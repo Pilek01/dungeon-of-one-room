@@ -1,4 +1,12 @@
 (() => {
+  function normalizeSeasonId(value, fallback = "season-1") {
+    const cleaned = String(value || "")
+      .trim()
+      .replace(/[^a-zA-Z0-9._-]/g, "")
+      .slice(0, 32);
+    return cleaned || fallback;
+  }
+
   const GRID_SIZE = 9;
   const TILE = 16;
   const CANVAS_SIZE = GRID_SIZE * TILE;
@@ -22,7 +30,7 @@
   const STORAGE_PLAYER_NAME = "dungeonOneRoomPlayerName";
   const STORAGE_LEADERBOARD = "dungeonOneRoomLeaderboardV1";
   const STORAGE_LEADERBOARD_PENDING = "dungeonOneRoomLeaderboardPendingV1";
-  const GAME_VERSION = "v0.1.13";
+  const GAME_VERSION = "v0.1.15";
   const MAX_LIVES = 10;
   const MAX_RELICS = 10;
   const LEADERBOARD_LIMIT = 25;
@@ -35,6 +43,9 @@
     const normalized = typeof raw === "string" ? raw.trim() : "";
     return normalized.replace(/\/+$/, "");
   })();
+  const ONLINE_LEADERBOARD_SEASON = normalizeSeasonId(
+    typeof window !== "undefined" ? window.DUNGEON_LEADERBOARD_SEASON : ""
+  );
   const DEBUG_CHEATS_ENABLED = true;
   const DEBUG_MENU_TOGGLE_KEY = "f9";
   const MUSIC_TRACKS = {
@@ -759,7 +770,8 @@
       score,
       mutatorCount: Math.max(0, Number(rawEntry.mutatorCount) || mutatorIds.length || 0),
       mutatorIds,
-      version: typeof rawEntry.version === "string" ? rawEntry.version : GAME_VERSION
+      version: typeof rawEntry.version === "string" ? rawEntry.version : GAME_VERSION,
+      season: normalizeSeasonId(rawEntry.season || "", "legacy")
     };
   }
 
@@ -879,6 +891,7 @@
     hasContinueRun: false,
     leaderboardModalOpen: false,
     leaderboardSortMode: "score", // "score" | "depth"
+    leaderboardScope: "current", // "current" | "legacy"
     nameModalOpen: false,
     nameModalAction: null,
     nameDraft: initialPlayerName,
@@ -1272,6 +1285,7 @@
   function openLeaderboardModal() {
     state.leaderboardModalOpen = true;
     state.leaderboardSortMode = "score";
+    state.leaderboardScope = "current";
     if (isOnlineLeaderboardEnabled()) {
       refreshOnlineLeaderboard(true);
     }
@@ -1292,6 +1306,20 @@
     markUiDirty();
   }
 
+  function setLeaderboardScope(scope) {
+    const normalized = scope === "legacy" ? "legacy" : "current";
+    if (state.leaderboardScope === normalized) return;
+    state.leaderboardScope = normalized;
+    if (isOnlineLeaderboardEnabled()) {
+      refreshOnlineLeaderboard(true);
+    }
+    markUiDirty();
+  }
+
+  function toggleLeaderboardScope() {
+    setLeaderboardScope(state.leaderboardScope === "current" ? "legacy" : "current");
+  }
+
   function isOnlineLeaderboardEnabled() {
     return Boolean(ONLINE_LEADERBOARD_API_BASE);
   }
@@ -1308,10 +1336,13 @@
   }
 
   function getLeaderboardSourceEntries() {
-    if (isOnlineLeaderboardEnabled() && state.onlineLeaderboardUpdatedAt > 0) {
-      return state.onlineLeaderboard;
+    const source = isOnlineLeaderboardEnabled() && state.onlineLeaderboardUpdatedAt > 0
+      ? state.onlineLeaderboard
+      : state.leaderboard;
+    if (state.leaderboardScope !== "legacy") {
+      return source.filter((entry) => normalizeSeasonId(entry?.season || "", "legacy") === ONLINE_LEADERBOARD_SEASON);
     }
-    return state.leaderboard;
+    return source;
   }
 
   function getLeaderboardSourceLabel() {
@@ -1414,7 +1445,8 @@
       score: Math.max(0, Number(entry.score) || 0),
       mutatorCount: Math.max(0, Number(entry.mutatorCount) || 0),
       mutatorIds: Array.isArray(entry.mutatorIds) ? entry.mutatorIds : [],
-      version: typeof entry.version === "string" ? entry.version : GAME_VERSION
+      version: typeof entry.version === "string" ? entry.version : GAME_VERSION,
+      season: normalizeSeasonId(entry.season || ONLINE_LEADERBOARD_SEASON)
     };
     await fetchJsonWithTimeout(endpoint, {
       method: "POST",
@@ -1483,7 +1515,9 @@
       await flushPendingLeaderboardQueue();
       const endpoint = getOnlineLeaderboardEndpoint();
       const sort = state.leaderboardSortMode === "depth" ? "depth" : "score";
-      const url = `${endpoint}?sort=${encodeURIComponent(sort)}&limit=${LEADERBOARD_MODAL_LIMIT}`;
+      const scope = state.leaderboardScope === "legacy" ? "legacy" : "current";
+      const season = encodeURIComponent(ONLINE_LEADERBOARD_SEASON);
+      const url = `${endpoint}?sort=${encodeURIComponent(sort)}&limit=${LEADERBOARD_MODAL_LIMIT}&scope=${scope}&season=${season}`;
       const payload = await fetchJsonWithTimeout(url, { method: "GET" });
       const entries = [];
       const sourceEntries = Array.isArray(payload?.entries) ? payload.entries : [];
@@ -1572,7 +1606,8 @@
       score: calculateScore(depth, gold),
       mutatorCount: mutatorIds.length,
       mutatorIds,
-      version: GAME_VERSION
+      version: GAME_VERSION,
+      season: ONLINE_LEADERBOARD_SEASON
     };
 
     upsertLeaderboardEntry(entry);
@@ -5581,6 +5616,9 @@
       if (isOnlineLeaderboardEnabled() && (state.onlineLeaderboardLoading || state.onlineSyncInFlight)) {
         return `<small class="leaderboard-note">Loading online leaderboard...</small>`;
       }
+      if (state.leaderboardScope === "current") {
+        return `<small class="leaderboard-note">No runs in current season yet.</small>`;
+      }
       if (isOnlineLeaderboardEnabled() && state.onlineLeaderboardUpdatedAt > 0) {
         return `<small class="leaderboard-note">No finished runs recorded online yet.</small>`;
       }
@@ -5590,12 +5628,15 @@
     const rows = entries.map((entry, index) => {
       const outcomeLabel = entry.outcome === "extract" ? "EXTRACT" : "DEATH";
       const mutatorLabel = entry.mutatorCount > 0 ? ` | Mut ${entry.mutatorCount}` : "";
+      const versionLabel = state.leaderboardScope === "legacy"
+        ? ` | Ver ${entry.version || "unknown"}`
+        : "";
       const topClass = index === 0 ? " leaderboard-top" : "";
       return [
         `<div class="mut-row leaderboard-row${topClass}">`,
         `<span class="mut-key">#${index + 1}</span>`,
         `<div class="mut-body">`,
-        `<strong>${entry.playerName} <em>${entry.score} pts | Depth ${entry.depth} | RunGoldEarned ${entry.gold} | ${outcomeLabel}</em></strong>`,
+        `<strong>${entry.playerName} <em>${entry.score} pts | Depth ${entry.depth} | Gold ${entry.gold} | ${outcomeLabel}${versionLabel}</em></strong>`,
         `<small>${formatLeaderboardTimestamp(entry.ts)}${mutatorLabel}</small>`,
         `</div>`,
         `</div>`
@@ -5815,6 +5856,7 @@
 
     if (state.leaderboardModalOpen && state.phase === "menu") {
       const modeLabel = state.leaderboardSortMode === "depth" ? "Depth" : "Points";
+      const scopeLabel = state.leaderboardScope === "legacy" ? "Legacy" : "Current Season";
       const rows = buildLeaderboardRows(LEADERBOARD_MODAL_LIMIT);
       const sourceLabel = getLeaderboardSourceLabel();
       const statusNote = getLeaderboardStatusNote();
@@ -5822,10 +5864,10 @@
       screenOverlayEl.innerHTML = [
         `<div class="overlay-card overlay-card-wide">`,
         `<h2 class="overlay-title">Leaderboard</h2>`,
-        `<p class="overlay-sub">Top ${Math.min(LEADERBOARD_MODAL_LIMIT, LEADERBOARD_LIMIT)} | Sort: ${modeLabel} | Source: ${sourceLabel}</p>`,
+        `<p class="overlay-sub">Top ${Math.min(LEADERBOARD_MODAL_LIMIT, LEADERBOARD_LIMIT)} | Scope: ${scopeLabel} | Sort: ${modeLabel} | Source: ${sourceLabel}</p>`,
         statusNote ? `<p class="overlay-sub">${statusNote}</p>` : "",
         `<div class="overlay-menu leaderboard-modal-list">${rows}</div>`,
-        `<p class="overlay-hint">T - switch Points/Depth | Esc/Enter - close</p>`,
+        `<p class="overlay-hint">T - switch Points/Depth | V - switch Current/Legacy | Esc/Enter - close</p>`,
         `</div>`
       ].join("");
       return;
@@ -6973,6 +7015,10 @@
     if (state.leaderboardModalOpen && state.phase === "menu") {
       if (key === "t" || key === "tab") {
         toggleLeaderboardSortMode();
+        return;
+      }
+      if (key === "v") {
+        toggleLeaderboardScope();
         return;
       }
       if (key === "arrowleft") {
