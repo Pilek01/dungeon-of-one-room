@@ -463,6 +463,24 @@ canvas.boss-pulse {
   overflow: hidden;
 }
 
+.overlay-card.overlay-card-danger {
+  border-color: #ff8f8f99;
+  background: linear-gradient(180deg, #2a1215e6, #16090cdd);
+  box-shadow: 0 10px 24px #00000080, 0 0 24px #ff6f6f40;
+}
+
+.overlay-card.overlay-card-danger .overlay-title {
+  color: #ffd7d7;
+}
+
+.overlay-card.overlay-card-danger .overlay-sub {
+  color: #ffc2c2;
+}
+
+.overlay-card.overlay-card-danger .overlay-hint {
+  color: #ffe2e2;
+}
+
 .overlay-title {
   margin: 0;
   font-size: clamp(18px, 2.2vw, 26px);
