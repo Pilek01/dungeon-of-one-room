@@ -30,12 +30,31 @@
   const STORAGE_PLAYER_NAME = "dungeonOneRoomPlayerName";
   const STORAGE_LEADERBOARD = "dungeonOneRoomLeaderboardV1";
   const STORAGE_LEADERBOARD_PENDING = "dungeonOneRoomLeaderboardPendingV1";
-  const GAME_VERSION = "v0.1.15";
-  const MAX_LIVES = 10;
+  const GAME_VERSION = (() => {
+    const raw = typeof window !== "undefined" ? window.GAME_VERSION : "";
+    const normalized = typeof raw === "string" ? raw.trim() : "";
+    return normalized || "dev";
+  })();
+  const MAX_LIVES = 5;
   const MAX_RELICS = 10;
   const LEADERBOARD_LIMIT = 25;
   const LEADERBOARD_MODAL_LIMIT = 20;
   const LEADERBOARD_PENDING_LIMIT = 200;
+  const COMBAT_SCALE = 10;
+  const BASE_PLAYER_HP = 10;
+  const BASE_PLAYER_ATTACK = 2;
+  const BASE_PLAYER_ARMOR = 0;
+  const LOW_HP_THRESHOLD = 4 * COMBAT_SCALE;
+  const LOW_HP_CRITICAL_THRESHOLD = 2 * COMBAT_SCALE;
+  const MIN_EFFECTIVE_DAMAGE = 1 * COMBAT_SCALE;
+  const CRIT_CHANCE_CAP = 0.55;
+  const ARMOR_DAMAGE_REDUCTION_CAP = 0.7;
+  const AUTO_POTION_TRIGGER_HP = 25;
+  const AUTO_POTION_INTERNAL_COOLDOWN_TURNS = 5;
+  const SHRINE_FURY_BLESSING_CHANCE = 0.1;
+  const ENEMY_LATE_SCALE_START_DEPTH = 20;
+  const ENEMY_LATE_SCALE_STEP_DEPTH = 10;
+  const ENEMY_LATE_SCALE_PER_STEP = 0.2;
   const ONLINE_LEADERBOARD_TIMEOUT_MS = 8000;
   const ONLINE_LEADERBOARD_REFRESH_MS = 12000;
   const ONLINE_LEADERBOARD_API_BASE = (() => {
@@ -311,12 +330,12 @@
   const MUTATORS = [
     {
       id: "berserker", name: "Berserker", key: "1",
-      bonus: "+3 ATK", drawback: "-5 Max HP", campGoldBonus: 0.15,
+      bonus: "+30 ATK", drawback: "-50 Max HP", campGoldBonus: 0.15,
       unlockText: "Kill 50 enemies"
     },
     {
       id: "bulwark", name: "Bulwark", key: "2",
-      bonus: "+3 Armor", drawback: "-2 ATK", campGoldBonus: 0.15,
+      bonus: "+30 Armor", drawback: "-20 ATK", campGoldBonus: 0.15,
       unlockText: "Reach depth 8"
     },
     {
@@ -326,12 +345,12 @@
     },
     {
       id: "greed", name: "Greed", key: "4",
-      bonus: "+40% Gold", drawback: "+2 enemies, +2 enemy HP, shop +20%", campGoldBonus: 0.05,
+      bonus: "+40% Gold", drawback: "+2 enemies, +20 enemy HP, shop +20%", campGoldBonus: 0.05,
       unlockText: "Earn 1000 gold total"
     },
     {
       id: "hunter", name: "Hunter", key: "5",
-      bonus: "+15% Crit", drawback: "Enemies deal +2 damage", campGoldBonus: 0.15,
+      bonus: "+15% Crit", drawback: "Enemies deal +20 damage", campGoldBonus: 0.15,
       unlockText: "Kill 30 elites"
     },
     {
@@ -346,17 +365,17 @@
     },
     {
       id: "famine", name: "Famine", key: "8",
-      bonus: "+2 Max HP", drawback: "No merchants, potions heal 50%", campGoldBonus: 0.25,
+      bonus: "+20 Max HP", drawback: "No merchants, potions heal 50%", campGoldBonus: 0.25,
       unlockText: "Extract depth 10+ without potions"
     },
     {
       id: "elitist", name: "Elitist", key: "9",
-      bonus: "10% elite relic drop", drawback: "+30% elite spawn, elites +2 HP", campGoldBonus: 0.20,
+      bonus: "Elites drop +50% gold", drawback: "+30% elite spawn, elites +20 HP", campGoldBonus: 0.20,
       unlockText: "Kill 100 elites"
     },
     {
       id: "ascension", name: "Ascension", key: "0",
-      bonus: "+1 relic choice", drawback: "Enemy ATK scales +1 per 3 depths", campGoldBonus: 0.30,
+      bonus: "+1 relic choice", drawback: "Enemy ATK scales +10 per 3 depths", campGoldBonus: 0.30,
       unlockText: "Reach depth 15"
     }
   ];
@@ -375,7 +394,7 @@
       id: "vitality",
       key: "1",
       name: "Vitality",
-      desc: "+1 max HP at run start",
+      desc: "+10 max HP at run start",
       baseCost: 10,
       scale: 8,
       max: 10
@@ -384,7 +403,7 @@
       id: "blade",
       key: "2",
       name: "Sharpen Blade",
-      desc: "+1 attack at run start",
+      desc: "+10 attack at run start",
       baseCost: 15,
       scale: 10,
       max: 8
@@ -402,7 +421,7 @@
       id: "guard",
       key: "4",
       name: "Guard Plates",
-      desc: "+1 starting armor",
+      desc: "+10 starting armor",
       baseCost: 30,
       scale: 12,
       max: 6
@@ -411,8 +430,8 @@
       id: "auto_potion",
       key: "5",
       name: "Auto Potion",
-      desc: "Auto-use potion at 4 HP or less",
-      baseCost: 250,
+      desc: "Auto-use potion at 25 HP or less (5-turn CD)",
+      baseCost: 600,
       scale: 0,
       max: 1,
       currency: "camp_gold"
@@ -421,7 +440,7 @@
       id: "potion_strength",
       key: "6",
       name: "Potion Strength",
-      desc: "+1 potion heal per level",
+      desc: "+10 potion heal per level",
       baseCost: 80,
       scale: 60,
       max: 5,
@@ -485,33 +504,33 @@
 
   const RELICS = [
     // ── Normal (6) ──
-    { id: "fang",      rarity: "normal", name: "Fang Charm",     desc: "+1 ATK" },
-    { id: "plating",   rarity: "normal", name: "Bone Plating",   desc: "+1 ARM" },
+    { id: "fang",      rarity: "normal", name: "Fang Charm",     desc: "+10 ATK" },
+    { id: "plating",   rarity: "normal", name: "Bone Plating",   desc: "+10 ARM" },
     { id: "lucky",     rarity: "normal", name: "Lucky Coin",     desc: "+5% crit" },
     { id: "flask",     rarity: "normal", name: "Spare Flask",    desc: "+1 potion" },
-    { id: "lifebloom", rarity: "normal", name: "Lifebloom Seed", desc: "+2 max HP and heal 2" },
+    { id: "lifebloom", rarity: "normal", name: "Lifebloom Seed", desc: "+20 max HP and heal 20" },
     { id: "ironboots", rarity: "normal", name: "Iron Boots",     desc: "Immune to spike damage" },
     // ── Rare (8) ──
     { id: "idol",      rarity: "rare", name: "Golden Idol",      desc: "+20% gold gain this run" },
-    { id: "thornmail", rarity: "rare", name: "Thorn Mail",       desc: "Melee attackers take 1 dmg" },
-    { id: "vampfang",  rarity: "rare", name: "Vampiric Fang",    desc: "Heal 1 HP every 3 kills" },
+    { id: "thornmail", rarity: "rare", name: "Thorn Mail",       desc: "Melee attackers take 10 dmg" },
+    { id: "vampfang",  rarity: "rare", name: "Vampiric Fang",    desc: "Heal 10 HP every 3 kills" },
     { id: "adrenal",   rarity: "rare", name: "Adrenaline Vial",  desc: "Max fury +2, start with 2 fury" },
     { id: "scoutlens", rarity: "rare", name: "Scout's Lens",     desc: "Enemy HP bars visible" },
     { id: "magnet",    rarity: "rare", name: "Magnetic Shard",   desc: "Auto-loot chests within 2 tiles" },
     { id: "shrineward",rarity: "rare", name: "Shrine Ward",      desc: "Shrines always bless, never curse" },
     { id: "merchfavor",rarity: "rare", name: "Merchant's Favor", desc: "Merchant prices halved" },
     // ── Epic (6) ──
-    { id: "glasscannon", rarity: "epic", name: "Glass Cannon",  desc: "+4 ATK, -5 max HP" },
+    { id: "glasscannon", rarity: "epic", name: "Glass Cannon",  desc: "+40 ATK, -50 max HP" },
     { id: "echostrike",  rarity: "epic", name: "Echo Strike",   desc: "30% chance to hit twice" },
     { id: "phasecloak",  rarity: "epic", name: "Phase Cloak",   desc: "Auto-dodge every 5th turn" },
-    { id: "soulharvest", rarity: "epic", name: "Soul Harvest",  desc: "Every 10 kills: +1 max HP (cap +10)" },
-    { id: "burnblade",   rarity: "epic", name: "Burning Blade", desc: "Attacks ignite: 1 dmg/turn for 3 turns" },
+    { id: "soulharvest", rarity: "epic", name: "Soul Harvest",  desc: "Every 10 kills: +10 max HP (cap +100)" },
+    { id: "burnblade",   rarity: "epic", name: "Burning Blade", desc: "Attacks ignite: 10 dmg/turn for 3 turns" },
     { id: "frostamulet", rarity: "epic", name: "Frost Amulet",  desc: "Nearby non-elites 15% chance to freeze (boss/elite immune)" },
     // ── Legendary (4) ──
     { id: "chronoloop",  rarity: "legendary", name: "Chrono Loop",  desc: "Cheat death once per run: revive 50% HP, kill all enemies" },
     { id: "voidreaper",  rarity: "legendary", name: "Void Reaper",  desc: "Crits execute <30% HP enemies. +15% crit. Crit kills +3 gold" },
-    { id: "titanheart",  rarity: "legendary", name: "Titan's Heart", desc: "+8 max HP, +2 ARM, -2 ATK. Potions heal +50%" },
-    { id: "chaosorb",    rarity: "legendary", name: "Chaos Orb",    desc: "Random effect each turn: +2 ATK, heal 3, +1 gold, spike teleport, or nothing" }
+    { id: "titanheart",  rarity: "legendary", name: "Titan's Heart", desc: "+80 max HP, +20 ARM, -20 ATK. Potions heal +50%" },
+    { id: "chaosorb",    rarity: "legendary", name: "Chaos Orb",    desc: "Random effect each turn: +20 ATK, heal 30, +1 gold, spike teleport, or nothing" }
   ];
 
   const SKILLS = [
@@ -586,6 +605,25 @@
   const tileKey = (x, y) => `${x},${y}`;
   const inBounds = (x, y) => x >= 1 && x <= GRID_SIZE - 2 && y >= 1 && y <= GRID_SIZE - 2;
   const manhattan = (ax, ay, bx, by) => Math.abs(ax - bx) + Math.abs(ay - by);
+  const scaledCombat = (base) => Math.round(base * COMBAT_SCALE);
+
+  function getFuryBlessingBonus() {
+    return (state.player?.furyBlessingTurns || 0) > 0 ? 2 : 0;
+  }
+
+  function getEffectiveAdrenaline() {
+    return Math.max(0, Number(state.player.adrenaline) || 0) + getFuryBlessingBonus();
+  }
+
+  function getEffectiveMaxAdrenaline() {
+    return Math.max(0, Number(state.player.maxAdrenaline) || 0) + getFuryBlessingBonus();
+  }
+
+  function getEnemyLateDepthMultiplier(depth = state.depth) {
+    if (depth < ENEMY_LATE_SCALE_START_DEPTH) return 1;
+    const steps = Math.floor((depth - ENEMY_LATE_SCALE_START_DEPTH) / ENEMY_LATE_SCALE_STEP_DEPTH) + 1;
+    return 1 + steps * ENEMY_LATE_SCALE_PER_STEP;
+  }
 
   const TWEEN_MS = 120;
 
@@ -758,6 +796,12 @@
     const mutatorIds = Array.isArray(rawEntry.mutatorIds)
       ? rawEntry.mutatorIds.filter((id) => typeof id === "string")
       : [];
+    const rawVersion =
+      typeof rawEntry.version === "string" && rawEntry.version.trim()
+        ? rawEntry.version.trim()
+        : typeof rawEntry.game_version === "string" && rawEntry.game_version.trim()
+          ? rawEntry.game_version.trim()
+          : GAME_VERSION;
     return {
       id: String(rawEntry.id || `${ts}-${Math.random().toString(36).slice(2, 8)}`),
       runId: String(rawEntry.runId || rawEntry.id || `${ts}-${Math.random().toString(36).slice(2, 8)}`),
@@ -770,7 +814,7 @@
       score,
       mutatorCount: Math.max(0, Number(rawEntry.mutatorCount) || mutatorIds.length || 0),
       mutatorIds,
-      version: typeof rawEntry.version === "string" ? rawEntry.version : GAME_VERSION,
+      version: rawVersion,
       season: normalizeSeasonId(rawEntry.season || "", "legacy")
     };
   }
@@ -909,6 +953,7 @@
       enemyHpBonus: 0,
       shopCostMult: 1,
       eliteHpBonus: 0,
+      eliteGoldMult: 1,
       extraSpikeMult: 1,
       enemyDoubleMoveChance: 0,
       noMerchants: false,
@@ -921,10 +966,10 @@
     player: {
       x: 4,
       y: 4,
-      hp: 10,
-      maxHp: 10,
-      attack: 2,
-      armor: 0,
+      hp: scaledCombat(BASE_PLAYER_HP),
+      maxHp: scaledCombat(BASE_PLAYER_HP),
+      attack: scaledCombat(BASE_PLAYER_ATTACK),
+      armor: scaledCombat(BASE_PLAYER_ARMOR),
       potions: 1,
       maxPotions: 5,
       gold: 0,
@@ -941,7 +986,9 @@
       phaseCooldown: 0,
       titanAttackPenalty: 0,
       chaosAtkBonus: 0,
-      chaosAtkTurns: 0
+      chaosAtkTurns: 0,
+      autoPotionCooldown: 0,
+      furyBlessingTurns: 0
     },
     portal: { x: 1, y: 1 },
     enemies: [],
@@ -1130,15 +1177,11 @@
         run: () => {
           state.depth += 1;
           state.runMaxDepth = Math.max(state.runMaxDepth, state.depth);
-          state.player.hp = Math.min(state.player.maxHp, state.player.hp + 1);
+          state.player.hp = Math.min(state.player.maxHp, state.player.hp + scaledCombat(1));
           saveMetaProgress();
           buildRoom();
           pushLog(`Debug: jumped to depth ${state.depth}.`, "warn");
-          if (state.depth > 0 && state.depth % 3 === 0) {
-            openRelicDraft();
-          } else {
-            saveRunSnapshot();
-          }
+          saveRunSnapshot();
           markUiDirty();
         }
       },
@@ -1434,6 +1477,10 @@
     if (!isOnlineLeaderboardEnabled()) return false;
     const endpoint = getOnlineLeaderboardEndpoint();
     if (!endpoint) return false;
+    const payloadVersion =
+      typeof entry.version === "string" && entry.version.trim()
+        ? entry.version.trim()
+        : GAME_VERSION;
     const payload = {
       runId: entry.runId,
       playerName: sanitizePlayerName(entry.playerName) || "Anonymous",
@@ -1445,7 +1492,8 @@
       score: Math.max(0, Number(entry.score) || 0),
       mutatorCount: Math.max(0, Number(entry.mutatorCount) || 0),
       mutatorIds: Array.isArray(entry.mutatorIds) ? entry.mutatorIds : [],
-      version: typeof entry.version === "string" ? entry.version : GAME_VERSION,
+      version: payloadVersion,
+      game_version: payloadVersion,
       season: normalizeSeasonId(entry.season || ONLINE_LEADERBOARD_SEASON)
     };
     await fetchJsonWithTimeout(endpoint, {
@@ -1607,6 +1655,7 @@
       mutatorCount: mutatorIds.length,
       mutatorIds,
       version: GAME_VERSION,
+      game_version: GAME_VERSION,
       season: ONLINE_LEADERBOARD_SEASON
     };
 
@@ -1805,6 +1854,7 @@
       enemyHpBonus: Number(snapshot.runMods?.enemyHpBonus) || 0,
       shopCostMult: Number(snapshot.runMods?.shopCostMult) || 1,
       eliteHpBonus: Number(snapshot.runMods?.eliteHpBonus) || 0,
+      eliteGoldMult: Number(snapshot.runMods?.eliteGoldMult) || 1,
       extraSpikeMult: Number(snapshot.runMods?.extraSpikeMult) || 1,
       enemyDoubleMoveChance: Number(snapshot.runMods?.enemyDoubleMoveChance) || 0,
       noMerchants: Boolean(snapshot.runMods?.noMerchants),
@@ -1826,10 +1876,10 @@
     state.player = {
       x: Number(snapshot.player.x) || 4,
       y: Number(snapshot.player.y) || 4,
-      hp: Number(snapshot.player.hp) || 10,
-      maxHp: Number(snapshot.player.maxHp) || 10,
-      attack: Number(snapshot.player.attack) || 2,
-      armor: Number(snapshot.player.armor) || 0,
+      hp: Number(snapshot.player.hp) || scaledCombat(BASE_PLAYER_HP),
+      maxHp: Number(snapshot.player.maxHp) || scaledCombat(BASE_PLAYER_HP),
+      attack: Number(snapshot.player.attack) || scaledCombat(BASE_PLAYER_ATTACK),
+      armor: Number(snapshot.player.armor) || scaledCombat(BASE_PLAYER_ARMOR),
       potions: Number(snapshot.player.potions) || 1,
       maxPotions: Math.max(5, Number(snapshot.player.maxPotions) || 5),
       gold: Number(snapshot.player.gold) || 0,
@@ -1846,10 +1896,12 @@
       phaseCooldown: Math.max(0, Number(snapshot.player.phaseCooldown) || 0),
       titanAttackPenalty: Math.max(0, Number(snapshot.player.titanAttackPenalty) || 0),
       chaosAtkBonus: Math.max(0, Number(snapshot.player.chaosAtkBonus) || 0),
-      chaosAtkTurns: Math.max(0, Number(snapshot.player.chaosAtkTurns) || 0)
+      chaosAtkTurns: Math.max(0, Number(snapshot.player.chaosAtkTurns) || 0),
+      autoPotionCooldown: Math.max(0, Number(snapshot.player.autoPotionCooldown) || 0),
+      furyBlessingTurns: Math.max(0, Number(snapshot.player.furyBlessingTurns) || 0)
     };
     state.player.hp = clamp(state.player.hp, 1, state.player.maxHp);
-    state.player.crit = clamp(state.player.crit, 0.01, 0.85);
+    state.player.crit = clamp(state.player.crit, 0.01, CRIT_CHANCE_CAP);
     snapVisual(state.player);
 
     state.portal = {
@@ -2821,18 +2873,18 @@
   function applyRelicEffects(relicId, options = {}) {
     const onGain = options.onGain !== false;
     // Normal
-    if (relicId === "fang") { state.player.attack += 1; return; }
-    if (relicId === "plating") { state.player.armor += 1; return; }
-    if (relicId === "lucky") { state.player.crit = clamp(state.player.crit + 0.05, 0.01, 0.85); return; }
+    if (relicId === "fang") { state.player.attack += scaledCombat(1); return; }
+    if (relicId === "plating") { state.player.armor += scaledCombat(1); return; }
+    if (relicId === "lucky") { state.player.crit = clamp(state.player.crit + 0.05, 0.01, CRIT_CHANCE_CAP); return; }
     if (relicId === "flask") {
       state.player.maxPotions += 1;
       if (onGain) grantPotion(1);
       return;
     }
     if (relicId === "lifebloom") {
-      state.player.maxHp += 2;
+      state.player.maxHp += scaledCombat(2);
       if (onGain) {
-        state.player.hp = Math.min(state.player.maxHp, state.player.hp + 2);
+        state.player.hp = Math.min(state.player.maxHp, state.player.hp + scaledCombat(2));
       } else {
         state.player.hp = Math.min(state.player.hp, state.player.maxHp);
       }
@@ -2858,8 +2910,8 @@
     if (relicId === "merchfavor") { return; } // passive: checked in merchant
     // Epic
     if (relicId === "glasscannon") {
-      state.player.attack += 4;
-      state.player.maxHp = Math.max(4, state.player.maxHp - 5);
+      state.player.attack += scaledCombat(4);
+      state.player.maxHp = Math.max(scaledCombat(4), state.player.maxHp - scaledCombat(5));
       state.player.hp = Math.min(state.player.hp, state.player.maxHp);
       return;
     }
@@ -2877,13 +2929,13 @@
       return;
     }
     if (relicId === "voidreaper") {
-      state.player.crit = clamp(state.player.crit + 0.15, 0.01, 0.85);
+      state.player.crit = clamp(state.player.crit + 0.15, 0.01, CRIT_CHANCE_CAP);
       return;
     }
     if (relicId === "titanheart") {
-      state.player.maxHp += 8;
-      state.player.armor += 2;
-      const penalty = Math.min(2, Math.max(0, state.player.attack - 1));
+      state.player.maxHp += scaledCombat(8);
+      state.player.armor += scaledCombat(2);
+      const penalty = Math.min(scaledCombat(2), Math.max(0, state.player.attack - scaledCombat(1)));
       state.player.attack -= penalty;
       state.player.titanAttackPenalty = penalty;
       state.player.hp = Math.min(state.player.hp, state.player.maxHp);
@@ -2894,16 +2946,16 @@
 
   function removeRelicEffects(relicId) {
     // Normal
-    if (relicId === "fang") { state.player.attack = Math.max(1, state.player.attack - 1); return; }
-    if (relicId === "plating") { state.player.armor = Math.max(0, state.player.armor - 1); return; }
-    if (relicId === "lucky") { state.player.crit = clamp(state.player.crit - 0.05, 0.01, 0.85); return; }
+    if (relicId === "fang") { state.player.attack = Math.max(scaledCombat(1), state.player.attack - scaledCombat(1)); return; }
+    if (relicId === "plating") { state.player.armor = Math.max(0, state.player.armor - scaledCombat(1)); return; }
+    if (relicId === "lucky") { state.player.crit = clamp(state.player.crit - 0.05, 0.01, CRIT_CHANCE_CAP); return; }
     if (relicId === "flask") {
       state.player.maxPotions = Math.max(1, state.player.maxPotions - 1);
       state.player.potions = Math.min(state.player.potions, state.player.maxPotions);
       return;
     }
     if (relicId === "lifebloom") {
-      state.player.maxHp = Math.max(4, state.player.maxHp - 2);
+      state.player.maxHp = Math.max(scaledCombat(4), state.player.maxHp - scaledCombat(2));
       state.player.hp = Math.min(state.player.hp, state.player.maxHp);
       return;
     }
@@ -2929,8 +2981,8 @@
     if (relicId === "merchfavor") { return; }
     // Epic
     if (relicId === "glasscannon") {
-      state.player.attack = Math.max(1, state.player.attack - 4);
-      state.player.maxHp += 5;
+      state.player.attack = Math.max(scaledCombat(1), state.player.attack - scaledCombat(4));
+      state.player.maxHp += scaledCombat(5);
       state.player.hp = Math.min(state.player.hp, state.player.maxHp);
       return;
     }
@@ -2942,7 +2994,7 @@
     if (relicId === "soulharvest") {
       const gained = Math.max(0, state.player.soulHarvestGained || 0);
       if (gained > 0) {
-        state.player.maxHp = Math.max(4, state.player.maxHp - gained);
+        state.player.maxHp = Math.max(scaledCombat(4), state.player.maxHp - gained * scaledCombat(1));
       }
       state.player.soulHarvestCount = 0;
       state.player.soulHarvestGained = 0;
@@ -2954,12 +3006,12 @@
     // Legendary
     if (relicId === "chronoloop") { return; }
     if (relicId === "voidreaper") {
-      state.player.crit = clamp(state.player.crit - 0.15, 0.01, 0.85);
+      state.player.crit = clamp(state.player.crit - 0.15, 0.01, CRIT_CHANCE_CAP);
       return;
     }
     if (relicId === "titanheart") {
-      state.player.maxHp = Math.max(4, state.player.maxHp - 8);
-      state.player.armor = Math.max(0, state.player.armor - 2);
+      state.player.maxHp = Math.max(scaledCombat(4), state.player.maxHp - scaledCombat(8));
+      state.player.armor = Math.max(0, state.player.armor - scaledCombat(2));
       const refund = Math.max(0, state.player.titanAttackPenalty || 0);
       state.player.attack += refund;
       state.player.titanAttackPenalty = 0;
@@ -3331,6 +3383,7 @@
     state.runMods.enemyHpBonus = 0;
     state.runMods.shopCostMult = 1;
     state.runMods.eliteHpBonus = 0;
+    state.runMods.eliteGoldMult = 1;
     state.runMods.extraSpikeMult = 1;
     state.runMods.enemyDoubleMoveChance = 0;
     state.runMods.noMerchants = false;
@@ -3341,22 +3394,22 @@
   }
 
   function applyCampUpgradesToRun() {
-    state.player.maxHp += getCampUpgradeLevel("vitality");
-    state.player.attack += getCampUpgradeLevel("blade");
+    state.player.maxHp += scaledCombat(getCampUpgradeLevel("vitality"));
+    state.player.attack += scaledCombat(getCampUpgradeLevel("blade"));
     const satchelLevel = getCampUpgradeLevel("satchel");
     state.player.potions += satchelLevel;
     state.player.maxPotions += satchelLevel;
-    state.player.armor += getCampUpgradeLevel("guard");
+    state.player.armor += scaledCombat(getCampUpgradeLevel("guard"));
     state.player.crit += getCampUpgradeLevel("crit_chance") * 0.05;
   }
 
   function getPotionHealAmount() {
-    const bonus = getCampUpgradeLevel("potion_strength");
-    const base = randInt(4 + bonus, 6 + bonus);
-    let heal = Math.max(1, Math.round(base * state.runMods.potionHealMult));
+    const bonus = scaledCombat(getCampUpgradeLevel("potion_strength"));
+    const base = randInt(scaledCombat(4) + bonus, scaledCombat(6) + bonus);
+    let heal = Math.max(MIN_EFFECTIVE_DAMAGE, Math.round(base * state.runMods.potionHealMult));
     // Titan's Heart: +50% potion healing.
     if (hasRelic("titanheart")) {
-      heal = Math.max(1, Math.round(heal * 1.5));
+      heal = Math.max(MIN_EFFECTIVE_DAMAGE, Math.round(heal * 1.5));
     }
     return heal;
   }
@@ -3425,7 +3478,7 @@
       getSkillTier("shield") >= 2 &&
       state.enemies.includes(attacker)
     ) {
-      const reflectDamage = Math.max(1, Math.round(Math.max(1, blockedDamage) * 2));
+      const reflectDamage = Math.max(MIN_EFFECTIVE_DAMAGE, Math.round(Math.max(MIN_EFFECTIVE_DAMAGE, blockedDamage) * 2));
       attacker.hp -= reflectDamage;
       spawnParticles(attacker.x, attacker.y, "#b7d8ff", 9, 1.1);
       pushLog(`Shield reflects ${reflectDamage} to ${attacker.name}.`, "good");
@@ -3440,17 +3493,38 @@
   function tryAutoPotion(triggerLabel = "low HP") {
     if (state.phase !== "playing") return false;
     if (getCampUpgradeLevel("auto_potion") < 1) return false;
-    if (state.player.hp <= 0 || state.player.hp > 4) return false;
+    if (state.player.hp <= 0 || state.player.hp > AUTO_POTION_TRIGGER_HP) return false;
+    if (state.player.autoPotionCooldown > 0) return false;
     if (state.player.potions <= 0) return false;
 
     state.player.potions -= 1;
+    state.player.autoPotionCooldown = AUTO_POTION_INTERNAL_COOLDOWN_TURNS;
     state.potionsUsedThisRun = (state.potionsUsedThisRun || 0) + 1;
     const heal = getPotionHealAmount();
     state.player.hp = Math.min(state.player.maxHp, state.player.hp + heal);
     spawnParticles(state.player.x, state.player.y, "#8ce1a7", 12, 1.1);
-    pushLog(`Auto Potion (${triggerLabel}): +${heal} HP.`, "good");
+    pushLog(
+      `Auto Potion (${triggerLabel}): +${heal} HP (CD ${AUTO_POTION_INTERNAL_COOLDOWN_TURNS} turns).`,
+      "good"
+    );
     markUiDirty();
     return true;
+  }
+
+  function tickAutoPotionCooldown() {
+    if (state.player.autoPotionCooldown > 0) {
+      state.player.autoPotionCooldown -= 1;
+    }
+  }
+
+  function tickFuryBlessing() {
+    if (state.player.furyBlessingTurns > 0) {
+      state.player.furyBlessingTurns -= 1;
+      if (state.player.furyBlessingTurns <= 0) {
+        state.player.furyBlessingTurns = 0;
+        pushLog("Fury Blessing fades.", "bad");
+      }
+    }
   }
 
   function applyMutatorsToRun() {
@@ -3458,13 +3532,13 @@
     let totalCampGoldBonus = 0;
 
     if (isMutatorActive("berserker")) {
-      state.player.attack += 3;
-      state.player.maxHp -= 5;
+      state.player.attack += scaledCombat(3);
+      state.player.maxHp -= scaledCombat(5);
       totalCampGoldBonus += 0.15;
     }
     if (isMutatorActive("bulwark")) {
-      state.player.armor += 3;
-      state.player.attack -= 2;
+      state.player.armor += scaledCombat(3);
+      state.player.attack -= scaledCombat(2);
       totalCampGoldBonus += 0.15;
     }
     if (isMutatorActive("alchemist")) {
@@ -3476,13 +3550,13 @@
     if (isMutatorActive("greed")) {
       state.runMods.goldMultiplier += 0.4;
       state.runMods.extraEnemies += 2;
-      state.runMods.enemyHpBonus += 2;
+      state.runMods.enemyHpBonus += scaledCombat(2);
       state.runMods.shopCostMult *= 1.2;
       totalCampGoldBonus += 0.05;
     }
     if (isMutatorActive("hunter")) {
       state.player.crit += 0.15;
-      state.runMods.enemyDamageBonus += 2;
+      state.runMods.enemyDamageBonus += scaledCombat(2);
       totalCampGoldBonus += 0.15;
     }
     if (isMutatorActive("glassdepths")) {
@@ -3494,28 +3568,29 @@
       totalCampGoldBonus += 0.20;
     }
     if (isMutatorActive("famine")) {
-      state.player.maxHp += 2;
+      state.player.maxHp += scaledCombat(2);
       state.runMods.noMerchants = true;
       state.runMods.potionHealMult = 0.5;
       totalCampGoldBonus += 0.25;
     }
     if (isMutatorActive("elitist")) {
       state.runMods.eliteChance += 0.30;
-      state.runMods.eliteHpBonus = 2; // elites specifically get +2 HP
+      state.runMods.eliteHpBonus = scaledCombat(2); // elites specifically get +20 HP
+      state.runMods.eliteGoldMult = 1.5;
       totalCampGoldBonus += 0.20;
     }
     if (isMutatorActive("ascension")) {
       state.runMods.extraRelicChoices += 1;
-      state.runMods.enemyAtkPerDepth = 1; // +1 ATK per 3 depths
+      state.runMods.enemyAtkPerDepth = scaledCombat(1); // +10 ATK per 3 depths
       totalCampGoldBonus += 0.30;
     }
 
     state.runMods.campGoldBonus = totalCampGoldBonus;
 
-    state.player.maxHp = clamp(state.player.maxHp, 4, 40);
-    state.player.attack = clamp(state.player.attack, 1, 20);
-    state.player.armor = clamp(state.player.armor, 0, 10);
-    state.player.crit = clamp(state.player.crit, 0.01, 0.85);
+    state.player.maxHp = clamp(state.player.maxHp, scaledCombat(4), scaledCombat(40));
+    state.player.attack = clamp(state.player.attack, scaledCombat(1), scaledCombat(20));
+    state.player.armor = clamp(state.player.armor, 0, scaledCombat(10));
+    state.player.crit = clamp(state.player.crit, 0.01, CRIT_CHANCE_CAP);
   }
 
   function grantGold(amount, options = {}) {
@@ -3672,8 +3747,8 @@
         name: "Skeleton",
         x,
         y,
-        hp: 4 + depthScale,
-        attack: 1 + Math.floor(state.depth / 4) + damageBonus,
+        hp: scaledCombat(4 + depthScale),
+        attack: scaledCombat(1 + Math.floor(state.depth / 4)) + damageBonus,
         range: 3,
         cooldown: 0,
         aiming: false
@@ -3684,8 +3759,8 @@
         name: "Brute",
         x,
         y,
-        hp: 7 + state.depth,
-        attack: 3 + Math.floor(state.depth / 3) + damageBonus,
+        hp: scaledCombat(7 + state.depth),
+        attack: scaledCombat(3 + Math.floor(state.depth / 3)) + damageBonus,
         rests: false
       };
     } else if (type === "warden") {
@@ -3694,8 +3769,8 @@
         name: "Warden",
         x,
         y,
-        hp: 16 + state.depth * 2,
-        attack: 4 + Math.floor(state.depth / 3) + damageBonus,
+        hp: scaledCombat(16 + state.depth * 2),
+        attack: scaledCombat(4 + Math.floor(state.depth / 3)) + damageBonus,
         range: 4,
         cooldown: 0
       };
@@ -3705,16 +3780,22 @@
         name: "Slime",
         x,
         y,
-        hp: 3 + depthScale,
-        attack: 1 + Math.floor(state.depth / 5) + damageBonus
+        hp: scaledCombat(3 + depthScale),
+        attack: scaledCombat(1 + Math.floor(state.depth / 5)) + damageBonus
       };
     }
 
-    // Mutator: enemy HP bonus (Greed +1, Elitist +2 for elites handled via eliteChance)
+    // Mutator: enemy HP bonus (scaled for x10 combat values).
     enemy.hp += state.runMods.enemyHpBonus;
-    // Ascension: enemy ATK scales +1 per 3 depths
+    // Ascension: enemy ATK scales +10 per 3 depths.
     if (state.runMods.enemyAtkPerDepth > 0) {
       enemy.attack += Math.floor(state.depth / 3) * state.runMods.enemyAtkPerDepth;
+    }
+
+    const lateScale = getEnemyLateDepthMultiplier(state.depth);
+    if (lateScale > 1) {
+      enemy.hp = Math.round(enemy.hp * lateScale);
+      enemy.attack = Math.round(enemy.attack * lateScale);
     }
 
     enemy.elite = false;
@@ -3731,13 +3812,13 @@
       enemy.elite = true;
       enemy.rewardBonus += 3;
       enemy.hp = Math.round(enemy.hp * 1.4) + (state.runMods.eliteHpBonus || 0);
-      enemy.attack += 1;
+      enemy.attack += scaledCombat(1);
       enemy.affix = pickEliteAffix();
 
       if (enemy.affix === "tank") {
         enemy.hp = Math.round(enemy.hp * 1.3);
       } else if (enemy.affix === "fast") {
-        enemy.attack += 1;
+        enemy.attack += scaledCombat(1);
       } else if (enemy.affix === "vampiric") {
         enemy.vampiric = true;
       }
@@ -3937,10 +4018,10 @@
 
     state.merchantPotionsBought = 0;
     state.potionsUsedThisRun = 0;
-    state.player.hp = 10;
-    state.player.maxHp = 10;
-    state.player.attack = 2;
-    state.player.armor = 0;
+    state.player.hp = scaledCombat(BASE_PLAYER_HP);
+    state.player.maxHp = scaledCombat(BASE_PLAYER_HP);
+    state.player.attack = scaledCombat(BASE_PLAYER_ATTACK);
+    state.player.armor = scaledCombat(BASE_PLAYER_ARMOR);
     state.player.potions = 1;
     state.player.maxPotions = 5;
     state.player.gold = 0;
@@ -3958,6 +4039,8 @@
     state.player.titanAttackPenalty = 0;
     state.player.chaosAtkBonus = 0;
     state.player.chaosAtkTurns = 0;
+    state.player.autoPotionCooldown = 0;
+    state.player.furyBlessingTurns = 0;
     state.skillCooldowns = sanitizeSkillCooldowns({});
     stopDeathTrack(true);
 
@@ -3999,7 +4082,7 @@
     if (state.lives <= 0) {
       pushLog("All lives lost. Fresh start triggered.", "bad");
       resetMetaProgressForFreshStart();
-      pushLog("Progress reset. Lives restored to 10.", "good");
+      pushLog(`Progress reset. Lives restored to ${MAX_LIVES}.`, "good");
       pushLog("Press R to begin a fresh run.");
       return;
     }
@@ -4068,20 +4151,30 @@
     state.shrine.used = true;
     const blessing = hasRelic("shrineward") ? true : chance(0.85);
     if (blessing) {
-      const roll = randInt(1, 4);
-      if (roll === 1) {
-        state.player.maxHp += 1;
-        state.player.hp = Math.min(state.player.maxHp, state.player.hp + 2);
-        pushLog("Shrine blessing: +1 max HP and heal 2.", "good");
-      } else if (roll === 2) {
-        state.player.attack += 1;
-        pushLog("Shrine blessing: +1 ATK.", "good");
-      } else if (roll === 3) {
-        state.player.armor += 1;
-        pushLog("Shrine blessing: +1 ARM.", "good");
+      if (chance(SHRINE_FURY_BLESSING_CHANCE)) {
+        const duration = randInt(100, 200);
+        state.player.adrenaline = Math.min(state.player.maxAdrenaline, state.player.adrenaline + 2);
+        state.player.furyBlessingTurns = Math.max(state.player.furyBlessingTurns || 0, duration);
+        pushLog(
+          `Shrine blessing: Fury +2 now, Fury Blessing active for ${state.player.furyBlessingTurns} turns.`,
+          "good"
+        );
       } else {
-        grantPotion(1);
-        pushLog("Shrine blessing: +1 potion.", "good");
+        const roll = randInt(1, 4);
+        if (roll === 1) {
+          state.player.maxHp += scaledCombat(1);
+          state.player.hp = Math.min(state.player.maxHp, state.player.hp + scaledCombat(2));
+          pushLog("Shrine blessing: +10 max HP and heal 20.", "good");
+        } else if (roll === 2) {
+          state.player.attack += scaledCombat(1);
+          pushLog("Shrine blessing: +10 ATK.", "good");
+        } else if (roll === 3) {
+          state.player.armor += scaledCombat(1);
+          pushLog("Shrine blessing: +10 ARM.", "good");
+        } else {
+          grantPotion(1);
+          pushLog("Shrine blessing: +1 potion.", "good");
+        }
       }
     } else {
       if (blockDamageWithShield("shrine curse")) {
@@ -4089,8 +4182,8 @@
       } else if (isDebugGodModeActive()) {
         pushLog("Shrine curse ignored (God Mode).", "warn");
       } else {
-        state.player.hp -= 2;
-        pushLog("Shrine curse: -2 HP.", "bad");
+        state.player.hp -= scaledCombat(2);
+        pushLog("Shrine curse: -20 HP.", "bad");
         tryAutoPotion("shrine curse");
         if (state.player.hp <= 0) {
           if (tryTriggerChronoLoop("shrine curse")) {
@@ -4191,7 +4284,8 @@
     if (enemy.type === "warden") base = 35;
     else if (enemy.type === "brute") base = 4;
     else if (enemy.type === "skeleton") base = 3;
-    const boosted = (base + (enemy.rewardBonus || 0)) * getBountyContractMultiplier();
+    const eliteMult = enemy.elite ? (state.runMods.eliteGoldMult || 1) : 1;
+    const boosted = (base + (enemy.rewardBonus || 0)) * getBountyContractMultiplier() * eliteMult;
     return Math.max(1, Math.round(boosted));
   }
 
@@ -4204,55 +4298,33 @@
     if (enemy.elite) {
       state.eliteKills += 1;
       localStorage.setItem(STORAGE_ELITE_KILLS, String(state.eliteKills));
-      // Elitist mutator: 10% chance elites drop relics
-      if (isMutatorActive("elitist") && state.phase === "playing" && chance(0.10)) {
-        state._pendingEliteRelic = true;
-      }
     }
     spawnParticles(enemy.x, enemy.y, "#ffd57a", 8, 1.45);
     pushLog(`${enemy.name} down. +${reward} gold. ${reason ? `(${reason})` : ""}`, "good");
 
-    // Vampiric Fang: heal 1 HP every 3 kills
+    // Vampiric Fang: heal 10 HP every 3 kills
     if (hasRelic("vampfang")) {
       state.player.vampFangKills = (state.player.vampFangKills || 0) + 1;
       if (state.player.vampFangKills % 3 === 0) {
-        state.player.hp = Math.min(state.player.maxHp, state.player.hp + 1);
+        state.player.hp = Math.min(state.player.maxHp, state.player.hp + scaledCombat(1));
         spawnParticles(enemy.x, enemy.y, "#ff5555", 6, 1.0);
-        pushLog("Vampiric Fang: +1 HP.", "good");
+        pushLog("Vampiric Fang: +10 HP.", "good");
       }
     }
 
-    // Soul Harvest: +1 max HP every 10 kills (cap +10)
+    // Soul Harvest: +10 max HP every 10 kills (cap +100)
     if (hasRelic("soulharvest") && (state.player.soulHarvestGained || 0) < 10) {
       state.player.soulHarvestCount = (state.player.soulHarvestCount || 0) + 1;
       if (state.player.soulHarvestCount % 10 === 0) {
         state.player.soulHarvestGained = (state.player.soulHarvestGained || 0) + 1;
-        state.player.maxHp += 1;
-        state.player.hp = Math.min(state.player.maxHp, state.player.hp + 1);
+        state.player.maxHp += scaledCombat(1);
+        state.player.hp = Math.min(state.player.maxHp, state.player.hp + scaledCombat(1));
         spawnParticles(enemy.x, enemy.y, "#b44dff", 8, 1.2);
-        pushLog(`Soul Harvest: +1 max HP (${state.player.soulHarvestGained}/10).`, "good");
+        pushLog(`Soul Harvest: +10 max HP (${state.player.soulHarvestGained * 10}/100).`, "good");
       }
     }
 
     markUiDirty();
-  }
-
-  function grantBossRelic() {
-    const roll = randInt(1, 3);
-    if (roll === 1) {
-      state.player.maxHp += 2;
-      state.player.hp = Math.min(state.player.maxHp, state.player.hp + 2);
-      pushLog("Boss relic: +2 Max HP.", "good");
-      return;
-    }
-    if (roll === 2) {
-      state.player.attack += 1;
-      pushLog("Boss relic: +1 ATK.", "good");
-      return;
-    }
-    state.player.armor += 1;
-    grantPotion(1);
-    pushLog("Boss relic: +1 Armor and +1 Potion.", "good");
   }
 
   function checkRoomClearBonus() {
@@ -4276,8 +4348,8 @@
 
     if (state.bossRoom) {
       goldBonus += 10;
-      grantBossRelic();
-      pushLog("Mini-boss defeated. Chamber bonus granted.", "good");
+      pushLog("Mini-boss defeated. Boss relic drop!", "good");
+      openRelicDraft(true);
       if (chance(0.01)) {
         grantLife("Boss drop");
       }
@@ -4349,7 +4421,13 @@
       markUiDirty();
       return;
     }
-    const reduced = Math.max(1, rawDamage - state.player.armor);
+    const incomingDamage = Math.max(MIN_EFFECTIVE_DAMAGE, Math.round(rawDamage));
+    const minDamageFromCap = Math.max(
+      MIN_EFFECTIVE_DAMAGE,
+      Math.ceil(incomingDamage * (1 - ARMOR_DAMAGE_REDUCTION_CAP))
+    );
+    const reducedByArmor = Math.max(MIN_EFFECTIVE_DAMAGE, incomingDamage - state.player.armor);
+    const reduced = Math.max(minDamageFromCap, reducedByArmor);
     state.player.hp -= reduced;
     state.flash = 90;
     setShake(2.8);
@@ -4378,16 +4456,16 @@
     if (blockDamageWithShield("spikes")) {
       return;
     }
-    state.player.hp -= 1;
+    state.player.hp -= scaledCombat(1);
     state.flash = 60;
     setShake(1.6);
     spawnParticles(state.player.x, state.player.y, "#d86b6b", 6, 1.1);
     // Glass Depths: spikes drop gold
     if (isMutatorActive("glassdepths")) {
       const spikeGold = grantGold(randInt(1, 3));
-      pushLog(`Spikes cut you for 1, but drop ${spikeGold} gold.`, "bad");
+      pushLog(`Spikes cut you for ${scaledCombat(1)}, but drop ${spikeGold} gold.`, "bad");
     } else {
-      pushLog("Spikes cut you for 1.", "bad");
+      pushLog(`Spikes cut you for ${scaledCombat(1)}.`, "bad");
     }
     tryAutoPotion("spikes");
     if (state.player.hp <= 0) {
@@ -4401,7 +4479,7 @@
 
   function applySpikeToEnemy(enemy) {
     if (!isSpikeAt(enemy.x, enemy.y)) return false;
-    enemy.hp -= 1;
+    enemy.hp -= scaledCombat(1);
     spawnParticles(enemy.x, enemy.y, "#d27272", 5, 0.9);
     if (enemy.hp <= 0) {
       removeEnemy(enemy);
@@ -4430,16 +4508,16 @@
         const fallbackGold = grantGold(randInt(2, 5));
         pushLog(`Chest: no heal (Alchemist), +${fallbackGold} gold.`);
       } else {
-        const healAmount = Math.max(1, 4 - state.runMods.chestHealPenalty);
+        const healAmount = Math.max(MIN_EFFECTIVE_DAMAGE, scaledCombat(4) - state.runMods.chestHealPenalty);
         state.player.hp = Math.min(state.player.maxHp, state.player.hp + healAmount);
         pushLog(`Chest: +${healAmount} HP.`);
       }
     } else if (roll < table.attack) {
-      state.player.attack += 1;
-      pushLog("Chest: Attack +1.", "good");
+      state.player.attack += 2;
+      pushLog("Chest: Attack +2.", "good");
     } else if (roll < table.armor) {
-      state.player.armor += 1;
-      pushLog("Chest: Armor +1.", "good");
+      state.player.armor += 2;
+      pushLog("Chest: Armor +2.", "good");
     } else if (roll < table.potion) {
       grantPotion(1);
       pushLog("Chest: +1 potion.", "good");
@@ -4457,8 +4535,8 @@
       } else if (isDebugGodModeActive()) {
         pushLog("Chest trap ignored (God Mode).", "warn");
       } else {
-        state.player.hp -= 3;
-        pushLog("Chest trap! You take 3.", "bad");
+        state.player.hp -= scaledCombat(3);
+        pushLog(`Chest trap! You take ${scaledCombat(3)}.`, "bad");
         tryAutoPotion("chest trap");
         if (state.player.hp <= 0) {
           if (tryTriggerChronoLoop("chest trap")) {
@@ -4597,9 +4675,9 @@
       return false;
     }
 
-    let damage = state.player.attack + 1 + Math.floor(state.player.adrenaline / 2);
+    let damage = state.player.attack + scaledCombat(1) + Math.floor(getEffectiveAdrenaline() / 2);
     if (dashTier >= 1) {
-      damage = Math.max(1, damage * 2);
+      damage = Math.max(MIN_EFFECTIVE_DAMAGE, damage * 2);
     }
     const maxDashTiles = dashTier >= 2 ? 4 : 3;
     const hitSet = new Set();
@@ -4660,7 +4738,7 @@
     }
 
     if (dashTier >= 2) {
-      const splashDamage = Math.max(1, Math.floor(damage * 0.6));
+      const splashDamage = Math.max(MIN_EFFECTIVE_DAMAGE, Math.floor(damage * 0.6));
       for (const enemy of [...state.enemies]) {
         if (hitSet.has(enemy)) continue;
         if (Math.abs(enemy.x - state.player.x) > 1 || Math.abs(enemy.y - state.player.y) > 1) continue;
@@ -4722,7 +4800,7 @@
       return false;
     }
 
-    let damage = Math.max(1, state.player.attack + Math.floor(state.player.adrenaline / 2));
+    let damage = Math.max(MIN_EFFECTIVE_DAMAGE, state.player.attack + Math.floor(getEffectiveAdrenaline() / 2));
     if (aoeTier >= 2) {
       damage *= 2;
     }
@@ -4825,7 +4903,7 @@
 
   function attackEnemy(enemy) {
     if (state.phase !== "playing") return;
-    const base = state.player.attack + state.player.adrenaline + (state.player.chaosAtkBonus || 0);
+    const base = state.player.attack + getEffectiveAdrenaline() + (state.player.chaosAtkBonus || 0);
     const critical = chance(state.player.crit);
     let damage = critical ? base * 2 : base;
     enemy.hp -= damage;
@@ -4864,7 +4942,7 @@
 
     // Echo Strike: 30% chance to hit again
     if (hasRelic("echostrike") && state.enemies.includes(enemy) && enemy.hp > 0 && chance(0.3)) {
-      const echoDmg = Math.max(1, state.player.attack);
+      const echoDmg = Math.max(MIN_EFFECTIVE_DAMAGE, state.player.attack);
       enemy.hp -= echoDmg;
       spawnParticles(enemy.x, enemy.y, "#9fdcff", 8, 1.2);
       pushLog(`Echo Strike! Extra ${echoDmg} damage.`, "good");
@@ -4935,18 +5013,20 @@
   }
 
   function enemyMelee(enemy) {
-    const damage = enemy.type === "skeleton" ? Math.max(1, enemy.attack - 1) : enemy.attack;
+    const damage = enemy.type === "skeleton"
+      ? Math.max(MIN_EFFECTIVE_DAMAGE, enemy.attack - scaledCombat(1))
+      : enemy.attack;
     applyDamageToPlayer(damage, enemy.name, enemy);
     if (enemy.vampiric && state.phase === "playing") {
-      enemy.hp = Math.min(enemy.maxHp || enemy.hp, enemy.hp + 1);
+      enemy.hp = Math.min(enemy.maxHp || enemy.hp, enemy.hp + scaledCombat(1));
     }
     spawnParticles(state.player.x, state.player.y, "#ff7a7a", 7, 1.35);
 
-    // Thorn Mail: reflect 1 dmg to melee attackers
+    // Thorn Mail: reflect 10 dmg to melee attackers
     if (hasRelic("thornmail") && state.phase === "playing" && state.enemies.includes(enemy)) {
-      enemy.hp -= 1;
+      enemy.hp -= scaledCombat(1);
       spawnParticles(enemy.x, enemy.y, "#d86b6b", 5, 0.9);
-      pushLog(`Thorn Mail reflects 1 to ${enemy.name}.`, "good");
+      pushLog(`Thorn Mail reflects ${scaledCombat(1)} to ${enemy.name}.`, "good");
       if (enemy.hp <= 0) {
         killEnemy(enemy, "thorns");
       }
@@ -4961,7 +5041,7 @@
     spawnRangedImpact(state.player.x, state.player.y, boltColor);
     applyDamageToPlayer(enemy.attack, `${enemy.name} bolt`, enemy);
     if (enemy.vampiric && state.phase === "playing") {
-      enemy.hp = Math.min(enemy.maxHp || enemy.hp, enemy.hp + 1);
+      enemy.hp = Math.min(enemy.maxHp || enemy.hp, enemy.hp + scaledCombat(1));
     }
     spawnParticles(state.player.x, state.player.y, boltColor, 7, 1.35);
   }
@@ -5102,7 +5182,7 @@
       if (!state.enemies.includes(enemy)) continue;
       if ((enemy.burnTurns || 0) > 0) {
         enemy.burnTurns -= 1;
-        enemy.hp -= 1;
+        enemy.hp -= scaledCombat(1);
         spawnParticles(enemy.x, enemy.y, "#ff6a35", 4, 0.8);
         if (enemy.hp <= 0) {
           killEnemy(enemy, "burn");
@@ -5142,14 +5222,14 @@
     }
     const roll = randInt(1, 6);
     if (roll === 1) {
-      state.player.chaosAtkBonus = 2;
+      state.player.chaosAtkBonus = scaledCombat(2);
       state.player.chaosAtkTurns = 1;
       spawnParticles(state.player.x, state.player.y, "#ff6a35", 6, 1.0);
-      pushLog("Chaos: +2 ATK this turn!", "good");
+      pushLog("Chaos: +20 ATK this turn!", "good");
     } else if (roll === 2) {
-      state.player.hp = Math.min(state.player.maxHp, state.player.hp + 3);
+      state.player.hp = Math.min(state.player.maxHp, state.player.hp + scaledCombat(3));
       spawnParticles(state.player.x, state.player.y, "#8ce1a7", 8, 1.0);
-      pushLog("Chaos: heal +3 HP!", "good");
+      pushLog("Chaos: heal +30 HP!", "good");
     } else if (roll === 3) {
       const chaosGold = grantGold(1);
       pushLog(`Chaos: +${chaosGold} gold.`, "good");
@@ -5211,14 +5291,7 @@
     if (state.phase !== "playing") return;
 
     checkRoomClearBonus();
-
-    // Elitist mutator: elite kill triggers relic draft
-    if (state._pendingEliteRelic && state.phase === "playing") {
-      state._pendingEliteRelic = false;
-      openRelicDraft(false);
-      if (state.phase === "relic") return; // draft opened, pause turn
-    }
-    state._pendingEliteRelic = false;
+    if (state.phase !== "playing") return;
 
     // Chaos Orb: random effect
     tickChaosOrb();
@@ -5229,6 +5302,8 @@
     }
 
     tickSkillCooldowns();
+    tickAutoPotionCooldown();
+    tickFuryBlessing();
     tickBarrier();
     saveMetaProgress();
     saveRunSnapshot();
@@ -5299,17 +5374,14 @@
     }
     state.depth += 1;
     state.runMaxDepth = Math.max(state.runMaxDepth, state.depth);
-    state.player.hp = Math.min(state.player.maxHp, state.player.hp + 1);
+    state.player.hp = Math.min(state.player.maxHp, state.player.hp + scaledCombat(1));
     saveMetaProgress();
     playSfx("portal");
     buildRoom();
     if (state.bossRoom) {
       pushLog(`You descend to depth ${state.depth}. Mini-boss room!`, "bad");
     } else {
-      pushLog(`You descend to depth ${state.depth}. +1 HP from momentum.`, "good");
-    }
-    if (state.depth > 0 && state.depth % 3 === 0) {
-      openRelicDraft();
+      pushLog(`You descend to depth ${state.depth}. +${scaledCombat(1)} HP from momentum.`, "good");
     }
     saveRunSnapshot();
     markUiDirty();
@@ -5369,7 +5441,10 @@
       `<div class="statline"><span>Camp Gold</span><strong>${state.campGold}</strong></div>`,
       `<div class="statline"><span>Enemies</span><strong>${state.enemies.length}</strong></div>`,
       `<div class="statline"><span>Turn</span><strong>${state.turn}</strong></div>`,
-      `<div class="statline"><span>Fury</span><strong>${state.player.adrenaline}/${state.player.maxAdrenaline}</strong></div>`,
+      `<div class="statline"><span>Fury</span><strong>${getEffectiveAdrenaline()}/${getEffectiveMaxAdrenaline()}</strong></div>`,
+      state.player.furyBlessingTurns > 0
+        ? `<div class="statline"><span>Fury Bless</span><strong>${state.player.furyBlessingTurns}T</strong></div>`
+        : "",
       `<div class="statline"><span>Room</span><strong>${ROOM_TYPE_LABELS[state.roomType]}</strong></div>`,
       `<div class="statline"><span>Relics</span><strong>${state.relics.length}/${MAX_RELICS}</strong></div>`,
       ...state.relics.map((id) => {
@@ -6547,13 +6622,21 @@
       drawPlayerFallback(px, py);
     }
 
-    if (state.player.adrenaline > 0) {
-      ctx.fillStyle = "#f7bf5a";
-      ctx.fillRect(px + 2, py + 2, 1, 1);
-      ctx.fillRect(px + 13, py + 4, 1, 1);
-      ctx.fillRect(px + 2, py + 11, 1, 1);
-      if (state.player.adrenaline > 1) {
-        ctx.fillRect(px + 13, py + 11, 1, 1);
+    const effectiveFury = getEffectiveAdrenaline();
+    if (effectiveFury > 0) {
+      const sparks = [
+        [2, 2],
+        [13, 4],
+        [2, 11],
+        [13, 11],
+        [7, 1],
+        [8, 13]
+      ];
+      ctx.fillStyle = getFuryBlessingBonus() > 0 ? "#ffd66f" : "#f7bf5a";
+      const sparkCount = Math.min(effectiveFury, sparks.length);
+      for (let i = 0; i < sparkCount; i += 1) {
+        const [sx, sy] = sparks[i];
+        ctx.fillRect(px + sx, py + sy, 1, 1);
       }
     }
   }
@@ -6691,10 +6774,10 @@
   function getLowHpWarningIntensity() {
     if (state.phase !== "playing") return 0;
     const hp = Math.max(0, state.player.hp);
-    if (hp <= 0 || hp > 4) return 0;
-    if (hp <= 2) return 1;
-    if (hp === 3) return 0.75;
-    return 0.5; // HP 4
+    if (hp <= 0 || hp > LOW_HP_THRESHOLD) return 0;
+    if (hp <= LOW_HP_CRITICAL_THRESHOLD) return 1;
+    if (hp <= scaledCombat(3)) return 0.75;
+    return 0.5; // HP 40
   }
 
   function drawLowHpWarning() {
