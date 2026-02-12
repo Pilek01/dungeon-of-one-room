@@ -921,6 +921,7 @@
     roomIntroSubtitle: "",
     extractConfirm: null,
     extractRelicPrompt: null,
+    finalGameOverPrompt: null,
     merchantMenuOpen: false,
     merchantUpgradeBoughtThisRoom: false,
     dashAimActive: false,
@@ -1698,6 +1699,7 @@
     state.nameModalOpen = false;
     state.nameModalAction = null;
     state.extractRelicPrompt = null;
+    state.finalGameOverPrompt = null;
 
     localStorage.setItem(STORAGE_DEPTH, "0");
     localStorage.setItem(STORAGE_GOLD, "0");
@@ -2617,6 +2619,7 @@
     state.leaderboardModalOpen = false;
     state.nameModalOpen = false;
     state.nameModalAction = null;
+    state.finalGameOverPrompt = null;
     const options = getMenuOptions();
     const firstEnabled = options.findIndex((item) => !item.disabled);
     state.menuIndex = firstEnabled >= 0 ? firstEnabled : 0;
@@ -4149,6 +4152,7 @@
     state.log = [];
     state.extractConfirm = null;
     state.extractRelicPrompt = null;
+    state.finalGameOverPrompt = null;
     state.campVisitShopCostMult = 1;
     state.runLeaderboardSubmitted = false;
     state.leaderboardModalOpen = false;
@@ -4238,10 +4242,19 @@
     pushLog(`Life lost. ${state.lives}/${MAX_LIVES} remaining.`, "bad");
 
     if (state.lives <= 0) {
+      const finalDepth = getRunMaxDepth();
+      const finalGold = getRunGoldEarned();
+      const finalScore = calculateScore(finalDepth, finalGold);
       pushLog("All lives lost. Fresh start triggered.", "bad");
       resetMetaProgressForFreshStart();
+      state.finalGameOverPrompt = {
+        depth: finalDepth,
+        gold: finalGold,
+        score: finalScore
+      };
       pushLog(`Progress reset. Lives restored to ${MAX_LIVES}.`, "good");
-      pushLog("Press R to begin a fresh run.");
+      pushLog("GAME OVER. Choose Main Menu or Leaderboard.", "bad");
+      clearRunSnapshot();
       return;
     }
 
@@ -5780,7 +5793,11 @@
       return;
     }
     if (state.phase === "dead") {
-      actionsEl.textContent = `Lives: ${state.lives}/${MAX_LIVES}. R â€” restart. 1-0 â€” toggle mutators.`;
+      if (state.finalGameOverPrompt) {
+        actionsEl.textContent = "GAME OVER: all lives lost. 1 = Main Menu, 2 = Leaderboard.";
+      } else {
+        actionsEl.textContent = `Lives: ${state.lives}/${MAX_LIVES}. R - restart. 1-0 - toggle mutators.`;
+      }
       return;
     }
     if (state.phase === "playing" && state.extractConfirm) {
@@ -6029,9 +6046,10 @@
     }
 
     // Dead: full mutator list
-    const rows = buildMutatorRows(true);
+    const rows = buildMutatorRows(!state.finalGameOverPrompt);
     const count = activeMutatorCount();
-    mutatorsEl.innerHTML = `<h3>Mutators (${count}/3) â€” press 1-0</h3>${rows}`;
+    const deadHint = state.finalGameOverPrompt ? "locked after final GAME OVER" : "press 1-0";
+    mutatorsEl.innerHTML = `<h3>Mutators (${count}/3) - ${deadHint}</h3>${rows}`;
   }
 
   function buildLog() {
@@ -6115,6 +6133,36 @@
         statusNote ? `<p class="overlay-sub">${statusNote}</p>` : "",
         `<div class="overlay-menu leaderboard-modal-list">${rows}</div>`,
         `<p class="overlay-hint">T - switch Points/Depth | V - switch Current/Legacy | Esc/Enter - close</p>`,
+        `</div>`
+      ].join("");
+      return;
+    }
+
+    if (state.phase === "dead" && state.finalGameOverPrompt) {
+      const finalDepth = Math.max(0, Number(state.finalGameOverPrompt.depth) || 0);
+      const finalGold = Math.max(0, Number(state.finalGameOverPrompt.gold) || 0);
+      const finalScore = Math.max(
+        0,
+        Number(state.finalGameOverPrompt.score) || calculateScore(finalDepth, finalGold)
+      );
+      const rows = [
+        `<div class="overlay-menu-row">`,
+        `<div class="overlay-menu-key">1</div>`,
+        `<div><strong>Main Menu</strong><br /><span>Return to main menu after final wipe.</span></div>`,
+        `</div>`,
+        `<div class="overlay-menu-row">`,
+        `<div class="overlay-menu-key">2</div>`,
+        `<div><strong>Leaderboard</strong><br /><span>Show ranking for this run, then continue in menu.</span></div>`,
+        `</div>`
+      ].join("");
+      screenOverlayEl.className = "screen-overlay visible";
+      screenOverlayEl.innerHTML = [
+        `<div class="overlay-card overlay-card-wide overlay-card-danger">`,
+        `<h2 class="overlay-title">GAME OVER</h2>`,
+        `<p class="overlay-sub">All lives lost.</p>`,
+        `<p class="overlay-sub">Final run: ${finalScore} pts | Depth ${finalDepth} | Gold ${finalGold}</p>`,
+        `<div class="overlay-menu">${rows}</div>`,
+        `<p class="overlay-hint">1 / Enter / Esc - Main Menu | 2 - Leaderboard</p>`,
         `</div>`
       ].join("");
       return;
@@ -7340,6 +7388,19 @@
       }
       if (key === "escape" || key === "n") {
         resolveExtractRelicPrompt(false);
+        return;
+      }
+      return;
+    }
+
+    if (state.phase === "dead" && state.finalGameOverPrompt) {
+      if (key === "2") {
+        enterMenu();
+        openLeaderboardModal();
+        return;
+      }
+      if (key === "1" || key === "escape" || isConfirm) {
+        enterMenu();
         return;
       }
       return;
