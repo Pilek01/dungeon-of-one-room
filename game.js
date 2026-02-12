@@ -1,4 +1,4 @@
-(() => {
+﻿(() => {
   function normalizeSeasonId(value, fallback = "season-1") {
     const cleaned = String(value || "")
       .trim()
@@ -36,7 +36,8 @@
     return normalized || "dev";
   })();
   const MAX_LIVES = 5;
-  const MAX_RELICS = 10;
+  const MAX_RELICS = 8;
+  const MAX_NORMAL_RELIC_STACK = 5;
   const LEADERBOARD_LIMIT = 25;
   const LEADERBOARD_MODAL_LIMIT = 20;
   const LEADERBOARD_PENDING_LIMIT = 200;
@@ -503,14 +504,14 @@
   };
 
   const RELICS = [
-    // ── Normal (6) ──
+    // â”€â”€ Normal (6) â”€â”€
     { id: "fang",      rarity: "normal", name: "Fang Charm",     desc: "+10 ATK" },
     { id: "plating",   rarity: "normal", name: "Bone Plating",   desc: "+10 ARM" },
     { id: "lucky",     rarity: "normal", name: "Lucky Coin",     desc: "+5% crit" },
     { id: "flask",     rarity: "normal", name: "Spare Flask",    desc: "+1 potion" },
     { id: "lifebloom", rarity: "normal", name: "Lifebloom Seed", desc: "+20 max HP and heal 20" },
     { id: "ironboots", rarity: "normal", name: "Iron Boots",     desc: "Immune to spike damage" },
-    // ── Rare (8) ──
+    // â”€â”€ Rare (8) â”€â”€
     { id: "idol",      rarity: "rare", name: "Golden Idol",      desc: "+20% gold gain this run" },
     { id: "thornmail", rarity: "rare", name: "Thorn Mail",       desc: "Melee attackers take 10 dmg" },
     { id: "vampfang",  rarity: "rare", name: "Vampiric Fang",    desc: "Heal 10 HP every 3 kills" },
@@ -519,14 +520,14 @@
     { id: "magnet",    rarity: "rare", name: "Magnetic Shard",   desc: "Auto-loot chests within 2 tiles" },
     { id: "shrineward",rarity: "rare", name: "Shrine Ward",      desc: "Shrines always bless, never curse" },
     { id: "merchfavor",rarity: "rare", name: "Merchant's Favor", desc: "Merchant prices halved" },
-    // ── Epic (6) ──
+    // â”€â”€ Epic (6) â”€â”€
     { id: "glasscannon", rarity: "epic", name: "Glass Cannon",  desc: "+40 ATK, -50 max HP" },
     { id: "echostrike",  rarity: "epic", name: "Echo Strike",   desc: "30% chance to hit twice" },
     { id: "phasecloak",  rarity: "epic", name: "Phase Cloak",   desc: "Auto-dodge every 5th turn" },
     { id: "soulharvest", rarity: "epic", name: "Soul Harvest",  desc: "Every 10 kills: +10 max HP (cap +100)" },
     { id: "burnblade",   rarity: "epic", name: "Burning Blade", desc: "Attacks ignite: 10 dmg/turn for 3 turns" },
     { id: "frostamulet", rarity: "epic", name: "Frost Amulet",  desc: "Nearby non-elites 15% chance to freeze (boss/elite immune)" },
-    // ── Legendary (4) ──
+    // â”€â”€ Legendary (4) â”€â”€
     { id: "chronoloop",  rarity: "legendary", name: "Chrono Loop",  desc: "Cheat death once per run: revive 50% HP, kill all enemies" },
     { id: "voidreaper",  rarity: "legendary", name: "Void Reaper",  desc: "Crits execute <30% HP enemies. +15% crit. Crit kills +3 gold" },
     { id: "titanheart",  rarity: "legendary", name: "Titan's Heart", desc: "+80 max HP, +20 ARM, -20 ATK. Potions heal +50%" },
@@ -919,6 +920,7 @@
     roomIntroTitle: "",
     roomIntroSubtitle: "",
     extractConfirm: null,
+    extractRelicPrompt: null,
     merchantMenuOpen: false,
     merchantUpgradeBoughtThisRoom: false,
     dashAimActive: false,
@@ -1695,6 +1697,7 @@
     state.leaderboardModalOpen = false;
     state.nameModalOpen = false;
     state.nameModalAction = null;
+    state.extractRelicPrompt = null;
 
     localStorage.setItem(STORAGE_DEPTH, "0");
     localStorage.setItem(STORAGE_GOLD, "0");
@@ -1745,6 +1748,7 @@
       roomType: state.roomType,
       floorPattern: state.floorPattern,
       roomCleared: state.roomCleared,
+      extractRelicPrompt: state.extractRelicPrompt,
       relicDraft: state.relicDraft,
       legendarySwapPending: state.legendarySwapPending,
       relicSwapPending: state.relicSwapPending,
@@ -1816,6 +1820,34 @@
     state.roomType = ROOM_TYPE_LABELS[snapshot.roomType] ? snapshot.roomType : "combat";
     state.floorPattern = Array.isArray(snapshot.floorPattern) ? snapshot.floorPattern : makeFloorPattern();
     state.roomCleared = Boolean(snapshot.roomCleared);
+    if (
+      nextPhase === "camp" &&
+      snapshot.extractRelicPrompt &&
+      typeof snapshot.extractRelicPrompt === "object" &&
+      snapshot.extractRelicPrompt.relicReturn &&
+      typeof snapshot.extractRelicPrompt.relicReturn === "object"
+    ) {
+      const relicReturn = snapshot.extractRelicPrompt.relicReturn;
+      state.extractRelicPrompt = {
+        baseGold: Math.max(0, Number(snapshot.extractRelicPrompt.baseGold) || 0),
+        bonusGold: Math.max(0, Number(snapshot.extractRelicPrompt.bonusGold) || 0),
+        relicReturn: {
+          count: Math.max(0, Number(relicReturn.count) || 0),
+          total: Math.max(0, Number(relicReturn.total) || 0),
+          byRarity: {
+            normal: Math.max(0, Number(relicReturn.byRarity?.normal) || 0),
+            rare: Math.max(0, Number(relicReturn.byRarity?.rare) || 0),
+            epic: Math.max(0, Number(relicReturn.byRarity?.epic) || 0),
+            legendary: Math.max(0, Number(relicReturn.byRarity?.legendary) || 0)
+          }
+        },
+        carriedRelics: Array.isArray(snapshot.extractRelicPrompt.carriedRelics)
+          ? snapshot.extractRelicPrompt.carriedRelics.filter((id) => typeof id === "string")
+          : []
+      };
+    } else {
+      state.extractRelicPrompt = null;
+    }
     state.relicDraft = Array.isArray(snapshot.relicDraft) ? snapshot.relicDraft : null;
     if (
       snapshot.legendarySwapPending &&
@@ -2854,8 +2886,37 @@
     return state.relics.some((relicId) => relicId !== exceptRelicId && isLegendaryRelic(relicId));
   }
 
+  function getRelicStackCount(relicId) {
+    return state.relics.reduce((count, id) => count + (id === relicId ? 1 : 0), 0);
+  }
+
+  function isNormalRelicStackAtCap(relicId) {
+    const relic = getRelicById(relicId);
+    if (!relic || relic.rarity !== "normal") return false;
+    return getRelicStackCount(relicId) >= MAX_NORMAL_RELIC_STACK;
+  }
+
+  function getRelicInventoryGroups() {
+    const groups = [];
+    const indexById = new Map();
+    for (const relicId of state.relics) {
+      const index = indexById.get(relicId);
+      if (index == null) {
+        groups.push({ relicId, count: 1 });
+        indexById.set(relicId, groups.length - 1);
+      } else {
+        groups[index].count += 1;
+      }
+    }
+    return groups;
+  }
+
   function relicHotkeyForIndex(index) {
     return index === 9 ? "0" : String(index + 1);
+  }
+
+  function getRelicDiscardHotkeyHint() {
+    return MAX_RELICS >= 10 ? "1-0" : `1-${MAX_RELICS}`;
   }
 
   function getRelicDraftSkipIndex() {
@@ -3024,7 +3085,9 @@
   function applyRelic(relicId, options = {}) {
     const relic = getRelicById(relicId);
     if (!relic) return false;
-    if (state.relics.includes(relicId)) return false;
+    const canStack = relic.rarity === "normal";
+    if (canStack && getRelicStackCount(relicId) >= MAX_NORMAL_RELIC_STACK) return false;
+    if (!canStack && state.relics.includes(relicId)) return false;
     if (state.relics.length >= MAX_RELICS) return false;
     if (relic.rarity === "legendary" && hasLegendaryRelic()) return false;
     state.relics.push(relicId);
@@ -3035,8 +3098,9 @@
 
   function removeRelic(relicId, options = {}) {
     const silent = Boolean(options.silent);
-    if (!state.relics.includes(relicId)) return false;
-    state.relics = state.relics.filter((id) => id !== relicId);
+    const idx = state.relics.indexOf(relicId);
+    if (idx < 0) return false;
+    state.relics.splice(idx, 1);
     removeRelicEffects(relicId);
     if (!silent) {
       const relic = getRelicById(relicId);
@@ -3053,18 +3117,29 @@
     const original = [...state.relics];
     let keptCount = 0;
     let keptLegendary = false;
+    const keptUniqueNonStack = new Set();
+    const keptNormalStacks = new Map();
     let changed = false;
 
     for (const relicId of original) {
       const relic = getRelicById(relicId);
       const isLegendary = Boolean(relic && relic.rarity === "legendary");
-      if (!relic || keptCount >= MAX_RELICS || (isLegendary && keptLegendary)) {
+      const isStackableNormal = Boolean(relic && relic.rarity === "normal");
+      const duplicateNonStack = Boolean(relic && !isStackableNormal && keptUniqueNonStack.has(relicId));
+      const normalStackCount = isStackableNormal ? (keptNormalStacks.get(relicId) || 0) : 0;
+      const normalStackOverCap = isStackableNormal && normalStackCount >= MAX_NORMAL_RELIC_STACK;
+      if (!relic || keptCount >= MAX_RELICS || (isLegendary && keptLegendary) || duplicateNonStack || normalStackOverCap) {
         if (removeRelic(relicId, { silent: true })) {
           changed = true;
         }
         continue;
       }
       keptCount += 1;
+      if (isStackableNormal) {
+        keptNormalStacks.set(relicId, normalStackCount + 1);
+      } else {
+        keptUniqueNonStack.add(relicId);
+      }
       if (isLegendary) keptLegendary = true;
     }
 
@@ -3123,7 +3198,11 @@
 
   function openRelicDraft(isBoss = false) {
     normalizeRelicInventory();
-    const pool = RELICS.filter((relic) => !state.relics.includes(relic.id));
+    const pool = RELICS.filter(
+      (relic) =>
+        (relic.rarity === "normal" && !isNormalRelicStackAtCap(relic.id)) ||
+        (relic.rarity !== "normal" && !state.relics.includes(relic.id))
+    );
     if (pool.length === 0) return;
 
     const choices = [];
@@ -3205,7 +3284,7 @@
 
       const outgoingRelicId = state.relics[index];
       if (!outgoingRelicId) {
-        pushLog("Choose relic to discard with keys 1-0.", "bad");
+        pushLog(`Choose relic to discard with keys ${getRelicDiscardHotkeyHint()}.`, "bad");
         return;
       }
 
@@ -3250,6 +3329,10 @@
 
     const relic = state.relicDraft?.[index];
     if (!relic) return;
+    if (relic.rarity === "normal" && isNormalRelicStackAtCap(relic.id)) {
+      pushLog(`${relic.name} stack is max (${MAX_NORMAL_RELIC_STACK}/${MAX_NORMAL_RELIC_STACK}). Choose another relic or skip.`, "bad");
+      return;
+    }
     const currentLegendaryId = state.relics.find((relicId) => isLegendaryRelic(relicId));
     if (relic.rarity === "legendary" && currentLegendaryId) {
       state.legendarySwapPending = {
@@ -3267,7 +3350,7 @@
       state.legendarySwapPending = null;
       const skipKey = getRelicDraftSkipHotkey();
       pushLog(
-        `Relic inventory full (${MAX_RELICS}/${MAX_RELICS}). Choose one relic to discard (1-0). Next time: use ${skipKey} to skip draft.`,
+        `Relic inventory full (${MAX_RELICS}/${MAX_RELICS}). Choose one relic to discard (${getRelicDiscardHotkeyHint()}). Next time: use ${skipKey} to skip draft.`,
         "bad"
       );
       saveRunSnapshot();
@@ -3290,6 +3373,7 @@
 
   function enterCampFromExtract() {
     state.extractConfirm = null;
+    state.extractRelicPrompt = null;
     state.merchantMenuOpen = false;
     state.legendarySwapPending = null;
     state.relicSwapPending = null;
@@ -3300,16 +3384,15 @@
     const bonusMult = state.runMods.campGoldBonus || 0;
     const bonusGold = Math.round(baseGold * bonusMult);
     const relicReturn = getRelicReturnSummary(state.relics);
-    const gainedCampGold = baseGold + bonusGold + relicReturn.total;
+    const gainedCampGold = baseGold + bonusGold;
     state.campGold += gainedCampGold;
     state.lastExtract = {
       depth: state.depth,
       gold: state.player.gold,
       campGold: gainedCampGold,
-      relicReturned: relicReturn.count,
-      relicGold: relicReturn.total
+      relicReturned: 0,
+      relicGold: 0
     };
-    state.relics = [];
     state.relicDraft = null;
     // Famine unlock: extract from depth 10+ without using potions
     if (state.depth >= 10 && (state.potionsUsedThisRun || 0) === 0) {
@@ -3321,23 +3404,82 @@
     saveMetaProgress();
     const unlockedNow = syncMutatorUnlocks();
     if (bonusGold > 0) {
-      pushLog(
-        `Extraction: +${baseGold} gold +${bonusGold} mutator bonus +${relicReturn.total} relic return = ${gainedCampGold} camp gold.`,
-        "good"
-      );
+      pushLog(`Extraction: +${baseGold} gold +${bonusGold} mutator bonus = ${gainedCampGold} camp gold.`, "good");
     } else {
-      pushLog(`Extraction success: +${gainedCampGold} camp gold (incl. +${relicReturn.total} relic return).`, "good");
+      pushLog(`Extraction success: +${gainedCampGold} camp gold.`, "good");
     }
-    pushLog(
-      `Relics returned: ${relicReturn.count} (+${relicReturn.total} camp gold). N:${relicReturn.byRarity.normal} R:${relicReturn.byRarity.rare} E:${relicReturn.byRarity.epic} L:${relicReturn.byRarity.legendary}.`,
-      relicReturn.count > 0 ? "good" : ""
-    );
+    if (relicReturn.count > 0) {
+      state.extractRelicPrompt = {
+        baseGold,
+        bonusGold,
+        relicReturn,
+        carriedRelics: [...state.relics]
+      };
+      for (const mutator of unlockedNow) {
+        pushLog(`Unlocked: [${mutator.key}] ${mutator.name}!`, "good");
+      }
+      pushLog(
+        `Relics carried: ${relicReturn.count}. Exchange for +${relicReturn.total} camp gold? [Y] yes (sell) / [N] no (keep relics in camp).`,
+        "warn"
+      );
+      saveRunSnapshot();
+      markUiDirty();
+      return;
+    }
+    state.relics = [];
     for (const mutator of unlockedNow) {
       pushLog(`Unlocked: [${mutator.key}] ${mutator.name}!`, "good");
     }
     pushLog("Camp shop: keys 1-0 buy upgrades. Press R for a new run.");
     saveRunSnapshot();
     markUiDirty();
+  }
+
+  function resolveExtractRelicPrompt(exchangeForGold) {
+    const prompt = state.extractRelicPrompt;
+    if (!prompt) return false;
+
+    if (exchangeForGold) {
+      const relicGain = Math.max(0, Number(prompt.relicReturn?.total) || 0);
+      if (relicGain > 0) {
+        state.campGold += relicGain;
+        if (state.lastExtract) {
+          state.lastExtract.campGold += relicGain;
+          state.lastExtract.relicReturned = Math.max(0, Number(prompt.relicReturn?.count) || 0);
+          state.lastExtract.relicGold = relicGain;
+        }
+      }
+      state.relics = [];
+      state.relicDraft = null;
+      state.legendarySwapPending = null;
+      state.relicSwapPending = null;
+      state.extractRelicPrompt = null;
+      pushLog(
+        `Relics exchanged: +${relicGain} camp gold. Camp shop: keys 1-0 buy upgrades. Press R for a new run.`,
+        "good"
+      );
+      saveMetaProgress();
+      saveRunSnapshot();
+      markUiDirty();
+      return true;
+    }
+
+    const carriedRelics = Array.isArray(prompt.carriedRelics)
+      ? prompt.carriedRelics.filter((id) => typeof id === "string")
+      : [...state.relics];
+    state.relics = carriedRelics;
+    normalizeRelicInventory();
+    state.relicDraft = null;
+    state.legendarySwapPending = null;
+    state.relicSwapPending = null;
+    state.extractRelicPrompt = null;
+    pushLog(
+      `Relics kept (${state.relics.length}). You can shop now. Press R to start next run with kept relics.`,
+      "good"
+    );
+    saveRunSnapshot();
+    markUiDirty();
+    return true;
   }
 
   function openEmergencyExtractConfirm() {
@@ -3808,7 +3950,7 @@
     enemy.facing = "south";
     snapVisual(enemy);
 
-    if (options.elite && enemy.type !== "warden") {
+    if (options.elite && enemy.type !== "warden" && state.depth >= 6) {
       enemy.elite = true;
       enemy.rewardBonus += 3;
       enemy.hp = Math.round(enemy.hp * 1.4) + (state.runMods.eliteHpBonus || 0);
@@ -3877,6 +4019,7 @@
     );
     spikeCount = clamp(Math.round(spikeCount * SPIKE_MULTIPLIER * state.runMods.extraSpikeMult), 0, maxSpikesByRoom);
 
+    const elitesEnabled = state.depth >= 6;
     let eliteChance = state.runMods.eliteChance + state.depth * 0.01;
     if (state.roomType === "treasure") eliteChance -= 0.06;
     if (state.roomType === "shrine") eliteChance += 0.03;
@@ -3885,7 +4028,7 @@
 
     for (let i = 0; i < enemyCount; i += 1) {
       const spot = randomFreeTile(occupied);
-      const elite = chance(eliteChance);
+      const elite = elitesEnabled && chance(eliteChance);
       state.enemies.push(createEnemy(rollEnemyType(), spot.x, spot.y, { elite }));
     }
     for (let i = 0; i < chestCount; i += 1) {
@@ -3924,7 +4067,7 @@
     for (let i = 0; i < addCount; i += 1) {
       const spot = randomFreeTile(occupied);
       const type = rollEnemyType();
-      state.enemies.push(createEnemy(type, spot.x, spot.y, { elite: chance(0.3) }));
+      state.enemies.push(createEnemy(type, spot.x, spot.y, { elite: state.depth >= 6 && chance(0.3) }));
     }
     for (let i = 0; i < chestCount; i += 1) {
       const spot = randomFreeTile(occupied);
@@ -3979,7 +4122,11 @@
     markUiDirty();
   }
 
-  function startRun() {
+  function startRun(options = {}) {
+    const carriedRelics = Array.isArray(options.carriedRelics)
+      ? options.carriedRelics.filter((id) => typeof id === "string")
+      : [];
+    const carryRelics = carriedRelics.length > 0;
     stopSplashTrack(true);
     state.phase = "playing";
     state.depth = 0;
@@ -4001,6 +4148,7 @@
     state.dashTrails = [];
     state.log = [];
     state.extractConfirm = null;
+    state.extractRelicPrompt = null;
     state.campVisitShopCostMult = 1;
     state.runLeaderboardSubmitted = false;
     state.leaderboardModalOpen = false;
@@ -4046,11 +4194,21 @@
 
     applyCampUpgradesToRun();
     applyMutatorsToRun();
+    if (carryRelics) {
+      for (const relicId of carriedRelics) {
+        applyRelic(relicId);
+      }
+      normalizeRelicInventory();
+    }
     state.player.hp = state.player.maxHp;
 
     buildRoom();
     syncBgmWithState(true);
-    pushLog("New run started.");
+    if (carryRelics) {
+      pushLog(`New run started with ${state.relics.length} carried relics.`);
+    } else {
+      pushLog("New run started.");
+    }
     if (activeMutatorCount() > 0) {
       pushLog(`Active mutators: ${activeMutatorCount()}.`);
     }
@@ -5409,6 +5567,7 @@
         `<div class="statline"><span>Highscore</span><strong>${state.highscore}</strong></div>`,
         `<div class="statline"><span>Best Gold</span><strong>${state.bestGold}</strong></div>`,
         `<div class="statline"><span>Deaths</span><strong>${state.deaths}</strong></div>`,
+        `<div class="statline"><span>Carried Relics</span><strong>${state.relics.length}/${MAX_RELICS}</strong></div>`,
         `<div class="statline"><span>Vitality</span><strong>${getCampUpgradeLevel("vitality")}</strong></div>`,
         `<div class="statline"><span>Blade</span><strong>${getCampUpgradeLevel("blade")}</strong></div>`,
         `<div class="statline"><span>Satchel</span><strong>${getCampUpgradeLevel("satchel")}</strong></div>`,
@@ -5447,14 +5606,19 @@
         : "",
       `<div class="statline"><span>Room</span><strong>${ROOM_TYPE_LABELS[state.roomType]}</strong></div>`,
       `<div class="statline"><span>Relics</span><strong>${state.relics.length}/${MAX_RELICS}</strong></div>`,
-      ...state.relics.map((id) => {
-        const rel = RELICS.find((r) => r.id === id);
+      ...getRelicInventoryGroups().map(({ relicId, count }) => {
+        const rel = RELICS.find((r) => r.id === relicId);
         if (!rel) return "";
         const ri = RARITY[rel.rarity] || RARITY.normal;
-        const chronoSpent = id === "chronoloop" && state.player.chronoUsedThisRun;
+        const chronoSpent = relicId === "chronoloop" && state.player.chronoUsedThisRun;
         const relicColor = chronoSpent ? "#ff5f5f" : ri.color;
         const relicLabel = chronoSpent ? "SPENT" : ri.label;
-        return `<div class="statline"><span style="color:${relicColor}">${rel.name}</span><strong style="color:${relicColor}">${relicLabel}</strong></div>`;
+        const stackSuffix = count > 1
+          ? rel.rarity === "normal"
+            ? ` x${count}/${MAX_NORMAL_RELIC_STACK}`
+            : ` x${count}`
+          : "";
+        return `<div class="statline"><span style="color:${relicColor}">${rel.name}${stackSuffix}</span><strong style="color:${relicColor}">${relicLabel}</strong></div>`;
       })
     ].join("");
   }
@@ -5577,6 +5741,11 @@
       return;
     }
     if (state.phase === "camp") {
+      if (state.extractRelicPrompt) {
+        const relicGold = Math.max(0, Number(state.extractRelicPrompt.relicReturn?.total) || 0);
+        actionsEl.textContent = `Exchange relics for +${relicGold} camp gold? Y/Enter = sell, N/Esc = keep relics in camp.`;
+        return;
+      }
       const summary = state.lastExtract
         ? `Last run: depth ${state.lastExtract.depth}, +${state.lastExtract.campGold} camp gold${
             state.lastExtract.relicReturned > 0
@@ -5585,7 +5754,10 @@
           }.`
         : "";
       const panelHint = state.campPanelView === "mutators" ? "1-0 toggle mutators" : "1-0 buy upgrades";
-      actionsEl.textContent = `${panelHint}. T — switch view. R — new run.${summary ? " " + summary : ""}`;
+      const carryHint = state.relics.length > 0
+        ? ` R - new run (carry ${state.relics.length} relics).`
+        : " R - new run.";
+      actionsEl.textContent = `${panelHint}. T - switch view.${carryHint}${summary ? " " + summary : ""}`;
       return;
     }
     if (state.phase === "relic") {
@@ -5598,8 +5770,8 @@
       } else if (state.relicSwapPending) {
         const incoming = getRelicById(state.relicSwapPending);
         actionsEl.textContent = incoming
-          ? `Relic cap ${MAX_RELICS}/${MAX_RELICS}. Press 1-0 to discard one for ${incoming.name}.`
-          : "Relic cap reached. Press 1-0 to discard one relic.";
+          ? `Relic cap ${MAX_RELICS}/${MAX_RELICS}. Press ${getRelicDiscardHotkeyHint()} to discard one for ${incoming.name}.`
+          : `Relic cap reached. Press ${getRelicDiscardHotkeyHint()} to discard one relic.`;
       } else {
         const draftSize = (state.relicDraft || []).length;
         const skipKey = getRelicDraftSkipHotkey();
@@ -5608,11 +5780,11 @@
       return;
     }
     if (state.phase === "dead") {
-      actionsEl.textContent = `Lives: ${state.lives}/${MAX_LIVES}. R — restart. 1-0 — toggle mutators.`;
+      actionsEl.textContent = `Lives: ${state.lives}/${MAX_LIVES}. R â€” restart. 1-0 â€” toggle mutators.`;
       return;
     }
     if (state.phase === "playing" && state.extractConfirm) {
-      actionsEl.textContent = `Lose ${emergencyLossPercent}% gold? Y/Enter — confirm, N/Esc — cancel.`;
+      actionsEl.textContent = `Lose ${emergencyLossPercent}% gold? Y/Enter â€” confirm, N/Esc â€” cancel.`;
       return;
     }
     if (state.phase === "playing" && state.merchantMenuOpen) {
@@ -5625,7 +5797,7 @@
     }
     if (state.phase === "playing" && hoveredEnemy && state.enemies.includes(hoveredEnemy)) {
       const e = hoveredEnemy;
-      let info = `${e.name} — HP: ${e.hp}/${e.maxHp}, ATK: ${e.attack}`;
+      let info = `${e.name} â€” HP: ${e.hp}/${e.maxHp}, ATK: ${e.attack}`;
       if (e.range) info += `, Range: ${e.range}`;
       if (e.aiming) info += ", Aiming!";
       if (e.frozenThisTurn || (e.frostFx || 0) > 0) info += ", Frozen";
@@ -5636,22 +5808,22 @@
     }
     if (isOnMerchant()) {
       const cost = merchantPotionCost();
-      actionsEl.textContent = `Merchant: E — open shop (potion ${cost}g). Q — emergency extract.`;
+      actionsEl.textContent = `Merchant: E â€” open shop (potion ${cost}g). Q â€” emergency extract.`;
       return;
     }
     if (isOnPortal()) {
       if (state.enemies.length > 0) {
-        actionsEl.textContent = "Portal locked — clear the room first. Q — emergency extract.";
+        actionsEl.textContent = "Portal locked â€” clear the room first. Q â€” emergency extract.";
       } else {
-        actionsEl.textContent = "E — descend deeper. Q — full extract (keep all gold).";
+        actionsEl.textContent = "E â€” descend deeper. Q â€” full extract (keep all gold).";
       }
       return;
     }
     if (state.roomCleared) {
-      actionsEl.textContent = `Room clear! Head to the portal. Q — emergency extract (-${emergencyLossPercent}%).`;
+      actionsEl.textContent = `Room clear! Head to the portal. Q â€” emergency extract (-${emergencyLossPercent}%).`;
       return;
     }
-    actionsEl.textContent = "Move into enemies to attack. Q — emergency extract.";
+    actionsEl.textContent = "Move into enemies to attack. Q â€” emergency extract.";
   }
 
   function buildMutatorRows(canToggle) {
@@ -5859,7 +6031,7 @@
     // Dead: full mutator list
     const rows = buildMutatorRows(true);
     const count = activeMutatorCount();
-    mutatorsEl.innerHTML = `<h3>Mutators (${count}/3) — press 1-0</h3>${rows}`;
+    mutatorsEl.innerHTML = `<h3>Mutators (${count}/3) â€” press 1-0</h3>${rows}`;
   }
 
   function buildLog() {
@@ -5954,6 +6126,23 @@
       return;
     }
 
+    if (state.phase === "camp" && state.extractRelicPrompt) {
+      const relicReturn = state.extractRelicPrompt.relicReturn || { count: 0, total: 0, byRarity: {} };
+      const carried = Math.max(0, Number(relicReturn.count) || 0);
+      const gain = Math.max(0, Number(relicReturn.total) || 0);
+      screenOverlayEl.className = "screen-overlay visible";
+      screenOverlayEl.innerHTML = [
+        `<div class="overlay-card">`,
+        `<h2 class="overlay-title">Relic Exchange</h2>`,
+        `<p class="overlay-sub">Extracted with ${carried} relics.</p>`,
+        `<p class="overlay-sub">Sell relics now for +${gain} camp gold, or keep relics and stay in camp.</p>`,
+        `<p class="overlay-sub">N:${relicReturn.byRarity?.normal || 0} R:${relicReturn.byRarity?.rare || 0} E:${relicReturn.byRarity?.epic || 0} L:${relicReturn.byRarity?.legendary || 0}</p>`,
+        `<p class="overlay-hint">Y/Enter - sell relics | N/Esc - keep relics in camp</p>`,
+        `</div>`
+      ].join("");
+      return;
+    }
+
     let title = "Paused";
     let subtitle = "";
     let hint = "";
@@ -5992,8 +6181,8 @@
         const incoming = getRelicById(state.relicSwapPending);
         title = "Relic Inventory Full";
         subtitle = incoming
-          ? `Choose relic to discard (1-0) for ${incoming.name}.`
-          : "Choose relic to discard (1-0).";
+          ? `Choose relic to discard (${getRelicDiscardHotkeyHint()}) for ${incoming.name}.`
+          : `Choose relic to discard (${getRelicDiscardHotkeyHint()}).`;
       } else {
         title = "Relic Draft";
         const rarityLabels = (state.relicDraft || []).map((r) => {
@@ -6013,7 +6202,7 @@
         hint = "Press 1 or 2";
       } else {
         hint = state.relicSwapPending
-          ? "Press 1-0 to discard relic"
+          ? `Press ${getRelicDiscardHotkeyHint()} to discard relic`
           : `Choose with 1-${draftSize} or ${getRelicDraftSkipHotkey()} to skip`;
       }
     }
@@ -7144,6 +7333,18 @@
       return;
     }
 
+    if (state.phase === "camp" && state.extractRelicPrompt) {
+      if (isConfirm || key === "y") {
+        resolveExtractRelicPrompt(true);
+        return;
+      }
+      if (key === "escape" || key === "n") {
+        resolveExtractRelicPrompt(false);
+        return;
+      }
+      return;
+    }
+
     if (state.phase === "playing" && state.merchantMenuOpen) {
       if (state.roomType !== "merchant" || !isOnMerchant()) {
         closeMerchantMenu();
@@ -7223,7 +7424,11 @@
 
     if (key === "r") {
       if (state.phase === "camp" || state.phase === "dead") {
-        startRun();
+        if (state.phase === "camp") {
+          startRun({ carriedRelics: [...state.relics] });
+        } else {
+          startRun();
+        }
       } else if (state.phase === "playing" || state.phase === "relic") {
         pushLog("Restart disabled during a run. Use Esc -> menu if needed.", "bad");
       }
