@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dungeon of One Room</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="bootScreen" class="boot-screen">
+    <div class="boot-content">
+      <img src="assets/logo.png" alt="Dungeon of One Room" class="boot-logo" />
+      <p class="boot-press">Press any button to start</p>
+      <p class="boot-credits">Made by Kamil Matysek</p>
+    </div>
+  </div>
+  <main class="app app-hidden" id="gameApp">
+    <header class="titlebar">
+      <h1>Dungeon of One Room</h1>
+      <p>One room. One chance. One more depth?</p>
+    </header>
+    <section class="layout">
+      <aside class="panel panel-left">
+        <section class="hud" id="hud" aria-live="polite"></section>
+      </aside>
+      <div class="board">
+        <div id="depthBadge" class="depth-badge" aria-live="polite"></div>
+        <div class="canvas-wrap">
+          <canvas id="game" width="144" height="144" aria-label="Gra dungeon"></canvas>
+          <div id="roomIntroOverlay" class="room-intro-overlay" aria-hidden="true"></div>
+          <div id="screenOverlay" class="screen-overlay" aria-live="polite"></div>
+        </div>
+        <section id="skillsBar" class="skills-bar" aria-live="polite"></section>
+      </div>
+      <aside class="panel panel-right">
+        <section class="actions" id="actions"></section>
+        <section class="mutators" id="mutators"></section>
+        <section class="log" id="log"></section>
+      </aside>
+    </section>
+    <footer class="app-footer">
+      <span id="appVersion" aria-live="polite"></span>
+    </footer>
+  </main>
+  <script src="config.js"></script>
+  <script src="game.js"></script>
+</body>
+</html>
