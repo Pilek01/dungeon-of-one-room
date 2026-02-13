@@ -56,6 +56,16 @@
   const ENEMY_LATE_SCALE_START_DEPTH = 20;
   const ENEMY_LATE_SCALE_STEP_DEPTH = 10;
   const ENEMY_LATE_SCALE_PER_STEP = 0.2;
+  const CHAOS_ORB_ROLL_INTERVAL = 10;
+  const CHAOS_ORB_ATK_BONUS = 2 * COMBAT_SCALE; // +20 ATK
+  const CHAOS_ORB_KILL_HEAL = 2 * COMBAT_SCALE; // +20 HP per kill
+  const CHAOS_ORB_GOLD_BONUS = 20;
+  const CHAOS_ORB_ENEMY_DAMAGE = 10 * COMBAT_SCALE; // 100 dmg
+  const MAX_FLOOR_BONFIRE_PER_MAP = 2;
+  const MIN_FLOOR_SKULL_PER_MAP = 3;
+  const MAX_FLOOR_SKULL_PER_MAP = 4;
+  const MAX_FLOOR_CRACK_CROSS_PER_MAP = 3;
+  const MAX_FLOOR_VAR3_PER_MAP = 3;
   const ONLINE_LEADERBOARD_TIMEOUT_MS = 8000;
   const ONLINE_LEADERBOARD_REFRESH_MS = 12000;
   const ONLINE_LEADERBOARD_API_BASE = (() => {
@@ -76,6 +86,43 @@
   const DEATH_TRACK = "assets/death.mp3";
   const CHEST_SPRITE_PATH = "assets/sprite/chest.png";
   const CHEST_SPRITE_VERSION = "20260209_2001";
+  const PORTAL_SPRITE_FRAME_PATHS = [
+    "assets/sprite/portal/portal1.png",
+    "assets/sprite/portal/portal2.png",
+    "assets/sprite/portal/portal3.png",
+    "assets/sprite/portal/portal4.png",
+    "assets/sprite/portal/portal5.png",
+    "assets/sprite/portal/portal6.png"
+  ];
+  const PORTAL_SPRITE_VERSION = "20260213_002";
+  const PORTAL_FRAME_MS = 110;
+  const PORTAL_DRAW_SCALE = 1.25;
+  const SPIKE_SPRITE_PATH = "assets/sprite/spike.png";
+  const SPIKE_SPRITE_VERSION = "20260213_001";
+  const SPIKE_DRAW_SCALE = 1.4;
+  const TILESET_SPRITE_PATH = "assets/sprite/tileset.png";
+  const TILESET_SPRITE_VERSION = "20260213_002";
+  const TILESET_TILE_SIZE = 16;
+  const TILESET_COLUMNS = 4;
+  const TILESET_IDS = {
+    wallCornerTL: 0,
+    wallTop: 1,
+    floorA: 2,
+    wallCornerTR: 3,
+    floorB: 4,
+    floorSkull: 5,
+    floorBonfire: 6,
+    floorCrackCross: 7,
+    wallLeft: 8,
+    floorVar3: 9,
+    floorVar4: 10,
+    wallRight: 11,
+    wallCornerBL: 12,
+    wallBottom: 13,
+    floorC: 14,
+    wallCornerBR: 15,
+    wallBase: 1
+  };
   const SPIKE_MULTIPLIER = 6;
   const ROOM_INNER_TILES = (GRID_SIZE - 2) * (GRID_SIZE - 2);
   const MAX_SPIKE_DENSITY = 0.6;
@@ -531,7 +578,7 @@
     { id: "chronoloop",  rarity: "legendary", name: "Chrono Loop",  desc: "Cheat death once per run: revive 50% HP, kill all enemies" },
     { id: "voidreaper",  rarity: "legendary", name: "Void Reaper",  desc: "Crits execute <30% HP enemies. +15% crit. Crit kills +3 gold" },
     { id: "titanheart",  rarity: "legendary", name: "Titan's Heart", desc: "+80 max HP, +20 ARM, -20 ATK. Potions heal +50%" },
-    { id: "chaosorb",    rarity: "legendary", name: "Chaos Orb",    desc: "Random effect each turn: +20 ATK, heal 30, +1 gold, spike teleport, or nothing" }
+    { id: "chaosorb",    rarity: "legendary", name: "Chaos Orb",    desc: "Every 10 turns rolls 1 of 6 effects: +20 ATK, +20 HP/kill, +20 gold, 100 dmg random enemy, safe teleport, or nothing" }
   ];
 
   const SKILLS = [
@@ -990,6 +1037,8 @@
       titanAttackPenalty: 0,
       chaosAtkBonus: 0,
       chaosAtkTurns: 0,
+      chaosKillHeal: 0,
+      chaosRollCounter: 0,
       autoPotionCooldown: 0,
       furyBlessingTurns: 0
     },
@@ -1023,6 +1072,21 @@
   const skeletonSprites = {};
   const bruteSprites = {};
   const chestSprite = {
+    img: null,
+    ready: false,
+    failed: false
+  };
+  const portalSprite = {
+    frames: [],
+    readyCount: 0,
+    failed: false
+  };
+  const spikeSprite = {
+    img: null,
+    ready: false,
+    failed: false
+  };
+  const tilesetSprite = {
     img: null,
     ready: false,
     failed: false
@@ -1931,11 +1995,23 @@
       titanAttackPenalty: Math.max(0, Number(snapshot.player.titanAttackPenalty) || 0),
       chaosAtkBonus: Math.max(0, Number(snapshot.player.chaosAtkBonus) || 0),
       chaosAtkTurns: Math.max(0, Number(snapshot.player.chaosAtkTurns) || 0),
+      chaosKillHeal: Math.max(0, Number(snapshot.player.chaosKillHeal) || 0),
+      chaosRollCounter: clamp(
+        Math.max(0, Number(snapshot.player.chaosRollCounter) || 0),
+        0,
+        CHAOS_ORB_ROLL_INTERVAL - 1
+      ),
       autoPotionCooldown: Math.max(0, Number(snapshot.player.autoPotionCooldown) || 0),
       furyBlessingTurns: Math.max(0, Number(snapshot.player.furyBlessingTurns) || 0)
     };
     state.player.hp = clamp(state.player.hp, 1, state.player.maxHp);
     state.player.crit = clamp(state.player.crit, 0.01, CRIT_CHANCE_CAP);
+    if (!hasRelic("chaosorb")) {
+      state.player.chaosAtkBonus = 0;
+      state.player.chaosAtkTurns = 0;
+      state.player.chaosKillHeal = 0;
+      state.player.chaosRollCounter = 0;
+    }
     snapVisual(state.player);
 
     state.portal = {
@@ -2052,6 +2128,63 @@
       }
     };
     img.src = `${CHEST_SPRITE_PATH}?v=${CHEST_SPRITE_VERSION}`;
+  }
+
+  function loadPortalSprite() {
+    portalSprite.frames = new Array(PORTAL_SPRITE_FRAME_PATHS.length).fill(null);
+    portalSprite.readyCount = 0;
+    portalSprite.failed = false;
+    PORTAL_SPRITE_FRAME_PATHS.forEach((path, frameIndex) => {
+      const img = new Image();
+      img.onload = () => {
+        portalSprite.frames[frameIndex] = img;
+        portalSprite.readyCount += 1;
+        markUiDirty();
+      };
+      img.onerror = () => {
+        if (!portalSprite.failed) {
+          portalSprite.failed = true;
+          pushLog(`Portal frame failed: ${path}`, "bad");
+        }
+      };
+      img.src = `${path}?v=${PORTAL_SPRITE_VERSION}`;
+    });
+  }
+
+  function loadSpikeSprite() {
+    const img = new Image();
+    spikeSprite.img = img;
+    spikeSprite.ready = false;
+    spikeSprite.failed = false;
+    img.onload = () => {
+      spikeSprite.ready = true;
+      markUiDirty();
+    };
+    img.onerror = () => {
+      if (!spikeSprite.failed) {
+        spikeSprite.failed = true;
+        pushLog(`Spike sprite failed: ${SPIKE_SPRITE_PATH}`, "bad");
+      }
+    };
+    img.src = `${SPIKE_SPRITE_PATH}?v=${SPIKE_SPRITE_VERSION}`;
+  }
+
+  function loadTilesetSprite() {
+    const img = new Image();
+    tilesetSprite.img = img;
+    tilesetSprite.ready = false;
+    tilesetSprite.failed = false;
+    img.onload = () => {
+      tilesetSprite.ready = true;
+      markUiDirty();
+    };
+    img.onerror = () => {
+      if (!tilesetSprite.failed) {
+        tilesetSprite.failed = true;
+        pushLog(`Tileset failed: ${TILESET_SPRITE_PATH}`, "bad");
+      }
+    };
+    img.src = `${TILESET_SPRITE_PATH}?v=${TILESET_SPRITE_VERSION}`;
   }
 
   function loadSlimeSprites() {
@@ -3005,7 +3138,13 @@
       state.player.hp = Math.min(state.player.hp, state.player.maxHp);
       return;
     }
-    if (relicId === "chaosorb") { return; } // passive: checked in finalizeTurn
+    if (relicId === "chaosorb") {
+      state.player.chaosAtkBonus = 0;
+      state.player.chaosAtkTurns = 0;
+      state.player.chaosKillHeal = 0;
+      state.player.chaosRollCounter = 0;
+      return;
+    } // passive: checked in finalizeTurn
   }
 
   function removeRelicEffects(relicId) {
@@ -3082,7 +3221,13 @@
       state.player.hp = Math.min(state.player.hp, state.player.maxHp);
       return;
     }
-    if (relicId === "chaosorb") { return; }
+    if (relicId === "chaosorb") {
+      state.player.chaosAtkBonus = 0;
+      state.player.chaosAtkTurns = 0;
+      state.player.chaosKillHeal = 0;
+      state.player.chaosRollCounter = 0;
+      return;
+    }
   }
 
   function applyRelic(relicId, options = {}) {
@@ -3840,10 +3985,64 @@
     for (let y = 0; y < GRID_SIZE; y += 1) {
       const row = [];
       for (let x = 0; x < GRID_SIZE; x += 1) {
-        row.push(randInt(0, 6));
+        row.push(randInt(0, 9));
       }
       pattern.push(row);
     }
+
+    const bonfireTiles = [];
+    const skullTiles = [];
+    const crossTiles = [];
+    const floorVar3Tiles = [];
+    for (let y = 1; y <= GRID_SIZE - 2; y += 1) {
+      for (let x = 1; x <= GRID_SIZE - 2; x += 1) {
+        const tileId = getFloorTilesetId(pattern[y][x]);
+        if (tileId === TILESET_IDS.floorBonfire) {
+          bonfireTiles.push({ x, y });
+        } else if (tileId === TILESET_IDS.floorSkull) {
+          skullTiles.push({ x, y });
+        } else if (tileId === TILESET_IDS.floorCrackCross) {
+          crossTiles.push({ x, y });
+        } else if (tileId === TILESET_IDS.floorVar3) {
+          floorVar3Tiles.push({ x, y });
+        }
+      }
+    }
+
+    const shuffle = (arr) => {
+      for (let i = arr.length - 1; i > 0; i -= 1) {
+        const j = randInt(0, i);
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+      }
+    };
+    // Replacements intentionally avoid limited buckets: bonfire/skull/crack-cross/floorVar3.
+    const replacementNoise = [0, 1, 6, 8, 9];
+    const replaceTile = (tile) => {
+      pattern[tile.y][tile.x] = replacementNoise[randInt(0, replacementNoise.length - 1)];
+    };
+    const isAdjacent = (a, b) => Math.abs(a.x - b.x) <= 1 && Math.abs(a.y - b.y) <= 1;
+    const enforceLimit = (arr, maxCount, disallowAdjacent = false) => {
+      if (arr.length <= 0) return;
+      shuffle(arr);
+      const kept = [];
+      for (const tile of arr) {
+        if (kept.length >= maxCount) {
+          replaceTile(tile);
+          continue;
+        }
+        if (disallowAdjacent && kept.some((other) => isAdjacent(other, tile))) {
+          replaceTile(tile);
+          continue;
+        }
+        kept.push(tile);
+      }
+    };
+
+    enforceLimit(bonfireTiles, MAX_FLOOR_BONFIRE_PER_MAP, true);
+    enforceLimit(skullTiles, randInt(MIN_FLOOR_SKULL_PER_MAP, MAX_FLOOR_SKULL_PER_MAP), true);
+    enforceLimit(crossTiles, MAX_FLOOR_CRACK_CROSS_PER_MAP);
+    enforceLimit(floorVar3Tiles, MAX_FLOOR_VAR3_PER_MAP);
+
     return pattern;
   }
 
@@ -4191,6 +4390,8 @@
     state.player.titanAttackPenalty = 0;
     state.player.chaosAtkBonus = 0;
     state.player.chaosAtkTurns = 0;
+    state.player.chaosKillHeal = 0;
+    state.player.chaosRollCounter = 0;
     state.player.autoPotionCooldown = 0;
     state.player.furyBlessingTurns = 0;
     state.skillCooldowns = sanitizeSkillCooldowns({});
@@ -4442,6 +4643,18 @@
     });
   }
 
+  function revealPortalFx() {
+    if (!state.portal) return;
+    spawnParticles(state.portal.x, state.portal.y, COLORS.portalCore, 16, 1.4);
+    spawnShockwaveRing(state.portal.x, state.portal.y, {
+      color: COLORS.portalGlow,
+      core: COLORS.portalCore,
+      maxRadius: TILE * 2.6,
+      life: 320
+    });
+    playSfx("portal");
+  }
+
   function setShake(amount) {
     state.shake = Math.max(state.shake, amount);
   }
@@ -4473,6 +4686,13 @@
     spawnParticles(enemy.x, enemy.y, "#ffd57a", 8, 1.45);
     pushLog(`${enemy.name} down. +${reward} gold. ${reason ? `(${reason})` : ""}`, "good");
 
+    if (hasRelic("chaosorb") && (state.player.chaosKillHeal || 0) > 0) {
+      const healAmount = Math.max(MIN_EFFECTIVE_DAMAGE, state.player.chaosKillHeal);
+      state.player.hp = Math.min(state.player.maxHp, state.player.hp + healAmount);
+      spawnParticles(state.player.x, state.player.y, "#8ce1a7", 6, 0.95);
+      pushLog(`Chaos: kill heal +${healAmount} HP.`, "good");
+    }
+
     // Vampiric Fang: heal 10 HP every 3 kills
     if (hasRelic("vampfang")) {
       state.player.vampFangKills = (state.player.vampFangKills || 0) + 1;
@@ -4501,6 +4721,8 @@
   function checkRoomClearBonus() {
     if (state.roomCleared || state.enemies.length > 0) return;
     state.roomCleared = true;
+    revealPortalFx();
+    pushLog("Room cleared! Portal revealed.", "good");
     let goldBonus = 2 + Math.floor(state.depth / 2);
     let potionChance = 0.35;
 
@@ -5382,48 +5604,92 @@
     }
   }
 
+  function getChaosSafeTeleportTiles() {
+    const tiles = [];
+    for (let y = 1; y <= GRID_SIZE - 2; y += 1) {
+      for (let x = 1; x <= GRID_SIZE - 2; x += 1) {
+        if (x === state.player.x && y === state.player.y) continue;
+        if (isSpikeAt(x, y)) continue;
+        if (getEnemyAt(x, y)) continue;
+        if (state.chests.some((chest) => !chest.opened && chest.x === x && chest.y === y)) continue;
+        if (state.merchant && state.merchant.x === x && state.merchant.y === y) continue;
+        if (state.shrine && !state.shrine.used && state.shrine.x === x && state.shrine.y === y) continue;
+        tiles.push({ x, y });
+      }
+    }
+    return tiles;
+  }
+
   function tickChaosOrb() {
     if (!hasRelic("chaosorb")) return;
-    // Decay previous chaos ATK bonus
-    if ((state.player.chaosAtkTurns || 0) > 0) {
-      state.player.chaosAtkTurns -= 1;
-      if (state.player.chaosAtkTurns <= 0) {
-        state.player.chaosAtkBonus = 0;
-      }
-    }
+
+    state.player.chaosRollCounter = (state.player.chaosRollCounter || 0) + 1;
+    if (state.player.chaosRollCounter < CHAOS_ORB_ROLL_INTERVAL) return;
+    state.player.chaosRollCounter = 0;
+
+    // Previous Chaos Orb mode expires on each new roll.
+    state.player.chaosAtkBonus = 0;
+    state.player.chaosAtkTurns = 0;
+    state.player.chaosKillHeal = 0;
+
+    // Visual feedback for every roll.
+    spawnParticles(state.player.x, state.player.y, "#ffb020", 16, 1.4);
+    spawnShockwaveRing(state.player.x, state.player.y, {
+      color: "#ffbf6d",
+      core: "#fff1d2",
+      maxRadius: TILE * 2.3,
+      life: 260
+    });
+
     const roll = randInt(1, 6);
     if (roll === 1) {
-      state.player.chaosAtkBonus = scaledCombat(2);
-      state.player.chaosAtkTurns = 1;
-      spawnParticles(state.player.x, state.player.y, "#ff6a35", 6, 1.0);
-      pushLog("Chaos: +20 ATK this turn!", "good");
-    } else if (roll === 2) {
-      state.player.hp = Math.min(state.player.maxHp, state.player.hp + scaledCombat(3));
-      spawnParticles(state.player.x, state.player.y, "#8ce1a7", 8, 1.0);
-      pushLog("Chaos: heal +30 HP!", "good");
-    } else if (roll === 3) {
-      const chaosGold = grantGold(1);
-      pushLog(`Chaos: +${chaosGold} gold.`, "good");
-    } else if (roll === 4) {
-      // Teleport a random enemy onto spikes
-      const spikeTargets = state.enemies.filter((e) => !isSpikeAt(e.x, e.y));
-      const spikePositions = state.spikes.filter((sp) => !getEnemyAt(sp.x, sp.y) && !(sp.x === state.player.x && sp.y === state.player.y));
-      if (spikeTargets.length > 0 && spikePositions.length > 0) {
-        const target = spikeTargets[randInt(0, spikeTargets.length - 1)];
-        const dest = spikePositions[randInt(0, spikePositions.length - 1)];
-        target.x = dest.x;
-        target.y = dest.y;
-        spawnParticles(target.x, target.y, "#c9abff", 8, 1.2);
-        pushLog(`Chaos: ${target.name} teleported onto spikes!`, "good");
-        applySpikeToEnemy(target);
-      } else {
-        pushLog("Chaos: teleport fizzles...");
-      }
-    } else if (roll === 5) {
-      spawnParticles(state.player.x, state.player.y, "#ffb020", 16, 1.8);
-      pushLog("Chaos: particle burst! (cosmetic)");
+      state.player.chaosAtkBonus = CHAOS_ORB_ATK_BONUS;
+      state.player.chaosAtkTurns = CHAOS_ORB_ROLL_INTERVAL;
+      pushLog("Chaos roll [1]: +20 ATK for 10 turns.", "good");
+      return;
     }
-    // roll === 6: nothing happens
+    if (roll === 2) {
+      state.player.chaosKillHeal = CHAOS_ORB_KILL_HEAL;
+      pushLog("Chaos roll [2]: +20 HP per kill for 10 turns.", "good");
+      return;
+    }
+    if (roll === 3) {
+      const chaosGold = grantGold(CHAOS_ORB_GOLD_BONUS, { applyMultiplier: false });
+      pushLog(`Chaos roll [3]: +${chaosGold} gold.`, "good");
+      return;
+    }
+    if (roll === 4) {
+      if (state.enemies.length <= 0) {
+        pushLog("Chaos roll [4]: no enemy to strike.");
+        return;
+      }
+      const target = state.enemies[randInt(0, state.enemies.length - 1)];
+      target.hp -= CHAOS_ORB_ENEMY_DAMAGE;
+      spawnParticles(target.x, target.y, "#ff8c8c", 10, 1.35);
+      pushLog(`Chaos roll [4]: ${target.name} takes ${CHAOS_ORB_ENEMY_DAMAGE} chaos damage.`, "good");
+      if (target.hp <= 0) {
+        killEnemy(target, "chaos strike");
+      }
+      return;
+    }
+    if (roll === 5) {
+      const safeTiles = getChaosSafeTeleportTiles();
+      if (safeTiles.length <= 0) {
+        pushLog("Chaos roll [5]: no safe tile for teleport.");
+        return;
+      }
+      const fromX = state.player.x;
+      const fromY = state.player.y;
+      const to = safeTiles[randInt(0, safeTiles.length - 1)];
+      startTween(state.player);
+      state.player.x = to.x;
+      state.player.y = to.y;
+      spawnParticles(fromX, fromY, "#a5c6ff", 8, 1.0);
+      spawnParticles(to.x, to.y, "#a5c6ff", 10, 1.2);
+      pushLog("Chaos roll [5]: teleported to a random safe tile.", "good");
+      return;
+    }
+    pushLog("Chaos roll [6]: nothing happens.");
   }
 
   function tickMagneticShard() {
@@ -5464,7 +5730,7 @@
     checkRoomClearBonus();
     if (state.phase !== "playing") return;
 
-    // Chaos Orb: random effect
+    // Chaos Orb: rolls a random effect every 10 turns.
     tickChaosOrb();
 
     // Phase Cloak cooldown
@@ -5595,11 +5861,21 @@
       return;
     }
 
+    const chaosAtkBonus = Math.max(0, Number(state.player.chaosAtkBonus) || 0);
+    const chaosRollCounter = clamp(
+      Math.max(0, Number(state.player.chaosRollCounter) || 0),
+      0,
+      CHAOS_ORB_ROLL_INTERVAL - 1
+    );
+    const chaosTurnsLeft = hasRelic("chaosorb")
+      ? CHAOS_ORB_ROLL_INTERVAL - chaosRollCounter
+      : 0;
+
     hudEl.innerHTML = [
       `<div class="statline"><span>Player</span><strong>${state.playerName || "Not set"}</strong></div>`,
       `<div class="statline"><span>HP</span><strong>${state.player.hp}/${state.player.maxHp}</strong></div>`,
       `<div class="statline"><span>Lives</span><strong>${state.lives}/${MAX_LIVES}</strong></div>`,
-      `<div class="statline"><span>ATK</span><strong>${state.player.attack}</strong></div>`,
+      `<div class="statline"><span>ATK</span><strong>${state.player.attack}${chaosAtkBonus > 0 ? ` (+${chaosAtkBonus})` : ""}</strong></div>`,
       `<div class="statline"><span>ARM</span><strong>${state.player.armor}</strong></div>`,
       `<div class="statline"><span>Crit</span><strong>${Math.round(state.player.crit * 100)}%</strong></div>`,
       `<div class="statline"><span>Potions</span><strong>${state.player.potions}/${state.player.maxPotions}</strong></div>`,
@@ -5614,6 +5890,12 @@
       `<div class="statline"><span>Enemies</span><strong>${state.enemies.length}</strong></div>`,
       `<div class="statline"><span>Turn</span><strong>${state.turn}</strong></div>`,
       `<div class="statline"><span>Fury</span><strong>${getEffectiveAdrenaline()}/${getEffectiveMaxAdrenaline()}</strong></div>`,
+      hasRelic("chaosorb")
+        ? `<div class="statline"><span>Chaos Roll</span><strong>${chaosTurnsLeft}T</strong></div>`
+        : "",
+      state.player.chaosKillHeal > 0
+        ? `<div class="statline"><span>Chaos Heal</span><strong>+${state.player.chaosKillHeal}/kill</strong></div>`
+        : "",
       state.player.furyBlessingTurns > 0
         ? `<div class="statline"><span>Fury Bless</span><strong>${state.player.furyBlessingTurns}T</strong></div>`
         : "",
@@ -5837,7 +6119,7 @@
       return;
     }
     if (state.roomCleared) {
-      actionsEl.textContent = `Room clear! Head to the portal. Q â€” emergency extract (-${emergencyLossPercent}%).`;
+      actionsEl.textContent = `Room cleared! Portal revealed. Head to the portal. Q - emergency extract (-${emergencyLossPercent}%).`;
       return;
     }
     actionsEl.textContent = "Move into enemies to attack. Q â€” emergency extract.";
@@ -6348,6 +6630,9 @@
   function drawFloorTile(x, y) {
     const px = x * TILE;
     const py = y * TILE;
+    if (drawFloorTileFromTileset(x, y, px, py)) {
+      return;
+    }
     const wall = x === 0 || y === 0 || x === GRID_SIZE - 1 || y === GRID_SIZE - 1;
     if (wall) {
       ctx.fillStyle = COLORS.wall;
@@ -6375,9 +6660,75 @@
     }
   }
 
+  function drawTilesetTile(tileId, px, py) {
+    if (!tilesetSprite.ready || !tilesetSprite.img) return false;
+    const sx = (tileId % TILESET_COLUMNS) * TILESET_TILE_SIZE;
+    const sy = Math.floor(tileId / TILESET_COLUMNS) * TILESET_TILE_SIZE;
+    ctx.drawImage(
+      tilesetSprite.img,
+      sx, sy, TILESET_TILE_SIZE, TILESET_TILE_SIZE,
+      px, py, TILE, TILE
+    );
+    return true;
+  }
+
+  function getWallTilesetId(x, y) {
+    const max = GRID_SIZE - 1;
+    if (x === 0 && y === 0) return TILESET_IDS.wallCornerTL;
+    if (x === max && y === 0) return TILESET_IDS.wallCornerTR;
+    if (x === 0 && y === max) return TILESET_IDS.wallCornerBL;
+    if (x === max && y === max) return TILESET_IDS.wallCornerBR;
+    if (y === 0) return TILESET_IDS.wallTop;
+    if (y === max) return TILESET_IDS.wallBottom;
+    if (x === 0) return TILESET_IDS.wallLeft;
+    if (x === max) return TILESET_IDS.wallRight;
+    return TILESET_IDS.wallBase;
+  }
+
+  function getFloorTilesetId(noise) {
+    if (noise === 2 || noise === 5) return TILESET_IDS.floorCrackCross;
+    if (noise === 3) return TILESET_IDS.floorBonfire;
+    if (noise === 4) return TILESET_IDS.floorVar3;
+    if (noise === 7) return TILESET_IDS.floorSkull;
+    if (noise === 8) return TILESET_IDS.floorVar4;
+    if (noise === 6) return TILESET_IDS.floorC;
+    if (noise === 1 || noise === 9) return TILESET_IDS.floorB;
+    return TILESET_IDS.floorA;
+  }
+
+  function drawFloorTileFromTileset(x, y, px, py) {
+    if (!tilesetSprite.ready || !tilesetSprite.img) return false;
+    const wall = x === 0 || y === 0 || x === GRID_SIZE - 1 || y === GRID_SIZE - 1;
+    const tileId = wall
+      ? getWallTilesetId(x, y)
+      : getFloorTilesetId(state.floorPattern[y]?.[x] ?? 0);
+    return drawTilesetTile(tileId, px, py);
+  }
+
   function drawPortal() {
+    if (!state.roomCleared) return;
     const px = state.portal.x * TILE;
     const py = state.portal.y * TILE;
+    if (portalSprite.readyCount > 0 && portalSprite.frames.length > 0) {
+      const drawSize = Math.round(TILE * PORTAL_DRAW_SCALE);
+      const drawX = Math.round(px + (TILE - drawSize) / 2);
+      const drawY = Math.round(py + (TILE - drawSize) / 2);
+      const frameCount = portalSprite.frames.length;
+      const frameIndex = Math.floor(state.playerAnimTimer / PORTAL_FRAME_MS) % frameCount;
+      const frame =
+        portalSprite.frames[frameIndex] ||
+        portalSprite.frames.find((img) => Boolean(img));
+      if (frame) {
+        const sw = frame.naturalWidth || TILE;
+        const sh = frame.naturalHeight || TILE;
+        ctx.drawImage(frame, 0, 0, sw, sh, drawX, drawY, drawSize, drawSize);
+      }
+      if (state.enemies.length > 0) {
+        ctx.fillStyle = "#2a0f0f88";
+        ctx.fillRect(drawX, drawY, drawSize, drawSize);
+      }
+      if (frame) return;
+    }
     const pulse = (Math.sin(state.portalPulse) + 1) * 0.5;
     const lockedColor = state.enemies.length > 0 ? "#8b5d5d" : COLORS.portalGlow;
     ctx.fillStyle = lockedColor;
@@ -6417,12 +6768,28 @@
   function drawSpikes(spike) {
     const px = spike.x * TILE;
     const py = spike.y * TILE;
+    const drawSize = Math.round(TILE * SPIKE_DRAW_SCALE);
+    const drawX = Math.round(px + (TILE - drawSize) / 2);
+    const drawY = Math.round(py + (TILE - drawSize) / 2);
+    if (spikeSprite.ready && spikeSprite.img) {
+      const sw = spikeSprite.img.naturalWidth || TILE;
+      const sh = spikeSprite.img.naturalHeight || TILE;
+      ctx.drawImage(spikeSprite.img, 0, 0, sw, sh, drawX, drawY, drawSize, drawSize);
+      return;
+    }
+    ctx.save();
+    const centerX = px + TILE / 2;
+    const centerY = py + TILE / 2;
+    ctx.translate(centerX, centerY);
+    ctx.scale(SPIKE_DRAW_SCALE, SPIKE_DRAW_SCALE);
+    ctx.translate(-TILE / 2, -TILE / 2);
     ctx.fillStyle = COLORS.spikeDark;
-    ctx.fillRect(px + 3, py + 11, 10, 2);
+    ctx.fillRect(3, 11, 10, 2);
     ctx.fillStyle = COLORS.spike;
-    ctx.fillRect(px + 4, py + 6, 2, 5);
-    ctx.fillRect(px + 7, py + 5, 2, 6);
-    ctx.fillRect(px + 10, py + 6, 2, 5);
+    ctx.fillRect(4, 6, 2, 5);
+    ctx.fillRect(7, 5, 2, 6);
+    ctx.fillRect(10, 6, 2, 5);
+    ctx.restore();
   }
 
   function drawShrine() {
@@ -7655,6 +8022,9 @@
   state.phase = "boot";
   state.log = [];
   loadChestSprite();
+  loadPortalSprite();
+  loadSpikeSprite();
+  loadTilesetSprite();
   loadPlayerSprites();
   loadSlimeSprites();
   loadSkeletonSprites();
