@@ -551,14 +551,14 @@
   };
 
   const RELICS = [
-    // â”€â”€ Normal (6) â”€â”€
+    // Normal (6)
     { id: "fang",      rarity: "normal", name: "Fang Charm",     desc: "+10 ATK" },
     { id: "plating",   rarity: "normal", name: "Bone Plating",   desc: "+10 ARM" },
     { id: "lucky",     rarity: "normal", name: "Lucky Coin",     desc: "+5% crit" },
     { id: "flask",     rarity: "normal", name: "Spare Flask",    desc: "+1 potion" },
     { id: "lifebloom", rarity: "normal", name: "Lifebloom Seed", desc: "+20 max HP and heal 20" },
     { id: "ironboots", rarity: "normal", name: "Iron Boots",     desc: "Immune to spike damage" },
-    // â”€â”€ Rare (8) â”€â”€
+    // Rare (8)
     { id: "idol",      rarity: "rare", name: "Golden Idol",      desc: "+20% gold gain this run" },
     { id: "thornmail", rarity: "rare", name: "Thorn Mail",       desc: "Melee attackers take 10 dmg" },
     { id: "vampfang",  rarity: "rare", name: "Vampiric Fang",    desc: "Heal 10 HP every 3 kills" },
@@ -567,14 +567,14 @@
     { id: "magnet",    rarity: "rare", name: "Magnetic Shard",   desc: "Auto-loot chests within 2 tiles" },
     { id: "shrineward",rarity: "rare", name: "Shrine Ward",      desc: "Shrines always bless, never curse" },
     { id: "merchfavor",rarity: "rare", name: "Merchant's Favor", desc: "Merchant prices halved" },
-    // â”€â”€ Epic (6) â”€â”€
+    // Epic (6)
     { id: "glasscannon", rarity: "epic", name: "Glass Cannon",  desc: "+40 ATK, -50 max HP" },
     { id: "echostrike",  rarity: "epic", name: "Echo Strike",   desc: "30% chance to hit twice" },
     { id: "phasecloak",  rarity: "epic", name: "Phase Cloak",   desc: "Auto-dodge every 5th turn" },
     { id: "soulharvest", rarity: "epic", name: "Soul Harvest",  desc: "Every 10 kills: +10 max HP (cap +100)" },
     { id: "burnblade",   rarity: "epic", name: "Burning Blade", desc: "Attacks ignite: 10 dmg/turn for 3 turns" },
     { id: "frostamulet", rarity: "epic", name: "Frost Amulet",  desc: "Nearby non-elites 15% chance to freeze (boss/elite immune)" },
-    // â”€â”€ Legendary (4) â”€â”€
+    // Legendary (4)
     { id: "chronoloop",  rarity: "legendary", name: "Chrono Loop",  desc: "Cheat death once per run: revive 50% HP, kill all enemies" },
     { id: "voidreaper",  rarity: "legendary", name: "Void Reaper",  desc: "Crits execute <30% HP enemies. +15% crit. Crit kills +3 gold" },
     { id: "titanheart",  rarity: "legendary", name: "Titan's Heart", desc: "+80 max HP, +20 ARM, -20 ATK. Potions heal +50%" },
@@ -6083,7 +6083,7 @@
       return;
     }
     if (state.phase === "playing" && state.extractConfirm) {
-      actionsEl.textContent = `Lose ${emergencyLossPercent}% gold? Y/Enter â€” confirm, N/Esc â€” cancel.`;
+      actionsEl.textContent = `Lose ${emergencyLossPercent}% gold? Y/Enter - confirm, N/Esc - cancel.`;
       return;
     }
     if (state.phase === "playing" && state.merchantMenuOpen) {
@@ -6096,7 +6096,7 @@
     }
     if (state.phase === "playing" && hoveredEnemy && state.enemies.includes(hoveredEnemy)) {
       const e = hoveredEnemy;
-      let info = `${e.name} â€” HP: ${e.hp}/${e.maxHp}, ATK: ${e.attack}`;
+      let info = `${e.name} - HP: ${e.hp}/${e.maxHp}, ATK: ${e.attack}`;
       if (e.range) info += `, Range: ${e.range}`;
       if (e.aiming) info += ", Aiming!";
       if (e.frozenThisTurn || (e.frostFx || 0) > 0) info += ", Frozen";
@@ -6107,22 +6107,22 @@
     }
     if (isOnMerchant()) {
       const cost = merchantPotionCost();
-      actionsEl.textContent = `Merchant: E â€” open shop (potion ${cost}g). Q â€” emergency extract.`;
+      actionsEl.textContent = `Merchant: Press E to open shop (potion ${cost}g). Press Q for emergency extract. Press F for potion.`;
       return;
     }
     if (isOnPortal()) {
       if (state.enemies.length > 0) {
-        actionsEl.textContent = "Portal locked â€” clear the room first. Q â€” emergency extract.";
+        actionsEl.textContent = "Portal locked - clear the room first. Press Q for emergency extract. Press F for potion.";
       } else {
-        actionsEl.textContent = "E â€” descend deeper. Q â€” full extract (keep all gold).";
+        actionsEl.textContent = "Press E to descend deeper. Press Q for full extract (keep all gold). Press F for potion.";
       }
       return;
     }
     if (state.roomCleared) {
-      actionsEl.textContent = `Room cleared! Portal revealed. Head to the portal. Q - emergency extract (-${emergencyLossPercent}%).`;
+      actionsEl.textContent = `Room cleared! Portal revealed. Head to the portal. Press Q for emergency extract (-${emergencyLossPercent}%). Press F for potion.`;
       return;
     }
-    actionsEl.textContent = "Move into enemies to attack. Q â€” emergency extract.";
+    actionsEl.textContent = "Move into enemies to attack. Press Q for emergency extract. Press F for potion.";
   }
 
   function buildMutatorRows(canToggle) {
@@ -8034,7 +8034,6 @@
   markUiDirty();
   requestAnimationFrame(frame);
 })();
-
 
 
 
