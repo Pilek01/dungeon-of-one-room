@@ -1,5 +1,5 @@
 ﻿// Single source of truth for current build version.
-window.GAME_VERSION = "v0.1.17";
+window.GAME_VERSION = "v0.1.18";
 
 // Optional online leaderboard endpoint.
 // Example:
@@ -9,5 +9,6 @@ window.DUNGEON_LEADERBOARD_API = "https://dungeon-one-room-leaderboard.pileksoft
 // Current leaderboard season id (used by "Current Season" scope).
 // Change this only on major balance resets, not every patch version.
 window.DUNGEON_LEADERBOARD_SEASON = "season-2";
+
 
 
