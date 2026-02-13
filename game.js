@@ -95,7 +95,7 @@
     "assets/sprite/portal/portal6.png"
   ];
   const PORTAL_SPRITE_VERSION = "20260213_002";
-  const PORTAL_FRAME_MS = 110;
+  const PORTAL_FRAME_MS = 220;
   const PORTAL_DRAW_SCALE = 1.25;
   const SPIKE_SPRITE_PATH = "assets/sprite/spike.png";
   const SPIKE_SPRITE_VERSION = "20260213_001";
@@ -8034,6 +8034,7 @@
   markUiDirty();
   requestAnimationFrame(frame);
 })();
+
 
 
 
