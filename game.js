@@ -68,6 +68,7 @@
   const MAX_FLOOR_VAR3_PER_MAP = 3;
   const ONLINE_LEADERBOARD_TIMEOUT_MS = 8000;
   const ONLINE_LEADERBOARD_REFRESH_MS = 12000;
+  const LEADERBOARD_MIN_TURNS = 30;
   const ONLINE_RUN_TOKEN_MAX_LEN = 256;
   const ONLINE_LEADERBOARD_API_BASE = (() => {
     const raw = typeof window !== "undefined" ? window.DUNGEON_LEADERBOARD_API : "";
@@ -847,6 +848,7 @@
     if (!rawEntry || typeof rawEntry !== "object") return null;
     const depth = Math.max(0, Number(rawEntry.depth) || 0);
     const gold = Math.max(0, Number(rawEntry.gold) || 0);
+    const turns = Math.max(0, Number(rawEntry.turns) || Number(rawEntry.turn) || 0);
     const score = Math.max(0, Number(rawEntry.score) || calculateScore(depth, gold));
     const outcome = rawEntry.outcome === "extract" ? "extract" : "death";
     const ts = Math.max(0, Number(rawEntry.ts) || Date.now());
@@ -869,6 +871,7 @@
       outcome,
       depth,
       gold,
+      turns,
       score,
       mutatorCount: Math.max(0, Number(rawEntry.mutatorCount) || mutatorIds.length || 0),
       mutatorIds,
@@ -1631,6 +1634,7 @@
       outcome: entry.outcome === "extract" ? "extract" : "death",
       depth: Math.max(0, Number(entry.depth) || 0),
       gold: Math.max(0, Number(entry.gold) || 0),
+      turns: Math.max(0, Number(entry.turns) || 0),
       score: Math.max(0, Number(entry.score) || 0),
       mutatorCount: Math.max(0, Number(entry.mutatorCount) || 0),
       mutatorIds: Array.isArray(entry.mutatorIds) ? entry.mutatorIds : [],
@@ -1784,6 +1788,11 @@
     if (state.runLeaderboardSubmitted && state.currentRunId) return;
     const depth = getRunMaxDepth();
     const gold = getRunGoldEarned();
+    const turns = Math.max(0, Number(state.turn) || 0);
+    if (turns < LEADERBOARD_MIN_TURNS) {
+      state.runLeaderboardSubmitted = true;
+      return;
+    }
     if (depth <= 0 && gold <= 0) {
       state.runLeaderboardSubmitted = true;
       return;
@@ -1803,6 +1812,7 @@
       outcome: outcome === "extract" ? "extract" : "death",
       depth,
       gold,
+      turns,
       score: calculateScore(depth, gold),
       mutatorCount: mutatorIds.length,
       mutatorIds,
