@@ -3075,18 +3075,25 @@
       return false;
     }
     const cost = merchantPotionCost();
-    if (state.player.gold < cost) {
-      pushLog(`Merchant: need ${cost} gold for a potion.`, "bad");
+    const wallet = getMerchantUpgradeWalletTotal();
+    if (wallet < cost) {
+      pushLog(`Merchant: need ${cost} gold for a potion (run + camp).`, "bad");
       return false;
     }
-    state.player.gold -= cost;
+    const payment = spendMerchantUpgradeGold(cost);
+    if (payment.fromCamp > 0) {
+      persistCampProgress();
+    }
     state.merchantPotionsBought = (state.merchantPotionsBought || 0) + 1;
     state.totalMerchantPots += 1;
     localStorage.setItem(STORAGE_TOTAL_MERCHANT_POTS, String(state.totalMerchantPots));
     grantPotion(1);
     spawnParticles(state.player.x, state.player.y, "#ffd98a", 10, 1.15);
     const nextCost = merchantPotionCost();
-    pushLog(`Merchant deal: -${cost} gold, +1 potion (${state.player.potions}/${state.player.maxPotions}). Next: ${nextCost}g.`, "good");
+    pushLog(
+      `Merchant deal: -${cost} gold (${payment.fromRun} run, ${payment.fromCamp} camp), +1 potion (${state.player.potions}/${state.player.maxPotions}). Next: ${nextCost}g.`,
+      "good"
+    );
     saveRunSnapshot();
     markUiDirty();
     return true;
@@ -6184,7 +6191,7 @@
       return;
     }
     if (state.phase === "playing" && state.merchantMenuOpen) {
-      actionsEl.textContent = "Merchant menu: 1 potion (run gold), 2 dash/3 shockwave/4 shield (run + camp gold). E/Esc - close.";
+      actionsEl.textContent = "Merchant menu: 1 potion (run + camp gold), 2 dash/3 shockwave/4 shield (run + camp gold). E/Esc - close.";
       return;
     }
     if (state.phase === "playing" && state.dashAimActive) {
@@ -6670,8 +6677,8 @@
       const potionFull = state.player.potions >= state.player.maxPotions;
       const potionBody = potionFull
         ? `Potion bag full (${state.player.potions}/${state.player.maxPotions})`
-        : `+1 potion for ${potionCost} gold`;
-      const potionDisabled = potionFull || state.player.gold < potionCost;
+        : `+1 potion for ${potionCost} gold (run + camp).`;
+      const potionDisabled = potionFull || getMerchantUpgradeWalletTotal() < potionCost;
 
       const buildSkillRow = (key, skillId) => {
         const skill = SKILL_BY_ID[skillId];
