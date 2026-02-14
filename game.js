@@ -2166,9 +2166,6 @@
     state.merchantUpgradeBoughtThisRoom = Boolean(snapshot.merchantUpgradeBoughtThisRoom);
 
     state.hasContinueRun = true;
-    if (nextPhase === "playing" || nextPhase === "relic") {
-      ensureOnlineRunSessionForCurrentRun(false);
-    }
     markUiDirty();
     return true;
   }
@@ -4530,7 +4527,6 @@
     if (activeMutatorCount() > 0) {
       pushLog(`Active mutators: ${activeMutatorCount()}.`);
     }
-    ensureOnlineRunSessionForCurrentRun(true);
     saveRunSnapshot();
     markUiDirty();
   }
