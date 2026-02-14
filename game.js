@@ -1397,7 +1397,7 @@
 
   function startFreshSessionRun() {
     resetMetaProgressForFreshStart();
-    state.currentRunId = null;
+    state.currentRunId = makeRunId();
     state.currentRunToken = "";
     state.currentRunTokenExpiresAt = 0;
     state.runMaxDepth = 0;
@@ -4426,9 +4426,11 @@
     stopSplashTrack(true);
     state.phase = "playing";
     state.depth = 0;
-    state.currentRunId = makeRunId();
-    state.runMaxDepth = 0;
-    state.runGoldEarned = 0;
+    if (!state.currentRunId) {
+      state.currentRunId = makeRunId();
+      state.runMaxDepth = 0;
+      state.runGoldEarned = 0;
+    }
     state.currentRunToken = "";
     state.currentRunTokenExpiresAt = 0;
     state.turn = 0;
