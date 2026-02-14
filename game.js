@@ -68,6 +68,7 @@
   const MAX_FLOOR_VAR3_PER_MAP = 3;
   const ONLINE_LEADERBOARD_TIMEOUT_MS = 8000;
   const ONLINE_LEADERBOARD_REFRESH_MS = 12000;
+  const ONLINE_RUN_TOKEN_MAX_LEN = 256;
   const ONLINE_LEADERBOARD_API_BASE = (() => {
     const raw = typeof window !== "undefined" ? window.DUNGEON_LEADERBOARD_API : "";
     const normalized = typeof raw === "string" ? raw.trim() : "";
@@ -816,6 +817,14 @@
     return clipped;
   }
 
+  function sanitizeRunToken(value) {
+    const token = String(value || "")
+      .trim()
+      .slice(0, ONLINE_RUN_TOKEN_MAX_LEN);
+    if (!token) return "";
+    return /^[a-zA-Z0-9_-]+$/.test(token) ? token : "";
+  }
+
   function makeRunId() {
     return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
   }
@@ -853,6 +862,7 @@
     return {
       id: String(rawEntry.id || `${ts}-${Math.random().toString(36).slice(2, 8)}`),
       runId: String(rawEntry.runId || rawEntry.id || `${ts}-${Math.random().toString(36).slice(2, 8)}`),
+      runToken: sanitizeRunToken(rawEntry.runToken),
       playerName: sanitizePlayerName(rawEntry.playerName) || "Anonymous",
       ts,
       endedAt: typeof rawEntry.endedAt === "string" ? rawEntry.endedAt : new Date(ts).toISOString(),
@@ -980,6 +990,8 @@
     merchant: null,
     lastExtract: null,
     currentRunId: null,
+    currentRunToken: "",
+    currentRunTokenExpiresAt: 0,
     runLeaderboardSubmitted: false,
     menuIndex: 0,
     hasContinueRun: false,
@@ -1385,7 +1397,9 @@
 
   function startFreshSessionRun() {
     resetMetaProgressForFreshStart();
-    state.currentRunId = makeRunId();
+    state.currentRunId = null;
+    state.currentRunToken = "";
+    state.currentRunTokenExpiresAt = 0;
     state.runMaxDepth = 0;
     state.runGoldEarned = 0;
     state.runLeaderboardSubmitted = false;
@@ -1443,6 +1457,64 @@
       return `${ONLINE_LEADERBOARD_API_BASE}/leaderboard`;
     }
     return `${ONLINE_LEADERBOARD_API_BASE}/api/leaderboard`;
+  }
+
+  function getOnlineLeaderboardStartEndpoint() {
+    const endpoint = getOnlineLeaderboardEndpoint();
+    if (!endpoint) return "";
+    return `${endpoint}/start`;
+  }
+
+  async function requestOnlineRunSession(runId) {
+    const normalizedRunId = String(runId || "").trim();
+    if (!normalizedRunId || !isOnlineLeaderboardEnabled()) return null;
+    const endpoint = getOnlineLeaderboardStartEndpoint();
+    if (!endpoint) return null;
+    const payload = await fetchJsonWithTimeout(endpoint, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json"
+      },
+      body: JSON.stringify({
+        runId: normalizedRunId,
+        season: ONLINE_LEADERBOARD_SEASON,
+        version: GAME_VERSION,
+        game_version: GAME_VERSION
+      })
+    });
+    const returnedRunId = String(payload?.runId || "").trim();
+    const runToken = sanitizeRunToken(payload?.runToken);
+    const expiresAt = Math.max(0, Number(payload?.expiresAt) || 0);
+    if (!returnedRunId || !runToken) return null;
+    return {
+      runId: returnedRunId,
+      runToken,
+      expiresAt
+    };
+  }
+
+  async function ensureOnlineRunSessionForCurrentRun(force = false) {
+    if (!isOnlineLeaderboardEnabled()) return false;
+    const runId = String(state.currentRunId || "").trim();
+    if (!runId) return false;
+    const hasToken = Boolean(state.currentRunToken);
+    const expiresAt = Math.max(0, Number(state.currentRunTokenExpiresAt) || 0);
+    const hasValidToken = hasToken && (expiresAt <= 0 || expiresAt > Date.now() + 60_000);
+    if (!force && hasValidToken) return true;
+    try {
+      const session = await requestOnlineRunSession(runId);
+      if (!session) return false;
+      state.currentRunId = session.runId;
+      state.currentRunToken = session.runToken;
+      state.currentRunTokenExpiresAt = session.expiresAt;
+      if (state.phase === "playing" || state.phase === "relic" || state.phase === "camp") {
+        saveRunSnapshot();
+      }
+      markUiDirty();
+      return true;
+    } catch {
+      return false;
+    }
   }
 
   function getLeaderboardSourceEntries() {
@@ -1544,12 +1616,32 @@
     if (!isOnlineLeaderboardEnabled()) return false;
     const endpoint = getOnlineLeaderboardEndpoint();
     if (!endpoint) return false;
+    const runId = String(entry.runId || "").trim();
+    if (!runId) return false;
+    let runToken = sanitizeRunToken(entry.runToken);
+    if (!runToken && runId === String(state.currentRunId || "").trim()) {
+      const ensured = await ensureOnlineRunSessionForCurrentRun(true);
+      if (ensured) {
+        runToken = sanitizeRunToken(state.currentRunToken);
+      }
+    }
+    if (!runToken) {
+      const session = await requestOnlineRunSession(runId);
+      if (session) {
+        runToken = session.runToken;
+        entry.runToken = runToken;
+      }
+    }
+    if (!runToken) {
+      throw new Error("Missing run authorization.");
+    }
     const payloadVersion =
       typeof entry.version === "string" && entry.version.trim()
         ? entry.version.trim()
         : GAME_VERSION;
     const payload = {
-      runId: entry.runId,
+      runId,
+      runToken,
       playerName: sanitizePlayerName(entry.playerName) || "Anonymous",
       ts: Math.max(0, Number(entry.ts) || Date.now()),
       endedAt: entry.endedAt,
@@ -1590,8 +1682,14 @@
       for (const entry of queueSnapshot) {
         try {
           await submitLeaderboardEntryOnline(entry);
+          persistLeaderboardPending();
           removePendingLeaderboardEntryByRunId(entry.runId);
         } catch (error) {
+          const message = error && error.message ? String(error.message) : "";
+          if (message.toLowerCase().includes("run already finalized")) {
+            removePendingLeaderboardEntryByRunId(entry.runId);
+            continue;
+          }
           state.onlineLeaderboardStatus = "offline";
           state.onlineLeaderboardError =
             error && error.message ? error.message : "Failed to upload pending scores.";
@@ -1712,6 +1810,7 @@
     const entry = {
       id: `${ts}-${Math.random().toString(36).slice(2, 8)}`,
       runId,
+      runToken: sanitizeRunToken(state.currentRunToken),
       playerName: sanitizePlayerName(state.playerName) || "Anonymous",
       ts,
       endedAt: new Date(ts).toISOString(),
@@ -1757,6 +1856,8 @@
     state.runMaxDepth = 0;
     state.runGoldEarned = 0;
     state.currentRunId = null;
+    state.currentRunToken = "";
+    state.currentRunTokenExpiresAt = 0;
     state.runLeaderboardSubmitted = false;
     state.campVisitShopCostMult = 1;
     state.leaderboardModalOpen = false;
@@ -1824,6 +1925,8 @@
       lastExtract: state.lastExtract,
       playerName: state.playerName,
       currentRunId: state.currentRunId,
+      currentRunToken: state.currentRunToken,
+      currentRunTokenExpiresAt: state.currentRunTokenExpiresAt,
       runLeaderboardSubmitted: state.runLeaderboardSubmitted,
       runMods: state.runMods,
       player: state.player,
@@ -1941,6 +2044,8 @@
       : nextPhase === "playing" || nextPhase === "relic"
         ? makeRunId()
         : null;
+    state.currentRunToken = sanitizeRunToken(snapshot.currentRunToken);
+    state.currentRunTokenExpiresAt = Math.max(0, Number(snapshot.currentRunTokenExpiresAt) || 0);
     state.runLeaderboardSubmitted = Boolean(snapshot.runLeaderboardSubmitted);
 
     state.runMods = {
@@ -2065,6 +2170,9 @@
     state.merchantUpgradeBoughtThisRoom = Boolean(snapshot.merchantUpgradeBoughtThisRoom);
 
     state.hasContinueRun = true;
+    if (nextPhase === "playing" || nextPhase === "relic") {
+      ensureOnlineRunSessionForCurrentRun(false);
+    }
     markUiDirty();
     return true;
   }
@@ -4332,11 +4440,11 @@
     stopSplashTrack(true);
     state.phase = "playing";
     state.depth = 0;
-    if (!state.currentRunId) {
-      state.currentRunId = makeRunId();
-      state.runMaxDepth = 0;
-      state.runGoldEarned = 0;
-    }
+    state.currentRunId = makeRunId();
+    state.runMaxDepth = 0;
+    state.runGoldEarned = 0;
+    state.currentRunToken = "";
+    state.currentRunTokenExpiresAt = 0;
     state.turn = 0;
     state.roomIndex = 0;
     state.bossRoom = false;
@@ -4417,6 +4525,7 @@
     if (activeMutatorCount() > 0) {
       pushLog(`Active mutators: ${activeMutatorCount()}.`);
     }
+    ensureOnlineRunSessionForCurrentRun(true);
     saveRunSnapshot();
     markUiDirty();
   }
