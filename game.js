@@ -1618,30 +1618,13 @@
     if (!endpoint) return false;
     const runId = String(entry.runId || "").trim();
     if (!runId) return false;
-    let runToken = sanitizeRunToken(entry.runToken);
-    if (!runToken && runId === String(state.currentRunId || "").trim()) {
-      const ensured = await ensureOnlineRunSessionForCurrentRun(true);
-      if (ensured) {
-        runToken = sanitizeRunToken(state.currentRunToken);
-      }
-    }
-    if (!runToken) {
-      const session = await requestOnlineRunSession(runId);
-      if (session) {
-        runToken = session.runToken;
-        entry.runToken = runToken;
-      }
-    }
-    if (!runToken) {
-      throw new Error("Missing run authorization.");
-    }
+    const runToken = sanitizeRunToken(entry.runToken);
     const payloadVersion =
       typeof entry.version === "string" && entry.version.trim()
         ? entry.version.trim()
         : GAME_VERSION;
     const payload = {
       runId,
-      runToken,
       playerName: sanitizePlayerName(entry.playerName) || "Anonymous",
       ts: Math.max(0, Number(entry.ts) || Date.now()),
       endedAt: entry.endedAt,
@@ -1655,6 +1638,9 @@
       game_version: payloadVersion,
       season: normalizeSeasonId(entry.season || ONLINE_LEADERBOARD_SEASON)
     };
+    if (runToken) {
+      payload.runToken = runToken;
+    }
     await fetchJsonWithTimeout(endpoint, {
       method: "POST",
       headers: {
