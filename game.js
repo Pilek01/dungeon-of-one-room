@@ -676,6 +676,10 @@
   }
 
   const TWEEN_MS = 120;
+  const ENTITY_HIT_FLASH_MS = 120;
+  const CRIT_HIT_FLASH_MS = 210;
+  const PORTAL_RING_PULSE_MS = 1200;
+  const ENEMY_TURN_STEP_DELAY_MS = 77;
 
   function startTween(entity) {
     entity._tweenFromX = entity.x * TILE;
@@ -984,6 +988,11 @@
     roomIntroDuration: 0,
     roomIntroTitle: "",
     roomIntroSubtitle: "",
+    turnInProgress: false,
+    enemyTurnInProgress: false,
+    enemyTurnQueue: [],
+    enemyTurnStepTimer: 0,
+    enemyTurnStepIndex: 0,
     extractConfirm: null,
     extractRelicPrompt: null,
     finalGameOverPrompt: null,
@@ -1060,6 +1069,7 @@
       chaosAtkTurns: 0,
       chaosKillHeal: 0,
       chaosRollCounter: 0,
+      hitFlash: 0,
       autoPotionCooldown: 0,
       furyBlessingTurns: 0
     },
@@ -1072,6 +1082,7 @@
     shockwaveRings: [],
     dashTrails: [],
     particles: [],
+    floatingTexts: [],
     log: []
   };
 
@@ -1131,6 +1142,10 @@
 
   function isDebugGodModeActive() {
     return canUseDebugCheats() && state.debugGodMode;
+  }
+
+  function isTurnInputLocked() {
+    return state.phase === "playing" && (state.turnInProgress || state.enemyTurnInProgress);
   }
 
   function toggleDebugCheatMenu(forceOpen = null) {
@@ -2164,6 +2179,7 @@
         0,
         CHAOS_ORB_ROLL_INTERVAL - 1
       ),
+      hitFlash: Math.max(0, Number(snapshot.player.hitFlash) || 0),
       autoPotionCooldown: Math.max(0, Number(snapshot.player.autoPotionCooldown) || 0),
       furyBlessingTurns: Math.max(0, Number(snapshot.player.furyBlessingTurns) || 0)
     };
@@ -2189,6 +2205,7 @@
       enemy.castFlash = 0;
       enemy.frozenThisTurn = Boolean(enemy.frozenThisTurn);
       enemy.frostFx = Math.max(0, Number(enemy.frostFx) || 0);
+      enemy.hitFlash = Math.max(0, Number(enemy.hitFlash) || 0);
       enemy.maxHp = Number(enemy.maxHp) || Number(enemy.hp) || 1;
       if (!enemy.facing) enemy.facing = "south";
       snapVisual(enemy);
@@ -2204,7 +2221,13 @@
     state.roomIntroDuration = 0;
     state.roomIntroTitle = "";
     state.roomIntroSubtitle = "";
+    state.turnInProgress = false;
+    state.enemyTurnInProgress = false;
+    state.enemyTurnQueue = [];
+    state.enemyTurnStepTimer = 0;
+    state.enemyTurnStepIndex = 0;
     state.particles = [];
+    state.floatingTexts = [];
     state.log = Array.isArray(snapshot.log) ? snapshot.log.slice(0, 8) : [];
     normalizeRelicInventory();
 
@@ -2615,6 +2638,25 @@
         endFrequency: 120,
         duration: 0.06,
         type: "square",
+        gain: 0.06
+      });
+      return;
+    }
+    if (kind === "crit") {
+      playTone(ctx, out, {
+        at: now,
+        frequency: 280,
+        endFrequency: 520,
+        duration: 0.08,
+        type: "square",
+        gain: 0.07
+      });
+      playTone(ctx, out, {
+        at: now + 0.06,
+        frequency: 620,
+        endFrequency: 880,
+        duration: 0.1,
+        type: "triangle",
         gain: 0.06
       });
       return;
@@ -3941,6 +3983,8 @@
     ) {
       const reflectDamage = Math.max(MIN_EFFECTIVE_DAMAGE, Math.round(Math.max(MIN_EFFECTIVE_DAMAGE, blockedDamage) * 2));
       attacker.hp -= reflectDamage;
+      triggerEnemyHitFlash(attacker);
+      spawnFloatingText(attacker.x, attacker.y, `-${reflectDamage}`, "#e6f2ff");
       spawnParticles(attacker.x, attacker.y, "#b7d8ff", 9, 1.1);
       pushLog(`Shield reflects ${reflectDamage} to ${attacker.name}.`, "good");
       if (attacker.hp <= 0) {
@@ -3963,6 +4007,7 @@
     state.potionsUsedThisRun = (state.potionsUsedThisRun || 0) + 1;
     const heal = getPotionHealAmount();
     state.player.hp = Math.min(state.player.maxHp, state.player.hp + heal);
+    spawnFloatingText(state.player.x, state.player.y, `+${heal}`, "#9ff7a9");
     spawnParticles(state.player.x, state.player.y, "#8ce1a7", 12, 1.1);
     pushLog(
       `Auto Potion (${triggerLabel}): +${heal} HP (CD ${AUTO_POTION_INTERNAL_COOLDOWN_TURNS} turns).`,
@@ -4320,6 +4365,7 @@
     enemy.castFlash = 0;
     enemy.frozenThisTurn = false;
     enemy.frostFx = 0;
+    enemy.hitFlash = 0;
     enemy.facing = "south";
     snapVisual(enemy);
 
@@ -4478,6 +4524,7 @@
     state.rangedImpacts = [];
     state.shockwaveRings = [];
     state.dashTrails = [];
+    state.floatingTexts = [];
 
     if (state.bossRoom) {
       buildBossRoom(occupied);
@@ -4518,7 +4565,13 @@
     state.roomType = "combat";
     state.shake = 0;
     state.flash = 0;
+    state.turnInProgress = false;
+    state.enemyTurnInProgress = false;
+    state.enemyTurnQueue = [];
+    state.enemyTurnStepTimer = 0;
+    state.enemyTurnStepIndex = 0;
     state.particles = [];
+    state.floatingTexts = [];
     state.rangedBolts = [];
     state.rangedImpacts = [];
     state.shockwaveRings = [];
@@ -4567,6 +4620,7 @@
     state.player.chaosAtkTurns = 0;
     state.player.chaosKillHeal = 0;
     state.player.chaosRollCounter = 0;
+    state.player.hitFlash = 0;
     state.player.autoPotionCooldown = 0;
     state.player.furyBlessingTurns = 0;
     state.skillCooldowns = sanitizeSkillCooldowns({});
@@ -4607,6 +4661,11 @@
     }
     recordRunOnLeaderboard("death");
     state.phase = "dead";
+    state.turnInProgress = false;
+    state.enemyTurnInProgress = false;
+    state.enemyTurnQueue = [];
+    state.enemyTurnStepTimer = 0;
+    state.enemyTurnStepIndex = 0;
     state.extractConfirm = null;
     state.merchantMenuOpen = false;
     syncBgmWithState();
@@ -4731,6 +4790,8 @@
         pushLog("Shrine curse ignored (God Mode).", "warn");
       } else {
         state.player.hp -= scaledCombat(2);
+        triggerPlayerHitFlash();
+        spawnFloatingText(state.player.x, state.player.y, `-${scaledCombat(2)}`, "#ff7676");
         pushLog("Shrine curse: -20 HP.", "bad");
         tryAutoPotion("shrine curse");
         if (state.player.hp <= 0) {
@@ -4835,6 +4896,15 @@
     state.shake = Math.max(state.shake, amount);
   }
 
+  function triggerEnemyHitFlash(enemy, duration = ENTITY_HIT_FLASH_MS) {
+    if (!enemy) return;
+    enemy.hitFlash = Math.max(Number(enemy.hitFlash) || 0, duration);
+  }
+
+  function triggerPlayerHitFlash(duration = ENTITY_HIT_FLASH_MS) {
+    state.player.hitFlash = Math.max(Number(state.player.hitFlash) || 0, duration);
+  }
+
   function removeEnemy(enemy) {
     state.enemies = state.enemies.filter((item) => item !== enemy);
   }
@@ -4865,6 +4935,7 @@
     if (hasRelic("chaosorb") && (state.player.chaosKillHeal || 0) > 0) {
       const healAmount = Math.max(MIN_EFFECTIVE_DAMAGE, state.player.chaosKillHeal);
       state.player.hp = Math.min(state.player.maxHp, state.player.hp + healAmount);
+      spawnFloatingText(state.player.x, state.player.y, `+${healAmount}`, "#9ff7a9");
       spawnParticles(state.player.x, state.player.y, "#8ce1a7", 6, 0.95);
       pushLog(`Chaos: kill heal +${healAmount} HP.`, "good");
     }
@@ -4874,6 +4945,7 @@
       state.player.vampFangKills = (state.player.vampFangKills || 0) + 1;
       if (state.player.vampFangKills % 3 === 0) {
         state.player.hp = Math.min(state.player.maxHp, state.player.hp + scaledCombat(1));
+        spawnFloatingText(state.player.x, state.player.y, `+${scaledCombat(1)}`, "#9ff7a9");
         spawnParticles(enemy.x, enemy.y, "#ff5555", 6, 1.0);
         pushLog("Vampiric Fang: +10 HP.", "good");
       }
@@ -4998,6 +5070,8 @@
     const reducedByArmor = Math.max(MIN_EFFECTIVE_DAMAGE, incomingDamage - state.player.armor);
     const reduced = Math.max(minDamageFromCap, reducedByArmor);
     state.player.hp -= reduced;
+    triggerPlayerHitFlash();
+    spawnFloatingText(state.player.x, state.player.y, `-${reduced}`, "#ff7676");
     state.flash = 90;
     setShake(2.8);
     spawnParticles(state.player.x, state.player.y, "#ff8e83", 8, 1.35);
@@ -5026,6 +5100,8 @@
       return;
     }
     state.player.hp -= scaledCombat(1);
+    triggerPlayerHitFlash();
+    spawnFloatingText(state.player.x, state.player.y, `-${scaledCombat(1)}`, "#ff7676");
     state.flash = 60;
     setShake(1.6);
     spawnParticles(state.player.x, state.player.y, "#d86b6b", 6, 1.1);
@@ -5049,6 +5125,8 @@
   function applySpikeToEnemy(enemy) {
     if (!isSpikeAt(enemy.x, enemy.y)) return false;
     enemy.hp -= scaledCombat(1);
+    triggerEnemyHitFlash(enemy);
+    spawnFloatingText(enemy.x, enemy.y, `-${scaledCombat(1)}`, "#ffffff");
     spawnParticles(enemy.x, enemy.y, "#d27272", 5, 0.9);
     if (enemy.hp <= 0) {
       removeEnemy(enemy);
@@ -5105,6 +5183,8 @@
         pushLog("Chest trap ignored (God Mode).", "warn");
       } else {
         state.player.hp -= scaledCombat(3);
+        triggerPlayerHitFlash();
+        spawnFloatingText(state.player.x, state.player.y, `-${scaledCombat(3)}`, "#ff7676");
         pushLog(`Chest trap! You take ${scaledCombat(3)}.`, "bad");
         tryAutoPotion("chest trap");
         if (state.player.hp <= 0) {
@@ -5279,6 +5359,8 @@
       const enemy = getEnemyAt(step.x, step.y);
       if (enemy && state.enemies.includes(enemy) && !hitSet.has(enemy)) {
         enemy.hp -= damage;
+        triggerEnemyHitFlash(enemy);
+        spawnFloatingText(enemy.x, enemy.y, `-${damage}`, "#f4f7ff");
         spawnParticles(enemy.x, enemy.y, "#8ee9ff", 11, 1.3);
         hitSet.add(enemy);
         if (enemy.hp <= 0) {
@@ -5312,6 +5394,8 @@
         if (hitSet.has(enemy)) continue;
         if (Math.abs(enemy.x - state.player.x) > 1 || Math.abs(enemy.y - state.player.y) > 1) continue;
         enemy.hp -= splashDamage;
+        triggerEnemyHitFlash(enemy);
+        spawnFloatingText(enemy.x, enemy.y, `-${splashDamage}`, "#dff0ff");
         splashHits += 1;
         spawnParticles(enemy.x, enemy.y, "#7fc9ff", 8, 1.2);
         if (enemy.hp <= 0) {
@@ -5377,6 +5461,8 @@
     for (const enemy of targets) {
       if (!state.enemies.includes(enemy)) continue;
       enemy.hp -= damage;
+      triggerEnemyHitFlash(enemy);
+      spawnFloatingText(enemy.x, enemy.y, `-${damage}`, "#ffe7c8");
       spawnParticles(enemy.x, enemy.y, "#ffd8a1", 8, 1.25);
       if (enemy.hp <= 0) {
         killEnemy(enemy, "shockwave");
@@ -5476,9 +5562,17 @@
     const critical = chance(state.player.crit);
     let damage = critical ? base * 2 : base;
     enemy.hp -= damage;
-    playSfx("hit");
+    triggerEnemyHitFlash(enemy, critical ? CRIT_HIT_FLASH_MS : ENTITY_HIT_FLASH_MS);
+    spawnFloatingText(
+      enemy.x,
+      enemy.y,
+      critical ? `CRIT ${damage}` : `-${damage}`,
+      critical ? "#fff27d" : "#ffd4c8",
+      critical ? { life: 680, size: 9 } : {}
+    );
+    playSfx(critical ? "crit" : "hit");
     spawnParticles(enemy.x, enemy.y, critical ? "#ffe694" : "#ff9d8d", critical ? 12 : 8, 1.35);
-    setShake(2.1);
+    setShake(critical ? 3.1 : 2.1);
     pushLog(
       `You hit ${enemy.name} for ${damage}${critical ? " (CRIT)" : ""}.`,
       critical ? "good" : ""
@@ -5513,6 +5607,8 @@
     if (hasRelic("echostrike") && state.enemies.includes(enemy) && enemy.hp > 0 && chance(0.3)) {
       const echoDmg = Math.max(MIN_EFFECTIVE_DAMAGE, state.player.attack);
       enemy.hp -= echoDmg;
+      triggerEnemyHitFlash(enemy);
+      spawnFloatingText(enemy.x, enemy.y, `-${echoDmg}`, "#bde3ff");
       spawnParticles(enemy.x, enemy.y, "#9fdcff", 8, 1.2);
       pushLog(`Echo Strike! Extra ${echoDmg} damage.`, "good");
       if (enemy.hp <= 0) {
@@ -5594,6 +5690,8 @@
     // Thorn Mail: reflect 10 dmg to melee attackers
     if (hasRelic("thornmail") && state.phase === "playing" && state.enemies.includes(enemy)) {
       enemy.hp -= scaledCombat(1);
+      triggerEnemyHitFlash(enemy);
+      spawnFloatingText(enemy.x, enemy.y, `-${scaledCombat(1)}`, "#ffc8c8");
       spawnParticles(enemy.x, enemy.y, "#d86b6b", 5, 0.9);
       pushLog(`Thorn Mail reflects ${scaledCombat(1)} to ${enemy.name}.`, "good");
       if (enemy.hp <= 0) {
@@ -5615,134 +5713,224 @@
     spawnParticles(state.player.x, state.player.y, boltColor, 7, 1.35);
   }
 
-  function enemyTurn() {
+  function processSingleEnemyTurn(enemy) {
     if (state.phase !== "playing") return;
-    const order = [...state.enemies];
-    for (const enemy of order) {
-      if (state.phase !== "playing") return;
-      if (!state.enemies.includes(enemy)) continue;
+    if (!state.enemies.includes(enemy)) return;
 
-      // Frost Amulet: skip frozen enemies
-      if (enemy.frozenThisTurn) {
-        if (isFrostImmuneEnemy(enemy)) {
-          enemy.frozenThisTurn = false;
-          enemy.frostFx = 0;
-        } else {
-          enemy.frozenThisTurn = false;
-          enemy.frostFx = Math.max(enemy.frostFx || 0, 820);
-          spawnParticles(enemy.x, enemy.y, "#cde9ff", 4, 0.55);
-          continue;
-        }
+    // Frost Amulet: skip frozen enemies
+    if (enemy.frozenThisTurn) {
+      if (isFrostImmuneEnemy(enemy)) {
+        enemy.frozenThisTurn = false;
+        enemy.frostFx = 0;
+      } else {
+        enemy.frozenThisTurn = false;
+        enemy.frostFx = Math.max(enemy.frostFx || 0, 820);
+        spawnParticles(enemy.x, enemy.y, "#cde9ff", 4, 0.55);
+        return;
       }
+    }
 
-      if (enemy.type === "brute") {
-        enemy.rests = !enemy.rests;
-        if (enemy.rests) {
-          continue;
-        }
+    if (enemy.type === "brute") {
+      enemy.rests = !enemy.rests;
+      if (enemy.rests) {
+        return;
       }
+    }
 
-      const distance = manhattan(enemy.x, enemy.y, state.player.x, state.player.y);
-      const lineDistance = Math.abs(enemy.x - state.player.x) + Math.abs(enemy.y - state.player.y);
+    const distance = manhattan(enemy.x, enemy.y, state.player.x, state.player.y);
+    const lineDistance = Math.abs(enemy.x - state.player.x) + Math.abs(enemy.y - state.player.y);
 
-      if (enemy.type === "warden") {
-        if (enemy.cooldown > 0) {
-          enemy.cooldown -= 1;
-        }
-        const canBlast =
-          hasLineOfSight(enemy) && lineDistance <= enemy.range && enemy.cooldown === 0 && distance > 1;
-        if (canBlast) {
+    if (enemy.type === "warden") {
+      if (enemy.cooldown > 0) {
+        enemy.cooldown -= 1;
+      }
+      const canBlast =
+        hasLineOfSight(enemy) && lineDistance <= enemy.range && enemy.cooldown === 0 && distance > 1;
+      if (canBlast) {
+        enemy.facing = getFacingFromDelta(state.player.x - enemy.x, state.player.y - enemy.y, enemy.facing);
+        enemyRanged(enemy);
+        enemy.cooldown = 2;
+        pushLog("Warden casts a pulse blast.", "bad");
+        return;
+      }
+    }
+
+    if (enemy.type === "skeleton" && enemy.cooldown > 0) {
+      enemy.cooldown -= 1;
+    }
+    if (enemy.type === "skeleton") {
+      const canLineShot = hasLineOfSight(enemy) && lineDistance >= 2 && lineDistance <= enemy.range;
+      if (enemy.aiming) {
+        if (canLineShot) {
           enemy.facing = getFacingFromDelta(state.player.x - enemy.x, state.player.y - enemy.y, enemy.facing);
           enemyRanged(enemy);
           enemy.cooldown = 2;
-          pushLog("Warden casts a pulse blast.", "bad");
-          if (state.phase !== "playing") return;
-          continue;
+          return;
         }
+        enemy.aiming = false;
       }
-
-      if (enemy.type === "skeleton" && enemy.cooldown > 0) {
-        enemy.cooldown -= 1;
-      }
-      if (enemy.type === "skeleton") {
-        const canLineShot = hasLineOfSight(enemy) && lineDistance >= 2 && lineDistance <= enemy.range;
-        if (enemy.aiming) {
-          if (canLineShot) {
-            enemy.facing = getFacingFromDelta(state.player.x - enemy.x, state.player.y - enemy.y, enemy.facing);
-            enemyRanged(enemy);
-            enemy.cooldown = 2;
-            if (state.phase !== "playing") return;
-            continue;
-          }
-          enemy.aiming = false;
-        }
-        if (canLineShot && enemy.cooldown === 0) {
-          if (isEpicShieldReflectActive()) {
-            enemy.facing = getFacingFromDelta(state.player.x - enemy.x, state.player.y - enemy.y, enemy.facing);
-            enemyRanged(enemy);
-            enemy.cooldown = 2;
-            if (state.phase !== "playing") return;
-            continue;
-          }
-          enemy.aiming = true;
-          pushLog("Skeleton lines up a shot.", "bad");
-          continue;
-        }
-      }
-
-      if (distance === 1) {
-        enemy.facing = getFacingFromDelta(state.player.x - enemy.x, state.player.y - enemy.y, enemy.facing);
-        enemyMelee(enemy);
-        if (state.phase !== "playing") return;
-        continue;
-      }
-
-      const step = stepToward(enemy, state.player.x, state.player.y);
-      if (!step) {
-        continue;
-      }
-      const oldX = enemy.x;
-      const oldY = enemy.y;
-      startTween(enemy);
-      enemy.x = step.x;
-      enemy.y = step.y;
-      enemy.facing = getFacingFromDelta(step.x - oldX, step.y - oldY, enemy.facing);
-      if (applySpikeToEnemy(enemy)) {
-        continue;
-      }
-
-      // Fast affix or Haste mutator double move
-      const hasDoubleMove = enemy.affix === "fast" ||
-        (state.runMods.enemyDoubleMoveChance > 0 && chance(state.runMods.enemyDoubleMoveChance));
-      if (hasDoubleMove && state.phase === "playing" && state.enemies.includes(enemy)) {
-        const bonusDistance = manhattan(enemy.x, enemy.y, state.player.x, state.player.y);
-        if (bonusDistance > 1) {
-          const bonusStep = stepToward(enemy, state.player.x, state.player.y);
-          if (bonusStep) {
-            const bonusOldX = enemy.x;
-            const bonusOldY = enemy.y;
-            startTween(enemy);
-            enemy.x = bonusStep.x;
-            enemy.y = bonusStep.y;
-            enemy.facing = getFacingFromDelta(bonusStep.x - bonusOldX, bonusStep.y - bonusOldY, enemy.facing);
-            if (applySpikeToEnemy(enemy)) {
-              continue;
-            }
-          }
-        }
-      }
-
-      // Epic Shield provokes nearby enemies into melee to make reflect reliable.
-      if (isEpicShieldReflectActive() && state.phase === "playing" && state.enemies.includes(enemy)) {
-        const postMoveDistance = manhattan(enemy.x, enemy.y, state.player.x, state.player.y);
-        if (postMoveDistance === 1) {
+      if (canLineShot && enemy.cooldown === 0) {
+        if (isEpicShieldReflectActive()) {
           enemy.facing = getFacingFromDelta(state.player.x - enemy.x, state.player.y - enemy.y, enemy.facing);
-          enemyMelee(enemy);
-          if (state.phase !== "playing") return;
-          continue;
+          enemyRanged(enemy);
+          enemy.cooldown = 2;
+          return;
+        }
+        enemy.aiming = true;
+        pushLog("Skeleton lines up a shot.", "bad");
+        return;
+      }
+    }
+
+    if (distance === 1) {
+      enemy.facing = getFacingFromDelta(state.player.x - enemy.x, state.player.y - enemy.y, enemy.facing);
+      enemyMelee(enemy);
+      return;
+    }
+
+    const step = stepToward(enemy, state.player.x, state.player.y);
+    if (!step) {
+      return;
+    }
+    const oldX = enemy.x;
+    const oldY = enemy.y;
+    startTween(enemy);
+    enemy.x = step.x;
+    enemy.y = step.y;
+    enemy.facing = getFacingFromDelta(step.x - oldX, step.y - oldY, enemy.facing);
+    if (applySpikeToEnemy(enemy)) {
+      return;
+    }
+
+    // Fast affix or Haste mutator double move
+    const hasDoubleMove = enemy.affix === "fast" ||
+      (state.runMods.enemyDoubleMoveChance > 0 && chance(state.runMods.enemyDoubleMoveChance));
+    if (hasDoubleMove && state.phase === "playing" && state.enemies.includes(enemy)) {
+      const bonusDistance = manhattan(enemy.x, enemy.y, state.player.x, state.player.y);
+      if (bonusDistance > 1) {
+        const bonusStep = stepToward(enemy, state.player.x, state.player.y);
+        if (bonusStep) {
+          const bonusOldX = enemy.x;
+          const bonusOldY = enemy.y;
+          startTween(enemy);
+          enemy.x = bonusStep.x;
+          enemy.y = bonusStep.y;
+          enemy.facing = getFacingFromDelta(bonusStep.x - bonusOldX, bonusStep.y - bonusOldY, enemy.facing);
+          if (applySpikeToEnemy(enemy)) {
+            return;
+          }
         }
       }
     }
+
+    // Epic Shield provokes nearby enemies into melee to make reflect reliable.
+    if (isEpicShieldReflectActive() && state.phase === "playing" && state.enemies.includes(enemy)) {
+      const postMoveDistance = manhattan(enemy.x, enemy.y, state.player.x, state.player.y);
+      if (postMoveDistance === 1) {
+        enemy.facing = getFacingFromDelta(state.player.x - enemy.x, state.player.y - enemy.y, enemy.facing);
+        enemyMelee(enemy);
+      }
+    }
+  }
+
+  function clearEnemyTurnSequence() {
+    state.enemyTurnInProgress = false;
+    state.enemyTurnQueue = [];
+    state.enemyTurnStepTimer = 0;
+    state.enemyTurnStepIndex = 0;
+  }
+
+  function finishTurnAfterEnemySequence() {
+    clearEnemyTurnSequence();
+    if (state.phase !== "playing") {
+      state.turnInProgress = false;
+      markUiDirty();
+      return;
+    }
+
+    // Burning Blade: tick burn damage on enemies
+    tickBurningEnemies();
+    if (state.phase !== "playing") {
+      state.turnInProgress = false;
+      markUiDirty();
+      return;
+    }
+
+    checkRoomClearBonus();
+    if (state.phase !== "playing") {
+      state.turnInProgress = false;
+      markUiDirty();
+      return;
+    }
+
+    // Chaos Orb: rolls a random effect every 10 turns.
+    tickChaosOrb();
+
+    // Phase Cloak cooldown
+    if (hasRelic("phasecloak") && state.player.phaseCooldown > 0) {
+      state.player.phaseCooldown -= 1;
+    }
+
+    tickSkillCooldowns();
+    tickAutoPotionCooldown();
+    tickFuryBlessing();
+    tickBarrier();
+    saveMetaProgress();
+    saveRunSnapshot();
+    state.turnInProgress = false;
+    markUiDirty();
+  }
+
+  function startEnemyTurnSequence() {
+    if (state.phase !== "playing") {
+      state.turnInProgress = false;
+      return;
+    }
+    state.enemyTurnQueue = [...state.enemies];
+    state.enemyTurnStepIndex = 0;
+    state.enemyTurnStepTimer = ENEMY_TURN_STEP_DELAY_MS;
+    state.enemyTurnInProgress = true;
+    if (state.enemyTurnQueue.length <= 0) {
+      finishTurnAfterEnemySequence();
+      return;
+    }
+    markUiDirty();
+  }
+
+  function updateEnemyTurnSequence(dt) {
+    if (!state.enemyTurnInProgress) return;
+    if (state.phase !== "playing") {
+      clearEnemyTurnSequence();
+      state.turnInProgress = false;
+      return;
+    }
+
+    state.enemyTurnStepTimer -= dt;
+    if (state.enemyTurnStepTimer > 0) return;
+    state.enemyTurnStepTimer = ENEMY_TURN_STEP_DELAY_MS;
+
+    const enemy = state.enemyTurnQueue.shift();
+    if (!enemy) {
+      finishTurnAfterEnemySequence();
+      return;
+    }
+    state.enemyTurnStepIndex += 1;
+    processSingleEnemyTurn(enemy);
+    if (state.phase !== "playing") {
+      clearEnemyTurnSequence();
+      state.turnInProgress = false;
+      markUiDirty();
+      return;
+    }
+    if (state.enemyTurnQueue.length <= 0) {
+      finishTurnAfterEnemySequence();
+    } else {
+      markUiDirty();
+    }
+  }
+
+  function enemyTurn() {
+    startEnemyTurnSequence();
   }
 
   function tickBurningEnemies() {
@@ -5752,6 +5940,8 @@
       if ((enemy.burnTurns || 0) > 0) {
         enemy.burnTurns -= 1;
         enemy.hp -= scaledCombat(1);
+        triggerEnemyHitFlash(enemy);
+        spawnFloatingText(enemy.x, enemy.y, `-${scaledCombat(1)}`, "#ffb17f", { life: 420, size: 7 });
         spawnParticles(enemy.x, enemy.y, "#ff6a35", 4, 0.8);
         if (enemy.hp <= 0) {
           killEnemy(enemy, "burn");
@@ -5841,6 +6031,8 @@
       }
       const target = state.enemies[randInt(0, state.enemies.length - 1)];
       target.hp -= CHAOS_ORB_ENEMY_DAMAGE;
+      triggerEnemyHitFlash(target);
+      spawnFloatingText(target.x, target.y, `-${CHAOS_ORB_ENEMY_DAMAGE}`, "#ffd6f8", { life: 700, size: 9 });
       spawnParticles(target.x, target.y, "#ff8c8c", 10, 1.35);
       pushLog(`Chaos roll [4]: ${target.name} takes ${CHAOS_ORB_ENEMY_DAMAGE} chaos damage.`, "good");
       if (target.hp <= 0) {
@@ -5884,42 +6076,31 @@
 
   function finalizeTurn() {
     if (state.phase !== "playing") return;
+    if (state.turnInProgress) return;
+    state.turnInProgress = true;
     state.turn += 1;
 
     // Magnetic Shard: auto-loot adjacent chests
     tickMagneticShard();
-    if (state.phase !== "playing") return;
+    if (state.phase !== "playing") {
+      state.turnInProgress = false;
+      return;
+    }
 
     applySpikeToPlayer();
-    if (state.phase !== "playing") return;
+    if (state.phase !== "playing") {
+      state.turnInProgress = false;
+      return;
+    }
 
     // Frost Amulet: freeze nearby enemies before their turn
     tickFrostAmulet();
 
     enemyTurn();
-    if (state.phase !== "playing") return;
-
-    // Burning Blade: tick burn damage on enemies
-    tickBurningEnemies();
-    if (state.phase !== "playing") return;
-
-    checkRoomClearBonus();
-    if (state.phase !== "playing") return;
-
-    // Chaos Orb: rolls a random effect every 10 turns.
-    tickChaosOrb();
-
-    // Phase Cloak cooldown
-    if (hasRelic("phasecloak") && state.player.phaseCooldown > 0) {
-      state.player.phaseCooldown -= 1;
+    if (state.phase !== "playing") {
+      state.turnInProgress = false;
+      return;
     }
-
-    tickSkillCooldowns();
-    tickAutoPotionCooldown();
-    tickFuryBlessing();
-    tickBarrier();
-    saveMetaProgress();
-    saveRunSnapshot();
     markUiDirty();
   }
 
@@ -5972,6 +6153,7 @@
     state.potionsUsedThisRun = (state.potionsUsedThisRun || 0) + 1;
     const heal = getPotionHealAmount();
     state.player.hp = Math.min(state.player.maxHp, state.player.hp + heal);
+    spawnFloatingText(state.player.x, state.player.y, `+${heal}`, "#9ff7a9");
     spawnParticles(state.player.x, state.player.y, "#8ce1a7", 10, 1.05);
     pushLog(`Potion used. +${heal} HP.`, "good");
     markUiDirty();
@@ -6065,6 +6247,7 @@
       `<div class="statline"><span>Camp Gold</span><strong>${state.campGold}</strong></div>`,
       `<div class="statline"><span>Enemies</span><strong>${state.enemies.length}</strong></div>`,
       `<div class="statline"><span>Turn</span><strong>${state.turn}</strong></div>`,
+      `<div class="statline"><span>Order</span><strong>${state.enemyTurnInProgress ? "ENEMY TURN" : "YOU -> ENEMY"}</strong></div>`,
       `<div class="statline"><span>Fury</span><strong>${getEffectiveAdrenaline()}/${getEffectiveMaxAdrenaline()}</strong></div>`,
       hasRelic("chaosorb")
         ? `<div class="statline"><span>Chaos Roll</span><strong>${chaosTurnsLeft}T</strong></div>`
@@ -6268,6 +6451,13 @@
     }
     if (state.phase === "playing" && state.dashAimActive) {
       actionsEl.textContent = "Dash armed: choose direction (WASD/Arrows), Esc to cancel.";
+      return;
+    }
+    if (state.phase === "playing" && isTurnInputLocked()) {
+      const remaining = Math.max(0, (state.enemyTurnQueue || []).length);
+      actionsEl.textContent = remaining > 0
+        ? `Enemy turn... ${remaining} enemies acting.`
+        : "Resolving turn...";
       return;
     }
     if (state.phase === "playing" && hoveredEnemy && state.enemies.includes(hoveredEnemy)) {
@@ -6836,6 +7026,24 @@
     }
   }
 
+  function spawnFloatingText(tileX, tileY, text, color = "#ffffff", options = {}) {
+    if (!text) return;
+    const centerX = tileX * TILE + TILE / 2;
+    const centerY = tileY * TILE + TILE / 2;
+    const life = Math.max(220, Number(options.life) || 520);
+    state.floatingTexts.push({
+      x: centerX + (Number(options.offsetX) || 0),
+      y: centerY - 2 + (Number(options.offsetY) || 0),
+      vx: Number(options.vx) || (Math.random() - 0.5) * 0.05,
+      vy: Number(options.vy) || -0.07,
+      life,
+      maxLife: life,
+      text: String(text),
+      color,
+      size: Math.max(10, Math.min(14, Number(options.size) || 11))
+    });
+  }
+
   function drawTilesetTile(tileId, px, py) {
     if (!tilesetSprite.ready || !tilesetSprite.img) return false;
     const sx = (tileId % TILESET_COLUMNS) * TILESET_TILE_SIZE;
@@ -6885,6 +7093,18 @@
     if (!state.roomCleared) return;
     const px = state.portal.x * TILE;
     const py = state.portal.y * TILE;
+    const pulse = (Math.sin((state.playerAnimTimer / PORTAL_RING_PULSE_MS) * Math.PI * 2) + 1) * 0.5;
+    const ringAlpha = 0.2 + pulse * 0.35;
+    ctx.save();
+    ctx.globalAlpha = ringAlpha;
+    ctx.strokeStyle = "#9deaff";
+    ctx.lineWidth = 1;
+    ctx.strokeRect(px + 1, py + 1, TILE - 2, TILE - 2);
+    ctx.globalAlpha = 0.1 + pulse * 0.2;
+    ctx.fillStyle = "#49c9f7";
+    ctx.fillRect(px + 2, py + 2, TILE - 4, TILE - 4);
+    ctx.restore();
+
     if (portalSprite.readyCount > 0 && portalSprite.frames.length > 0) {
       const drawSize = Math.round(TILE * PORTAL_DRAW_SCALE);
       const drawX = Math.round(px + (TILE - drawSize) / 2);
@@ -6905,13 +7125,13 @@
       }
       if (frame) return;
     }
-    const pulse = (Math.sin(state.portalPulse) + 1) * 0.5;
+    const idlePulse = (Math.sin(state.portalPulse) + 1) * 0.5;
     const lockedColor = state.enemies.length > 0 ? "#8b5d5d" : COLORS.portalGlow;
     ctx.fillStyle = lockedColor;
     ctx.fillRect(px + 3, py + 3, 10, 10);
     ctx.fillStyle = COLORS.portalCore;
     ctx.fillRect(px + 5, py + 5, 6, 6);
-    const edge = pulse > 0.5 ? 2 : 1;
+    const edge = idlePulse > 0.5 ? 2 : 1;
     ctx.fillStyle = "#b2f5ff";
     ctx.fillRect(px + edge, py + edge, TILE - edge * 2, 1);
     ctx.fillRect(px + edge, py + TILE - edge - 1, TILE - edge * 2, 1);
@@ -7209,6 +7429,18 @@
       drawSlime(enemy);
     }
 
+    if ((enemy.hitFlash || 0) > 0) {
+      const px = visualX(enemy);
+      const py = visualY(enemy);
+      const alpha = clamp((enemy.hitFlash || 0) / ENTITY_HIT_FLASH_MS, 0, 1);
+      ctx.save();
+      ctx.globalCompositeOperation = "screen";
+      ctx.globalAlpha = 0.18 + alpha * 0.62;
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(px - 1, py - 2, TILE + 2, TILE + 4);
+      ctx.restore();
+    }
+
     if (enemy.elite) {
       const px = visualX(enemy);
       const py = visualY(enemy);
@@ -7343,7 +7575,8 @@
   }
 
   function drawPlayerFallback(px, py) {
-    const color = state.flash > 0 ? COLORS.playerHit : COLORS.player;
+    const hitAlpha = clamp((state.player.hitFlash || 0) / ENTITY_HIT_FLASH_MS, 0, 1);
+    const color = hitAlpha > 0 ? COLORS.playerHit : COLORS.player;
     ctx.fillStyle = color;
     ctx.fillRect(px + 5, py + 4, 6, 8);
     ctx.fillStyle = COLORS.playerCape;
@@ -7386,8 +7619,9 @@
     const drawY = Math.round(py + TILE - drawH);
     ctx.drawImage(img, clip.x, clip.y, clip.w, clip.h, drawX, drawY, drawW, drawH);
 
-    if (state.flash > 0) {
-      ctx.globalAlpha = 0.2;
+    const hitAlpha = clamp((state.player.hitFlash || 0) / ENTITY_HIT_FLASH_MS, 0, 1);
+    if (hitAlpha > 0) {
+      ctx.globalAlpha = 0.2 + hitAlpha * 0.35;
       ctx.fillStyle = COLORS.playerHit;
       ctx.fillRect(drawX + 1, drawY + 1, drawW - 2, drawH - 2);
       ctx.globalAlpha = 1;
@@ -7455,6 +7689,31 @@
       ctx.fillStyle = particle.color;
       ctx.fillRect(particle.x, particle.y, particle.size, particle.size);
     }
+    ctx.globalAlpha = 1;
+  }
+
+  function drawFloatingTexts() {
+    if (!state.floatingTexts || state.floatingTexts.length <= 0) return;
+    ctx.save();
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    for (const item of state.floatingTexts) {
+      const alpha = clamp(item.life / item.maxLife, 0, 1);
+      const visibleAlpha = Math.max(0.18, alpha);
+      const size = Math.max(7, Number(item.size) || 8);
+      const drawX = Math.round(item.x);
+      const drawY = Math.round(item.y);
+      ctx.font = `900 ${size}px monospace`;
+      ctx.lineJoin = "round";
+      ctx.lineWidth = Math.max(2, Math.round(size * 0.22));
+      ctx.globalAlpha = visibleAlpha;
+      ctx.strokeStyle = "#000000";
+      ctx.strokeText(item.text, drawX, drawY);
+      ctx.globalAlpha = alpha;
+      ctx.fillStyle = item.color || "#ffffff";
+      ctx.fillText(item.text, drawX, drawY);
+    }
+    ctx.restore();
     ctx.globalAlpha = 1;
   }
 
@@ -7674,9 +7933,13 @@
     if (state.shake > 0) {
       state.shake = Math.max(0, state.shake - dt * 0.015);
     }
+    if ((state.player.hitFlash || 0) > 0) {
+      state.player.hitFlash = Math.max(0, state.player.hitFlash - dt);
+    }
     if (state.phase === "playing" && state.roomIntroTimer > 0) {
       state.roomIntroTimer = Math.max(0, state.roomIntroTimer - dt);
     }
+    updateEnemyTurnSequence(dt);
 
     if (state.particles.length > 0) {
       for (const particle of state.particles) {
@@ -7686,6 +7949,16 @@
         particle.life -= dt;
       }
       state.particles = state.particles.filter((particle) => particle.life > 0);
+    }
+
+    if (state.floatingTexts.length > 0) {
+      for (const item of state.floatingTexts) {
+        item.x += item.vx * dt;
+        item.y += item.vy * dt;
+        item.vy -= 0.00005 * dt;
+        item.life -= dt;
+      }
+      state.floatingTexts = state.floatingTexts.filter((item) => item.life > 0);
     }
 
     if (state.rangedBolts.length > 0) {
@@ -7727,6 +8000,9 @@
       if ((enemy.frostFx || 0) > 0) {
         enemy.frostFx = Math.max(0, enemy.frostFx - dt);
       }
+      if ((enemy.hitFlash || 0) > 0) {
+        enemy.hitFlash = Math.max(0, enemy.hitFlash - dt);
+      }
     }
   }
 
@@ -7767,6 +8043,7 @@
     drawPlayer();
     drawDashAimArrows();
     drawParticles();
+    drawFloatingTexts();
     drawLowHpWarning();
     drawOverlay();
     ctx.restore();
@@ -7979,6 +8256,10 @@
 
     if (key === "escape") {
       if (state.phase === "playing" || state.phase === "relic" || state.phase === "camp") {
+        if (state.phase === "playing" && isTurnInputLocked()) {
+          pushLog("Wait for turn resolution before opening menu.", "bad");
+          return;
+        }
         saveRunSnapshot();
         enterMenu();
         return;
@@ -8076,6 +8357,10 @@
     }
 
     if (state.phase !== "playing") return;
+
+    if (isTurnInputLocked()) {
+      return;
+    }
 
     if (state.dashAimActive) {
       const dashDir = getDirectionFromKey(key);
