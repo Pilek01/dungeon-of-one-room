@@ -849,6 +849,10 @@
     const depth = Math.max(0, Number(rawEntry.depth) || 0);
     const gold = Math.max(0, Number(rawEntry.gold) || 0);
     const turns = Math.max(0, Number(rawEntry.turns) || Number(rawEntry.turn) || 0);
+    const submitSeq = Math.max(
+      1,
+      Number(rawEntry.submitSeq ?? rawEntry.submit_seq ?? rawEntry.seq) || 1
+    );
     const score = Math.max(0, Number(rawEntry.score) || calculateScore(depth, gold));
     const outcome = rawEntry.outcome === "extract" ? "extract" : "death";
     const ts = Math.max(0, Number(rawEntry.ts) || Date.now());
@@ -872,6 +876,7 @@
       depth,
       gold,
       turns,
+      submitSeq,
       score,
       mutatorCount: Math.max(0, Number(rawEntry.mutatorCount) || mutatorIds.length || 0),
       mutatorIds,
@@ -995,6 +1000,7 @@
     currentRunId: null,
     currentRunToken: "",
     currentRunTokenExpiresAt: 0,
+    currentRunSubmitSeq: 1,
     runLeaderboardSubmitted: false,
     menuIndex: 0,
     hasContinueRun: false,
@@ -1403,6 +1409,7 @@
     state.currentRunId = makeRunId();
     state.currentRunToken = "";
     state.currentRunTokenExpiresAt = 0;
+    state.currentRunSubmitSeq = 1;
     state.runMaxDepth = 0;
     state.runGoldEarned = 0;
     state.runLeaderboardSubmitted = false;
@@ -1488,11 +1495,13 @@
     const returnedRunId = String(payload?.runId || "").trim();
     const runToken = sanitizeRunToken(payload?.runToken);
     const expiresAt = Math.max(0, Number(payload?.expiresAt) || 0);
+    const nextSubmitSeq = Math.max(1, Number(payload?.nextSubmitSeq) || 1);
     if (!returnedRunId || !runToken) return null;
     return {
       runId: returnedRunId,
       runToken,
-      expiresAt
+      expiresAt,
+      nextSubmitSeq
     };
   }
 
@@ -1500,9 +1509,7 @@
     if (!isOnlineLeaderboardEnabled()) return false;
     const runId = String(state.currentRunId || "").trim();
     if (!runId) return false;
-    const hasToken = Boolean(state.currentRunToken);
-    const expiresAt = Math.max(0, Number(state.currentRunTokenExpiresAt) || 0);
-    const hasValidToken = hasToken && (expiresAt <= 0 || expiresAt > Date.now() + 60_000);
+    const hasValidToken = Boolean(state.currentRunToken);
     if (!force && hasValidToken) return true;
     try {
       const session = await requestOnlineRunSession(runId);
@@ -1510,6 +1517,11 @@
       state.currentRunId = session.runId;
       state.currentRunToken = session.runToken;
       state.currentRunTokenExpiresAt = session.expiresAt;
+      state.currentRunSubmitSeq = Math.max(
+        1,
+        Number(state.currentRunSubmitSeq) || 1,
+        Number(session.nextSubmitSeq) || 1
+      );
       if (state.phase === "playing" || state.phase === "relic" || state.phase === "camp") {
         saveRunSnapshot();
       }
@@ -1621,7 +1633,36 @@
     if (!endpoint) return false;
     const runId = String(entry.runId || "").trim();
     if (!runId) return false;
-    const runToken = sanitizeRunToken(entry.runToken);
+    let runToken = sanitizeRunToken(entry.runToken);
+    if (!runToken) {
+      const session = await requestOnlineRunSession(runId);
+      if (session && session.runId === runId) {
+        runToken = sanitizeRunToken(session.runToken);
+        entry.runToken = runToken;
+        if (String(state.currentRunId || "") === runId) {
+          state.currentRunToken = runToken;
+          state.currentRunTokenExpiresAt = Math.max(0, Number(session.expiresAt) || 0);
+          state.currentRunSubmitSeq = Math.max(
+            1,
+            Number(state.currentRunSubmitSeq) || 1,
+            Number(session.nextSubmitSeq) || 1
+          );
+          saveRunSnapshot();
+        }
+      }
+    }
+    if (!runToken) {
+      throw new Error("Missing run session.");
+    }
+
+    let submitSeq = Math.max(1, Number(entry.submitSeq) || 0);
+    if (!Number.isFinite(submitSeq) || submitSeq < 1) {
+      submitSeq = String(state.currentRunId || "") === runId
+        ? Math.max(1, Number(state.currentRunSubmitSeq) || 1)
+        : 1;
+      entry.submitSeq = submitSeq;
+    }
+
     const payloadVersion =
       typeof entry.version === "string" && entry.version.trim()
         ? entry.version.trim()
@@ -1635,16 +1676,15 @@
       depth: Math.max(0, Number(entry.depth) || 0),
       gold: Math.max(0, Number(entry.gold) || 0),
       turns: Math.max(0, Number(entry.turns) || 0),
+      submitSeq,
       score: Math.max(0, Number(entry.score) || 0),
       mutatorCount: Math.max(0, Number(entry.mutatorCount) || 0),
       mutatorIds: Array.isArray(entry.mutatorIds) ? entry.mutatorIds : [],
       version: payloadVersion,
       game_version: payloadVersion,
-      season: normalizeSeasonId(entry.season || ONLINE_LEADERBOARD_SEASON)
+      season: normalizeSeasonId(entry.season || ONLINE_LEADERBOARD_SEASON),
+      runToken
     };
-    if (runToken) {
-      payload.runToken = runToken;
-    }
     await fetchJsonWithTimeout(endpoint, {
       method: "POST",
       headers: {
@@ -1652,6 +1692,13 @@
       },
       body: JSON.stringify(payload)
     });
+    if (String(state.currentRunId || "") === runId) {
+      state.currentRunSubmitSeq = Math.max(
+        Number(state.currentRunSubmitSeq) || 1,
+        submitSeq + 1
+      );
+      saveRunSnapshot();
+    }
     return true;
   }
 
@@ -1676,7 +1723,13 @@
           removePendingLeaderboardEntryByRunId(entry.runId);
         } catch (error) {
           const message = error && error.message ? String(error.message) : "";
-          if (message.toLowerCase().includes("run already finalized")) {
+          const lowered = message.toLowerCase();
+          if (
+            lowered.includes("run already finalized") ||
+            lowered.includes("submission rejected") ||
+            lowered.includes("invalid score payload") ||
+            lowered.includes("missing run session")
+          ) {
             removePendingLeaderboardEntryByRunId(entry.runId);
             continue;
           }
@@ -1763,6 +1816,9 @@
     const candidateGold = Number(candidate?.gold) || 0;
     const currentGold = Number(current?.gold) || 0;
     if (candidateGold !== currentGold) return candidateGold > currentGold;
+    const candidateSeq = Number(candidate?.submitSeq) || 0;
+    const currentSeq = Number(current?.submitSeq) || 0;
+    if (candidateSeq !== currentSeq) return candidateSeq > currentSeq;
     return (Number(candidate?.ts) || 0) > (Number(current?.ts) || 0);
   }
 
@@ -1800,12 +1856,15 @@
 
     const runId = String(state.currentRunId || makeRunId());
     state.currentRunId = runId;
+    const submitSeq = Math.max(1, Number(state.currentRunSubmitSeq) || 1);
+    state.currentRunSubmitSeq = submitSeq + 1;
     const ts = Date.now();
     const mutatorIds = getActiveMutatorIds();
     const entry = {
       id: `${ts}-${Math.random().toString(36).slice(2, 8)}`,
       runId,
       runToken: sanitizeRunToken(state.currentRunToken),
+      submitSeq,
       playerName: sanitizePlayerName(state.playerName) || "Anonymous",
       ts,
       endedAt: new Date(ts).toISOString(),
@@ -1854,6 +1913,7 @@
     state.currentRunId = null;
     state.currentRunToken = "";
     state.currentRunTokenExpiresAt = 0;
+    state.currentRunSubmitSeq = 1;
     state.runLeaderboardSubmitted = false;
     state.campVisitShopCostMult = 1;
     state.leaderboardModalOpen = false;
@@ -1923,6 +1983,7 @@
       currentRunId: state.currentRunId,
       currentRunToken: state.currentRunToken,
       currentRunTokenExpiresAt: state.currentRunTokenExpiresAt,
+      currentRunSubmitSeq: state.currentRunSubmitSeq,
       runLeaderboardSubmitted: state.runLeaderboardSubmitted,
       runMods: state.runMods,
       player: state.player,
@@ -2042,6 +2103,7 @@
         : null;
     state.currentRunToken = sanitizeRunToken(snapshot.currentRunToken);
     state.currentRunTokenExpiresAt = Math.max(0, Number(snapshot.currentRunTokenExpiresAt) || 0);
+    state.currentRunSubmitSeq = Math.max(1, Number(snapshot.currentRunSubmitSeq) || 1);
     state.runLeaderboardSubmitted = Boolean(snapshot.runLeaderboardSubmitted);
 
     state.runMods = {
@@ -2166,6 +2228,7 @@
     state.merchantUpgradeBoughtThisRoom = Boolean(snapshot.merchantUpgradeBoughtThisRoom);
 
     state.hasContinueRun = true;
+    ensureOnlineRunSessionForCurrentRun(false);
     markUiDirty();
     return true;
   }
@@ -4442,11 +4505,13 @@
     state.depth = 0;
     if (!state.currentRunId) {
       state.currentRunId = makeRunId();
+      state.currentRunToken = "";
+      state.currentRunTokenExpiresAt = 0;
+      state.currentRunSubmitSeq = 1;
       state.runMaxDepth = 0;
       state.runGoldEarned = 0;
     }
-    state.currentRunToken = "";
-    state.currentRunTokenExpiresAt = 0;
+    state.currentRunSubmitSeq = Math.max(1, Number(state.currentRunSubmitSeq) || 1);
     state.turn = 0;
     state.roomIndex = 0;
     state.bossRoom = false;
@@ -4528,6 +4593,7 @@
       pushLog(`Active mutators: ${activeMutatorCount()}.`);
     }
     saveRunSnapshot();
+    ensureOnlineRunSessionForCurrentRun(false);
     markUiDirty();
   }
 
