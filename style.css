@@ -481,6 +481,24 @@ canvas.boss-pulse {
   color: #ffe2e2;
 }
 
+.overlay-card.overlay-card-success {
+  border-color: #7bd3898f;
+  background: linear-gradient(180deg, #112018e8, #0a130fdd);
+  box-shadow: 0 10px 24px #00000080, 0 0 20px #5fcf7a3a;
+}
+
+.overlay-card.overlay-card-success .overlay-title {
+  color: #d8ffe3;
+}
+
+.overlay-card.overlay-card-success .overlay-sub {
+  color: #c2f0ce;
+}
+
+.overlay-card.overlay-card-success .overlay-hint {
+  color: #e2ffe9;
+}
+
 .overlay-title {
   margin: 0;
   font-size: clamp(18px, 2.2vw, 26px);
@@ -509,6 +527,55 @@ canvas.boss-pulse {
   width: min(390px, 100%);
   display: grid;
   gap: 7px;
+}
+
+.relic-exchange-list {
+  margin: 12px auto 0;
+  width: min(620px, 100%);
+  max-height: min(40vh, 360px);
+  overflow: auto;
+  display: grid;
+  gap: 6px;
+  padding-right: 2px;
+}
+
+.relic-exchange-row {
+  border: 1px solid #ffffff2a;
+  border-radius: 8px;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  text-align: left;
+}
+
+.relic-exchange-main strong {
+  display: block;
+  font-size: clamp(12px, 1.3vw, 15px);
+  line-height: 1.2;
+}
+
+.relic-exchange-main span {
+  display: block;
+  margin-top: 2px;
+  font-size: clamp(11px, 1.12vw, 13px);
+  color: #b8c5de;
+}
+
+.relic-exchange-gold {
+  color: #9ff0b3;
+  font-weight: 700;
+  font-size: clamp(12px, 1.3vw, 15px);
+  line-height: 1.2;
+}
+
+.relic-exchange-empty {
+  border: 1px dashed #7bd38966;
+  border-radius: 8px;
+  padding: 10px;
+  color: #a9dfb8;
+  text-align: center;
 }
 
 .leaderboard-modal-list {

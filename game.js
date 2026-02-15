@@ -16,6 +16,7 @@
   const STORAGE_MUT_UNLOCK = "dungeonOneRoomMutatorUnlocks";
   const STORAGE_MUT_ACTIVE = "dungeonOneRoomMutatorActive";
   const STORAGE_AUDIO_MUTED = "dungeonOneRoomAudioMuted";
+  const STORAGE_ENEMY_SPEED = "dungeonOneRoomEnemySpeed";
   const STORAGE_CAMP_GOLD = "dungeonOneRoomCampGold";
   const STORAGE_ESSENCE_LEGACY = "dungeonOneRoomEssence";
   const STORAGE_LIVES = "dungeonOneRoomLives";
@@ -66,6 +67,7 @@
   const MAX_FLOOR_SKULL_PER_MAP = 4;
   const MAX_FLOOR_CRACK_CROSS_PER_MAP = 3;
   const MAX_FLOOR_VAR3_PER_MAP = 3;
+  const ENEMY_SPEED_MODES = ["slow", "standard", "fast"];
   const ONLINE_LEADERBOARD_TIMEOUT_MS = 8000;
   const ONLINE_LEADERBOARD_REFRESH_MS = 12000;
   const LEADERBOARD_MIN_TURNS = 30;
@@ -546,10 +548,10 @@
   };
 
   const RELIC_RETURN_VALUE = {
-    normal: 25,
-    rare: 50,
-    epic: 100,
-    legendary: 200
+    normal: 50,
+    rare: 100,
+    epic: 200,
+    legendary: 400
   };
 
   const RELICS = [
@@ -679,7 +681,12 @@
   const ENTITY_HIT_FLASH_MS = 120;
   const CRIT_HIT_FLASH_MS = 210;
   const PORTAL_RING_PULSE_MS = 1200;
-  const ENEMY_TURN_STEP_DELAY_MS = 77;
+  const ENEMY_TURN_STEP_DELAY_BASE_MS = 77;
+  const ENEMY_TURN_DELAY_MULTIPLIERS = {
+    slow: 1.3,
+    standard: 1,
+    fast: 0.7
+  };
 
   function startTween(entity) {
     entity._tweenFromX = entity.x * TILE;
@@ -813,6 +820,12 @@
     return output;
   }
 
+  function sanitizeEnemySpeedMode(value, fallback = "standard") {
+    const normalized = String(value || "").trim().toLowerCase();
+    if (ENEMY_SPEED_MODES.includes(normalized)) return normalized;
+    return fallback;
+  }
+
   function sanitizePlayerName(value) {
     const base = String(value || "")
       .replace(/\s+/g, " ")
@@ -943,6 +956,7 @@
   const initialLeaderboard = sanitizeLeaderboard(readJsonStorage(STORAGE_LEADERBOARD, []));
   const initialLeaderboardPending = sanitizePendingLeaderboard(readJsonStorage(STORAGE_LEADERBOARD_PENDING, []));
   const initialPlayerName = sanitizePlayerName(localStorage.getItem(STORAGE_PLAYER_NAME) || "");
+  const initialEnemySpeedMode = sanitizeEnemySpeedMode(localStorage.getItem(STORAGE_ENEMY_SPEED) || "");
 
   const state = {
     phase: "boot",
@@ -1012,6 +1026,9 @@
     currentRunSubmitSeq: 1,
     runLeaderboardSubmitted: false,
     menuIndex: 0,
+    menuOptionsOpen: false,
+    menuOptionsView: "root", // "root" | "enemy_speed"
+    menuOptionsIndex: 0,
     hasContinueRun: false,
     leaderboardModalOpen: false,
     leaderboardSortMode: "score", // "score" | "depth"
@@ -1023,6 +1040,7 @@
     campVisitShopCostMult: 1,
     debugCheatOpen: false,
     debugGodMode: false,
+    enemySpeedMode: initialEnemySpeedMode,
     merchantPotionsBought: 0,
     runMods: {
       goldMultiplier: 1,
@@ -2777,6 +2795,133 @@
     markUiDirty();
   }
 
+  function getEnemySpeedLabel(mode = state.enemySpeedMode) {
+    const normalized = sanitizeEnemySpeedMode(mode);
+    if (normalized === "slow") return "Slow";
+    if (normalized === "fast") return "Fast";
+    return "Standard";
+  }
+
+  function getEnemyTurnStepDelayMs() {
+    const mode = sanitizeEnemySpeedMode(state.enemySpeedMode);
+    const multiplier = Number(ENEMY_TURN_DELAY_MULTIPLIERS[mode]) || 1;
+    return Math.max(20, Math.round(ENEMY_TURN_STEP_DELAY_BASE_MS * multiplier));
+  }
+
+  function setEnemySpeedMode(mode, options = {}) {
+    const normalized = sanitizeEnemySpeedMode(mode);
+    if (normalized === state.enemySpeedMode) return false;
+    state.enemySpeedMode = normalized;
+    localStorage.setItem(STORAGE_ENEMY_SPEED, normalized);
+    if (!options.silent) {
+      pushLog(`Enemy speed: ${getEnemySpeedLabel(normalized)}.`);
+    }
+    markUiDirty();
+    return true;
+  }
+
+  function shiftEnemySpeedMode(step) {
+    const current = sanitizeEnemySpeedMode(state.enemySpeedMode);
+    const index = ENEMY_SPEED_MODES.indexOf(current);
+    const nextIndex = (index + step + ENEMY_SPEED_MODES.length) % ENEMY_SPEED_MODES.length;
+    setEnemySpeedMode(ENEMY_SPEED_MODES[nextIndex], { silent: true });
+  }
+
+  function getEnemySpeedOptionsItems() {
+    return [
+      { id: "slow", key: "1", label: "Slow" },
+      { id: "standard", key: "2", label: "Standard" },
+      { id: "fast", key: "3", label: "Fast" }
+    ];
+  }
+
+  function getMenuOptionsRootItems() {
+    return [
+      {
+        id: "enemy_speed",
+        key: "1",
+        title: "Enemy Speed",
+        desc: `Current: ${getEnemySpeedLabel()} (${getEnemyTurnStepDelayMs()} ms per enemy step).`
+      }
+    ];
+  }
+
+  function getActiveMenuOptionsItems() {
+    if (state.menuOptionsView === "enemy_speed") {
+      return getEnemySpeedOptionsItems();
+    }
+    return getMenuOptionsRootItems();
+  }
+
+  function syncMenuOptionsIndex() {
+    const items = getActiveMenuOptionsItems();
+    if (!items.length) {
+      state.menuOptionsIndex = 0;
+      return;
+    }
+    state.menuOptionsIndex = clamp(state.menuOptionsIndex, 0, items.length - 1);
+  }
+
+  function moveMenuOptionsSelection(step) {
+    const items = getActiveMenuOptionsItems();
+    if (!items.length) return;
+    const len = items.length;
+    state.menuOptionsIndex = (state.menuOptionsIndex + step + len) % len;
+    markUiDirty();
+  }
+
+  function openEnemySpeedOptions() {
+    state.menuOptionsView = "enemy_speed";
+    const idx = ENEMY_SPEED_MODES.indexOf(sanitizeEnemySpeedMode(state.enemySpeedMode));
+    state.menuOptionsIndex = idx >= 0 ? idx : 1;
+    markUiDirty();
+  }
+
+  function backFromMenuOptionsView() {
+    if (state.menuOptionsView === "enemy_speed") {
+      state.menuOptionsView = "root";
+      state.menuOptionsIndex = 0;
+      markUiDirty();
+      return true;
+    }
+    return false;
+  }
+
+  function activateMenuOptionsSelection(index = state.menuOptionsIndex) {
+    const items = getActiveMenuOptionsItems();
+    if (!items.length) return;
+    const item = items[clamp(index, 0, items.length - 1)];
+    if (!item) return;
+
+    if (state.menuOptionsView === "root") {
+      if (item.id === "enemy_speed") {
+        openEnemySpeedOptions();
+      }
+      return;
+    }
+    if (state.menuOptionsView === "enemy_speed") {
+      setEnemySpeedMode(item.id, { silent: true });
+      const idx = ENEMY_SPEED_MODES.indexOf(sanitizeEnemySpeedMode(state.enemySpeedMode));
+      state.menuOptionsIndex = idx >= 0 ? idx : 1;
+      markUiDirty();
+    }
+  }
+
+  function openMenuOptions() {
+    state.menuOptionsOpen = true;
+    state.menuOptionsView = "root";
+    state.menuOptionsIndex = 0;
+    markUiDirty();
+  }
+
+  function closeMenuOptions() {
+    if (!state.menuOptionsOpen) return;
+    state.menuOptionsOpen = false;
+    state.menuOptionsView = "root";
+    state.menuOptionsIndex = 0;
+    markUiDirty();
+  }
+
   function unlockMutator(id) {
     if (state.unlockedMutators[id]) return false;
     state.unlockedMutators[id] = true;
@@ -2902,6 +3047,13 @@
       },
       {
         key: "6",
+        title: "Options",
+        desc: "Game settings.",
+        disabled: false,
+        action: () => openMenuOptions()
+      },
+      {
+        key: "7",
         title: "Clear Continue Slot",
         desc: "Delete saved run data.",
         disabled: !state.hasContinueRun,
@@ -2955,6 +3107,9 @@
   function enterMenu() {
     state.phase = "menu";
     state.merchantMenuOpen = false;
+    state.menuOptionsOpen = false;
+    state.menuOptionsView = "root";
+    state.menuOptionsIndex = 0;
     state.leaderboardModalOpen = false;
     state.nameModalOpen = false;
     state.nameModalAction = null;
@@ -3258,6 +3413,48 @@
       }
     }
     return groups;
+  }
+
+  function getRelicInventoryGroupsFromList(relicIds) {
+    const groups = [];
+    const indexById = new Map();
+    for (const relicId of relicIds || []) {
+      if (typeof relicId !== "string") continue;
+      const index = indexById.get(relicId);
+      if (index == null) {
+        groups.push({ relicId, count: 1 });
+        indexById.set(relicId, groups.length - 1);
+      } else {
+        groups[index].count += 1;
+      }
+    }
+    return groups;
+  }
+
+  function getRelicExchangeBreakdown(relicIds) {
+    const groups = getRelicInventoryGroupsFromList(relicIds);
+    const rows = [];
+    for (const group of groups) {
+      const relic = getRelicById(group.relicId);
+      if (!relic) continue;
+      const rarity = RELIC_RETURN_VALUE[relic.rarity] != null ? relic.rarity : "normal";
+      const unitValue = RELIC_RETURN_VALUE[rarity];
+      rows.push({
+        relicId: relic.id,
+        name: relic.name,
+        rarity,
+        rarityInfo: RARITY[rarity] || RARITY.normal,
+        count: group.count,
+        unitValue,
+        totalValue: unitValue * group.count
+      });
+    }
+    rows.sort((a, b) =>
+      b.totalValue - a.totalValue ||
+      b.unitValue - a.unitValue ||
+      a.name.localeCompare(b.name)
+    );
+    return rows;
   }
 
   function relicHotkeyForIndex(index) {
@@ -5888,7 +6085,7 @@
     }
     state.enemyTurnQueue = [...state.enemies];
     state.enemyTurnStepIndex = 0;
-    state.enemyTurnStepTimer = ENEMY_TURN_STEP_DELAY_MS;
+    state.enemyTurnStepTimer = getEnemyTurnStepDelayMs();
     state.enemyTurnInProgress = true;
     if (state.enemyTurnQueue.length <= 0) {
       finishTurnAfterEnemySequence();
@@ -5907,7 +6104,7 @@
 
     state.enemyTurnStepTimer -= dt;
     if (state.enemyTurnStepTimer > 0) return;
-    state.enemyTurnStepTimer = ENEMY_TURN_STEP_DELAY_MS;
+    state.enemyTurnStepTimer = getEnemyTurnStepDelayMs();
 
     const enemy = state.enemyTurnQueue.shift();
     if (!enemy) {
@@ -6247,7 +6444,6 @@
       `<div class="statline"><span>Camp Gold</span><strong>${state.campGold}</strong></div>`,
       `<div class="statline"><span>Enemies</span><strong>${state.enemies.length}</strong></div>`,
       `<div class="statline"><span>Turn</span><strong>${state.turn}</strong></div>`,
-      `<div class="statline"><span>Order</span><strong>${state.enemyTurnInProgress ? "ENEMY TURN" : "YOU -> ENEMY"}</strong></div>`,
       `<div class="statline"><span>Fury</span><strong>${getEffectiveAdrenaline()}/${getEffectiveMaxAdrenaline()}</strong></div>`,
       hasRelic("chaosorb")
         ? `<div class="statline"><span>Chaos Roll</span><strong>${chaosTurnsLeft}T</strong></div>`
@@ -6391,7 +6587,15 @@
     const emergencyLossPercent = Math.round(getEmergencyExtractLossRatio() * 100);
 
     if (state.phase === "menu") {
-      actionsEl.textContent = "Navigate with W/S or Arrows. Enter to select.";
+      if (state.menuOptionsOpen) {
+        if (state.menuOptionsView === "enemy_speed") {
+          actionsEl.textContent = "Enemy Speed: 1 Slow, 2 Standard, 3 Fast. Enter to apply. Esc - back.";
+        } else {
+          actionsEl.textContent = "Options: choose a category. Enter to open. Esc to close.";
+        }
+      } else {
+        actionsEl.textContent = "Navigate with W/S or Arrows. Enter to select.";
+      }
       return;
     }
     if (state.phase === "camp") {
@@ -6786,6 +6990,55 @@
       return;
     }
 
+    if (state.phase === "menu" && state.menuOptionsOpen) {
+      syncMenuOptionsIndex();
+      const rootView = state.menuOptionsView === "root";
+      const rows = rootView
+        ? getMenuOptionsRootItems().map((item, index) => {
+            const classes = [
+              "overlay-menu-row",
+              state.menuOptionsIndex === index ? "selected" : ""
+            ].join(" ").trim();
+            return [
+              `<div class="${classes}">`,
+              `<div class="overlay-menu-key">${item.key}</div>`,
+              `<div><strong>${item.title}</strong><br /><span>${item.desc}</span></div>`,
+              `</div>`
+            ].join("");
+          }).join("")
+        : getEnemySpeedOptionsItems().map((option, index) => {
+            const optionDelay = Math.max(
+              20,
+              Math.round(ENEMY_TURN_STEP_DELAY_BASE_MS * (Number(ENEMY_TURN_DELAY_MULTIPLIERS[option.id]) || 1))
+            );
+            const active = sanitizeEnemySpeedMode(state.enemySpeedMode) === option.id;
+            const classes = [
+              "overlay-menu-row",
+              state.menuOptionsIndex === index ? "selected" : ""
+            ].join(" ").trim();
+            return [
+              `<div class="${classes}">`,
+              `<div class="overlay-menu-key">${option.key}</div>`,
+              `<div><strong>${option.label}${active ? " (Active)" : ""}</strong><br /><span>${optionDelay} ms per enemy step</span></div>`,
+              `</div>`
+            ].join("");
+          }).join("");
+      screenOverlayEl.className = "screen-overlay visible";
+      screenOverlayEl.innerHTML = [
+        `<div class="overlay-card">`,
+        `<h2 class="overlay-title">Options</h2>`,
+        `<p class="overlay-sub">${rootView ? "Choose a category" : "Enemy Speed"}</p>`,
+        `<div class="overlay-menu">${rows}</div>`,
+        `<p class="overlay-hint">${
+          rootView
+            ? "W/S or Arrows - move | Enter - open | Esc - close"
+            : "W/S or Arrows - move | Enter - apply | 1-3 quick set | Esc - back"
+        }</p>`,
+        `</div>`
+      ].join("");
+      return;
+    }
+
     if (state.phase === "dead" && state.finalGameOverPrompt) {
       const finalDepth = Math.max(0, Number(state.finalGameOverPrompt.depth) || 0);
       const finalGold = Math.max(0, Number(state.finalGameOverPrompt.gold) || 0);
@@ -6823,17 +7076,40 @@
     }
 
     if (state.phase === "camp" && state.extractRelicPrompt) {
-      const relicReturn = state.extractRelicPrompt.relicReturn || { count: 0, total: 0, byRarity: {} };
+      const prompt = state.extractRelicPrompt;
+      const relicReturn = prompt.relicReturn || { count: 0, total: 0, byRarity: {} };
       const carried = Math.max(0, Number(relicReturn.count) || 0);
       const gain = Math.max(0, Number(relicReturn.total) || 0);
+      const baseGold = Math.max(0, Number(prompt.baseGold) || 0);
+      const bonusGold = Math.max(0, Number(prompt.bonusGold) || 0);
+      const extractedNow = baseGold + bonusGold;
+      const carriedRelics = Array.isArray(prompt.carriedRelics)
+        ? prompt.carriedRelics.filter((id) => typeof id === "string")
+        : [...state.relics];
+      const relicRows = getRelicExchangeBreakdown(carriedRelics);
+      const relicRowsHtml = relicRows.length > 0
+        ? relicRows.map((row) => {
+            const stackLabel = row.count > 1 ? ` x${row.count}` : "";
+            return [
+              `<div class="relic-exchange-row" style="border-color:${row.rarityInfo.border};background:${row.rarityInfo.bg}">`,
+              `<div class="relic-exchange-main">`,
+              `<strong style="color:${row.rarityInfo.color}">${row.name}${stackLabel}</strong>`,
+              `<span>${row.rarityInfo.label} | ${row.unitValue} each</span>`,
+              `</div>`,
+              `<div class="relic-exchange-gold">+${row.totalValue}</div>`,
+              `</div>`
+            ].join("");
+          }).join("")
+        : `<div class="relic-exchange-empty">No relics to exchange.</div>`;
       screenOverlayEl.className = "screen-overlay visible";
       screenOverlayEl.innerHTML = [
-        `<div class="overlay-card">`,
+        `<div class="overlay-card overlay-card-wide overlay-card-success">`,
         `<h2 class="overlay-title">Relic Exchange</h2>`,
-        `<p class="overlay-sub">Extracted with ${carried} relics.</p>`,
-        `<p class="overlay-sub">Sell relics now for +${gain} camp gold, or keep relics and stay in camp.</p>`,
+        `<p class="overlay-sub">You extracted with ${carried} relics. Current extract already banked: +${extractedNow} camp gold.</p>`,
+        `<p class="overlay-sub">Sell relics now for <strong>+${gain}</strong> camp gold, or keep relics.</p>`,
         `<p class="overlay-sub">N:${relicReturn.byRarity?.normal || 0} R:${relicReturn.byRarity?.rare || 0} E:${relicReturn.byRarity?.epic || 0} L:${relicReturn.byRarity?.legendary || 0}</p>`,
-        `<p class="overlay-hint">Y/Enter - sell relics | N/Esc - keep relics in camp</p>`,
+        `<div class="relic-exchange-list">${relicRowsHtml}</div>`,
+        `<p class="overlay-hint">Y/Enter - sell relics | N/Esc - keep relics</p>`,
         `</div>`
       ].join("");
       return;
@@ -6891,7 +7167,11 @@
 
     if (state.phase === "menu") hint = `1-${getMenuOptions().length} quick select`;
     if (state.phase === "dead") hint = "R restart | Esc menu";
-    if (state.phase === "camp") hint = "1-0 buy upgrade | R new run";
+    if (state.phase === "camp") {
+      hint = state.campPanelView === "mutators"
+        ? "1-0 toggle mutators | T shop | R new run"
+        : "1-0 buy upgrade | T mutators | R new run";
+    }
     if (state.phase === "relic") {
       const draftSize = Math.max(1, (state.relicDraft || []).length);
       if (state.legendarySwapPending) {
@@ -8184,6 +8464,60 @@
       return;
     }
 
+    if (state.phase === "menu" && state.menuOptionsOpen) {
+      if (key === "escape") {
+        if (backFromMenuOptionsView()) return;
+        closeMenuOptions();
+        return;
+      }
+      if (key === "arrowup" || key === "w") {
+        moveMenuOptionsSelection(-1);
+        return;
+      }
+      if (key === "arrowdown" || key === "s") {
+        moveMenuOptionsSelection(1);
+        return;
+      }
+      if (isConfirm || key === "e") {
+        activateMenuOptionsSelection();
+        return;
+      }
+      if (state.menuOptionsView === "enemy_speed" && (key === "arrowleft" || key === "a")) {
+        shiftEnemySpeedMode(-1);
+        const idx = ENEMY_SPEED_MODES.indexOf(sanitizeEnemySpeedMode(state.enemySpeedMode));
+        state.menuOptionsIndex = idx >= 0 ? idx : 1;
+        markUiDirty();
+        return;
+      }
+      if (state.menuOptionsView === "enemy_speed" && (key === "arrowright" || key === "d")) {
+        shiftEnemySpeedMode(1);
+        const idx = ENEMY_SPEED_MODES.indexOf(sanitizeEnemySpeedMode(state.enemySpeedMode));
+        state.menuOptionsIndex = idx >= 0 ? idx : 1;
+        markUiDirty();
+        return;
+      }
+      if (key >= "1" && key <= "9") {
+        const index = Number(key) - 1;
+        if (state.menuOptionsView === "root") {
+          const items = getMenuOptionsRootItems();
+          if (index >= 0 && index < items.length) {
+            state.menuOptionsIndex = index;
+            activateMenuOptionsSelection(index);
+          }
+          return;
+        }
+        if (state.menuOptionsView === "enemy_speed") {
+          if (index >= 0 && index < ENEMY_SPEED_MODES.length) {
+            state.menuOptionsIndex = index;
+            activateMenuOptionsSelection(index);
+          }
+          return;
+        }
+        return;
+      }
+      return;
+    }
+
     if (state.phase === "playing" && state.dashAimActive && key === "escape") {
       cancelDashAim();
       return;
@@ -8427,6 +8761,10 @@
       return;
     }
     if (state.phase === "menu") {
+      if (state.menuOptionsOpen) {
+        closeMenuOptions();
+        return;
+      }
       activateMenuOption();
       return;
     }
