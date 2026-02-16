@@ -57,8 +57,12 @@
   const BLADE_ATTACK_FLAT_PER_LEVEL = 1 * COMBAT_SCALE; // +10
   const BLADE_ATTACK_PERCENT_PER_LEVEL = 0.10; // +10% per blade level
   const CHEST_ATTACK_UPGRADE_FLAT = 2;
+  const CHEST_ARMOR_UPGRADE_FLAT = 2;
   const CHEST_ATTACK_BUCKET_SIZE = 10;
   const CHEST_ATTACK_BUCKET_MAX = 5;
+  const SPIKE_DAMAGE_BASE = Math.round(1.5 * COMBAT_SCALE); // 15
+  const SPIKE_DAMAGE_STEP_DEPTH = 10;
+  const SPIKE_DAMAGE_PER_STEP = Math.round(1.5 * COMBAT_SCALE); // +15 each step
   const SHRINE_FURY_BLESSING_CHANCE = 0.1;
   const ENEMY_LATE_SCALE_START_DEPTH = 20;
   const ENEMY_LATE_SCALE_STEP_DEPTH = 10;
@@ -694,6 +698,12 @@
     return 1 + steps * ENEMY_LATE_SCALE_PER_STEP;
   }
 
+  function getSpikeDamageByDepth(depth = state.depth) {
+    const safeDepth = Math.max(0, Number(depth) || 0);
+    const steps = Math.floor(safeDepth / SPIKE_DAMAGE_STEP_DEPTH);
+    return SPIKE_DAMAGE_BASE + steps * SPIKE_DAMAGE_PER_STEP;
+  }
+
   function getBladeAttackMultiplier(level = getCampUpgradeLevel("blade")) {
     const safeLevel = Math.max(0, Number(level) || 0);
     return 1 + safeLevel * BLADE_ATTACK_PERCENT_PER_LEVEL;
@@ -1087,6 +1097,10 @@
     runLeaderboardSubmitted: false,
     sessionChestAttackFlat: 0,
     sessionChestAttackDepthBuckets: {},
+    sessionChestArmorFlat: 0,
+    sessionChestArmorDepthBuckets: {},
+    sessionChestHealthFlat: 0,
+    sessionChestHealthDepthBuckets: {},
     menuIndex: 0,
     menuOptionsOpen: false,
     menuOptionsView: "root", // "root" | "enemy_speed"
@@ -2105,7 +2119,7 @@
     state.currentRunTokenExpiresAt = 0;
     state.currentRunSubmitSeq = 1;
     state.runLeaderboardSubmitted = false;
-    resetSessionChestAttackBonuses();
+    resetSessionChestBonuses();
     state.campVisitShopCostMult = 1;
     state.leaderboardModalOpen = false;
     state.nameModalOpen = false;
@@ -2179,6 +2193,10 @@
       runLeaderboardSubmitted: state.runLeaderboardSubmitted,
       sessionChestAttackFlat: state.sessionChestAttackFlat,
       sessionChestAttackDepthBuckets: state.sessionChestAttackDepthBuckets,
+      sessionChestArmorFlat: state.sessionChestArmorFlat,
+      sessionChestArmorDepthBuckets: state.sessionChestArmorDepthBuckets,
+      sessionChestHealthFlat: state.sessionChestHealthFlat,
+      sessionChestHealthDepthBuckets: state.sessionChestHealthDepthBuckets,
       runMods: state.runMods,
       player: state.player,
       portal: state.portal,
@@ -2307,6 +2325,24 @@
       Math.max(0, Number(snapshot.sessionChestAttackFlat) || 0),
       0,
       Math.max(0, maxSessionChestFlat)
+    );
+    state.sessionChestArmorDepthBuckets = sanitizeChestAttackDepthBuckets(snapshot.sessionChestArmorDepthBuckets);
+    const maxSessionChestArmorFlat =
+      Object.values(state.sessionChestArmorDepthBuckets)
+        .reduce((sum, count) => sum + (Number(count) || 0), 0) * CHEST_ARMOR_UPGRADE_FLAT;
+    state.sessionChestArmorFlat = clamp(
+      Math.max(0, Number(snapshot.sessionChestArmorFlat) || 0),
+      0,
+      Math.max(0, maxSessionChestArmorFlat)
+    );
+    state.sessionChestHealthDepthBuckets = sanitizeChestAttackDepthBuckets(snapshot.sessionChestHealthDepthBuckets);
+    const maxSessionChestHealthFlat =
+      Object.values(state.sessionChestHealthDepthBuckets)
+        .reduce((sum, count) => sum + (Number(count) || 0), 0) * scaledCombat(4);
+    state.sessionChestHealthFlat = clamp(
+      Math.max(0, Number(snapshot.sessionChestHealthFlat) || 0),
+      0,
+      Math.max(0, maxSessionChestHealthFlat)
     );
 
     state.runMods = {
@@ -4402,27 +4438,69 @@
     return `${start}-${end}`;
   }
 
-  function getChestAttackBucketCount(bucketIndex) {
+  function getChestBucketCount(bucketMap, bucketIndex) {
     const key = String(Math.max(0, Math.floor(Number(bucketIndex) || 0)));
-    return clamp(Number(state.sessionChestAttackDepthBuckets?.[key]) || 0, 0, CHEST_ATTACK_BUCKET_MAX);
+    return clamp(Number(bucketMap?.[key]) || 0, 0, CHEST_ATTACK_BUCKET_MAX);
   }
 
-  function incrementChestAttackBucketCount(bucketIndex) {
+  function incrementChestBucketCount(bucketMap, bucketIndex) {
     const key = String(Math.max(0, Math.floor(Number(bucketIndex) || 0)));
-    const next = clamp(getChestAttackBucketCount(bucketIndex) + 1, 0, CHEST_ATTACK_BUCKET_MAX);
-    state.sessionChestAttackDepthBuckets[key] = next;
+    const next = clamp(getChestBucketCount(bucketMap, bucketIndex) + 1, 0, CHEST_ATTACK_BUCKET_MAX);
+    bucketMap[key] = next;
     return next;
   }
 
-  function resetSessionChestAttackBonuses() {
+  function getChestAttackBucketCount(bucketIndex) {
+    return getChestBucketCount(state.sessionChestAttackDepthBuckets, bucketIndex);
+  }
+
+  function incrementChestAttackBucketCount(bucketIndex) {
+    return incrementChestBucketCount(state.sessionChestAttackDepthBuckets, bucketIndex);
+  }
+
+  function getChestArmorBucketCount(bucketIndex) {
+    return getChestBucketCount(state.sessionChestArmorDepthBuckets, bucketIndex);
+  }
+
+  function incrementChestArmorBucketCount(bucketIndex) {
+    return incrementChestBucketCount(state.sessionChestArmorDepthBuckets, bucketIndex);
+  }
+
+  function getChestHealthBucketCount(bucketIndex) {
+    return getChestBucketCount(state.sessionChestHealthDepthBuckets, bucketIndex);
+  }
+
+  function incrementChestHealthBucketCount(bucketIndex) {
+    return incrementChestBucketCount(state.sessionChestHealthDepthBuckets, bucketIndex);
+  }
+
+  function resetSessionChestBonuses() {
     state.sessionChestAttackFlat = 0;
     state.sessionChestAttackDepthBuckets = {};
+    state.sessionChestArmorFlat = 0;
+    state.sessionChestArmorDepthBuckets = {};
+    state.sessionChestHealthFlat = 0;
+    state.sessionChestHealthDepthBuckets = {};
   }
 
   function applySessionChestAttackBonusToRun() {
     const carryFlat = Math.max(0, Number(state.sessionChestAttackFlat) || 0);
     if (carryFlat <= 0) return 0;
     return addScaledFlatAttack(carryFlat);
+  }
+
+  function applySessionChestArmorBonusToRun() {
+    const carryFlat = Math.max(0, Number(state.sessionChestArmorFlat) || 0);
+    if (carryFlat <= 0) return 0;
+    state.player.armor += carryFlat;
+    return carryFlat;
+  }
+
+  function applySessionChestHealthBonusToRun() {
+    const carryFlat = Math.max(0, Number(state.sessionChestHealthFlat) || 0);
+    if (carryFlat <= 0) return 0;
+    state.player.maxHp += carryFlat;
+    return carryFlat;
   }
 
   function getSkillCooldownRemaining(skillId) {
@@ -4816,6 +4894,7 @@
         y,
         hp: scaledCombat(7 + state.depth),
         attack: scaledCombat(3 + Math.floor(state.depth / 3)) + damageBonus,
+        cooldown: 0,
         rests: false
       };
     } else if (type === "warden") {
@@ -4827,7 +4906,8 @@
         hp: scaledCombat(16 + state.depth * 2),
         attack: scaledCombat(4 + Math.floor(state.depth / 3)) + damageBonus,
         range: 4,
-        cooldown: 0
+        cooldown: 0,
+        aiming: false
       };
     } else {
       enemy = {
@@ -5131,6 +5211,8 @@
       normalizeRelicInventory();
     }
     const carriedChestAttack = applySessionChestAttackBonusToRun();
+    const carriedChestArmor = applySessionChestArmorBonusToRun();
+    const carriedChestHealth = applySessionChestHealthBonusToRun();
     state.player.hp = state.player.maxHp;
 
     buildRoom();
@@ -5142,6 +5224,12 @@
     }
     if (carriedChestAttack > 0) {
       pushLog(`Session chest attack carried: +${carriedChestAttack} ATK.`, "good");
+    }
+    if (carriedChestArmor > 0) {
+      pushLog(`Session chest armor carried: +${carriedChestArmor} ARM.`, "good");
+    }
+    if (carriedChestHealth > 0) {
+      pushLog(`Session chest health carried: +${carriedChestHealth} Max HP.`, "good");
     }
     if (activeMutatorCount() > 0) {
       pushLog(`Active mutators: ${activeMutatorCount()}.`);
@@ -5222,8 +5310,11 @@
       pushLog("Chrono Loop was already spent this run.", "bad");
     }
     recordRunOnLeaderboard("death");
-    const hadSessionChestAttack = Math.max(0, Number(state.sessionChestAttackFlat) || 0) > 0;
-    resetSessionChestAttackBonuses();
+    const hadSessionChestBonuses =
+      Math.max(0, Number(state.sessionChestAttackFlat) || 0) > 0 ||
+      Math.max(0, Number(state.sessionChestArmorFlat) || 0) > 0 ||
+      Math.max(0, Number(state.sessionChestHealthFlat) || 0) > 0;
+    resetSessionChestBonuses();
     state.phase = "dead";
     state.finalVictoryPrompt = null;
     state.turnInProgress = false;
@@ -5239,8 +5330,8 @@
       playSfx("death");
     }
     pushLog(reason, "bad");
-    if (hadSessionChestAttack) {
-      pushLog("Session chest attack bonuses were reset on death.", "bad");
+    if (hadSessionChestBonuses) {
+      pushLog("Session chest bonuses (ATK/ARM/HP) were reset on death.", "bad");
     }
     state.lives = Math.max(0, state.lives - 1);
     pushLog(`Life lost. ${state.lives}/${MAX_LIVES} remaining.`, "bad");
@@ -5674,21 +5765,22 @@
     if (hasRelic("ironboots")) {
       return;
     }
-    if (blockDamageWithShield("spikes")) {
+    const spikeDamage = getSpikeDamageByDepth();
+    if (blockDamageWithShield("spikes", null, spikeDamage)) {
       return;
     }
-    state.player.hp -= scaledCombat(1);
+    state.player.hp -= spikeDamage;
     triggerPlayerHitFlash();
-    spawnFloatingText(state.player.x, state.player.y, `-${scaledCombat(1)}`, "#ff7676");
+    spawnFloatingText(state.player.x, state.player.y, `-${spikeDamage}`, "#ff7676");
     state.flash = 60;
     setShake(1.6);
     spawnParticles(state.player.x, state.player.y, "#d86b6b", 6, 1.1);
     // Glass Depths: spikes drop gold
     if (isMutatorActive("glassdepths")) {
       const spikeGold = grantGold(randInt(1, 3));
-      pushLog(`Spikes cut you for ${scaledCombat(1)}, but drop ${spikeGold} gold.`, "bad");
+      pushLog(`Spikes cut you for ${spikeDamage}, but drop ${spikeGold} gold.`, "bad");
     } else {
-      pushLog(`Spikes cut you for ${scaledCombat(1)}.`, "bad");
+      pushLog(`Spikes cut you for ${spikeDamage}.`, "bad");
     }
     tryAutoPotion("spikes");
     if (state.player.hp <= 0) {
@@ -5702,9 +5794,10 @@
 
   function applySpikeToEnemy(enemy) {
     if (!isSpikeAt(enemy.x, enemy.y)) return false;
-    enemy.hp -= scaledCombat(1);
+    const spikeDamage = getSpikeDamageByDepth();
+    enemy.hp -= spikeDamage;
     triggerEnemyHitFlash(enemy);
-    spawnFloatingText(enemy.x, enemy.y, `-${scaledCombat(1)}`, "#ffffff");
+    spawnFloatingText(enemy.x, enemy.y, `-${spikeDamage}`, "#ffffff");
     spawnParticles(enemy.x, enemy.y, "#d27272", 5, 0.9);
     if (enemy.hp <= 0) {
       removeEnemy(enemy);
@@ -5716,27 +5809,31 @@
     return false;
   }
 
+  function applyChestCapFallback(inTreasureRoom, bucketLabel, statLabel) {
+    const canHeal = state.runMods.chestHealPenalty < 999;
+    const pickHeal = canHeal && chance(0.5);
+    if (pickHeal) {
+      const healAmount = Math.max(MIN_EFFECTIVE_DAMAGE, scaledCombat(4) - state.runMods.chestHealPenalty);
+      state.player.hp = Math.min(state.player.maxHp, state.player.hp + healAmount);
+      pushLog(`Chest ${statLabel} cap (${bucketLabel}) reached: converted to +${healAmount} HP.`, "good");
+      return;
+    }
+    let rawGold = randInt(4, 8);
+    if (inTreasureRoom) {
+      rawGold = Math.round(rawGold * 6);
+    }
+    rawGold = Math.max(1, Math.round(rawGold * getTreasureSenseMultiplier()));
+    const convertedGold = grantGold(rawGold);
+    pushLog(`Chest ${statLabel} cap (${bucketLabel}) reached: converted to +${convertedGold} gold.`, "good");
+  }
+
   function handleChestAttackUpgrade(inTreasureRoom) {
     const bucketIndex = getChestAttackBucketIndex(state.depth);
     const currentBucketCount = getChestAttackBucketCount(bucketIndex);
     const bucketLabel = getChestAttackBucketLabel(bucketIndex);
 
     if (currentBucketCount >= CHEST_ATTACK_BUCKET_MAX) {
-      const canHeal = state.runMods.chestHealPenalty < 999;
-      const pickHeal = canHeal && chance(0.5);
-      if (pickHeal) {
-        const healAmount = Math.max(MIN_EFFECTIVE_DAMAGE, scaledCombat(4) - state.runMods.chestHealPenalty);
-        state.player.hp = Math.min(state.player.maxHp, state.player.hp + healAmount);
-        pushLog(`Chest ATK cap (${bucketLabel}) reached: converted to +${healAmount} HP.`, "good");
-      } else {
-        let rawGold = randInt(4, 8);
-        if (inTreasureRoom) {
-          rawGold = Math.round(rawGold * 6);
-        }
-        rawGold = Math.max(1, Math.round(rawGold * getTreasureSenseMultiplier()));
-        const convertedGold = grantGold(rawGold);
-        pushLog(`Chest ATK cap (${bucketLabel}) reached: converted to +${convertedGold} gold.`, "good");
-      }
+      applyChestCapFallback(inTreasureRoom, bucketLabel, "ATK");
       return;
     }
 
@@ -5745,6 +5842,41 @@
     const gainedAttack = addScaledFlatAttack(CHEST_ATTACK_UPGRADE_FLAT);
     pushLog(
       `Chest: Attack +${gainedAttack}. Depth ${bucketLabel} chest ATK ${nextBucketCount}/${CHEST_ATTACK_BUCKET_MAX}.`,
+      "good"
+    );
+  }
+
+  function handleChestArmorUpgrade(inTreasureRoom) {
+    const bucketIndex = getChestAttackBucketIndex(state.depth);
+    const currentBucketCount = getChestArmorBucketCount(bucketIndex);
+    const bucketLabel = getChestAttackBucketLabel(bucketIndex);
+    if (currentBucketCount >= CHEST_ATTACK_BUCKET_MAX) {
+      applyChestCapFallback(inTreasureRoom, bucketLabel, "ARM");
+      return;
+    }
+    const nextBucketCount = incrementChestArmorBucketCount(bucketIndex);
+    state.sessionChestArmorFlat += CHEST_ARMOR_UPGRADE_FLAT;
+    state.player.armor += CHEST_ARMOR_UPGRADE_FLAT;
+    pushLog(
+      `Chest: Armor +${CHEST_ARMOR_UPGRADE_FLAT}. Depth ${bucketLabel} chest ARM ${nextBucketCount}/${CHEST_ATTACK_BUCKET_MAX}.`,
+      "good"
+    );
+  }
+
+  function handleChestHealthUpgrade(healAmount, inTreasureRoom) {
+    const bucketIndex = getChestAttackBucketIndex(state.depth);
+    const currentBucketCount = getChestHealthBucketCount(bucketIndex);
+    const bucketLabel = getChestAttackBucketLabel(bucketIndex);
+    if (currentBucketCount >= CHEST_ATTACK_BUCKET_MAX) {
+      applyChestCapFallback(inTreasureRoom, bucketLabel, "HP");
+      return;
+    }
+    const nextBucketCount = incrementChestHealthBucketCount(bucketIndex);
+    state.sessionChestHealthFlat += healAmount;
+    state.player.maxHp += healAmount;
+    state.player.hp = Math.min(state.player.maxHp, state.player.hp + healAmount);
+    pushLog(
+      `Chest: Health +${healAmount}. Depth ${bucketLabel} chest HP ${nextBucketCount}/${CHEST_ATTACK_BUCKET_MAX}.`,
       "good"
     );
   }
@@ -5767,14 +5899,12 @@
         pushLog(`Chest: no heal (Alchemist), +${fallbackGold} gold.`);
       } else {
         const healAmount = Math.max(MIN_EFFECTIVE_DAMAGE, scaledCombat(4) - state.runMods.chestHealPenalty);
-        state.player.hp = Math.min(state.player.maxHp, state.player.hp + healAmount);
-        pushLog(`Chest: +${healAmount} HP.`);
+        handleChestHealthUpgrade(healAmount, inTreasureRoom);
       }
     } else if (roll < table.attack) {
       handleChestAttackUpgrade(inTreasureRoom);
     } else if (roll < table.armor) {
-      state.player.armor += 2;
-      pushLog("Chest: Armor +2.", "good");
+      handleChestArmorUpgrade(inTreasureRoom);
     } else if (roll < table.potion) {
       grantPotion(1);
       pushLog("Chest: +1 potion.", "good");
@@ -6239,6 +6369,45 @@
     return false;
   }
 
+  function playerKnockbackTileBlocked(x, y) {
+    if (!inBounds(x, y)) return true;
+    if (state.chests.some((chest) => !chest.opened && chest.x === x && chest.y === y)) return true;
+    if (state.enemies.some((enemy) => enemy.x === x && enemy.y === y)) return true;
+    return false;
+  }
+
+  function useBruteKnockback(enemy) {
+    const dx = sign(state.player.x - enemy.x);
+    const dy = sign(state.player.y - enemy.y);
+    if (dx === 0 && dy === 0) return false;
+
+    let pushedTiles = 0;
+    for (let i = 0; i < 2; i += 1) {
+      const nx = state.player.x + dx;
+      const ny = state.player.y + dy;
+      if (playerKnockbackTileBlocked(nx, ny)) break;
+      if (pushedTiles === 0) {
+        startTween(state.player);
+      }
+      state.player.x = nx;
+      state.player.y = ny;
+      pushedTiles += 1;
+    }
+
+    if (pushedTiles <= 0) return false;
+    applyDamageToPlayer(enemy.attack, `${enemy.name} slam`, enemy);
+    if (state.phase !== "playing") {
+      return true;
+    }
+    state.player.lastMoveX = dx;
+    state.player.lastMoveY = dy;
+    spawnParticles(state.player.x, state.player.y, "#ff8e83", 9, 1.2);
+    setShake(2.4);
+    pushLog(`Brute slam knocks you back ${pushedTiles} tile${pushedTiles > 1 ? "s" : ""}.`, "bad");
+    applySpikeToPlayer();
+    return true;
+  }
+
   function stepToward(enemy, targetX, targetY) {
     const dx = targetX - enemy.x;
     const dy = targetY - enemy.y;
@@ -6340,11 +6509,8 @@
       }
     }
 
-    if (enemy.type === "brute") {
-      enemy.rests = !enemy.rests;
-      if (enemy.rests) {
-        return;
-      }
+    if (enemy.type === "brute" && enemy.cooldown > 0) {
+      enemy.cooldown -= 1;
     }
 
     const distance = manhattan(enemy.x, enemy.y, state.player.x, state.player.y);
@@ -6354,13 +6520,21 @@
       if (enemy.cooldown > 0) {
         enemy.cooldown -= 1;
       }
-      const canBlast =
-        hasLineOfSight(enemy) && lineDistance <= enemy.range && enemy.cooldown === 0 && distance > 1;
-      if (canBlast) {
-        enemy.facing = getFacingFromDelta(state.player.x - enemy.x, state.player.y - enemy.y, enemy.facing);
-        enemyRanged(enemy);
-        enemy.cooldown = 2;
-        pushLog("Warden casts a pulse blast.", "bad");
+      const canBlast = hasLineOfSight(enemy) && lineDistance <= enemy.range && distance > 1;
+      if (enemy.aiming) {
+        if (canBlast) {
+          enemy.facing = getFacingFromDelta(state.player.x - enemy.x, state.player.y - enemy.y, enemy.facing);
+          enemyRanged(enemy);
+          enemy.cooldown = 2;
+          enemy.aiming = false;
+          pushLog("Warden casts a pulse blast.", "bad");
+          return;
+        }
+        enemy.aiming = false;
+      }
+      if (canBlast && enemy.cooldown === 0) {
+        enemy.aiming = true;
+        pushLog("Warden charges a pulse blast.", "bad");
         return;
       }
     }
@@ -6390,6 +6564,18 @@
         pushLog("Skeleton lines up a shot.", "bad");
         return;
       }
+    }
+
+    if (enemy.type === "brute" && distance === 1 && enemy.cooldown === 0) {
+      enemy.facing = getFacingFromDelta(state.player.x - enemy.x, state.player.y - enemy.y, enemy.facing);
+      if (!useBruteKnockback(enemy) && state.phase === "playing") {
+        // If push is blocked, brute still lands a heavy melee hit.
+        enemyMelee(enemy);
+        if (state.phase !== "playing") return;
+        pushLog("Brute slam was blocked, but the hit still lands.", "bad");
+      }
+      enemy.cooldown = 3;
+      return;
     }
 
     if (distance === 1) {
