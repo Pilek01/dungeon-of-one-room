@@ -112,12 +112,10 @@
     "assets/sprite/merchant/merchant1.png",
     "assets/sprite/merchant/merchant2.png",
     "assets/sprite/merchant/merchant3.png",
-    "assets/sprite/merchant/merchant4.png",
-    "assets/sprite/merchant/merchant5.png",
-    "assets/sprite/merchant/merchant6.png"
+    "assets/sprite/merchant/merchant4.png"
   ];
   const MERCHANT_SPRITE_GIF_PATH = "assets/sprite/merchant/merchant.gif";
-  const MERCHANT_SPRITE_VERSION = "20260216_001";
+  const MERCHANT_SPRITE_VERSION = "20260216_002";
   const MERCHANT_FRAME_MS = 180;
   const MERCHANT_DRAW_SCALE = 1.2;
   const SPIKE_SPRITE_PATH = "assets/sprite/spike.png";
