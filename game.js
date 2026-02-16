@@ -36,6 +36,7 @@
     const normalized = typeof raw === "string" ? raw.trim() : "";
     return normalized || "dev";
   })();
+  const MAX_DEPTH = 100;
   const MAX_LIVES = 5;
   const MAX_RELICS = 8;
   const MAX_NORMAL_RELIC_STACK = 5;
@@ -53,6 +54,11 @@
   const ARMOR_DAMAGE_REDUCTION_CAP = 0.7;
   const AUTO_POTION_TRIGGER_HP = 25;
   const AUTO_POTION_INTERNAL_COOLDOWN_TURNS = 5;
+  const BLADE_ATTACK_FLAT_PER_LEVEL = 1 * COMBAT_SCALE; // +10
+  const BLADE_ATTACK_PERCENT_PER_LEVEL = 0.10; // +10% per blade level
+  const CHEST_ATTACK_UPGRADE_FLAT = 2;
+  const CHEST_ATTACK_BUCKET_SIZE = 10;
+  const CHEST_ATTACK_BUCKET_MAX = 5;
   const SHRINE_FURY_BLESSING_CHANCE = 0.1;
   const ENEMY_LATE_SCALE_START_DEPTH = 20;
   const ENEMY_LATE_SCALE_STEP_DEPTH = 10;
@@ -72,6 +78,7 @@
   const ONLINE_LEADERBOARD_REFRESH_MS = 12000;
   const LEADERBOARD_MIN_TURNS = 30;
   const ONLINE_RUN_TOKEN_MAX_LEN = 256;
+  const ONLINE_FINALIZE_NONCE_MAX_LEN = 256;
   const ONLINE_LEADERBOARD_API_BASE = (() => {
     const raw = typeof window !== "undefined" ? window.DUNGEON_LEADERBOARD_API : "";
     const normalized = typeof raw === "string" ? raw.trim() : "";
@@ -101,6 +108,18 @@
   const PORTAL_SPRITE_VERSION = "20260213_002";
   const PORTAL_FRAME_MS = 220;
   const PORTAL_DRAW_SCALE = 1.25;
+  const MERCHANT_SPRITE_FRAME_PATHS = [
+    "assets/sprite/merchant/merchant1.png",
+    "assets/sprite/merchant/merchant2.png",
+    "assets/sprite/merchant/merchant3.png",
+    "assets/sprite/merchant/merchant4.png",
+    "assets/sprite/merchant/merchant5.png",
+    "assets/sprite/merchant/merchant6.png"
+  ];
+  const MERCHANT_SPRITE_GIF_PATH = "assets/sprite/merchant/merchant.gif";
+  const MERCHANT_SPRITE_VERSION = "20260216_001";
+  const MERCHANT_FRAME_MS = 180;
+  const MERCHANT_DRAW_SCALE = 1.2;
   const SPIKE_SPRITE_PATH = "assets/sprite/spike.png";
   const SPIKE_SPRITE_VERSION = "20260213_001";
   const SPIKE_DRAW_SCALE = 1.4;
@@ -446,7 +465,7 @@
       id: "vitality",
       key: "1",
       name: "Vitality",
-      desc: "+10 max HP at run start",
+      desc: "+10% max HP at run start",
       baseCost: 10,
       scale: 8,
       max: 10
@@ -455,10 +474,10 @@
       id: "blade",
       key: "2",
       name: "Sharpen Blade",
-      desc: "+10 attack at run start",
+      desc: "+10 ATK and +10% all flat ATK per level",
       baseCost: 15,
       scale: 10,
-      max: 8
+      max: 15
     },
     {
       id: "satchel",
@@ -476,7 +495,7 @@
       desc: "+10 starting armor",
       baseCost: 30,
       scale: 12,
-      max: 6
+      max: 15
     },
     {
       id: "auto_potion",
@@ -492,7 +511,7 @@
       id: "potion_strength",
       key: "6",
       name: "Potion Strength",
-      desc: "+10 potion heal per level",
+      desc: "+20 potion heal per level",
       baseCost: 80,
       scale: 60,
       max: 5,
@@ -677,6 +696,25 @@
     return 1 + steps * ENEMY_LATE_SCALE_PER_STEP;
   }
 
+  function getBladeAttackMultiplier(level = getCampUpgradeLevel("blade")) {
+    const safeLevel = Math.max(0, Number(level) || 0);
+    return 1 + safeLevel * BLADE_ATTACK_PERCENT_PER_LEVEL;
+  }
+
+  function scaleFlatAttackByBlade(flatAmount, level = getCampUpgradeLevel("blade")) {
+    const base = Math.round(Number(flatAmount) || 0);
+    if (base === 0) return 0;
+    const scaled = Math.round(base * getBladeAttackMultiplier(level));
+    if (base > 0) return Math.max(1, scaled);
+    return Math.min(-1, scaled);
+  }
+
+  function addScaledFlatAttack(flatAmount, level = getCampUpgradeLevel("blade")) {
+    const gained = scaleFlatAttackByBlade(flatAmount, level);
+    state.player.attack += gained;
+    return gained;
+  }
+
   const TWEEN_MS = 120;
   const ENTITY_HIT_FLASH_MS = 120;
   const CRIT_HIT_FLASH_MS = 210;
@@ -820,6 +858,19 @@
     return output;
   }
 
+  function sanitizeChestAttackDepthBuckets(input) {
+    const output = {};
+    if (!input || typeof input !== "object") return output;
+    for (const [rawBucket, rawCount] of Object.entries(input)) {
+      const bucket = Math.floor(Number(rawBucket));
+      if (!Number.isFinite(bucket) || bucket < 0) continue;
+      const count = clamp(Number(rawCount) || 0, 0, CHEST_ATTACK_BUCKET_MAX);
+      if (count <= 0) continue;
+      output[String(bucket)] = count;
+    }
+    return output;
+  }
+
   function sanitizeEnemySpeedMode(value, fallback = "standard") {
     const normalized = String(value || "").trim().toLowerCase();
     if (ENEMY_SPEED_MODES.includes(normalized)) return normalized;
@@ -841,6 +892,14 @@
       .slice(0, ONLINE_RUN_TOKEN_MAX_LEN);
     if (!token) return "";
     return /^[a-zA-Z0-9_-]+$/.test(token) ? token : "";
+  }
+
+  function sanitizeFinalizeNonce(value) {
+    const nonce = String(value || "")
+      .trim()
+      .slice(0, ONLINE_FINALIZE_NONCE_MAX_LEN);
+    if (!nonce) return "";
+    return /^[a-zA-Z0-9_-]+$/.test(nonce) ? nonce : "";
   }
 
   function makeRunId() {
@@ -886,6 +945,8 @@
       id: String(rawEntry.id || `${ts}-${Math.random().toString(36).slice(2, 8)}`),
       runId: String(rawEntry.runId || rawEntry.id || `${ts}-${Math.random().toString(36).slice(2, 8)}`),
       runToken: sanitizeRunToken(rawEntry.runToken),
+      finalizeNonce: sanitizeFinalizeNonce(rawEntry.finalizeNonce ?? rawEntry.finalize_nonce),
+      finalizeExpiresAt: Math.max(0, Number(rawEntry.finalizeExpiresAt ?? rawEntry.finalize_expires_at) || 0),
       playerName: sanitizePlayerName(rawEntry.playerName) || "Anonymous",
       ts,
       endedAt: typeof rawEntry.endedAt === "string" ? rawEntry.endedAt : new Date(ts).toISOString(),
@@ -1010,6 +1071,7 @@
     extractConfirm: null,
     extractRelicPrompt: null,
     finalGameOverPrompt: null,
+    finalVictoryPrompt: null,
     merchantMenuOpen: false,
     merchantUpgradeBoughtThisRoom: false,
     dashAimActive: false,
@@ -1025,6 +1087,8 @@
     currentRunTokenExpiresAt: 0,
     currentRunSubmitSeq: 1,
     runLeaderboardSubmitted: false,
+    sessionChestAttackFlat: 0,
+    sessionChestAttackDepthBuckets: {},
     menuIndex: 0,
     menuOptionsOpen: false,
     menuOptionsView: "root", // "root" | "enemy_speed"
@@ -1130,6 +1194,15 @@
     frames: [],
     readyCount: 0,
     failed: false
+  };
+  const merchantSprite = {
+    frames: [],
+    readyCount: 0,
+    frameDurationsMs: [],
+    frameDurationTotalMs: 0,
+    failed: false,
+    gif: null,
+    gifReady: false
   };
   const spikeSprite = {
     img: null,
@@ -1296,7 +1369,12 @@
         desc: "Jump to next room depth.",
         available: () => state.phase === "playing",
         run: () => {
-          state.depth += 1;
+          if (state.depth >= MAX_DEPTH) {
+            pushLog(`Debug: max depth ${MAX_DEPTH} reached.`, "bad");
+            markUiDirty();
+            return;
+          }
+          state.depth = Math.min(MAX_DEPTH, state.depth + 1);
           state.runMaxDepth = Math.max(state.runMaxDepth, state.depth);
           state.player.hp = Math.min(state.player.maxHp, state.player.hp + scaledCombat(1));
           saveMetaProgress();
@@ -1508,6 +1586,12 @@
     return `${endpoint}/start`;
   }
 
+  function getOnlineLeaderboardFinalizeEndpoint() {
+    const endpoint = getOnlineLeaderboardEndpoint();
+    if (!endpoint) return "";
+    return `${endpoint}/finalize`;
+  }
+
   async function requestOnlineRunSession(runId) {
     const normalizedRunId = String(runId || "").trim();
     if (!normalizedRunId || !isOnlineLeaderboardEnabled()) return null;
@@ -1535,6 +1619,36 @@
       runToken,
       expiresAt,
       nextSubmitSeq
+    };
+  }
+
+  async function requestOnlineFinalizeNonce(runId, runToken) {
+    const normalizedRunId = String(runId || "").trim();
+    const normalizedRunToken = sanitizeRunToken(runToken);
+    if (!normalizedRunId || !normalizedRunToken || !isOnlineLeaderboardEnabled()) return null;
+    const endpoint = getOnlineLeaderboardFinalizeEndpoint();
+    if (!endpoint) return null;
+    const payload = await fetchJsonWithTimeout(endpoint, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json"
+      },
+      body: JSON.stringify({
+        runId: normalizedRunId,
+        runToken: normalizedRunToken,
+        season: ONLINE_LEADERBOARD_SEASON,
+        version: GAME_VERSION,
+        game_version: GAME_VERSION
+      })
+    });
+    const returnedRunId = String(payload?.runId || "").trim();
+    const finalizeNonce = sanitizeFinalizeNonce(payload?.finalizeNonce);
+    const finalizeExpiresAt = Math.max(0, Number(payload?.finalizeExpiresAt) || 0);
+    if (!returnedRunId || !finalizeNonce || finalizeExpiresAt <= 0) return null;
+    return {
+      runId: returnedRunId,
+      finalizeNonce,
+      finalizeExpiresAt
     };
   }
 
@@ -1688,6 +1802,26 @@
       throw new Error("Missing run session.");
     }
 
+    let finalizeNonce = sanitizeFinalizeNonce(entry.finalizeNonce);
+    let finalizeExpiresAt = Math.max(0, Number(entry.finalizeExpiresAt) || 0);
+    const nowTs = Date.now();
+    if (!finalizeNonce || finalizeExpiresAt <= nowTs + 500) {
+      const finalize = await requestOnlineFinalizeNonce(runId, runToken);
+      if (!finalize || finalize.runId !== runId) {
+        throw new Error("Missing finalize window.");
+      }
+      finalizeNonce = sanitizeFinalizeNonce(finalize.finalizeNonce);
+      finalizeExpiresAt = Math.max(0, Number(finalize.finalizeExpiresAt) || 0);
+      entry.finalizeNonce = finalizeNonce;
+      entry.finalizeExpiresAt = finalizeExpiresAt;
+      if (String(state.currentRunId || "") === runId) {
+        saveRunSnapshot();
+      }
+    }
+    if (!finalizeNonce) {
+      throw new Error("Missing finalize window.");
+    }
+
     let submitSeq = Math.max(1, Number(entry.submitSeq) || 0);
     if (!Number.isFinite(submitSeq) || submitSeq < 1) {
       submitSeq = String(state.currentRunId || "") === runId
@@ -1700,31 +1834,54 @@
       typeof entry.version === "string" && entry.version.trim()
         ? entry.version.trim()
         : GAME_VERSION;
-    const payload = {
-      runId,
-      playerName: sanitizePlayerName(entry.playerName) || "Anonymous",
-      ts: Math.max(0, Number(entry.ts) || Date.now()),
-      endedAt: entry.endedAt,
-      outcome: entry.outcome === "extract" ? "extract" : "death",
-      depth: Math.max(0, Number(entry.depth) || 0),
-      gold: Math.max(0, Number(entry.gold) || 0),
-      turns: Math.max(0, Number(entry.turns) || 0),
-      submitSeq,
-      score: Math.max(0, Number(entry.score) || 0),
-      mutatorCount: Math.max(0, Number(entry.mutatorCount) || 0),
-      mutatorIds: Array.isArray(entry.mutatorIds) ? entry.mutatorIds : [],
-      version: payloadVersion,
-      game_version: payloadVersion,
-      season: normalizeSeasonId(entry.season || ONLINE_LEADERBOARD_SEASON),
-      runToken
-    };
-    await fetchJsonWithTimeout(endpoint, {
-      method: "POST",
-      headers: {
-        "content-type": "application/json"
-      },
-      body: JSON.stringify(payload)
-    });
+    for (let attempt = 0; attempt < 2; attempt += 1) {
+      const payload = {
+        runId,
+        playerName: sanitizePlayerName(entry.playerName) || "Anonymous",
+        ts: Math.max(0, Number(entry.ts) || Date.now()),
+        endedAt: entry.endedAt,
+        outcome: entry.outcome === "extract" ? "extract" : "death",
+        depth: Math.max(0, Number(entry.depth) || 0),
+        gold: Math.max(0, Number(entry.gold) || 0),
+        turns: Math.max(0, Number(entry.turns) || 0),
+        submitSeq,
+        score: Math.max(0, Number(entry.score) || 0),
+        mutatorCount: Math.max(0, Number(entry.mutatorCount) || 0),
+        mutatorIds: Array.isArray(entry.mutatorIds) ? entry.mutatorIds : [],
+        version: payloadVersion,
+        game_version: payloadVersion,
+        season: normalizeSeasonId(entry.season || ONLINE_LEADERBOARD_SEASON),
+        runToken,
+        finalizeNonce
+      };
+      try {
+        await fetchJsonWithTimeout(endpoint, {
+          method: "POST",
+          headers: {
+            "content-type": "application/json"
+          },
+          body: JSON.stringify(payload)
+        });
+        break;
+      } catch (error) {
+        const message = String(error && error.message ? error.message : "").toLowerCase();
+        const canRetryFinalize = attempt === 0 && message.includes("finalize window expired");
+        if (!canRetryFinalize) {
+          throw error;
+        }
+        const refreshedFinalize = await requestOnlineFinalizeNonce(runId, runToken);
+        if (!refreshedFinalize || refreshedFinalize.runId !== runId) {
+          throw error;
+        }
+        finalizeNonce = sanitizeFinalizeNonce(refreshedFinalize.finalizeNonce);
+        finalizeExpiresAt = Math.max(0, Number(refreshedFinalize.finalizeExpiresAt) || 0);
+        entry.finalizeNonce = finalizeNonce;
+        entry.finalizeExpiresAt = finalizeExpiresAt;
+        if (!finalizeNonce) {
+          throw error;
+        }
+      }
+    }
     if (String(state.currentRunId || "") === runId) {
       state.currentRunSubmitSeq = Math.max(
         Number(state.currentRunSubmitSeq) || 1,
@@ -1897,6 +2054,8 @@
       id: `${ts}-${Math.random().toString(36).slice(2, 8)}`,
       runId,
       runToken: sanitizeRunToken(state.currentRunToken),
+      finalizeNonce: "",
+      finalizeExpiresAt: 0,
       submitSeq,
       playerName: sanitizePlayerName(state.playerName) || "Anonymous",
       ts,
@@ -1948,12 +2107,14 @@
     state.currentRunTokenExpiresAt = 0;
     state.currentRunSubmitSeq = 1;
     state.runLeaderboardSubmitted = false;
+    resetSessionChestAttackBonuses();
     state.campVisitShopCostMult = 1;
     state.leaderboardModalOpen = false;
     state.nameModalOpen = false;
     state.nameModalAction = null;
     state.extractRelicPrompt = null;
     state.finalGameOverPrompt = null;
+    state.finalVictoryPrompt = null;
 
     localStorage.setItem(STORAGE_DEPTH, "0");
     localStorage.setItem(STORAGE_GOLD, "0");
@@ -2018,6 +2179,8 @@
       currentRunTokenExpiresAt: state.currentRunTokenExpiresAt,
       currentRunSubmitSeq: state.currentRunSubmitSeq,
       runLeaderboardSubmitted: state.runLeaderboardSubmitted,
+      sessionChestAttackFlat: state.sessionChestAttackFlat,
+      sessionChestAttackDepthBuckets: state.sessionChestAttackDepthBuckets,
       runMods: state.runMods,
       player: state.player,
       portal: state.portal,
@@ -2138,6 +2301,15 @@
     state.currentRunTokenExpiresAt = Math.max(0, Number(snapshot.currentRunTokenExpiresAt) || 0);
     state.currentRunSubmitSeq = Math.max(1, Number(snapshot.currentRunSubmitSeq) || 1);
     state.runLeaderboardSubmitted = Boolean(snapshot.runLeaderboardSubmitted);
+    state.sessionChestAttackDepthBuckets = sanitizeChestAttackDepthBuckets(snapshot.sessionChestAttackDepthBuckets);
+    const maxSessionChestFlat =
+      Object.values(state.sessionChestAttackDepthBuckets)
+        .reduce((sum, count) => sum + (Number(count) || 0), 0) * CHEST_ATTACK_UPGRADE_FLAT;
+    state.sessionChestAttackFlat = clamp(
+      Math.max(0, Number(snapshot.sessionChestAttackFlat) || 0),
+      0,
+      Math.max(0, maxSessionChestFlat)
+    );
 
     state.runMods = {
       goldMultiplier: Number(snapshot.runMods?.goldMultiplier) || 1,
@@ -2354,6 +2526,87 @@
       };
       img.src = `${path}?v=${PORTAL_SPRITE_VERSION}`;
     });
+  }
+
+  function loadMerchantSprite() {
+    merchantSprite.frames = new Array(MERCHANT_SPRITE_FRAME_PATHS.length).fill(null);
+    merchantSprite.readyCount = 0;
+    merchantSprite.frameDurationsMs = [];
+    merchantSprite.frameDurationTotalMs = 0;
+    merchantSprite.failed = false;
+    merchantSprite.gifReady = false;
+
+    const gif = new Image();
+    merchantSprite.gif = gif;
+    const gifUrl = `${MERCHANT_SPRITE_GIF_PATH}?v=${MERCHANT_SPRITE_VERSION}`;
+    gif.onload = () => {
+      merchantSprite.gifReady = true;
+      markUiDirty();
+    };
+    gif.onerror = () => {
+      if (!merchantSprite.failed) {
+        merchantSprite.failed = true;
+        pushLog(`Merchant sprite failed: ${MERCHANT_SPRITE_GIF_PATH}`, "bad");
+      }
+    };
+    gif.src = gifUrl;
+
+    MERCHANT_SPRITE_FRAME_PATHS.forEach((path, frameIndex) => {
+      const img = new Image();
+      img.onload = () => {
+        merchantSprite.frames[frameIndex] = img;
+        merchantSprite.readyCount += 1;
+        markUiDirty();
+      };
+      img.onerror = () => {
+        // Optional frame set: ignore missing png frames, gif/fallback will still render.
+      };
+      img.src = `${path}?v=${MERCHANT_SPRITE_VERSION}`;
+    });
+
+    void decodeMerchantGifFrames(gifUrl);
+  }
+
+  async function decodeMerchantGifFrames(gifUrl) {
+    if (typeof window === "undefined") return false;
+    if (typeof window.ImageDecoder !== "function") return false;
+    if (typeof createImageBitmap !== "function") return false;
+    try {
+      const response = await fetch(gifUrl, { cache: "no-store" });
+      if (!response.ok) return false;
+      const data = await response.arrayBuffer();
+      const decoder = new window.ImageDecoder({ data, type: "image/gif" });
+      await decoder.tracks.ready;
+      const frameCount = Math.max(0, Number(decoder.tracks?.selectedTrack?.frameCount) || 0);
+      if (frameCount <= 1) return false;
+
+      const decodedFrames = [];
+      const durationsMs = [];
+      for (let frameIndex = 0; frameIndex < frameCount; frameIndex += 1) {
+        const result = await decoder.decode({ frameIndex });
+        const frame = result.image;
+        const bitmap = await createImageBitmap(frame);
+        const durationUs = Math.max(0, Number(frame.duration) || 0);
+        const durationMs = durationUs > 0
+          ? Math.max(40, Math.round(durationUs / 1000))
+          : MERCHANT_FRAME_MS;
+        decodedFrames.push(bitmap);
+        durationsMs.push(durationMs);
+        frame.close();
+      }
+
+      // Prefer decoded GIF frames when no explicit PNG frame set loaded.
+      if (merchantSprite.readyCount <= 0) {
+        merchantSprite.frames = decodedFrames;
+        merchantSprite.readyCount = decodedFrames.length;
+      }
+      merchantSprite.frameDurationsMs = durationsMs;
+      merchantSprite.frameDurationTotalMs = durationsMs.reduce((sum, value) => sum + value, 0);
+      markUiDirty();
+      return true;
+    } catch {
+      return false;
+    }
   }
 
   function loadSpikeSprite() {
@@ -3114,6 +3367,7 @@
     state.nameModalOpen = false;
     state.nameModalAction = null;
     state.finalGameOverPrompt = null;
+    state.finalVictoryPrompt = null;
     const options = getMenuOptions();
     const firstEnabled = options.findIndex((item) => !item.disabled);
     state.menuIndex = firstEnabled >= 0 ? firstEnabled : 0;
@@ -3480,7 +3734,7 @@
   function applyRelicEffects(relicId, options = {}) {
     const onGain = options.onGain !== false;
     // Normal
-    if (relicId === "fang") { state.player.attack += scaledCombat(1); return; }
+    if (relicId === "fang") { addScaledFlatAttack(scaledCombat(1)); return; }
     if (relicId === "plating") { state.player.armor += scaledCombat(1); return; }
     if (relicId === "lucky") { state.player.crit = clamp(state.player.crit + 0.05, 0.01, CRIT_CHANCE_CAP); return; }
     if (relicId === "flask") {
@@ -3517,7 +3771,7 @@
     if (relicId === "merchfavor") { return; } // passive: checked in merchant
     // Epic
     if (relicId === "glasscannon") {
-      state.player.attack += scaledCombat(4);
+      addScaledFlatAttack(scaledCombat(4));
       state.player.maxHp = Math.max(scaledCombat(4), state.player.maxHp - scaledCombat(5));
       state.player.hp = Math.min(state.player.hp, state.player.maxHp);
       return;
@@ -3542,7 +3796,8 @@
     if (relicId === "titanheart") {
       state.player.maxHp += scaledCombat(8);
       state.player.armor += scaledCombat(2);
-      const penalty = Math.min(scaledCombat(2), Math.max(0, state.player.attack - scaledCombat(1)));
+      const scaledPenalty = Math.max(1, Math.abs(scaleFlatAttackByBlade(-scaledCombat(2))));
+      const penalty = Math.min(scaledPenalty, Math.max(0, state.player.attack - scaledCombat(1)));
       state.player.attack -= penalty;
       state.player.titanAttackPenalty = penalty;
       state.player.hp = Math.min(state.player.hp, state.player.maxHp);
@@ -3559,7 +3814,10 @@
 
   function removeRelicEffects(relicId) {
     // Normal
-    if (relicId === "fang") { state.player.attack = Math.max(scaledCombat(1), state.player.attack - scaledCombat(1)); return; }
+    if (relicId === "fang") {
+      state.player.attack = Math.max(scaledCombat(1), state.player.attack - Math.max(1, scaleFlatAttackByBlade(scaledCombat(1))));
+      return;
+    }
     if (relicId === "plating") { state.player.armor = Math.max(0, state.player.armor - scaledCombat(1)); return; }
     if (relicId === "lucky") { state.player.crit = clamp(state.player.crit - 0.05, 0.01, CRIT_CHANCE_CAP); return; }
     if (relicId === "flask") {
@@ -3594,7 +3852,7 @@
     if (relicId === "merchfavor") { return; }
     // Epic
     if (relicId === "glasscannon") {
-      state.player.attack = Math.max(scaledCombat(1), state.player.attack - scaledCombat(4));
+      state.player.attack = Math.max(scaledCombat(1), state.player.attack - Math.max(1, scaleFlatAttackByBlade(scaledCombat(4))));
       state.player.maxHp += scaledCombat(5);
       state.player.hp = Math.min(state.player.hp, state.player.maxHp);
       return;
@@ -4094,8 +4352,15 @@
   }
 
   function applyCampUpgradesToRun() {
-    state.player.maxHp += scaledCombat(getCampUpgradeLevel("vitality"));
-    state.player.attack += scaledCombat(getCampUpgradeLevel("blade"));
+    const vitalityLevel = getCampUpgradeLevel("vitality");
+    if (vitalityLevel > 0) {
+      const hpMult = 1 + vitalityLevel * 0.1;
+      state.player.maxHp = Math.round(state.player.maxHp * hpMult);
+    }
+    const bladeFlat = getCampUpgradeLevel("blade") * BLADE_ATTACK_FLAT_PER_LEVEL;
+    if (bladeFlat > 0) {
+      addScaledFlatAttack(bladeFlat);
+    }
     const satchelLevel = getCampUpgradeLevel("satchel");
     state.player.potions += satchelLevel;
     state.player.maxPotions += satchelLevel;
@@ -4104,7 +4369,7 @@
   }
 
   function getPotionHealAmount() {
-    const bonus = scaledCombat(getCampUpgradeLevel("potion_strength"));
+    const bonus = scaledCombat(getCampUpgradeLevel("potion_strength") * 2);
     const base = randInt(scaledCombat(4) + bonus, scaledCombat(6) + bonus);
     let heal = Math.max(MIN_EFFECTIVE_DAMAGE, Math.round(base * state.runMods.potionHealMult));
     // Titan's Heart: +50% potion healing.
@@ -4125,6 +4390,41 @@
   function getEmergencyExtractLossRatio() {
     const reduction = getCampUpgradeLevel("emergency_stash") * 0.1;
     return clamp(0.7 - reduction, 0.05, 0.95);
+  }
+
+  function getChestAttackBucketIndex(depth = state.depth) {
+    const safeDepth = Math.max(0, Number(depth) || 0);
+    return Math.floor(safeDepth / CHEST_ATTACK_BUCKET_SIZE);
+  }
+
+  function getChestAttackBucketLabel(bucketIndex) {
+    const safeBucket = Math.max(0, Math.floor(Number(bucketIndex) || 0));
+    const start = safeBucket * CHEST_ATTACK_BUCKET_SIZE;
+    const end = start + CHEST_ATTACK_BUCKET_SIZE - 1;
+    return `${start}-${end}`;
+  }
+
+  function getChestAttackBucketCount(bucketIndex) {
+    const key = String(Math.max(0, Math.floor(Number(bucketIndex) || 0)));
+    return clamp(Number(state.sessionChestAttackDepthBuckets?.[key]) || 0, 0, CHEST_ATTACK_BUCKET_MAX);
+  }
+
+  function incrementChestAttackBucketCount(bucketIndex) {
+    const key = String(Math.max(0, Math.floor(Number(bucketIndex) || 0)));
+    const next = clamp(getChestAttackBucketCount(bucketIndex) + 1, 0, CHEST_ATTACK_BUCKET_MAX);
+    state.sessionChestAttackDepthBuckets[key] = next;
+    return next;
+  }
+
+  function resetSessionChestAttackBonuses() {
+    state.sessionChestAttackFlat = 0;
+    state.sessionChestAttackDepthBuckets = {};
+  }
+
+  function applySessionChestAttackBonusToRun() {
+    const carryFlat = Math.max(0, Number(state.sessionChestAttackFlat) || 0);
+    if (carryFlat <= 0) return 0;
+    return addScaledFlatAttack(carryFlat);
   }
 
   function getSkillCooldownRemaining(skillId) {
@@ -4235,13 +4535,13 @@
     let totalCampGoldBonus = 0;
 
     if (isMutatorActive("berserker")) {
-      state.player.attack += scaledCombat(3);
+      addScaledFlatAttack(scaledCombat(3));
       state.player.maxHp -= scaledCombat(5);
       totalCampGoldBonus += 0.15;
     }
     if (isMutatorActive("bulwark")) {
       state.player.armor += scaledCombat(3);
-      state.player.attack -= scaledCombat(2);
+      state.player.attack -= Math.max(1, Math.abs(scaleFlatAttackByBlade(-scaledCombat(2))));
       totalCampGoldBonus += 0.15;
     }
     if (isMutatorActive("alchemist")) {
@@ -4291,7 +4591,7 @@
     state.runMods.campGoldBonus = totalCampGoldBonus;
 
     state.player.maxHp = clamp(state.player.maxHp, scaledCombat(4), scaledCombat(40));
-    state.player.attack = clamp(state.player.attack, scaledCombat(1), scaledCombat(20));
+    state.player.attack = clamp(state.player.attack, scaledCombat(1), scaledCombat(500));
     state.player.armor = clamp(state.player.armor, 0, scaledCombat(10));
     state.player.crit = clamp(state.player.crit, 0.01, CRIT_CHANCE_CAP);
   }
@@ -4777,6 +5077,7 @@
     state.extractConfirm = null;
     state.extractRelicPrompt = null;
     state.finalGameOverPrompt = null;
+    state.finalVictoryPrompt = null;
     state.campVisitShopCostMult = 1;
     state.runLeaderboardSubmitted = false;
     state.leaderboardModalOpen = false;
@@ -4831,6 +5132,7 @@
       }
       normalizeRelicInventory();
     }
+    const carriedChestAttack = applySessionChestAttackBonusToRun();
     state.player.hp = state.player.maxHp;
 
     buildRoom();
@@ -4840,11 +5142,76 @@
     } else {
       pushLog("New run started.");
     }
+    if (carriedChestAttack > 0) {
+      pushLog(`Session chest attack carried: +${carriedChestAttack} ATK.`, "good");
+    }
     if (activeMutatorCount() > 0) {
       pushLog(`Active mutators: ${activeMutatorCount()}.`);
     }
     saveRunSnapshot();
     ensureOnlineRunSessionForCurrentRun(false);
+    markUiDirty();
+  }
+
+  function launchVictoryFireworks() {
+    const burstColors = ["#ffd95f", "#8ee9ff", "#ff8bc2", "#b78cff", "#8ce1a7"];
+    state.flash = Math.max(state.flash, 260);
+    setShake(6.8);
+    for (let i = 0; i < 22; i += 1) {
+      const x = randInt(1, GRID_SIZE - 2);
+      const y = randInt(1, GRID_SIZE - 2);
+      const color = burstColors[i % burstColors.length];
+      spawnParticles(x, y, color, randInt(10, 20), 2.35);
+      spawnShockwaveRing(x, y, {
+        color,
+        core: "#fff5dc",
+        maxRadius: TILE * (1.8 + Math.random() * 2.1),
+        life: randInt(260, 520)
+      });
+      if (chance(0.35)) {
+        spawnRangedImpact(x, y, color);
+      }
+    }
+    spawnParticles(state.player.x, state.player.y, "#ffe08e", 36, 2.8);
+    spawnParticles(state.portal.x, state.portal.y, "#9deaff", 28, 2.4);
+  }
+
+  function triggerDepth100Victory() {
+    if (state.phase !== "playing") return;
+    const finalDepth = Math.max(MAX_DEPTH, Number(state.depth) || 0, getRunMaxDepth());
+    state.depth = finalDepth;
+    state.runMaxDepth = Math.max(state.runMaxDepth, finalDepth);
+    const finalGold = getRunGoldEarned();
+    const finalScore = calculateScore(finalDepth, finalGold);
+
+    recordRunOnLeaderboard("extract");
+    state.phase = "won";
+    state.turnInProgress = false;
+    state.enemyTurnInProgress = false;
+    state.enemyTurnQueue = [];
+    state.enemyTurnStepTimer = 0;
+    state.enemyTurnStepIndex = 0;
+    state.extractConfirm = null;
+    state.merchantMenuOpen = false;
+    state.relicDraft = null;
+    state.legendarySwapPending = null;
+    state.relicSwapPending = null;
+    state.finalGameOverPrompt = null;
+    state.finalVictoryPrompt = {
+      depth: finalDepth,
+      gold: finalGold,
+      score: finalScore
+    };
+
+    playSfx("portal");
+    playSfx("chrono");
+    launchVictoryFireworks();
+    saveMetaProgress();
+    clearRunSnapshot();
+    syncBgmWithState();
+    pushLog(`DEPTH ${MAX_DEPTH} CONQUERED!`, "good");
+    pushLog("Abyss shattered. You are the champion of the dungeon.", "good");
+    pushLog("Victory achieved. 1 = Main Menu, 2 = Leaderboard.", "good");
     markUiDirty();
   }
 
@@ -4857,7 +5224,10 @@
       pushLog("Chrono Loop was already spent this run.", "bad");
     }
     recordRunOnLeaderboard("death");
+    const hadSessionChestAttack = Math.max(0, Number(state.sessionChestAttackFlat) || 0) > 0;
+    resetSessionChestAttackBonuses();
     state.phase = "dead";
+    state.finalVictoryPrompt = null;
     state.turnInProgress = false;
     state.enemyTurnInProgress = false;
     state.enemyTurnQueue = [];
@@ -4871,6 +5241,9 @@
       playSfx("death");
     }
     pushLog(reason, "bad");
+    if (hadSessionChestAttack) {
+      pushLog("Session chest attack bonuses were reset on death.", "bad");
+    }
     state.lives = Math.max(0, state.lives - 1);
     pushLog(`Life lost. ${state.lives}/${MAX_LIVES} remaining.`, "bad");
 
@@ -5170,6 +5543,7 @@
     pushLog("Room cleared! Portal revealed.", "good");
     let goldBonus = 2 + Math.floor(state.depth / 2);
     let potionChance = 0.35;
+    let shouldTriggerFinalVictory = false;
 
     if (!state.bossRoom) {
       if (state.roomType === "treasure") {
@@ -5186,8 +5560,13 @@
 
     if (state.bossRoom) {
       goldBonus += 10;
-      pushLog("Mini-boss defeated. Boss relic drop!", "good");
-      openRelicDraft(true);
+      if (state.depth >= MAX_DEPTH) {
+        pushLog(`Final boss of depth ${MAX_DEPTH} defeated!`, "good");
+        shouldTriggerFinalVictory = true;
+      } else {
+        pushLog("Mini-boss defeated. Boss relic drop!", "good");
+        openRelicDraft(true);
+      }
       if (chance(0.01)) {
         grantLife("Boss drop");
       }
@@ -5198,6 +5577,10 @@
       pushLog(`Room clear bonus: +${scaled} gold and +1 potion.`, "good");
     } else {
       pushLog(`Room clear bonus: +${scaled} gold.`, "good");
+    }
+    if (shouldTriggerFinalVictory) {
+      triggerDepth100Victory();
+      return;
     }
     markUiDirty();
   }
@@ -5335,6 +5718,39 @@
     return false;
   }
 
+  function handleChestAttackUpgrade(inTreasureRoom) {
+    const bucketIndex = getChestAttackBucketIndex(state.depth);
+    const currentBucketCount = getChestAttackBucketCount(bucketIndex);
+    const bucketLabel = getChestAttackBucketLabel(bucketIndex);
+
+    if (currentBucketCount >= CHEST_ATTACK_BUCKET_MAX) {
+      const canHeal = state.runMods.chestHealPenalty < 999;
+      const pickHeal = canHeal && chance(0.5);
+      if (pickHeal) {
+        const healAmount = Math.max(MIN_EFFECTIVE_DAMAGE, scaledCombat(4) - state.runMods.chestHealPenalty);
+        state.player.hp = Math.min(state.player.maxHp, state.player.hp + healAmount);
+        pushLog(`Chest ATK cap (${bucketLabel}) reached: converted to +${healAmount} HP.`, "good");
+      } else {
+        let rawGold = randInt(4, 8);
+        if (inTreasureRoom) {
+          rawGold = Math.round(rawGold * 6);
+        }
+        rawGold = Math.max(1, Math.round(rawGold * getTreasureSenseMultiplier()));
+        const convertedGold = grantGold(rawGold);
+        pushLog(`Chest ATK cap (${bucketLabel}) reached: converted to +${convertedGold} gold.`, "good");
+      }
+      return;
+    }
+
+    const nextBucketCount = incrementChestAttackBucketCount(bucketIndex);
+    state.sessionChestAttackFlat += CHEST_ATTACK_UPGRADE_FLAT;
+    const gainedAttack = addScaledFlatAttack(CHEST_ATTACK_UPGRADE_FLAT);
+    pushLog(
+      `Chest: Attack +${gainedAttack}. Depth ${bucketLabel} chest ATK ${nextBucketCount}/${CHEST_ATTACK_BUCKET_MAX}.`,
+      "good"
+    );
+  }
+
   function openChest(chest) {
     chest.opened = true;
     playSfx("chest");
@@ -5357,8 +5773,7 @@
         pushLog(`Chest: +${healAmount} HP.`);
       }
     } else if (roll < table.attack) {
-      state.player.attack += 2;
-      pushLog("Chest: Attack +2.", "good");
+      handleChestAttackUpgrade(inTreasureRoom);
     } else if (roll < table.armor) {
       state.player.armor += 2;
       pushLog("Chest: Armor +2.", "good");
@@ -6364,7 +6779,11 @@
       pushLog("Portal sealed. Clear all enemies first.", "bad");
       return;
     }
-    state.depth += 1;
+    if (state.depth >= MAX_DEPTH) {
+      pushLog(`Depth cap reached (${MAX_DEPTH}). Defeat the final boss to win.`, "bad");
+      return;
+    }
+    state.depth = Math.min(MAX_DEPTH, state.depth + 1);
     state.runMaxDepth = Math.max(state.runMaxDepth, state.depth);
     state.player.hp = Math.min(state.player.maxHp, state.player.hp + scaledCombat(1));
     saveMetaProgress();
@@ -6491,6 +6910,10 @@
       const bossStatus = state.bossRoom ? "BOSS NOW" : `BOSS IN ${getRoomsUntilBoss()}`;
       title = `Depth ${state.depth}`;
       subtitle = `${roomLabel} Room - ${bossStatus}`;
+    } else if (state.phase === "won") {
+      const victoryDepth = Math.max(0, Number(state.finalVictoryPrompt?.depth) || MAX_DEPTH);
+      title = "VICTORY";
+      subtitle = `Final depth ${victoryDepth} conquered`;
     } else if (state.phase === "camp") {
       const lastDepth = state.lastExtract?.depth ?? state.depth;
       title = "Camp";
@@ -6635,6 +7058,15 @@
         const skipKey = getRelicDraftSkipHotkey();
         actionsEl.textContent = `Press 1-${draftSize} to pick a relic, or ${skipKey} to skip.`;
       }
+      return;
+    }
+    if (state.phase === "won") {
+      const finalDepth = Math.max(0, Number(state.finalVictoryPrompt?.depth) || MAX_DEPTH);
+      const finalScore = Math.max(
+        0,
+        Number(state.finalVictoryPrompt?.score) || calculateScore(finalDepth, getRunGoldEarned())
+      );
+      actionsEl.textContent = `VICTORY! Depth ${finalDepth} cleared (${finalScore} pts). 1 = Main Menu, 2 = Leaderboard.`;
       return;
     }
     if (state.phase === "dead") {
@@ -6897,6 +7329,12 @@
       return;
     }
 
+    if (state.phase === "won") {
+      const finalDepth = Math.max(0, Number(state.finalVictoryPrompt?.depth) || MAX_DEPTH);
+      mutatorsEl.innerHTML = `<h3>Victory</h3><small>Depth ${finalDepth} conquered. 1 menu | 2 leaderboard</small>`;
+      return;
+    }
+
     // Dead: full mutator list
     const rows = buildMutatorRows(!state.finalGameOverPrompt);
     const count = activeMutatorCount();
@@ -7061,6 +7499,36 @@
         `<div class="overlay-card overlay-card-wide overlay-card-danger">`,
         `<h2 class="overlay-title">GAME OVER</h2>`,
         `<p class="overlay-sub">All lives lost.</p>`,
+        `<p class="overlay-sub">Final run: ${finalScore} pts | Depth ${finalDepth} | Gold ${finalGold}</p>`,
+        `<div class="overlay-menu">${rows}</div>`,
+        `<p class="overlay-hint">1 / Enter / Esc - Main Menu | 2 - Leaderboard</p>`,
+        `</div>`
+      ].join("");
+      return;
+    }
+
+    if (state.phase === "won" && state.finalVictoryPrompt) {
+      const finalDepth = Math.max(0, Number(state.finalVictoryPrompt.depth) || MAX_DEPTH);
+      const finalGold = Math.max(0, Number(state.finalVictoryPrompt.gold) || 0);
+      const finalScore = Math.max(
+        0,
+        Number(state.finalVictoryPrompt.score) || calculateScore(finalDepth, finalGold)
+      );
+      const rows = [
+        `<div class="overlay-menu-row">`,
+        `<div class="overlay-menu-key">1</div>`,
+        `<div><strong>Main Menu</strong><br /><span>Return to menu after this victory.</span></div>`,
+        `</div>`,
+        `<div class="overlay-menu-row">`,
+        `<div class="overlay-menu-key">2</div>`,
+        `<div><strong>Leaderboard</strong><br /><span>Show ranking and your winning score.</span></div>`,
+        `</div>`
+      ].join("");
+      screenOverlayEl.className = "screen-overlay visible";
+      screenOverlayEl.innerHTML = [
+        `<div class="overlay-card overlay-card-wide overlay-card-success">`,
+        `<h2 class="overlay-title">VICTORY</h2>`,
+        `<p class="overlay-sub">Depth ${MAX_DEPTH} completed. The dungeon has fallen.</p>`,
         `<p class="overlay-sub">Final run: ${finalScore} pts | Depth ${finalDepth} | Gold ${finalGold}</p>`,
         `<div class="overlay-menu">${rows}</div>`,
         `<p class="overlay-hint">1 / Enter / Esc - Main Menu | 2 - Leaderboard</p>`,
@@ -7488,6 +7956,48 @@
     if (!state.merchant) return;
     const px = state.merchant.x * TILE;
     const py = state.merchant.y * TILE;
+
+    if (merchantSprite.readyCount > 0 && merchantSprite.frames.length > 0) {
+      const frameCount = merchantSprite.frames.length;
+      let frameIndex = Math.floor(state.playerAnimTimer / MERCHANT_FRAME_MS) % frameCount;
+      if (
+        merchantSprite.frameDurationTotalMs > 0 &&
+        merchantSprite.frameDurationsMs.length >= frameCount
+      ) {
+        let elapsed = state.playerAnimTimer % merchantSprite.frameDurationTotalMs;
+        for (let i = 0; i < frameCount; i += 1) {
+          const duration = Math.max(1, Number(merchantSprite.frameDurationsMs[i]) || MERCHANT_FRAME_MS);
+          if (elapsed < duration) {
+            frameIndex = i;
+            break;
+          }
+          elapsed -= duration;
+        }
+      }
+      const frame =
+        merchantSprite.frames[frameIndex] ||
+        merchantSprite.frames.find((img) => Boolean(img));
+      if (frame) {
+        const drawSize = Math.round(TILE * MERCHANT_DRAW_SCALE);
+        const drawX = Math.round(px + (TILE - drawSize) / 2);
+        const drawY = Math.round(py + (TILE - drawSize) / 2);
+        const sw = frame.naturalWidth || frame.videoWidth || frame.width || TILE;
+        const sh = frame.naturalHeight || frame.videoHeight || frame.height || TILE;
+        ctx.drawImage(frame, 0, 0, sw, sh, drawX, drawY, drawSize, drawSize);
+        return;
+      }
+    }
+
+    if (merchantSprite.gifReady && merchantSprite.gif) {
+      const drawSize = Math.round(TILE * MERCHANT_DRAW_SCALE);
+      const drawX = Math.round(px + (TILE - drawSize) / 2);
+      const drawY = Math.round(py + (TILE - drawSize) / 2);
+      const sw = merchantSprite.gif.naturalWidth || TILE;
+      const sh = merchantSprite.gif.naturalHeight || TILE;
+      ctx.drawImage(merchantSprite.gif, 0, 0, sw, sh, drawX, drawY, drawSize, drawSize);
+      return;
+    }
+
     const pulse = (Math.sin(state.portalPulse * 2.2) + 1) * 0.5;
     ctx.fillStyle = COLORS.merchantTrim;
     ctx.fillRect(px + 3, py + 12, 10, 2);
@@ -8560,6 +9070,19 @@
       return;
     }
 
+    if (state.phase === "won" && state.finalVictoryPrompt) {
+      if (key === "2") {
+        enterMenu();
+        openLeaderboardModal();
+        return;
+      }
+      if (key === "1" || key === "escape" || isConfirm) {
+        enterMenu();
+        return;
+      }
+      return;
+    }
+
     if (state.phase === "playing" && state.merchantMenuOpen) {
       if (state.roomType !== "merchant" || !isOnMerchant()) {
         closeMerchantMenu();
@@ -8822,6 +9345,7 @@
   state.log = [];
   loadChestSprite();
   loadPortalSprite();
+  loadMerchantSprite();
   loadSpikeSprite();
   loadTilesetSprite();
   loadPlayerSprites();
