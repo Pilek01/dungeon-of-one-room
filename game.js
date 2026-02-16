@@ -58,6 +58,8 @@
   const BLADE_ATTACK_PERCENT_PER_LEVEL = 0.10; // +10% per blade level
   const CHEST_ATTACK_UPGRADE_FLAT = 2;
   const CHEST_ARMOR_UPGRADE_FLAT = 2;
+  const CHEST_HEALTH_UPGRADE_FLAT = 5;
+  const CHEST_HEALING_DROP_AMOUNT = 4 * COMBAT_SCALE; // 40 HP
   const CHEST_ATTACK_BUCKET_SIZE = 10;
   const CHEST_ATTACK_BUCKET_MAX = 5;
   const SPIKE_DAMAGE_BASE = Math.round(1.5 * COMBAT_SCALE); // 15
@@ -2338,7 +2340,7 @@
     state.sessionChestHealthDepthBuckets = sanitizeChestAttackDepthBuckets(snapshot.sessionChestHealthDepthBuckets);
     const maxSessionChestHealthFlat =
       Object.values(state.sessionChestHealthDepthBuckets)
-        .reduce((sum, count) => sum + (Number(count) || 0), 0) * scaledCombat(4);
+        .reduce((sum, count) => sum + (Number(count) || 0), 0) * CHEST_HEALTH_UPGRADE_FLAT;
     state.sessionChestHealthFlat = clamp(
       Math.max(0, Number(snapshot.sessionChestHealthFlat) || 0),
       0,
@@ -5863,7 +5865,7 @@
     );
   }
 
-  function handleChestHealthUpgrade(healAmount, inTreasureRoom) {
+  function handleChestHealthUpgrade(inTreasureRoom) {
     const bucketIndex = getChestAttackBucketIndex(state.depth);
     const currentBucketCount = getChestHealthBucketCount(bucketIndex);
     const bucketLabel = getChestAttackBucketLabel(bucketIndex);
@@ -5872,13 +5874,21 @@
       return;
     }
     const nextBucketCount = incrementChestHealthBucketCount(bucketIndex);
-    state.sessionChestHealthFlat += healAmount;
-    state.player.maxHp += healAmount;
-    state.player.hp = Math.min(state.player.maxHp, state.player.hp + healAmount);
+    state.sessionChestHealthFlat += CHEST_HEALTH_UPGRADE_FLAT;
+    state.player.maxHp += CHEST_HEALTH_UPGRADE_FLAT;
+    state.player.hp = Math.min(state.player.maxHp, state.player.hp + CHEST_HEALTH_UPGRADE_FLAT);
     pushLog(
-      `Chest: Health +${healAmount}. Depth ${bucketLabel} chest HP ${nextBucketCount}/${CHEST_ATTACK_BUCKET_MAX}.`,
+      `Chest: Health +${CHEST_HEALTH_UPGRADE_FLAT}. Depth ${bucketLabel} chest HP ${nextBucketCount}/${CHEST_ATTACK_BUCKET_MAX}.`,
       "good"
     );
+  }
+
+  function handleChestHealingDrop() {
+    const healAmount = CHEST_HEALING_DROP_AMOUNT;
+    const before = state.player.hp;
+    state.player.hp = Math.min(state.player.maxHp, state.player.hp + healAmount);
+    const restored = Math.max(0, state.player.hp - before);
+    pushLog(`Chest: Healing +${restored}.`, "good");
   }
 
   function openChest(chest) {
@@ -5887,19 +5897,25 @@
     const roll = Math.random();
     const inTreasureRoom = state.roomType === "treasure";
     const table = inTreasureRoom
-      ? { heal: 0.28, attack: 0.46, armor: 0.58, potion: 0.72, gold: 0.97 }
-      : { heal: 0.38, attack: 0.62, armor: 0.78, potion: 0.9, gold: 0.97 };
+      ? { health: 0.14, healing: 0.28, attack: 0.46, armor: 0.58, potion: 0.72, gold: 0.97 }
+      : { health: 0.18, healing: 0.38, attack: 0.62, armor: 0.78, potion: 0.9, gold: 0.97 };
     if (chance(0.005)) {
       grantLife("Chest blessing");
     }
-    if (roll < table.heal) {
+    if (roll < table.health) {
       if (state.runMods.chestHealPenalty >= 999) {
         // Alchemist: chests don't heal, give gold instead
         const fallbackGold = grantGold(randInt(2, 5));
         pushLog(`Chest: no heal (Alchemist), +${fallbackGold} gold.`);
       } else {
-        const healAmount = Math.max(MIN_EFFECTIVE_DAMAGE, scaledCombat(4) - state.runMods.chestHealPenalty);
-        handleChestHealthUpgrade(healAmount, inTreasureRoom);
+        handleChestHealthUpgrade(inTreasureRoom);
+      }
+    } else if (roll < table.healing) {
+      if (state.runMods.chestHealPenalty >= 999) {
+        const fallbackGold = grantGold(randInt(2, 5));
+        pushLog(`Chest: no heal (Alchemist), +${fallbackGold} gold.`);
+      } else {
+        handleChestHealingDrop();
       }
     } else if (roll < table.attack) {
       handleChestAttackUpgrade(inTreasureRoom);
