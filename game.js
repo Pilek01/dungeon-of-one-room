@@ -470,7 +470,8 @@
       key: "1",
       name: "Vitality",
       desc: "+10% max HP at run start",
-      baseCost: 10,
+      baseCost: 20,
+      costGrowth: 1.4,
       scale: 8,
       max: 10
     },
@@ -479,7 +480,8 @@
       key: "2",
       name: "Sharpen Blade",
       desc: "+10 ATK and +10% all flat ATK per level",
-      baseCost: 15,
+      baseCost: 30,
+      costGrowth: 1.4,
       scale: 10,
       max: 15
     },
@@ -497,7 +499,8 @@
       key: "4",
       name: "Guard Plates",
       desc: "+10 starting armor",
-      baseCost: 30,
+      baseCost: 60,
+      costGrowth: 1.4,
       scale: 12,
       max: 15
     },
@@ -576,6 +579,15 @@
     epic: 200,
     legendary: 400
   };
+  const WARDEN_RELIC_DROP_TABLE = [
+    { minDepth: 25, dropChance: 0.60, rarityWeights: { normal: 0.35, rare: 0.30, epic: 0.22, legendary: 0.13 } },
+    { minDepth: 20, dropChance: 0.60, rarityWeights: { normal: 0.45, rare: 0.30, epic: 0.20, legendary: 0.05 } },
+    { minDepth: 15, dropChance: 0.55, rarityWeights: { normal: 0.60, rare: 0.30, epic: 0.10, legendary: 0 } },
+    { minDepth: 10, dropChance: 0.50, rarityWeights: { normal: 0.80, rare: 0.20, epic: 0, legendary: 0 } },
+    { minDepth: 5, dropChance: 0.45, rarityWeights: { normal: 1, rare: 0, epic: 0, legendary: 0 } }
+  ];
+  const WARDEN_RELIC_PITY_BONUS_PER_MISS = 0.15;
+  const WARDEN_RELIC_HARD_PITY_AFTER_MISSES = 3;
 
   const RELICS = [
     // Normal (6)
@@ -1080,6 +1092,8 @@
     enemyTurnStepIndex: 0,
     extractConfirm: null,
     extractRelicPrompt: null,
+    lastDeathRelicLossText: "",
+    wardenRelicMissStreak: 0,
     finalGameOverPrompt: null,
     finalVictoryPrompt: null,
     merchantMenuOpen: false,
@@ -2121,6 +2135,7 @@
     state.currentRunTokenExpiresAt = 0;
     state.currentRunSubmitSeq = 1;
     state.runLeaderboardSubmitted = false;
+    state.wardenRelicMissStreak = 0;
     resetSessionChestBonuses();
     state.campVisitShopCostMult = 1;
     state.leaderboardModalOpen = false;
@@ -2193,6 +2208,7 @@
       currentRunTokenExpiresAt: state.currentRunTokenExpiresAt,
       currentRunSubmitSeq: state.currentRunSubmitSeq,
       runLeaderboardSubmitted: state.runLeaderboardSubmitted,
+      wardenRelicMissStreak: state.wardenRelicMissStreak,
       sessionChestAttackFlat: state.sessionChestAttackFlat,
       sessionChestAttackDepthBuckets: state.sessionChestAttackDepthBuckets,
       sessionChestArmorFlat: state.sessionChestArmorFlat,
@@ -2268,6 +2284,9 @@
       typeof snapshot.extractRelicPrompt.relicReturn === "object"
     ) {
       const relicReturn = snapshot.extractRelicPrompt.relicReturn;
+      const carriedRelics = Array.isArray(snapshot.extractRelicPrompt.carriedRelics)
+        ? snapshot.extractRelicPrompt.carriedRelics.filter((id) => typeof id === "string")
+        : [];
       state.extractRelicPrompt = {
         baseGold: Math.max(0, Number(snapshot.extractRelicPrompt.baseGold) || 0),
         bonusGold: Math.max(0, Number(snapshot.extractRelicPrompt.bonusGold) || 0),
@@ -2281,9 +2300,11 @@
             legendary: Math.max(0, Number(relicReturn.byRarity?.legendary) || 0)
           }
         },
-        carriedRelics: Array.isArray(snapshot.extractRelicPrompt.carriedRelics)
-          ? snapshot.extractRelicPrompt.carriedRelics.filter((id) => typeof id === "string")
-          : []
+        carriedRelics,
+        selectedIndices: sanitizeExtractRelicSelectionIndices(
+          snapshot.extractRelicPrompt.selectedIndices,
+          carriedRelics.length
+        )
       };
     } else {
       state.extractRelicPrompt = null;
@@ -2319,6 +2340,7 @@
     state.currentRunTokenExpiresAt = Math.max(0, Number(snapshot.currentRunTokenExpiresAt) || 0);
     state.currentRunSubmitSeq = Math.max(1, Number(snapshot.currentRunSubmitSeq) || 1);
     state.runLeaderboardSubmitted = Boolean(snapshot.runLeaderboardSubmitted);
+    state.wardenRelicMissStreak = Math.max(0, Number(snapshot.wardenRelicMissStreak) || 0);
     state.sessionChestAttackDepthBuckets = sanitizeChestAttackDepthBuckets(snapshot.sessionChestAttackDepthBuckets);
     const maxSessionChestFlat =
       Object.values(state.sessionChestAttackDepthBuckets)
@@ -3402,6 +3424,7 @@
     state.leaderboardModalOpen = false;
     state.nameModalOpen = false;
     state.nameModalAction = null;
+    state.lastDeathRelicLossText = "";
     state.finalGameOverPrompt = null;
     state.finalVictoryPrompt = null;
     const options = getMenuOptions();
@@ -3421,7 +3444,8 @@
 
   function getCampUpgradeCost(def) {
     const level = getCampUpgradeLevel(def.id);
-    const base = Math.round(def.baseCost * 2 ** level);
+    const growth = Math.max(1, Number(def.costGrowth) || 2);
+    const base = Math.round(def.baseCost * growth ** level);
     const visitMult = state.phase === "camp"
       ? (state.campVisitShopCostMult || 1)
       : (state.runMods?.shopCostMult || 1);
@@ -3965,6 +3989,16 @@
     return true;
   }
 
+  function loseRandomRelicOnDeath() {
+    if (!Array.isArray(state.relics) || state.relics.length <= 0) return null;
+    const randomIndex = randInt(0, state.relics.length - 1);
+    const relicId = state.relics[randomIndex];
+    const relic = getRelicById(relicId);
+    const removed = removeRelic(relicId, { silent: true });
+    if (!removed) return null;
+    return relic || { id: relicId, name: relicId };
+  }
+
   function normalizeRelicInventory() {
     const original = [...state.relics];
     let keptCount = 0;
@@ -4030,30 +4064,110 @@
     return summary;
   }
 
-  function rollRelicRarity(isBoss) {
-    const depthBonus = Math.floor(state.depth / 5);
-    let legendaryChance = 0.02 + depthBonus * 0.008;
-    let epicChance = 0.06 + depthBonus * 0.012;
-    let rareChance = 0.17;
-    // Boss draft: boosted rarity
-    if (isBoss) {
-      legendaryChance += 0.03;
-      epicChance += 0.06;
-      rareChance += 0.10;
+  function getExtractPromptCarriedRelics(prompt = state.extractRelicPrompt) {
+    if (!prompt || !Array.isArray(prompt.carriedRelics)) return [];
+    return prompt.carriedRelics.filter((id) => typeof id === "string");
+  }
+
+  function sanitizeExtractRelicSelectionIndices(indices, maxCount) {
+    const cap = Math.max(0, Number(maxCount) || 0);
+    const sanitized = [];
+    const seen = new Set();
+    for (const rawIndex of indices || []) {
+      const index = Math.floor(Number(rawIndex));
+      if (!Number.isFinite(index) || index < 0 || index >= cap || seen.has(index)) continue;
+      seen.add(index);
+      sanitized.push(index);
     }
+    sanitized.sort((a, b) => a - b);
+    return sanitized;
+  }
+
+  function getExtractPromptSelectedIndices(prompt = state.extractRelicPrompt) {
+    const carriedRelics = getExtractPromptCarriedRelics(prompt);
+    return sanitizeExtractRelicSelectionIndices(prompt?.selectedIndices, carriedRelics.length);
+  }
+
+  function getExtractPromptSelectedRelics(prompt = state.extractRelicPrompt) {
+    const carriedRelics = getExtractPromptCarriedRelics(prompt);
+    const selectedIndices = getExtractPromptSelectedIndices(prompt);
+    return selectedIndices
+      .map((index) => carriedRelics[index])
+      .filter((id) => typeof id === "string");
+  }
+
+  function getExtractPromptSelectedSummary(prompt = state.extractRelicPrompt) {
+    return getRelicReturnSummary(getExtractPromptSelectedRelics(prompt));
+  }
+
+  function getWardenRelicTableEntry(depth = state.depth) {
+    const safeDepth = Math.max(0, Number(depth) || 0);
+    for (const entry of WARDEN_RELIC_DROP_TABLE) {
+      if (safeDepth >= entry.minDepth) return entry;
+    }
+    return null;
+  }
+
+  function getWardenRelicDropChance(depth = state.depth) {
+    const entry = getWardenRelicTableEntry(depth);
+    return entry ? entry.dropChance : 0;
+  }
+
+  function getWardenRelicDropRoll(depth = state.depth) {
+    const baseChance = getWardenRelicDropChance(depth);
+    const missStreak = Math.max(0, Number(state.wardenRelicMissStreak) || 0);
+    const hardPity = missStreak >= WARDEN_RELIC_HARD_PITY_AFTER_MISSES;
+    const chanceValue = hardPity
+      ? 1
+      : clamp(baseChance + missStreak * WARDEN_RELIC_PITY_BONUS_PER_MISS, 0, 0.95);
+    return { chance: chanceValue, missStreak, hardPity };
+  }
+
+  function getUnlockedWardenRelicRarities(depth = state.depth) {
+    const entry = getWardenRelicTableEntry(depth);
+    if (!entry) return new Set();
+    return new Set(
+      Object.entries(entry.rarityWeights)
+        .filter(([, weight]) => Number(weight) > 0)
+        .map(([rarity]) => rarity)
+    );
+  }
+
+  function rollRelicRarity(isBoss) {
+    if (!isBoss) {
+      const depthBonus = Math.floor(state.depth / 5);
+      let legendaryChance = 0.02 + depthBonus * 0.008;
+      let epicChance = 0.06 + depthBonus * 0.012;
+      let rareChance = 0.17;
+      const roll = Math.random();
+      if (roll < legendaryChance) return "legendary";
+      if (roll < legendaryChance + epicChance) return "epic";
+      if (roll < legendaryChance + epicChance + rareChance) return "rare";
+      return "normal";
+    }
+
+    const entry = getWardenRelicTableEntry(state.depth);
+    if (!entry) return "normal";
     const roll = Math.random();
-    if (roll < legendaryChance) return "legendary";
-    if (roll < legendaryChance + epicChance) return "epic";
-    if (roll < legendaryChance + epicChance + rareChance) return "rare";
+    let cumulative = 0;
+    const order = ["normal", "rare", "epic", "legendary"];
+    for (const rarity of order) {
+      cumulative += Number(entry.rarityWeights[rarity]) || 0;
+      if (roll < cumulative) return rarity;
+    }
     return "normal";
   }
 
   function openRelicDraft(isBoss = false) {
     normalizeRelicInventory();
+    const unlockedRarities = isBoss ? getUnlockedWardenRelicRarities(state.depth) : null;
     const pool = RELICS.filter(
       (relic) =>
-        (relic.rarity === "normal" && !isNormalRelicStackAtCap(relic.id)) ||
-        (relic.rarity !== "normal" && !state.relics.includes(relic.id))
+        (!unlockedRarities || unlockedRarities.has(relic.rarity)) &&
+        (
+          (relic.rarity === "normal" && !isNormalRelicStackAtCap(relic.id)) ||
+          (relic.rarity !== "normal" && !state.relics.includes(relic.id))
+        )
     );
     if (pool.length === 0) return;
 
@@ -4265,13 +4379,14 @@
         baseGold,
         bonusGold,
         relicReturn,
-        carriedRelics: [...state.relics]
+        carriedRelics: [...state.relics],
+        selectedIndices: []
       };
       for (const mutator of unlockedNow) {
         pushLog(`Unlocked: [${mutator.key}] ${mutator.name}!`, "good");
       }
       pushLog(
-        `Relics carried: ${relicReturn.count}. Exchange for +${relicReturn.total} camp gold? [Y] yes (sell) / [N] no (keep relics in camp).`,
+        `Relics carried: ${relicReturn.count}. Select relics to sell (1-8 toggle, A all, C clear, Y sell selected, N keep all).`,
         "warn"
       );
       saveRunSnapshot();
@@ -4290,35 +4405,46 @@
   function resolveExtractRelicPrompt(exchangeForGold) {
     const prompt = state.extractRelicPrompt;
     if (!prompt) return false;
+    const carriedRelics = getExtractPromptCarriedRelics(prompt);
 
     if (exchangeForGold) {
-      const relicGain = Math.max(0, Number(prompt.relicReturn?.total) || 0);
-      if (relicGain > 0) {
-        state.campGold += relicGain;
-        if (state.lastExtract) {
-          state.lastExtract.campGold += relicGain;
-          state.lastExtract.relicReturned = Math.max(0, Number(prompt.relicReturn?.count) || 0);
-          state.lastExtract.relicGold = relicGain;
-        }
+      const selectedIndices = getExtractPromptSelectedIndices(prompt);
+      const selectedIndexSet = new Set(selectedIndices);
+      const soldRelics = selectedIndices
+        .map((index) => carriedRelics[index])
+        .filter((id) => typeof id === "string");
+      const soldSummary = getRelicReturnSummary(soldRelics);
+      if (soldSummary.total > 0) {
+        state.campGold += soldSummary.total;
       }
-      state.relics = [];
+      if (state.lastExtract) {
+        state.lastExtract.campGold += soldSummary.total;
+        state.lastExtract.relicReturned = soldSummary.count;
+        state.lastExtract.relicGold = soldSummary.total;
+      }
+      state.relics = carriedRelics.filter((_, index) => !selectedIndexSet.has(index));
+      normalizeRelicInventory();
       state.relicDraft = null;
       state.legendarySwapPending = null;
       state.relicSwapPending = null;
       state.extractRelicPrompt = null;
-      pushLog(
-        `Relics exchanged: +${relicGain} camp gold. Camp shop: keys 1-0 buy upgrades. Press R for a new run.`,
-        "good"
-      );
+      if (soldSummary.count > 0) {
+        pushLog(
+          `Relics sold: ${soldSummary.count} for +${soldSummary.total} camp gold. Kept ${state.relics.length}. Camp shop: keys 1-0 buy upgrades. Press R for a new run.`,
+          "good"
+        );
+      } else {
+        pushLog(
+          `No relics selected. Relics kept (${state.relics.length}). Camp shop: keys 1-0 buy upgrades. Press R for a new run.`,
+          "good"
+        );
+      }
       saveMetaProgress();
       saveRunSnapshot();
       markUiDirty();
       return true;
     }
 
-    const carriedRelics = Array.isArray(prompt.carriedRelics)
-      ? prompt.carriedRelics.filter((id) => typeof id === "string")
-      : [...state.relics];
     state.relics = carriedRelics;
     normalizeRelicInventory();
     state.relicDraft = null;
@@ -5156,6 +5282,7 @@
     state.log = [];
     state.extractConfirm = null;
     state.extractRelicPrompt = null;
+    state.lastDeathRelicLossText = "";
     state.finalGameOverPrompt = null;
     state.finalVictoryPrompt = null;
     state.campVisitShopCostMult = 1;
@@ -5170,6 +5297,7 @@
     state.legendarySwapPending = null;
     state.relicSwapPending = null;
     state.relics = [];
+    state.wardenRelicMissStreak = 0;
     state.shrine = null;
     state.merchant = null;
 
@@ -5312,11 +5440,10 @@
       pushLog("Chrono Loop was already spent this run.", "bad");
     }
     recordRunOnLeaderboard("death");
-    const hadSessionChestBonuses =
-      Math.max(0, Number(state.sessionChestAttackFlat) || 0) > 0 ||
-      Math.max(0, Number(state.sessionChestArmorFlat) || 0) > 0 ||
-      Math.max(0, Number(state.sessionChestHealthFlat) || 0) > 0;
-    resetSessionChestBonuses();
+    const lostRelic = loseRandomRelicOnDeath();
+    state.lastDeathRelicLossText = lostRelic
+      ? `Death penalty: lost relic ${lostRelic.name}.`
+      : "Death penalty: no relic lost.";
     state.phase = "dead";
     state.finalVictoryPrompt = null;
     state.turnInProgress = false;
@@ -5331,10 +5458,8 @@
     if (!usedSample && !state.audioMuted) {
       playSfx("death");
     }
-    pushLog(reason, "bad");
-    if (hadSessionChestBonuses) {
-      pushLog("Session chest bonuses (ATK/ARM/HP) were reset on death.", "bad");
-    }
+    const lossSummary = lostRelic ? ` Lost relic: ${lostRelic.name}.` : " No relic lost.";
+    pushLog(`${reason}${lossSummary}`, "bad");
     state.lives = Math.max(0, state.lives - 1);
     pushLog(`Life lost. ${state.lives}/${MAX_LIVES} remaining.`, "bad");
 
@@ -5655,8 +5780,15 @@
         pushLog(`Final boss of depth ${MAX_DEPTH} defeated!`, "good");
         shouldTriggerFinalVictory = true;
       } else {
-        pushLog("Mini-boss defeated. Boss relic drop!", "good");
-        openRelicDraft(true);
+        const relicDropRoll = getWardenRelicDropRoll(state.depth);
+        if (chance(relicDropRoll.chance)) {
+          state.wardenRelicMissStreak = 0;
+          pushLog("Mini-boss defeated. Warden dropped a relic!", "good");
+          openRelicDraft(true);
+        } else {
+          state.wardenRelicMissStreak = relicDropRoll.missStreak + 1;
+          pushLog("Mini-boss defeated. No relic drop this time.", "warn");
+        }
       }
       if (chance(0.01)) {
         grantLife("Boss drop");
@@ -7223,8 +7355,10 @@
     }
     if (state.phase === "camp") {
       if (state.extractRelicPrompt) {
-        const relicGold = Math.max(0, Number(state.extractRelicPrompt.relicReturn?.total) || 0);
-        actionsEl.textContent = `Exchange relics for +${relicGold} camp gold? Y/Enter = sell, N/Esc = keep relics in camp.`;
+        const selected = getExtractPromptSelectedSummary(state.extractRelicPrompt);
+        actionsEl.textContent =
+          `Relic exchange: 1-8 toggle, A all, C clear. Selected ${selected.count} for +${selected.total}. ` +
+          "Y/Enter sell selected, N/Esc keep all.";
         return;
       }
       const summary = state.lastExtract
@@ -7747,24 +7881,29 @@
       const prompt = state.extractRelicPrompt;
       const relicReturn = prompt.relicReturn || { count: 0, total: 0, byRarity: {} };
       const carried = Math.max(0, Number(relicReturn.count) || 0);
-      const gain = Math.max(0, Number(relicReturn.total) || 0);
+      const gainIfAllSold = Math.max(0, Number(relicReturn.total) || 0);
       const baseGold = Math.max(0, Number(prompt.baseGold) || 0);
       const bonusGold = Math.max(0, Number(prompt.bonusGold) || 0);
       const extractedNow = baseGold + bonusGold;
-      const carriedRelics = Array.isArray(prompt.carriedRelics)
-        ? prompt.carriedRelics.filter((id) => typeof id === "string")
-        : [...state.relics];
-      const relicRows = getRelicExchangeBreakdown(carriedRelics);
-      const relicRowsHtml = relicRows.length > 0
-        ? relicRows.map((row) => {
-            const stackLabel = row.count > 1 ? ` x${row.count}` : "";
+      const carriedRelics = getExtractPromptCarriedRelics(prompt);
+      const selectedIndices = getExtractPromptSelectedIndices(prompt);
+      const selectedIndexSet = new Set(selectedIndices);
+      const selectedSummary = getExtractPromptSelectedSummary(prompt);
+      const relicRowsHtml = carriedRelics.length > 0
+        ? carriedRelics.map((relicId, index) => {
+            const relic = getRelicById(relicId);
+            const rarity = RELIC_RETURN_VALUE[relic?.rarity] != null ? relic.rarity : "normal";
+            const rarityInfo = RARITY[rarity] || RARITY.normal;
+            const unitValue = RELIC_RETURN_VALUE[rarity];
+            const selected = selectedIndexSet.has(index);
+            const hotkeyLabel = index < 8 ? String(index + 1) : "-";
             return [
-              `<div class="relic-exchange-row" style="border-color:${row.rarityInfo.border};background:${row.rarityInfo.bg}">`,
+              `<div class="relic-exchange-row" style="border-color:${selected ? rarityInfo.color : rarityInfo.border};background:${rarityInfo.bg};opacity:${selected ? 1 : 0.78}">`,
               `<div class="relic-exchange-main">`,
-              `<strong style="color:${row.rarityInfo.color}">${row.name}${stackLabel}</strong>`,
-              `<span>${row.rarityInfo.label} | ${row.unitValue} each</span>`,
+              `<strong style="color:${rarityInfo.color}">[${hotkeyLabel}] ${relic?.name || relicId}</strong>`,
+              `<span>${rarityInfo.label} | +${unitValue} camp gold${selected ? " | SELECTED" : ""}</span>`,
               `</div>`,
-              `<div class="relic-exchange-gold">+${row.totalValue}</div>`,
+              `<div class="relic-exchange-gold">${selected ? "SELL" : "KEEP"}</div>`,
               `</div>`
             ].join("");
           }).join("")
@@ -7774,10 +7913,11 @@
         `<div class="overlay-card overlay-card-wide overlay-card-success">`,
         `<h2 class="overlay-title">Relic Exchange</h2>`,
         `<p class="overlay-sub">You extracted with ${carried} relics. Current extract already banked: +${extractedNow} camp gold.</p>`,
-        `<p class="overlay-sub">Sell relics now for <strong>+${gain}</strong> camp gold, or keep relics.</p>`,
+        `<p class="overlay-sub">Selected now: <strong>${selectedSummary.count}</strong> relics for <strong>+${selectedSummary.total}</strong> camp gold.</p>`,
+        `<p class="overlay-sub">If all are sold: +${gainIfAllSold} camp gold.</p>`,
         `<p class="overlay-sub">N:${relicReturn.byRarity?.normal || 0} R:${relicReturn.byRarity?.rare || 0} E:${relicReturn.byRarity?.epic || 0} L:${relicReturn.byRarity?.legendary || 0}</p>`,
         `<div class="relic-exchange-list">${relicRowsHtml}</div>`,
-        `<p class="overlay-hint">Y/Enter - sell relics | N/Esc - keep relics</p>`,
+        `<p class="overlay-hint">1-8 toggle | A all | C clear | Y/Enter sell selected | N/Esc keep all</p>`,
         `</div>`
       ].join("");
       return;
@@ -7785,6 +7925,7 @@
 
     let title = "Paused";
     let subtitle = "";
+    let subtitleDetail = "";
     let hint = "";
     if (state.phase === "playing" && state.extractConfirm) {
       const lossRatio = clamp(Number(state.extractConfirm.lossRatio) || 0.7, 0, 0.95);
@@ -7808,6 +7949,7 @@
     } else if (state.phase === "dead") {
       title = "Run Over";
       subtitle = `Depth ${state.depth} | Gold ${state.player.gold} | Lives ${state.lives}/${MAX_LIVES}`;
+      subtitleDetail = state.lastDeathRelicLossText || "Death penalty: no relic lost.";
     } else if (state.phase === "camp") {
       title = "Camp Shop";
       subtitle = `Camp Gold ${state.campGold} | Lives ${state.lives}/${MAX_LIVES}`;
@@ -7923,6 +8065,7 @@
       `<div class="overlay-card">`,
       `<h2 class="overlay-title">${title}</h2>`,
       subtitle ? `<p class="overlay-sub">${subtitle}</p>` : "",
+      subtitleDetail ? `<p class="overlay-sub">${subtitleDetail}</p>` : "",
       hint ? `<p class="overlay-hint">${hint}</p>` : "",
       menuBlock,
       `</div>`
@@ -9246,6 +9389,39 @@
     }
 
     if (state.phase === "camp" && state.extractRelicPrompt) {
+      const prompt = state.extractRelicPrompt;
+      const carriedRelics = getExtractPromptCarriedRelics(prompt);
+      const relicHotkey = Number(key);
+      if (Number.isInteger(relicHotkey) && relicHotkey >= 1 && relicHotkey <= 8) {
+        const selectionIndex = relicHotkey - 1;
+        if (selectionIndex < carriedRelics.length) {
+          const selectedIndexSet = new Set(getExtractPromptSelectedIndices(prompt));
+          if (selectedIndexSet.has(selectionIndex)) {
+            selectedIndexSet.delete(selectionIndex);
+          } else {
+            selectedIndexSet.add(selectionIndex);
+          }
+          prompt.selectedIndices = sanitizeExtractRelicSelectionIndices(
+            [...selectedIndexSet],
+            carriedRelics.length
+          );
+          saveRunSnapshot();
+          markUiDirty();
+        }
+        return;
+      }
+      if (key === "a") {
+        prompt.selectedIndices = carriedRelics.map((_, index) => index);
+        saveRunSnapshot();
+        markUiDirty();
+        return;
+      }
+      if (key === "c") {
+        prompt.selectedIndices = [];
+        saveRunSnapshot();
+        markUiDirty();
+        return;
+      }
       if (isConfirm || key === "y") {
         resolveExtractRelicPrompt(true);
         return;
