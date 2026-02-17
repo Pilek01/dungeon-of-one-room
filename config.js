@@ -8,6 +8,6 @@ window.DUNGEON_LEADERBOARD_API = "https://dungeon-one-room-leaderboard.pileksoft
 
 // Current leaderboard season id (used by "Current Season" scope).
 // Change this only on major balance resets, not every patch version.
-window.DUNGEON_LEADERBOARD_SEASON = "season-2";
+window.DUNGEON_LEADERBOARD_SEASON = "season-3";
 
 
