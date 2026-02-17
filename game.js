@@ -32,6 +32,7 @@
   const STORAGE_PLAYER_NAME = "dungeonOneRoomPlayerName";
   const STORAGE_LEADERBOARD = "dungeonOneRoomLeaderboardV1";
   const STORAGE_LEADERBOARD_PENDING = "dungeonOneRoomLeaderboardPendingV1";
+  const STORAGE_WARDEN_FIRST_DROP_DEPTHS = "dungeonOneRoomWardenFirstDropDepths";
   const GAME_VERSION = (() => {
     const raw = typeof window !== "undefined" ? window.GAME_VERSION : "";
     const normalized = typeof raw === "string" ? raw.trim() : "";
@@ -74,6 +75,7 @@
   const ACOLYTE_SUPPORT_HEAL_BASE = 2;
   const ACOLYTE_SUPPORT_BUFF_ATTACK_MULT = 0.3;
   const ACOLYTE_SUPPORT_BUFF_TURNS = 3;
+  const MAX_ACOLYTES_PER_ROOM = 2;
   const CHAOS_ORB_ROLL_INTERVAL = 10;
   const CHAOS_ORB_ATK_BONUS = 2 * COMBAT_SCALE; // +20 ATK
   const CHAOS_ORB_KILL_HEAL = 2 * COMBAT_SCALE; // +20 HP per kill
@@ -796,6 +798,8 @@
     standard: 1,
     fast: 0.7
   };
+  const ENEMY_ADJACENT_PRESSURE_CHANCE = 0.65;
+  const ENEMY_ADJACENT_PRESSURE_MAX = 2;
 
   function startTween(entity) {
     entity._tweenFromX = entity.x * TILE;
@@ -938,6 +942,18 @@
       const count = clamp(Number(rawCount) || 0, 0, CHEST_ATTACK_BUCKET_MAX);
       if (count <= 0) continue;
       output[String(bucket)] = count;
+    }
+    return output;
+  }
+
+  function sanitizeWardenFirstDropDepths(input) {
+    const output = {};
+    if (!input || typeof input !== "object") return output;
+    for (const [rawDepth, rawFlag] of Object.entries(input)) {
+      const depth = Math.floor(Number(rawDepth));
+      if (!Number.isFinite(depth) || depth <= 0 || depth > MAX_DEPTH) continue;
+      if (!Boolean(rawFlag)) continue;
+      output[String(depth)] = true;
     }
     return output;
   }
@@ -1087,6 +1103,9 @@
   const initialSkillTiers = sanitizeSkillTiers(readJsonStorage(STORAGE_SKILL_TIERS, {}));
   const initialLeaderboard = sanitizeLeaderboard(readJsonStorage(STORAGE_LEADERBOARD, []));
   const initialLeaderboardPending = sanitizePendingLeaderboard(readJsonStorage(STORAGE_LEADERBOARD_PENDING, []));
+  const initialWardenFirstDropDepths = sanitizeWardenFirstDropDepths(
+    readJsonStorage(STORAGE_WARDEN_FIRST_DROP_DEPTHS, {})
+  );
   const initialPlayerName = sanitizePlayerName(localStorage.getItem(STORAGE_PLAYER_NAME) || "");
   const initialEnemySpeedMode = sanitizeEnemySpeedMode(localStorage.getItem(STORAGE_ENEMY_SPEED) || "");
 
@@ -1141,12 +1160,14 @@
     enemyTurnStepIndex: 0,
     enemyMeleeCommitLimit: 1,
     enemyMeleeCommitted: 0,
+    enemyMeleeOverflowCommitted: 0,
     enemyBlackboard: null,
     enemyDebugPlans: [],
     extractConfirm: null,
     extractRelicPrompt: null,
     lastDeathRelicLossText: "",
     wardenRelicMissStreak: 0,
+    wardenFirstDropDepths: initialWardenFirstDropDepths,
     finalGameOverPrompt: null,
     finalVictoryPrompt: null,
     merchantMenuOpen: false,
@@ -1172,7 +1193,7 @@
     sessionChestHealthDepthBuckets: {},
     menuIndex: 0,
     menuOptionsOpen: false,
-    menuOptionsView: "root", // "root" | "enemy_speed"
+    menuOptionsView: "root", // "root" | "enemy_speed" | "audio"
     menuOptionsIndex: 0,
     hasContinueRun: false,
     leaderboardModalOpen: false,
@@ -1526,6 +1547,13 @@
     localStorage.setItem(STORAGE_LIVES, String(state.lives));
     localStorage.setItem(STORAGE_CAMP_UPGRADES, JSON.stringify(state.campUpgrades));
     localStorage.setItem(STORAGE_SKILL_TIERS, JSON.stringify(state.skillTiers));
+  }
+
+  function persistWardenFirstDropDepths() {
+    localStorage.setItem(
+      STORAGE_WARDEN_FIRST_DROP_DEPTHS,
+      JSON.stringify(sanitizeWardenFirstDropDepths(state.wardenFirstDropDepths))
+    );
   }
 
   function persistLeaderboard() {
@@ -2210,6 +2238,7 @@
     state.currentRunSubmitSeq = 1;
     state.runLeaderboardSubmitted = false;
     state.wardenRelicMissStreak = 0;
+    state.wardenFirstDropDepths = {};
     resetSessionChestBonuses();
     state.campVisitShopCostMult = 1;
     state.leaderboardModalOpen = false;
@@ -2224,6 +2253,7 @@
     localStorage.setItem(STORAGE_DEATHS, "0");
     persistMutatorState();
     persistCampProgress();
+    persistWardenFirstDropDepths();
     clearRunSnapshot();
     markUiDirty();
   }
@@ -2283,6 +2313,7 @@
       currentRunSubmitSeq: state.currentRunSubmitSeq,
       runLeaderboardSubmitted: state.runLeaderboardSubmitted,
       wardenRelicMissStreak: state.wardenRelicMissStreak,
+      wardenFirstDropDepths: state.wardenFirstDropDepths,
       sessionChestAttackFlat: state.sessionChestAttackFlat,
       sessionChestAttackDepthBuckets: state.sessionChestAttackDepthBuckets,
       sessionChestArmorFlat: state.sessionChestArmorFlat,
@@ -2415,6 +2446,9 @@
     state.currentRunSubmitSeq = Math.max(1, Number(snapshot.currentRunSubmitSeq) || 1);
     state.runLeaderboardSubmitted = Boolean(snapshot.runLeaderboardSubmitted);
     state.wardenRelicMissStreak = Math.max(0, Number(snapshot.wardenRelicMissStreak) || 0);
+    state.wardenFirstDropDepths = sanitizeWardenFirstDropDepths(
+      snapshot.wardenFirstDropDepths || state.wardenFirstDropDepths
+    );
     state.sessionChestAttackDepthBuckets = sanitizeChestAttackDepthBuckets(snapshot.sessionChestAttackDepthBuckets);
     const maxSessionChestFlat =
       Object.values(state.sessionChestAttackDepthBuckets)
@@ -3277,6 +3311,13 @@
     ];
   }
 
+  function getAudioOptionsItems() {
+    return [
+      { id: "on", key: "1", label: "On" },
+      { id: "off", key: "2", label: "Off" }
+    ];
+  }
+
   function getMenuOptionsRootItems() {
     return [
       {
@@ -3284,6 +3325,12 @@
         key: "1",
         title: "Enemy Speed",
         desc: `Current: ${getEnemySpeedLabel()} (${getEnemyTurnStepDelayMs()} ms per enemy step).`
+      },
+      {
+        id: "audio",
+        key: "2",
+        title: "Audio",
+        desc: `Current: ${state.audioMuted ? "Off" : "On"}.`
       }
     ];
   }
@@ -3291,6 +3338,9 @@
   function getActiveMenuOptionsItems() {
     if (state.menuOptionsView === "enemy_speed") {
       return getEnemySpeedOptionsItems();
+    }
+    if (state.menuOptionsView === "audio") {
+      return getAudioOptionsItems();
     }
     return getMenuOptionsRootItems();
   }
@@ -3319,8 +3369,20 @@
     markUiDirty();
   }
 
+  function openAudioOptions() {
+    state.menuOptionsView = "audio";
+    state.menuOptionsIndex = state.audioMuted ? 1 : 0;
+    markUiDirty();
+  }
+
   function backFromMenuOptionsView() {
     if (state.menuOptionsView === "enemy_speed") {
+      state.menuOptionsView = "root";
+      state.menuOptionsIndex = 0;
+      markUiDirty();
+      return true;
+    }
+    if (state.menuOptionsView === "audio") {
       state.menuOptionsView = "root";
       state.menuOptionsIndex = 0;
       markUiDirty();
@@ -3338,6 +3400,8 @@
     if (state.menuOptionsView === "root") {
       if (item.id === "enemy_speed") {
         openEnemySpeedOptions();
+      } else if (item.id === "audio") {
+        openAudioOptions();
       }
       return;
     }
@@ -3345,6 +3409,16 @@
       setEnemySpeedMode(item.id, { silent: true });
       const idx = ENEMY_SPEED_MODES.indexOf(sanitizeEnemySpeedMode(state.enemySpeedMode));
       state.menuOptionsIndex = idx >= 0 ? idx : 1;
+      markUiDirty();
+      return;
+    }
+    if (state.menuOptionsView === "audio") {
+      if (item.id === "on" && state.audioMuted) {
+        toggleAudio();
+      } else if (item.id === "off" && !state.audioMuted) {
+        toggleAudio();
+      }
+      state.menuOptionsIndex = state.audioMuted ? 1 : 0;
       markUiDirty();
     }
   }
@@ -3482,20 +3556,13 @@
       },
       {
         key: "5",
-        title: `Audio: ${state.audioMuted ? "OFF" : "ON"}`,
-        desc: "Toggle game music and sound.",
-        disabled: false,
-        action: () => toggleAudio()
-      },
-      {
-        key: "6",
         title: "Options",
         desc: "Game settings.",
         disabled: false,
         action: () => openMenuOptions()
       },
       {
-        key: "7",
+        key: "6",
         title: "Clear Continue Slot",
         desc: "Delete saved run data.",
         disabled: !state.hasContinueRun,
@@ -4252,6 +4319,35 @@
       ? 1
       : clamp(baseChance + missStreak * WARDEN_RELIC_PITY_BONUS_PER_MISS, 0, 0.95);
     return { chance: chanceValue, missStreak, hardPity };
+  }
+
+  function getWardenDepthKey(depth = state.depth) {
+    const safeDepth = Math.max(0, Math.floor(Number(depth) || 0));
+    return String(safeDepth);
+  }
+
+  function hasUsedWardenFirstDropAtDepth(depth = state.depth) {
+    const key = getWardenDepthKey(depth);
+    return Boolean(state.wardenFirstDropDepths && state.wardenFirstDropDepths[key]);
+  }
+
+  function markWardenFirstDropUsedAtDepth(depth = state.depth) {
+    const safeDepth = Math.max(0, Math.floor(Number(depth) || 0));
+    if (safeDepth <= 0) return;
+    const key = getWardenDepthKey(safeDepth);
+    if (!state.wardenFirstDropDepths || typeof state.wardenFirstDropDepths !== "object") {
+      state.wardenFirstDropDepths = {};
+    }
+    if (state.wardenFirstDropDepths[key]) return;
+    state.wardenFirstDropDepths[key] = true;
+    persistWardenFirstDropDepths();
+  }
+
+  function shouldForceWardenFirstDrop(depth = state.depth) {
+    const safeDepth = Math.max(0, Math.floor(Number(depth) || 0));
+    if (safeDepth <= 0 || safeDepth >= MAX_DEPTH) return false;
+    if (safeDepth % 5 !== 0) return false;
+    return !hasUsedWardenFirstDropAtDepth(safeDepth);
   }
 
   function getUnlockedWardenRelicRarities(depth = state.depth) {
@@ -5144,6 +5240,32 @@
     return "skitter";
   }
 
+  function countEnemiesByType(type) {
+    let count = 0;
+    for (const enemy of state.enemies) {
+      if (enemy?.type === type) count += 1;
+    }
+    return count;
+  }
+
+  function rollEnemyTypeWithoutAcolyte() {
+    for (let attempt = 0; attempt < 8; attempt += 1) {
+      const reroll = rollEnemyType();
+      if (reroll !== "acolyte") return reroll;
+    }
+    if (state.depth >= 15) return "skitter";
+    if (state.depth >= 11) return "brute";
+    return "skeleton";
+  }
+
+  function rollEnemyTypeWithCaps() {
+    let type = rollEnemyType();
+    if (type === "acolyte" && countEnemiesByType("acolyte") >= MAX_ACOLYTES_PER_ROOM) {
+      type = rollEnemyTypeWithoutAcolyte();
+    }
+    return type;
+  }
+
   function createEnemy(type, x, y, options = {}) {
     const depthScale = Math.floor(state.depth / 2);
     const damageBonus = state.runMods.enemyDamageBonus;
@@ -5329,7 +5451,7 @@
     for (let i = 0; i < enemyCount; i += 1) {
       const spot = randomFreeTile(occupied);
       const elite = elitesEnabled && chance(eliteChance);
-      state.enemies.push(createEnemy(rollEnemyType(), spot.x, spot.y, { elite }));
+      state.enemies.push(createEnemy(rollEnemyTypeWithCaps(), spot.x, spot.y, { elite }));
     }
     for (let i = 0; i < chestCount; i += 1) {
       const spot = randomFreeTile(occupied);
@@ -5366,7 +5488,7 @@
     const spikeCount = clamp(Math.round(1 * SPIKE_MULTIPLIER), 0, maxSpikesByRoom);
     for (let i = 0; i < addCount; i += 1) {
       const spot = randomFreeTile(occupied);
-      const type = rollEnemyType();
+      const type = rollEnemyTypeWithCaps();
       state.enemies.push(createEnemy(type, spot.x, spot.y, { elite: state.depth >= 6 && chance(0.3) }));
     }
     for (let i = 0; i < chestCount; i += 1) {
@@ -5589,6 +5711,7 @@
     state.enemyTurnStepIndex = 0;
     state.enemyMeleeCommitLimit = 1;
     state.enemyMeleeCommitted = 0;
+    state.enemyMeleeOverflowCommitted = 0;
     state.enemyBlackboard = null;
     state.enemyDebugPlans = [];
     state.extractConfirm = null;
@@ -5635,6 +5758,7 @@
     state.enemyTurnQueue = [];
     state.enemyTurnStepTimer = 0;
     state.enemyTurnStepIndex = 0;
+    state.enemyMeleeOverflowCommitted = 0;
     state.enemyBlackboard = null;
     state.enemyDebugPlans = [];
     state.extractConfirm = null;
@@ -5969,14 +6093,21 @@
         pushLog(`Final boss of depth ${MAX_DEPTH} defeated!`, "good");
         shouldTriggerFinalVictory = true;
       } else {
-        const relicDropRoll = getWardenRelicDropRoll(state.depth);
-        if (chance(relicDropRoll.chance)) {
+        if (shouldForceWardenFirstDrop(state.depth)) {
+          markWardenFirstDropUsedAtDepth(state.depth);
           state.wardenRelicMissStreak = 0;
-          pushLog("Mini-boss defeated. Warden dropped a relic!", "good");
+          pushLog(`Mini-boss defeated. First Warden kill on depth ${state.depth}: guaranteed relic drop!`, "good");
           openRelicDraft(true);
         } else {
-          state.wardenRelicMissStreak = relicDropRoll.missStreak + 1;
-          pushLog("Mini-boss defeated. No relic drop this time.", "warn");
+          const relicDropRoll = getWardenRelicDropRoll(state.depth);
+          if (chance(relicDropRoll.chance)) {
+            state.wardenRelicMissStreak = 0;
+            pushLog("Mini-boss defeated. Warden dropped a relic!", "good");
+            openRelicDraft(true);
+          } else {
+            state.wardenRelicMissStreak = relicDropRoll.missStreak + 1;
+            pushLog("Mini-boss defeated. No relic drop this time.", "warn");
+          }
         }
       }
       if (chance(0.01)) {
@@ -7125,6 +7256,25 @@
     }
   }
 
+  function registerEnemyMeleeOverflowCommit() {
+    state.enemyMeleeOverflowCommitted =
+      Math.max(0, Number(state.enemyMeleeOverflowCommitted) || 0) + 1;
+  }
+
+  function tryEnemyAdjacentPressureMelee(enemy) {
+    if (!enemy || state.phase !== "playing") return false;
+    if (manhattan(enemy.x, enemy.y, state.player.x, state.player.y) !== 1) return false;
+    const overflowUsed = Math.max(0, Number(state.enemyMeleeOverflowCommitted) || 0);
+    if (overflowUsed >= ENEMY_ADJACENT_PRESSURE_MAX) return false;
+    if (!chance(ENEMY_ADJACENT_PRESSURE_CHANCE)) return false;
+
+    enemy.facing = getFacingFromDelta(state.player.x - enemy.x, state.player.y - enemy.y, enemy.facing);
+    enemyMelee(enemy);
+    if (state.phase !== "playing") return true;
+    registerEnemyMeleeOverflowCommit();
+    return true;
+  }
+
   function buildEnemyDirectorPlan(enemy, distance) {
     if (!enemyDirector || typeof enemyDirector.decidePlan !== "function") {
       return {
@@ -7443,6 +7593,9 @@
     }
 
     if (currentDistance === 1 && !canEnemyCommitMelee(enemy)) {
+      if (tryEnemyAdjacentPressureMelee(enemy)) {
+        return;
+      }
       if (
         aiPlan.moveTo &&
         (aiPlan.moveTo.x !== enemy.x || aiPlan.moveTo.y !== enemy.y) &&
@@ -7461,6 +7614,11 @@
       if (state.phase !== "playing") return;
       registerEnemyMeleeCommit();
       return;
+    }
+    if (currentDistance === 1 && !canEnemyCommitMelee(enemy)) {
+      if (tryEnemyAdjacentPressureMelee(enemy)) {
+        return;
+      }
     }
 
     let step = null;
@@ -7538,6 +7696,7 @@
     state.enemyTurnStepTimer = 0;
     state.enemyTurnStepIndex = 0;
     state.enemyMeleeCommitted = 0;
+    state.enemyMeleeOverflowCommitted = 0;
     state.enemyBlackboard = null;
     state.enemyDebugPlans = [];
   }
@@ -7599,6 +7758,7 @@
     state.enemyTurnStepTimer = getEnemyTurnStepDelayMs();
     state.enemyMeleeCommitLimit = getEnemyMeleeCommitLimit();
     state.enemyMeleeCommitted = 0;
+    state.enemyMeleeOverflowCommitted = 0;
     state.enemyBlackboard = createEnemyBlackboard();
     if (state.enemyBlackboard && state.enemyBlackboard.melee) {
       state.enemyMeleeCommitLimit = state.enemyBlackboard.melee.limit || state.enemyMeleeCommitLimit;
@@ -8116,6 +8276,8 @@
       if (state.menuOptionsOpen) {
         if (state.menuOptionsView === "enemy_speed") {
           actionsEl.textContent = "Enemy Speed: 1 Slow, 2 Standard, 3 Fast. Enter to apply. Esc - back.";
+        } else if (state.menuOptionsView === "audio") {
+          actionsEl.textContent = "Audio: 1 On, 2 Off. Enter to apply. Esc - back.";
         } else {
           actionsEl.textContent = "Options: choose a category. Enter to open. Esc to close.";
         }
@@ -8543,6 +8705,7 @@
     if (state.phase === "menu" && state.menuOptionsOpen) {
       syncMenuOptionsIndex();
       const rootView = state.menuOptionsView === "root";
+      const enemySpeedView = state.menuOptionsView === "enemy_speed";
       const rows = rootView
         ? getMenuOptionsRootItems().map((item, index) => {
             const classes = [
@@ -8556,7 +8719,8 @@
               `</div>`
             ].join("");
           }).join("")
-        : getEnemySpeedOptionsItems().map((option, index) => {
+        : enemySpeedView
+          ? getEnemySpeedOptionsItems().map((option, index) => {
             const optionDelay = Math.max(
               20,
               Math.round(ENEMY_TURN_STEP_DELAY_BASE_MS * (Number(ENEMY_TURN_DELAY_MULTIPLIERS[option.id]) || 1))
@@ -8572,17 +8736,34 @@
               `<div><strong>${option.label}${active ? " (Active)" : ""}</strong><br /><span>${optionDelay} ms per enemy step</span></div>`,
               `</div>`
             ].join("");
+          }).join("")
+          : getAudioOptionsItems().map((option, index) => {
+            const active = (option.id === "off" && state.audioMuted) || (option.id === "on" && !state.audioMuted);
+            const classes = [
+              "overlay-menu-row",
+              state.menuOptionsIndex === index ? "selected" : ""
+            ].join(" ").trim();
+            return [
+              `<div class="${classes}">`,
+              `<div class="overlay-menu-key">${option.key}</div>`,
+              `<div><strong>${option.label}${active ? " (Active)" : ""}</strong><br /><span>Game music and sound</span></div>`,
+              `</div>`
+            ].join("");
           }).join("");
       screenOverlayEl.className = "screen-overlay visible";
       screenOverlayEl.innerHTML = [
         `<div class="overlay-card">`,
         `<h2 class="overlay-title">Options</h2>`,
-        `<p class="overlay-sub">${rootView ? "Choose a category" : "Enemy Speed"}</p>`,
+        `<p class="overlay-sub">${
+          rootView ? "Choose a category" : enemySpeedView ? "Enemy Speed" : "Audio"
+        }</p>`,
         `<div class="overlay-menu">${rows}</div>`,
         `<p class="overlay-hint">${
           rootView
             ? "W/S or Arrows - move | Enter - open | Esc - close"
-            : "W/S or Arrows - move | Enter - apply | 1-3 quick set | Esc - back"
+            : enemySpeedView
+              ? "W/S or Arrows - move | Enter - apply | 1-3 quick set | Esc - back"
+              : "W/S or Arrows - move | Enter - apply | 1-2 quick set | Esc - back"
         }</p>`,
         `</div>`
       ].join("");
@@ -10438,6 +10619,22 @@
         markUiDirty();
         return;
       }
+      if (state.menuOptionsView === "audio" && (key === "arrowleft" || key === "a")) {
+        if (state.audioMuted) {
+          toggleAudio();
+        }
+        state.menuOptionsIndex = 0;
+        markUiDirty();
+        return;
+      }
+      if (state.menuOptionsView === "audio" && (key === "arrowright" || key === "d")) {
+        if (!state.audioMuted) {
+          toggleAudio();
+        }
+        state.menuOptionsIndex = 1;
+        markUiDirty();
+        return;
+      }
       if (key >= "1" && key <= "9") {
         const index = Number(key) - 1;
         if (state.menuOptionsView === "root") {
@@ -10450,6 +10647,13 @@
         }
         if (state.menuOptionsView === "enemy_speed") {
           if (index >= 0 && index < ENEMY_SPEED_MODES.length) {
+            state.menuOptionsIndex = index;
+            activateMenuOptionsSelection(index);
+          }
+          return;
+        }
+        if (state.menuOptionsView === "audio") {
+          if (index >= 0 && index < getAudioOptionsItems().length) {
             state.menuOptionsIndex = index;
             activateMenuOptionsSelection(index);
           }
