@@ -499,7 +499,7 @@
       key: "4",
       name: "Guard Plates",
       desc: "+10 starting armor",
-      baseCost: 60,
+      baseCost: 30,
       costGrowth: 1.4,
       scale: 12,
       max: 15
@@ -9733,6 +9733,7 @@
   markUiDirty();
   requestAnimationFrame(frame);
 })();
+
 
 
 
