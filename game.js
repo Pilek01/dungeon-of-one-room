@@ -16,6 +16,7 @@
   const STORAGE_MUT_UNLOCK = "dungeonOneRoomMutatorUnlocks";
   const STORAGE_MUT_ACTIVE = "dungeonOneRoomMutatorActive";
   const STORAGE_AUDIO_MUTED = "dungeonOneRoomAudioMuted";
+  const STORAGE_DEBUG_AI_OVERLAY = "dungeonOneRoomDebugAiOverlay";
   const STORAGE_ENEMY_SPEED = "dungeonOneRoomEnemySpeed";
   const STORAGE_CAMP_GOLD = "dungeonOneRoomCampGold";
   const STORAGE_ESSENCE_LEGACY = "dungeonOneRoomEssence";
@@ -69,6 +70,10 @@
   const ENEMY_LATE_SCALE_START_DEPTH = 20;
   const ENEMY_LATE_SCALE_STEP_DEPTH = 10;
   const ENEMY_LATE_SCALE_PER_STEP = 0.2;
+  const ACOLYTE_SUPPORT_RANGE = 4;
+  const ACOLYTE_SUPPORT_HEAL_BASE = 2;
+  const ACOLYTE_SUPPORT_BUFF_ATTACK_MULT = 0.3;
+  const ACOLYTE_SUPPORT_BUFF_TURNS = 3;
   const CHAOS_ORB_ROLL_INTERVAL = 10;
   const CHAOS_ORB_ATK_BONUS = 2 * COMBAT_SCALE; // +20 ATK
   const CHAOS_ORB_KILL_HEAL = 2 * COMBAT_SCALE; // +20 HP per kill
@@ -93,8 +98,13 @@
   const ONLINE_LEADERBOARD_SEASON = normalizeSeasonId(
     typeof window !== "undefined" ? window.DUNGEON_LEADERBOARD_SEASON : ""
   );
+  const enemyBlackboardApi = typeof window !== "undefined" ? window.DungeonEnemyBlackboard : null;
+  const enemyDirector = typeof window !== "undefined" ? window.DungeonEnemyDirector : null;
+  const enemyTactics = typeof window !== "undefined" ? window.DungeonEnemyTactics : null;
+  const enemyDebugOverlay = typeof window !== "undefined" ? window.DungeonEnemyDebugOverlay : null;
   const DEBUG_CHEATS_ENABLED = true;
   const DEBUG_MENU_TOGGLE_KEY = "f9";
+  const DEBUG_AI_OVERLAY_TOGGLE_KEY = "f8";
   const MUSIC_TRACKS = {
     normal: "assets/Dungeon Descent.mp3",
     boss: "assets/Dungeon Descent2.mp3"
@@ -124,6 +134,12 @@
   const MERCHANT_SPRITE_VERSION = "20260216_002";
   const MERCHANT_FRAME_MS = 180;
   const MERCHANT_DRAW_SCALE = 1.2;
+  const SHRINE_SPRITESHEET_PATH = "assets/sprite/shrine/shrine.png";
+  const SHRINE_SPRITESHEET_VERSION = "20260217_001";
+  const SHRINE_SPRITESHEET_COLS = 3;
+  const SHRINE_SPRITESHEET_ROWS = 3;
+  const SHRINE_FRAME_MS = 220;
+  const SHRINE_DRAW_SCALE = 1.2;
   const SPIKE_SPRITE_PATH = "assets/sprite/spike.png";
   const SPIKE_SPRITE_VERSION = "20260213_001";
   const SPIKE_DRAW_SCALE = 1.4;
@@ -287,6 +303,24 @@
     east: { x: 14, y: 4, w: 12, h: 29 },
     west: { x: 15, y: 5, w: 12, h: 29 }
   };
+  const WARDEN_SPRITESHEET_PATH = "assets/sprite/warden/spritesheetwarden2.png";
+  const WARDEN_SPRITESHEET_VERSION = "20260217_002";
+  const WARDEN_SPRITESHEET_COLS = 3;
+  const WARDEN_SPRITESHEET_ROWS = 1;
+  const WARDEN_FRAME_MS = 220;
+  const WARDEN_DRAW_SCALE = 1.2;
+  const ACOLYTE_SPRITESHEET_PATH = "assets/sprite/acolyte/acolyte.png";
+  const ACOLYTE_SPRITESHEET_VERSION = "20260217_001";
+  const ACOLYTE_SPRITESHEET_COLS = 3;
+  const ACOLYTE_SPRITESHEET_ROWS = 1;
+  const ACOLYTE_FRAME_MS = 220;
+  const ACOLYTE_DRAW_SCALE = 1.2;
+  const SKITTER_SPRITESHEET_PATH = "assets/sprite/skitter/skitter.png";
+  const SKITTER_SPRITESHEET_VERSION = "20260217_001";
+  const SKITTER_SPRITESHEET_COLS = 3;
+  const SKITTER_SPRITESHEET_ROWS = 1;
+  const SKITTER_FRAME_MS = 180;
+  const SKITTER_DRAW_SCALE = 1.2;
 
   const SYNTH_VOLUME_MULTIPLIER = 6;
   const BASE_SYNTH_MASTER_GAIN = 0.18;
@@ -305,8 +339,12 @@
     slimeEye: "#203020",
     skeleton: "#d8dde6",
     skeletonEye: "#192029",
+    acolyte: "#9c8dff",
+    acolyteTrim: "#4b427f",
     brute: "#cb6d4f",
     bruteTrim: "#6a1f1f",
+    skitter: "#f17d7d",
+    skitterTrim: "#6b2a2a",
     warden: "#8d68d8",
     wardenTrim: "#3f2b74",
     wardenEye: "#d3bbff",
@@ -718,6 +756,17 @@
     return SPIKE_DAMAGE_BASE + steps * SPIKE_DAMAGE_PER_STEP;
   }
 
+  function getEnemyAcolyteBuffAttackBonus(enemy) {
+    if (!enemy || (Number(enemy.acolyteBuffTurns) || 0) <= 0) return 0;
+    const baseAttack = Math.max(MIN_EFFECTIVE_DAMAGE, Number(enemy?.attack) || 0);
+    return Math.max(MIN_EFFECTIVE_DAMAGE, Math.round(baseAttack * ACOLYTE_SUPPORT_BUFF_ATTACK_MULT));
+  }
+
+  function getEnemyEffectiveAttack(enemy) {
+    const baseAttack = Math.max(MIN_EFFECTIVE_DAMAGE, Number(enemy?.attack) || 0);
+    return Math.max(MIN_EFFECTIVE_DAMAGE, baseAttack + getEnemyAcolyteBuffAttackBonus(enemy));
+  }
+
   function getBladeAttackMultiplier(level = getCampUpgradeLevel("blade")) {
     const safeLevel = Math.max(0, Number(level) || 0);
     return 1 + safeLevel * BLADE_ATTACK_PERCENT_PER_LEVEL;
@@ -1090,6 +1139,10 @@
     enemyTurnQueue: [],
     enemyTurnStepTimer: 0,
     enemyTurnStepIndex: 0,
+    enemyMeleeCommitLimit: 1,
+    enemyMeleeCommitted: 0,
+    enemyBlackboard: null,
+    enemyDebugPlans: [],
     extractConfirm: null,
     extractRelicPrompt: null,
     lastDeathRelicLossText: "",
@@ -1132,6 +1185,7 @@
     campVisitShopCostMult: 1,
     debugCheatOpen: false,
     debugGodMode: false,
+    debugAiOverlay: localStorage.getItem(STORAGE_DEBUG_AI_OVERLAY) === "1",
     enemySpeedMode: initialEnemySpeedMode,
     merchantPotionsBought: 0,
     runMods: {
@@ -1213,6 +1267,21 @@
   const slimeSprites = {};
   const skeletonSprites = {};
   const bruteSprites = {};
+  const acolyteSprite = {
+    sheet: null,
+    ready: false,
+    failed: false
+  };
+  const skitterSprite = {
+    sheet: null,
+    ready: false,
+    failed: false
+  };
+  const wardenSprite = {
+    sheet: null,
+    ready: false,
+    failed: false
+  };
   const chestSprite = {
     img: null,
     ready: false,
@@ -1231,6 +1300,11 @@
     failed: false,
     gif: null,
     gifReady: false
+  };
+  const shrineSprite = {
+    sheet: null,
+    ready: false,
+    failed: false
   };
   const spikeSprite = {
     img: null,
@@ -2448,8 +2522,19 @@
 
     state.enemies = Array.isArray(snapshot.enemies) ? snapshot.enemies : [];
     for (const enemy of state.enemies) {
+      if (enemyTactics && typeof enemyTactics.ensureEnemyState === "function") {
+        enemyTactics.ensureEnemyState(enemy);
+      }
       if (enemy.cooldown == null) enemy.cooldown = 0;
       enemy.aiming = Boolean(enemy.aiming);
+      enemy.slamAiming = Boolean(enemy.slamAiming);
+      enemy.intent = typeof enemy.intent === "string" ? enemy.intent : "chase";
+      enemy.aiLastSeenX = Number.isFinite(enemy.aiLastSeenX) ? enemy.aiLastSeenX : enemy.x;
+      enemy.aiLastSeenY = Number.isFinite(enemy.aiLastSeenY) ? enemy.aiLastSeenY : enemy.y;
+      enemy.aiMemoryTtl = Math.max(0, Number(enemy.aiMemoryTtl) || 0);
+      if (!Number.isFinite(enemy.aiPersonality)) {
+        enemy.aiPersonality = Math.random() * 2 - 1;
+      }
       enemy.castFlash = 0;
       enemy.frozenThisTurn = Boolean(enemy.frozenThisTurn);
       enemy.frostFx = Math.max(0, Number(enemy.frostFx) || 0);
@@ -2474,6 +2559,8 @@
     state.enemyTurnQueue = [];
     state.enemyTurnStepTimer = 0;
     state.enemyTurnStepIndex = 0;
+    state.enemyBlackboard = null;
+    state.enemyDebugPlans = [];
     state.particles = [];
     state.floatingTexts = [];
     state.log = Array.isArray(snapshot.log) ? snapshot.log.slice(0, 8) : [];
@@ -2623,6 +2710,24 @@
     });
 
     void decodeMerchantGifFrames(gifUrl);
+  }
+
+  function loadShrineSprite() {
+    const img = new Image();
+    shrineSprite.sheet = img;
+    shrineSprite.ready = false;
+    shrineSprite.failed = false;
+    img.onload = () => {
+      shrineSprite.ready = true;
+      markUiDirty();
+    };
+    img.onerror = () => {
+      if (!shrineSprite.failed) {
+        shrineSprite.failed = true;
+        pushLog(`Shrine sprite failed: ${SHRINE_SPRITESHEET_PATH}`, "bad");
+      }
+    };
+    img.src = `${SHRINE_SPRITESHEET_PATH}?v=${SHRINE_SPRITESHEET_VERSION}`;
   }
 
   async function decodeMerchantGifFrames(gifUrl) {
@@ -3074,6 +3179,25 @@
       });
       return;
     }
+    if (kind === "shrine") {
+      playTone(ctx, out, {
+        at: now,
+        frequency: 360,
+        endFrequency: 560,
+        duration: 0.12,
+        type: "triangle",
+        gain: 0.06
+      });
+      playTone(ctx, out, {
+        at: now + 0.08,
+        frequency: 520,
+        endFrequency: 760,
+        duration: 0.14,
+        type: "sine",
+        gain: 0.05
+      });
+      return;
+    }
     if (kind === "chest") {
       playTone(ctx, out, {
         at: now,
@@ -3103,6 +3227,13 @@
     }
     syncBgmWithState(true);
     pushLog(`Audio ${state.audioMuted ? "muted" : "enabled"}.`);
+    markUiDirty();
+  }
+
+  function toggleDebugAiOverlay() {
+    state.debugAiOverlay = !state.debugAiOverlay;
+    localStorage.setItem(STORAGE_DEBUG_AI_OVERLAY, state.debugAiOverlay ? "1" : "0");
+    pushLog(`AI debug overlay ${state.debugAiOverlay ? "ON" : "OFF"} (${DEBUG_AI_OVERLAY_TOGGLE_KEY.toUpperCase()}).`);
     markUiDirty();
   }
 
@@ -4993,9 +5124,24 @@
     const roll = Math.random();
     if (state.depth < 5) return "slime";
     if (state.depth <= 10) return roll < 0.72 ? "slime" : "skeleton";
-    if (roll < 0.43) return "slime";
-    if (roll < 0.77) return "skeleton";
-    return "brute";
+    if (state.depth <= 14) {
+      if (roll < 0.38) return "slime";
+      if (roll < 0.7) return "skeleton";
+      if (roll < 0.92) return "brute";
+      return "acolyte";
+    }
+    if (state.depth <= 24) {
+      if (roll < 0.28) return "slime";
+      if (roll < 0.52) return "skeleton";
+      if (roll < 0.72) return "brute";
+      if (roll < 0.88) return "acolyte";
+      return "skitter";
+    }
+    if (roll < 0.2) return "slime";
+    if (roll < 0.4) return "skeleton";
+    if (roll < 0.58) return "brute";
+    if (roll < 0.78) return "acolyte";
+    return "skitter";
   }
 
   function createEnemy(type, x, y, options = {}) {
@@ -5013,6 +5159,28 @@
         range: 3,
         cooldown: 0,
         aiming: false
+      };
+    } else if (type === "acolyte") {
+      enemy = {
+        type,
+        name: "Acolyte",
+        x,
+        y,
+        hp: scaledCombat(4 + depthScale),
+        attack: scaledCombat(2 + Math.floor(state.depth / 5)) + damageBonus,
+        range: 4,
+        cooldown: 0,
+        aiming: false
+      };
+    } else if (type === "skitter") {
+      enemy = {
+        type,
+        name: "Skitter",
+        x,
+        y,
+        hp: scaledCombat(3 + depthScale),
+        attack: scaledCombat(2 + Math.floor(state.depth / 4)) + damageBonus,
+        cooldown: 0
       };
     } else if (type === "brute") {
       enemy = {
@@ -5070,6 +5238,16 @@
     enemy.frostFx = 0;
     enemy.hitFlash = 0;
     enemy.facing = "south";
+    enemy.intent = "chase";
+    enemy.slamAiming = false;
+    enemy.acolyteBuffTurns = Math.max(0, Number(enemy.acolyteBuffTurns) || 0);
+    enemy.aiLastSeenX = x;
+    enemy.aiLastSeenY = y;
+    enemy.aiMemoryTtl = 0;
+    enemy.aiPersonality = Math.random() * 2 - 1;
+    if (enemyTactics && typeof enemyTactics.ensureEnemyState === "function") {
+      enemyTactics.ensureEnemyState(enemy);
+    }
     snapVisual(enemy);
 
     if (options.elite && enemy.type !== "warden" && state.depth >= 6) {
@@ -5273,6 +5451,8 @@
     state.enemyTurnQueue = [];
     state.enemyTurnStepTimer = 0;
     state.enemyTurnStepIndex = 0;
+    state.enemyBlackboard = null;
+    state.enemyDebugPlans = [];
     state.particles = [];
     state.floatingTexts = [];
     state.rangedBolts = [];
@@ -5407,6 +5587,10 @@
     state.enemyTurnQueue = [];
     state.enemyTurnStepTimer = 0;
     state.enemyTurnStepIndex = 0;
+    state.enemyMeleeCommitLimit = 1;
+    state.enemyMeleeCommitted = 0;
+    state.enemyBlackboard = null;
+    state.enemyDebugPlans = [];
     state.extractConfirm = null;
     state.merchantMenuOpen = false;
     state.relicDraft = null;
@@ -5451,6 +5635,8 @@
     state.enemyTurnQueue = [];
     state.enemyTurnStepTimer = 0;
     state.enemyTurnStepIndex = 0;
+    state.enemyBlackboard = null;
+    state.enemyDebugPlans = [];
     state.extractConfirm = null;
     state.merchantMenuOpen = false;
     syncBgmWithState();
@@ -5542,6 +5728,7 @@
   function activateShrine() {
     if (!isOnShrine()) return;
     state.shrine.used = true;
+    playSfx("shrine");
     const blessing = hasRelic("shrineward") ? true : chance(0.85);
     if (blessing) {
       if (chance(SHRINE_FURY_BLESSING_CHANCE)) {
@@ -5698,6 +5885,8 @@
   function rewardForEnemy(enemy) {
     let base = 2;
     if (enemy.type === "warden") base = 35;
+    else if (enemy.type === "acolyte") base = 5;
+    else if (enemy.type === "skitter") base = 4;
     else if (enemy.type === "brute") base = 4;
     else if (enemy.type === "skeleton") base = 3;
     const eliteMult = enemy.elite ? (state.runMods.eliteGoldMult || 1) : 1;
@@ -6556,6 +6745,110 @@
     return true;
   }
 
+  function forceMovePlayer(dx, dy, maxTiles = 1) {
+    const steps = Math.max(1, Number(maxTiles) || 1);
+    let movedTiles = 0;
+    for (let i = 0; i < steps; i += 1) {
+      const nx = state.player.x + dx;
+      const ny = state.player.y + dy;
+      if (playerKnockbackTileBlocked(nx, ny)) break;
+      if (movedTiles === 0) {
+        startTween(state.player);
+      }
+      state.player.x = nx;
+      state.player.y = ny;
+      movedTiles += 1;
+    }
+    if (movedTiles > 0) {
+      state.player.lastMoveX = dx;
+      state.player.lastMoveY = dy;
+      applySpikeToPlayer();
+    }
+    return movedTiles;
+  }
+
+  function pullPlayerTowardEnemy(enemy, maxTiles = 1) {
+    const dx = sign(enemy.x - state.player.x);
+    const dy = sign(enemy.y - state.player.y);
+    if (dx === 0 && dy === 0) return 0;
+    return forceMovePlayer(dx, dy, maxTiles);
+  }
+
+  function executeWardenBurst(enemy) {
+    const burstDamage = Math.max(MIN_EFFECTIVE_DAMAGE, Math.round(getEnemyEffectiveAttack(enemy) * 1.25));
+    enemy.cooldown = Math.max(Number(enemy.cooldown) || 0, 2);
+    applyDamageToPlayer(burstDamage, `${enemy.name} gravity burst`, enemy);
+    if (state.phase !== "playing") return;
+    const pulled = pullPlayerTowardEnemy(enemy, 1);
+    enemy.castFlash = 140;
+    spawnShockwaveRing(enemy.x, enemy.y, {
+      color: "#b995ff",
+      core: "#efe1ff",
+      maxRadius: TILE * 2.6,
+      life: 320
+    });
+    spawnParticles(state.player.x, state.player.y, "#c8a7ff", 10, 1.2);
+    if (pulled > 0) {
+      pushLog(`Warden gravity burst pulls you ${pulled} tile${pulled > 1 ? "s" : ""}.`, "bad");
+    } else {
+      pushLog("Warden gravity burst detonates.", "bad");
+    }
+  }
+
+  function loadWardenSprite() {
+    const img = new Image();
+    wardenSprite.sheet = img;
+    wardenSprite.ready = false;
+    wardenSprite.failed = false;
+    img.onload = () => {
+      wardenSprite.ready = true;
+      markUiDirty();
+    };
+    img.onerror = () => {
+      if (!wardenSprite.failed) {
+        wardenSprite.failed = true;
+        pushLog(`Warden sprite failed: ${WARDEN_SPRITESHEET_PATH}`, "bad");
+      }
+    };
+    img.src = `${WARDEN_SPRITESHEET_PATH}?v=${WARDEN_SPRITESHEET_VERSION}`;
+  }
+
+  function loadAcolyteSprite() {
+    const img = new Image();
+    acolyteSprite.sheet = img;
+    acolyteSprite.ready = false;
+    acolyteSprite.failed = false;
+    img.onload = () => {
+      acolyteSprite.ready = true;
+      markUiDirty();
+    };
+    img.onerror = () => {
+      if (!acolyteSprite.failed) {
+        acolyteSprite.failed = true;
+        pushLog(`Acolyte sprite failed: ${ACOLYTE_SPRITESHEET_PATH}`, "bad");
+      }
+    };
+    img.src = `${ACOLYTE_SPRITESHEET_PATH}?v=${ACOLYTE_SPRITESHEET_VERSION}`;
+  }
+
+  function loadSkitterSprite() {
+    const img = new Image();
+    skitterSprite.sheet = img;
+    skitterSprite.ready = false;
+    skitterSprite.failed = false;
+    img.onload = () => {
+      skitterSprite.ready = true;
+      markUiDirty();
+    };
+    img.onerror = () => {
+      if (!skitterSprite.failed) {
+        skitterSprite.failed = true;
+        pushLog(`Skitter sprite failed: ${SKITTER_SPRITESHEET_PATH}`, "bad");
+      }
+    };
+    img.src = `${SKITTER_SPRITESHEET_PATH}?v=${SKITTER_SPRITESHEET_VERSION}`;
+  }
+
   function stepToward(enemy, targetX, targetY) {
     const dx = targetX - enemy.x;
     const dy = targetY - enemy.y;
@@ -6606,8 +6899,8 @@
 
   function enemyMelee(enemy) {
     const damage = enemy.type === "skeleton"
-      ? Math.max(MIN_EFFECTIVE_DAMAGE, enemy.attack - scaledCombat(1))
-      : enemy.attack;
+      ? Math.max(MIN_EFFECTIVE_DAMAGE, getEnemyEffectiveAttack(enemy) - scaledCombat(1))
+      : getEnemyEffectiveAttack(enemy);
     applyDamageToPlayer(damage, enemy.name, enemy);
     if (enemy.vampiric && state.phase === "playing") {
       enemy.hp = Math.min(enemy.maxHp || enemy.hp, enemy.hp + scaledCombat(1));
@@ -6627,17 +6920,330 @@
     }
   }
 
-  function enemyRanged(enemy) {
-    const boltColor = enemy.type === "warden" ? "#c8a7ff" : "#8bb4ff";
+  function enemyRanged(enemy, options = {}) {
+    const boltColor = typeof options.color === "string"
+      ? options.color
+      : (enemy.type === "warden" ? "#c8a7ff" : "#8bb4ff");
     enemy.castFlash = 120;
     enemy.aiming = false;
+    enemy.volleyAiming = false;
+    enemy.burstAiming = false;
+    const damageMultiplier = Math.max(0.1, Number(options.damageMultiplier) || 1);
+    const damage = Math.max(MIN_EFFECTIVE_DAMAGE, Math.round(getEnemyEffectiveAttack(enemy) * damageMultiplier));
+    const sourceLabel = typeof options.source === "string"
+      ? options.source
+      : `${enemy.name} bolt`;
     spawnRangedBolt(enemy.x, enemy.y, state.player.x, state.player.y, boltColor);
     spawnRangedImpact(state.player.x, state.player.y, boltColor);
-    applyDamageToPlayer(enemy.attack, `${enemy.name} bolt`, enemy);
+    applyDamageToPlayer(damage, sourceLabel, enemy);
     if (enemy.vampiric && state.phase === "playing") {
       enemy.hp = Math.min(enemy.maxHp || enemy.hp, enemy.hp + scaledCombat(1));
     }
     spawnParticles(state.player.x, state.player.y, boltColor, 7, 1.35);
+  }
+
+  function healNearestEnemyAlly(caster, amount = scaledCombat(1), maxRange = 3) {
+    if (!caster || state.phase !== "playing") return 0;
+    const healBase = Math.max(MIN_EFFECTIVE_DAMAGE, Number(amount) || 0);
+    if (healBase <= 0) return 0;
+    const nearbyAllies = state.enemies
+      .filter((enemy) =>
+        enemy &&
+        enemy !== caster &&
+        enemy.hp < enemy.maxHp &&
+        manhattan(enemy.x, enemy.y, caster.x, caster.y) <= maxRange
+      )
+      .sort((a, b) =>
+        manhattan(a.x, a.y, caster.x, caster.y) - manhattan(b.x, b.y, caster.x, caster.y) ||
+        (a.hp / Math.max(1, a.maxHp)) - (b.hp / Math.max(1, b.maxHp))
+      );
+    const target = nearbyAllies[0];
+    if (!target) return 0;
+    const before = target.hp;
+    target.hp = Math.min(target.maxHp, target.hp + healBase);
+    const healed = target.hp - before;
+    if (healed > 0) {
+      spawnParticles(target.x, target.y, "#b7a9ff", 7, 0.95);
+      spawnFloatingText(target.x, target.y, `+${healed}`, "#cdbdff");
+      pushLog(`${caster.name} restores ${healed} HP to ${target.name}.`, "bad");
+      markUiDirty();
+    }
+    return healed;
+  }
+
+  function getAcolyteSupportTarget(caster, maxRange = ACOLYTE_SUPPORT_RANGE) {
+    if (!caster || state.phase !== "playing") return null;
+    const allies = state.enemies
+      .filter((enemy) =>
+        enemy &&
+        enemy !== caster &&
+        manhattan(enemy.x, enemy.y, caster.x, caster.y) <= maxRange
+      );
+    if (allies.length <= 0) return null;
+
+    const needsHeal = allies
+      .filter((enemy) => enemy.hp < enemy.maxHp)
+      .sort((a, b) =>
+        (a.hp / Math.max(1, a.maxHp)) - (b.hp / Math.max(1, b.maxHp)) ||
+        manhattan(a.x, a.y, caster.x, caster.y) - manhattan(b.x, b.y, caster.x, caster.y)
+      );
+    if (needsHeal.length > 0) return needsHeal[0];
+
+    const needsBuff = allies
+      .filter((enemy) => (Number(enemy.acolyteBuffTurns) || 0) <= 1)
+      .sort((a, b) =>
+        manhattan(a.x, a.y, caster.x, caster.y) - manhattan(b.x, b.y, caster.x, caster.y)
+      );
+    if (needsBuff.length > 0) return needsBuff[0];
+
+    return allies[0];
+  }
+
+  function applyAcolyteSupport(caster, target) {
+    if (!caster || !target || state.phase !== "playing") return false;
+    const healAmount = scaledCombat(ACOLYTE_SUPPORT_HEAL_BASE);
+    const beforeHp = target.hp;
+    target.hp = Math.min(target.maxHp, target.hp + healAmount);
+    const healed = target.hp - beforeHp;
+    target.acolyteBuffTurns = Math.max(
+      Number(target.acolyteBuffTurns) || 0,
+      ACOLYTE_SUPPORT_BUFF_TURNS
+    );
+    caster.castFlash = 120;
+    spawnParticles(caster.x, caster.y, "#b89dff", 8, 1.05);
+    spawnParticles(target.x, target.y, "#cbb7ff", 10, 1.05);
+    if (healed > 0) {
+      spawnFloatingText(target.x, target.y, `+${healed}`, "#d6c7ff");
+    }
+    pushLog(
+      `${caster.name} blesses ${target.name}${healed > 0 ? ` (+${healed} HP)` : ""}.`,
+      "bad"
+    );
+    return true;
+  }
+
+  function tryUseSkitterLunge(enemy) {
+    if (!enemy || state.phase !== "playing") return false;
+    const startDistance = manhattan(enemy.x, enemy.y, state.player.x, state.player.y);
+    const maxSteps = startDistance >= 3 ? 2 : 1;
+    let movedAny = false;
+
+    for (let i = 0; i < maxSteps; i += 1) {
+      const distance = manhattan(enemy.x, enemy.y, state.player.x, state.player.y);
+      if (distance <= 1) break;
+      const step = stepToward(enemy, state.player.x, state.player.y);
+      if (!step) break;
+      const move = applyEnemyMoveStep(enemy, step);
+      movedAny = true;
+      if (move.removed || state.phase !== "playing" || !state.enemies.includes(enemy)) {
+        return true;
+      }
+    }
+    if (manhattan(enemy.x, enemy.y, state.player.x, state.player.y) !== 1) {
+      return movedAny;
+    }
+    enemy.facing = getFacingFromDelta(state.player.x - enemy.x, state.player.y - enemy.y, enemy.facing);
+    const lungeDamage = Math.max(MIN_EFFECTIVE_DAMAGE, Math.round(getEnemyEffectiveAttack(enemy) * 1.25));
+    applyDamageToPlayer(lungeDamage, `${enemy.name} lunge`, enemy);
+    if (state.phase !== "playing") return true;
+    if (enemy.vampiric) {
+      enemy.hp = Math.min(enemy.maxHp || enemy.hp, enemy.hp + scaledCombat(1));
+    }
+    if (hasRelic("thornmail") && state.enemies.includes(enemy)) {
+      enemy.hp -= scaledCombat(1);
+      triggerEnemyHitFlash(enemy);
+      spawnFloatingText(enemy.x, enemy.y, `-${scaledCombat(1)}`, "#ffc8c8");
+      spawnParticles(enemy.x, enemy.y, "#d86b6b", 5, 0.9);
+      pushLog(`Thorn Mail reflects ${scaledCombat(1)} to ${enemy.name}.`, "good");
+      if (enemy.hp <= 0) {
+        killEnemy(enemy, "thorns");
+        return true;
+      }
+    }
+    spawnParticles(state.player.x, state.player.y, "#ff8d8d", 9, 1.25);
+    pushLog(`${enemy.name} lunges for ${lungeDamage}.`, "bad");
+    enemy.cooldown = 6;
+    registerEnemyMeleeCommit();
+    return true;
+  }
+
+  function getEnemyMeleeCommitLimit() {
+    return state.enemies.length >= 6 ? 2 : 1;
+  }
+
+  function getEnemyTelegraphLimit() {
+    return state.enemies.length >= 6 ? 3 : 2;
+  }
+
+  function createEnemyBlackboard() {
+    if (!enemyBlackboardApi || typeof enemyBlackboardApi.createBlackboard !== "function") {
+      return null;
+    }
+    const unopenedChests = state.chests
+      .filter((chest) => !chest.opened)
+      .map((chest) => ({ x: chest.x, y: chest.y }));
+    return enemyBlackboardApi.createBlackboard({
+      gridSize: GRID_SIZE,
+      enemies: state.enemies,
+      player: {
+        x: state.player.x,
+        y: state.player.y,
+        hp: state.player.hp,
+        maxHp: state.player.maxHp
+      },
+      spikes: state.spikes,
+      chests: unopenedChests,
+      meleeLimit: getEnemyMeleeCommitLimit(),
+      telegraphLimit: getEnemyTelegraphLimit(),
+      playerLowHp: state.player.hp <= LOW_HP_THRESHOLD,
+      playerShieldActive: isShieldActive()
+    });
+  }
+
+  function canStartEnemyTelegraph() {
+    if (enemyBlackboardApi && typeof enemyBlackboardApi.canStartTelegraph === "function") {
+      return enemyBlackboardApi.canStartTelegraph(state.enemyBlackboard, state.enemies);
+    }
+    const fallbackActive = (enemyBlackboardApi && typeof enemyBlackboardApi.countActiveTelegraphs === "function")
+      ? enemyBlackboardApi.countActiveTelegraphs(state.enemies)
+      : state.enemies.filter((enemy) => enemy.aiming || enemy.slamAiming || enemy.volleyAiming || enemy.burstAiming).length;
+    return fallbackActive < getEnemyTelegraphLimit();
+  }
+
+  function canEnemyCommitMelee(enemy) {
+    if (isEpicShieldReflectActive()) return true;
+    if (enemyBlackboardApi && typeof enemyBlackboardApi.canCommitMelee === "function") {
+      return enemyBlackboardApi.canCommitMelee(state.enemyBlackboard);
+    }
+    return (state.enemyMeleeCommitted || 0) < (state.enemyMeleeCommitLimit || 1);
+  }
+
+  function registerEnemyMeleeCommit() {
+    state.enemyMeleeCommitted = Math.max(0, Number(state.enemyMeleeCommitted) || 0) + 1;
+    if (enemyBlackboardApi && typeof enemyBlackboardApi.registerMeleeCommit === "function") {
+      enemyBlackboardApi.registerMeleeCommit(state.enemyBlackboard);
+    }
+  }
+
+  function buildEnemyDirectorPlan(enemy, distance) {
+    if (!enemyDirector || typeof enemyDirector.decidePlan !== "function") {
+      return {
+        role: enemy?.type || "swarm",
+        lane: "support",
+        intent: "chase",
+        moveTo: null
+      };
+    }
+    const unopenedChests = state.chests
+      .filter((chest) => !chest.opened)
+      .map((chest) => ({ x: chest.x, y: chest.y }));
+    const plan = enemyDirector.decidePlan({
+      enemy,
+      player: {
+        x: state.player.x,
+        y: state.player.y,
+        hp: state.player.hp,
+        maxHp: state.player.maxHp
+      },
+      portal: {
+        x: state.portal.x,
+        y: state.portal.y
+      },
+      enemies: state.enemies,
+      chests: unopenedChests,
+      spikes: state.spikes,
+      inBounds,
+      meleeSlotsUsed: state.enemyMeleeCommitted,
+      meleeSlotsLimit: state.enemyMeleeCommitLimit,
+      playerShieldActive: isShieldActive(),
+      playerLowHp: state.player.hp <= LOW_HP_THRESHOLD,
+      playerDistance: distance,
+      blackboard: state.enemyBlackboard
+    });
+    if (!plan || typeof plan !== "object") {
+      return {
+        role: enemy?.type || "swarm",
+        lane: "support",
+        intent: "chase",
+        moveTo: null
+      };
+    }
+    const existingIndex = state.enemyDebugPlans.findIndex((item) => item.enemy === enemy);
+    const debugPlan = {
+      enemy,
+      intent: plan.intent || "chase",
+      moveTo: plan.moveTo || null,
+      role: plan.role || enemy.type || "swarm",
+      lane: plan.lane || "support"
+    };
+    if (existingIndex >= 0) {
+      state.enemyDebugPlans[existingIndex] = debugPlan;
+    } else {
+      state.enemyDebugPlans.push(debugPlan);
+    }
+    return plan;
+  }
+
+  function buildEnemyDebugPreviewPlans() {
+    if (!state.debugAiOverlay) return null;
+    if (!enemyDirector || typeof enemyDirector.decidePlan !== "function") {
+      return null;
+    }
+    const board = createEnemyBlackboard();
+    const unopenedChests = state.chests
+      .filter((chest) => !chest.opened)
+      .map((chest) => ({ x: chest.x, y: chest.y }));
+    const plans = [];
+    for (const enemy of state.enemies) {
+      if (!enemy || !state.enemies.includes(enemy)) continue;
+      const distance = manhattan(enemy.x, enemy.y, state.player.x, state.player.y);
+      const plan = enemyDirector.decidePlan({
+        enemy,
+        player: {
+          x: state.player.x,
+          y: state.player.y,
+          hp: state.player.hp,
+          maxHp: state.player.maxHp
+        },
+        portal: {
+          x: state.portal.x,
+          y: state.portal.y
+        },
+        enemies: state.enemies,
+        chests: unopenedChests,
+        spikes: state.spikes,
+        inBounds,
+        meleeSlotsUsed: 0,
+        meleeSlotsLimit: board?.melee?.limit || getEnemyMeleeCommitLimit(),
+        playerShieldActive: isShieldActive(),
+        playerLowHp: state.player.hp <= LOW_HP_THRESHOLD,
+        playerDistance: distance,
+        blackboard: board,
+        previewOnly: true
+      });
+      plans.push({
+        enemy,
+        intent: plan?.intent || "chase",
+        moveTo: plan?.moveTo || null,
+        role: plan?.role || enemy.type || "swarm",
+        lane: plan?.lane || "support"
+      });
+    }
+    return { board, plans };
+  }
+
+  function applyEnemyMoveStep(enemy, step) {
+    if (!step) return { moved: false, removed: false };
+    const oldX = enemy.x;
+    const oldY = enemy.y;
+    startTween(enemy);
+    enemy.x = step.x;
+    enemy.y = step.y;
+    enemy.facing = getFacingFromDelta(step.x - oldX, step.y - oldY, enemy.facing);
+    if (applySpikeToEnemy(enemy)) {
+      return { moved: true, removed: true };
+    }
+    return { moved: true, removed: false };
   }
 
   function processSingleEnemyTurn(enemy) {
@@ -6656,19 +7262,56 @@
         return;
       }
     }
+    if (enemyTactics && typeof enemyTactics.tickPassiveCooldowns === "function") {
+      enemyTactics.tickPassiveCooldowns(enemy);
+    }
 
-    if (enemy.type === "brute" && enemy.cooldown > 0) {
+    let currentDistance = manhattan(enemy.x, enemy.y, state.player.x, state.player.y);
+    let lineDistance = Math.abs(enemy.x - state.player.x) + Math.abs(enemy.y - state.player.y);
+    const usesCooldown =
+      enemy.type === "brute" ||
+      enemy.type === "skeleton" ||
+      enemy.type === "acolyte" ||
+      enemy.type === "skitter" ||
+      enemy.type === "warden";
+    if (usesCooldown && enemy.cooldown > 0) {
       enemy.cooldown -= 1;
     }
 
-    const distance = manhattan(enemy.x, enemy.y, state.player.x, state.player.y);
-    const lineDistance = Math.abs(enemy.x - state.player.x) + Math.abs(enemy.y - state.player.y);
+    const aiPlan = buildEnemyDirectorPlan(enemy, currentDistance);
+    enemy.intent = typeof aiPlan.intent === "string" ? aiPlan.intent : "chase";
 
     if (enemy.type === "warden") {
-      if (enemy.cooldown > 0) {
-        enemy.cooldown -= 1;
+      const wardenCanLineShot = hasLineOfSight(enemy);
+      if (enemyTactics && typeof enemyTactics.handleWarden === "function") {
+        const wardenTactical = enemyTactics.handleWarden(enemy, {
+          distance: currentDistance,
+          intent: enemy.intent,
+          hasLineShot: wardenCanLineShot,
+          playerShieldActive: isShieldActive(),
+          canStartTelegraph: canStartEnemyTelegraph()
+        });
+        if (wardenTactical.type === "start_burst") {
+          pushLog("Warden weaves a gravity burst.", "bad");
+          return;
+        }
+        if (wardenTactical.type === "hold_burst") {
+          if ((enemy.telegraphAge || 0) === 1) {
+            pushLog("Warden channels gravity...", "bad");
+          }
+          return;
+        }
+        if (wardenTactical.type === "cancel_burst") {
+          pushLog("Warden's gravity burst fizzles.", "good");
+          return;
+        }
+        if (wardenTactical.type === "execute_burst") {
+          executeWardenBurst(enemy);
+          return;
+        }
       }
-      const canBlast = hasLineOfSight(enemy) && lineDistance <= enemy.range && distance > 1;
+
+      const canBlast = wardenCanLineShot && lineDistance <= enemy.range && currentDistance > 1;
       if (enemy.aiming) {
         if (canBlast) {
           enemy.facing = getFacingFromDelta(state.player.x - enemy.x, state.player.y - enemy.y, enemy.facing);
@@ -6680,18 +7323,39 @@
         }
         enemy.aiming = false;
       }
-      if (canBlast && enemy.cooldown === 0) {
+      const wantsCast = enemy.intent === "cast" && !isShieldActive();
+      if (canBlast && enemy.cooldown === 0 && wantsCast) {
         enemy.aiming = true;
         pushLog("Warden charges a pulse blast.", "bad");
         return;
       }
     }
 
-    if (enemy.type === "skeleton" && enemy.cooldown > 0) {
-      enemy.cooldown -= 1;
-    }
     if (enemy.type === "skeleton") {
       const canLineShot = hasLineOfSight(enemy) && lineDistance >= 2 && lineDistance <= enemy.range;
+      if (enemyTactics && typeof enemyTactics.handleSkeleton === "function") {
+        const skeletonTactical = enemyTactics.handleSkeleton(enemy, {
+          canLineShot,
+          intent: enemy.intent,
+          playerShieldActive: isShieldActive(),
+          canStartTelegraph: canStartEnemyTelegraph()
+        });
+        if (skeletonTactical.type === "start_volley") {
+          pushLog("Skeleton prepares a bone volley.", "bad");
+          return;
+        }
+        if (skeletonTactical.type === "execute_volley") {
+          enemy.facing = getFacingFromDelta(state.player.x - enemy.x, state.player.y - enemy.y, enemy.facing);
+          enemyRanged(enemy, {
+            source: `${enemy.name} bone volley`,
+            damageMultiplier: 1.4,
+            color: "#d4e8ff"
+          });
+          enemy.cooldown = 2;
+          pushLog("Skeleton unleashes bone volley.", "bad");
+          return;
+        }
+      }
       if (enemy.aiming) {
         if (canLineShot) {
           enemy.facing = getFacingFromDelta(state.player.x - enemy.x, state.player.y - enemy.y, enemy.facing);
@@ -6701,7 +7365,8 @@
         }
         enemy.aiming = false;
       }
-      if (canLineShot && enemy.cooldown === 0) {
+      const wantsCast = enemy.intent === "cast" && !isShieldActive();
+      if (canLineShot && enemy.cooldown === 0 && wantsCast) {
         if (isEpicShieldReflectActive()) {
           enemy.facing = getFacingFromDelta(state.player.x - enemy.x, state.player.y - enemy.y, enemy.facing);
           enemyRanged(enemy);
@@ -6714,53 +7379,142 @@
       }
     }
 
-    if (enemy.type === "brute" && distance === 1 && enemy.cooldown === 0) {
-      enemy.facing = getFacingFromDelta(state.player.x - enemy.x, state.player.y - enemy.y, enemy.facing);
-      if (!useBruteKnockback(enemy) && state.phase === "playing") {
-        // If push is blocked, brute still lands a heavy melee hit.
-        enemyMelee(enemy);
-        if (state.phase !== "playing") return;
-        pushLog("Brute slam was blocked, but the hit still lands.", "bad");
+    if (enemy.type === "acolyte") {
+      const supportTarget = getAcolyteSupportTarget(enemy, ACOLYTE_SUPPORT_RANGE);
+      if (enemy.aiming) {
+        if (supportTarget && state.enemies.includes(supportTarget)) {
+          enemy.facing = getFacingFromDelta(supportTarget.x - enemy.x, supportTarget.y - enemy.y, enemy.facing);
+          applyAcolyteSupport(enemy, supportTarget);
+          enemy.cooldown = 3;
+          return;
+        }
+        enemy.aiming = false;
       }
-      enemy.cooldown = 3;
-      return;
+      if (supportTarget && enemy.cooldown === 0 && canStartEnemyTelegraph()) {
+        enemy.aiming = true;
+        pushLog("Acolyte begins a dark blessing.", "bad");
+        return;
+      }
     }
 
-    if (distance === 1) {
+    if (enemy.type === "brute") {
+      const bruteTactical = enemyTactics && typeof enemyTactics.handleBrute === "function"
+        ? enemyTactics.handleBrute(enemy, {
+          distance: currentDistance,
+          canStartTelegraph: canStartEnemyTelegraph()
+        })
+        : { type: "none" };
+      if (bruteTactical.type === "cancel_slam") {
+        enemy.rests = false;
+      }
+      enemy.rests = Boolean(enemy.slamAiming);
+      if (bruteTactical.type === "start_slam") {
+        if (!canEnemyCommitMelee(enemy)) {
+          return;
+        }
+        pushLog("Brute winds up a slam!", "bad");
+        return;
+      }
+      if (bruteTactical.type === "execute_slam") {
+        if (!canEnemyCommitMelee(enemy)) {
+          return;
+        }
+        enemy.facing = getFacingFromDelta(state.player.x - enemy.x, state.player.y - enemy.y, enemy.facing);
+        if (!useBruteKnockback(enemy) && state.phase === "playing") {
+          if (canEnemyCommitMelee(enemy)) {
+            enemyMelee(enemy);
+            if (state.phase !== "playing") return;
+            registerEnemyMeleeCommit();
+            pushLog("Brute slam was blocked, but the hit still lands.", "bad");
+          }
+        }
+        enemy.cooldown = 3;
+        if (state.phase === "playing") registerEnemyMeleeCommit();
+        return;
+      }
+    }
+
+    if (enemy.type === "skitter") {
+      if (currentDistance === 3 && enemy.cooldown === 0 && canEnemyCommitMelee(enemy)) {
+        if (tryUseSkitterLunge(enemy)) {
+          return;
+        }
+      }
+    }
+
+    if (currentDistance === 1 && !canEnemyCommitMelee(enemy)) {
+      if (
+        aiPlan.moveTo &&
+        (aiPlan.moveTo.x !== enemy.x || aiPlan.moveTo.y !== enemy.y) &&
+        !enemyTileBlocked(aiPlan.moveTo.x, aiPlan.moveTo.y, enemy)
+      ) {
+        const moveOff = applyEnemyMoveStep(enemy, aiPlan.moveTo);
+        if (moveOff.removed) return;
+        currentDistance = manhattan(enemy.x, enemy.y, state.player.x, state.player.y);
+        lineDistance = Math.abs(enemy.x - state.player.x) + Math.abs(enemy.y - state.player.y);
+      }
+    }
+
+    if (currentDistance === 1 && canEnemyCommitMelee(enemy)) {
       enemy.facing = getFacingFromDelta(state.player.x - enemy.x, state.player.y - enemy.y, enemy.facing);
       enemyMelee(enemy);
+      if (state.phase !== "playing") return;
+      registerEnemyMeleeCommit();
       return;
     }
 
-    const step = stepToward(enemy, state.player.x, state.player.y);
-    if (!step) {
-      return;
+    let step = null;
+    if (
+      aiPlan.moveTo &&
+      !enemyTileBlocked(aiPlan.moveTo.x, aiPlan.moveTo.y, enemy)
+    ) {
+      step = aiPlan.moveTo;
     }
-    const oldX = enemy.x;
-    const oldY = enemy.y;
-    startTween(enemy);
-    enemy.x = step.x;
-    enemy.y = step.y;
-    enemy.facing = getFacingFromDelta(step.x - oldX, step.y - oldY, enemy.facing);
-    if (applySpikeToEnemy(enemy)) {
+    if (!step) {
+      step = stepToward(enemy, state.player.x, state.player.y);
+    }
+    if (!step) return;
+
+    const moved = applyEnemyMoveStep(enemy, step);
+    if (moved.removed) return;
+    currentDistance = manhattan(enemy.x, enemy.y, state.player.x, state.player.y);
+    lineDistance = Math.abs(enemy.x - state.player.x) + Math.abs(enemy.y - state.player.y);
+
+    if (currentDistance === 1 && canEnemyCommitMelee(enemy)) {
+      enemy.facing = getFacingFromDelta(state.player.x - enemy.x, state.player.y - enemy.y, enemy.facing);
+      enemyMelee(enemy);
+      if (state.phase !== "playing") return;
+      registerEnemyMeleeCommit();
       return;
     }
 
     // Fast affix or Haste mutator double move
-    const hasDoubleMove = enemy.affix === "fast" ||
+    const hasDoubleMove = enemy.type === "skitter" ||
+      enemy.affix === "fast" ||
       (state.runMods.enemyDoubleMoveChance > 0 && chance(state.runMods.enemyDoubleMoveChance));
     if (hasDoubleMove && state.phase === "playing" && state.enemies.includes(enemy)) {
-      const bonusDistance = manhattan(enemy.x, enemy.y, state.player.x, state.player.y);
-      if (bonusDistance > 1) {
-        const bonusStep = stepToward(enemy, state.player.x, state.player.y);
+      if (currentDistance > 1) {
+        const bonusPlan = buildEnemyDirectorPlan(enemy, currentDistance);
+        let bonusStep = null;
+        if (
+          bonusPlan.moveTo &&
+          !enemyTileBlocked(bonusPlan.moveTo.x, bonusPlan.moveTo.y, enemy)
+        ) {
+          bonusStep = bonusPlan.moveTo;
+        }
+        if (!bonusStep) {
+          bonusStep = stepToward(enemy, state.player.x, state.player.y);
+        }
         if (bonusStep) {
-          const bonusOldX = enemy.x;
-          const bonusOldY = enemy.y;
-          startTween(enemy);
-          enemy.x = bonusStep.x;
-          enemy.y = bonusStep.y;
-          enemy.facing = getFacingFromDelta(bonusStep.x - bonusOldX, bonusStep.y - bonusOldY, enemy.facing);
-          if (applySpikeToEnemy(enemy)) {
+          const bonusMove = applyEnemyMoveStep(enemy, bonusStep);
+          if (bonusMove.removed) return;
+          currentDistance = manhattan(enemy.x, enemy.y, state.player.x, state.player.y);
+          lineDistance = Math.abs(enemy.x - state.player.x) + Math.abs(enemy.y - state.player.y);
+          if (currentDistance === 1 && canEnemyCommitMelee(enemy)) {
+            enemy.facing = getFacingFromDelta(state.player.x - enemy.x, state.player.y - enemy.y, enemy.facing);
+            enemyMelee(enemy);
+            if (state.phase !== "playing") return;
+            registerEnemyMeleeCommit();
             return;
           }
         }
@@ -6769,10 +7523,11 @@
 
     // Epic Shield provokes nearby enemies into melee to make reflect reliable.
     if (isEpicShieldReflectActive() && state.phase === "playing" && state.enemies.includes(enemy)) {
-      const postMoveDistance = manhattan(enemy.x, enemy.y, state.player.x, state.player.y);
-      if (postMoveDistance === 1) {
+      if (currentDistance === 1) {
         enemy.facing = getFacingFromDelta(state.player.x - enemy.x, state.player.y - enemy.y, enemy.facing);
         enemyMelee(enemy);
+        if (state.phase !== "playing") return;
+        registerEnemyMeleeCommit();
       }
     }
   }
@@ -6782,6 +7537,9 @@
     state.enemyTurnQueue = [];
     state.enemyTurnStepTimer = 0;
     state.enemyTurnStepIndex = 0;
+    state.enemyMeleeCommitted = 0;
+    state.enemyBlackboard = null;
+    state.enemyDebugPlans = [];
   }
 
   function finishTurnAfterEnemySequence() {
@@ -6830,9 +7588,22 @@
       state.turnInProgress = false;
       return;
     }
+    for (const enemy of state.enemies) {
+      if (!enemy) continue;
+      if ((enemy.acolyteBuffTurns || 0) > 0) {
+        enemy.acolyteBuffTurns = Math.max(0, (Number(enemy.acolyteBuffTurns) || 0) - 1);
+      }
+    }
     state.enemyTurnQueue = [...state.enemies];
     state.enemyTurnStepIndex = 0;
     state.enemyTurnStepTimer = getEnemyTurnStepDelayMs();
+    state.enemyMeleeCommitLimit = getEnemyMeleeCommitLimit();
+    state.enemyMeleeCommitted = 0;
+    state.enemyBlackboard = createEnemyBlackboard();
+    if (state.enemyBlackboard && state.enemyBlackboard.melee) {
+      state.enemyMeleeCommitLimit = state.enemyBlackboard.melee.limit || state.enemyMeleeCommitLimit;
+    }
+    state.enemyDebugPlans = [];
     state.enemyTurnInProgress = true;
     if (state.enemyTurnQueue.length <= 0) {
       finishTurnAfterEnemySequence();
@@ -7432,9 +8203,16 @@
     }
     if (state.phase === "playing" && hoveredEnemy && state.enemies.includes(hoveredEnemy)) {
       const e = hoveredEnemy;
-      let info = `${e.name} - HP: ${e.hp}/${e.maxHp}, ATK: ${e.attack}`;
+      let info = `${e.name} - HP: ${e.hp}/${e.maxHp}, ATK: ${getEnemyEffectiveAttack(e)}`;
       if (e.range) info += `, Range: ${e.range}`;
       if (e.aiming) info += ", Aiming!";
+      if (e.slamAiming) info += ", Slam Ready!";
+      if (e.volleyAiming) info += ", Volley Ready!";
+      if (e.burstAiming) info += ", Burst Ready!";
+      if (e.intent) info += `, Intent: ${String(e.intent).toUpperCase()}`;
+      if ((e.volleyCooldown || 0) > 0) info += `, VolleyCD:${e.volleyCooldown}`;
+      if ((e.burstCooldown || 0) > 0) info += `, BurstCD:${e.burstCooldown}`;
+      if ((e.acolyteBuffTurns || 0) > 0) info += `, Buff(${e.acolyteBuffTurns})`;
       if (e.frozenThisTurn || (e.frostFx || 0) > 0) info += ", Frozen";
       if ((e.burnTurns || 0) > 0) info += `, Burn(${e.burnTurns})`;
       if (e.elite) info += ` [${e.affix || "elite"}]`;
@@ -8280,19 +9058,44 @@
   }
 
   function drawShrine() {
-    if (!state.shrine) return;
+    if (!state.shrine || state.shrine.used) return;
     const px = state.shrine.x * TILE;
     const py = state.shrine.y * TILE;
-    const active = !state.shrine.used;
-    ctx.fillStyle = active ? "#7f68d8" : "#4a455a";
+    if (shrineSprite.ready && shrineSprite.sheet) {
+      const img = shrineSprite.sheet;
+      const totalFrames = SHRINE_SPRITESHEET_COLS * SHRINE_SPRITESHEET_ROWS;
+      if (totalFrames > 0) {
+        const frameIndex = Math.floor(state.playerAnimTimer / SHRINE_FRAME_MS) % totalFrames;
+        const frameCol = frameIndex % SHRINE_SPRITESHEET_COLS;
+        const frameRow = Math.floor(frameIndex / SHRINE_SPRITESHEET_COLS);
+        const sw = Math.floor((img.naturalWidth || 0) / SHRINE_SPRITESHEET_COLS);
+        const sh = Math.floor((img.naturalHeight || 0) / SHRINE_SPRITESHEET_ROWS);
+        if (sw > 0 && sh > 0) {
+          const drawSize = Math.round(TILE * SHRINE_DRAW_SCALE);
+          const drawX = Math.round(px + (TILE - drawSize) / 2);
+          const drawY = Math.round(py + (TILE - drawSize) / 2);
+          ctx.drawImage(
+            img,
+            frameCol * sw,
+            frameRow * sh,
+            sw,
+            sh,
+            drawX,
+            drawY,
+            drawSize,
+            drawSize
+          );
+          return;
+        }
+      }
+    }
+    ctx.fillStyle = "#7f68d8";
     ctx.fillRect(px + 4, py + 4, 8, 8);
-    ctx.fillStyle = active ? "#d5c4ff" : "#7f7698";
+    ctx.fillStyle = "#d5c4ff";
     ctx.fillRect(px + 7, py + 2, 2, 2);
     ctx.fillRect(px + 7, py + 12, 2, 2);
-    if (active) {
-      ctx.fillRect(px + 2, py + 7, 2, 2);
-      ctx.fillRect(px + 12, py + 7, 2, 2);
-    }
+    ctx.fillRect(px + 2, py + 7, 2, 2);
+    ctx.fillRect(px + 12, py + 7, 2, 2);
   }
 
   function drawMerchant() {
@@ -8428,6 +9231,141 @@
     }
   }
 
+  function drawAcolyteSprite(enemy) {
+    if (!acolyteSprite.ready || !acolyteSprite.sheet) return false;
+    const img = acolyteSprite.sheet;
+    const totalFrames = ACOLYTE_SPRITESHEET_COLS * ACOLYTE_SPRITESHEET_ROWS;
+    if (totalFrames <= 0) return false;
+    const frameIndex = Math.floor(state.playerAnimTimer / ACOLYTE_FRAME_MS) % totalFrames;
+    const frameCol = frameIndex % ACOLYTE_SPRITESHEET_COLS;
+    const frameRow = Math.floor(frameIndex / ACOLYTE_SPRITESHEET_COLS);
+    const sw = Math.floor((img.naturalWidth || 0) / ACOLYTE_SPRITESHEET_COLS);
+    const sh = Math.floor((img.naturalHeight || 0) / ACOLYTE_SPRITESHEET_ROWS);
+    if (sw <= 0 || sh <= 0) return false;
+
+    const px = visualX(enemy);
+    const py = visualY(enemy);
+    const bob = Math.sin(state.playerAnimTimer * 0.012 + enemy.x * 0.36 + enemy.y * 0.24) > 0.56 ? 1 : 0;
+    const drawSize = Math.round(TILE * ACOLYTE_DRAW_SCALE);
+    const drawX = Math.round(px + (TILE - drawSize) / 2);
+    const drawY = Math.round(py + (TILE - drawSize) / 2 - bob);
+
+    ctx.drawImage(
+      img,
+      frameCol * sw,
+      frameRow * sh,
+      sw,
+      sh,
+      drawX,
+      drawY,
+      drawSize,
+      drawSize
+    );
+    return true;
+  }
+
+  function drawAcolyteFallback(enemy) {
+    const px = visualX(enemy);
+    const py = visualY(enemy);
+    const pulse = (Math.sin(state.playerAnimTimer * 0.015 + enemy.x * 0.3 + enemy.y * 0.2) + 1) * 0.5;
+    const bob = pulse > 0.55 ? 1 : 0;
+    ctx.fillStyle = COLORS.acolyteTrim;
+    ctx.fillRect(px + 4, py + 12 - bob, 8, 2);
+    ctx.fillStyle = COLORS.acolyte;
+    ctx.fillRect(px + 4, py + 5 - bob, 8, 7);
+    ctx.fillRect(px + 6, py + 3 - bob, 4, 2);
+    ctx.fillStyle = "#e7deff";
+    ctx.fillRect(px + 6, py + 7 - bob, 1, 1);
+    ctx.fillRect(px + 9, py + 7 - bob, 1, 1);
+    ctx.fillStyle = "#c4b1ff";
+    ctx.fillRect(px + 12, py + 5 - bob, 1, 6);
+    if (pulse > 0.62) {
+      ctx.fillStyle = "#f2e7ff";
+      ctx.fillRect(px + 12, py + 4 - bob, 1, 1);
+    }
+  }
+
+  function drawAcolyte(enemy) {
+    if (!drawAcolyteSprite(enemy)) {
+      drawAcolyteFallback(enemy);
+    }
+  }
+
+  function drawSkitter(enemy) {
+    if (drawSkitterSprite(enemy)) {
+      return;
+    }
+    drawSkitterFallback(enemy);
+  }
+
+  function getSkitterSpriteLayout(img) {
+    const w = img?.naturalWidth || 0;
+    const h = img?.naturalHeight || 0;
+    // Future-ready: if sheet looks like 3 horizontal square frames (e.g. 48x16), animate 3 frames.
+    const looksLikeThreeFrameSheet =
+      w >= 3 &&
+      h > 0 &&
+      w % SKITTER_SPRITESHEET_COLS === 0 &&
+      Math.abs(Math.round(w / SKITTER_SPRITESHEET_COLS) - h) <= 1;
+    if (looksLikeThreeFrameSheet) {
+      return { cols: SKITTER_SPRITESHEET_COLS, rows: SKITTER_SPRITESHEET_ROWS };
+    }
+    return { cols: 1, rows: 1 };
+  }
+
+  function drawSkitterSprite(enemy) {
+    if (!skitterSprite.ready || !skitterSprite.sheet) return false;
+    const img = skitterSprite.sheet;
+    const layout = getSkitterSpriteLayout(img);
+    const cols = Math.max(1, layout.cols);
+    const rows = Math.max(1, layout.rows);
+    const totalFrames = cols * rows;
+    if (totalFrames <= 0) return false;
+
+    const frameIndex = Math.floor(state.playerAnimTimer / SKITTER_FRAME_MS) % totalFrames;
+    const frameCol = frameIndex % cols;
+    const frameRow = Math.floor(frameIndex / cols);
+    const sw = Math.floor((img.naturalWidth || 0) / cols);
+    const sh = Math.floor((img.naturalHeight || 0) / rows);
+    if (sw <= 0 || sh <= 0) return false;
+
+    const px = visualX(enemy);
+    const py = visualY(enemy);
+    const bob = Math.sin(state.playerAnimTimer * 0.02 + enemy.x * 0.65 + enemy.y * 0.33) > 0.52 ? 1 : 0;
+    const drawSize = Math.round(TILE * SKITTER_DRAW_SCALE);
+    const drawX = Math.round(px + (TILE - drawSize) / 2);
+    const drawY = Math.round(py + (TILE - drawSize) / 2 - bob);
+
+    ctx.drawImage(
+      img,
+      frameCol * sw,
+      frameRow * sh,
+      sw,
+      sh,
+      drawX,
+      drawY,
+      drawSize,
+      drawSize
+    );
+    return true;
+  }
+
+  function drawSkitterFallback(enemy) {
+    const px = visualX(enemy);
+    const py = visualY(enemy);
+    const twitch = Math.sin(state.playerAnimTimer * 0.04 + enemy.x * 0.7 + enemy.y * 0.4) > 0.35 ? 1 : 0;
+    ctx.fillStyle = COLORS.skitterTrim;
+    ctx.fillRect(px + 3, py + 11, 10, 2);
+    ctx.fillStyle = COLORS.skitter;
+    ctx.fillRect(px + 4, py + 6 - twitch, 8, 5);
+    ctx.fillStyle = "#ffd6d6";
+    ctx.fillRect(px + 6, py + 7 - twitch, 1, 1);
+    ctx.fillRect(px + 9, py + 7 - twitch, 1, 1);
+    ctx.fillStyle = COLORS.skitterTrim;
+    ctx.fillRect(px + 2, py + 9 - twitch, 2, 1);
+    ctx.fillRect(px + 12, py + 9 - twitch, 2, 1);
+  }
+
   function drawBruteSprite(enemy) {
     const facing = enemy.facing || "south";
     const spriteSet = bruteSprites[facing];
@@ -8495,7 +9433,43 @@
     }
   }
 
+  function drawWardenSprite(enemy) {
+    if (!wardenSprite.ready || !wardenSprite.sheet) return false;
+    const img = wardenSprite.sheet;
+    const totalFrames = WARDEN_SPRITESHEET_COLS * WARDEN_SPRITESHEET_ROWS;
+    if (totalFrames <= 0) return false;
+    const frameIndex = Math.floor(state.playerAnimTimer / WARDEN_FRAME_MS) % totalFrames;
+    const frameCol = frameIndex % WARDEN_SPRITESHEET_COLS;
+    const frameRow = Math.floor(frameIndex / WARDEN_SPRITESHEET_COLS);
+    const sw = Math.floor((img.naturalWidth || 0) / WARDEN_SPRITESHEET_COLS);
+    const sh = Math.floor((img.naturalHeight || 0) / WARDEN_SPRITESHEET_ROWS);
+    if (sw <= 0 || sh <= 0) return false;
+
+    const px = visualX(enemy);
+    const py = visualY(enemy);
+    const bob = Math.sin(state.playerAnimTimer * 0.01 + enemy.x * 0.4 + enemy.y * 0.22) > 0.52 ? 1 : 0;
+    const drawSize = Math.round(TILE * WARDEN_DRAW_SCALE);
+    const drawX = Math.round(px + (TILE - drawSize) / 2);
+    const drawY = Math.round(py + (TILE - drawSize) / 2 - bob);
+
+    ctx.drawImage(
+      img,
+      frameCol * sw,
+      frameRow * sh,
+      sw,
+      sh,
+      drawX,
+      drawY,
+      drawSize,
+      drawSize
+    );
+    return true;
+  }
+
   function drawWarden(enemy) {
+    if (drawWardenSprite(enemy)) {
+      return;
+    }
     const px = visualX(enemy);
     const py = visualY(enemy);
     const theme = getThemeForEnemy(enemy);
@@ -8547,13 +9521,22 @@
       const theme = getThemeForEnemy(enemy);
       const alpha = clamp(enemy.castFlash / 120, 0, 1);
       ctx.globalAlpha = 0.2 + alpha * 0.5;
-      ctx.fillStyle = enemy.type === "warden" ? theme.wardenBolt : "#8bb4ff";
+      ctx.fillStyle =
+        enemy.type === "warden"
+          ? theme.wardenBolt
+          : enemy.type === "acolyte"
+            ? "#b89dff"
+            : "#8bb4ff";
       ctx.fillRect(px + 1, py + 1, TILE - 2, TILE - 2);
       ctx.globalAlpha = 1;
     }
 
     if (enemy.type === "skeleton") {
       drawSkeleton(enemy);
+    } else if (enemy.type === "acolyte") {
+      drawAcolyte(enemy);
+    } else if (enemy.type === "skitter") {
+      drawSkitter(enemy);
     } else if (enemy.type === "brute") {
       drawBrute(enemy);
     } else if (enemy.type === "warden") {
@@ -8610,6 +9593,14 @@
       ctx.fillRect(px + 14, py + 14, 1, 1);
     }
 
+    if ((enemy.acolyteBuffTurns || 0) > 0) {
+      const px = visualX(enemy);
+      const py = visualY(enemy);
+      ctx.fillStyle = "#d7c6ff";
+      ctx.fillRect(px + 7, py + 2, 2, 1);
+      ctx.fillRect(px + 6, py + 3, 4, 1);
+    }
+
     // Frost Amulet indicator
     if (enemy.frozenThisTurn || (enemy.frostFx || 0) > 0) {
       const px = visualX(enemy);
@@ -8633,24 +9624,92 @@
 
   function drawAimingLines() {
     for (const enemy of state.enemies) {
-      if (!enemy.aiming) continue;
+      const telegraphKind = enemyTactics && typeof enemyTactics.getTelegraphKind === "function"
+        ? enemyTactics.getTelegraphKind(enemy)
+        : (enemy.aiming ? "cast" : "");
+      if (!telegraphKind) continue;
       const fromX = visualX(enemy) + TILE / 2;
       const fromY = visualY(enemy) + TILE / 2;
-      const toX = visualX(state.player) + TILE / 2;
-      const toY = visualY(state.player) + TILE / 2;
+      const isAcolyteBlessing = enemy.type === "acolyte" && telegraphKind === "cast";
+      const acolyteTarget = isAcolyteBlessing
+        ? getAcolyteSupportTarget(enemy, ACOLYTE_SUPPORT_RANGE)
+        : null;
+      const toX = acolyteTarget
+        ? visualX(acolyteTarget) + TILE / 2
+        : visualX(state.player) + TILE / 2;
+      const toY = acolyteTarget
+        ? visualY(acolyteTarget) + TILE / 2
+        : visualY(state.player) + TILE / 2;
       const pulse = (Math.sin(state.portalPulse * 3.5) + 1) * 0.5;
 
+      if (telegraphKind === "slam") {
+        ctx.globalAlpha = 0.25 + pulse * 0.35;
+        ctx.strokeStyle = "#ff9e84";
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.arc(fromX, fromY, TILE * 0.7 + pulse * 1.4, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.globalAlpha = 1;
+        continue;
+      }
+
+      const style = isAcolyteBlessing
+        ? { stroke: "#be9aff", target: "#ead8ff", dash: [1, 1] }
+        : telegraphKind === "burst"
+          ? { stroke: "#cda8ff", target: "#f0e2ff", dash: [3, 2] }
+          : telegraphKind === "volley"
+            ? { stroke: "#d4e8ff", target: "#eef7ff", dash: [1, 2] }
+            : { stroke: "#8bb4ff", target: "#d9e8ff", dash: [2, 2] };
+
       ctx.globalAlpha = 0.25 + pulse * 0.45;
-      ctx.strokeStyle = "#8bb4ff";
+      ctx.strokeStyle = style.stroke;
       ctx.lineWidth = 1.5;
-      ctx.setLineDash([2, 2]);
-      ctx.beginPath();
-      ctx.moveTo(fromX, fromY);
-      ctx.lineTo(toX, toY);
-      ctx.stroke();
+      if (!isAcolyteBlessing || acolyteTarget) {
+        ctx.setLineDash(style.dash);
+        ctx.beginPath();
+        ctx.moveTo(fromX, fromY);
+        ctx.lineTo(toX, toY);
+        ctx.stroke();
+      }
       ctx.setLineDash([]);
-      ctx.strokeStyle = "#d9e8ff";
+      ctx.strokeStyle = style.target;
       ctx.strokeRect(toX - 3, toY - 3, 6, 6);
+
+      if (telegraphKind === "burst") {
+        ctx.globalAlpha = 0.15 + pulse * 0.28;
+        ctx.strokeStyle = "#cda8ff";
+        ctx.beginPath();
+        ctx.arc(fromX, fromY, TILE * 3.1, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+      if (isAcolyteBlessing) {
+        const iconX = fromX;
+        const iconY = fromY - 9;
+        ctx.globalAlpha = 0.26 + pulse * 0.38;
+        ctx.strokeStyle = "#be9aff";
+        ctx.lineWidth = 1.2;
+        ctx.beginPath();
+        ctx.arc(iconX, iconY, 4 + pulse * 0.6, 0, Math.PI * 2);
+        ctx.stroke();
+
+        ctx.globalAlpha = 0.38 + pulse * 0.52;
+        ctx.fillStyle = "#ead8ff";
+        ctx.fillRect(iconX - 1, iconY - 3, 2, 6);
+        ctx.fillRect(iconX - 3, iconY - 1, 6, 2);
+
+        if (acolyteTarget) {
+          ctx.globalAlpha = 0.22 + pulse * 0.45;
+          ctx.strokeStyle = "#be9aff";
+          ctx.lineWidth = 1.2;
+          ctx.beginPath();
+          ctx.arc(toX, toY, 5 + pulse * 0.9, 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.globalAlpha = 0.4 + pulse * 0.45;
+          ctx.fillStyle = "#ead8ff";
+          ctx.fillRect(toX - 1, toY - 2, 2, 4);
+          ctx.fillRect(toX - 2, toY - 1, 4, 2);
+        }
+      }
       ctx.globalAlpha = 1;
     }
   }
@@ -9057,6 +10116,29 @@
     ctx.fillRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
   }
 
+  function drawEnemyDebugOverlay() {
+    if (!state.debugAiOverlay || state.phase !== "playing") return;
+    if (!enemyDebugOverlay || typeof enemyDebugOverlay.draw !== "function") return;
+
+    let board = state.enemyBlackboard;
+    let plans = state.enemyDebugPlans;
+    if (!board || !Array.isArray(plans) || plans.length <= 0) {
+      const preview = buildEnemyDebugPreviewPlans();
+      if (preview && typeof preview === "object") {
+        board = preview.board || board;
+        plans = preview.plans || plans;
+      }
+    }
+    enemyDebugOverlay.draw(ctx, {
+      enabled: true,
+      gridSize: GRID_SIZE,
+      tileSize: TILE,
+      blackboard: board,
+      threatMap: board?.threatMap || null,
+      plans: Array.isArray(plans) ? plans : []
+    });
+  }
+
   function updateEffects(dt) {
     state.portalPulse += dt * 0.014;
     state.playerAnimTimer = (state.playerAnimTimer + dt) % 100000;
@@ -9154,6 +10236,7 @@
         drawFloorTile(x, y);
       }
     }
+    drawEnemyDebugOverlay();
 
     for (const spike of state.spikes) {
       drawSpikes(spike);
@@ -9225,6 +10308,7 @@
       key === "x" ||
       key === "c" ||
       key === "m" ||
+      key === DEBUG_AI_OVERLAY_TOGGLE_KEY ||
       key === DEBUG_MENU_TOGGLE_KEY ||
       key === "escape" ||
       key === "enter" ||
@@ -9254,6 +10338,11 @@
 
     if (key === "m") {
       toggleAudio();
+      return;
+    }
+
+    if (key === DEBUG_AI_OVERLAY_TOGGLE_KEY) {
+      toggleDebugAiOverlay();
       return;
     }
 
@@ -9722,18 +10811,21 @@
   loadChestSprite();
   loadPortalSprite();
   loadMerchantSprite();
+  loadShrineSprite();
   loadSpikeSprite();
   loadTilesetSprite();
   loadPlayerSprites();
   loadSlimeSprites();
   loadSkeletonSprites();
   loadBruteSprites();
+  loadAcolyteSprite();
+  loadSkitterSprite();
+  loadWardenSprite();
   updateCanvasScale();
   syncBgmWithState();
   markUiDirty();
   requestAnimationFrame(frame);
 })();
-
 
 
 
