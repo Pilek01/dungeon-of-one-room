@@ -1,5 +1,5 @@
 ﻿// Single source of truth for current build version.
-window.GAME_VERSION = "v0.2.10";
+window.GAME_VERSION = "v0.2.11";
 
 // Enable/disable debug cheat menu (F9).
 // true  = cheats enabled
