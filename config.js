@@ -4,12 +4,12 @@ window.GAME_VERSION = "v0.2.10";
 // Enable/disable debug cheat menu (F9).
 // true  = cheats enabled
 // false = cheats disabled
-window.DUNGEON_DEBUG_CHEATS_ENABLED = true;
+window.DUNGEON_DEBUG_CHEATS_ENABLED = false;
 
 // Enable/disable test mode.
 // true  = leaderboard fully disabled (no start/finalize/submit, no new entries)
 // false = normal leaderboard behavior
-window.DUNGEON_TEST_MODE = true;
+window.DUNGEON_TEST_MODE = false;
 
 // Optional online leaderboard endpoint.
 // Example:
