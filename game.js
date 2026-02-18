@@ -3882,6 +3882,7 @@
     const firstEnabled = options.findIndex((item) => !item.disabled);
     state.menuIndex = firstEnabled >= 0 ? firstEnabled : 0;
     syncBgmWithState();
+    playSplashTrack();
     if (isOnlineLeaderboardEnabled()) {
       flushPendingLeaderboardQueue();
       refreshOnlineLeaderboard(false);
