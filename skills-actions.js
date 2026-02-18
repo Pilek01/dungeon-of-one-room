@@ -19,6 +19,7 @@
       spawnFloatingText,
       spawnParticles,
       killEnemy,
+      applyVampfangLifesteal,
       findDashKnockbackTile,
       getFacingFromDelta,
       applySpikeToEnemy,
@@ -116,6 +117,9 @@
         const enemy = getEnemyAt(step.x, step.y);
         if (enemy && state.enemies.includes(enemy) && !hitSet.has(enemy)) {
           enemy.hp -= damage;
+          if (typeof applyVampfangLifesteal === "function") {
+            applyVampfangLifesteal(damage);
+          }
           triggerEnemyHitFlash(enemy);
           spawnFloatingText(enemy.x, enemy.y, `-${damage}`, "#f4f7ff");
           spawnParticles(enemy.x, enemy.y, "#8ee9ff", 11, 1.3);
@@ -151,6 +155,9 @@
           if (hitSet.has(enemy)) continue;
           if (Math.abs(enemy.x - state.player.x) > 1 || Math.abs(enemy.y - state.player.y) > 1) continue;
           enemy.hp -= splashDamage;
+          if (typeof applyVampfangLifesteal === "function") {
+            applyVampfangLifesteal(splashDamage);
+          }
           triggerEnemyHitFlash(enemy);
           spawnFloatingText(enemy.x, enemy.y, `-${splashDamage}`, "#dff0ff");
           splashHits += 1;
@@ -202,8 +209,9 @@
       }
 
       const radius = aoeTier >= 2 ? 2 : 1;
-      const hasFullFuryCost = (Number(state.player.adrenaline) || 0) >= 2;
-      const furyDamageMultiplier = hasFullFuryCost ? 1 : 0.6;
+      const furyAvailable = Math.max(0, Math.floor(Number(state.player.adrenaline) || 0));
+      const furySpent = furyAvailable;
+      const furyDamageMultiplier = 0.6 + furySpent * 0.2;
       const targets = state.enemies.filter(
         (enemy) => Math.abs(enemy.x - state.player.x) <= radius && Math.abs(enemy.y - state.player.y) <= radius
       );
@@ -259,6 +267,9 @@
           Math.round(baseDamage * furyDamageMultiplier * falloff)
         );
         enemy.hp -= damage;
+        if (typeof applyVampfangLifesteal === "function") {
+          applyVampfangLifesteal(damage);
+        }
         triggerEnemyHitFlash(enemy);
         spawnFloatingText(enemy.x, enemy.y, `-${damage}`, "#ffe7c8");
         spawnParticles(enemy.x, enemy.y, "#ffd8a1", 8, 1.25);
@@ -277,8 +288,8 @@
         }
       }
 
-      if (hasFullFuryCost) {
-        state.player.adrenaline = Math.max(0, (Number(state.player.adrenaline) || 0) - 2);
+      if (furySpent > 0) {
+        state.player.adrenaline = Math.max(0, (Number(state.player.adrenaline) || 0) - furySpent);
       }
 
       spawnShockwaveRing(state.player.x, state.player.y, {
@@ -298,9 +309,10 @@
       playSfx("hit");
       setShake(2.3);
       spawnParticles(state.player.x, state.player.y, "#f6c48f", 12, 1.3);
+      const dmgPct = Math.round(furyDamageMultiplier * 100);
       pushLog(
         `Shockwave (R${radius}) ${
-          hasFullFuryCost ? "uses 2 Fury (100% dmg)" : "uses low Fury mode (60% dmg)"
+          furySpent > 0 ? `uses ${furySpent} Fury (${dmgPct}% dmg)` : "uses no Fury (60% dmg)"
         }: ${targets.length} hit${targets.length > 1 ? "s" : ""}${
           kills > 0 ? `, ${kills} kill${kills > 1 ? "s" : ""}` : ""
         }${aoeTier >= 1 ? `, ${knockbacks} knockback` : ""}.`,

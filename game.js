@@ -7,6 +7,19 @@
     return cleaned || fallback;
   }
 
+  function readGlobalFlag(name, fallback = false) {
+    if (typeof window === "undefined") return Boolean(fallback);
+    const raw = window[name];
+    if (typeof raw === "boolean") return raw;
+    if (typeof raw === "number") return raw !== 0;
+    if (typeof raw === "string") {
+      const normalized = raw.trim().toLowerCase();
+      if (normalized === "1" || normalized === "true" || normalized === "yes" || normalized === "on") return true;
+      if (normalized === "0" || normalized === "false" || normalized === "no" || normalized === "off") return false;
+    }
+    return Boolean(fallback);
+  }
+
   const GRID_SIZE = 9;
   const TILE = 16;
   const CANVAS_SIZE = GRID_SIZE * TILE;
@@ -75,8 +88,19 @@
   const ACOLYTE_SUPPORT_HEAL_BASE = 2;
   const ACOLYTE_SUPPORT_BUFF_ATTACK_MULT = 0.3;
   const ACOLYTE_SUPPORT_BUFF_TURNS = 3;
+  const ACOLYTE_SUPPORT_CAST_COOLDOWN = 4;
+  const ACOLYTE_SUPPORT_CANCEL_COOLDOWN = 2;
   const MAX_ACOLYTES_PER_ROOM = 2;
   const SKELETON_MELEE_DAMAGE_MULTIPLIER = 0.7;
+  const GOLDEN_IDOL_GOLD_MULTIPLIER = 0.15;
+  const THORNMAIL_REFLECT_MULTIPLIER = 0.2;
+  const VAMPFANG_LIFESTEAL_MULTIPLIER = 0.2;
+  const PHASE_CLOAK_DODGE_COOLDOWN_TURNS = 3;
+  const SOUL_HARVEST_KILL_INTERVAL = 30;
+  const BURNING_BLADE_DOT_DAMAGE = 3 * COMBAT_SCALE;
+  const CHRONO_LOOP_BURST_DAMAGE = 10 * COMBAT_SCALE;
+  const CHRONO_LOOP_BURST_RADIUS = 2;
+  const VOID_REAPER_CRIT_KILL_GOLD = 10;
   const SHIELD_RARE_CHARGE_MAX = 2;
   const SHIELD_RARE_CHARGE_REGEN_TURNS = 20;
   const CHAOS_ORB_ROLL_INTERVAL = 10;
@@ -95,7 +119,9 @@
   const LEADERBOARD_MIN_TURNS = 30;
   const ONLINE_RUN_TOKEN_MAX_LEN = 256;
   const ONLINE_FINALIZE_NONCE_MAX_LEN = 256;
+  const TEST_MODE_ENABLED = readGlobalFlag("DUNGEON_TEST_MODE", false);
   const ONLINE_LEADERBOARD_API_BASE = (() => {
+    if (TEST_MODE_ENABLED) return "";
     const raw = typeof window !== "undefined" ? window.DUNGEON_LEADERBOARD_API : "";
     const normalized = typeof raw === "string" ? raw.trim() : "";
     return normalized.replace(/\/+$/, "");
@@ -125,14 +151,15 @@
   ) {
     throw new Error("Missing gameplay data modules. Check script order in index.html.");
   }
-  const DEBUG_CHEATS_ENABLED = true;
+  const DEBUG_CHEATS_ENABLED = readGlobalFlag("DUNGEON_DEBUG_CHEATS_ENABLED", true);
   const DEBUG_MENU_TOGGLE_KEY = "f9";
   const DEBUG_AI_OVERLAY_TOGGLE_KEY = "f8";
   const MUSIC_TRACKS = {
     normal: "assets/Dungeon Descent.mp3",
+    deep: "assets/Haunted High Score.mp3",
     boss: "assets/Dungeon Descent2.mp3"
   };
-  const SPLASH_TRACK = "assets/Splash.mp3";
+  const SPLASH_TRACK = "assets/Blue glow on my face.mp3";
   const DEATH_TRACK = "assets/death.mp3";
   const CHEST_SPRITE_PATH = "assets/sprite/chest.png";
   const CHEST_SPRITE_VERSION = "20260209_2001";
@@ -172,13 +199,20 @@
   const SHIELD_DRAW_OPACITY = 0.7;
   const SPIKE_SPRITE_PATH = "assets/sprite/spike.png";
   const SPIKE_SPRITE_VERSION = "20260213_001";
+  const SPIKE_DEEP_SPRITE_PATH = "assets/sprite/spike2.png";
+  const SPIKE_DEEP_SPRITE_VERSION = "20260219_001";
   const SPIKE_DRAW_SCALE = 1.4;
+  const DEEP_THEME_START_DEPTH = 20;
   const TILESET_SPRITE_PATH = "assets/sprite/tileset.png";
   const TILESET_SPRITE_VERSION = "20260213_002";
+  const TILESET_DEEP_SPRITE_PATH = "assets/sprite/tileset2.png";
+  const TILESET_DEEP_SPRITE_VERSION = "20260219_001";
   const TILESET_TILE_SIZE = 16;
   const TILESET_COLUMNS = 4;
   const TORCH_SPRITESHEET_PATH = "assets/sprite/torch.png";
   const TORCH_SPRITESHEET_VERSION = "20260218_001";
+  const TORCH_DEEP_SPRITESHEET_PATH = "assets/sprite/torch2.png";
+  const TORCH_DEEP_SPRITESHEET_VERSION = "20260219_001";
   const TORCH_SPRITESHEET_COLS = 3;
   const TORCH_SPRITESHEET_ROWS = 1;
   const TORCH_FRAME_MS = 160;
@@ -858,7 +892,7 @@
   }
 
   function getRunMaxDepth() {
-    return Math.max(0, Number(state.runMaxDepth) || 0, Number(state.depth) || 0);
+    return Math.max(0, Number(state.runMaxDepth) || 0);
   }
 
   function getRunGoldEarned() {
@@ -1063,6 +1097,9 @@
     campPanelView: "shop", // "shop" or "mutators"
     campVisitShopCostMult: 1,
     debugCheatOpen: false,
+    debugCheatView: "actions", // "actions" | "relic_picker"
+    debugCheatRelicPage: 0,
+    debugCheatSectionIndex: 0,
     debugGodMode: false,
     debugAiOverlay: localStorage.getItem(STORAGE_DEBUG_AI_OVERLAY) === "1",
     enemySpeedMode: initialEnemySpeedMode,
@@ -1108,6 +1145,7 @@
       chronoUsedThisRun: false,
       phaseCooldown: 0,
       titanAttackPenalty: 0,
+      glassCannonHpPenalty: 0,
       chaosAtkBonus: 0,
       chaosAtkTurns: 0,
       chaosKillHeal: 0,
@@ -1185,6 +1223,7 @@
     spawnFloatingText,
     spawnParticles,
     killEnemy,
+    applyVampfangLifesteal,
     findDashKnockbackTile,
     getFacingFromDelta,
     applySpikeToEnemy,
@@ -1205,6 +1244,7 @@
     ctx: null,
     master: null,
     bgmNormal: null,
+    bgmDeep: null,
     bgmBoss: null,
     currentBgm: null,
     bgmReady: false,
@@ -1267,12 +1307,27 @@
     ready: false,
     failed: false
   };
+  const spikeDeepSprite = {
+    img: null,
+    ready: false,
+    failed: false
+  };
   const tilesetSprite = {
     img: null,
     ready: false,
     failed: false
   };
+  const tilesetDeepSprite = {
+    img: null,
+    ready: false,
+    failed: false
+  };
   const torchSprite = {
+    sheet: null,
+    ready: false,
+    failed: false
+  };
+  const torchDeepSprite = {
     sheet: null,
     ready: false,
     failed: false
@@ -1307,6 +1362,9 @@
     if (state.phase === "boot" || state.phase === "splash") return false;
     const next = forceOpen == null ? !state.debugCheatOpen : Boolean(forceOpen);
     state.debugCheatOpen = next;
+    state.debugCheatView = "actions";
+    state.debugCheatRelicPage = 0;
+    state.debugCheatSectionIndex = 0;
     markUiDirty();
     return true;
   }
@@ -1319,10 +1377,126 @@
     markUiDirty();
   }
 
+  function getDebugCheatRelicPageSize() {
+    return 10;
+  }
+
+  function getDebugCheatRelicEntries() {
+    const rarityOrder = { normal: 0, rare: 1, epic: 2, legendary: 3 };
+    return [...RELICS].sort((a, b) =>
+      (rarityOrder[a.rarity] ?? 99) - (rarityOrder[b.rarity] ?? 99) ||
+      String(a.name || "").localeCompare(String(b.name || ""))
+    );
+  }
+
+  function getDebugCheatRelicPickerPageInfo() {
+    const all = getDebugCheatRelicEntries();
+    const pageSize = getDebugCheatRelicPageSize();
+    const totalPages = Math.max(1, Math.ceil(all.length / pageSize));
+    state.debugCheatRelicPage = clamp(Number(state.debugCheatRelicPage) || 0, 0, totalPages - 1);
+    const start = state.debugCheatRelicPage * pageSize;
+    return {
+      all,
+      pageSize,
+      totalPages,
+      page: state.debugCheatRelicPage,
+      entries: all.slice(start, start + pageSize)
+    };
+  }
+
+  function openDebugRelicPicker() {
+    state.debugCheatView = "relic_picker";
+    state.debugCheatRelicPage = 0;
+    markUiDirty();
+  }
+
+  function closeDebugRelicPicker() {
+    if (state.debugCheatView !== "relic_picker") return;
+    state.debugCheatView = "actions";
+    markUiDirty();
+  }
+
+  function shiftDebugRelicPickerPage(delta) {
+    const info = getDebugCheatRelicPickerPageInfo();
+    const next = clamp((Number(info.page) || 0) + (delta >= 0 ? 1 : -1), 0, info.totalPages - 1);
+    if (next === info.page) return;
+    state.debugCheatRelicPage = next;
+    markUiDirty();
+  }
+
+  function getDebugCheatRelicSlotHotkey(slotIndex) {
+    return slotIndex === 9 ? "0" : String(slotIndex + 1);
+  }
+
+  function getDebugRelicUnavailableReason(relic) {
+    if (!relic) return "Invalid relic.";
+    const stackable = isRelicStackable(relic);
+    if (state.relics.length >= MAX_RELICS) {
+      return `Relic slots full (${state.relics.length}/${MAX_RELICS}).`;
+    }
+    if (stackable && isNormalRelicStackAtCap(relic.id)) {
+      return `Stack max (${MAX_NORMAL_RELIC_STACK}/${MAX_NORMAL_RELIC_STACK}).`;
+    }
+    if (!stackable && hasRelic(relic.id)) {
+      return "Already owned.";
+    }
+    if (relic.rarity === "legendary" && hasLegendaryRelic()) {
+      return "Legendary slot already occupied.";
+    }
+    return "";
+  }
+
+  function tryDebugAddRelicBySlot(slotIndex) {
+    const info = getDebugCheatRelicPickerPageInfo();
+    const relic = info.entries[slotIndex];
+    if (!relic) return false;
+    const blockedReason = getDebugRelicUnavailableReason(relic);
+    if (blockedReason) {
+      pushLog(`Debug relic unavailable: ${relic.name}. ${blockedReason}`, "bad");
+      markUiDirty();
+      return true;
+    }
+    if (!applyRelic(relic.id)) {
+      pushLog(`Debug relic failed: ${relic.name}.`, "bad");
+      markUiDirty();
+      return true;
+    }
+    pushLog(`Debug: relic added ${relic.name}.`, "warn");
+    saveAfterDebugCheat();
+    return true;
+  }
+
+  function getDebugCheatSections() {
+    const available = new Set(
+      getDebugCheatActions().map((action) => action.section || "Misc")
+    );
+    const ordered = ["Run", "Combat", "Meta", "System", "Misc"].filter((name) => available.has(name));
+    return ordered.length > 0 ? ordered : ["Run"];
+  }
+
+  function getCurrentDebugCheatSection() {
+    const sections = getDebugCheatSections();
+    const maxIndex = Math.max(0, sections.length - 1);
+    state.debugCheatSectionIndex = clamp(Number(state.debugCheatSectionIndex) || 0, 0, maxIndex);
+    return sections[state.debugCheatSectionIndex] || sections[0];
+  }
+
+  function shiftDebugCheatSection(delta) {
+    const sections = getDebugCheatSections();
+    if (sections.length <= 1) return;
+    const maxIndex = sections.length - 1;
+    const direction = delta >= 0 ? 1 : -1;
+    const next = clamp((Number(state.debugCheatSectionIndex) || 0) + direction, 0, maxIndex);
+    if (next === state.debugCheatSectionIndex) return;
+    state.debugCheatSectionIndex = next;
+    markUiDirty();
+  }
+
   function getDebugCheatActions() {
     return [
       {
         key: "1",
+        section: "Run",
         name: "+100 Run Gold",
         desc: "Add 100 gold to current run.",
         available: () => state.phase === "playing" || state.phase === "relic",
@@ -1334,6 +1508,7 @@
       },
       {
         key: "2",
+        section: "Meta",
         name: "+1000 Camp Gold",
         desc: "Add 1000 camp gold.",
         available: () => true,
@@ -1345,6 +1520,7 @@
       },
       {
         key: "3",
+        section: "Combat",
         name: "Full Heal",
         desc: "Restore HP to max.",
         available: () => state.phase === "playing" || state.phase === "relic",
@@ -1357,6 +1533,7 @@
       },
       {
         key: "4",
+        section: "Meta",
         name: "+1 Life",
         desc: "Grant one extra life.",
         available: () => state.lives < MAX_LIVES,
@@ -1367,6 +1544,7 @@
       },
       {
         key: "5",
+        section: "Combat",
         name: "Clear Room",
         desc: "Kill all enemies in current room.",
         available: () => state.phase === "playing" && state.enemies.length > 0,
@@ -1382,17 +1560,17 @@
       },
       {
         key: "6",
-        name: "Relic Draft",
-        desc: "Force or reroll relic draft.",
-        available: () => state.phase === "playing" || state.phase === "relic",
+        section: "Run",
+        name: "Relic Picker",
+        desc: "Choose exactly which relic to add.",
+        available: () => true,
         run: () => {
-          openRelicDraft(true);
-          pushLog("Debug: relic draft rerolled.", "warn");
-          saveAfterDebugCheat();
+          openDebugRelicPicker();
         }
       },
       {
         key: "7",
+        section: "Run",
         name: "+1 Potion",
         desc: "Add one potion to bag.",
         available: () => state.phase === "playing" || state.phase === "relic",
@@ -1403,7 +1581,26 @@
         }
       },
       {
+        key: "x",
+        section: "Run",
+        name: "Clear All Relics",
+        desc: "Remove all relics from current run/camp loadout.",
+        available: () => state.relics.length > 0,
+        run: () => {
+          const removedCount = state.relics.length;
+          while (state.relics.length > 0) {
+            removeRelic(state.relics[0], { silent: true });
+          }
+          state.relicDraft = null;
+          state.legendarySwapPending = null;
+          state.relicSwapPending = null;
+          pushLog(`Debug: removed all relics (${removedCount}).`, "warn");
+          saveAfterDebugCheat();
+        }
+      },
+      {
         key: "8",
+        section: "System",
         name: "Toggle God Mode",
         desc: "No damage from hits, spikes, traps, curses.",
         available: () => true,
@@ -1415,6 +1612,7 @@
       },
       {
         key: "9",
+        section: "Combat",
         name: "Reset Skill CD",
         desc: "Set all skill cooldowns to 0.",
         available: () => state.phase === "playing",
@@ -1428,6 +1626,7 @@
       },
       {
         key: "0",
+        section: "Run",
         name: "Next Depth",
         desc: "Jump to next room depth.",
         available: () => state.phase === "playing",
@@ -1438,23 +1637,10 @@
             return;
           }
           state.depth = Math.min(MAX_DEPTH, state.depth + 1);
-          state.runMaxDepth = Math.max(state.runMaxDepth, state.depth);
           state.player.hp = Math.min(state.player.maxHp, state.player.hp + scaledCombat(1));
           saveMetaProgress();
           buildRoom();
           pushLog(`Debug: jumped to depth ${state.depth}.`, "warn");
-          saveRunSnapshot();
-          markUiDirty();
-        }
-      },
-      {
-        key: "l",
-        name: "Clear Leaderboard",
-        desc: "Delete local leaderboard + pending uploads.",
-        available: () => (state.leaderboard || []).length > 0 || (state.leaderboardPending || []).length > 0,
-        run: () => {
-          clearLocalLeaderboard();
-          pushLog("Debug: local leaderboard cleared.", "warn");
           saveRunSnapshot();
           markUiDirty();
         }
@@ -1464,7 +1650,10 @@
 
   function triggerDebugCheatHotkey(key) {
     if (!canUseDebugCheats()) return false;
-    const action = getDebugCheatActions().find((item) => item.key === key);
+    const currentSection = getCurrentDebugCheatSection();
+    const action = getDebugCheatActions().find((item) =>
+      (item.section || "Misc") === currentSection && item.key === key
+    );
     if (!action) return false;
     const enabled = action.available ? action.available() : true;
     if (!enabled) {
@@ -1636,6 +1825,7 @@
   }
 
   function isOnlineLeaderboardEnabled() {
+    if (TEST_MODE_ENABLED) return false;
     return Boolean(ONLINE_LEADERBOARD_API_BASE);
   }
 
@@ -1760,6 +1950,7 @@
   }
 
   function getLeaderboardSourceLabel() {
+    if (TEST_MODE_ENABLED) return "Disabled (test mode)";
     if (!isOnlineLeaderboardEnabled()) return "Local";
     if (state.onlineLeaderboardUpdatedAt > 0) return "Online";
     if (state.onlineLeaderboardLoading || state.onlineSyncInFlight) return "Local (syncing online)";
@@ -1767,6 +1958,9 @@
   }
 
   function getLeaderboardStatusNote() {
+    if (TEST_MODE_ENABLED) {
+      return "Test mode enabled: leaderboard submit/sync is disabled.";
+    }
     if (!isOnlineLeaderboardEnabled()) {
       return "Offline mode: set window.DUNGEON_LEADERBOARD_API to enable online ranking.";
     }
@@ -2101,6 +2295,10 @@
   }
 
   function recordRunOnLeaderboard(outcome) {
+    if (TEST_MODE_ENABLED) {
+      state.runLeaderboardSubmitted = true;
+      return;
+    }
     if (state.runLeaderboardSubmitted && state.currentRunId) return;
     const depth = getRunMaxDepth();
     const gold = getRunGoldEarned();
@@ -2308,7 +2506,15 @@
 
     state.phase = nextPhase;
     state.depth = Math.max(0, Number(snapshot.depth) || 0);
-    state.runMaxDepth = Math.max(0, Number(snapshot.runMaxDepth) || state.depth);
+    const snapshotRunMaxDepth = Number(snapshot.runMaxDepth);
+    if (Number.isFinite(snapshotRunMaxDepth) && snapshotRunMaxDepth >= 0) {
+      state.runMaxDepth = Math.max(0, Math.floor(snapshotRunMaxDepth));
+    } else {
+      const inferredClearedDepth = state.depth - (Boolean(snapshot.roomCleared) ? 0 : 1);
+      state.runMaxDepth = Math.max(0, inferredClearedDepth);
+    }
+    const maxAllowedClearedDepth = Math.max(0, state.depth - (Boolean(snapshot.roomCleared) ? 0 : 1));
+    state.runMaxDepth = Math.min(state.runMaxDepth, maxAllowedClearedDepth);
     state.runGoldEarned = Math.max(
       0,
       Number(snapshot.runGoldEarned) ||
@@ -2467,6 +2673,7 @@
       chronoUsedThisRun: Boolean(snapshot.player.chronoUsedThisRun),
       phaseCooldown: Math.max(0, Number(snapshot.player.phaseCooldown) || 0),
       titanAttackPenalty: Math.max(0, Number(snapshot.player.titanAttackPenalty) || 0),
+      glassCannonHpPenalty: Math.max(0, Number(snapshot.player.glassCannonHpPenalty) || 0),
       chaosAtkBonus: Math.max(0, Number(snapshot.player.chaosAtkBonus) || 0),
       chaosAtkTurns: Math.max(0, Number(snapshot.player.chaosAtkTurns) || 0),
       chaosKillHeal: Math.max(0, Number(snapshot.player.chaosKillHeal) || 0),
@@ -2488,6 +2695,10 @@
       state.player.chaosAtkTurns = 0;
       state.player.chaosKillHeal = 0;
       state.player.chaosRollCounter = 0;
+    }
+    if (hasRelic("titanheart") && (state.player.titanAttackPenalty || 0) > 0) {
+      state.player.attack += state.player.titanAttackPenalty;
+      state.player.titanAttackPenalty = 0;
     }
     ensureShieldChargeState();
     snapVisual(state.player);
@@ -2785,6 +2996,24 @@
     img.src = `${SPIKE_SPRITE_PATH}?v=${SPIKE_SPRITE_VERSION}`;
   }
 
+  function loadDeepSpikeSprite() {
+    const img = new Image();
+    spikeDeepSprite.img = img;
+    spikeDeepSprite.ready = false;
+    spikeDeepSprite.failed = false;
+    img.onload = () => {
+      spikeDeepSprite.ready = true;
+      markUiDirty();
+    };
+    img.onerror = () => {
+      if (!spikeDeepSprite.failed) {
+        spikeDeepSprite.failed = true;
+        pushLog(`Spike sprite failed: ${SPIKE_DEEP_SPRITE_PATH}`, "bad");
+      }
+    };
+    img.src = `${SPIKE_DEEP_SPRITE_PATH}?v=${SPIKE_DEEP_SPRITE_VERSION}`;
+  }
+
   function loadTilesetSprite() {
     const img = new Image();
     tilesetSprite.img = img;
@@ -2803,6 +3032,24 @@
     img.src = `${TILESET_SPRITE_PATH}?v=${TILESET_SPRITE_VERSION}`;
   }
 
+  function loadDeepTilesetSprite() {
+    const img = new Image();
+    tilesetDeepSprite.img = img;
+    tilesetDeepSprite.ready = false;
+    tilesetDeepSprite.failed = false;
+    img.onload = () => {
+      tilesetDeepSprite.ready = true;
+      markUiDirty();
+    };
+    img.onerror = () => {
+      if (!tilesetDeepSprite.failed) {
+        tilesetDeepSprite.failed = true;
+        pushLog(`Tileset failed: ${TILESET_DEEP_SPRITE_PATH}`, "bad");
+      }
+    };
+    img.src = `${TILESET_DEEP_SPRITE_PATH}?v=${TILESET_DEEP_SPRITE_VERSION}`;
+  }
+
   function loadTorchSprite() {
     const img = new Image();
     torchSprite.sheet = img;
@@ -2819,6 +3066,24 @@
       }
     };
     img.src = `${TORCH_SPRITESHEET_PATH}?v=${TORCH_SPRITESHEET_VERSION}`;
+  }
+
+  function loadDeepTorchSprite() {
+    const img = new Image();
+    torchDeepSprite.sheet = img;
+    torchDeepSprite.ready = false;
+    torchDeepSprite.failed = false;
+    img.onload = () => {
+      torchDeepSprite.ready = true;
+      markUiDirty();
+    };
+    img.onerror = () => {
+      if (!torchDeepSprite.failed) {
+        torchDeepSprite.failed = true;
+        pushLog(`Torch sprite failed: ${TORCH_DEEP_SPRITESHEET_PATH}`, "bad");
+      }
+    };
+    img.src = `${TORCH_DEEP_SPRITESHEET_PATH}?v=${TORCH_DEEP_SPRITESHEET_VERSION}`;
   }
 
   function loadSlimeSprites() {
@@ -2983,8 +3248,10 @@
   function ensureBgmTracks() {
     if (audio.bgmReady) return;
     audio.bgmNormal = createBgmTrack(MUSIC_TRACKS.normal, 0.36);
+    audio.bgmDeep = createBgmTrack(MUSIC_TRACKS.deep, 0.38);
     audio.bgmBoss = createBgmTrack(MUSIC_TRACKS.boss, 0.4);
     audio.bgmNormal.load();
+    audio.bgmDeep.load();
     audio.bgmBoss.load();
     audio.bgmReady = true;
   }
@@ -2999,6 +3266,7 @@
 
   function stopAllBgm(resetTime = false) {
     pauseBgmTrack(audio.bgmNormal, resetTime);
+    pauseBgmTrack(audio.bgmDeep, resetTime);
     pauseBgmTrack(audio.bgmBoss, resetTime);
     audio.currentBgm = null;
   }
@@ -3031,10 +3299,16 @@
 
     stopSplashTrack(false);
 
-    const target = state.bossRoom ? audio.bgmBoss : audio.bgmNormal;
-    const other = target === audio.bgmNormal ? audio.bgmBoss : audio.bgmNormal;
-
-    pauseBgmTrack(other, true);
+    const target = state.bossRoom
+      ? audio.bgmBoss
+      : state.depth >= DEEP_THEME_START_DEPTH
+        ? audio.bgmDeep
+        : audio.bgmNormal;
+    const allTracks = [audio.bgmNormal, audio.bgmDeep, audio.bgmBoss];
+    for (const track of allTracks) {
+      if (!track || track === target) continue;
+      pauseBgmTrack(track, true);
+    }
 
     if (audio.currentBgm !== target) {
       pauseBgmTrack(audio.currentBgm, true);
@@ -3867,6 +4141,36 @@
     return relicRuntime.getRelicDraftSkipHotkey();
   }
 
+  function isRelicStackable(relic) {
+    return Boolean(
+      relic &&
+      relic.rarity === "normal" &&
+      relic.id !== "shrineward" &&
+      relic.id !== "ironboots" &&
+      relic.id !== "scoutlens"
+    );
+  }
+
+  function getThornmailReflectDamage(incomingDamage) {
+    const base = Math.max(0, Number(incomingDamage) || 0);
+    return Math.max(1, Math.round(base * THORNMAIL_REFLECT_MULTIPLIER));
+  }
+
+  function applyVampfangLifesteal(damageDealt, options = {}) {
+    if (!hasRelic("vampfang")) return 0;
+    const dealt = Math.max(0, Number(damageDealt) || 0);
+    if (dealt <= 0) return 0;
+    const healAmount = Math.max(1, Math.round(dealt * VAMPFANG_LIFESTEAL_MULTIPLIER));
+    const before = state.player.hp;
+    state.player.hp = Math.min(state.player.maxHp, state.player.hp + healAmount);
+    const restored = Math.max(0, state.player.hp - before);
+    if (restored > 0 && options.visuals !== false) {
+      spawnFloatingText(state.player.x, state.player.y, `+${restored}`, "#9ff7a9");
+      spawnParticles(state.player.x, state.player.y, "#7fe9a7", 4, 0.8);
+    }
+    return restored;
+  }
+
   function applyRelicEffects(relicId, options = {}) {
     const onGain = options.onGain !== false;
     // Normal
@@ -3889,9 +4193,9 @@
     }
     if (relicId === "ironboots") { return; } // passive: checked in spike logic
     // Rare
-    if (relicId === "idol") { state.runMods.goldMultiplier += 0.2; return; }
+    if (relicId === "idol") { state.runMods.goldMultiplier += GOLDEN_IDOL_GOLD_MULTIPLIER; return; }
     if (relicId === "thornmail") { return; } // passive: checked in enemy melee
-    if (relicId === "vampfang") { return; } // passive: checked in killEnemy
+    if (relicId === "vampfang") { return; } // passive: checked in player damage hooks
     if (relicId === "adrenal") {
       state.player.maxAdrenaline += 2;
       if (onGain) {
@@ -3908,13 +4212,16 @@
     // Epic
     if (relicId === "glasscannon") {
       addScaledFlatAttack(scaledCombat(4));
-      state.player.maxHp = Math.max(scaledCombat(4), state.player.maxHp - scaledCombat(5));
+      const maxReducible = Math.max(0, state.player.maxHp - scaledCombat(4));
+      const hpPenalty = Math.min(maxReducible, Math.max(1, Math.round(state.player.maxHp * 0.5)));
+      state.player.glassCannonHpPenalty = hpPenalty;
+      state.player.maxHp = Math.max(scaledCombat(4), state.player.maxHp - hpPenalty);
       state.player.hp = Math.min(state.player.hp, state.player.maxHp);
       return;
     }
     if (relicId === "echostrike") { return; } // passive: checked in attackEnemy
     if (relicId === "phasecloak") {
-      if (onGain) state.player.phaseCooldown = 5;
+      if (onGain) state.player.phaseCooldown = PHASE_CLOAK_DODGE_COOLDOWN_TURNS;
       return;
     }
     if (relicId === "soulharvest") { return; } // passive: checked in killEnemy
@@ -3932,10 +4239,7 @@
     if (relicId === "titanheart") {
       state.player.maxHp += scaledCombat(8);
       state.player.armor += scaledCombat(2);
-      const scaledPenalty = Math.max(1, Math.abs(scaleFlatAttackByBlade(-scaledCombat(2))));
-      const penalty = Math.min(scaledPenalty, Math.max(0, state.player.attack - scaledCombat(1)));
-      state.player.attack -= penalty;
-      state.player.titanAttackPenalty = penalty;
+      state.player.titanAttackPenalty = 0;
       state.player.hp = Math.min(state.player.hp, state.player.maxHp);
       return;
     }
@@ -3969,14 +4273,11 @@
     if (relicId === "ironboots") { return; }
     // Rare
     if (relicId === "idol") {
-      state.runMods.goldMultiplier = Math.max(0.2, state.runMods.goldMultiplier - 0.2);
+      state.runMods.goldMultiplier = Math.max(0.1, state.runMods.goldMultiplier - GOLDEN_IDOL_GOLD_MULTIPLIER);
       return;
     }
     if (relicId === "thornmail") { return; }
-    if (relicId === "vampfang") {
-      state.player.vampFangKills = 0;
-      return;
-    }
+    if (relicId === "vampfang") { return; }
     if (relicId === "adrenal") {
       state.player.maxAdrenaline = Math.max(3, state.player.maxAdrenaline - 2);
       state.player.adrenaline = Math.min(state.player.adrenaline, state.player.maxAdrenaline);
@@ -3989,7 +4290,9 @@
     // Epic
     if (relicId === "glasscannon") {
       state.player.attack = Math.max(scaledCombat(1), state.player.attack - Math.max(1, scaleFlatAttackByBlade(scaledCombat(4))));
-      state.player.maxHp += scaledCombat(5);
+      const refund = Math.max(0, Number(state.player.glassCannonHpPenalty) || 0);
+      state.player.maxHp += refund;
+      state.player.glassCannonHpPenalty = 0;
       state.player.hp = Math.min(state.player.hp, state.player.maxHp);
       return;
     }
@@ -4019,8 +4322,6 @@
     if (relicId === "titanheart") {
       state.player.maxHp = Math.max(scaledCombat(4), state.player.maxHp - scaledCombat(8));
       state.player.armor = Math.max(0, state.player.armor - scaledCombat(2));
-      const refund = Math.max(0, state.player.titanAttackPenalty || 0);
-      state.player.attack += refund;
       state.player.titanAttackPenalty = 0;
       state.player.hp = Math.min(state.player.hp, state.player.maxHp);
       return;
@@ -4037,7 +4338,7 @@
   function applyRelic(relicId, options = {}) {
     const relic = getRelicById(relicId);
     if (!relic) return false;
-    const canStack = relic.rarity === "normal";
+    const canStack = isRelicStackable(relic);
     if (canStack && getRelicStackCount(relicId) >= MAX_NORMAL_RELIC_STACK) return false;
     if (!canStack && state.relics.includes(relicId)) return false;
     if (state.relics.length >= MAX_RELICS) return false;
@@ -4086,7 +4387,7 @@
     for (const relicId of original) {
       const relic = getRelicById(relicId);
       const isLegendary = Boolean(relic && relic.rarity === "legendary");
-      const isStackableNormal = Boolean(relic && relic.rarity === "normal");
+      const isStackableNormal = isRelicStackable(relic);
       const duplicateNonStack = Boolean(relic && !isStackableNormal && keptUniqueNonStack.has(relicId));
       const normalStackCount = isStackableNormal ? (keptNormalStacks.get(relicId) || 0) : 0;
       const normalStackOverCap = isStackableNormal && normalStackCount >= MAX_NORMAL_RELIC_STACK;
@@ -4207,12 +4508,16 @@
     normalizeRelicInventory();
     const unlockedRarities = isBoss ? getUnlockedWardenRelicRarities(state.depth) : null;
     const pool = RELICS.filter(
-      (relic) =>
+      (relic) => {
+        const stackable = isRelicStackable(relic);
+        return (
         (!unlockedRarities || unlockedRarities.has(relic.rarity)) &&
         (
-          (relic.rarity === "normal" && !isNormalRelicStackAtCap(relic.id)) ||
-          (relic.rarity !== "normal" && !state.relics.includes(relic.id))
+          (stackable && !isNormalRelicStackAtCap(relic.id)) ||
+          (!stackable && !state.relics.includes(relic.id))
         )
+      );
+      }
     );
     if (pool.length === 0) return;
 
@@ -4340,7 +4645,7 @@
 
     const relic = state.relicDraft?.[index];
     if (!relic) return;
-    if (relic.rarity === "normal" && isNormalRelicStackAtCap(relic.id)) {
+    if (isRelicStackable(relic) && isNormalRelicStackAtCap(relic.id)) {
       pushLog(`${relic.name} stack is max (${MAX_NORMAL_RELIC_STACK}/${MAX_NORMAL_RELIC_STACK}). Choose another relic or skip.`, "bad");
       return;
     }
@@ -5517,6 +5822,7 @@
     state.player.chronoUsedThisRun = false;
     state.player.phaseCooldown = 0;
     state.player.titanAttackPenalty = 0;
+    state.player.glassCannonHpPenalty = 0;
     state.player.chaosAtkBonus = 0;
     state.player.chaosAtkTurns = 0;
     state.player.chaosKillHeal = 0;
@@ -5936,21 +6242,10 @@
       pushLog(`Chaos: kill heal +${healAmount} HP.`, "good");
     }
 
-    // Vampiric Fang: heal 10 HP every 3 kills
-    if (hasRelic("vampfang")) {
-      state.player.vampFangKills = (state.player.vampFangKills || 0) + 1;
-      if (state.player.vampFangKills % 3 === 0) {
-        state.player.hp = Math.min(state.player.maxHp, state.player.hp + scaledCombat(1));
-        spawnFloatingText(state.player.x, state.player.y, `+${scaledCombat(1)}`, "#9ff7a9");
-        spawnParticles(enemy.x, enemy.y, "#ff5555", 6, 1.0);
-        pushLog("Vampiric Fang: +10 HP.", "good");
-      }
-    }
-
-    // Soul Harvest: +10 max HP every 10 kills (cap +100)
+    // Soul Harvest: +10 max HP every 30 kills (cap +100)
     if (hasRelic("soulharvest") && (state.player.soulHarvestGained || 0) < 10) {
       state.player.soulHarvestCount = (state.player.soulHarvestCount || 0) + 1;
-      if (state.player.soulHarvestCount % 10 === 0) {
+      if (state.player.soulHarvestCount % SOUL_HARVEST_KILL_INTERVAL === 0) {
         state.player.soulHarvestGained = (state.player.soulHarvestGained || 0) + 1;
         state.player.maxHp += scaledCombat(1);
         state.player.hp = Math.min(state.player.maxHp, state.player.hp + scaledCombat(1));
@@ -5965,6 +6260,7 @@
   function checkRoomClearBonus() {
     if (state.roomCleared || state.enemies.length > 0) return;
     state.roomCleared = true;
+    state.runMaxDepth = Math.max(state.runMaxDepth, state.depth);
     revealPortalFx();
     pushLog("Room cleared! Portal revealed.", "good");
     let goldBonus = 2 + Math.floor(state.depth / 2);
@@ -6032,11 +6328,22 @@
     state.player.chronoUsedThisRun = true;
     state.player.hp = Math.max(1, Math.floor(state.player.maxHp * 0.5));
 
-    const killCount = state.enemies.length;
+    let hitCount = 0;
+    let killCount = 0;
     for (const enemy of [...state.enemies]) {
+      if (Math.max(Math.abs(enemy.x - state.player.x), Math.abs(enemy.y - state.player.y)) > CHRONO_LOOP_BURST_RADIUS) {
+        continue;
+      }
+      hitCount += 1;
+      enemy.hp -= CHRONO_LOOP_BURST_DAMAGE;
+      triggerEnemyHitFlash(enemy, CRIT_HIT_FLASH_MS);
+      spawnFloatingText(enemy.x, enemy.y, `-${CHRONO_LOOP_BURST_DAMAGE}`, "#ffd8ad", { life: 700, size: 9 });
       spawnParticles(enemy.x, enemy.y, "#ffb020", 12, 1.6);
+      if (enemy.hp <= 0) {
+        killEnemy(enemy, "chrono burst");
+        killCount += 1;
+      }
     }
-    state.enemies = [];
 
     state.flash = 240;
     setShake(5.2);
@@ -6058,7 +6365,7 @@
     spawnRangedImpact(state.player.x, state.player.y, "#ffb020");
     spawnRangedImpact(state.player.x, state.player.y, "#bd88ff");
     pushLog(
-      `CHRONO LOOP! Revived with ${state.player.hp} HP. ${killCount} enemies erased after ${sourceLabel}.`,
+      `CHRONO LOOP! Revived with ${state.player.hp} HP. Burst hit ${hitCount} nearby ${hitCount === 1 ? "enemy" : "enemies"}${killCount > 0 ? `, ${killCount} downed` : ""}.`,
       "good"
     );
     pushLog("Chrono Loop triggered: resurrection charge spent.", "warn");
@@ -6074,9 +6381,9 @@
     if (blockDamageWithShield(source, attacker, rawDamage)) {
       return;
     }
-    // Phase Cloak: auto-dodge every 5th turn
+    // Phase Cloak: auto-dodge every 3 turns
     if (hasRelic("phasecloak") && state.player.phaseCooldown <= 0) {
-      state.player.phaseCooldown = 5;
+      state.player.phaseCooldown = PHASE_CLOAK_DODGE_COOLDOWN_TURNS;
       spawnParticles(state.player.x, state.player.y, "#c9abff", 10, 1.3);
       pushLog(`Phase Cloak dodges ${source}!`, "good");
       markUiDirty();
@@ -6246,6 +6553,7 @@
     const inTreasureRoom = state.roomType === "treasure";
     const chestOutcome = lootTablesApi.rollChestOutcome({
       inTreasureRoom,
+      hasShrineWard: hasRelic("shrineward"),
       rng: Math.random
     });
     if (chestOutcome.grantsLife) {
@@ -6413,6 +6721,7 @@
     const critical = chance(state.player.crit);
     let damage = critical ? base * 2 : base;
     enemy.hp -= damage;
+    applyVampfangLifesteal(damage);
     triggerEnemyHitFlash(enemy, critical ? CRIT_HIT_FLASH_MS : ENTITY_HIT_FLASH_MS);
     spawnFloatingText(
       enemy.x,
@@ -6432,7 +6741,7 @@
     // Burning Blade: ignite enemy
     if (hasRelic("burnblade") && enemy.hp > 0) {
       enemy.burnTurns = (enemy.burnTurns || 0) + 3;
-      pushLog(`${enemy.name} is burning!`, "good");
+      pushLog(`${enemy.name} is burning (${BURNING_BLADE_DOT_DAMAGE}/turn)!`, "good");
     }
 
     // Void Reaper: crit execute enemies below 30% HP
@@ -6448,16 +6757,17 @@
     if (enemy.hp <= 0) {
       // Void Reaper crit kill gold bonus
       if (hasRelic("voidreaper") && critical) {
-        const voidGold = grantGold(3);
+        const voidGold = grantGold(VOID_REAPER_CRIT_KILL_GOLD);
         pushLog(`Void Reaper bonus: +${voidGold} gold.`, "good");
       }
       killEnemy(enemy, "final blow");
     }
 
-    // Echo Strike: 30% chance to hit again
-    if (hasRelic("echostrike") && state.enemies.includes(enemy) && enemy.hp > 0 && chance(0.3)) {
+    // Echo Strike: 25% chance to hit again
+    if (hasRelic("echostrike") && state.enemies.includes(enemy) && enemy.hp > 0 && chance(0.25)) {
       const echoDmg = Math.max(MIN_EFFECTIVE_DAMAGE, state.player.attack);
       enemy.hp -= echoDmg;
+      applyVampfangLifesteal(echoDmg);
       triggerEnemyHitFlash(enemy);
       spawnFloatingText(enemy.x, enemy.y, `-${echoDmg}`, "#bde3ff");
       spawnParticles(enemy.x, enemy.y, "#9fdcff", 8, 1.2);
@@ -6671,6 +6981,65 @@
     return false;
   }
 
+  function hasLineOfSightFromTile(fromX, fromY) {
+    if (fromX === state.player.x) {
+      const minY = Math.min(fromY, state.player.y);
+      const maxY = Math.max(fromY, state.player.y);
+      for (let y = minY + 1; y < maxY; y += 1) {
+        if (state.chests.some((chest) => !chest.opened && chest.x === fromX && chest.y === y)) {
+          return false;
+        }
+      }
+      return true;
+    }
+    if (fromY === state.player.y) {
+      const minX = Math.min(fromX, state.player.x);
+      const maxX = Math.max(fromX, state.player.x);
+      for (let x = minX + 1; x < maxX; x += 1) {
+        if (state.chests.some((chest) => !chest.opened && chest.x === x && chest.y === fromY)) {
+          return false;
+        }
+      }
+      return true;
+    }
+    return false;
+  }
+
+  function isSkeletonCastPositionAt(x, y, range = 3) {
+    const dist = manhattan(x, y, state.player.x, state.player.y);
+    return dist >= 2 && dist <= range && hasLineOfSightFromTile(x, y);
+  }
+
+  function getSkeletonSetupStep(enemy) {
+    if (!enemy) return null;
+    const range = Math.max(2, Number(enemy.range) || 3);
+    const options = [];
+    for (let oy = -1; oy <= 1; oy += 1) {
+      for (let ox = -1; ox <= 1; ox += 1) {
+        if (ox === 0 && oy === 0) continue;
+        const x = enemy.x + ox;
+        const y = enemy.y + oy;
+        if (enemyTileBlocked(x, y, enemy)) continue;
+        const dist = manhattan(x, y, state.player.x, state.player.y);
+        const castReady = isSkeletonCastPositionAt(x, y, range);
+        const spikePenalty = isSpikeAt(x, y) ? 18 : 0;
+        let score = 0;
+        if (castReady) score += 45;
+        score -= Math.abs(dist - 3) * 5;
+        if (dist === 1) score -= 30;
+        score -= spikePenalty;
+        options.push({ x, y, dist, score, castReady });
+      }
+    }
+    if (options.length <= 0) return null;
+    options.sort((a, b) =>
+      b.score - a.score ||
+      Number(b.castReady) - Number(a.castReady) ||
+      Math.abs(a.dist - 3) - Math.abs(b.dist - 3)
+    );
+    return { x: options[0].x, y: options[0].y };
+  }
+
   function enemyMelee(enemy) {
     const damage = enemy.type === "skeleton"
       ? Math.max(
@@ -6684,13 +7053,14 @@
     }
     spawnParticles(state.player.x, state.player.y, "#ff7a7a", 7, 1.35);
 
-    // Thorn Mail: reflect 10 dmg to melee attackers
+    // Thorn Mail: reflect 20% of incoming melee damage
     if (hasRelic("thornmail") && state.phase === "playing" && state.enemies.includes(enemy)) {
-      enemy.hp -= scaledCombat(1);
+      const reflectDamage = getThornmailReflectDamage(damage);
+      enemy.hp -= reflectDamage;
       triggerEnemyHitFlash(enemy);
-      spawnFloatingText(enemy.x, enemy.y, `-${scaledCombat(1)}`, "#ffc8c8");
+      spawnFloatingText(enemy.x, enemy.y, `-${reflectDamage}`, "#ffc8c8");
       spawnParticles(enemy.x, enemy.y, "#d86b6b", 5, 0.9);
-      pushLog(`Thorn Mail reflects ${scaledCombat(1)} to ${enemy.name}.`, "good");
+      pushLog(`Thorn Mail reflects ${reflectDamage} to ${enemy.name}.`, "good");
       if (enemy.hp <= 0) {
         killEnemy(enemy, "thorns");
       }
@@ -6816,32 +7186,11 @@
         return true;
       }
     }
-    if (manhattan(enemy.x, enemy.y, state.player.x, state.player.y) !== 1) {
-      return movedAny;
+    if (movedAny) {
+      enemy.cooldown = 6;
+      pushLog(`${enemy.name} lunges into position.`, "bad");
     }
-    enemy.facing = getFacingFromDelta(state.player.x - enemy.x, state.player.y - enemy.y, enemy.facing);
-    const lungeDamage = Math.max(MIN_EFFECTIVE_DAMAGE, Math.round(getEnemyEffectiveAttack(enemy) * 1.25));
-    applyDamageToPlayer(lungeDamage, `${enemy.name} lunge`, enemy);
-    if (state.phase !== "playing") return true;
-    if (enemy.vampiric) {
-      enemy.hp = Math.min(enemy.maxHp || enemy.hp, enemy.hp + scaledCombat(1));
-    }
-    if (hasRelic("thornmail") && state.enemies.includes(enemy)) {
-      enemy.hp -= scaledCombat(1);
-      triggerEnemyHitFlash(enemy);
-      spawnFloatingText(enemy.x, enemy.y, `-${scaledCombat(1)}`, "#ffc8c8");
-      spawnParticles(enemy.x, enemy.y, "#d86b6b", 5, 0.9);
-      pushLog(`Thorn Mail reflects ${scaledCombat(1)} to ${enemy.name}.`, "good");
-      if (enemy.hp <= 0) {
-        killEnemy(enemy, "thorns");
-        return true;
-      }
-    }
-    spawnParticles(state.player.x, state.player.y, "#ff8d8d", 9, 1.25);
-    pushLog(`${enemy.name} lunges for ${lungeDamage}.`, "bad");
-    enemy.cooldown = 6;
-    registerEnemyMeleeCommit();
-    return true;
+    return movedAny;
   }
 
   function getEnemyMeleeCommitLimit() {
@@ -7084,6 +7433,7 @@
       };
     }
     enemy.intent = typeof aiPlan.intent === "string" ? aiPlan.intent : "chase";
+    let preferredMoveStep = null;
 
     if (enemy.type === "warden") {
       const wardenCanLineShot = hasLineOfSight(enemy);
@@ -7181,6 +7531,14 @@
         pushLog("Skeleton lines up a shot.", "bad");
         return;
       }
+      const alreadyInCastPosition = isSkeletonCastPositionAt(enemy.x, enemy.y, enemy.range);
+      if (currentDistance > 1) {
+        if (enemy.cooldown > 0 && !alreadyInCastPosition) {
+          preferredMoveStep = getSkeletonSetupStep(enemy) || stepToward(enemy, state.player.x, state.player.y);
+        } else if (enemy.cooldown === 0 && wantsCast && !canLineShot) {
+          preferredMoveStep = getSkeletonSetupStep(enemy) || stepToward(enemy, state.player.x, state.player.y);
+        }
+      }
     }
 
     if (enemy.type === "acolyte") {
@@ -7189,10 +7547,11 @@
         if (supportTarget && state.enemies.includes(supportTarget)) {
           enemy.facing = getFacingFromDelta(supportTarget.x - enemy.x, supportTarget.y - enemy.y, enemy.facing);
           applyAcolyteSupport(enemy, supportTarget);
-          enemy.cooldown = 3;
+          enemy.cooldown = ACOLYTE_SUPPORT_CAST_COOLDOWN;
           return;
         }
         enemy.aiming = false;
+        enemy.cooldown = Math.max(enemy.cooldown || 0, ACOLYTE_SUPPORT_CANCEL_COOLDOWN);
       }
       if (supportTarget && enemy.cooldown === 0 && canStartEnemyTelegraph()) {
         enemy.aiming = true;
@@ -7257,6 +7616,7 @@
       ) {
         const moveOff = applyEnemyMoveStep(enemy, aiPlan.moveTo);
         if (moveOff.removed) return;
+        if (moveOff.moved) return;
         currentDistance = manhattan(enemy.x, enemy.y, state.player.x, state.player.y);
         lineDistance = Math.abs(enemy.x - state.player.x) + Math.abs(enemy.y - state.player.y);
       }
@@ -7275,9 +7635,14 @@
       }
     }
 
-    let step = null;
+    let step = preferredMoveStep || null;
+    if (step && step.x === enemy.x && step.y === enemy.y) {
+      step = null;
+    }
     if (
+      !step &&
       aiPlan.moveTo &&
+      (aiPlan.moveTo.x !== enemy.x || aiPlan.moveTo.y !== enemy.y) &&
       !enemyTileBlocked(aiPlan.moveTo.x, aiPlan.moveTo.y, enemy)
     ) {
       step = aiPlan.moveTo;
@@ -7291,14 +7656,6 @@
     if (moved.removed) return;
     currentDistance = manhattan(enemy.x, enemy.y, state.player.x, state.player.y);
     lineDistance = Math.abs(enemy.x - state.player.x) + Math.abs(enemy.y - state.player.y);
-
-    if (currentDistance === 1 && canEnemyCommitMelee(enemy)) {
-      enemy.facing = getFacingFromDelta(state.player.x - enemy.x, state.player.y - enemy.y, enemy.facing);
-      enemyMelee(enemy);
-      if (state.phase !== "playing") return;
-      registerEnemyMeleeCommit();
-      return;
-    }
 
     // Fast affix or Haste mutator double move
     const hasDoubleMove = enemy.type === "skitter" ||
@@ -7322,26 +7679,10 @@
           if (bonusMove.removed) return;
           currentDistance = manhattan(enemy.x, enemy.y, state.player.x, state.player.y);
           lineDistance = Math.abs(enemy.x - state.player.x) + Math.abs(enemy.y - state.player.y);
-          if (currentDistance === 1 && canEnemyCommitMelee(enemy)) {
-            enemy.facing = getFacingFromDelta(state.player.x - enemy.x, state.player.y - enemy.y, enemy.facing);
-            enemyMelee(enemy);
-            if (state.phase !== "playing") return;
-            registerEnemyMeleeCommit();
-            return;
-          }
         }
       }
     }
-
-    // Epic Shield provokes nearby enemies into melee to make reflect reliable.
-    if (isEpicShieldReflectActive() && state.phase === "playing" && state.enemies.includes(enemy)) {
-      if (currentDistance === 1) {
-        enemy.facing = getFacingFromDelta(state.player.x - enemy.x, state.player.y - enemy.y, enemy.facing);
-        enemyMelee(enemy);
-        if (state.phase !== "playing") return;
-        registerEnemyMeleeCommit();
-      }
-    }
+    return;
   }
 
   function clearEnemyTurnSequence() {
@@ -7469,9 +7810,9 @@
       if (!state.enemies.includes(enemy)) continue;
       if ((enemy.burnTurns || 0) > 0) {
         enemy.burnTurns -= 1;
-        enemy.hp -= scaledCombat(1);
+        enemy.hp -= BURNING_BLADE_DOT_DAMAGE;
         triggerEnemyHitFlash(enemy);
-        spawnFloatingText(enemy.x, enemy.y, `-${scaledCombat(1)}`, "#ffb17f", { life: 420, size: 7 });
+        spawnFloatingText(enemy.x, enemy.y, `-${BURNING_BLADE_DOT_DAMAGE}`, "#ffb17f", { life: 420, size: 7 });
         spawnParticles(enemy.x, enemy.y, "#ff6a35", 4, 0.8);
         if (enemy.hp <= 0) {
           killEnemy(enemy, "burn");
@@ -7702,7 +8043,6 @@
       return;
     }
     state.depth = Math.min(MAX_DEPTH, state.depth + 1);
-    state.runMaxDepth = Math.max(state.runMaxDepth, state.depth);
     state.player.hp = Math.min(state.player.maxHp, state.player.hp + scaledCombat(1));
     saveMetaProgress();
     playSfx("portal");
@@ -7897,9 +8237,9 @@
       return "3-tile pierce + knockback";
     }
     if (skillId === "aoe") {
-      if (tier >= 2) return "2 Fury full dmg, knockback";
-      if (tier >= 1) return "2 Fury full dmg, knockback";
-      return "2 Fury full damage (60% without Fury)";
+      if (tier >= 2) return "Base 60% dmg, +20% per Fury spent, knockback, ring2 falloff";
+      if (tier >= 1) return "Base 60% dmg, +20% per Fury spent, knockback";
+      return "Base 60% damage, +20% per Fury spent";
     }
     if (skillId === "shield") {
       if (tier >= 2) return "3-turn immunity, 2 charges (1 returns every 20 turns), smart knockback, reflect x2 + taunt";
@@ -8332,7 +8672,45 @@
     if (!screenOverlayEl) return;
 
     if (canUseDebugCheats() && state.debugCheatOpen) {
-      const rows = getDebugCheatActions()
+      if (state.debugCheatView === "relic_picker") {
+        const picker = getDebugCheatRelicPickerPageInfo();
+        const rows = picker.entries.map((relic, index) => {
+          const hotkey = getDebugCheatRelicSlotHotkey(index);
+          const rarityInfo = RARITY[relic.rarity] || RARITY.normal;
+          const stackable = isRelicStackable(relic);
+          const stackCount = getRelicStackCount(relic.id);
+          const blockedReason = getDebugRelicUnavailableReason(relic);
+          const classes = [
+            "overlay-menu-row",
+            blockedReason ? "disabled" : ""
+          ].join(" ").trim();
+          const suffix = stackable
+            ? `x${stackCount}/${MAX_NORMAL_RELIC_STACK}`
+            : (stackCount > 0 ? "Owned" : "Unique");
+          return [
+            `<div class="${classes}">`,
+            `<div class="overlay-menu-key">${hotkey}</div>`,
+            `<div><strong style="color:${rarityInfo.color}">${relic.name} <em>${rarityInfo.label}</em></strong><br /><span>${relic.desc} | ${suffix}${blockedReason ? ` | ${blockedReason}` : ""}</span></div>`,
+            `</div>`
+          ].join("");
+        }).join("");
+        const pageLabel = `${picker.page + 1}/${picker.totalPages}`;
+        screenOverlayEl.className = "screen-overlay visible";
+        screenOverlayEl.innerHTML = [
+          `<div class="overlay-card overlay-card-wide">`,
+          `<h2 class="overlay-title">Debug Relic Picker</h2>`,
+          `<p class="overlay-sub">Relics ${state.relics.length}/${MAX_RELICS} | Page ${pageLabel}</p>`,
+          `<div class="overlay-menu">${rows}</div>`,
+          `<p class="overlay-hint">1-0 add relic | A/D or arrows page | R back | Esc close</p>`,
+          `</div>`
+        ].join("");
+        return;
+      }
+
+      const sections = getDebugCheatSections();
+      const currentSection = getCurrentDebugCheatSection();
+      const sectionRows = getDebugCheatActions()
+        .filter((action) => (action.section || "Misc") === currentSection)
         .map((action) => {
           const enabled = action.available ? action.available() : true;
           const classes = [
@@ -8347,13 +8725,22 @@
           ].join("");
         })
         .join("");
+      const sectionTabs = sections
+        .map((section, index) => {
+          const active = index === state.debugCheatSectionIndex;
+          return active ? `[${section}]` : section;
+        })
+        .join("  ");
+      const sectionLabel = `${state.debugCheatSectionIndex + 1}/${sections.length}`;
+
       screenOverlayEl.className = "screen-overlay visible";
       screenOverlayEl.innerHTML = [
-        `<div class="overlay-card">`,
+        `<div class="overlay-card overlay-card-wide">`,
         `<h2 class="overlay-title">Debug Cheats</h2>`,
-        `<p class="overlay-sub">God Mode: ${state.debugGodMode ? "ON" : "OFF"} | Phase: ${state.phase}</p>`,
-        `<p class="overlay-hint">1-0 or L execute | ${DEBUG_MENU_TOGGLE_KEY.toUpperCase()} or Esc close</p>`,
-        `<div class="overlay-menu">${rows}</div>`,
+        `<p class="overlay-sub">God Mode: ${state.debugGodMode ? "ON" : "OFF"} | Test Mode: ${TEST_MODE_ENABLED ? "ON" : "OFF"} | Phase: ${state.phase}</p>`,
+        `<p class="overlay-sub">Section ${sectionLabel}: ${sectionTabs}</p>`,
+        `<p class="overlay-hint">A/D or arrows switch section | 1-0 / listed letter key execute | ${DEBUG_MENU_TOGGLE_KEY.toUpperCase()} or Esc close</p>`,
+        `<div class="overlay-menu">${sectionRows}</div>`,
         `</div>`
       ].join("");
       return;
@@ -8800,20 +9187,51 @@
     });
   }
 
+  function getActiveTilesetSprite() {
+    if (
+      state.depth >= DEEP_THEME_START_DEPTH &&
+      tilesetDeepSprite.ready &&
+      tilesetDeepSprite.img
+    ) {
+      return tilesetDeepSprite;
+    }
+    if (tilesetSprite.ready && tilesetSprite.img) {
+      return tilesetSprite;
+    }
+    return null;
+  }
+
+  function getActiveTorchSprite() {
+    if (
+      state.depth >= DEEP_THEME_START_DEPTH &&
+      torchDeepSprite.ready &&
+      torchDeepSprite.sheet
+    ) {
+      return torchDeepSprite;
+    }
+    if (torchSprite.ready && torchSprite.sheet) {
+      return torchSprite;
+    }
+    return null;
+  }
+
   function drawTilesetTile(tileId, px, py) {
-    if (!tilesetSprite.ready || !tilesetSprite.img) return false;
-    if (tileId === TILESET_IDS.floorBonfire && torchSprite.ready && torchSprite.sheet) {
+    const activeTileset = getActiveTilesetSprite();
+    if (!activeTileset || !activeTileset.img) return false;
+    const tilesetImage = activeTileset.img;
+    const activeTorch = getActiveTorchSprite();
+    if (tileId === TILESET_IDS.floorBonfire && activeTorch && activeTorch.sheet) {
       // Keep a stable floor base under torch frames in case spritesheet has transparency.
       const baseTileId = TILESET_IDS.floorA;
       const baseSx = (baseTileId % TILESET_COLUMNS) * TILESET_TILE_SIZE;
       const baseSy = Math.floor(baseTileId / TILESET_COLUMNS) * TILESET_TILE_SIZE;
       ctx.drawImage(
-        tilesetSprite.img,
+        tilesetImage,
         baseSx, baseSy, TILESET_TILE_SIZE, TILESET_TILE_SIZE,
         px, py, TILE, TILE
       );
 
-      const sheet = torchSprite.sheet;
+      const sheet = activeTorch.sheet;
       const frameW = Math.floor((sheet.naturalWidth || 0) / TORCH_SPRITESHEET_COLS);
       const frameH = Math.floor((sheet.naturalHeight || 0) / TORCH_SPRITESHEET_ROWS);
       if (frameW > 0 && frameH > 0) {
@@ -8832,7 +9250,7 @@
     const sx = (tileId % TILESET_COLUMNS) * TILESET_TILE_SIZE;
     const sy = Math.floor(tileId / TILESET_COLUMNS) * TILESET_TILE_SIZE;
     ctx.drawImage(
-      tilesetSprite.img,
+      tilesetImage,
       sx, sy, TILESET_TILE_SIZE, TILESET_TILE_SIZE,
       px, py, TILE, TILE
     );
@@ -8864,7 +9282,7 @@
   }
 
   function drawFloorTileFromTileset(x, y, px, py) {
-    if (!tilesetSprite.ready || !tilesetSprite.img) return false;
+    if (!getActiveTilesetSprite()) return false;
     const wall = x === 0 || y === 0 || x === GRID_SIZE - 1 || y === GRID_SIZE - 1;
     const tileId = wall
       ? getWallTilesetId(x, y)
@@ -8948,10 +9366,17 @@
     const drawSize = Math.round(TILE * SPIKE_DRAW_SCALE);
     const drawX = Math.round(px + (TILE - drawSize) / 2);
     const drawY = Math.round(py + (TILE - drawSize) / 2);
-    if (spikeSprite.ready && spikeSprite.img) {
-      const sw = spikeSprite.img.naturalWidth || TILE;
-      const sh = spikeSprite.img.naturalHeight || TILE;
-      ctx.drawImage(spikeSprite.img, 0, 0, sw, sh, drawX, drawY, drawSize, drawSize);
+    const activeSpikeSprite = (
+      state.depth >= DEEP_THEME_START_DEPTH &&
+      spikeDeepSprite.ready &&
+      spikeDeepSprite.img
+    )
+      ? spikeDeepSprite
+      : (spikeSprite.ready && spikeSprite.img ? spikeSprite : null);
+    if (activeSpikeSprite && activeSpikeSprite.img) {
+      const sw = activeSpikeSprite.img.naturalWidth || TILE;
+      const sh = activeSpikeSprite.img.naturalHeight || TILE;
+      ctx.drawImage(activeSpikeSprite.img, 0, 0, sw, sh, drawX, drawY, drawSize, drawSize);
       return;
     }
     ctx.save();
@@ -9500,8 +9925,15 @@
     if ((enemy.burnTurns || 0) > 0) {
       const px = visualX(enemy);
       const py = visualY(enemy);
+      const burnPulse = (Math.sin(state.portalPulse * 6 + enemy.x * 0.8 + enemy.y * 0.7) + 1) * 0.5;
+      ctx.save();
+      ctx.globalAlpha = 0.18 + burnPulse * 0.28;
       ctx.fillStyle = "#ff6a35";
+      ctx.fillRect(px + 2, py + 2, TILE - 4, TILE - 4);
+      ctx.restore();
+      ctx.fillStyle = burnPulse > 0.5 ? "#ffd17f" : "#ff6a35";
       ctx.fillRect(px + 1, py + 14, 1, 1);
+      ctx.fillRect(px + 7, py + 13, 2, 1);
       ctx.fillRect(px + 14, py + 14, 1, 1);
     }
 
@@ -10287,6 +10719,36 @@
         toggleDebugCheatMenu(false);
         return;
       }
+      if (state.debugCheatView === "relic_picker") {
+        if (key === "r" || key === "backspace") {
+          closeDebugRelicPicker();
+          return;
+        }
+        if (key === "arrowleft" || key === "a") {
+          shiftDebugRelicPickerPage(-1);
+          return;
+        }
+        if (key === "arrowright" || key === "d") {
+          shiftDebugRelicPickerPage(1);
+          return;
+        }
+        if (key === "0") {
+          if (tryDebugAddRelicBySlot(9)) return;
+        }
+        if (key >= "1" && key <= "9") {
+          const slotIndex = Number(key) - 1;
+          if (tryDebugAddRelicBySlot(slotIndex)) return;
+        }
+        return;
+      }
+      if (key === "arrowleft" || key === "a") {
+        shiftDebugCheatSection(-1);
+        return;
+      }
+      if (key === "arrowright" || key === "d") {
+        shiftDebugCheatSection(1);
+        return;
+      }
       if (triggerDebugCheatHotkey(key)) {
         return;
       }
@@ -10768,8 +11230,11 @@
   loadShrineSprite();
   loadShieldSprite();
   loadSpikeSprite();
+  loadDeepSpikeSprite();
   loadTilesetSprite();
+  loadDeepTilesetSprite();
   loadTorchSprite();
+  loadDeepTorchSprite();
   loadPlayerSprites();
   loadSlimeSprites();
   loadSkeletonSprites();

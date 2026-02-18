@@ -20,7 +20,7 @@
     gold: 0.97
   };
 
-  function rollChestOutcome({ inTreasureRoom = false, rng = Math.random } = {}) {
+  function rollChestOutcome({ inTreasureRoom = false, hasShrineWard = false, rng = Math.random } = {}) {
     const table = inTreasureRoom ? CHEST_THRESHOLD_TREASURE : CHEST_THRESHOLD_STANDARD;
     const roll = rng();
     let outcome = "trap";
@@ -30,6 +30,9 @@
     else if (roll < table.armor) outcome = "armor";
     else if (roll < table.potion) outcome = "potion";
     else if (roll < table.gold) outcome = "gold";
+    if (outcome === "trap" && hasShrineWard) {
+      outcome = "gold";
+    }
     return {
       outcome,
       grantsLife: rng() < CHEST_BLESSING_LIFE_CHANCE

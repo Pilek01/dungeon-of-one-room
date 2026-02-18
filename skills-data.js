@@ -12,7 +12,7 @@
       key: "X",
       name: "Shockwave",
       cooldown: 30,
-      desc: "2 Fury for full damage (60% without)"
+      desc: "Base 60% damage, +20% per Fury spent"
     },
     {
       id: "shield",
