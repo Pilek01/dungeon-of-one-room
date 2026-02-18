@@ -1186,6 +1186,7 @@
       chaosRollCounter: 0,
       hitFlash: 0,
       autoPotionCooldown: 0,
+      dashImmunityTurns: 0,
       furyBlessingTurns: 0,
       shrineAttackBonus: 0,
       shrineAttackTurns: 0,
@@ -2726,6 +2727,7 @@
       ),
       hitFlash: Math.max(0, Number(snapshot.player.hitFlash) || 0),
       autoPotionCooldown: Math.max(0, Number(snapshot.player.autoPotionCooldown) || 0),
+      dashImmunityTurns: Math.max(0, Number(snapshot.player.dashImmunityTurns) || 0),
       furyBlessingTurns: Math.max(0, Number(snapshot.player.furyBlessingTurns) || 0),
       shrineAttackBonus: Math.max(0, Number(snapshot.player.shrineAttackBonus) || 0),
       shrineAttackTurns: Math.max(0, Number(snapshot.player.shrineAttackTurns) || 0),
@@ -5207,6 +5209,19 @@
     }
   }
 
+  function isDashImmunityActive() {
+    return (state.player?.dashImmunityTurns || 0) > 0;
+  }
+
+  function tickDashImmunity() {
+    if (state.player.dashImmunityTurns > 0) {
+      state.player.dashImmunityTurns -= 1;
+      if (state.player.dashImmunityTurns < 0) {
+        state.player.dashImmunityTurns = 0;
+      }
+    }
+  }
+
   function applyTimedShrineStatBlessing({
     bonusKey,
     turnsKey,
@@ -5959,6 +5974,7 @@
     state.player.chaosRollCounter = 0;
     state.player.hitFlash = 0;
     state.player.autoPotionCooldown = 0;
+    state.player.dashImmunityTurns = 0;
     state.player.furyBlessingTurns = 0;
     state.player.shrineAttackBonus = 0;
     state.player.shrineAttackTurns = 0;
@@ -6544,6 +6560,9 @@
     if (isDebugGodModeActive()) {
       return;
     }
+    if (isDashImmunityActive()) {
+      return;
+    }
     if (blockDamageWithShield(source, attacker, rawDamage)) {
       return;
     }
@@ -6583,6 +6602,9 @@
   function applySpikeToPlayer() {
     if (!isSpikeAt(state.player.x, state.player.y) || state.phase !== "playing") return;
     if (isDebugGodModeActive()) {
+      return;
+    }
+    if (isDashImmunityActive()) {
       return;
     }
     // Iron Boots: immune to spikes
@@ -7896,6 +7918,7 @@
     tickSkillCooldowns();
     tickShieldChargeRegen();
     tickAutoPotionCooldown();
+    tickDashImmunity();
     tickFuryBlessing();
     tickBarrier();
     saveMetaProgress();

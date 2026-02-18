@@ -194,6 +194,7 @@
       setShake(1.9);
       spawnParticles(state.player.x, state.player.y, "#9fdcff", 9, 1.2);
       state.dashAimActive = false;
+      state.player.dashImmunityTurns = Math.max(1, Number(state.player.dashImmunityTurns) || 0);
       putSkillOnCooldown(skill.id);
       finalizeTurn();
       return true;
