@@ -26,7 +26,7 @@
     if (enemy.volleyAiming) {
       if (canLineShot) {
         enemy.volleyAiming = false;
-        enemy.volleyCooldown = 5;
+        enemy.volleyCooldown = 7;
         enemy.telegraphAge = 0;
         return { type: "execute_volley" };
       }

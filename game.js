@@ -76,6 +76,9 @@
   const ACOLYTE_SUPPORT_BUFF_ATTACK_MULT = 0.3;
   const ACOLYTE_SUPPORT_BUFF_TURNS = 3;
   const MAX_ACOLYTES_PER_ROOM = 2;
+  const SKELETON_MELEE_DAMAGE_MULTIPLIER = 0.7;
+  const SHIELD_RARE_CHARGE_MAX = 2;
+  const SHIELD_RARE_CHARGE_REGEN_TURNS = 20;
   const CHAOS_ORB_ROLL_INTERVAL = 10;
   const CHAOS_ORB_ATK_BONUS = 2 * COMBAT_SCALE; // +20 ATK
   const CHAOS_ORB_KILL_HEAL = 2 * COMBAT_SCALE; // +20 HP per kill
@@ -104,6 +107,24 @@
   const enemyDirector = typeof window !== "undefined" ? window.DungeonEnemyDirector : null;
   const enemyTactics = typeof window !== "undefined" ? window.DungeonEnemyTactics : null;
   const enemyDebugOverlay = typeof window !== "undefined" ? window.DungeonEnemyDebugOverlay : null;
+  const relicData = typeof window !== "undefined" ? window.DungeonRelicData : null;
+  const relicRuntimeApi = typeof window !== "undefined" ? window.DungeonRelicRuntime : null;
+  const campData = typeof window !== "undefined" ? window.DungeonCampData : null;
+  const campRuntimeApi = typeof window !== "undefined" ? window.DungeonCampRuntime : null;
+  const skillsData = typeof window !== "undefined" ? window.DungeonSkillsData : null;
+  const skillsActionsApiFactory = typeof window !== "undefined" ? window.DungeonSkillsActions : null;
+  const lootTablesApi = typeof window !== "undefined" ? window.DungeonLootTables : null;
+  if (
+    !relicData ||
+    !relicRuntimeApi ||
+    !campData ||
+    !campRuntimeApi ||
+    !skillsData ||
+    !skillsActionsApiFactory ||
+    !lootTablesApi
+  ) {
+    throw new Error("Missing gameplay data modules. Check script order in index.html.");
+  }
   const DEBUG_CHEATS_ENABLED = true;
   const DEBUG_MENU_TOGGLE_KEY = "f9";
   const DEBUG_AI_OVERLAY_TOGGLE_KEY = "f8";
@@ -142,6 +163,13 @@
   const SHRINE_SPRITESHEET_ROWS = 3;
   const SHRINE_FRAME_MS = 220;
   const SHRINE_DRAW_SCALE = 1.2;
+  const SHIELD_SPRITESHEET_PATH = "assets/sprite/shield/shield.png";
+  const SHIELD_SPRITESHEET_VERSION = "20260218_001";
+  const SHIELD_SPRITESHEET_COLS = 4;
+  const SHIELD_SPRITESHEET_ROWS = 1;
+  const SHIELD_FRAME_MS = 140;
+  const SHIELD_DRAW_SCALE = 1;
+  const SHIELD_DRAW_OPACITY = 0.7;
   const SPIKE_SPRITE_PATH = "assets/sprite/spike.png";
   const SPIKE_SPRITE_VERSION = "20260213_001";
   const SPIKE_DRAW_SCALE = 1.4;
@@ -149,6 +177,11 @@
   const TILESET_SPRITE_VERSION = "20260213_002";
   const TILESET_TILE_SIZE = 16;
   const TILESET_COLUMNS = 4;
+  const TORCH_SPRITESHEET_PATH = "assets/sprite/torch.png";
+  const TORCH_SPRITESHEET_VERSION = "20260218_001";
+  const TORCH_SPRITESHEET_COLS = 3;
+  const TORCH_SPRITESHEET_ROWS = 1;
+  const TORCH_FRAME_MS = 160;
   const TILESET_IDS = {
     wallCornerTL: 0,
     wallTop: 1,
@@ -504,205 +537,24 @@
     boss: "Boss"
   };
 
-  const CAMP_UPGRADES = [
-    {
-      id: "vitality",
-      key: "1",
-      name: "Vitality",
-      desc: "+10% max HP at run start",
-      baseCost: 20,
-      costGrowth: 1.4,
-      scale: 8,
-      max: 10
-    },
-    {
-      id: "blade",
-      key: "2",
-      name: "Sharpen Blade",
-      desc: "+10 ATK and +10% all flat ATK per level",
-      baseCost: 30,
-      costGrowth: 1.4,
-      scale: 10,
-      max: 15
-    },
-    {
-      id: "satchel",
-      key: "3",
-      name: "Potion Satchel",
-      desc: "+1 starting potion",
-      baseCost: 15,
-      scale: 11,
-      max: 6
-    },
-    {
-      id: "guard",
-      key: "4",
-      name: "Guard Plates",
-      desc: "+10 starting armor",
-      baseCost: 30,
-      costGrowth: 1.4,
-      scale: 12,
-      max: 15
-    },
-    {
-      id: "auto_potion",
-      key: "5",
-      name: "Auto Potion",
-      desc: "Auto-use potion at 25 HP or less (5-turn CD)",
-      baseCost: 600,
-      scale: 0,
-      max: 1,
-      currency: "camp_gold"
-    },
-    {
-      id: "potion_strength",
-      key: "6",
-      name: "Potion Strength",
-      desc: "+20 potion heal per level",
-      baseCost: 80,
-      scale: 60,
-      max: 5,
-      currency: "camp_gold"
-    },
-    {
-      id: "crit_chance",
-      key: "7",
-      name: "Crit Training",
-      desc: "+5% crit chance at run start",
-      baseCost: 100,
-      scale: 80,
-      max: 4,
-      currency: "camp_gold"
-    },
-    {
-      id: "treasure_sense",
-      key: "8",
-      name: "Treasure Sense",
-      desc: "+10% gold from chest drops",
-      baseCost: 80,
-      scale: 60,
-      max: 5,
-      currency: "camp_gold"
-    },
-    {
-      id: "emergency_stash",
-      key: "9",
-      name: "Emergency Stash",
-      desc: "-10% emergency extract gold loss",
-      baseCost: 120,
-      scale: 80,
-      max: 3,
-      currency: "camp_gold"
-    },
-    {
-      id: "bounty_contract",
-      key: "0",
-      name: "Bounty Contract",
-      desc: "+10% gold from enemy kills",
-      baseCost: 70,
-      scale: 55,
-      max: 5,
-      currency: "camp_gold"
-    }
-  ];
-
-  const RARITY = {
-    normal:    { label: "Normal",    color: "#b0b8c4", border: "#b0b8c422", bg: "#b0b8c408" },
-    rare:      { label: "Rare",      color: "#4d9fff", border: "#4d9fff55", bg: "#4d9fff14" },
-    epic:      { label: "Epic",      color: "#b44dff", border: "#b44dff66", bg: "#b44dff18" },
-    legendary: { label: "Legendary", color: "#ffb020", border: "#ffb02088", bg: "#ffb02022" }
-  };
-
-  const RELIC_RETURN_VALUE = {
-    normal: 50,
-    rare: 100,
-    epic: 200,
-    legendary: 400
-  };
-  const WARDEN_RELIC_DROP_TABLE = [
-    { minDepth: 25, dropChance: 0.60, rarityWeights: { normal: 0.35, rare: 0.30, epic: 0.22, legendary: 0.13 } },
-    { minDepth: 20, dropChance: 0.60, rarityWeights: { normal: 0.45, rare: 0.30, epic: 0.20, legendary: 0.05 } },
-    { minDepth: 15, dropChance: 0.55, rarityWeights: { normal: 0.60, rare: 0.30, epic: 0.10, legendary: 0 } },
-    { minDepth: 10, dropChance: 0.50, rarityWeights: { normal: 0.80, rare: 0.20, epic: 0, legendary: 0 } },
-    { minDepth: 5, dropChance: 0.45, rarityWeights: { normal: 1, rare: 0, epic: 0, legendary: 0 } }
-  ];
-  const WARDEN_RELIC_PITY_BONUS_PER_MISS = 0.15;
-  const WARDEN_RELIC_HARD_PITY_AFTER_MISSES = 3;
-
-  const RELICS = [
-    // Normal (6)
-    { id: "fang",      rarity: "normal", name: "Fang Charm",     desc: "+10 ATK" },
-    { id: "plating",   rarity: "normal", name: "Bone Plating",   desc: "+10 ARM" },
-    { id: "lucky",     rarity: "normal", name: "Lucky Coin",     desc: "+5% crit" },
-    { id: "flask",     rarity: "normal", name: "Spare Flask",    desc: "+1 potion" },
-    { id: "lifebloom", rarity: "normal", name: "Lifebloom Seed", desc: "+20 max HP and heal 20" },
-    { id: "ironboots", rarity: "normal", name: "Iron Boots",     desc: "Immune to spike damage" },
-    // Rare (8)
-    { id: "idol",      rarity: "rare", name: "Golden Idol",      desc: "+20% gold gain this run" },
-    { id: "thornmail", rarity: "rare", name: "Thorn Mail",       desc: "Melee attackers take 10 dmg" },
-    { id: "vampfang",  rarity: "rare", name: "Vampiric Fang",    desc: "Heal 10 HP every 3 kills" },
-    { id: "adrenal",   rarity: "rare", name: "Adrenaline Vial",  desc: "Max fury +2, start with 2 fury" },
-    { id: "scoutlens", rarity: "rare", name: "Scout's Lens",     desc: "Enemy HP bars visible" },
-    { id: "magnet",    rarity: "rare", name: "Magnetic Shard",   desc: "Auto-loot chests within 2 tiles" },
-    { id: "shrineward",rarity: "rare", name: "Shrine Ward",      desc: "Shrines always bless, never curse" },
-    { id: "merchfavor",rarity: "rare", name: "Merchant's Favor", desc: "Merchant prices halved" },
-    // Epic (6)
-    { id: "glasscannon", rarity: "epic", name: "Glass Cannon",  desc: "+40 ATK, -50 max HP" },
-    { id: "echostrike",  rarity: "epic", name: "Echo Strike",   desc: "30% chance to hit twice" },
-    { id: "phasecloak",  rarity: "epic", name: "Phase Cloak",   desc: "Auto-dodge every 5th turn" },
-    { id: "soulharvest", rarity: "epic", name: "Soul Harvest",  desc: "Every 10 kills: +10 max HP (cap +100)" },
-    { id: "burnblade",   rarity: "epic", name: "Burning Blade", desc: "Attacks ignite: 10 dmg/turn for 3 turns" },
-    { id: "frostamulet", rarity: "epic", name: "Frost Amulet",  desc: "Nearby non-elites 15% chance to freeze (boss/elite immune)" },
-    // Legendary (4)
-    { id: "chronoloop",  rarity: "legendary", name: "Chrono Loop",  desc: "Cheat death once per run: revive 50% HP, kill all enemies" },
-    { id: "voidreaper",  rarity: "legendary", name: "Void Reaper",  desc: "Crits execute <30% HP enemies. +15% crit. Crit kills +3 gold" },
-    { id: "titanheart",  rarity: "legendary", name: "Titan's Heart", desc: "+80 max HP, +20 ARM, -20 ATK. Potions heal +50%" },
-    { id: "chaosorb",    rarity: "legendary", name: "Chaos Orb",    desc: "Every 10 turns rolls 1 of 6 effects: +20 ATK, +20 HP/kill, +20 gold, 100 dmg random enemy, safe teleport, or nothing" }
-  ];
-
-  const SKILLS = [
-    {
-      id: "dash",
-      key: "Z",
-      name: "Dash",
-      cooldown: 10,
-      desc: "3-tile pierce + knockback"
-    },
-    {
-      id: "aoe",
-      key: "X",
-      name: "Shockwave",
-      cooldown: 30,
-      desc: "Hit all 8 nearby tiles"
-    },
-    {
-      id: "shield",
-      key: "C",
-      name: "Shield",
-      cooldown: 20,
-      desc: "Full immunity for 3 turns after cast"
-    }
-  ];
-
-  const SKILL_BY_ID = Object.fromEntries(SKILLS.map((skill) => [skill.id, skill]));
-  const DEFAULT_SKILL_COOLDOWNS = Object.fromEntries(SKILLS.map((skill) => [skill.id, 0]));
-  const MAX_SKILL_TIER = 2;
-  const SKILL_TIER_LABELS = ["Base", "Rare", "Epic"];
-  const DEFAULT_SKILL_TIERS = Object.fromEntries(SKILLS.map((skill) => [skill.id, 0]));
-  const MERCHANT_SKILL_UPGRADES = {
-    dash: [
-      { tier: 1, label: "Rare", cost: 800, desc: "+100% dash damage" },
-      { tier: 2, label: "Epic", cost: 1600, desc: "Range +1 and landing splash damage" }
-    ],
-    aoe: [
-      { tier: 1, label: "Rare", cost: 1000, desc: "Radius +1 tile" },
-      { tier: 2, label: "Epic", cost: 2000, desc: "Damage x2" }
-    ],
-    shield: [
-      { tier: 1, label: "Rare", cost: 300, desc: "Cast pushes nearby enemies" },
-      { tier: 2, label: "Epic", cost: 600, desc: "Reflect x2 and provoke attacks" }
-    ]
-  };
+  const { CAMP_UPGRADES } = campData;
+  const {
+    RARITY,
+    RELIC_RETURN_VALUE,
+    WARDEN_RELIC_DROP_TABLE,
+    WARDEN_RELIC_PITY_BONUS_PER_MISS,
+    WARDEN_RELIC_HARD_PITY_AFTER_MISSES,
+    RELICS
+  } = relicData;
+  const {
+    SKILLS,
+    SKILL_BY_ID,
+    DEFAULT_SKILL_COOLDOWNS,
+    MAX_SKILL_TIER,
+    SKILL_TIER_LABELS,
+    DEFAULT_SKILL_TIERS,
+    MERCHANT_SKILL_UPGRADES
+  } = skillsData;
 
   const canvas = document.getElementById("game");
   const ctx = canvas.getContext("2d");
@@ -729,6 +581,12 @@
   const chance = (p) => Math.random() < p;
   const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
   const sign = (n) => (n > 0 ? 1 : n < 0 ? -1 : 0);
+  const escapeHtmlAttr = (value) =>
+    String(value == null ? "" : value)
+      .replace(/&/g, "&amp;")
+      .replace(/"/g, "&quot;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;");
   const tileKey = (x, y) => `${x},${y}`;
   const inBounds = (x, y) => x >= 1 && x <= GRID_SIZE - 2 && y >= 1 && y <= GRID_SIZE - 2;
   const manhattan = (ax, ay, bx, by) => Math.abs(ax - bx) + Math.abs(ay - by);
@@ -1256,7 +1114,9 @@
       chaosRollCounter: 0,
       hitFlash: 0,
       autoPotionCooldown: 0,
-      furyBlessingTurns: 0
+      furyBlessingTurns: 0,
+      shieldCharges: 1,
+      shieldChargeRegenTurns: 0
     },
     portal: { x: 1, y: 1 },
     enemies: [],
@@ -1270,6 +1130,76 @@
     floatingTexts: [],
     log: []
   };
+
+  const relicRuntime = relicRuntimeApi.create({
+    state,
+    RELICS,
+    RARITY,
+    RELIC_RETURN_VALUE,
+    MAX_NORMAL_RELIC_STACK,
+    MAX_RELICS,
+    WARDEN_RELIC_DROP_TABLE,
+    WARDEN_RELIC_PITY_BONUS_PER_MISS,
+    WARDEN_RELIC_HARD_PITY_AFTER_MISSES,
+    MAX_DEPTH,
+    clamp,
+    persistWardenFirstDropDepths
+  });
+
+  const campRuntime = campRuntimeApi.create({
+    state,
+    isOnMerchant,
+    markUiDirty,
+    pushLog,
+    SKILL_BY_ID,
+    getSkillTier,
+    MAX_SKILL_TIER,
+    merchantSkillUpgradeCost,
+    persistCampProgress,
+    spawnParticles,
+    spawnShockwaveRing,
+    TILE,
+    getSkillTierLabel,
+    saveRunSnapshot,
+    grantPotion,
+    merchantPotionCost,
+    STORAGE_TOTAL_MERCHANT_POTS
+  });
+
+  const skillsActionsApi = skillsActionsApiFactory.create({
+    state,
+    SKILL_BY_ID,
+    getSkillTier,
+    getSkillCooldownRemaining,
+    pushLog,
+    sign,
+    scaledCombat,
+    MIN_EFFECTIVE_DAMAGE,
+    getEffectiveAdrenaline,
+    inBounds,
+    getChestAt,
+    startTween,
+    spawnDashTrail,
+    getEnemyAt,
+    triggerEnemyHitFlash,
+    spawnFloatingText,
+    spawnParticles,
+    killEnemy,
+    findDashKnockbackTile,
+    getFacingFromDelta,
+    applySpikeToEnemy,
+    TILE,
+    spawnShockwaveRing,
+    playSfx,
+    isOnShrine,
+    activateShrine,
+    setShake,
+    getShieldChargesInfo,
+    consumeShieldCharge,
+    putSkillOnCooldown,
+    finalizeTurn,
+    markUiDirty
+  });
 
   const audio = {
     ctx: null,
@@ -1327,6 +1257,11 @@
     ready: false,
     failed: false
   };
+  const shieldSprite = {
+    sheet: null,
+    ready: false,
+    failed: false
+  };
   const spikeSprite = {
     img: null,
     ready: false,
@@ -1334,6 +1269,11 @@
   };
   const tilesetSprite = {
     img: null,
+    ready: false,
+    failed: false
+  };
+  const torchSprite = {
+    sheet: null,
     ready: false,
     failed: false
   };
@@ -2537,7 +2477,9 @@
       ),
       hitFlash: Math.max(0, Number(snapshot.player.hitFlash) || 0),
       autoPotionCooldown: Math.max(0, Number(snapshot.player.autoPotionCooldown) || 0),
-      furyBlessingTurns: Math.max(0, Number(snapshot.player.furyBlessingTurns) || 0)
+      furyBlessingTurns: Math.max(0, Number(snapshot.player.furyBlessingTurns) || 0),
+      shieldCharges: Math.max(0, Number(snapshot.player.shieldCharges) || 0),
+      shieldChargeRegenTurns: Math.max(0, Number(snapshot.player.shieldChargeRegenTurns) || 0)
     };
     state.player.hp = clamp(state.player.hp, 1, state.player.maxHp);
     state.player.crit = clamp(state.player.crit, 0.01, CRIT_CHANCE_CAP);
@@ -2547,6 +2489,7 @@
       state.player.chaosKillHeal = 0;
       state.player.chaosRollCounter = 0;
     }
+    ensureShieldChargeState();
     snapVisual(state.player);
 
     state.portal = {
@@ -2764,6 +2707,24 @@
     img.src = `${SHRINE_SPRITESHEET_PATH}?v=${SHRINE_SPRITESHEET_VERSION}`;
   }
 
+  function loadShieldSprite() {
+    const img = new Image();
+    shieldSprite.sheet = img;
+    shieldSprite.ready = false;
+    shieldSprite.failed = false;
+    img.onload = () => {
+      shieldSprite.ready = true;
+      markUiDirty();
+    };
+    img.onerror = () => {
+      if (!shieldSprite.failed) {
+        shieldSprite.failed = true;
+        pushLog(`Shield sprite failed: ${SHIELD_SPRITESHEET_PATH}`, "bad");
+      }
+    };
+    img.src = `${SHIELD_SPRITESHEET_PATH}?v=${SHIELD_SPRITESHEET_VERSION}`;
+  }
+
   async function decodeMerchantGifFrames(gifUrl) {
     if (typeof window === "undefined") return false;
     if (typeof window.ImageDecoder !== "function") return false;
@@ -2840,6 +2801,24 @@
       }
     };
     img.src = `${TILESET_SPRITE_PATH}?v=${TILESET_SPRITE_VERSION}`;
+  }
+
+  function loadTorchSprite() {
+    const img = new Image();
+    torchSprite.sheet = img;
+    torchSprite.ready = false;
+    torchSprite.failed = false;
+    img.onload = () => {
+      torchSprite.ready = true;
+      markUiDirty();
+    };
+    img.onerror = () => {
+      if (!torchSprite.failed) {
+        torchSprite.failed = true;
+        pushLog(`Torch sprite failed: ${TORCH_SPRITESHEET_PATH}`, "bad");
+      }
+    };
+    img.src = `${TORCH_SPRITESHEET_PATH}?v=${TORCH_SPRITESHEET_VERSION}`;
   }
 
   function loadSlimeSprites() {
@@ -3667,6 +3646,51 @@
     state.campGold = Math.max(0, state.campGold - amount);
   }
 
+  function applyCampUpgradeInstantPreview(def, previousLevel, nextLevel) {
+    if (!def || nextLevel <= previousLevel) return;
+
+    if (def.id === "vitality") {
+      const oldMult = 1 + Math.max(0, previousLevel) * 0.1;
+      const newMult = 1 + Math.max(0, nextLevel) * 0.1;
+      const ratio = oldMult > 0 ? newMult / oldMult : 1;
+      const prevMaxHp = Math.max(1, Number(state.player.maxHp) || scaledCombat(BASE_PLAYER_HP));
+      const prevHp = Math.max(1, Number(state.player.hp) || prevMaxHp);
+      state.player.maxHp = Math.max(1, Math.round(prevMaxHp * ratio));
+      state.player.hp = clamp(Math.round(prevHp * ratio), 1, state.player.maxHp);
+      return;
+    }
+
+    if (def.id === "blade") {
+      const previousTotal = scaleFlatAttackByBlade(previousLevel * BLADE_ATTACK_FLAT_PER_LEVEL, previousLevel);
+      const nextTotal = scaleFlatAttackByBlade(nextLevel * BLADE_ATTACK_FLAT_PER_LEVEL, nextLevel);
+      const delta = nextTotal - previousTotal;
+      if (delta !== 0) {
+        state.player.attack += delta;
+      }
+      return;
+    }
+
+    if (def.id === "guard") {
+      state.player.armor += scaledCombat(nextLevel - previousLevel);
+      return;
+    }
+
+    if (def.id === "crit_chance") {
+      state.player.crit = clamp(
+        state.player.crit + (nextLevel - previousLevel) * 0.05,
+        0.01,
+        CRIT_CHANCE_CAP
+      );
+      return;
+    }
+
+    if (def.id === "satchel") {
+      const gain = nextLevel - previousLevel;
+      state.player.maxPotions = Math.max(1, state.player.maxPotions + gain);
+      state.player.potions = Math.min(state.player.maxPotions, state.player.potions + gain);
+    }
+  }
+
   function buyCampUpgrade(index) {
     if (state.phase !== "camp") return;
     const def = CAMP_UPGRADES[index];
@@ -3685,6 +3709,7 @@
     }
     spendCampUpgradeCurrency(def, cost);
     state.campUpgrades[def.id] = level + 1;
+    applyCampUpgradeInstantPreview(def, level, level + 1);
     persistCampProgress();
     pushLog(`${def.name} upgraded to level ${level + 1}.`, "good");
     saveRunSnapshot();
@@ -3760,122 +3785,27 @@
   }
 
   function getMerchantUpgradeWalletTotal() {
-    const runGold = Math.max(0, Number(state.player.gold) || 0);
-    const campGold = Math.max(0, Number(state.campGold) || 0);
-    return runGold + campGold;
+    return campRuntime.getMerchantUpgradeWalletTotal();
   }
 
   function spendMerchantUpgradeGold(amount) {
-    const cost = Math.max(0, Number(amount) || 0);
-    const fromRun = Math.min(Math.max(0, state.player.gold), cost);
-    state.player.gold -= fromRun;
-    const fromCamp = cost - fromRun;
-    if (fromCamp > 0) {
-      state.campGold = Math.max(0, state.campGold - fromCamp);
-    }
-    return { fromRun, fromCamp };
+    return campRuntime.spendMerchantUpgradeGold(amount);
   }
 
   function openMerchantMenu() {
-    if (state.phase !== "playing") return false;
-    if (state.roomType !== "merchant") return false;
-    if (!isOnMerchant()) return false;
-    state.merchantMenuOpen = true;
-    markUiDirty();
-    return true;
+    return campRuntime.openMerchantMenu();
   }
 
   function closeMerchantMenu(logText = "") {
-    if (!state.merchantMenuOpen) return false;
-    state.merchantMenuOpen = false;
-    if (logText) {
-      pushLog(logText);
-    } else {
-      markUiDirty();
-    }
-    return true;
+    return campRuntime.closeMerchantMenu(logText);
   }
 
   function tryBuySkillUpgradeFromMerchant(skillId) {
-    if (state.phase !== "playing") return false;
-    if (state.roomType !== "merchant") return false;
-    if (!isOnMerchant()) return false;
-
-    const skill = SKILL_BY_ID[skillId];
-    if (!skill) return false;
-
-    const tier = getSkillTier(skillId);
-    if (tier >= MAX_SKILL_TIER) {
-      pushLog(`Merchant: ${skill.name} is already Epic.`, "bad");
-      return false;
-    }
-
-    const cost = merchantSkillUpgradeCost(skillId);
-    if (cost == null) {
-      pushLog("Merchant has no upgrade offer.", "bad");
-      return false;
-    }
-    const wallet = getMerchantUpgradeWalletTotal();
-    if (wallet < cost) {
-      pushLog(`Merchant: need ${cost} gold for ${skill.name} upgrade (run + camp).`, "bad");
-      return false;
-    }
-
-    const payment = spendMerchantUpgradeGold(cost);
-    state.skillTiers[skillId] = tier + 1;
-    persistCampProgress();
-    spawnParticles(state.player.x, state.player.y, "#9fdcff", 13, 1.25);
-    spawnShockwaveRing(state.player.x, state.player.y, {
-      color: "#8fd9ff",
-      core: "#e9f6ff",
-      maxRadius: TILE * 2.7,
-      life: 300
-    });
-
-    const newLabel = getSkillTierLabel(skillId);
-    const nextCost = merchantSkillUpgradeCost(skillId);
-    pushLog(
-      `Merchant reforges ${skill.name} to ${newLabel}. -${cost} gold (${payment.fromRun} run, ${payment.fromCamp} camp).${
-        nextCost ? ` Next: ${nextCost}g.` : " Max tier reached."
-      }`,
-      "good"
-    );
-    saveRunSnapshot();
-    markUiDirty();
-    return true;
+    return campRuntime.tryBuySkillUpgradeFromMerchant(skillId);
   }
 
   function tryBuyPotionFromMerchant() {
-    if (state.phase !== "playing") return false;
-    if (state.roomType !== "merchant") return false;
-    if (!isOnMerchant()) return false;
-    if (state.player.potions >= state.player.maxPotions) {
-      pushLog(`Merchant: potion bag full (${state.player.potions}/${state.player.maxPotions}).`, "bad");
-      return false;
-    }
-    const cost = merchantPotionCost();
-    const wallet = getMerchantUpgradeWalletTotal();
-    if (wallet < cost) {
-      pushLog(`Merchant: need ${cost} gold for a potion (run + camp).`, "bad");
-      return false;
-    }
-    const payment = spendMerchantUpgradeGold(cost);
-    if (payment.fromCamp > 0) {
-      persistCampProgress();
-    }
-    state.merchantPotionsBought = (state.merchantPotionsBought || 0) + 1;
-    state.totalMerchantPots += 1;
-    localStorage.setItem(STORAGE_TOTAL_MERCHANT_POTS, String(state.totalMerchantPots));
-    grantPotion(1);
-    spawnParticles(state.player.x, state.player.y, "#ffd98a", 10, 1.15);
-    const nextCost = merchantPotionCost();
-    pushLog(
-      `Merchant deal: -${cost} gold (${payment.fromRun} run, ${payment.fromCamp} camp), +1 potion (${state.player.potions}/${state.player.maxPotions}). Next: ${nextCost}g.`,
-      "good"
-    );
-    saveRunSnapshot();
-    markUiDirty();
-    return true;
+    return campRuntime.tryBuyPotionFromMerchant();
   }
 
   function pickEliteAffix() {
@@ -3886,107 +3816,55 @@
   }
 
   function hasRelic(id) {
-    return state.relics.includes(id);
+    return relicRuntime.hasRelic(id);
   }
 
   function getRelicById(relicId) {
-    return RELICS.find((relic) => relic.id === relicId) || null;
+    return relicRuntime.getRelicById(relicId);
   }
 
   function isLegendaryRelic(relicId) {
-    const relic = getRelicById(relicId);
-    return Boolean(relic && relic.rarity === "legendary");
+    return relicRuntime.isLegendaryRelic(relicId);
   }
 
   function hasLegendaryRelic(exceptRelicId = null) {
-    return state.relics.some((relicId) => relicId !== exceptRelicId && isLegendaryRelic(relicId));
+    return relicRuntime.hasLegendaryRelic(exceptRelicId);
   }
 
   function getRelicStackCount(relicId) {
-    return state.relics.reduce((count, id) => count + (id === relicId ? 1 : 0), 0);
+    return relicRuntime.getRelicStackCount(relicId);
   }
 
   function isNormalRelicStackAtCap(relicId) {
-    const relic = getRelicById(relicId);
-    if (!relic || relic.rarity !== "normal") return false;
-    return getRelicStackCount(relicId) >= MAX_NORMAL_RELIC_STACK;
+    return relicRuntime.isNormalRelicStackAtCap(relicId);
   }
 
   function getRelicInventoryGroups() {
-    const groups = [];
-    const indexById = new Map();
-    for (const relicId of state.relics) {
-      const index = indexById.get(relicId);
-      if (index == null) {
-        groups.push({ relicId, count: 1 });
-        indexById.set(relicId, groups.length - 1);
-      } else {
-        groups[index].count += 1;
-      }
-    }
-    return groups;
+    return relicRuntime.getRelicInventoryGroups();
   }
 
   function getRelicInventoryGroupsFromList(relicIds) {
-    const groups = [];
-    const indexById = new Map();
-    for (const relicId of relicIds || []) {
-      if (typeof relicId !== "string") continue;
-      const index = indexById.get(relicId);
-      if (index == null) {
-        groups.push({ relicId, count: 1 });
-        indexById.set(relicId, groups.length - 1);
-      } else {
-        groups[index].count += 1;
-      }
-    }
-    return groups;
+    return relicRuntime.getRelicInventoryGroupsFromList(relicIds);
   }
 
   function getRelicExchangeBreakdown(relicIds) {
-    const groups = getRelicInventoryGroupsFromList(relicIds);
-    const rows = [];
-    for (const group of groups) {
-      const relic = getRelicById(group.relicId);
-      if (!relic) continue;
-      const rarity = RELIC_RETURN_VALUE[relic.rarity] != null ? relic.rarity : "normal";
-      const unitValue = RELIC_RETURN_VALUE[rarity];
-      rows.push({
-        relicId: relic.id,
-        name: relic.name,
-        rarity,
-        rarityInfo: RARITY[rarity] || RARITY.normal,
-        count: group.count,
-        unitValue,
-        totalValue: unitValue * group.count
-      });
-    }
-    rows.sort((a, b) =>
-      b.totalValue - a.totalValue ||
-      b.unitValue - a.unitValue ||
-      a.name.localeCompare(b.name)
-    );
-    return rows;
+    return relicRuntime.getRelicExchangeBreakdown(relicIds);
   }
 
   function relicHotkeyForIndex(index) {
-    return index === 9 ? "0" : String(index + 1);
+    return relicRuntime.relicHotkeyForIndex(index);
   }
 
   function getRelicDiscardHotkeyHint() {
-    return MAX_RELICS >= 10 ? "1-0" : `1-${MAX_RELICS}`;
+    return relicRuntime.getRelicDiscardHotkeyHint();
   }
 
   function getRelicDraftSkipIndex() {
-    const draftSize = Math.max(0, state.relicDraft?.length || 0);
-    // Default drafts are 3 choices -> key 4 for skip.
-    // If mutators add more choices, fallback to key 0.
-    if (draftSize <= 3) return 3;
-    return 9;
+    return relicRuntime.getRelicDraftSkipIndex();
   }
 
   function getRelicDraftSkipHotkey() {
-    return relicHotkeyForIndex(getRelicDraftSkipIndex());
+    return relicRuntime.getRelicDraftSkipHotkey();
   }
 
   function applyRelicEffects(relicId, options = {}) {
@@ -4239,115 +4117,55 @@
   }
 
   function getRelicReturnSummary(relicIds) {
-    const summary = {
-      count: 0,
-      total: 0,
-      byRarity: {
-        normal: 0,
-        rare: 0,
-        epic: 0,
-        legendary: 0
-      }
-    };
-
-    for (const relicId of relicIds || []) {
-      const relic = getRelicById(relicId);
-      if (!relic) continue;
-      const rarity = RELIC_RETURN_VALUE[relic.rarity] != null ? relic.rarity : "normal";
-      summary.count += 1;
-      summary.byRarity[rarity] += 1;
-      summary.total += RELIC_RETURN_VALUE[rarity];
-    }
-
-    return summary;
+    return relicRuntime.getRelicReturnSummary(relicIds);
   }
 
   function getExtractPromptCarriedRelics(prompt = state.extractRelicPrompt) {
-    if (!prompt || !Array.isArray(prompt.carriedRelics)) return [];
-    return prompt.carriedRelics.filter((id) => typeof id === "string");
+    return relicRuntime.getExtractPromptCarriedRelics(prompt);
   }
 
   function sanitizeExtractRelicSelectionIndices(indices, maxCount) {
-    const cap = Math.max(0, Number(maxCount) || 0);
-    const sanitized = [];
-    const seen = new Set();
-    for (const rawIndex of indices || []) {
-      const index = Math.floor(Number(rawIndex));
-      if (!Number.isFinite(index) || index < 0 || index >= cap || seen.has(index)) continue;
-      seen.add(index);
-      sanitized.push(index);
-    }
-    sanitized.sort((a, b) => a - b);
-    return sanitized;
+    return relicRuntime.sanitizeExtractRelicSelectionIndices(indices, maxCount);
   }
 
   function getExtractPromptSelectedIndices(prompt = state.extractRelicPrompt) {
-    const carriedRelics = getExtractPromptCarriedRelics(prompt);
-    return sanitizeExtractRelicSelectionIndices(prompt?.selectedIndices, carriedRelics.length);
+    return relicRuntime.getExtractPromptSelectedIndices(prompt);
   }
 
   function getExtractPromptSelectedRelics(prompt = state.extractRelicPrompt) {
-    const carriedRelics = getExtractPromptCarriedRelics(prompt);
-    const selectedIndices = getExtractPromptSelectedIndices(prompt);
-    return selectedIndices
-      .map((index) => carriedRelics[index])
-      .filter((id) => typeof id === "string");
+    return relicRuntime.getExtractPromptSelectedRelics(prompt);
   }
 
   function getExtractPromptSelectedSummary(prompt = state.extractRelicPrompt) {
-    return getRelicReturnSummary(getExtractPromptSelectedRelics(prompt));
+    return relicRuntime.getExtractPromptSelectedSummary(prompt);
   }
 
   function getWardenRelicTableEntry(depth = state.depth) {
-    const safeDepth = Math.max(0, Number(depth) || 0);
-    for (const entry of WARDEN_RELIC_DROP_TABLE) {
-      if (safeDepth >= entry.minDepth) return entry;
-    }
-    return null;
+    return relicRuntime.getWardenRelicTableEntry(depth);
   }
 
   function getWardenRelicDropChance(depth = state.depth) {
-    const entry = getWardenRelicTableEntry(depth);
-    return entry ? entry.dropChance : 0;
+    return relicRuntime.getWardenRelicDropChance(depth);
   }
 
   function getWardenRelicDropRoll(depth = state.depth) {
-    const baseChance = getWardenRelicDropChance(depth);
-    const missStreak = Math.max(0, Number(state.wardenRelicMissStreak) || 0);
-    const hardPity = missStreak >= WARDEN_RELIC_HARD_PITY_AFTER_MISSES;
-    const chanceValue = hardPity
-      ? 1
-      : clamp(baseChance + missStreak * WARDEN_RELIC_PITY_BONUS_PER_MISS, 0, 0.95);
-    return { chance: chanceValue, missStreak, hardPity };
+    return relicRuntime.getWardenRelicDropRoll(depth);
   }
 
   function getWardenDepthKey(depth = state.depth) {
-    const safeDepth = Math.max(0, Math.floor(Number(depth) || 0));
-    return String(safeDepth);
+    return relicRuntime.getWardenDepthKey(depth);
   }
 
   function hasUsedWardenFirstDropAtDepth(depth = state.depth) {
-    const key = getWardenDepthKey(depth);
-    return Boolean(state.wardenFirstDropDepths && state.wardenFirstDropDepths[key]);
+    return relicRuntime.hasUsedWardenFirstDropAtDepth(depth);
   }
 
   function markWardenFirstDropUsedAtDepth(depth = state.depth) {
-    const safeDepth = Math.max(0, Math.floor(Number(depth) || 0));
-    if (safeDepth <= 0) return;
-    const key = getWardenDepthKey(safeDepth);
-    if (!state.wardenFirstDropDepths || typeof state.wardenFirstDropDepths !== "object") {
-      state.wardenFirstDropDepths = {};
-    }
-    if (state.wardenFirstDropDepths[key]) return;
-    state.wardenFirstDropDepths[key] = true;
-    persistWardenFirstDropDepths();
+    return relicRuntime.markWardenFirstDropUsedAtDepth(depth);
   }
 
   function shouldForceWardenFirstDrop(depth = state.depth) {
-    const safeDepth = Math.max(0, Math.floor(Number(depth) || 0));
-    if (safeDepth <= 0 || safeDepth >= MAX_DEPTH) return false;
-    if (safeDepth % 5 !== 0) return false;
-    return !hasUsedWardenFirstDropAtDepth(safeDepth);
+    return relicRuntime.shouldForceWardenFirstDrop(depth);
   }
 
   function getUnlockedWardenRelicRarities(depth = state.depth) {
@@ -4876,6 +4694,81 @@
         state.skillCooldowns[id] -= 1;
       }
     }
+  }
+
+  function getShieldChargeMaxByTier(tier = getSkillTier("shield")) {
+    return tier >= 1 ? SHIELD_RARE_CHARGE_MAX : 1;
+  }
+
+  function ensureShieldChargeState() {
+    const tier = getSkillTier("shield");
+    const maxCharges = getShieldChargeMaxByTier(tier);
+    if (tier < 1) {
+      state.player.shieldCharges = 1;
+      state.player.shieldChargeRegenTurns = 0;
+      return { enabled: false, max: 1, charges: 1, regenTurns: 0 };
+    }
+    if (!Number.isFinite(state.player.shieldCharges)) {
+      state.player.shieldCharges = maxCharges;
+    }
+    if (!Number.isFinite(state.player.shieldChargeRegenTurns)) {
+      state.player.shieldChargeRegenTurns = 0;
+    }
+    state.player.shieldCharges = clamp(Math.floor(state.player.shieldCharges), 0, maxCharges);
+    state.player.shieldChargeRegenTurns = clamp(
+      Math.floor(state.player.shieldChargeRegenTurns),
+      0,
+      SHIELD_RARE_CHARGE_REGEN_TURNS
+    );
+    if (state.player.shieldCharges >= maxCharges) {
+      state.player.shieldChargeRegenTurns = 0;
+    } else if (state.player.shieldChargeRegenTurns <= 0) {
+      state.player.shieldChargeRegenTurns = SHIELD_RARE_CHARGE_REGEN_TURNS;
+    }
+    return {
+      enabled: true,
+      max: maxCharges,
+      charges: state.player.shieldCharges,
+      regenTurns: state.player.shieldChargeRegenTurns
+    };
+  }
+
+  function getShieldChargesInfo() {
+    return ensureShieldChargeState();
+  }
+
+  function consumeShieldCharge() {
+    const info = ensureShieldChargeState();
+    if (!info.enabled) return true;
+    if (info.charges <= 0) return false;
+    state.player.shieldCharges = Math.max(0, state.player.shieldCharges - 1);
+    if (
+      state.player.shieldCharges < info.max &&
+      state.player.shieldChargeRegenTurns <= 0
+    ) {
+      state.player.shieldChargeRegenTurns = SHIELD_RARE_CHARGE_REGEN_TURNS;
+    }
+    return true;
+  }
+
+  function tickShieldChargeRegen() {
+    const info = ensureShieldChargeState();
+    if (!info.enabled) return;
+    if (state.player.shieldCharges >= info.max) {
+      state.player.shieldChargeRegenTurns = 0;
+      return;
+    }
+    if (state.player.shieldChargeRegenTurns > 0) {
+      state.player.shieldChargeRegenTurns -= 1;
+    }
+    if (state.player.shieldChargeRegenTurns > 0) return;
+    state.player.shieldCharges = Math.min(info.max, state.player.shieldCharges + 1);
+    if (state.player.shieldCharges < info.max) {
+      state.player.shieldChargeRegenTurns = SHIELD_RARE_CHARGE_REGEN_TURNS;
+    } else {
+      state.player.shieldChargeRegenTurns = 0;
+    }
+    pushLog(`Shield charge restored (${state.player.shieldCharges}/${info.max}).`, "good");
   }
 
   function tickBarrier() {
@@ -5631,6 +5524,8 @@
     state.player.hitFlash = 0;
     state.player.autoPotionCooldown = 0;
     state.player.furyBlessingTurns = 0;
+    state.player.shieldCharges = 1;
+    state.player.shieldChargeRegenTurns = 0;
     state.skillCooldowns = sanitizeSkillCooldowns({});
     stopDeathTrack(true);
 
@@ -5642,6 +5537,7 @@
       }
       normalizeRelicInventory();
     }
+    ensureShieldChargeState();
     const carriedChestAttack = applySessionChestAttackBonusToRun();
     const carriedChestArmor = applySessionChestArmorBonusToRun();
     const carriedChestHealth = applySessionChestHealthBonusToRun();
@@ -5853,9 +5749,13 @@
     if (!isOnShrine()) return;
     state.shrine.used = true;
     playSfx("shrine");
-    const blessing = hasRelic("shrineward") ? true : chance(0.85);
-    if (blessing) {
-      if (chance(SHRINE_FURY_BLESSING_CHANCE)) {
+    const shrineOutcome = lootTablesApi.rollShrineOutcome({
+      hasShrineWard: hasRelic("shrineward"),
+      furyChance: SHRINE_FURY_BLESSING_CHANCE,
+      rng: Math.random
+    });
+    if (shrineOutcome.type === "blessing") {
+      if (shrineOutcome.blessing === "fury") {
         const duration = randInt(100, 200);
         state.player.adrenaline = Math.min(state.player.maxAdrenaline, state.player.adrenaline + 2);
         state.player.furyBlessingTurns = Math.max(state.player.furyBlessingTurns || 0, duration);
@@ -5863,22 +5763,19 @@
           `Shrine blessing: Fury +2 now, Fury Blessing active for ${state.player.furyBlessingTurns} turns.`,
           "good"
         );
+      } else if (shrineOutcome.blessing === "max_hp") {
+        state.player.maxHp += scaledCombat(1);
+        state.player.hp = Math.min(state.player.maxHp, state.player.hp + scaledCombat(2));
+        pushLog("Shrine blessing: +10 max HP and heal 20.", "good");
+      } else if (shrineOutcome.blessing === "attack") {
+        state.player.attack += scaledCombat(1);
+        pushLog("Shrine blessing: +10 ATK.", "good");
+      } else if (shrineOutcome.blessing === "armor") {
+        state.player.armor += scaledCombat(1);
+        pushLog("Shrine blessing: +10 ARM.", "good");
       } else {
-        const roll = randInt(1, 4);
-        if (roll === 1) {
-          state.player.maxHp += scaledCombat(1);
-          state.player.hp = Math.min(state.player.maxHp, state.player.hp + scaledCombat(2));
-          pushLog("Shrine blessing: +10 max HP and heal 20.", "good");
-        } else if (roll === 2) {
-          state.player.attack += scaledCombat(1);
-          pushLog("Shrine blessing: +10 ATK.", "good");
-        } else if (roll === 3) {
-          state.player.armor += scaledCombat(1);
-          pushLog("Shrine blessing: +10 ARM.", "good");
-        } else {
-          grantPotion(1);
-          pushLog("Shrine blessing: +1 potion.", "good");
-        }
+        grantPotion(1);
+        pushLog("Shrine blessing: +1 potion.", "good");
       }
     } else {
       if (blockDamageWithShield("shrine curse")) {
@@ -6346,15 +6243,15 @@
   function openChest(chest) {
     chest.opened = true;
     playSfx("chest");
-    const roll = Math.random();
     const inTreasureRoom = state.roomType === "treasure";
-    const table = inTreasureRoom
-      ? { health: 0.14, healing: 0.28, attack: 0.46, armor: 0.58, potion: 0.72, gold: 0.97 }
-      : { health: 0.18, healing: 0.38, attack: 0.62, armor: 0.78, potion: 0.9, gold: 0.97 };
-    if (chance(0.005)) {
+    const chestOutcome = lootTablesApi.rollChestOutcome({
+      inTreasureRoom,
+      rng: Math.random
+    });
+    if (chestOutcome.grantsLife) {
       grantLife("Chest blessing");
     }
-    if (roll < table.health) {
+    if (chestOutcome.outcome === "health") {
       if (state.runMods.chestHealPenalty >= 999) {
         // Alchemist: chests don't heal, give gold instead
         const fallbackGold = grantGold(randInt(2, 5));
@@ -6362,21 +6259,21 @@
       } else {
         handleChestHealthUpgrade(inTreasureRoom);
       }
-    } else if (roll < table.healing) {
+    } else if (chestOutcome.outcome === "healing") {
       if (state.runMods.chestHealPenalty >= 999) {
         const fallbackGold = grantGold(randInt(2, 5));
         pushLog(`Chest: no heal (Alchemist), +${fallbackGold} gold.`);
       } else {
         handleChestHealingDrop();
       }
-    } else if (roll < table.attack) {
+    } else if (chestOutcome.outcome === "attack") {
       handleChestAttackUpgrade(inTreasureRoom);
-    } else if (roll < table.armor) {
+    } else if (chestOutcome.outcome === "armor") {
       handleChestArmorUpgrade(inTreasureRoom);
-    } else if (roll < table.potion) {
+    } else if (chestOutcome.outcome === "potion") {
       grantPotion(1);
       pushLog("Chest: +1 potion.", "good");
-    } else if (roll < table.gold) {
+    } else if (chestOutcome.outcome === "gold") {
       let raw = randInt(4, 8);
       if (inTreasureRoom) {
         raw = Math.round(raw * 6);
@@ -6487,281 +6384,27 @@
   }
 
   function cancelDashAim(logText = "Dash canceled.") {
-    if (!state.dashAimActive) return false;
-    state.dashAimActive = false;
-    if (logText) {
-      pushLog(logText);
-    } else {
-      markUiDirty();
-    }
-    return true;
+    return skillsActionsApi.cancelDashAim(logText);
   }
 
   function tryArmDashSkill() {
-    const skill = SKILL_BY_ID.dash;
-    const remaining = getSkillCooldownRemaining(skill.id);
-    if (remaining > 0) {
-      pushLog(`${skill.name} cooldown: ${remaining} turns.`, "bad");
-      return false;
-    }
-    if (state.dashAimActive) {
-      cancelDashAim();
-      return true;
-    }
-    state.dashAimActive = true;
-    pushLog("Dash armed. Choose direction (WASD/Arrows). Esc cancels.", "good");
-    return true;
+    return skillsActionsApi.tryArmDashSkill();
   }
 
   function tryUseDashSkill(forcedDx = null, forcedDy = null) {
-    const skill = SKILL_BY_ID.dash;
-    const dashTier = getSkillTier(skill.id);
-    const remaining = getSkillCooldownRemaining(skill.id);
-    if (remaining > 0) {
-      state.dashAimActive = false;
-      pushLog(`${skill.name} cooldown: ${remaining} turns.`, "bad");
-      return false;
-    }
-
-    const rawDx = forcedDx == null ? state.player.lastMoveX : forcedDx;
-    const rawDy = forcedDy == null ? state.player.lastMoveY : forcedDy;
-    const dx = sign(rawDx || 0);
-    const dy = sign(rawDy || 0);
-    if (dx === 0 && dy === 0) {
-      pushLog("Dash needs a direction.", "bad");
-      return false;
-    }
-
-    let damage = state.player.attack + scaledCombat(1) + Math.floor(getEffectiveAdrenaline() / 2);
-    if (dashTier >= 1) {
-      damage = Math.max(MIN_EFFECTIVE_DAMAGE, damage * 2);
-    }
-    const maxDashTiles = dashTier >= 2 ? 4 : 3;
-    const hitSet = new Set();
-    const path = [];
-    let currentX = state.player.x;
-    let currentY = state.player.y;
-    for (let i = 0; i < maxDashTiles; i += 1) {
-      const nx = currentX + dx;
-      const ny = currentY + dy;
-      if (!inBounds(nx, ny)) break;
-      if (getChestAt(nx, ny)) break;
-      path.push({ x: nx, y: ny });
-      currentX = nx;
-      currentY = ny;
-    }
-
-    if (path.length === 0) {
-      pushLog("Dash blocked.", "bad");
-      return false;
-    }
-
-    const fromX = state.player.x;
-    const fromY = state.player.y;
-    startTween(state.player);
-    for (const step of path) {
-      spawnDashTrail(state.player.x, state.player.y, step.x, step.y);
-      state.player.x = step.x;
-      state.player.y = step.y;
-
-      const enemy = getEnemyAt(step.x, step.y);
-      if (enemy && state.enemies.includes(enemy) && !hitSet.has(enemy)) {
-        enemy.hp -= damage;
-        triggerEnemyHitFlash(enemy);
-        spawnFloatingText(enemy.x, enemy.y, `-${damage}`, "#f4f7ff");
-        spawnParticles(enemy.x, enemy.y, "#8ee9ff", 11, 1.3);
-        hitSet.add(enemy);
-        if (enemy.hp <= 0) {
-          killEnemy(enemy, "dash strike");
-        }
-      }
-    }
-    state.player.lastMoveX = dx;
-    state.player.lastMoveY = dy;
-
-    let knockbacks = 0;
-    let splashHits = 0;
-    let splashKills = 0;
-    const landingEnemy = getEnemyAt(state.player.x, state.player.y);
-    if (landingEnemy && state.enemies.includes(landingEnemy)) {
-      const knockTile = findDashKnockbackTile(landingEnemy, dx, dy);
-      if (knockTile) {
-        startTween(landingEnemy);
-        landingEnemy.x = knockTile.x;
-        landingEnemy.y = knockTile.y;
-        landingEnemy.facing = getFacingFromDelta(knockTile.x - state.player.x, knockTile.y - state.player.y, landingEnemy.facing);
-        spawnParticles(knockTile.x, knockTile.y, "#8ed8ff", 8, 1.15);
-        applySpikeToEnemy(landingEnemy);
-        knockbacks += 1;
-      }
-    }
-
-    if (dashTier >= 2) {
-      const splashDamage = Math.max(MIN_EFFECTIVE_DAMAGE, Math.floor(damage * 0.6));
-      for (const enemy of [...state.enemies]) {
-        if (hitSet.has(enemy)) continue;
-        if (Math.abs(enemy.x - state.player.x) > 1 || Math.abs(enemy.y - state.player.y) > 1) continue;
-        enemy.hp -= splashDamage;
-        triggerEnemyHitFlash(enemy);
-        spawnFloatingText(enemy.x, enemy.y, `-${splashDamage}`, "#dff0ff");
-        splashHits += 1;
-        spawnParticles(enemy.x, enemy.y, "#7fc9ff", 8, 1.2);
-        if (enemy.hp <= 0) {
-          killEnemy(enemy, "dash splash");
-          splashKills += 1;
-        }
-      }
-      if (splashHits > 0) {
-        spawnShockwaveRing(state.player.x, state.player.y, {
-          color: "#8fcaff",
-          core: "#e7f6ff",
-          maxRadius: TILE * 1.8,
-          life: 220
-        });
-      }
-    }
-
-    const travelTiles = Math.max(Math.abs(state.player.x - fromX), Math.abs(state.player.y - fromY));
-    const hits = hitSet.size;
-    const kills = [...hitSet].filter((enemy) => !state.enemies.includes(enemy)).length;
-    if (hits > 0 || knockbacks > 0 || splashHits > 0) {
-      pushLog(
-        `Dash surges ${travelTiles} tiles: ${hits} hit${hits !== 1 ? "s" : ""}, ${kills} kill${kills !== 1 ? "s" : ""}${knockbacks > 0 ? `, ${knockbacks} knockback` : ""}${splashHits > 0 ? `, splash ${splashHits} hit/${splashKills} kill` : ""}.`,
-        "good"
-      );
-    }
-
-    playSfx("hit");
-    if (isOnShrine()) {
-      activateShrine();
-    }
-    setShake(1.9);
-    spawnParticles(state.player.x, state.player.y, "#9fdcff", 9, 1.2);
-    state.dashAimActive = false;
-    putSkillOnCooldown(skill.id);
-    finalizeTurn();
-    return true;
+    return skillsActionsApi.tryUseDashSkill(forcedDx, forcedDy);
   }
 
   function tryUseAoeSkill() {
-    const skill = SKILL_BY_ID.aoe;
-    const aoeTier = getSkillTier(skill.id);
-    const remaining = getSkillCooldownRemaining(skill.id);
-    if (remaining > 0) {
-      pushLog(`${skill.name} cooldown: ${remaining} turns.`, "bad");
-      return false;
-    }
-
-    const radius = aoeTier >= 1 ? 2 : 1;
-    const targets = state.enemies.filter(
-      (enemy) => Math.abs(enemy.x - state.player.x) <= radius && Math.abs(enemy.y - state.player.y) <= radius
-    );
-    if (targets.length === 0) {
-      pushLog("Shockwave has no targets nearby.", "bad");
-      return false;
-    }
-
-    let damage = Math.max(MIN_EFFECTIVE_DAMAGE, state.player.attack + Math.floor(getEffectiveAdrenaline() / 2));
-    if (aoeTier >= 2) {
-      damage *= 2;
-    }
-    let kills = 0;
-    for (const enemy of targets) {
-      if (!state.enemies.includes(enemy)) continue;
-      enemy.hp -= damage;
-      triggerEnemyHitFlash(enemy);
-      spawnFloatingText(enemy.x, enemy.y, `-${damage}`, "#ffe7c8");
-      spawnParticles(enemy.x, enemy.y, "#ffd8a1", 8, 1.25);
-      if (enemy.hp <= 0) {
-        killEnemy(enemy, "shockwave");
-        kills += 1;
-      }
-    }
-
-    spawnShockwaveRing(state.player.x, state.player.y, {
-      color: aoeTier >= 2 ? "#ffc87d" : "#f2cb92",
-      core: aoeTier >= 2 ? "#fff5e6" : "#fff0cf",
-      maxRadius: radius >= 2 ? TILE * 3.8 : TILE * 2.4,
-      life: radius >= 2 ? 420 : 340
-    });
-    if (radius >= 2) {
-      spawnShockwaveRing(state.player.x, state.player.y, {
-        color: "#ffd8a9",
-        core: "#fff6db",
-        maxRadius: TILE * 2.8,
-        life: 340
-      });
-    }
-    playSfx("hit");
-    setShake(2.3);
-    spawnParticles(state.player.x, state.player.y, "#f6c48f", 12, 1.3);
-    pushLog(
-      `Shockwave (R${radius}) deals ${damage} to ${targets.length} target${targets.length > 1 ? "s" : ""}${
-        kills > 0 ? ` (${kills} kill${kills > 1 ? "s" : ""})` : ""
-      }.`,
-      "good"
-    );
-    putSkillOnCooldown(skill.id);
-    finalizeTurn();
-    return true;
+    return skillsActionsApi.tryUseAoeSkill();
   }
 
   function tryUseShieldSkill() {
-    const skill = SKILL_BY_ID.shield;
-    const shieldTier = getSkillTier(skill.id);
-    const remaining = getSkillCooldownRemaining(skill.id);
-    if (remaining > 0) {
-      pushLog(`${skill.name} cooldown: ${remaining} turns.`, "bad");
-      return false;
-    }
-    if (state.player.barrierTurns > 0) {
-      pushLog("Shield is already active.", "bad");
-      return false;
-    }
-
-    state.player.barrierArmor = 0;
-    // +1 offset because barrier ticks down in the same finalized turn.
-    state.player.barrierTurns = 4;
-    spawnParticles(state.player.x, state.player.y, "#b4d3ff", 12, 1.15);
-    let pushed = 0;
-    if (shieldTier >= 1) {
-      const nearbyEnemies = [...state.enemies].filter(
-        (enemy) => Math.abs(enemy.x - state.player.x) <= 1 && Math.abs(enemy.y - state.player.y) <= 1
-      );
-      for (const enemy of nearbyEnemies) {
-        if (!state.enemies.includes(enemy)) continue;
-        const awayDx = sign(enemy.x - state.player.x);
-        const awayDy = sign(enemy.y - state.player.y);
-        if (awayDx === 0 && awayDy === 0) continue;
-        const knockTile = findDashKnockbackTile(enemy, awayDx, awayDy);
-        if (!knockTile) continue;
-        startTween(enemy);
-        enemy.x = knockTile.x;
-        enemy.y = knockTile.y;
-        enemy.facing = getFacingFromDelta(knockTile.x - state.player.x, knockTile.y - state.player.y, enemy.facing);
-        spawnParticles(knockTile.x, knockTile.y, "#b5d4ff", 7, 1.05);
-        applySpikeToEnemy(enemy);
-        pushed += 1;
-      }
-    }
-    setShake(1.2);
-    pushLog(
-      `Shield up: full immunity for 3 turns after cast${
-        shieldTier >= 1 ? `, knockback ${pushed}` : ""
-      }${shieldTier >= 2 ? ", reflect x2 + taunt active" : ""}.`,
-      "good"
-    );
-    putSkillOnCooldown(skill.id);
-    finalizeTurn();
-    return true;
+    return skillsActionsApi.tryUseShieldSkill();
   }
 
   function tryUseSkillByKey(key) {
-    if (state.phase !== "playing") return false;
-    if (key === "z") return tryArmDashSkill();
-    if (key === "x") return tryUseAoeSkill();
-    if (key === "c") return tryUseShieldSkill();
-    return false;
+    return skillsActionsApi.tryUseSkillByKey(key);
   }
 
   function attackEnemy(enemy) {
@@ -7030,7 +6673,10 @@
 
   function enemyMelee(enemy) {
     const damage = enemy.type === "skeleton"
-      ? Math.max(MIN_EFFECTIVE_DAMAGE, getEnemyEffectiveAttack(enemy) - scaledCombat(1))
+      ? Math.max(
+        MIN_EFFECTIVE_DAMAGE,
+        Math.round(getEnemyEffectiveAttack(enemy) * SKELETON_MELEE_DAMAGE_MULTIPLIER)
+      )
       : getEnemyEffectiveAttack(enemy);
     applyDamageToPlayer(damage, enemy.name, enemy);
     if (enemy.vampiric && state.phase === "playing") {
@@ -7428,7 +7074,15 @@
       enemy.cooldown -= 1;
     }
 
-    const aiPlan = buildEnemyDirectorPlan(enemy, currentDistance);
+    const epicShieldTauntActive = isEpicShieldReflectActive();
+    let aiPlan = buildEnemyDirectorPlan(enemy, currentDistance);
+    if (epicShieldTauntActive) {
+      aiPlan = {
+        ...aiPlan,
+        intent: "chase",
+        moveTo: null
+      };
+    }
     enemy.intent = typeof aiPlan.intent === "string" ? aiPlan.intent : "chase";
 
     if (enemy.type === "warden") {
@@ -7498,10 +7152,10 @@
           enemy.facing = getFacingFromDelta(state.player.x - enemy.x, state.player.y - enemy.y, enemy.facing);
           enemyRanged(enemy, {
             source: `${enemy.name} bone volley`,
-            damageMultiplier: 1.4,
+            damageMultiplier: 1.2,
             color: "#d4e8ff"
           });
-          enemy.cooldown = 2;
+          enemy.cooldown = 4;
           pushLog("Skeleton unleashes bone volley.", "bad");
           return;
         }
@@ -7510,7 +7164,7 @@
         if (canLineShot) {
           enemy.facing = getFacingFromDelta(state.player.x - enemy.x, state.player.y - enemy.y, enemy.facing);
           enemyRanged(enemy);
-          enemy.cooldown = 2;
+          enemy.cooldown = 4;
           return;
         }
         enemy.aiming = false;
@@ -7520,7 +7174,7 @@
         if (isEpicShieldReflectActive()) {
           enemy.facing = getFacingFromDelta(state.player.x - enemy.x, state.player.y - enemy.y, enemy.facing);
           enemyRanged(enemy);
-          enemy.cooldown = 2;
+          enemy.cooldown = 4;
           return;
         }
         enemy.aiming = true;
@@ -7733,6 +7387,7 @@
     }
 
     tickSkillCooldowns();
+    tickShieldChargeRegen();
     tickAutoPotionCooldown();
     tickFuryBlessing();
     tickBarrier();
@@ -8075,29 +7730,6 @@
       return;
     }
 
-    if (state.phase === "camp") {
-      hudEl.innerHTML = [
-        `<div class="statline"><span>Player</span><strong>${state.playerName || "Not set"}</strong></div>`,
-        `<div class="statline"><span>Lives</span><strong>${state.lives}/${MAX_LIVES}</strong></div>`,
-        `<div class="statline"><span>Camp Gold</span><strong>${state.campGold}</strong></div>`,
-        `<div class="statline"><span>Highscore</span><strong>${state.highscore}</strong></div>`,
-        `<div class="statline"><span>Best Gold</span><strong>${state.bestGold}</strong></div>`,
-        `<div class="statline"><span>Deaths</span><strong>${state.deaths}</strong></div>`,
-        `<div class="statline"><span>Carried Relics</span><strong>${state.relics.length}/${MAX_RELICS}</strong></div>`,
-        `<div class="statline"><span>Vitality</span><strong>${getCampUpgradeLevel("vitality")}</strong></div>`,
-        `<div class="statline"><span>Blade</span><strong>${getCampUpgradeLevel("blade")}</strong></div>`,
-        `<div class="statline"><span>Satchel</span><strong>${getCampUpgradeLevel("satchel")}</strong></div>`,
-        `<div class="statline"><span>Guard</span><strong>${getCampUpgradeLevel("guard")}</strong></div>`,
-        `<div class="statline"><span>Auto Potion</span><strong>${getCampUpgradeLevel("auto_potion")}/1</strong></div>`,
-        `<div class="statline"><span>Potion Str</span><strong>${getCampUpgradeLevel("potion_strength")}/5</strong></div>`,
-        `<div class="statline"><span>Crit Train</span><strong>${getCampUpgradeLevel("crit_chance")}/4</strong></div>`,
-        `<div class="statline"><span>Treasure Sense</span><strong>${getCampUpgradeLevel("treasure_sense")}/5</strong></div>`,
-        `<div class="statline"><span>Emergency Stash</span><strong>${getCampUpgradeLevel("emergency_stash")}/3</strong></div>`,
-        `<div class="statline"><span>Bounty Contract</span><strong>${getCampUpgradeLevel("bounty_contract")}/5</strong></div>`
-      ].join("");
-      return;
-    }
-
     const chaosAtkBonus = Math.max(0, Number(state.player.chaosAtkBonus) || 0);
     const chaosRollCounter = clamp(
       Math.max(0, Number(state.player.chaosRollCounter) || 0),
@@ -8107,51 +7739,89 @@
     const chaosTurnsLeft = hasRelic("chaosorb")
       ? CHAOS_ORB_ROLL_INTERVAL - chaosRollCounter
       : 0;
+    const armorCapPct = Math.round(ARMOR_DAMAGE_REDUCTION_CAP * 100);
+    const statRow = (label, value, tooltip = "") =>
+      `<div class="statline"><span${tooltip ? ` title="${escapeHtmlAttr(tooltip)}"` : ""}>${label}</span><strong>${value}</strong></div>`;
+
+    const combatRows = [
+      statRow("Player", state.playerName || "Not set", "Your current nickname used for leaderboard entries."),
+      statRow("Lives", `${state.lives}/${MAX_LIVES}`, "Lives are lost on death. At 0 lives, meta progress resets."),
+      statRow("HP", `${state.player.hp}/${state.player.maxHp}`, "Current and maximum health. Reaching 0 HP kills the run."),
+      statRow(
+        "ATK",
+        `${state.player.attack}${chaosAtkBonus > 0 ? ` (+${chaosAtkBonus})` : ""}`,
+        "Base damage for attacks and many skills before crits and modifiers."
+      ),
+      statRow(
+        "ARM",
+        state.player.armor,
+        `Flat damage reduction on incoming hits. Armor cannot reduce more than ${armorCapPct}% of one hit.`
+      ),
+      statRow(
+        "Crit",
+        `${Math.round(state.player.crit * 100)}%`,
+        `Chance to deal critical damage (x2). Crit chance cap is ${Math.round(CRIT_CHANCE_CAP * 100)}%.`
+      )
+    ];
+
+    const runMetaRows = [
+      statRow("Depth", state.depth, "Current dungeon depth in this run."),
+      statRow("Depth Highscore", state.highscore, "Best depth reached across all runs."),
+      statRow("Run Score", calculateScore(getRunMaxDepth(), getRunGoldEarned()), "Combined performance score for the current run."),
+      statRow("Room", ROOM_TYPE_LABELS[state.roomType], "Current room type."),
+      statRow("Turn", state.turn, "Total turns played in current run."),
+      statRow("Camp Gold", state.campGold, "Persistent currency for camp upgrades."),
+      statRow("Deaths", state.deaths, "Total deaths across your profile.")
+    ];
+    if (hasRelic("chaosorb")) {
+      runMetaRows.push(
+        statRow("Chaos Roll", `${chaosTurnsLeft}T`, "Turns left until the next Chaos Orb roll.")
+      );
+    }
+    if (state.player.chaosKillHeal > 0) {
+      runMetaRows.push(
+        statRow("Chaos Heal", `+${state.player.chaosKillHeal}/kill`, "Chaos Orb effect: heal this amount on each kill.")
+      );
+    }
+    if (state.player.furyBlessingTurns > 0) {
+      runMetaRows.push(
+        statRow("Fury Bless", `${state.player.furyBlessingTurns}T`, "Remaining turns of Fury Blessing.")
+      );
+    }
+
+    const relicGroups = getRelicInventoryGroups();
+    const relicItems = relicGroups.map(({ relicId, count }) => {
+      const rel = RELICS.find((r) => r.id === relicId);
+      if (!rel) return "";
+      const ri = RARITY[rel.rarity] || RARITY.normal;
+      const chronoSpent = relicId === "chronoloop" && state.player.chronoUsedThisRun;
+      const relicColor = chronoSpent ? "#ff5f5f" : ri.color;
+      const stackSuffix = count > 1
+        ? rel.rarity === "normal"
+          ? ` x${count}/${MAX_NORMAL_RELIC_STACK}`
+          : ` x${count}`
+        : "";
+      const tooltip = `${rel.desc} | Rarity: ${ri.label}${count > 1 ? ` | Stack: ${count}` : ""}`;
+      return `<div class="hud-relic-item" style="color:${relicColor}" title="${escapeHtmlAttr(tooltip)}">${rel.name}${stackSuffix}</div>`;
+    }).filter(Boolean);
+
+    const section = (bodyHtml) => [
+      `<div class="hud-section">`,
+      bodyHtml,
+      `</div>`
+    ].join("");
+
+    const relicBody = [
+      statRow("Relics", `${state.relics.length}/${MAX_RELICS}`, "Equipped relics for the current run."),
+      relicItems.length > 0
+        ? relicItems.join("")
+        : `<div class="hud-relic-empty">No relics</div>`
+    ].join("");
 
     hudEl.innerHTML = [
-      `<div class="statline"><span>Player</span><strong>${state.playerName || "Not set"}</strong></div>`,
-      `<div class="statline"><span>HP</span><strong>${state.player.hp}/${state.player.maxHp}</strong></div>`,
-      `<div class="statline"><span>Lives</span><strong>${state.lives}/${MAX_LIVES}</strong></div>`,
-      `<div class="statline"><span>ATK</span><strong>${state.player.attack}${chaosAtkBonus > 0 ? ` (+${chaosAtkBonus})` : ""}</strong></div>`,
-      `<div class="statline"><span>ARM</span><strong>${state.player.armor}</strong></div>`,
-      `<div class="statline"><span>Crit</span><strong>${Math.round(state.player.crit * 100)}%</strong></div>`,
-      `<div class="statline"><span>Potions</span><strong>${state.player.potions}/${state.player.maxPotions}</strong></div>`,
-      `<div class="statline"><span>Gold</span><strong>${state.player.gold}</strong></div>`,
-      `<div class="statline"><span>Run Gold+</span><strong>${getRunGoldEarned()}</strong></div>`,
-      `<div class="statline"><span>Score</span><strong>${calculateScore(getRunMaxDepth(), getRunGoldEarned())}</strong></div>`,
-      `<div class="statline"><span>Depth</span><strong>${state.depth}</strong></div>`,
-      `<div class="statline"><span>Highscore</span><strong>${state.highscore}</strong></div>`,
-      `<div class="statline"><span>Best Gold</span><strong>${state.bestGold}</strong></div>`,
-      `<div class="statline"><span>Deaths</span><strong>${state.deaths}</strong></div>`,
-      `<div class="statline"><span>Camp Gold</span><strong>${state.campGold}</strong></div>`,
-      `<div class="statline"><span>Enemies</span><strong>${state.enemies.length}</strong></div>`,
-      `<div class="statline"><span>Turn</span><strong>${state.turn}</strong></div>`,
-      `<div class="statline"><span>Fury</span><strong>${getEffectiveAdrenaline()}/${getEffectiveMaxAdrenaline()}</strong></div>`,
-      hasRelic("chaosorb")
-        ? `<div class="statline"><span>Chaos Roll</span><strong>${chaosTurnsLeft}T</strong></div>`
-        : "",
-      state.player.chaosKillHeal > 0
-        ? `<div class="statline"><span>Chaos Heal</span><strong>+${state.player.chaosKillHeal}/kill</strong></div>`
-        : "",
-      state.player.furyBlessingTurns > 0
-        ? `<div class="statline"><span>Fury Bless</span><strong>${state.player.furyBlessingTurns}T</strong></div>`
-        : "",
-      `<div class="statline"><span>Room</span><strong>${ROOM_TYPE_LABELS[state.roomType]}</strong></div>`,
-      `<div class="statline"><span>Relics</span><strong>${state.relics.length}/${MAX_RELICS}</strong></div>`,
-      ...getRelicInventoryGroups().map(({ relicId, count }) => {
-        const rel = RELICS.find((r) => r.id === relicId);
-        if (!rel) return "";
-        const ri = RARITY[rel.rarity] || RARITY.normal;
-        const chronoSpent = relicId === "chronoloop" && state.player.chronoUsedThisRun;
-        const relicColor = chronoSpent ? "#ff5f5f" : ri.color;
-        const relicLabel = chronoSpent ? "SPENT" : ri.label;
-        const stackSuffix = count > 1
-          ? rel.rarity === "normal"
-            ? ` x${count}/${MAX_NORMAL_RELIC_STACK}`
-            : ` x${count}`
-          : "";
-        return `<div class="statline"><span style="color:${relicColor}">${rel.name}${stackSuffix}</span><strong style="color:${relicColor}">${relicLabel}</strong></div>`;
-      })
+      section(combatRows.join("")),
+      section(runMetaRows.join("")),
+      section(relicBody)
     ].join("");
   }
 
@@ -8167,12 +7837,21 @@
 
     let title = "";
     let subtitle = "";
+    let leftMetaTop = "";
+    let leftMetaTopTooltip = "";
+    let leftMetaBottom = "";
+    let rightMetaTop = "";
+    let rightMetaBottom = "";
 
     if (state.phase === "playing" || state.phase === "relic") {
       const roomLabel = ROOM_TYPE_LABELS[state.roomType] || "Room";
       const bossStatus = state.bossRoom ? "BOSS NOW" : `BOSS IN ${getRoomsUntilBoss()}`;
       title = `Depth ${state.depth}`;
       subtitle = `${roomLabel} Room - ${bossStatus}`;
+      leftMetaTop = `Fury ${getEffectiveAdrenaline()}/${getEffectiveMaxAdrenaline()}`;
+      leftMetaTopTooltip = `Fury is gained mainly by killing enemies (+1 per kill). Some relics and shrine blessings can grant extra Fury. Fury boosts attack damage and powers certain skills.`;
+      rightMetaTop = `Run Gold ${state.player.gold}`;
+      rightMetaBottom = `Potions ${state.player.potions}/${state.player.maxPotions}`;
     } else if (state.phase === "won") {
       const victoryDepth = Math.max(0, Number(state.finalVictoryPrompt?.depth) || MAX_DEPTH);
       title = "VICTORY";
@@ -8190,8 +7869,18 @@
     }
 
     depthBadgeEl.innerHTML = [
+      `<div class="depth-badge-meta">`,
+      `<div class="depth-meta-column depth-meta-left">`,
+      `<span class="depth-meta"${leftMetaTopTooltip ? ` title="${escapeHtmlAttr(leftMetaTopTooltip)}"` : ""}>${leftMetaTop || "&nbsp;"}</span>`,
+      `<span class="depth-meta">${leftMetaBottom || "&nbsp;"}</span>`,
+      `</div>`,
+      `<div class="depth-meta-column depth-meta-right">`,
+      `<span class="depth-meta">${rightMetaTop || "&nbsp;"}</span>`,
+      `<span class="depth-meta">${rightMetaBottom || "&nbsp;"}</span>`,
+      `</div>`,
+      `</div>`,
       `<strong>${title}</strong>`,
-      `<span>${subtitle}</span>`
+      `<span class="depth-subtitle">${subtitle}</span>`
     ].join("");
 
     const inBossRoom = state.phase === "playing" && state.bossRoom;
@@ -8208,13 +7897,13 @@
       return "3-tile pierce + knockback";
     }
     if (skillId === "aoe") {
-      if (tier >= 2) return "Radius 2, damage x2";
-      if (tier >= 1) return "Radius 2 shockwave";
-      return "Hit all 8 nearby tiles";
+      if (tier >= 2) return "2 Fury full dmg, knockback";
+      if (tier >= 1) return "2 Fury full dmg, knockback";
+      return "2 Fury full damage (60% without Fury)";
     }
     if (skillId === "shield") {
-      if (tier >= 2) return "3-turn immunity, knockback + reflect x2 (taunt)";
-      if (tier >= 1) return "3-turn immunity + cast knockback";
+      if (tier >= 2) return "3-turn immunity, 2 charges (1 returns every 20 turns), smart knockback, reflect x2 + taunt";
+      if (tier >= 1) return "3-turn immunity, 2 charges (1 returns every 20 turns), smart knockback";
       return "Full immunity for 3 turns after cast";
     }
     return "";
@@ -8234,23 +7923,40 @@
       const cd = getSkillCooldownRemaining(skill.id);
       const tierLabel = getSkillTierLabel(skill.id);
       const tier = getSkillTier(skill.id);
+      const shieldCharges = skill.id === "shield" ? getShieldChargesInfo() : null;
       const tierClass = tier >= 2 ? "tier-epic" : tier >= 1 ? "tier-rare" : "tier-base";
       const dashArmed = inRun && skill.id === "dash" && state.dashAimActive;
-      const ready = inRun && cd <= 0;
+      const ready = inRun && (
+        skill.id === "shield" && shieldCharges?.enabled
+          ? shieldCharges.charges > 0
+          : cd <= 0
+      );
       const stateClass = dashArmed
         ? "armed"
         : ready
           ? "ready"
-          : cd > 0
+          : (skill.id === "shield" && shieldCharges?.enabled && shieldCharges.charges <= 0) || cd > 0
             ? "cooling"
             : "idle";
       const cardClass = `skill-card ${stateClass} ${tierClass}`;
-      const status = dashArmed ? "ARMED" : cd > 0 ? `${cd}T` : inRun ? "READY" : "IDLE";
+      const status = dashArmed
+        ? "ARMED"
+        : skill.id === "shield" && shieldCharges?.enabled
+          ? shieldCharges.charges > 0
+            ? `CH ${shieldCharges.charges}/${shieldCharges.max}`
+            : `${shieldCharges.regenTurns}T`
+          : cd > 0
+            ? `${cd}T`
+            : inRun
+              ? "READY"
+              : "IDLE";
       const detail =
         dashArmed
           ? "Choose direction (WASD/Arrows)"
           : skill.id === "shield" && state.player.barrierTurns > 0
           ? `Immunity (${state.player.barrierTurns}T)`
+          : skill.id === "shield" && shieldCharges?.enabled
+          ? `Charges ${shieldCharges.charges}/${shieldCharges.max}${shieldCharges.charges < shieldCharges.max ? ` (+1 in ${shieldCharges.regenTurns}T)` : ""}`
           : getSkillTierEffectsSummary(skill.id);
       return [
         `<div class="${cardClass}" data-skill="${skill.id}">`,
@@ -9096,6 +8802,33 @@
 
   function drawTilesetTile(tileId, px, py) {
     if (!tilesetSprite.ready || !tilesetSprite.img) return false;
+    if (tileId === TILESET_IDS.floorBonfire && torchSprite.ready && torchSprite.sheet) {
+      // Keep a stable floor base under torch frames in case spritesheet has transparency.
+      const baseTileId = TILESET_IDS.floorA;
+      const baseSx = (baseTileId % TILESET_COLUMNS) * TILESET_TILE_SIZE;
+      const baseSy = Math.floor(baseTileId / TILESET_COLUMNS) * TILESET_TILE_SIZE;
+      ctx.drawImage(
+        tilesetSprite.img,
+        baseSx, baseSy, TILESET_TILE_SIZE, TILESET_TILE_SIZE,
+        px, py, TILE, TILE
+      );
+
+      const sheet = torchSprite.sheet;
+      const frameW = Math.floor((sheet.naturalWidth || 0) / TORCH_SPRITESHEET_COLS);
+      const frameH = Math.floor((sheet.naturalHeight || 0) / TORCH_SPRITESHEET_ROWS);
+      if (frameW > 0 && frameH > 0) {
+        const frameCount = TORCH_SPRITESHEET_COLS * TORCH_SPRITESHEET_ROWS;
+        const frameIndex = Math.floor(state.playerAnimTimer / TORCH_FRAME_MS) % frameCount;
+        const sxTorch = (frameIndex % TORCH_SPRITESHEET_COLS) * frameW;
+        const syTorch = Math.floor(frameIndex / TORCH_SPRITESHEET_COLS) * frameH;
+        ctx.drawImage(
+          sheet,
+          sxTorch, syTorch, frameW, frameH,
+          px, py, TILE, TILE
+        );
+        return true;
+      }
+    }
     const sx = (tileId % TILESET_COLUMNS) * TILESET_TILE_SIZE;
     const sy = Math.floor(tileId / TILESET_COLUMNS) * TILESET_TILE_SIZE;
     ctx.drawImage(
@@ -9191,8 +8924,6 @@
     const px = chest.x * TILE;
     const py = chest.y * TILE;
     if (chest.opened) {
-      ctx.fillStyle = "#3a2d1d";
-      ctx.fillRect(px + 3, py + 8, 10, 4);
       return;
     }
     if (chestSprite.ready && chestSprite.img) {
@@ -10032,15 +9763,34 @@
     if (!isShieldActive()) return;
     const px = visualX(state.player);
     const py = visualY(state.player);
-    const pulse = (Math.sin(state.portalPulse * 4.2) + 1) * 0.5;
+    if (shieldSprite.ready && shieldSprite.sheet) {
+      const sheet = shieldSprite.sheet;
+      const frameW = Math.floor((sheet.naturalWidth || 0) / SHIELD_SPRITESHEET_COLS);
+      const frameH = Math.floor((sheet.naturalHeight || 0) / SHIELD_SPRITESHEET_ROWS);
+      if (frameW > 0 && frameH > 0) {
+        const frameCount = SHIELD_SPRITESHEET_COLS * SHIELD_SPRITESHEET_ROWS;
+        const time = Math.max(0, state.playerAnimTimer);
+        const frameIndex = Math.floor(time / SHIELD_FRAME_MS) % frameCount;
+        const sx = (frameIndex % SHIELD_SPRITESHEET_COLS) * frameW;
+        const sy = Math.floor(frameIndex / SHIELD_SPRITESHEET_COLS) * frameH;
+        const drawSize = Math.round(TILE * SHIELD_DRAW_SCALE);
+        const drawX = Math.round(px + (TILE - drawSize) / 2);
+        const drawY = Math.round(py + (TILE - drawSize) / 2);
+        ctx.save();
+        ctx.globalAlpha = SHIELD_DRAW_OPACITY;
+        ctx.drawImage(sheet, sx, sy, frameW, frameH, drawX, drawY, drawSize, drawSize);
+        ctx.restore();
+        return;
+      }
+    }
 
+    const pulse = (Math.sin(state.portalPulse * 4.2) + 1) * 0.5;
     ctx.globalAlpha = 0.25 + pulse * 0.3;
     ctx.fillStyle = "#9ecbff";
     ctx.fillRect(px + 1, py + 1, 14, 1);
     ctx.fillRect(px + 1, py + 14, 14, 1);
     ctx.fillRect(px + 1, py + 1, 1, 14);
     ctx.fillRect(px + 14, py + 1, 1, 14);
-
     if (pulse > 0.45) {
       ctx.globalAlpha = 0.45 + pulse * 0.35;
       ctx.fillStyle = "#d9ecff";
@@ -11016,8 +10766,10 @@
   loadPortalSprite();
   loadMerchantSprite();
   loadShrineSprite();
+  loadShieldSprite();
   loadSpikeSprite();
   loadTilesetSprite();
+  loadTorchSprite();
   loadPlayerSprites();
   loadSlimeSprites();
   loadSkeletonSprites();

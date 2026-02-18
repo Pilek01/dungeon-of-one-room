@@ -1,5 +1,5 @@
 ﻿// Single source of truth for current build version.
-window.GAME_VERSION = "v0.1.27";
+window.GAME_VERSION = "v0.2.00";
 
 // Optional online leaderboard endpoint.
 // Example:
