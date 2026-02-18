@@ -162,6 +162,7 @@
     normal: "assets/Dungeon Descent.mp3",
     deep: "assets/Haunted High Score.mp3",
     camp: "assets/camp.mp3",
+    campLastLife: "assets/One light left on the wall,.mp3",
     boss: "assets/Dungeon Descent2.mp3"
   };
   const SPLASH_TRACK = "assets/Blue glow on my face.mp3";
@@ -1285,6 +1286,7 @@
     bgmNormal: null,
     bgmDeep: null,
     bgmCamp: null,
+    bgmCampLastLife: null,
     bgmBoss: null,
     currentBgm: null,
     bgmReady: false,
@@ -3296,10 +3298,12 @@
     audio.bgmNormal = createBgmTrack(MUSIC_TRACKS.normal, 0.36);
     audio.bgmDeep = createBgmTrack(MUSIC_TRACKS.deep, 0.38);
     audio.bgmCamp = createBgmTrack(MUSIC_TRACKS.camp, 0.34);
+    audio.bgmCampLastLife = createBgmTrack(MUSIC_TRACKS.campLastLife, 0.34);
     audio.bgmBoss = createBgmTrack(MUSIC_TRACKS.boss, 0.4);
     audio.bgmNormal.load();
     audio.bgmDeep.load();
     audio.bgmCamp.load();
+    audio.bgmCampLastLife.load();
     audio.bgmBoss.load();
     audio.bgmReady = true;
   }
@@ -3316,6 +3320,7 @@
     pauseBgmTrack(audio.bgmNormal, resetTime);
     pauseBgmTrack(audio.bgmDeep, resetTime);
     pauseBgmTrack(audio.bgmCamp, resetTime);
+    pauseBgmTrack(audio.bgmCampLastLife, resetTime);
     pauseBgmTrack(audio.bgmBoss, resetTime);
     audio.currentBgm = null;
   }
@@ -3349,13 +3354,13 @@
     stopSplashTrack(false);
 
     const target = state.phase === "camp"
-      ? audio.bgmCamp
+      ? ((state.lives <= 1 && audio.bgmCampLastLife) ? audio.bgmCampLastLife : audio.bgmCamp)
       : state.bossRoom
         ? audio.bgmBoss
         : state.depth >= DEEP_THEME_START_DEPTH
           ? audio.bgmDeep
           : audio.bgmNormal;
-    const allTracks = [audio.bgmNormal, audio.bgmDeep, audio.bgmCamp, audio.bgmBoss];
+    const allTracks = [audio.bgmNormal, audio.bgmDeep, audio.bgmCamp, audio.bgmCampLastLife, audio.bgmBoss];
     for (const track of allTracks) {
       if (!track || track === target) continue;
       pauseBgmTrack(track, true);
