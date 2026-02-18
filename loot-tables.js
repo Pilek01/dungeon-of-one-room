@@ -41,21 +41,18 @@
 
   function rollShrineOutcome({
     hasShrineWard = false,
-    furyChance = 0.1,
     rng = Math.random
   } = {}) {
     const blessing = hasShrineWard || rng() < SHRINE_BLESSING_CHANCE;
     if (!blessing) {
       return { type: "curse" };
     }
-    if (rng() < furyChance) {
-      return { type: "blessing", blessing: "fury" };
-    }
-    const roll = Math.floor(rng() * 4) + 1;
+    const roll = Math.floor(rng() * 5) + 1;
     if (roll === 1) return { type: "blessing", blessing: "max_hp" };
     if (roll === 2) return { type: "blessing", blessing: "attack" };
     if (roll === 3) return { type: "blessing", blessing: "armor" };
-    return { type: "blessing", blessing: "potion" };
+    if (roll === 4) return { type: "blessing", blessing: "potion" };
+    return { type: "blessing", blessing: "fury" };
   }
 
   window.DungeonLootTables = {

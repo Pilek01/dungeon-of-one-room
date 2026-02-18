@@ -80,7 +80,10 @@
   const SPIKE_DAMAGE_BASE = Math.round(1.5 * COMBAT_SCALE); // 15
   const SPIKE_DAMAGE_STEP_DEPTH = 10;
   const SPIKE_DAMAGE_PER_STEP = Math.round(1.5 * COMBAT_SCALE); // +15 each step
-  const SHRINE_FURY_BLESSING_CHANCE = 0.1;
+  const SHRINE_BLESSING_MIN_TURNS = 100;
+  const SHRINE_BLESSING_MAX_TURNS = 200;
+  const SHRINE_BLESSING_DEPTH_SCALE_TIER_ONE = 20;
+  const SHRINE_BLESSING_DEPTH_SCALE_TIER_TWO = 30;
   const ENEMY_LATE_SCALE_START_DEPTH = 20;
   const ENEMY_LATE_SCALE_STEP_DEPTH = 10;
   const ENEMY_LATE_SCALE_PER_STEP = 0.2;
@@ -94,7 +97,8 @@
   const SKELETON_MELEE_DAMAGE_MULTIPLIER = 0.7;
   const GOLDEN_IDOL_GOLD_MULTIPLIER = 0.15;
   const THORNMAIL_REFLECT_MULTIPLIER = 0.2;
-  const VAMPFANG_LIFESTEAL_MULTIPLIER = 0.2;
+  const VAMPFANG_LIFESTEAL_MULTIPLIER = 0.1;
+  const VAMPFANG_MAX_HEAL_PER_HIT = 2 * COMBAT_SCALE;
   const PHASE_CLOAK_DODGE_COOLDOWN_TURNS = 3;
   const SOUL_HARVEST_KILL_INTERVAL = 30;
   const BURNING_BLADE_DOT_DAMAGE = 3 * COMBAT_SCALE;
@@ -157,6 +161,7 @@
   const MUSIC_TRACKS = {
     normal: "assets/Dungeon Descent.mp3",
     deep: "assets/Haunted High Score.mp3",
+    camp: "assets/camp.mp3",
     boss: "assets/Dungeon Descent2.mp3"
   };
   const SPLASH_TRACK = "assets/Blue glow on my face.mp3";
@@ -636,6 +641,34 @@
 
   function getEffectiveMaxAdrenaline() {
     return Math.max(0, Number(state.player.maxAdrenaline) || 0) + getFuryBlessingBonus();
+  }
+
+  function rollShrineBlessingTurns() {
+    return randInt(SHRINE_BLESSING_MIN_TURNS, SHRINE_BLESSING_MAX_TURNS);
+  }
+
+  function getShrineBlessingDepthMultiplier(depth = state.depth) {
+    const safeDepth = Math.max(0, Number(depth) || 0);
+    if (safeDepth >= SHRINE_BLESSING_DEPTH_SCALE_TIER_TWO) return 3;
+    if (safeDepth >= SHRINE_BLESSING_DEPTH_SCALE_TIER_ONE) return 2;
+    return 1;
+  }
+
+  function getShrineMaxHpBlessingBonus(depth = state.depth) {
+    return scaledCombat(1) * getShrineBlessingDepthMultiplier(depth);
+  }
+
+  function getShrineArmorBlessingBonus(depth = state.depth) {
+    return scaledCombat(1) * getShrineBlessingDepthMultiplier(depth);
+  }
+
+  function isShrineBlessed() {
+    return (
+      (state.player?.furyBlessingTurns || 0) > 0 ||
+      (state.player?.shrineAttackTurns || 0) > 0 ||
+      (state.player?.shrineArmorTurns || 0) > 0 ||
+      (state.player?.shrineMaxHpTurns || 0) > 0
+    );
   }
 
   function getEnemyLateDepthMultiplier(depth = state.depth) {
@@ -1153,6 +1186,12 @@
       hitFlash: 0,
       autoPotionCooldown: 0,
       furyBlessingTurns: 0,
+      shrineAttackBonus: 0,
+      shrineAttackTurns: 0,
+      shrineArmorBonus: 0,
+      shrineArmorTurns: 0,
+      shrineMaxHpBonus: 0,
+      shrineMaxHpTurns: 0,
       shieldCharges: 1,
       shieldChargeRegenTurns: 0
     },
@@ -1245,6 +1284,7 @@
     master: null,
     bgmNormal: null,
     bgmDeep: null,
+    bgmCamp: null,
     bgmBoss: null,
     currentBgm: null,
     bgmReady: false,
@@ -2685,6 +2725,12 @@
       hitFlash: Math.max(0, Number(snapshot.player.hitFlash) || 0),
       autoPotionCooldown: Math.max(0, Number(snapshot.player.autoPotionCooldown) || 0),
       furyBlessingTurns: Math.max(0, Number(snapshot.player.furyBlessingTurns) || 0),
+      shrineAttackBonus: Math.max(0, Number(snapshot.player.shrineAttackBonus) || 0),
+      shrineAttackTurns: Math.max(0, Number(snapshot.player.shrineAttackTurns) || 0),
+      shrineArmorBonus: Math.max(0, Number(snapshot.player.shrineArmorBonus) || 0),
+      shrineArmorTurns: Math.max(0, Number(snapshot.player.shrineArmorTurns) || 0),
+      shrineMaxHpBonus: Math.max(0, Number(snapshot.player.shrineMaxHpBonus) || 0),
+      shrineMaxHpTurns: Math.max(0, Number(snapshot.player.shrineMaxHpTurns) || 0),
       shieldCharges: Math.max(0, Number(snapshot.player.shieldCharges) || 0),
       shieldChargeRegenTurns: Math.max(0, Number(snapshot.player.shieldChargeRegenTurns) || 0)
     };
@@ -3249,9 +3295,11 @@
     if (audio.bgmReady) return;
     audio.bgmNormal = createBgmTrack(MUSIC_TRACKS.normal, 0.36);
     audio.bgmDeep = createBgmTrack(MUSIC_TRACKS.deep, 0.38);
+    audio.bgmCamp = createBgmTrack(MUSIC_TRACKS.camp, 0.34);
     audio.bgmBoss = createBgmTrack(MUSIC_TRACKS.boss, 0.4);
     audio.bgmNormal.load();
     audio.bgmDeep.load();
+    audio.bgmCamp.load();
     audio.bgmBoss.load();
     audio.bgmReady = true;
   }
@@ -3267,6 +3315,7 @@
   function stopAllBgm(resetTime = false) {
     pauseBgmTrack(audio.bgmNormal, resetTime);
     pauseBgmTrack(audio.bgmDeep, resetTime);
+    pauseBgmTrack(audio.bgmCamp, resetTime);
     pauseBgmTrack(audio.bgmBoss, resetTime);
     audio.currentBgm = null;
   }
@@ -3287,8 +3336,8 @@
   function syncBgmWithState(force = false) {
     ensureBgmTracks();
 
-    const allowMusic = state.phase === "playing" || state.phase === "relic";
-    const splashPlaying = state.phase === "menu" || state.phase === "camp" || state.phase === "dead";
+    const allowMusic = state.phase === "playing" || state.phase === "relic" || state.phase === "camp";
+    const splashPlaying = state.phase === "menu" || state.phase === "dead";
     if (state.audioMuted || !allowMusic) {
       stopAllBgm(false);
       if (!splashPlaying) {
@@ -3299,12 +3348,14 @@
 
     stopSplashTrack(false);
 
-    const target = state.bossRoom
-      ? audio.bgmBoss
-      : state.depth >= DEEP_THEME_START_DEPTH
-        ? audio.bgmDeep
-        : audio.bgmNormal;
-    const allTracks = [audio.bgmNormal, audio.bgmDeep, audio.bgmBoss];
+    const target = state.phase === "camp"
+      ? audio.bgmCamp
+      : state.bossRoom
+        ? audio.bgmBoss
+        : state.depth >= DEEP_THEME_START_DEPTH
+          ? audio.bgmDeep
+          : audio.bgmNormal;
+    const allTracks = [audio.bgmNormal, audio.bgmDeep, audio.bgmCamp, audio.bgmBoss];
     for (const track of allTracks) {
       if (!track || track === target) continue;
       pauseBgmTrack(track, true);
@@ -4161,7 +4212,8 @@
     if (!hasRelic("vampfang")) return 0;
     const dealt = Math.max(0, Number(damageDealt) || 0);
     if (dealt <= 0) return 0;
-    const healAmount = Math.max(1, Math.round(dealt * VAMPFANG_LIFESTEAL_MULTIPLIER));
+    const rawHealAmount = Math.max(1, Math.round(dealt * VAMPFANG_LIFESTEAL_MULTIPLIER));
+    const healAmount = Math.min(VAMPFANG_MAX_HEAL_PER_HIT, rawHealAmount);
     const before = state.player.hp;
     state.player.hp = Math.min(state.player.maxHp, state.player.hp + healAmount);
     const restored = Math.max(0, state.player.hp - before);
@@ -5150,6 +5202,57 @@
     }
   }
 
+  function applyTimedShrineStatBlessing({
+    bonusKey,
+    turnsKey,
+    statKey,
+    bonusAmount,
+    turns,
+    minValue = 0
+  }) {
+    const safeBonus = Math.max(0, Math.round(Number(bonusAmount) || 0));
+    const safeTurns = Math.max(1, Math.round(Number(turns) || 0));
+    const prevBonus = Math.max(0, Number(state.player[bonusKey]) || 0);
+    if (prevBonus > 0) {
+      state.player[statKey] = Math.max(minValue, (Number(state.player[statKey]) || 0) - prevBonus);
+    }
+    state.player[bonusKey] = safeBonus;
+    state.player[turnsKey] = safeTurns;
+    state.player[statKey] = Math.max(minValue, (Number(state.player[statKey]) || 0) + safeBonus);
+    if (statKey === "maxHp") {
+      state.player.hp = Math.min(state.player.hp, state.player.maxHp);
+    }
+  }
+
+  function tickTimedShrineStatBlessing({
+    bonusKey,
+    turnsKey,
+    statKey,
+    minValue = 0,
+    fadeLog
+  }) {
+    if ((state.player[turnsKey] || 0) <= 0) {
+      state.player[turnsKey] = 0;
+      return false;
+    }
+    state.player[turnsKey] -= 1;
+    if (state.player[turnsKey] > 0) return false;
+
+    state.player[turnsKey] = 0;
+    const bonus = Math.max(0, Number(state.player[bonusKey]) || 0);
+    state.player[bonusKey] = 0;
+    if (bonus <= 0) return false;
+
+    state.player[statKey] = Math.max(minValue, (Number(state.player[statKey]) || 0) - bonus);
+    if (statKey === "maxHp") {
+      state.player.hp = Math.min(state.player.hp, state.player.maxHp);
+    }
+    if (fadeLog) {
+      pushLog(fadeLog, "bad");
+    }
+    return true;
+  }
+
   function tickFuryBlessing() {
     if (state.player.furyBlessingTurns > 0) {
       state.player.furyBlessingTurns -= 1;
@@ -5158,6 +5261,27 @@
         pushLog("Fury Blessing fades.", "bad");
       }
     }
+    tickTimedShrineStatBlessing({
+      bonusKey: "shrineAttackBonus",
+      turnsKey: "shrineAttackTurns",
+      statKey: "attack",
+      minValue: MIN_EFFECTIVE_DAMAGE,
+      fadeLog: "Shrine blessing fades: Attack bonus expired."
+    });
+    tickTimedShrineStatBlessing({
+      bonusKey: "shrineArmorBonus",
+      turnsKey: "shrineArmorTurns",
+      statKey: "armor",
+      minValue: 0,
+      fadeLog: "Shrine blessing fades: Armor bonus expired."
+    });
+    tickTimedShrineStatBlessing({
+      bonusKey: "shrineMaxHpBonus",
+      turnsKey: "shrineMaxHpTurns",
+      statKey: "maxHp",
+      minValue: scaledCombat(BASE_PLAYER_HP),
+      fadeLog: "Shrine blessing fades: Max HP bonus expired."
+    });
   }
 
   function applyMutatorsToRun() {
@@ -5831,6 +5955,12 @@
     state.player.hitFlash = 0;
     state.player.autoPotionCooldown = 0;
     state.player.furyBlessingTurns = 0;
+    state.player.shrineAttackBonus = 0;
+    state.player.shrineAttackTurns = 0;
+    state.player.shrineArmorBonus = 0;
+    state.player.shrineArmorTurns = 0;
+    state.player.shrineMaxHpBonus = 0;
+    state.player.shrineMaxHpTurns = 0;
     state.player.shieldCharges = 1;
     state.player.shieldChargeRegenTurns = 0;
     state.skillCooldowns = sanitizeSkillCooldowns({});
@@ -6058,12 +6188,11 @@
     playSfx("shrine");
     const shrineOutcome = lootTablesApi.rollShrineOutcome({
       hasShrineWard: hasRelic("shrineward"),
-      furyChance: SHRINE_FURY_BLESSING_CHANCE,
       rng: Math.random
     });
     if (shrineOutcome.type === "blessing") {
       if (shrineOutcome.blessing === "fury") {
-        const duration = randInt(100, 200);
+        const duration = rollShrineBlessingTurns();
         state.player.adrenaline = Math.min(state.player.maxAdrenaline, state.player.adrenaline + 2);
         state.player.furyBlessingTurns = Math.max(state.player.furyBlessingTurns || 0, duration);
         pushLog(
@@ -6071,15 +6200,46 @@
           "good"
         );
       } else if (shrineOutcome.blessing === "max_hp") {
-        state.player.maxHp += scaledCombat(1);
-        state.player.hp = Math.min(state.player.maxHp, state.player.hp + scaledCombat(2));
-        pushLog("Shrine blessing: +10 max HP and heal 20.", "good");
+        const duration = rollShrineBlessingTurns();
+        const bonus = getShrineMaxHpBlessingBonus(state.depth);
+        const healAmount = Math.max(scaledCombat(2), bonus * 2);
+        applyTimedShrineStatBlessing({
+          bonusKey: "shrineMaxHpBonus",
+          turnsKey: "shrineMaxHpTurns",
+          statKey: "maxHp",
+          bonusAmount: bonus,
+          turns: duration,
+          minValue: scaledCombat(BASE_PLAYER_HP)
+        });
+        state.player.hp = Math.min(state.player.maxHp, state.player.hp + healAmount);
+        pushLog(
+          `Shrine blessing: +${bonus} max HP for ${state.player.shrineMaxHpTurns} turns and heal ${healAmount}.`,
+          "good"
+        );
       } else if (shrineOutcome.blessing === "attack") {
-        state.player.attack += scaledCombat(1);
-        pushLog("Shrine blessing: +10 ATK.", "good");
+        const duration = rollShrineBlessingTurns();
+        const bonus = scaledCombat(1);
+        applyTimedShrineStatBlessing({
+          bonusKey: "shrineAttackBonus",
+          turnsKey: "shrineAttackTurns",
+          statKey: "attack",
+          bonusAmount: bonus,
+          turns: duration,
+          minValue: MIN_EFFECTIVE_DAMAGE
+        });
+        pushLog(`Shrine blessing: +${bonus} ATK for ${state.player.shrineAttackTurns} turns.`, "good");
       } else if (shrineOutcome.blessing === "armor") {
-        state.player.armor += scaledCombat(1);
-        pushLog("Shrine blessing: +10 ARM.", "good");
+        const duration = rollShrineBlessingTurns();
+        const bonus = getShrineArmorBlessingBonus(state.depth);
+        applyTimedShrineStatBlessing({
+          bonusKey: "shrineArmorBonus",
+          turnsKey: "shrineArmorTurns",
+          statKey: "armor",
+          bonusAmount: bonus,
+          turns: duration,
+          minValue: 0
+        });
+        pushLog(`Shrine blessing: +${bonus} ARM for ${state.player.shrineArmorTurns} turns.`, "good");
       } else {
         grantPotion(1);
         pushLog("Shrine blessing: +1 potion.", "good");
@@ -8124,11 +8284,6 @@
         statRow("Chaos Heal", `+${state.player.chaosKillHeal}/kill`, "Chaos Orb effect: heal this amount on each kill.")
       );
     }
-    if (state.player.furyBlessingTurns > 0) {
-      runMetaRows.push(
-        statRow("Fury Bless", `${state.player.furyBlessingTurns}T`, "Remaining turns of Fury Blessing.")
-      );
-    }
 
     const relicGroups = getRelicInventoryGroups();
     const relicItems = relicGroups.map(({ relicId, count }) => {
@@ -8159,10 +8314,82 @@
         : `<div class="hud-relic-empty">No relics</div>`
     ].join("");
 
+    const activeEffectRows = [
+      statRow(
+        "Crit Total",
+        `${Math.round(state.player.crit * 100)}%`,
+        "Final crit chance after all run bonuses, upgrades, and relics."
+      )
+    ];
+    if (hasRelic("vampfang")) {
+      activeEffectRows.push(
+        statRow(
+          "Lifesteal",
+          `${Math.round(VAMPFANG_LIFESTEAL_MULTIPLIER * 100)}% (cap ${VAMPFANG_MAX_HEAL_PER_HIT}/hit)`,
+          "Vampiric Fang heals a percent of damage dealt, capped per hit."
+        )
+      );
+    }
+    if (hasRelic("burnblade")) {
+      activeEffectRows.push(
+        statRow(
+          "Burn DPS",
+          `${BURNING_BLADE_DOT_DAMAGE}/turn`,
+          "Burning Blade applies this damage each turn for 3 turns."
+        )
+      );
+    }
+    if (state.player.furyBlessingTurns > 0) {
+      activeEffectRows.push(
+        statRow("Fury Bless", `${state.player.furyBlessingTurns}T`, "Fury Blessing active: +2 effective Fury.")
+      );
+    }
+    if (state.player.shrineAttackTurns > 0 && state.player.shrineAttackBonus > 0) {
+      activeEffectRows.push(
+        statRow(
+          "Shrine ATK",
+          `+${state.player.shrineAttackBonus} (${state.player.shrineAttackTurns}T)`,
+          "Temporary attack bonus from shrine blessing."
+        )
+      );
+    }
+    if (state.player.shrineArmorTurns > 0 && state.player.shrineArmorBonus > 0) {
+      activeEffectRows.push(
+        statRow(
+          "Shrine ARM",
+          `+${state.player.shrineArmorBonus} (${state.player.shrineArmorTurns}T)`,
+          "Temporary armor bonus from shrine blessing."
+        )
+      );
+    }
+    if (state.player.shrineMaxHpTurns > 0 && state.player.shrineMaxHpBonus > 0) {
+      activeEffectRows.push(
+        statRow(
+          "Shrine Max HP",
+          `+${state.player.shrineMaxHpBonus} (${state.player.shrineMaxHpTurns}T)`,
+          "Temporary max HP bonus from shrine blessing."
+        )
+      );
+    }
+    if (state.player.chaosAtkTurns > 0 && state.player.chaosAtkBonus > 0) {
+      activeEffectRows.push(
+        statRow(
+          "Chaos ATK",
+          `+${state.player.chaosAtkBonus} (${state.player.chaosAtkTurns}T)`,
+          "Chaos Orb attack bonus while this effect lasts."
+        )
+      );
+    }
+    const activeEffectsBody = [
+      statRow("Active Effects", `${Math.max(0, activeEffectRows.length - 1)}`, "Current temporary and relic-driven combat effects."),
+      activeEffectRows.join("")
+    ].join("");
+
     hudEl.innerHTML = [
       section(combatRows.join("")),
       section(runMetaRows.join("")),
-      section(relicBody)
+      section(relicBody),
+      section(activeEffectsBody)
     ].join("");
   }
 
@@ -10190,6 +10417,25 @@
         ctx.fillRect(px + sx, py + sy, 1, 1);
       }
     }
+
+    if (isShrineBlessed()) {
+      const pulse = (Math.sin(state.playerAnimTimer * 0.015) + 1) * 0.5;
+      const markerY = py - 4;
+      const primaryColor = (state.player.furyBlessingTurns || 0) > 0 ? "#ffd66f" : "#b6ddff";
+      const accentColor = (state.player.shrineArmorTurns || 0) > 0 ? "#b4f4ff" : "#efd6ff";
+      ctx.save();
+      ctx.globalAlpha = 0.55 + pulse * 0.35;
+      ctx.fillStyle = primaryColor;
+      ctx.fillRect(px + 6, markerY, 4, 1);
+      ctx.fillRect(px + 7, markerY - 1, 2, 1);
+      ctx.fillRect(px + 7, markerY + 1, 2, 1);
+      if (pulse > 0.45) {
+        ctx.fillStyle = accentColor;
+        ctx.fillRect(px + 5, markerY, 1, 1);
+        ctx.fillRect(px + 10, markerY, 1, 1);
+      }
+      ctx.restore();
+    }
   }
 
   function drawShieldAura() {
@@ -11048,11 +11294,7 @@
 
     if (key === "r") {
       if (state.phase === "camp" || state.phase === "dead") {
-        if (state.phase === "camp") {
-          startRun({ carriedRelics: [...state.relics] });
-        } else {
-          startRun();
-        }
+        startRun({ carriedRelics: [...state.relics] });
       } else if (state.phase === "playing" || state.phase === "relic") {
         pushLog("Restart disabled during a run. Use Esc -> menu if needed.", "bad");
       }

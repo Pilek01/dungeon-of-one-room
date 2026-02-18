@@ -32,7 +32,7 @@
     { id: "ironboots", rarity: "normal", name: "Iron Boots", desc: "Immune to spike damage. Non-stackable" },
     { id: "idol", rarity: "rare", name: "Golden Idol", desc: "+15% gold gain this run" },
     { id: "thornmail", rarity: "rare", name: "Thorn Mail", desc: "Melee attackers take 20% reflected damage" },
-    { id: "vampfang", rarity: "rare", name: "Vampiric Fang", desc: "Lifesteal: heal 20% of damage dealt on each hit" },
+    { id: "vampfang", rarity: "rare", name: "Vampiric Fang", desc: "Lifesteal: heal 10% of damage dealt on each hit (cap 20/hit)" },
     { id: "adrenal", rarity: "rare", name: "Adrenaline Vial", desc: "Max fury +2, start with 2 fury" },
     { id: "scoutlens", rarity: "normal", name: "Scout's Lens", desc: "Enemy HP bars visible. Non-stackable" },
     { id: "magnet", rarity: "rare", name: "Magnetic Shard", desc: "Auto-loot chests within 2 tiles" },
