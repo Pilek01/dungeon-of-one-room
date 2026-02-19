@@ -14,6 +14,8 @@
       spawnShockwaveRing,
       TILE,
       getSkillTierLabel,
+      canBuyLegendarySkillUpgrade,
+      getLegendarySkillUpgradeBlockReason,
       saveRunSnapshot,
       grantPotion,
       merchantPotionCost,
@@ -67,7 +69,21 @@
 
       const tier = getSkillTier(skillId);
       if (tier >= MAX_SKILL_TIER) {
-        pushLog(`Merchant: ${skill.name} is already Epic.`, "bad");
+        pushLog(`Merchant: ${skill.name} is already ${getSkillTierLabel(skillId)}.`, "bad");
+        return false;
+      }
+
+      const nextTier = tier + 1;
+      if (
+        nextTier >= 3 &&
+        typeof canBuyLegendarySkillUpgrade === "function" &&
+        !canBuyLegendarySkillUpgrade(skillId)
+      ) {
+        const blockReason =
+          typeof getLegendarySkillUpgradeBlockReason === "function"
+            ? getLegendarySkillUpgradeBlockReason(skillId)
+            : "Legendary upgrade is locked.";
+        pushLog(`Merchant: ${blockReason}`, "bad");
         return false;
       }
 
@@ -95,9 +111,19 @@
 
       const newLabel = getSkillTierLabel(skillId);
       const nextCost = merchantSkillUpgradeCost(skillId);
+      const nextBlockedReason =
+        typeof canBuyLegendarySkillUpgrade === "function" && !canBuyLegendarySkillUpgrade(skillId)
+          ? (typeof getLegendarySkillUpgradeBlockReason === "function"
+            ? getLegendarySkillUpgradeBlockReason(skillId)
+            : "")
+          : "";
       pushLog(
         `Merchant reforges ${skill.name} to ${newLabel}. -${cost} gold (${payment.fromRun} run, ${payment.fromCamp} camp).${
-          nextCost ? ` Next: ${nextCost}g.` : " Max tier reached."
+          nextBlockedReason
+            ? ` ${nextBlockedReason}`
+            : nextCost
+              ? ` Next: ${nextCost}g.`
+              : " Max tier reached."
         }`,
         "good"
       );

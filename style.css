@@ -371,6 +371,14 @@ canvas.boss-pulse {
   --skill-idle-bg: #161022;
 }
 
+.skill-card.tier-legendary {
+  --skill-ready-border: #ffbf4ca8;
+  --skill-ready-bg: #ffbf4c24;
+  --skill-cooling-border: #ffbf4c78;
+  --skill-cooling-bg: #ffbf4c18;
+  --skill-idle-bg: #22170d;
+}
+
 .skill-card.ready {
   border-color: var(--skill-ready-border);
   background: var(--skill-ready-bg);
@@ -443,6 +451,10 @@ canvas.boss-pulse {
 
 .skill-card.tier-epic .skill-name small {
   color: #d09cff;
+}
+
+.skill-card.tier-legendary .skill-name small {
+  color: #ffd28a;
 }
 
 .skill-desc {
@@ -660,6 +672,59 @@ canvas.boss-pulse {
   color: #b8c5de;
 }
 
+.overlay-menu-row.merchant-tier-rare {
+  border-color: #4d9fff77;
+  background: linear-gradient(180deg, #4d9fff1f, #4d9fff10);
+  box-shadow: inset 0 0 0 1px #4d9fff2e;
+}
+
+.overlay-menu-row.merchant-tier-epic {
+  border-color: #b44dff88;
+  background: linear-gradient(180deg, #b44dff23, #b44dff14);
+  box-shadow: inset 0 0 0 1px #b44dff30;
+}
+
+.overlay-menu-row.merchant-tier-legendary {
+  border-color: #ffb02099;
+  background: linear-gradient(180deg, #ffb0202c, #ffb02018);
+  box-shadow: inset 0 0 0 1px #ffb02045, 0 0 10px #ffb0202b;
+  animation: merchantLegendaryPulse 1.8s ease-in-out infinite;
+}
+
+.merchant-tier-badge {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  border: 1px solid #ffffff2e;
+  font-style: normal;
+  font-size: 0.72em;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  color: #c8d2e9;
+  background: #ffffff12;
+  vertical-align: middle;
+}
+
+.merchant-tier-badge.merchant-tier-rare {
+  color: #8ec3ff;
+  border-color: #4d9fff70;
+  background: #4d9fff1c;
+}
+
+.merchant-tier-badge.merchant-tier-epic {
+  color: #e0b3ff;
+  border-color: #b44dff73;
+  background: #b44dff22;
+}
+
+.merchant-tier-badge.merchant-tier-legendary {
+  color: #ffd892;
+  border-color: #ffb0208f;
+  background: #ffb0202b;
+}
+
 .overlay-menu-key {
   color: #ffd787;
   font-weight: 700;
@@ -675,6 +740,12 @@ canvas.boss-pulse {
 
 .overlay-menu-row.disabled {
   opacity: 0.55;
+}
+
+@keyframes merchantLegendaryPulse {
+  0% { box-shadow: inset 0 0 0 1px #ffb02045, 0 0 6px #ffb02024; }
+  50% { box-shadow: inset 0 0 0 1px #ffb02059, 0 0 14px #ffb02055; }
+  100% { box-shadow: inset 0 0 0 1px #ffb02045, 0 0 6px #ffb02024; }
 }
 
 @keyframes overlayPulse {

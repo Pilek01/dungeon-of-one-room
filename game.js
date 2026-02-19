@@ -58,6 +58,9 @@
   const LEADERBOARD_LIMIT = 25;
   const LEADERBOARD_MODAL_LIMIT = 20;
   const LEADERBOARD_PENDING_LIMIT = 200;
+  const LEGENDARY_SKILL_TIER = 3;
+  const LEGENDARY_SKILL_MIN_DEPTH = 20;
+  const LEGENDARY_SKILL_REQUIRED_BOSS_DEPTH = 20;
   const COMBAT_SCALE = 10;
   const BASE_PLAYER_HP = 10;
   const BASE_PLAYER_ATTACK = 2;
@@ -163,7 +166,8 @@
     deep: "assets/Haunted High Score.mp3",
     camp: "assets/camp.mp3",
     campLastLife: "assets/One light left on the wall,.mp3",
-    boss: "assets/Dungeon Descent2.mp3"
+    boss: "assets/Dungeon Descent2.mp3",
+    bossDeep: "assets/boss over 20.mp3"
   };
   const SPLASH_TRACK = "assets/Blue glow on my face.mp3";
   const DEATH_TRACK = "assets/death.mp3";
@@ -1111,6 +1115,7 @@
     currentRunTokenExpiresAt: 0,
     currentRunSubmitSeq: 1,
     runLeaderboardSubmitted: false,
+    lastBossClearDepthThisRun: 0,
     sessionChestAttackFlat: 0,
     sessionChestAttackDepthBuckets: {},
     sessionChestArmorFlat: 0,
@@ -1195,7 +1200,9 @@
       shrineMaxHpBonus: 0,
       shrineMaxHpTurns: 0,
       shieldCharges: 1,
-      shieldChargeRegenTurns: 0
+      shieldChargeRegenTurns: 0,
+      shieldStoredDamage: 0,
+      dashAfterline: null
     },
     portal: { x: 1, y: 1 },
     enemies: [],
@@ -1239,6 +1246,8 @@
     spawnShockwaveRing,
     TILE,
     getSkillTierLabel,
+    canBuyLegendarySkillUpgrade,
+    getLegendarySkillUpgradeBlockReason,
     saveRunSnapshot,
     grantPotion,
     merchantPotionCost,
@@ -1289,6 +1298,7 @@
     bgmCamp: null,
     bgmCampLastLife: null,
     bgmBoss: null,
+    bgmBossDeep: null,
     currentBgm: null,
     bgmReady: false,
     bgmWarned: false,
@@ -2418,6 +2428,7 @@
     state.currentRunTokenExpiresAt = 0;
     state.currentRunSubmitSeq = 1;
     state.runLeaderboardSubmitted = false;
+    state.lastBossClearDepthThisRun = 0;
     state.wardenRelicMissStreak = 0;
     state.wardenFirstDropDepths = {};
     resetSessionChestBonuses();
@@ -2493,6 +2504,7 @@
       currentRunTokenExpiresAt: state.currentRunTokenExpiresAt,
       currentRunSubmitSeq: state.currentRunSubmitSeq,
       runLeaderboardSubmitted: state.runLeaderboardSubmitted,
+      lastBossClearDepthThisRun: state.lastBossClearDepthThisRun,
       wardenRelicMissStreak: state.wardenRelicMissStreak,
       wardenFirstDropDepths: state.wardenFirstDropDepths,
       sessionChestAttackFlat: state.sessionChestAttackFlat,
@@ -2634,6 +2646,15 @@
     state.currentRunTokenExpiresAt = Math.max(0, Number(snapshot.currentRunTokenExpiresAt) || 0);
     state.currentRunSubmitSeq = Math.max(1, Number(snapshot.currentRunSubmitSeq) || 1);
     state.runLeaderboardSubmitted = Boolean(snapshot.runLeaderboardSubmitted);
+    const snapshotBossClearDepth = Number(snapshot.lastBossClearDepthThisRun);
+    state.lastBossClearDepthThisRun = Math.max(
+      0,
+      Number.isFinite(snapshotBossClearDepth)
+        ? snapshotBossClearDepth
+        : state.depth >= LEGENDARY_SKILL_REQUIRED_BOSS_DEPTH
+          ? LEGENDARY_SKILL_REQUIRED_BOSS_DEPTH
+          : 0
+    );
     state.wardenRelicMissStreak = Math.max(0, Number(snapshot.wardenRelicMissStreak) || 0);
     state.wardenFirstDropDepths = sanitizeWardenFirstDropDepths(
       snapshot.wardenFirstDropDepths || state.wardenFirstDropDepths
@@ -2736,10 +2757,30 @@
       shrineMaxHpBonus: Math.max(0, Number(snapshot.player.shrineMaxHpBonus) || 0),
       shrineMaxHpTurns: Math.max(0, Number(snapshot.player.shrineMaxHpTurns) || 0),
       shieldCharges: Math.max(0, Number(snapshot.player.shieldCharges) || 0),
-      shieldChargeRegenTurns: Math.max(0, Number(snapshot.player.shieldChargeRegenTurns) || 0)
+      shieldChargeRegenTurns: Math.max(0, Number(snapshot.player.shieldChargeRegenTurns) || 0),
+      shieldStoredDamage: Math.max(0, Number(snapshot.player.shieldStoredDamage) || 0),
+      dashAfterline:
+        snapshot.player.dashAfterline &&
+        typeof snapshot.player.dashAfterline === "object" &&
+        Array.isArray(snapshot.player.dashAfterline.tiles)
+          ? {
+              turns: Math.max(0, Number(snapshot.player.dashAfterline.turns) || 0),
+              tiles: snapshot.player.dashAfterline.tiles
+                .filter((tile) => tile && Number.isFinite(tile.x) && Number.isFinite(tile.y))
+                .map((tile) => ({ x: Math.round(tile.x), y: Math.round(tile.y) }))
+            }
+          : null
     };
     state.player.hp = clamp(state.player.hp, 1, state.player.maxHp);
     state.player.crit = clamp(state.player.crit, 0.01, CRIT_CHANCE_CAP);
+    if (
+      !state.player.dashAfterline ||
+      state.player.dashAfterline.turns <= 0 ||
+      !Array.isArray(state.player.dashAfterline.tiles) ||
+      state.player.dashAfterline.tiles.length <= 0
+    ) {
+      state.player.dashAfterline = null;
+    }
     if (!hasRelic("chaosorb")) {
       state.player.chaosAtkBonus = 0;
       state.player.chaosAtkTurns = 0;
@@ -2776,6 +2817,7 @@
       enemy.castFlash = 0;
       enemy.frozenThisTurn = Boolean(enemy.frozenThisTurn);
       enemy.frostFx = Math.max(0, Number(enemy.frostFx) || 0);
+      enemy.disorientedTurns = Math.max(0, Number(enemy.disorientedTurns) || 0);
       enemy.hitFlash = Math.max(0, Number(enemy.hitFlash) || 0);
       enemy.maxHp = Number(enemy.maxHp) || Number(enemy.hp) || 1;
       if (!enemy.facing) enemy.facing = "south";
@@ -2787,6 +2829,7 @@
     state.rangedImpacts = [];
     state.shockwaveRings = [];
     state.dashTrails = [];
+    state.player.dashAfterline = null;
     state.dashAimActive = false;
     state.roomIntroTimer = 0;
     state.roomIntroDuration = 0;
@@ -3302,11 +3345,13 @@
     audio.bgmCamp = createBgmTrack(MUSIC_TRACKS.camp, 0.34);
     audio.bgmCampLastLife = createBgmTrack(MUSIC_TRACKS.campLastLife, 0.34);
     audio.bgmBoss = createBgmTrack(MUSIC_TRACKS.boss, 0.4);
+    audio.bgmBossDeep = createBgmTrack(MUSIC_TRACKS.bossDeep, 0.4);
     audio.bgmNormal.load();
     audio.bgmDeep.load();
     audio.bgmCamp.load();
     audio.bgmCampLastLife.load();
     audio.bgmBoss.load();
+    audio.bgmBossDeep.load();
     audio.bgmReady = true;
   }
 
@@ -3324,6 +3369,7 @@
     pauseBgmTrack(audio.bgmCamp, resetTime);
     pauseBgmTrack(audio.bgmCampLastLife, resetTime);
     pauseBgmTrack(audio.bgmBoss, resetTime);
+    pauseBgmTrack(audio.bgmBossDeep, resetTime);
     audio.currentBgm = null;
   }
 
@@ -3358,11 +3404,11 @@
     const target = state.phase === "camp"
       ? ((state.lives <= 1 && audio.bgmCampLastLife) ? audio.bgmCampLastLife : audio.bgmCamp)
       : state.bossRoom
-        ? audio.bgmBoss
+        ? (state.depth >= DEEP_THEME_START_DEPTH && audio.bgmBossDeep ? audio.bgmBossDeep : audio.bgmBoss)
         : state.depth >= DEEP_THEME_START_DEPTH
           ? audio.bgmDeep
           : audio.bgmNormal;
-    const allTracks = [audio.bgmNormal, audio.bgmDeep, audio.bgmCamp, audio.bgmCampLastLife, audio.bgmBoss];
+    const allTracks = [audio.bgmNormal, audio.bgmDeep, audio.bgmCamp, audio.bgmCampLastLife, audio.bgmBoss, audio.bgmBossDeep];
     for (const track of allTracks) {
       if (!track || track === target) continue;
       pauseBgmTrack(track, true);
@@ -4108,6 +4154,27 @@
     const tier = getSkillTier(skillId);
     const upgrades = MERCHANT_SKILL_UPGRADES[skillId] || [];
     return upgrades[tier] || null;
+  }
+
+  function canBuyLegendarySkillUpgrade(skillId) {
+    const offer = getNextSkillUpgradeOffer(skillId);
+    if (!offer || Number(offer.tier) < LEGENDARY_SKILL_TIER) return true;
+    return (
+      state.depth >= LEGENDARY_SKILL_MIN_DEPTH &&
+      (Number(state.lastBossClearDepthThisRun) || 0) >= LEGENDARY_SKILL_REQUIRED_BOSS_DEPTH
+    );
+  }
+
+  function getLegendarySkillUpgradeBlockReason(skillId) {
+    const offer = getNextSkillUpgradeOffer(skillId);
+    if (!offer || Number(offer.tier) < LEGENDARY_SKILL_TIER) return "";
+    if (state.depth < LEGENDARY_SKILL_MIN_DEPTH) {
+      return `Legendary unlocks at depth ${LEGENDARY_SKILL_MIN_DEPTH}+ (current: ${state.depth}).`;
+    }
+    if ((Number(state.lastBossClearDepthThisRun) || 0) < LEGENDARY_SKILL_REQUIRED_BOSS_DEPTH) {
+      return `Defeat a Warden on depth ${LEGENDARY_SKILL_REQUIRED_BOSS_DEPTH}+ in this run first.`;
+    }
+    return "";
   }
 
   function merchantSkillUpgradeCost(skillId) {
@@ -5068,6 +5135,12 @@
   function ensureShieldChargeState() {
     const tier = getSkillTier("shield");
     const maxCharges = getShieldChargeMaxByTier(tier);
+    if (!Number.isFinite(state.player.shieldStoredDamage)) {
+      state.player.shieldStoredDamage = 0;
+    }
+    if (tier < LEGENDARY_SKILL_TIER) {
+      state.player.shieldStoredDamage = 0;
+    }
     if (tier < 1) {
       state.player.shieldCharges = 1;
       state.player.shieldChargeRegenTurns = 0;
@@ -5136,12 +5209,60 @@
     pushLog(`Shield charge restored (${state.player.shieldCharges}/${info.max}).`, "good");
   }
 
+  function triggerLegendaryShieldBlast() {
+    const stored = Math.max(0, Math.round(Number(state.player.shieldStoredDamage) || 0));
+    if (stored <= 0 || state.phase !== "playing") return;
+    const ring2Damage = Math.max(MIN_EFFECTIVE_DAMAGE, Math.round(stored * 0.7));
+    let hitCount = 0;
+    let killCount = 0;
+    for (const enemy of [...state.enemies]) {
+      if (!state.enemies.includes(enemy)) continue;
+      const dist = Math.max(Math.abs(enemy.x - state.player.x), Math.abs(enemy.y - state.player.y));
+      if (dist > 2) continue;
+      const blastDamage = dist <= 1 ? stored : ring2Damage;
+      enemy.hp -= blastDamage;
+      triggerEnemyHitFlash(enemy);
+      spawnFloatingText(enemy.x, enemy.y, `-${blastDamage}`, "#d7ecff");
+      spawnParticles(enemy.x, enemy.y, "#b7d8ff", 8, 1.05);
+      hitCount += 1;
+      if (enemy.hp <= 0) {
+        killEnemy(enemy, "aegis counter");
+        killCount += 1;
+      }
+    }
+    spawnShockwaveRing(state.player.x, state.player.y, {
+      color: "#b7d8ff",
+      core: "#ecf6ff",
+      maxRadius: TILE * 2.1,
+      life: 260
+    });
+    spawnShockwaveRing(state.player.x, state.player.y, {
+      color: "#8fb8ff",
+      core: "#d8e9ff",
+      maxRadius: TILE * 3.6,
+      life: 320
+    });
+    pushLog(
+      `Aegis Counter bursts: ${hitCount} hit${hitCount === 1 ? "" : "s"}${
+        killCount > 0 ? `, ${killCount} kill${killCount === 1 ? "" : "s"}` : ""
+      }.`,
+      "good"
+    );
+    state.player.shieldStoredDamage = 0;
+  }
+
   function tickBarrier() {
     if (state.player.barrierTurns <= 0) return;
     state.player.barrierTurns -= 1;
     if (state.player.barrierTurns <= 0) {
+      const shieldTier = getSkillTier("shield");
       state.player.barrierTurns = 0;
       state.player.barrierArmor = 0;
+      if (shieldTier >= LEGENDARY_SKILL_TIER) {
+        triggerLegendaryShieldBlast();
+      } else {
+        state.player.shieldStoredDamage = 0;
+      }
       pushLog("Shield fades.");
     }
   }
@@ -5159,6 +5280,13 @@
     spawnParticles(state.player.x, state.player.y, "#a9cfff", 8, 1.05);
     setShake(1.1);
     pushLog(`Shield blocks ${sourceLabel}.`, "good");
+
+    if (getSkillTier("shield") >= LEGENDARY_SKILL_TIER) {
+      const storeGain = Math.max(0, Math.round(Math.max(0, Number(blockedDamage) || 0) * 0.4));
+      if (storeGain > 0) {
+        state.player.shieldStoredDamage = Math.max(0, Number(state.player.shieldStoredDamage) || 0) + storeGain;
+      }
+    }
 
     // Epic Shield: reflect blocked damage back to the attacker.
     if (
@@ -5179,6 +5307,51 @@
     }
     markUiDirty();
     return true;
+  }
+
+  function tickDashAfterline() {
+    const afterline = state.player.dashAfterline;
+    if (!afterline || typeof afterline !== "object") return;
+    const turns = Math.max(0, Number(afterline.turns) || 0);
+    if (turns <= 0 || !Array.isArray(afterline.tiles) || afterline.tiles.length <= 0) {
+      state.player.dashAfterline = null;
+      return;
+    }
+
+    const tileSet = new Set(afterline.tiles.map((tile) => tileKey(tile.x, tile.y)));
+    const afterlineDamage = Math.max(
+      MIN_EFFECTIVE_DAMAGE,
+      Math.round(Math.max(0, Number(state.player.attack) || 0) * 0.4)
+    );
+    let hitCount = 0;
+    let killCount = 0;
+    for (const enemy of [...state.enemies]) {
+      if (!state.enemies.includes(enemy)) continue;
+      if (!tileSet.has(tileKey(enemy.x, enemy.y))) continue;
+      enemy.hp -= afterlineDamage;
+      triggerEnemyHitFlash(enemy);
+      spawnFloatingText(enemy.x, enemy.y, `-${afterlineDamage}`, "#bfe7ff");
+      spawnParticles(enemy.x, enemy.y, "#7fc9ff", 7, 1.0);
+      hitCount += 1;
+      if (enemy.hp <= 0) {
+        killEnemy(enemy, "void afterline");
+        killCount += 1;
+      }
+    }
+
+    afterline.turns = turns - 1;
+    if (hitCount > 0) {
+      pushLog(
+        `Void afterline hits ${hitCount} ${hitCount === 1 ? "enemy" : "enemies"}${
+          killCount > 0 ? ` (${killCount} kill${killCount === 1 ? "" : "s"})` : ""
+        }.`,
+        "good"
+      );
+    }
+    if (afterline.turns <= 0) {
+      state.player.dashAfterline = null;
+      pushLog("Void afterline fades.", "warn");
+    }
   }
 
   function tryAutoPotion(triggerLabel = "low HP") {
@@ -5701,6 +5874,7 @@
     enemy.castFlash = 0;
     enemy.frozenThisTurn = false;
     enemy.frostFx = 0;
+    enemy.disorientedTurns = 0;
     enemy.hitFlash = 0;
     enemy.facing = "south";
     enemy.intent = "chase";
@@ -5932,6 +6106,7 @@
     state.finalVictoryPrompt = null;
     state.campVisitShopCostMult = 1;
     state.runLeaderboardSubmitted = false;
+    state.lastBossClearDepthThisRun = 0;
     state.leaderboardModalOpen = false;
     state.nameModalOpen = false;
     state.nameModalAction = null;
@@ -5984,6 +6159,8 @@
     state.player.shrineMaxHpTurns = 0;
     state.player.shieldCharges = 1;
     state.player.shieldChargeRegenTurns = 0;
+    state.player.shieldStoredDamage = 0;
+    state.player.dashAfterline = null;
     state.skillCooldowns = sanitizeSkillCooldowns({});
     stopDeathTrack(true);
 
@@ -6463,6 +6640,10 @@
     }
 
     if (state.bossRoom) {
+      state.lastBossClearDepthThisRun = Math.max(
+        Number(state.lastBossClearDepthThisRun) || 0,
+        Number(state.depth) || 0
+      );
       goldBonus += 10;
       if (state.depth >= MAX_DEPTH) {
         pushLog(`Final boss of depth ${MAX_DEPTH} defeated!`, "good");
@@ -7583,6 +7764,13 @@
     if (state.phase !== "playing") return;
     if (!state.enemies.includes(enemy)) return;
 
+    if ((enemy.disorientedTurns || 0) > 0) {
+      enemy.disorientedTurns = Math.max(0, (Number(enemy.disorientedTurns) || 0) - 1);
+      enemy.castFlash = Math.max(enemy.castFlash || 0, 80);
+      spawnParticles(enemy.x, enemy.y, "#d7c7ff", 4, 0.55);
+      return;
+    }
+
     // Frost Amulet: skip frozen enemies
     if (enemy.frozenThisTurn) {
       if (isFrostImmuneEnemy(enemy)) {
@@ -7886,6 +8074,13 @@
 
   function finishTurnAfterEnemySequence() {
     clearEnemyTurnSequence();
+    if (state.phase !== "playing") {
+      state.turnInProgress = false;
+      markUiDirty();
+      return;
+    }
+
+    tickDashAfterline();
     if (state.phase !== "playing") {
       state.turnInProgress = false;
       markUiDirty();
@@ -8488,16 +8683,19 @@
   function getSkillTierEffectsSummary(skillId) {
     const tier = getSkillTier(skillId);
     if (skillId === "dash") {
+      if (tier >= 3) return "4-tile pierce, x2 dmg, first hit +60%, splash, afterline 4T";
       if (tier >= 2) return "4-tile pierce, x2 dmg, landing splash";
       if (tier >= 1) return "3-tile pierce, x2 damage";
       return "3-tile pierce + knockback";
     }
     if (skillId === "aoe") {
+      if (tier >= 3) return "R2 overload: ring1 120%, ring2 80%, +20%/Fury, ring1 disorient 2T";
       if (tier >= 2) return "Base 60% dmg, +20% per Fury spent, knockback, ring2 falloff";
       if (tier >= 1) return "Base 60% dmg, +20% per Fury spent, knockback";
       return "Base 60% damage, +20% per Fury spent";
     }
     if (skillId === "shield") {
+      if (tier >= 3) return "3-turn immunity, charges, reflect x2 + taunt, store 40% blocked, 2-ring blast";
       if (tier >= 2) return "3-turn immunity, 2 charges (1 returns every 20 turns), smart knockback, reflect x2 + taunt";
       if (tier >= 1) return "3-turn immunity, 2 charges (1 returns every 20 turns), smart knockback";
       return "Full immunity for 3 turns after cast";
@@ -8520,7 +8718,7 @@
       const tierLabel = getSkillTierLabel(skill.id);
       const tier = getSkillTier(skill.id);
       const shieldCharges = skill.id === "shield" ? getShieldChargesInfo() : null;
-      const tierClass = tier >= 2 ? "tier-epic" : tier >= 1 ? "tier-rare" : "tier-base";
+      const tierClass = tier >= 3 ? "tier-legendary" : tier >= 2 ? "tier-epic" : tier >= 1 ? "tier-rare" : "tier-base";
       const dashArmed = inRun && skill.id === "dash" && state.dashAimActive;
       const ready = inRun && (
         skill.id === "shield" && shieldCharges?.enabled
@@ -8677,6 +8875,7 @@
       if ((e.volleyCooldown || 0) > 0) info += `, VolleyCD:${e.volleyCooldown}`;
       if ((e.burstCooldown || 0) > 0) info += `, BurstCD:${e.burstCooldown}`;
       if ((e.acolyteBuffTurns || 0) > 0) info += `, Buff(${e.acolyteBuffTurns})`;
+      if ((e.disorientedTurns || 0) > 0) info += `, Disoriented(${e.disorientedTurns})`;
       if (e.frozenThisTurn || (e.frostFx || 0) > 0) info += ", Frozen";
       if ((e.burnTurns || 0) > 0) info += `, Burn(${e.burnTurns})`;
       if (e.elite) info += ` [${e.affix || "elite"}]`;
@@ -9320,15 +9519,30 @@
         .join("");
       menuBlock = `<div class="overlay-menu">${rows}</div>`;
     } else if (state.phase === "playing" && state.merchantMenuOpen) {
-      const buildMerchantRow = (key, titleText, body, disabled = false) => {
+      const getMerchantTierClass = (tierLabel) => {
+        const normalized = String(tierLabel || "").trim().toLowerCase();
+        if (normalized === "rare") return "merchant-tier-rare";
+        if (normalized === "epic") return "merchant-tier-epic";
+        if (normalized === "legendary") return "merchant-tier-legendary";
+        return "";
+      };
+
+      const buildMerchantRow = (key, titleText, body, options = {}) => {
+        const disabled = Boolean(options && options.disabled);
+        const tierLabel = options && typeof options.tierLabel === "string" ? options.tierLabel : "";
+        const tierClass = options && typeof options.tierClass === "string" ? options.tierClass : "";
         const classes = [
           "overlay-menu-row",
+          tierClass,
           disabled ? "disabled" : ""
         ].join(" ").trim();
+        const badgeHtml = tierLabel
+          ? ` <em class="merchant-tier-badge ${tierClass}">${tierLabel}</em>`
+          : "";
         return [
           `<div class="${classes}">`,
           `<div class="overlay-menu-key">${key}</div>`,
-          `<div><strong>${titleText}</strong><br /><span>${body}</span></div>`,
+          `<div><strong>${titleText}${badgeHtml}</strong><br /><span>${body}</span></div>`,
           `</div>`
         ].join("");
       };
@@ -9346,21 +9560,45 @@
         const currentLabel = getSkillTierLabelByValue(currentTier);
         const offer = getNextSkillUpgradeOffer(skillId);
         if (!offer) {
-          return buildMerchantRow(key, `${skill.name} [${currentLabel} MAX]`, "Already Epic (max tier).", true);
+          const maxTierClass = getMerchantTierClass(currentLabel);
+          return buildMerchantRow(
+            key,
+            `${skill.name} [${currentLabel} MAX]`,
+            `Already ${currentLabel} (max tier).`,
+            {
+              disabled: true,
+              tierLabel: currentLabel,
+              tierClass: maxTierClass
+            }
+          );
         }
         const nextLabel = getSkillTierLabelByValue(offer.tier);
+        const tierClass = getMerchantTierClass(nextLabel);
         const cost = merchantSkillUpgradeCost(skillId);
         const wallet = getMerchantUpgradeWalletTotal();
+        const legendaryLocked = !canBuyLegendarySkillUpgrade(skillId);
+        const lockReason = legendaryLocked ? getLegendarySkillUpgradeBlockReason(skillId) : "";
         const cannotAfford = wallet < cost;
-        const disabled = cannotAfford;
-        const reason = cannotAfford
+        const disabled = legendaryLocked || cannotAfford;
+        const reason = legendaryLocked
+          ? lockReason
+          : cannotAfford
           ? `Need ${cost} gold (run + camp).`
           : `Upgrade to ${nextLabel}: ${offer.desc}. Cost ${cost} gold (run + camp).`;
-        return buildMerchantRow(key, `${skill.name} [${currentLabel} -> ${nextLabel}]`, reason, disabled);
+        return buildMerchantRow(
+          key,
+          `${skill.name} [${currentLabel} -> ${nextLabel}]`,
+          reason,
+          {
+            disabled,
+            tierLabel: nextLabel,
+            tierClass
+          }
+        );
       };
 
       const rows = [
-        buildMerchantRow("1", "Potion", potionBody, potionDisabled),
+        buildMerchantRow("1", "Potion", potionBody, { disabled: potionDisabled }),
         buildSkillRow("2", "dash"),
         buildSkillRow("3", "aoe"),
         buildSkillRow("4", "shield")
@@ -10201,6 +10439,19 @@
       ctx.fillRect(px + 6, py + 3, 4, 1);
     }
 
+    if ((enemy.disorientedTurns || 0) > 0) {
+      const px = visualX(enemy);
+      const py = visualY(enemy);
+      const pulse = (Math.sin(state.portalPulse * 4.2 + enemy.x * 0.7 + enemy.y * 0.6) + 1) * 0.5;
+      ctx.globalAlpha = 0.2 + pulse * 0.3;
+      ctx.fillStyle = "#c9a4ff";
+      ctx.fillRect(px + 4, py + 1, 8, 2);
+      ctx.globalAlpha = 1;
+      ctx.fillStyle = "#efd8ff";
+      ctx.fillRect(px + 6, py + 1, 1, 1);
+      ctx.fillRect(px + 9, py + 2, 1, 1);
+    }
+
     // Frost Amulet indicator
     if (enemy.frozenThisTurn || (enemy.frostFx || 0) > 0) {
       const px = visualX(enemy);
@@ -10589,6 +10840,29 @@
     ctx.lineWidth = 1;
   }
 
+  function drawDashAfterline() {
+    const afterline = state.player?.dashAfterline;
+    if (!afterline || !Array.isArray(afterline.tiles) || afterline.tiles.length <= 0) return;
+    const turns = Math.max(0, Number(afterline.turns) || 0);
+    const maxTurns = Math.max(turns, Number(afterline.maxTurns) || 0, 1);
+    if (turns <= 0) return;
+    const fade = clamp(turns / maxTurns, 0, 1);
+    for (const tile of afterline.tiles) {
+      if (!tile || !Number.isFinite(tile.x) || !Number.isFinite(tile.y)) continue;
+      const px = tile.x * TILE;
+      const py = tile.y * TILE;
+      ctx.globalAlpha = 0.08 + fade * 0.2;
+      ctx.fillStyle = "#8fd9ff";
+      ctx.fillRect(px + 1, py + 1, TILE - 2, TILE - 2);
+      ctx.globalAlpha = 0.2 + fade * 0.35;
+      ctx.strokeStyle = "#d7efff";
+      ctx.lineWidth = 1;
+      ctx.strokeRect(px + 1.5, py + 1.5, TILE - 3, TILE - 3);
+    }
+    ctx.globalAlpha = 1;
+    ctx.lineWidth = 1;
+  }
+
   function drawRangedImpacts() {
     for (const impact of state.rangedImpacts) {
       const fade = clamp(impact.life / impact.maxLife, 0, 1);
@@ -10879,6 +11153,7 @@
     for (const spike of state.spikes) {
       drawSpikes(spike);
     }
+    drawDashAfterline();
     drawShrine();
     drawMerchant();
     drawPortal();

@@ -35,6 +35,9 @@
       finalizeTurn,
       markUiDirty
     } = deps;
+    const LEGENDARY_SKILL_TIER = 3;
+    const DASH_LEGENDARY_FIRST_HIT_MULT = 1.6;
+    const DASH_LEGENDARY_AFTERLINE_TURNS = 4;
 
     function cancelDashAim(logText = "Dash canceled.") {
       if (!state.dashAimActive) return false;
@@ -88,6 +91,7 @@
       }
       const maxDashTiles = dashTier >= 2 ? 4 : 3;
       const hitSet = new Set();
+      let firstHitBoostApplied = false;
       const path = [];
       let currentX = state.player.x;
       let currentY = state.player.y;
@@ -116,13 +120,20 @@
 
         const enemy = getEnemyAt(step.x, step.y);
         if (enemy && state.enemies.includes(enemy) && !hitSet.has(enemy)) {
-          enemy.hp -= damage;
+          const strikeDamage =
+            dashTier >= LEGENDARY_SKILL_TIER && !firstHitBoostApplied
+              ? Math.max(MIN_EFFECTIVE_DAMAGE, Math.round(damage * DASH_LEGENDARY_FIRST_HIT_MULT))
+              : damage;
+          enemy.hp -= strikeDamage;
           if (typeof applyVampfangLifesteal === "function") {
-            applyVampfangLifesteal(damage);
+            applyVampfangLifesteal(strikeDamage);
           }
           triggerEnemyHitFlash(enemy);
-          spawnFloatingText(enemy.x, enemy.y, `-${damage}`, "#f4f7ff");
+          spawnFloatingText(enemy.x, enemy.y, `-${strikeDamage}`, "#f4f7ff");
           spawnParticles(enemy.x, enemy.y, "#8ee9ff", 11, 1.3);
+          if (dashTier >= LEGENDARY_SKILL_TIER && !firstHitBoostApplied) {
+            firstHitBoostApplied = true;
+          }
           hitSet.add(enemy);
           if (enemy.hp <= 0) {
             killEnemy(enemy, "dash strike");
@@ -177,6 +188,25 @@
         }
       }
 
+      if (dashTier >= LEGENDARY_SKILL_TIER) {
+        const seenTiles = new Set();
+        const afterlineTiles = [];
+        for (const step of path) {
+          const key = `${step.x},${step.y}`;
+          if (seenTiles.has(key)) continue;
+          seenTiles.add(key);
+          afterlineTiles.push({ x: step.x, y: step.y });
+        }
+        if (afterlineTiles.length > 0) {
+          state.player.dashAfterline = {
+            turns: DASH_LEGENDARY_AFTERLINE_TURNS,
+            maxTurns: DASH_LEGENDARY_AFTERLINE_TURNS,
+            tiles: afterlineTiles
+          };
+          spawnParticles(state.player.x, state.player.y, "#8fcaff", 10, 1.1);
+        }
+      }
+
       const travelTiles = Math.max(Math.abs(state.player.x - fromX), Math.abs(state.player.y - fromY));
       const hits = hitSet.size;
       const kills = [...hitSet].filter((enemy) => !state.enemies.includes(enemy)).length;
@@ -185,6 +215,9 @@
           `Dash surges ${travelTiles} tiles: ${hits} hit${hits !== 1 ? "s" : ""}, ${kills} kill${kills !== 1 ? "s" : ""}${knockbacks > 0 ? `, ${knockbacks} knockback` : ""}${splashHits > 0 ? `, splash ${splashHits} hit/${splashKills} kill` : ""}.`,
           "good"
         );
+      }
+      if (dashTier >= LEGENDARY_SKILL_TIER && path.length > 0) {
+        pushLog("Void Lunge leaves an afterline for 4 turns (40% ATK).", "good");
       }
 
       playSfx("hit");
@@ -227,6 +260,7 @@
       }
       let kills = 0;
       let knockbacks = 0;
+      let disorientedCount = 0;
 
       function pushEnemyChain(enemy, dx, dy, visited = new Set()) {
         if (!enemy || !state.enemies.includes(enemy)) return false;
@@ -259,14 +293,22 @@
       for (const enemy of targets) {
         if (!state.enemies.includes(enemy)) continue;
         const dist = Math.max(Math.abs(enemy.x - state.player.x), Math.abs(enemy.y - state.player.y));
-        let falloff = 1;
-        if (aoeTier >= 2 && dist >= 2) {
-          falloff = 0.7;
+        let damage = MIN_EFFECTIVE_DAMAGE;
+        if (aoeTier >= LEGENDARY_SKILL_TIER) {
+          const ring1Multiplier = 1.2 + furySpent * 0.2;
+          const ring2Multiplier = 0.8 + furySpent * 0.2;
+          const ringMultiplier = dist <= 1 ? ring1Multiplier : ring2Multiplier;
+          damage = Math.max(MIN_EFFECTIVE_DAMAGE, Math.round(baseDamage * ringMultiplier));
+        } else {
+          let falloff = 1;
+          if (aoeTier >= 2 && dist >= 2) {
+            falloff = 0.7;
+          }
+          damage = Math.max(
+            MIN_EFFECTIVE_DAMAGE,
+            Math.round(baseDamage * furyDamageMultiplier * falloff)
+          );
         }
-        const damage = Math.max(
-          MIN_EFFECTIVE_DAMAGE,
-          Math.round(baseDamage * furyDamageMultiplier * falloff)
-        );
         enemy.hp -= damage;
         if (typeof applyVampfangLifesteal === "function") {
           applyVampfangLifesteal(damage);
@@ -278,6 +320,13 @@
           killEnemy(enemy, "shockwave");
           kills += 1;
           continue;
+        }
+
+        if (aoeTier >= LEGENDARY_SKILL_TIER && dist <= 1) {
+          enemy.disorientedTurns = Math.max(2, Number(enemy.disorientedTurns) || 0);
+          enemy.castFlash = Math.max(enemy.castFlash || 0, 80);
+          spawnParticles(enemy.x, enemy.y, "#d7c6ff", 6, 0.85);
+          disorientedCount += 1;
         }
 
         if (aoeTier >= 1) {
@@ -294,15 +343,15 @@
       }
 
       spawnShockwaveRing(state.player.x, state.player.y, {
-        color: aoeTier >= 2 ? "#ffc87d" : (aoeTier >= 1 ? "#ffd696" : "#f2cb92"),
-        core: aoeTier >= 2 ? "#fff5e6" : (aoeTier >= 1 ? "#fff3df" : "#fff0cf"),
+        color: aoeTier >= LEGENDARY_SKILL_TIER ? "#ffb35f" : (aoeTier >= 2 ? "#ffc87d" : (aoeTier >= 1 ? "#ffd696" : "#f2cb92")),
+        core: aoeTier >= LEGENDARY_SKILL_TIER ? "#fff1d8" : (aoeTier >= 2 ? "#fff5e6" : (aoeTier >= 1 ? "#fff3df" : "#fff0cf")),
         maxRadius: radius >= 2 ? TILE * 3.8 : TILE * 2.4,
         life: radius >= 2 ? 420 : 340
       });
       if (radius >= 2) {
         spawnShockwaveRing(state.player.x, state.player.y, {
-          color: "#ffd8a9",
-          core: "#fff6db",
+          color: aoeTier >= LEGENDARY_SKILL_TIER ? "#caa4ff" : "#ffd8a9",
+          core: aoeTier >= LEGENDARY_SKILL_TIER ? "#f0e3ff" : "#fff6db",
           maxRadius: TILE * 2.8,
           life: 340
         });
@@ -311,12 +360,19 @@
       setShake(2.3);
       spawnParticles(state.player.x, state.player.y, "#f6c48f", 12, 1.3);
       const dmgPct = Math.round(furyDamageMultiplier * 100);
+      const legendaryRing1Pct = Math.round((1.2 + furySpent * 0.2) * 100);
+      const legendaryRing2Pct = Math.round((0.8 + furySpent * 0.2) * 100);
+      const damageSummary = aoeTier >= LEGENDARY_SKILL_TIER
+        ? `uses ${furySpent} Fury (ring1 ${legendaryRing1Pct}%, ring2 ${legendaryRing2Pct}%)`
+        : (furySpent > 0 ? `uses ${furySpent} Fury (${dmgPct}% dmg)` : "uses no Fury (60% dmg)");
       pushLog(
         `Shockwave (R${radius}) ${
-          furySpent > 0 ? `uses ${furySpent} Fury (${dmgPct}% dmg)` : "uses no Fury (60% dmg)"
+          damageSummary
         }: ${targets.length} hit${targets.length > 1 ? "s" : ""}${
           kills > 0 ? `, ${kills} kill${kills > 1 ? "s" : ""}` : ""
-        }${aoeTier >= 1 ? `, ${knockbacks} knockback` : ""}.`,
+        }${aoeTier >= 1 ? `, ${knockbacks} knockback` : ""}${
+          aoeTier >= LEGENDARY_SKILL_TIER ? `, ${disorientedCount} disoriented` : ""
+        }.`,
         "good"
       );
       putSkillOnCooldown(skill.id);
@@ -353,6 +409,7 @@
 
       state.player.barrierArmor = 0;
       state.player.barrierTurns = 4;
+      state.player.shieldStoredDamage = 0;
       spawnParticles(state.player.x, state.player.y, "#b4d3ff", 12, 1.15);
       let pushed = 0;
       if (shieldTier >= 1) {
@@ -413,6 +470,8 @@
         `Shield up: full immunity for 3 turns after cast${
           shieldTier >= 1 ? `, knockback ${pushed}` : ""
         }${shieldTier >= 2 ? ", reflect x2 + taunt active" : ""}${
+          shieldTier >= LEGENDARY_SKILL_TIER ? ", stores 40% blocked damage for Aegis Counter" : ""
+        }${
           shieldChargesAfter?.enabled ? `, charges ${shieldChargesAfter.charges}/${shieldChargesAfter.max}` : ""
         }.`,
         "good"
