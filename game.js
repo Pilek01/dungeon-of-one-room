@@ -46,6 +46,7 @@
   const STORAGE_LEADERBOARD = "dungeonOneRoomLeaderboardV1";
   const STORAGE_LEADERBOARD_PENDING = "dungeonOneRoomLeaderboardPendingV1";
   const STORAGE_WARDEN_FIRST_DROP_DEPTHS = "dungeonOneRoomWardenFirstDropDepths";
+  const STORAGE_OBSERVER_AI_MODEL = "dungeonOneRoomObserverAiModelV2";
   const GAME_VERSION = (() => {
     const raw = typeof window !== "undefined" ? window.GAME_VERSION : "";
     const normalized = typeof raw === "string" ? raw.trim() : "";
@@ -126,6 +127,19 @@
   const LEADERBOARD_MIN_TURNS = 30;
   const ONLINE_RUN_TOKEN_MAX_LEN = 256;
   const ONLINE_FINALIZE_NONCE_MAX_LEN = 256;
+  const OBSERVER_AI_MODEL_VERSION = 2;
+  const OBSERVER_AI_DEFAULT_WEIGHTS = Object.freeze({
+    survival: 1.25,
+    kill: 1.1,
+    progress: 1.0,
+    utility: 0.85,
+    economy: 1.0,
+    lookahead: 0.9,
+    spikeAversion: 1.3,
+    extractBias: 1.0,
+    potionBias: 1.0,
+    bossDefense: 1.2
+  });
   const TEST_MODE_ENABLED = readGlobalFlag("DUNGEON_TEST_MODE", false);
   const ONLINE_LEADERBOARD_API_BASE = (() => {
     if (TEST_MODE_ENABLED) return "";
@@ -400,6 +414,12 @@
   const SKITTER_SPRITESHEET_ROWS = 1;
   const SKITTER_FRAME_MS = 180;
   const SKITTER_DRAW_SCALE = 1.2;
+  const GUARDIAN_SPRITESHEET_PATH = "assets/sprite/vault-guardian/vault-guardian.png";
+  const GUARDIAN_SPRITESHEET_VERSION = "20260219_001";
+  const GUARDIAN_SPRITESHEET_COLS = 3;
+  const GUARDIAN_SPRITESHEET_ROWS = 1;
+  const GUARDIAN_FRAME_MS = 180;
+  const GUARDIAN_DRAW_SCALE = 1.2;
 
   const SYNTH_VOLUME_MULTIPLIER = 6;
   const BASE_SYNTH_MASTER_GAIN = 0.18;
@@ -515,7 +535,7 @@
 
   function getThemeForEnemy(enemy) {
     if (enemy?.type === "warden") return getWardenThemeByDepth(state.depth);
-    if (enemy?.type === "brute") return getBruteThemeByDepth(state.depth);
+    if (enemy?.type === "brute" || enemy?.type === "guardian") return getBruteThemeByDepth(state.depth);
     return ENEMY_THEME_PRESETS.infernal;
   }
 
@@ -577,6 +597,7 @@
     treasure: "Treasure",
     shrine: "Shrine",
     cursed: "Cursed",
+    vault: "Vault",
     merchant: "Merchant",
     boss: "Boss"
   };
@@ -888,6 +909,34 @@
     return output;
   }
 
+  function sanitizeObserverAiWeights(input) {
+    const output = { ...OBSERVER_AI_DEFAULT_WEIGHTS };
+    if (!input || typeof input !== "object") return output;
+    for (const [key, fallback] of Object.entries(OBSERVER_AI_DEFAULT_WEIGHTS)) {
+      const raw = Number(input[key]);
+      output[key] = clamp(Number.isFinite(raw) ? raw : fallback, 0.2, 3.5);
+    }
+    return output;
+  }
+
+  function sanitizeObserverAiModel(input) {
+    const fallback = {
+      version: OBSERVER_AI_MODEL_VERSION,
+      learningEnabled: true,
+      updates: 0,
+      lastUpdatedAt: 0,
+      weights: { ...OBSERVER_AI_DEFAULT_WEIGHTS }
+    };
+    if (!input || typeof input !== "object") return fallback;
+    return {
+      version: clamp(Math.floor(Number(input.version) || OBSERVER_AI_MODEL_VERSION), 1, OBSERVER_AI_MODEL_VERSION),
+      learningEnabled: input.learningEnabled !== false,
+      updates: Math.max(0, Math.floor(Number(input.updates) || 0)),
+      lastUpdatedAt: Math.max(0, Number(input.lastUpdatedAt) || 0),
+      weights: sanitizeObserverAiWeights(input.weights)
+    };
+  }
+
   function sanitizeEnemySpeedMode(value, fallback = "standard") {
     const normalized = String(value || "").trim().toLowerCase();
     if (ENEMY_SPEED_MODES.includes(normalized)) return normalized;
@@ -1036,6 +1085,7 @@
   const initialWardenFirstDropDepths = sanitizeWardenFirstDropDepths(
     readJsonStorage(STORAGE_WARDEN_FIRST_DROP_DEPTHS, {})
   );
+  const initialObserverAiModel = sanitizeObserverAiModel(readJsonStorage(STORAGE_OBSERVER_AI_MODEL, null));
   const initialPlayerName = sanitizePlayerName(localStorage.getItem(STORAGE_PLAYER_NAME) || "");
   const initialEnemySpeedMode = sanitizeEnemySpeedMode(localStorage.getItem(STORAGE_ENEMY_SPEED) || "");
 
@@ -1048,6 +1098,7 @@
     roomIndex: 0,
     bossRoom: false,
     roomType: "combat",
+    runMerchantRoomsSeen: 0,
     highscore: Number(localStorage.getItem(STORAGE_DEPTH) || 0),
     bestGold: Number(localStorage.getItem(STORAGE_GOLD) || 0),
     deaths: Number(localStorage.getItem(STORAGE_DEATHS) || 0),
@@ -1073,6 +1124,16 @@
     skillCooldowns: initialSkillCooldowns,
     skillTiers: initialSkillTiers,
     uiDirty: true,
+    simulation: {
+      active: false,
+      suppressLogs: false,
+      suppressVisuals: false,
+      suppressAudio: false,
+      suppressPersistence: false,
+      runIndex: 0,
+      runSeed: "",
+      lastGameOverReason: ""
+    },
     portalPulse: 0,
     shake: 0,
     flash: 0,
@@ -1141,6 +1202,31 @@
     debugCheatSectionIndex: 0,
     debugGodMode: false,
     debugAiOverlay: localStorage.getItem(STORAGE_DEBUG_AI_OVERLAY) === "1",
+    observerBot: {
+      enabled: false,
+      actionIntervalMs: 270,
+      actionTimerMs: 0,
+      lastDecision: "idle",
+      currentRoomIndex: -1,
+      merchantPurchasesThisRoom: 0,
+      merchantDoneRoomIndex: -1,
+      stallTicks: 0,
+      lastPosX: -1,
+      lastPosY: -1,
+      lastEnemyCount: 0,
+      lastEnemyHpTotal: 0,
+      pressureDepth: 0,
+      pressureFailures: 0,
+      farmMode: false,
+      farmExtractDepth: 0,
+      farmGoldTarget: 0,
+      farmGuardTarget: 0,
+      farmVitalityTarget: 0,
+      farmBladeTarget: 0,
+      aiModel: initialObserverAiModel,
+      economyPlan: null,
+      lastPolicy: "default"
+    },
     enemySpeedMode: initialEnemySpeedMode,
     merchantPotionsBought: 0,
     runMods: {
@@ -1321,6 +1407,11 @@
     ready: false,
     failed: false
   };
+  const guardianSprite = {
+    sheet: null,
+    ready: false,
+    failed: false
+  };
   const wardenSprite = {
     sheet: null,
     ready: false,
@@ -1386,11 +1477,17 @@
     failed: false
   };
 
+  function isSimulationActive() {
+    return Boolean(state?.simulation?.active);
+  }
+
   function markUiDirty() {
+    if (isSimulationActive()) return;
     state.uiDirty = true;
   }
 
   function pushLog(text, type = "") {
+    if (isSimulationActive() && state.simulation.suppressLogs) return;
     state.log.unshift({ text, type });
     if (state.log.length > 8) {
       state.log.length = 8;
@@ -1408,6 +1505,84 @@
 
   function isTurnInputLocked() {
     return state.phase === "playing" && (state.turnInProgress || state.enemyTurnInProgress);
+  }
+
+  function shouldPersistToStorage() {
+    return !(isSimulationActive() && state.simulation.suppressPersistence);
+  }
+
+  function isObserverBotActive() {
+    return !isSimulationActive() && Boolean(state?.observerBot?.enabled);
+  }
+
+  function setObserverBotEnabled(enabled, options = {}) {
+    const next = Boolean(enabled);
+    if (!state.observerBot || state.observerBot.enabled === next) return false;
+    state.observerBot.enabled = next;
+    state.observerBot.actionTimerMs = 0;
+    state.observerBot.currentRoomIndex = -1;
+    state.observerBot.merchantPurchasesThisRoom = 0;
+    state.observerBot.merchantDoneRoomIndex = -1;
+    state.observerBot.lastDecision = next ? "online" : "offline";
+    resetObserverBotStallTracker();
+    if (!options.silent) {
+      pushLog(`Observer Bot ${next ? "ON" : "OFF"}.`, "warn");
+    } else {
+      markUiDirty();
+    }
+    return true;
+  }
+
+  function toggleObserverBot() {
+    return setObserverBotEnabled(!isObserverBotActive());
+  }
+
+  function setStorageItem(key, value) {
+    if (!shouldPersistToStorage()) return;
+    localStorage.setItem(key, value);
+  }
+
+  function removeStorageItem(key) {
+    if (!shouldPersistToStorage()) return;
+    localStorage.removeItem(key);
+  }
+
+  function persistObserverBotAiModel() {
+    const model = sanitizeObserverAiModel(state.observerBot?.aiModel || null);
+    state.observerBot.aiModel = model;
+    setStorageItem(STORAGE_OBSERVER_AI_MODEL, JSON.stringify(model));
+  }
+
+  function getObserverBotAiModel() {
+    if (!state.observerBot) return sanitizeObserverAiModel(null);
+    if (!state.observerBot.aiModel) {
+      state.observerBot.aiModel = sanitizeObserverAiModel(null);
+    }
+    return state.observerBot.aiModel;
+  }
+
+  function getObserverBotAiWeights() {
+    return sanitizeObserverAiWeights(getObserverBotAiModel().weights);
+  }
+
+  function updateObserverBotAiWeights(mutator) {
+    if (typeof mutator !== "function") return getObserverBotAiWeights();
+    const model = getObserverBotAiModel();
+    const nextWeights = sanitizeObserverAiWeights(mutator({ ...model.weights }) || model.weights);
+    model.weights = nextWeights;
+    model.updates = Math.max(0, Number(model.updates) || 0) + 1;
+    model.lastUpdatedAt = Date.now();
+    persistObserverBotAiModel();
+    return nextWeights;
+  }
+
+  function resetObserverBotAiModel() {
+    const model = sanitizeObserverAiModel(null);
+    if (state.observerBot) {
+      state.observerBot.aiModel = model;
+    }
+    setStorageItem(STORAGE_OBSERVER_AI_MODEL, JSON.stringify(model));
+    return model;
   }
 
   function toggleDebugCheatMenu(forceOpen = null) {
@@ -1652,6 +1827,64 @@
         }
       },
       {
+        key: "c",
+        section: "System",
+        name: "Sim Runner 1000",
+        desc: "Run 1000 seeded bot sims (median depth + death causes).",
+        available: () => true,
+        run: () => {
+          const seed = `${GAME_VERSION}-debug-sim`;
+          pushLog(`Debug sim start: 1000 runs (seed: ${seed}).`, "warn");
+          markUiDirty();
+          const report = runBalanceSimulation({
+            runs: 1000,
+            seed
+          });
+          const causeSummary = Object.entries(report.deathCauses || {})
+            .slice(0, 3)
+            .map(([cause, count]) => `${cause}:${count}`)
+            .join(", ");
+          pushLog(
+            `Debug sim done: median depth ${report.medianDepth}. ${causeSummary ? `Top causes: ${causeSummary}.` : ""}`.trim(),
+            "warn"
+          );
+          markUiDirty();
+        }
+      },
+      {
+        key: "v",
+        section: "System",
+        name: "Regression Suite",
+        desc: "Run 5 fixed seeds x 200 sims and print p10/p50/p90 stats.",
+        available: () => true,
+        run: () => {
+          const seed = `${GAME_VERSION}-debug-regression`;
+          pushLog(`Debug regression start: 5 seeds x 200 runs (suite: ${seed}).`, "warn");
+          markUiDirty();
+          const suite = runObserverBotRegressionSuite({
+            seed,
+            runsPerSeed: 200,
+            learn: false
+          });
+          const aggregate = suite?.aggregate || {};
+          pushLog(
+            `Debug regression done: median ${aggregate.medianDepth || 0}, worst ${aggregate.worstMedianDepth || 0}, best ${aggregate.bestMedianDepth || 0}.`,
+            "warn"
+          );
+          markUiDirty();
+        }
+      },
+      {
+        key: "b",
+        section: "System",
+        name: "Toggle Observer Bot",
+        desc: "Auto-play visible run: skills, extract logic, camp upgrades, merchant.",
+        available: () => true,
+        run: () => {
+          toggleObserverBot();
+        }
+      },
+      {
         key: "8",
         section: "System",
         name: "Toggle God Mode",
@@ -1720,30 +1953,30 @@
   }
 
   function persistMutatorState() {
-    localStorage.setItem(STORAGE_MUT_UNLOCK, JSON.stringify(state.unlockedMutators));
-    localStorage.setItem(STORAGE_MUT_ACTIVE, JSON.stringify(state.activeMutators));
+    setStorageItem(STORAGE_MUT_UNLOCK, JSON.stringify(state.unlockedMutators));
+    setStorageItem(STORAGE_MUT_ACTIVE, JSON.stringify(state.activeMutators));
   }
 
   function persistCampProgress() {
-    localStorage.setItem(STORAGE_CAMP_GOLD, String(state.campGold));
-    localStorage.setItem(STORAGE_LIVES, String(state.lives));
-    localStorage.setItem(STORAGE_CAMP_UPGRADES, JSON.stringify(state.campUpgrades));
-    localStorage.setItem(STORAGE_SKILL_TIERS, JSON.stringify(state.skillTiers));
+    setStorageItem(STORAGE_CAMP_GOLD, String(state.campGold));
+    setStorageItem(STORAGE_LIVES, String(state.lives));
+    setStorageItem(STORAGE_CAMP_UPGRADES, JSON.stringify(state.campUpgrades));
+    setStorageItem(STORAGE_SKILL_TIERS, JSON.stringify(state.skillTiers));
   }
 
   function persistWardenFirstDropDepths() {
-    localStorage.setItem(
+    setStorageItem(
       STORAGE_WARDEN_FIRST_DROP_DEPTHS,
       JSON.stringify(sanitizeWardenFirstDropDepths(state.wardenFirstDropDepths))
     );
   }
 
   function persistLeaderboard() {
-    localStorage.setItem(STORAGE_LEADERBOARD, JSON.stringify(state.leaderboard || []));
+    setStorageItem(STORAGE_LEADERBOARD, JSON.stringify(state.leaderboard || []));
   }
 
   function persistLeaderboardPending() {
-    localStorage.setItem(STORAGE_LEADERBOARD_PENDING, JSON.stringify(state.leaderboardPending || []));
+    setStorageItem(STORAGE_LEADERBOARD_PENDING, JSON.stringify(state.leaderboardPending || []));
   }
 
   function clearLocalLeaderboard() {
@@ -1753,16 +1986,16 @@
     state.onlineLeaderboardError = "";
     state.onlineLeaderboardStatus = ONLINE_LEADERBOARD_API_BASE ? "idle" : "disabled";
     state.onlineLeaderboardUpdatedAt = 0;
-    localStorage.removeItem(STORAGE_LEADERBOARD);
-    localStorage.removeItem(STORAGE_LEADERBOARD_PENDING);
+    removeStorageItem(STORAGE_LEADERBOARD);
+    removeStorageItem(STORAGE_LEADERBOARD_PENDING);
     markUiDirty();
   }
 
   function persistPlayerName() {
     if (state.playerName) {
-      localStorage.setItem(STORAGE_PLAYER_NAME, state.playerName);
+      setStorageItem(STORAGE_PLAYER_NAME, state.playerName);
     } else {
-      localStorage.removeItem(STORAGE_PLAYER_NAME);
+      removeStorageItem(STORAGE_PLAYER_NAME);
     }
   }
 
@@ -1878,6 +2111,7 @@
   }
 
   function isOnlineLeaderboardEnabled() {
+    if (isSimulationActive()) return false;
     if (TEST_MODE_ENABLED) return false;
     return Boolean(ONLINE_LEADERBOARD_API_BASE);
   }
@@ -2440,9 +2674,9 @@
     state.finalGameOverPrompt = null;
     state.finalVictoryPrompt = null;
 
-    localStorage.setItem(STORAGE_DEPTH, "0");
-    localStorage.setItem(STORAGE_GOLD, "0");
-    localStorage.setItem(STORAGE_DEATHS, "0");
+    setStorageItem(STORAGE_DEPTH, "0");
+    setStorageItem(STORAGE_GOLD, "0");
+    setStorageItem(STORAGE_DEATHS, "0");
     persistMutatorState();
     persistCampProgress();
     persistWardenFirstDropDepths();
@@ -2463,16 +2697,16 @@
   function saveMetaProgress() {
     state.highscore = Math.max(state.highscore, getRunMaxDepth());
     state.bestGold = Math.max(state.bestGold, state.player.gold);
-    localStorage.setItem(STORAGE_DEPTH, String(state.highscore));
-    localStorage.setItem(STORAGE_GOLD, String(state.bestGold));
-    localStorage.setItem(STORAGE_DEATHS, String(state.deaths));
+    setStorageItem(STORAGE_DEPTH, String(state.highscore));
+    setStorageItem(STORAGE_GOLD, String(state.bestGold));
+    setStorageItem(STORAGE_DEATHS, String(state.deaths));
     persistMutatorState();
     persistCampProgress();
     markUiDirty();
   }
 
   function clearRunSnapshot() {
-    localStorage.removeItem(STORAGE_RUN_SAVE);
+    removeStorageItem(STORAGE_RUN_SAVE);
     state.hasContinueRun = false;
     markUiDirty();
   }
@@ -2488,6 +2722,7 @@
       roomIndex: state.roomIndex,
       bossRoom: state.bossRoom,
       roomType: state.roomType,
+      runMerchantRoomsSeen: state.runMerchantRoomsSeen || 0,
       floorPattern: state.floorPattern,
       roomCleared: state.roomCleared,
       extractRelicPrompt: state.extractRelicPrompt,
@@ -2541,7 +2776,7 @@
     if (state.phase !== "playing" && state.phase !== "relic" && state.phase !== "camp") {
       return;
     }
-    localStorage.setItem(STORAGE_RUN_SAVE, JSON.stringify(buildRunSnapshot()));
+    setStorageItem(STORAGE_RUN_SAVE, JSON.stringify(buildRunSnapshot()));
     state.hasContinueRun = true;
     markUiDirty();
   }
@@ -2549,7 +2784,7 @@
   function tryLoadRunSnapshot() {
     const snapshot = readJsonStorage(STORAGE_RUN_SAVE, null);
     if (!snapshot || !snapshot.player || !snapshot.portal) {
-      localStorage.removeItem(STORAGE_RUN_SAVE);
+      removeStorageItem(STORAGE_RUN_SAVE);
       state.hasContinueRun = false;
       return false;
     }
@@ -2580,6 +2815,10 @@
     state.roomIndex = Math.max(0, Number(snapshot.roomIndex) || 0);
     state.bossRoom = Boolean(snapshot.bossRoom);
     state.roomType = ROOM_TYPE_LABELS[snapshot.roomType] ? snapshot.roomType : "combat";
+    state.runMerchantRoomsSeen = Math.max(
+      0,
+      Number(snapshot.runMerchantRoomsSeen) || (state.roomType === "merchant" ? 1 : 0)
+    );
     state.floorPattern = Array.isArray(snapshot.floorPattern) ? snapshot.floorPattern : makeFloorPattern();
     state.roomCleared = Boolean(snapshot.roomCleared);
     if (
@@ -3275,6 +3514,7 @@
   }
 
   function playSplashTrack() {
+    if (isSimulationActive() && state.simulation.suppressAudio) return;
     if (state.audioMuted) return;
     ensureSplashTrack();
     if (!audio.splash) return;
@@ -3311,6 +3551,7 @@
   }
 
   function playDeathTrack() {
+    if (isSimulationActive() && state.simulation.suppressAudio) return false;
     if (state.audioMuted) return false;
     ensureDeathTrack();
     if (!audio.deathSample) return false;
@@ -3387,6 +3628,12 @@
   }
 
   function syncBgmWithState(force = false) {
+    if (isSimulationActive() && state.simulation.suppressAudio) {
+      stopAllBgm(false);
+      stopSplashTrack(false);
+      stopDeathTrack(false);
+      return;
+    }
     ensureBgmTracks();
 
     const allowMusic = state.phase === "playing" || state.phase === "relic" || state.phase === "camp";
@@ -3451,6 +3698,7 @@
   }
 
   function playSfx(kind) {
+    if (isSimulationActive() && state.simulation.suppressAudio) return;
     if (!ensureAudio()) return;
     const ctx = audio.ctx;
     const out = audio.master;
@@ -3611,7 +3859,7 @@
 
   function toggleAudio() {
     state.audioMuted = !state.audioMuted;
-    localStorage.setItem(STORAGE_AUDIO_MUTED, state.audioMuted ? "1" : "0");
+    setStorageItem(STORAGE_AUDIO_MUTED, state.audioMuted ? "1" : "0");
     if (state.audioMuted) {
       stopSplashTrack(false);
       stopDeathTrack(false);
@@ -3623,7 +3871,7 @@
 
   function toggleDebugAiOverlay() {
     state.debugAiOverlay = !state.debugAiOverlay;
-    localStorage.setItem(STORAGE_DEBUG_AI_OVERLAY, state.debugAiOverlay ? "1" : "0");
+    setStorageItem(STORAGE_DEBUG_AI_OVERLAY, state.debugAiOverlay ? "1" : "0");
     pushLog(`AI debug overlay ${state.debugAiOverlay ? "ON" : "OFF"} (${DEBUG_AI_OVERLAY_TOGGLE_KEY.toUpperCase()}).`);
     markUiDirty();
   }
@@ -3645,7 +3893,7 @@
     const normalized = sanitizeEnemySpeedMode(mode);
     if (normalized === state.enemySpeedMode) return false;
     state.enemySpeedMode = normalized;
-    localStorage.setItem(STORAGE_ENEMY_SPEED, normalized);
+    setStorageItem(STORAGE_ENEMY_SPEED, normalized);
     if (!options.silent) {
       pushLog(`Enemy speed: ${getEnemySpeedLabel(normalized)}.`);
     }
@@ -4096,9 +4344,16 @@
   }
 
   function chooseRoomType() {
-    const guaranteedMerchantRoom = state.roomIndex === 18;
+    const guaranteedMerchantRoom = state.roomIndex === 18 || (
+      state.roomIndex === 8 && Math.max(0, Number(state.runMerchantRoomsSeen) || 0) <= 0
+    );
     if (guaranteedMerchantRoom) {
       return "merchant";
+    }
+
+    const vaultChance = state.depth < 10 ? 0.003 : state.depth < 20 ? 0.005 : 0.007;
+    if (state.depth >= 6 && chance(vaultChance)) {
+      return "vault";
     }
 
     const roll = Math.random();
@@ -4840,7 +5095,7 @@
     // Famine unlock: extract from depth 10+ without using potions
     if (state.depth >= 10 && (state.potionsUsedThisRun || 0) === 0) {
       state.potionFreeExtract = (state.potionFreeExtract || 0) + 1;
-      localStorage.setItem(STORAGE_POTION_FREE_EXTRACT, String(state.potionFreeExtract));
+      setStorageItem(STORAGE_POTION_FREE_EXTRACT, String(state.potionFreeExtract));
     }
     state.phase = "camp";
     syncBgmWithState();
@@ -5553,7 +5808,7 @@
     state.player.gold += scaled;
     state.runGoldEarned += scaled;
     state.totalGoldEarned += scaled;
-    localStorage.setItem(STORAGE_TOTAL_GOLD, String(state.totalGoldEarned));
+    setStorageItem(STORAGE_TOTAL_GOLD, String(state.totalGoldEarned));
     return scaled;
   }
 
@@ -5831,6 +6086,17 @@
         cooldown: 0,
         rests: false
       };
+    } else if (type === "guardian") {
+      enemy = {
+        type,
+        name: "Guardian",
+        x,
+        y,
+        hp: scaledCombat(12 + Math.floor(state.depth * 1.8)),
+        attack: scaledCombat(4 + Math.floor(state.depth / 3)) + damageBonus,
+        cooldown: 0,
+        rests: false
+      };
     } else if (type === "warden") {
       enemy = {
         type,
@@ -5928,6 +6194,7 @@
       spikeCount = 0;
       const merchantSpot = randomFreeTile(occupied);
       state.merchant = { x: merchantSpot.x, y: merchantSpot.y };
+      state.runMerchantRoomsSeen = Math.max(0, Number(state.runMerchantRoomsSeen) || 0) + 1;
       state.roomCleared = true;
       pushLog(`Merchant room ${state.depth + 1}: stand on trader and press E to open shop.`, "good");
       return;
@@ -5944,8 +6211,12 @@
       enemyCount = Math.min(10, baseEnemyCount + 2);
       chestCount = randInt(0, 1);
       spikeCount = Math.min(5, baseSpikeCount + 2);
+    } else if (state.roomType === "vault") {
+      enemyCount = 1;
+      chestCount = randInt(5, 10);
+      spikeCount = randInt(0, 2);
     }
-    if (state.roomType !== "treasure") {
+    if (state.roomType !== "treasure" && state.roomType !== "vault") {
       chestCount = rollChestCountWithChance(chestCount, NON_TREASURE_CHEST_CHANCE);
     }
 
@@ -5967,8 +6238,10 @@
 
     for (let i = 0; i < enemyCount; i += 1) {
       const spot = randomFreeTile(occupied);
-      const elite = elitesEnabled && chance(eliteChance);
-      state.enemies.push(createEnemy(rollEnemyTypeWithCaps(), spot.x, spot.y, { elite }));
+      const isVaultGuardian = state.roomType === "vault";
+      const elite = !isVaultGuardian && elitesEnabled && chance(eliteChance);
+      const enemyType = isVaultGuardian ? "guardian" : rollEnemyTypeWithCaps();
+      state.enemies.push(createEnemy(enemyType, spot.x, spot.y, { elite }));
     }
     for (let i = 0; i < chestCount; i += 1) {
       const spot = randomFreeTile(occupied);
@@ -6083,6 +6356,7 @@
     state.roomIndex = 0;
     state.bossRoom = false;
     state.roomType = "combat";
+    state.runMerchantRoomsSeen = 0;
     state.shake = 0;
     state.flash = 0;
     state.turnInProgress = false;
@@ -6104,6 +6378,7 @@
     state.lastDeathRelicLossText = "";
     state.finalGameOverPrompt = null;
     state.finalVictoryPrompt = null;
+    state.simulation.lastGameOverReason = "";
     state.campVisitShopCostMult = 1;
     state.runLeaderboardSubmitted = false;
     state.lastBossClearDepthThisRun = 0;
@@ -6120,6 +6395,11 @@
     state.wardenRelicMissStreak = 0;
     state.shrine = null;
     state.merchant = null;
+    state.observerBot.currentRoomIndex = -1;
+    state.observerBot.merchantPurchasesThisRoom = 0;
+    state.observerBot.merchantDoneRoomIndex = -1;
+    state.observerBot.stallTicks = 0;
+    state.observerBot.lastDecision = "run_start";
 
     state.merchantPotionsBought = 0;
     state.potionsUsedThisRun = 0;
@@ -6179,6 +6459,7 @@
     state.player.hp = state.player.maxHp;
 
     buildRoom();
+    resetObserverBotStallTracker();
     syncBgmWithState(true);
     if (carryRelics) {
       pushLog(`New run started with ${state.relics.length} carried relics.`);
@@ -6251,6 +6532,7 @@
     state.legendarySwapPending = null;
     state.relicSwapPending = null;
     state.finalGameOverPrompt = null;
+    state.simulation.lastGameOverReason = "";
     state.finalVictoryPrompt = {
       depth: finalDepth,
       gold: finalGold,
@@ -6277,6 +6559,8 @@
     if (state.player.hp <= 0 && hasRelic("chronoloop") && state.player.chronoUsedThisRun) {
       pushLog("Chrono Loop was already spent this run.", "bad");
     }
+    state.simulation.lastGameOverReason = String(reason || "");
+    registerObserverBotDepthFailure(state.depth, reason);
     recordRunOnLeaderboard("death");
     const lostRelic = loseRandomRelicOnDeath();
     state.lastDeathRelicLossText = lostRelic
@@ -6467,6 +6751,7 @@
   }
 
   function spawnParticles(tileX, tileY, color, count, spread = 1.1) {
+    if (isSimulationActive() && state.simulation.suppressVisuals) return;
     const centerX = tileX * TILE + TILE / 2;
     const centerY = tileY * TILE + TILE / 2;
     for (let i = 0; i < count; i += 1) {
@@ -6486,6 +6771,7 @@
   }
 
   function spawnRangedBolt(fromTileX, fromTileY, toTileX, toTileY, color) {
+    if (isSimulationActive() && state.simulation.suppressVisuals) return;
     state.rangedBolts.push({
       fromX: fromTileX * TILE + TILE / 2,
       fromY: fromTileY * TILE + TILE / 2,
@@ -6500,6 +6786,7 @@
   }
 
   function spawnRangedImpact(tileX, tileY, color) {
+    if (isSimulationActive() && state.simulation.suppressVisuals) return;
     state.rangedImpacts.push({
       x: tileX * TILE + TILE / 2,
       y: tileY * TILE + TILE / 2,
@@ -6511,6 +6798,7 @@
   }
 
   function spawnShockwaveRing(tileX, tileY, options = {}) {
+    if (isSimulationActive() && state.simulation.suppressVisuals) return;
     const color = options.color || "#f2cb92";
     const core = options.core || "#fff0cf";
     const maxRadius = Number(options.maxRadius) || TILE * 2.4;
@@ -6528,6 +6816,7 @@
   }
 
   function spawnDashTrail(fromTileX, fromTileY, toTileX, toTileY) {
+    if (isSimulationActive() && state.simulation.suppressVisuals) return;
     state.dashTrails.push({
       fromX: fromTileX * TILE + TILE / 2,
       fromY: fromTileY * TILE + TILE / 2,
@@ -6571,6 +6860,7 @@
   function rewardForEnemy(enemy) {
     let base = 2;
     if (enemy.type === "warden") base = 35;
+    else if (enemy.type === "guardian") base = 16;
     else if (enemy.type === "acolyte") base = 5;
     else if (enemy.type === "skitter") base = 4;
     else if (enemy.type === "brute") base = 4;
@@ -6585,10 +6875,10 @@
     const reward = grantGold(rewardForEnemy(enemy));
     state.player.adrenaline = clamp(state.player.adrenaline + 1, 0, state.player.maxAdrenaline);
     state.totalKills += 1;
-    localStorage.setItem(STORAGE_TOTAL_KILLS, String(state.totalKills));
+    setStorageItem(STORAGE_TOTAL_KILLS, String(state.totalKills));
     if (enemy.elite) {
       state.eliteKills += 1;
-      localStorage.setItem(STORAGE_ELITE_KILLS, String(state.eliteKills));
+      setStorageItem(STORAGE_ELITE_KILLS, String(state.eliteKills));
     }
     spawnParticles(enemy.x, enemy.y, "#ffd57a", 8, 1.45);
     pushLog(`${enemy.name} down. +${reward} gold. ${reason ? `(${reason})` : ""}`, "good");
@@ -6620,6 +6910,7 @@
     if (state.roomCleared || state.enemies.length > 0) return;
     state.roomCleared = true;
     state.runMaxDepth = Math.max(state.runMaxDepth, state.depth);
+    registerObserverBotDepthClear(state.depth);
     revealPortalFx();
     pushLog("Room cleared! Portal revealed.", "good");
     let goldBonus = 2 + Math.floor(state.depth / 2);
@@ -6630,6 +6921,9 @@
       if (state.roomType === "treasure") {
         goldBonus = Math.max(1, goldBonus - 1);
         potionChance = 0.22;
+      } else if (state.roomType === "vault") {
+        goldBonus = Math.max(1, goldBonus - 2);
+        potionChance = 0.1;
       } else if (state.roomType === "shrine") {
         goldBonus += 1;
         potionChance = 0.45;
@@ -6665,9 +6959,6 @@
             pushLog("Mini-boss defeated. No relic drop this time.", "warn");
           }
         }
-      }
-      if (chance(0.01)) {
-        grantLife("Boss drop");
       }
     }
     const scaled = grantGold(goldBonus);
@@ -7302,6 +7593,24 @@
     img.src = `${SKITTER_SPRITESHEET_PATH}?v=${SKITTER_SPRITESHEET_VERSION}`;
   }
 
+  function loadGuardianSprite() {
+    const img = new Image();
+    guardianSprite.sheet = img;
+    guardianSprite.ready = false;
+    guardianSprite.failed = false;
+    img.onload = () => {
+      guardianSprite.ready = true;
+      markUiDirty();
+    };
+    img.onerror = () => {
+      if (!guardianSprite.failed) {
+        guardianSprite.failed = true;
+        pushLog(`Guardian sprite failed: ${GUARDIAN_SPRITESHEET_PATH}`, "bad");
+      }
+    };
+    img.src = `${GUARDIAN_SPRITESHEET_PATH}?v=${GUARDIAN_SPRITESHEET_VERSION}`;
+  }
+
   function stepToward(enemy, targetX, targetY) {
     const dx = targetX - enemy.x;
     const dy = targetY - enemy.y;
@@ -7791,6 +8100,7 @@
     let lineDistance = Math.abs(enemy.x - state.player.x) + Math.abs(enemy.y - state.player.y);
     const usesCooldown =
       enemy.type === "brute" ||
+      enemy.type === "guardian" ||
       enemy.type === "skeleton" ||
       enemy.type === "acolyte" ||
       enemy.type === "skitter" ||
@@ -7936,7 +8246,7 @@
       }
     }
 
-    if (enemy.type === "brute") {
+    if (enemy.type === "brute" || enemy.type === "guardian") {
       const bruteTactical = enemyTactics && typeof enemyTactics.handleBrute === "function"
         ? enemyTactics.handleBrute(enemy, {
           distance: currentDistance,
@@ -7951,7 +8261,7 @@
         if (!canEnemyCommitMelee(enemy)) {
           return;
         }
-        pushLog("Brute winds up a slam!", "bad");
+        pushLog(`${enemy.name} winds up a slam!`, "bad");
         return;
       }
       if (bruteTactical.type === "execute_slam") {
@@ -7964,7 +8274,7 @@
             enemyMelee(enemy);
             if (state.phase !== "playing") return;
             registerEnemyMeleeCommit();
-            pushLog("Brute slam was blocked, but the hit still lands.", "bad");
+            pushLog(`${enemy.name} slam was blocked, but the hit still lands.`, "bad");
           }
         }
         enemy.cooldown = 3;
@@ -8206,7 +8516,7 @@
   }
 
   function isFrostImmuneEnemy(enemy) {
-    return Boolean(enemy && (enemy.elite || enemy.type === "warden"));
+    return Boolean(enemy && (enemy.elite || enemy.type === "warden" || enemy.type === "guardian"));
   }
 
   function tickFrostAmulet() {
@@ -8633,12 +8943,13 @@
     let leftMetaBottom = "";
     let rightMetaTop = "";
     let rightMetaBottom = "";
+    const observerBotTag = isObserverBotActive() ? " | BOT ON" : "";
 
     if (state.phase === "playing" || state.phase === "relic") {
       const roomLabel = ROOM_TYPE_LABELS[state.roomType] || "Room";
       const bossStatus = state.bossRoom ? "BOSS NOW" : `BOSS IN ${getRoomsUntilBoss()}`;
       title = `Depth ${state.depth}`;
-      subtitle = `${roomLabel} Room - ${bossStatus}`;
+      subtitle = `${roomLabel} Room - ${bossStatus}${observerBotTag}`;
       leftMetaTop = `Fury ${getEffectiveAdrenaline()}/${getEffectiveMaxAdrenaline()}`;
       leftMetaTopTooltip = `Fury is gained mainly by killing enemies (+1 per kill). Some relics and shrine blessings can grant extra Fury. Fury boosts attack damage and powers certain skills.`;
       rightMetaTop = `Run Gold ${state.player.gold}`;
@@ -8650,7 +8961,7 @@
     } else if (state.phase === "camp") {
       const lastDepth = state.lastExtract?.depth ?? state.depth;
       title = "Camp";
-      subtitle = `Last run depth ${lastDepth}`;
+      subtitle = `Last run depth ${lastDepth}${observerBotTag}`;
     } else if (state.phase === "dead") {
       title = `Depth ${state.depth}`;
       subtitle = "Run Over";
@@ -9192,7 +9503,7 @@
       screenOverlayEl.innerHTML = [
         `<div class="overlay-card overlay-card-wide">`,
         `<h2 class="overlay-title">Debug Cheats</h2>`,
-        `<p class="overlay-sub">God Mode: ${state.debugGodMode ? "ON" : "OFF"} | Test Mode: ${TEST_MODE_ENABLED ? "ON" : "OFF"} | Phase: ${state.phase}</p>`,
+        `<p class="overlay-sub">God Mode: ${state.debugGodMode ? "ON" : "OFF"} | Observer Bot: ${isObserverBotActive() ? "ON" : "OFF"} | Test Mode: ${TEST_MODE_ENABLED ? "ON" : "OFF"} | Phase: ${state.phase}</p>`,
         `<p class="overlay-sub">Section ${sectionLabel}: ${sectionTabs}</p>`,
         `<p class="overlay-hint">A/D or arrows switch section | 1-0 / listed letter key execute | ${DEBUG_MENU_TOGGLE_KEY.toUpperCase()} or Esc close</p>`,
         `<div class="overlay-menu">${sectionRows}</div>`,
@@ -9664,6 +9975,7 @@
   }
 
   function spawnFloatingText(tileX, tileY, text, color = "#ffffff", options = {}) {
+    if (isSimulationActive() && state.simulation.suppressVisuals) return;
     if (!text) return;
     const centerX = tileX * TILE + TILE / 2;
     const centerY = tileY * TILE + TILE / 2;
@@ -10197,6 +10509,63 @@
     ctx.fillRect(px + 12, py + 9 - twitch, 2, 1);
   }
 
+  function drawGuardian(enemy) {
+    if (!drawGuardianSprite(enemy)) {
+      drawBruteFallback(enemy);
+    }
+  }
+
+  function getGuardianSpriteLayout(img) {
+    const w = img?.naturalWidth || 0;
+    const h = img?.naturalHeight || 0;
+    const looksLikeThreeFrameSheet =
+      w >= 3 &&
+      h > 0 &&
+      w % GUARDIAN_SPRITESHEET_COLS === 0 &&
+      Math.abs(Math.round(w / GUARDIAN_SPRITESHEET_COLS) - h) <= 1;
+    if (looksLikeThreeFrameSheet) {
+      return { cols: GUARDIAN_SPRITESHEET_COLS, rows: GUARDIAN_SPRITESHEET_ROWS };
+    }
+    return { cols: 1, rows: 1 };
+  }
+
+  function drawGuardianSprite(enemy) {
+    if (!guardianSprite.ready || !guardianSprite.sheet) return false;
+    const img = guardianSprite.sheet;
+    const layout = getGuardianSpriteLayout(img);
+    const cols = Math.max(1, layout.cols);
+    const rows = Math.max(1, layout.rows);
+    const totalFrames = cols * rows;
+    if (totalFrames <= 0) return false;
+
+    const frameIndex = Math.floor(state.playerAnimTimer / GUARDIAN_FRAME_MS) % totalFrames;
+    const frameCol = frameIndex % cols;
+    const frameRow = Math.floor(frameIndex / cols);
+    const sw = Math.floor((img.naturalWidth || 0) / cols);
+    const sh = Math.floor((img.naturalHeight || 0) / rows);
+    if (sw <= 0 || sh <= 0) return false;
+
+    const px = visualX(enemy);
+    const py = visualY(enemy);
+    const bob = Math.sin(state.playerAnimTimer * 0.02 + enemy.x * 0.55 + enemy.y * 0.35) > 0.45 ? 1 : 0;
+    const drawSize = Math.round(TILE * GUARDIAN_DRAW_SCALE);
+    const drawX = Math.round(px + (TILE - drawSize) / 2);
+    const drawY = Math.round(py + (TILE - drawSize) / 2 - bob);
+
+    ctx.drawImage(
+      img,
+      frameCol * sw,
+      frameRow * sh,
+      sw,
+      sh,
+      drawX,
+      drawY,
+      drawSize,
+      drawSize
+    );
+    return true;
+  }
+
   function drawBruteSprite(enemy) {
     const facing = enemy.facing || "south";
     const spriteSet = bruteSprites[facing];
@@ -10368,6 +10737,8 @@
       drawAcolyte(enemy);
     } else if (enemy.type === "skitter") {
       drawSkitter(enemy);
+    } else if (enemy.type === "guardian") {
+      drawGuardian(enemy);
     } else if (enemy.type === "brute") {
       drawBrute(enemy);
     } else if (enemy.type === "warden") {
@@ -11067,6 +11438,7 @@
       state.roomIntroTimer = Math.max(0, state.roomIntroTimer - dt);
     }
     updateEnemyTurnSequence(dt);
+    updateObserverBot(dt);
 
     if (state.particles.length > 0) {
       for (const particle of state.particles) {
@@ -11178,6 +11550,2871 @@
     ctx.restore();
   }
 
+  const BOT_CARDINAL_DIRECTIONS = [
+    { dx: 0, dy: -1 },
+    { dx: 1, dy: 0 },
+    { dx: 0, dy: 1 },
+    { dx: -1, dy: 0 }
+  ];
+
+  function deepCloneValue(value) {
+    if (typeof structuredClone === "function") {
+      return structuredClone(value);
+    }
+    return JSON.parse(JSON.stringify(value));
+  }
+
+  function captureLocalStorageSnapshot() {
+    const snapshot = {};
+    for (let i = 0; i < localStorage.length; i += 1) {
+      const key = localStorage.key(i);
+      if (!key) continue;
+      snapshot[key] = localStorage.getItem(key);
+    }
+    return snapshot;
+  }
+
+  function restoreLocalStorageSnapshot(snapshot) {
+    const nextSnapshot = snapshot && typeof snapshot === "object" ? snapshot : {};
+    const currentKeys = [];
+    for (let i = 0; i < localStorage.length; i += 1) {
+      const key = localStorage.key(i);
+      if (key) currentKeys.push(key);
+    }
+    for (const key of currentKeys) {
+      if (!Object.prototype.hasOwnProperty.call(nextSnapshot, key)) {
+        localStorage.removeItem(key);
+      }
+    }
+    for (const [key, value] of Object.entries(nextSnapshot)) {
+      localStorage.setItem(key, value == null ? "" : String(value));
+    }
+  }
+
+  function restoreStateFromSnapshot(snapshot) {
+    const next = deepCloneValue(snapshot);
+    for (const key of Object.keys(state)) {
+      delete state[key];
+    }
+    Object.assign(state, next);
+  }
+
+  function hashSeedToUint32(seedValue) {
+    const text = String(seedValue || "seed");
+    let hash = 2166136261;
+    for (let i = 0; i < text.length; i += 1) {
+      hash ^= text.charCodeAt(i);
+      hash = Math.imul(hash, 16777619);
+      hash >>>= 0;
+    }
+    return hash >>> 0;
+  }
+
+  function createSeededRandom(seedValue) {
+    let seed = hashSeedToUint32(seedValue) || 0x9e3779b9;
+    return () => {
+      seed += 0x6d2b79f5;
+      let t = seed;
+      t = Math.imul(t ^ (t >>> 15), t | 1);
+      t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+
+  function withSeededRandom(seedValue, callback) {
+    const previousRandom = Math.random;
+    Math.random = createSeededRandom(seedValue);
+    try {
+      return callback();
+    } finally {
+      Math.random = previousRandom;
+    }
+  }
+
+  function calculateMedian(values) {
+    if (!Array.isArray(values) || values.length <= 0) return 0;
+    const sorted = [...values].sort((a, b) => a - b);
+    const mid = Math.floor(sorted.length / 2);
+    if (sorted.length % 2 === 1) return sorted[mid];
+    return (sorted[mid - 1] + sorted[mid]) / 2;
+  }
+
+  function calculateMean(values) {
+    if (!Array.isArray(values) || values.length <= 0) return 0;
+    const total = values.reduce((sum, value) => sum + value, 0);
+    return total / values.length;
+  }
+
+  function calculatePercentile(values, percentile) {
+    if (!Array.isArray(values) || values.length <= 0) return 0;
+    const p = clamp(Number(percentile) || 0, 0, 1);
+    if (values.length === 1) return Number(values[0]) || 0;
+    const sorted = [...values].sort((a, b) => a - b);
+    const pos = (sorted.length - 1) * p;
+    const lowerIndex = Math.floor(pos);
+    const upperIndex = Math.min(sorted.length - 1, lowerIndex + 1);
+    if (lowerIndex === upperIndex) return sorted[lowerIndex];
+    const weight = pos - lowerIndex;
+    return sorted[lowerIndex] * (1 - weight) + sorted[upperIndex] * weight;
+  }
+
+  function classifyDeathCause(reason) {
+    const text = String(reason || "").toLowerCase();
+    if (!text) return "unknown";
+    if (text.includes("spike")) return "spikes";
+    if (text.includes("chest trap")) return "chest_trap";
+    if (text.includes("shrine curse")) return "shrine_curse";
+    if (text.includes("died on depth")) return "enemy_damage";
+    if (text.includes("timeout")) return "timeout";
+    return "other";
+  }
+
+  function summarizeCauseCounts(causeCounts) {
+    return Object.fromEntries(
+      Object.entries(causeCounts).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+    );
+  }
+
+  function getCauseRateFromCounts(causeCounts, cause, totalRuns) {
+    const runs = Math.max(1, Math.floor(Number(totalRuns) || 0));
+    return Math.max(0, Number(causeCounts?.[cause]) || 0) / runs;
+  }
+
+  function findBotStepToTarget(targetX, targetY, options = {}) {
+    const allowTargetEnemy = Boolean(options.allowTargetEnemy);
+    const avoidSpikes = options.avoidSpikes !== false;
+    if (state.player.x === targetX && state.player.y === targetY) return null;
+
+    const queue = [{ x: state.player.x, y: state.player.y, firstStep: null }];
+    const visited = new Set([tileKey(state.player.x, state.player.y)]);
+    let index = 0;
+
+    while (index < queue.length) {
+      const node = queue[index];
+      index += 1;
+
+      for (const dir of BOT_CARDINAL_DIRECTIONS) {
+        const nx = node.x + dir.dx;
+        const ny = node.y + dir.dy;
+        if (!inBounds(nx, ny)) continue;
+        const isTarget = nx === targetX && ny === targetY;
+        const key = tileKey(nx, ny);
+        if (visited.has(key)) continue;
+        const enemy = getEnemyAt(nx, ny);
+        if (enemy && !(isTarget && allowTargetEnemy)) continue;
+        if (avoidSpikes && isSpikeAt(nx, ny) && !isTarget) continue;
+
+        const firstStep = node.firstStep || dir;
+        if (isTarget) return firstStep;
+        visited.add(key);
+        queue.push({ x: nx, y: ny, firstStep });
+      }
+    }
+
+    return null;
+  }
+
+  function getSortedEnemiesForBot() {
+    if (!Array.isArray(state.enemies) || state.enemies.length <= 0) return [];
+    return [...state.enemies].sort((a, b) => {
+      const distA = manhattan(state.player.x, state.player.y, a.x, a.y);
+      const distB = manhattan(state.player.x, state.player.y, b.x, b.y);
+      if (distA !== distB) return distA - distB;
+      const hpA = Math.max(0, Number(a.hp) || 0);
+      const hpB = Math.max(0, Number(b.hp) || 0);
+      if (hpA !== hpB) return hpA - hpB;
+      if (a.y !== b.y) return a.y - b.y;
+      return a.x - b.x;
+    });
+  }
+
+  function getNearestEnemyForBot() {
+    const sorted = getSortedEnemiesForBot();
+    return sorted.length > 0 ? sorted[0] : null;
+  }
+
+  function getBotEnemyHpTotal() {
+    if (!Array.isArray(state.enemies) || state.enemies.length <= 0) return 0;
+    let total = 0;
+    for (const enemy of state.enemies) {
+      total += Math.max(0, Number(enemy.hp) || 0);
+    }
+    return total;
+  }
+
+  function getNearestChestForBot() {
+    const unopened = (state.chests || []).filter((chest) => !chest.opened);
+    if (unopened.length <= 0) return null;
+    let best = null;
+    let bestDist = Infinity;
+    for (const chest of unopened) {
+      const dist = manhattan(state.player.x, state.player.y, chest.x, chest.y);
+      if (dist < bestDist) {
+        bestDist = dist;
+        best = chest;
+      }
+    }
+    return best;
+  }
+
+  function getNearestShrineForBot() {
+    if (!state.shrine || state.shrine.used) return null;
+    return { x: state.shrine.x, y: state.shrine.y };
+  }
+
+  function getBestEnemyChaseStepForBot(options = {}) {
+    const forceSpikeRisk = Boolean(options.forceSpikeRisk);
+    const candidates = getSortedEnemiesForBot();
+    if (candidates.length <= 0) return null;
+
+    for (const enemy of candidates) {
+      const safeStep = findBotStepToTarget(enemy.x, enemy.y, {
+        allowTargetEnemy: true,
+        avoidSpikes: true
+      });
+      if (safeStep) {
+        return { enemy, step: safeStep, risky: false };
+      }
+    }
+
+    if (!forceSpikeRisk && !shouldBotRiskSpikeStep("combat")) {
+      return null;
+    }
+
+    for (const enemy of candidates) {
+      const riskyStep = findBotStepToTarget(enemy.x, enemy.y, {
+        allowTargetEnemy: true,
+        avoidSpikes: false
+      });
+      if (riskyStep) {
+        return { enemy, step: riskyStep, risky: true };
+      }
+    }
+
+    return null;
+  }
+
+  function resetObserverBotStallTracker() {
+    if (!state.observerBot) return;
+    state.observerBot.stallTicks = 0;
+    state.observerBot.lastPosX = Math.max(0, Number(state.player?.x) || 0);
+    state.observerBot.lastPosY = Math.max(0, Number(state.player?.y) || 0);
+    state.observerBot.lastEnemyCount = Array.isArray(state.enemies) ? state.enemies.length : 0;
+    state.observerBot.lastEnemyHpTotal = getBotEnemyHpTotal();
+  }
+
+  function shouldObserverBotForceAggro() {
+    if (!state.observerBot || state.phase !== "playing") return false;
+
+    const enemyCount = Array.isArray(state.enemies) ? state.enemies.length : 0;
+    const enemyHpTotal = getBotEnemyHpTotal();
+    if (state.roomCleared || enemyCount <= 0) {
+      resetObserverBotStallTracker();
+      return false;
+    }
+
+    const bot = state.observerBot;
+    const prevX = Math.max(0, Number(bot.lastPosX) || 0);
+    const prevY = Math.max(0, Number(bot.lastPosY) || 0);
+    const prevEnemyCount = Math.max(0, Number(bot.lastEnemyCount) || 0);
+    const prevEnemyHpTotal = Math.max(0, Number(bot.lastEnemyHpTotal) || 0);
+    const moved = prevX !== state.player.x || prevY !== state.player.y;
+    const madeProgress = moved || enemyCount < prevEnemyCount || enemyHpTotal < prevEnemyHpTotal;
+
+    if (madeProgress) {
+      bot.stallTicks = 0;
+    } else {
+      bot.stallTicks = Math.min(999, Math.max(0, Number(bot.stallTicks) || 0) + 1);
+    }
+
+    bot.lastPosX = state.player.x;
+    bot.lastPosY = state.player.y;
+    bot.lastEnemyCount = enemyCount;
+    bot.lastEnemyHpTotal = enemyHpTotal;
+    return bot.stallTicks >= 5;
+  }
+
+  function shouldBotRiskSpikeStep(context = "combat") {
+    if (hasRelic("ironboots")) return true;
+    const hpRatio = getBotHpRatio();
+    const potions = Math.max(0, Number(state.player.potions) || 0);
+    if (context === "extract") {
+      return hpRatio >= 0.52 || potions >= 1;
+    }
+    if (context === "utility") {
+      return hpRatio >= 0.72 && (potions >= 1 || state.player.hp >= scaledCombat(6));
+    }
+    if (context === "combat") {
+      return hpRatio >= 0.62 || potions >= 2;
+    }
+    return hpRatio >= 0.68 || potions >= 1;
+  }
+
+  function findBotStepWithSpikePolicy(targetX, targetY, options = {}) {
+    const allowTargetEnemy = Boolean(options.allowTargetEnemy);
+    const context = typeof options.context === "string" ? options.context : "combat";
+    const safeStep = findBotStepToTarget(targetX, targetY, {
+      allowTargetEnemy,
+      avoidSpikes: true
+    });
+    if (safeStep) return safeStep;
+    if (!shouldBotRiskSpikeStep(context)) return null;
+    return findBotStepToTarget(targetX, targetY, {
+      allowTargetEnemy,
+      avoidSpikes: false
+    });
+  }
+
+  function getAdjacentEnemyStepForBot() {
+    let best = null;
+    let bestHp = Infinity;
+    for (const dir of BOT_CARDINAL_DIRECTIONS) {
+      const nx = state.player.x + dir.dx;
+      const ny = state.player.y + dir.dy;
+      const enemy = getEnemyAt(nx, ny);
+      if (!enemy) continue;
+      const hp = Math.max(0, Number(enemy.hp) || 0);
+      if (hp < bestHp) {
+        bestHp = hp;
+        best = dir;
+      }
+    }
+    return best;
+  }
+
+  function getFallbackStepForBot() {
+    const candidates = [];
+    for (const dir of BOT_CARDINAL_DIRECTIONS) {
+      const nx = state.player.x + dir.dx;
+      const ny = state.player.y + dir.dy;
+      if (!inBounds(nx, ny)) continue;
+      if (getEnemyAt(nx, ny)) continue;
+      candidates.push({ dir, spike: isSpikeAt(nx, ny) });
+    }
+    if (candidates.length <= 0) return null;
+    const safe = candidates.filter((candidate) => !candidate.spike);
+    if (safe.length <= 0 && !shouldBotRiskSpikeStep("fallback")) {
+      return null;
+    }
+    const pool = safe.length > 0 ? safe : candidates;
+    const pick = pool[randInt(0, pool.length - 1)];
+    return pick.dir;
+  }
+
+  function shouldBotDrinkPotion() {
+    if (state.player.potions <= 0) return false;
+    if (state.player.hp >= state.player.maxHp) return false;
+    const hpRatio = state.player.hp / Math.max(1, state.player.maxHp);
+    return hpRatio <= 0.35;
+  }
+
+  function hasLineOfSightBetweenTilesForBot(fromX, fromY, toX, toY, chestsOverride = null) {
+    const unopenedChests = Array.isArray(chestsOverride)
+      ? chestsOverride
+      : (state.chests || []).filter((chest) => !chest.opened);
+    if (fromX === toX) {
+      const minY = Math.min(fromY, toY);
+      const maxY = Math.max(fromY, toY);
+      for (let y = minY + 1; y < maxY; y += 1) {
+        if (unopenedChests.some((chest) => chest.x === fromX && chest.y === y)) return false;
+      }
+      return true;
+    }
+    if (fromY === toY) {
+      const minX = Math.min(fromX, toX);
+      const maxX = Math.max(fromX, toX);
+      for (let x = minX + 1; x < maxX; x += 1) {
+        if (unopenedChests.some((chest) => chest.x === x && chest.y === fromY)) return false;
+      }
+      return true;
+    }
+    return false;
+  }
+
+  function getEnemyRangedRangeForBot(enemy) {
+    if (!enemy) return 0;
+    if (enemy.type === "skeleton") return Math.max(2, Number(enemy.range) || 3);
+    if (enemy.type === "acolyte") return Math.max(2, Number(enemy.range) || 4);
+    if (enemy.type === "warden") return Math.max(2, Number(enemy.range) || 4);
+    return 0;
+  }
+
+  function buildObserverBotThreatMap(options = {}) {
+    const depth = Math.max(0, Number(options.depth ?? state.depth) || 0);
+    const playerArmor = Math.max(0, Number(options.playerArmor ?? state.player.armor) || 0);
+    const enemies = Array.isArray(options.enemies) ? options.enemies : state.enemies;
+    const spikes = Array.isArray(options.spikes) ? options.spikes : state.spikes;
+    const chests = Array.isArray(options.chests)
+      ? options.chests
+      : (state.chests || []).filter((chest) => !chest.opened);
+    const spikeSet = new Set(spikes.map((spike) => tileKey(spike.x, spike.y)));
+    const chestSet = new Set(chests.map((chest) => tileKey(chest.x, chest.y)));
+    const riskMap = {};
+    const damageMap = {};
+    const spikeDamage = getSpikeDamageByDepth(depth);
+
+    for (let y = 1; y <= GRID_SIZE - 2; y += 1) {
+      for (let x = 1; x <= GRID_SIZE - 2; x += 1) {
+        const key = tileKey(x, y);
+        let risk = 0;
+        let expectedDamage = 0;
+
+        if (spikeSet.has(key)) {
+          risk += 24;
+          expectedDamage += Math.max(MIN_EFFECTIVE_DAMAGE, spikeDamage - Math.round(playerArmor * 0.25));
+        }
+        if (chestSet.has(key)) {
+          risk += 8;
+        }
+
+        for (const enemy of enemies) {
+          if (!enemy) continue;
+          const dist = manhattan(x, y, enemy.x, enemy.y);
+          const baseAttack = Math.max(MIN_EFFECTIVE_DAMAGE, Number(enemy.attack) || 0);
+          const telegraphing = Boolean(enemy.aiming || enemy.volleyAiming || enemy.burstAiming || enemy.slamAiming);
+
+          if (dist === 1) {
+            const meleeDamage = Math.max(
+              MIN_EFFECTIVE_DAMAGE,
+              Math.round(baseAttack * 0.9) - Math.round(playerArmor * 0.35)
+            );
+            expectedDamage += meleeDamage;
+            risk += 22;
+            if (enemy.slamAiming) {
+              expectedDamage += Math.max(MIN_EFFECTIVE_DAMAGE, Math.round(baseAttack * 0.65));
+              risk += 18;
+            }
+          } else if (dist === 2) {
+            risk += 10;
+          }
+
+          const rangedRange = getEnemyRangedRangeForBot(enemy);
+          if (
+            rangedRange > 0 &&
+            dist >= 2 &&
+            dist <= rangedRange &&
+            hasLineOfSightBetweenTilesForBot(enemy.x, enemy.y, x, y, chests)
+          ) {
+            const rangedDamage = Math.max(
+              MIN_EFFECTIVE_DAMAGE,
+              Math.round(baseAttack * (telegraphing ? 0.9 : 0.35)) - Math.round(playerArmor * 0.2)
+            );
+            expectedDamage += rangedDamage;
+            risk += telegraphing ? 24 : 10;
+          }
+
+          if (enemy.burstAiming && dist <= 3 && hasLineOfSightBetweenTilesForBot(enemy.x, enemy.y, x, y, chests)) {
+            expectedDamage += Math.max(MIN_EFFECTIVE_DAMAGE, Math.round(baseAttack * 0.7));
+            risk += 14;
+          }
+        }
+
+        riskMap[key] = clamp(Math.round(risk), 0, 300);
+        damageMap[key] = Math.max(0, Math.round(expectedDamage));
+      }
+    }
+
+    return {
+      riskAt(x, y) {
+        return Number(riskMap[tileKey(x, y)]) || 0;
+      },
+      damageAt(x, y) {
+        return Number(damageMap[tileKey(x, y)]) || 0;
+      }
+    };
+  }
+
+  function getObserverBotPolicyProfile(options = {}) {
+    const hpRatio = Number(options.hpRatio ?? getBotHpRatio()) || 0;
+    const roomType = String((options.roomType ?? state.roomType) || "combat");
+    const bossRoom = Boolean(options.bossRoom ?? state.bossRoom);
+    let mode = "default";
+    let aggression = 1;
+    let survival = 1;
+    let utility = 1;
+    let economy = 1;
+    let lookaheadTurns = 2;
+
+    if (bossRoom) {
+      mode = "boss";
+      aggression = 0.92;
+      survival = 1.45;
+      utility = 1.1;
+      economy = 1.2;
+      lookaheadTurns = 3;
+    } else if (roomType === "cursed") {
+      mode = "cursed";
+      aggression = 0.96;
+      survival = 1.3;
+      utility = 1;
+      economy = 1.05;
+      lookaheadTurns = 3;
+    } else if (roomType === "treasure") {
+      mode = "treasure";
+      aggression = 1.12;
+      survival = 0.95;
+      utility = 0.92;
+      economy = 1.15;
+    } else if (roomType === "shrine") {
+      mode = "shrine";
+      aggression = 1.02;
+      survival = 1.08;
+      utility = 1.18;
+      economy = 1.08;
+    } else if (roomType === "merchant") {
+      mode = "merchant";
+      aggression = 1.05;
+      survival = 1.02;
+      utility = 1;
+      economy = 1.25;
+    } else if (roomType === "vault") {
+      mode = "vault";
+      aggression = 1.08;
+      survival = 1.18;
+      utility = 0.9;
+      economy = 1.2;
+      lookaheadTurns = 3;
+    }
+
+    if (hpRatio < 0.45) {
+      survival += 0.28;
+      aggression -= 0.14;
+      economy += 0.12;
+    }
+    if (hpRatio < 0.3) {
+      survival += 0.2;
+      aggression -= 0.12;
+    }
+    return {
+      mode,
+      aggression: clamp(aggression, 0.4, 1.8),
+      survival: clamp(survival, 0.5, 2.2),
+      utility: clamp(utility, 0.5, 2),
+      economy: clamp(economy, 0.5, 2),
+      lookaheadTurns: clamp(lookaheadTurns, 2, 3)
+    };
+  }
+
+  function buildObserverBotEconomyPlan(options = {}) {
+    const depth = Math.max(0, Number(options.depth ?? state.depth) || 0);
+    const hpRatio = Number(options.hpRatio ?? getBotHpRatio()) || 0;
+    const nextDepths = [];
+    for (let i = 1; i <= 3; i += 1) {
+      const d = depth + i;
+      if (d <= MAX_DEPTH) nextDepths.push(d);
+    }
+    const upcomingBossDepth = nextDepths.find((d) => d % 5 === 0) || 0;
+    const guardLevel = getCampUpgradeLevel("guard");
+    const vitalityLevel = getCampUpgradeLevel("vitality");
+    const bladeLevel = getCampUpgradeLevel("blade");
+    const bossTier = upcomingBossDepth > 0 ? Math.max(1, Math.floor((upcomingBossDepth - 1) / 5) + 1) : 0;
+    const guardTarget = clamp(
+      guardLevel + (upcomingBossDepth > 0 ? Math.max(1, bossTier - Math.floor(guardLevel / 2)) : 0),
+      guardLevel,
+      getCampUpgradeMaxForBot("guard")
+    );
+    const vitalityTarget = clamp(
+      vitalityLevel + (upcomingBossDepth > 0 ? Math.max(1, Math.ceil(bossTier * 0.8)) : 0),
+      vitalityLevel,
+      getCampUpgradeMaxForBot("vitality")
+    );
+    const bladeTarget = clamp(
+      bladeLevel + (depth >= 12 ? 1 : 0),
+      bladeLevel,
+      getCampUpgradeMaxForBot("blade")
+    );
+    const shopMult = Math.max(0.1, Number(state.runMods?.shopCostMult) || Number(state.campVisitShopCostMult) || 1);
+    const guardNeed = estimateCampUpgradeCostToTargetForBot("guard", guardTarget, { visitMult: shopMult });
+    const vitalityNeed = estimateCampUpgradeCostToTargetForBot("vitality", vitalityTarget, { visitMult: shopMult });
+    const bladeNeed = estimateCampUpgradeCostToTargetForBot("blade", bladeTarget, { visitMult: shopMult });
+    const campGoldReserve = Math.round(guardNeed + vitalityNeed * 0.85 + bladeNeed * 0.55 + 70 + bossTier * 25);
+    const runGoldReserve = Math.round(20 + (upcomingBossDepth > 0 ? 40 : 20));
+    const potionTarget = upcomingBossDepth > 0 ? 2 : 1;
+    const shouldBankSoon = depth >= 10 && (
+      upcomingBossDepth > 0 ||
+      hpRatio < 0.58 ||
+      state.player.potions < potionTarget
+    );
+    return {
+      depth,
+      nextDepths,
+      upcomingBossDepth,
+      guardTarget,
+      vitalityTarget,
+      bladeTarget,
+      campGoldReserve: Math.max(0, campGoldReserve),
+      runGoldReserve: Math.max(0, runGoldReserve),
+      potionTarget,
+      shouldBankSoon,
+      runGoldBankThreshold: upcomingBossDepth > 0 ? 95 : 130
+    };
+  }
+
+  function refreshObserverBotEconomyPlan() {
+    if (!state.observerBot) return buildObserverBotEconomyPlan();
+    const plan = buildObserverBotEconomyPlan();
+    state.observerBot.economyPlan = plan;
+    return plan;
+  }
+
+  function getObserverBotEconomyPlan(options = {}) {
+    const forceRefresh = Boolean(options.forceRefresh);
+    if (!state.observerBot) return buildObserverBotEconomyPlan();
+    const cached = state.observerBot.economyPlan;
+    const currentDepth = Math.max(0, Number(state.depth) || 0);
+    const cachedDepth = Math.max(0, Number(cached?.depth) || 0);
+    if (forceRefresh || !cached || cachedDepth !== currentDepth) {
+      return refreshObserverBotEconomyPlan();
+    }
+    return cached;
+  }
+
+  function getObserverBotExpectedMeleeDamage() {
+    const base = state.player.attack + getEffectiveAdrenaline() + (state.player.chaosAtkBonus || 0);
+    const critExpectedMult = 1 + Math.max(0, Number(state.player.crit) || 0) * 0.35;
+    return Math.max(MIN_EFFECTIVE_DAMAGE, Math.round(base * critExpectedMult));
+  }
+
+  function estimateObserverBotDashLandingPosition(dx, dy) {
+    const dashTier = getSkillTier("dash");
+    const maxDashTiles = dashTier >= 2 ? 4 : 3;
+    let cx = state.player.x;
+    let cy = state.player.y;
+    let moved = 0;
+    for (let i = 0; i < maxDashTiles; i += 1) {
+      const nx = cx + dx;
+      const ny = cy + dy;
+      if (!inBounds(nx, ny)) break;
+      if (getChestAt(nx, ny)) break;
+      cx = nx;
+      cy = ny;
+      moved += 1;
+    }
+    return { x: cx, y: cy, moved };
+  }
+
+  function buildObserverBotCombatActionCandidates(options = {}) {
+    const forceAggro = Boolean(options.forceAggro);
+    const out = [];
+    const seen = new Set();
+    const addCandidate = (candidate) => {
+      if (!candidate || typeof candidate !== "object") return;
+      const key = `${candidate.kind}:${candidate.dx || 0}:${candidate.dy || 0}`;
+      if (seen.has(key)) return;
+      seen.add(key);
+      out.push(candidate);
+    };
+
+    if (state.player.potions > 0 && state.player.hp < state.player.maxHp) {
+      addCandidate({ kind: "potion" });
+    }
+
+    if (typeof canObserverBotUseShieldNow === "function" && canObserverBotUseShieldNow()) {
+      addCandidate({ kind: "shield" });
+    }
+    if (getSkillCooldownRemaining("aoe") <= 0) {
+      addCandidate({ kind: "aoe" });
+    }
+    if (getSkillCooldownRemaining("dash") <= 0) {
+      for (const dir of BOT_CARDINAL_DIRECTIONS) {
+        const dashEval = evaluateObserverBotDashDirection(dir.dx, dir.dy);
+        if (dashEval) {
+          addCandidate({ kind: "dash", dx: dir.dx, dy: dir.dy, dashEval });
+        }
+      }
+    }
+
+    for (const dir of BOT_CARDINAL_DIRECTIONS) {
+      const nx = state.player.x + dir.dx;
+      const ny = state.player.y + dir.dy;
+      if (!inBounds(nx, ny)) continue;
+      const targetEnemy = getEnemyAt(nx, ny);
+      addCandidate({
+        kind: "move",
+        dx: dir.dx,
+        dy: dir.dy,
+        attack: Boolean(targetEnemy),
+        targetEnemy: targetEnemy || null,
+        onSpike: isSpikeAt(nx, ny),
+        onChest: Boolean(getChestAt(nx, ny))
+      });
+    }
+
+    const chasePlan = getBestEnemyChaseStepForBot({ forceSpikeRisk: forceAggro });
+    if (chasePlan && chasePlan.step) {
+      const nx = state.player.x + chasePlan.step.dx;
+      const ny = state.player.y + chasePlan.step.dy;
+      addCandidate({
+        kind: "move",
+        dx: chasePlan.step.dx,
+        dy: chasePlan.step.dy,
+        chase: true,
+        risky: Boolean(chasePlan.risky),
+        attack: Boolean(getEnemyAt(nx, ny)),
+        targetEnemy: getEnemyAt(nx, ny),
+        onSpike: isSpikeAt(nx, ny),
+        onChest: Boolean(getChestAt(nx, ny))
+      });
+    }
+
+    const fallback = getFallbackStepForBot();
+    if (fallback) {
+      const nx = state.player.x + fallback.dx;
+      const ny = state.player.y + fallback.dy;
+      addCandidate({
+        kind: "move",
+        dx: fallback.dx,
+        dy: fallback.dy,
+        fallback: true,
+        attack: Boolean(getEnemyAt(nx, ny)),
+        targetEnemy: getEnemyAt(nx, ny),
+        onSpike: isSpikeAt(nx, ny),
+        onChest: Boolean(getChestAt(nx, ny))
+      });
+    }
+    return out;
+  }
+
+  function evaluateObserverBotCombatAction(candidate, context = {}) {
+    if (!candidate) return { score: -Infinity };
+    const weights = context.weights || getObserverBotAiWeights();
+    const policy = context.policy || getObserverBotPolicyProfile();
+    const threatMap = context.threatMap || buildObserverBotThreatMap();
+    const nearestEnemy = context.nearestEnemy || getNearestEnemyForBot();
+    const currentDist = nearestEnemy
+      ? manhattan(state.player.x, state.player.y, nearestEnemy.x, nearestEnemy.y)
+      : 0;
+
+    let resultX = state.player.x;
+    let resultY = state.player.y;
+    let score = 0;
+    let outgoingDamage = 0;
+    let kills = 0;
+
+    if (candidate.kind === "potion") {
+      if (state.player.potions <= 0 || state.player.hp >= state.player.maxHp) {
+        return { score: -Infinity };
+      }
+      const healAmount = getPotionHealAmount();
+      const effectiveHeal = Math.min(Math.max(0, state.player.maxHp - state.player.hp), healAmount);
+      const incoming = threatMap.damageAt(state.player.x, state.player.y);
+      score += weights.potionBias * policy.survival * (effectiveHeal * 0.42 + incoming * 0.74);
+      if (state.player.hp / Math.max(1, state.player.maxHp) > 0.82) score -= 65;
+    } else if (candidate.kind === "shield") {
+      const incoming = threatMap.damageAt(state.player.x, state.player.y);
+      const closeThreat = getBotEnemyCountWithinDistanceFrom(state.player.x, state.player.y, 1) * 2 +
+        getBotEnemyCountWithinDistanceFrom(state.player.x, state.player.y, 2);
+      score += weights.survival * policy.survival * (incoming * 1.1 + closeThreat * 18);
+      if (state.bossRoom) score += weights.bossDefense * 34;
+      if (state.player.barrierTurns > 0) score -= 90;
+    } else if (candidate.kind === "aoe") {
+      if (getSkillCooldownRemaining("aoe") > 0) return { score: -Infinity };
+      const aoeTier = getSkillTier("aoe");
+      const radius = aoeTier >= 2 ? 2 : 1;
+      const furySpent = Math.max(0, Math.floor(Number(state.player.adrenaline) || 0));
+      let baseDamage = Math.max(MIN_EFFECTIVE_DAMAGE, state.player.attack + Math.floor(getEffectiveAdrenaline() / 2));
+      if (aoeTier >= 1) {
+        baseDamage = Math.max(MIN_EFFECTIVE_DAMAGE, Math.round(baseDamage * 1.5));
+      }
+      const targets = state.enemies.filter(
+        (enemy) => Math.abs(enemy.x - state.player.x) <= radius && Math.abs(enemy.y - state.player.y) <= radius
+      );
+      if (targets.length <= 0) return { score: -Infinity };
+      let predictedKills = 0;
+      let totalPredictedDamage = 0;
+      for (const enemy of targets) {
+        const predicted = estimateObserverBotAoeDamage(enemy, aoeTier, furySpent, baseDamage);
+        totalPredictedDamage += Math.min(Math.max(0, Number(enemy.hp) || 0), predicted);
+        if ((Number(enemy.hp) || 0) <= predicted) predictedKills += 1;
+      }
+      outgoingDamage = totalPredictedDamage;
+      kills = predictedKills;
+      score += weights.kill * policy.aggression * (targets.length * 22 + predictedKills * 68 + totalPredictedDamage * 0.14);
+      if (state.bossRoom && targets.length <= 1 && predictedKills <= 0) score -= 18;
+    } else if (candidate.kind === "dash") {
+      if (getSkillCooldownRemaining("dash") > 0) return { score: -Infinity };
+      const dashEval = candidate.dashEval || evaluateObserverBotDashDirection(candidate.dx, candidate.dy);
+      if (!dashEval) return { score: -Infinity };
+      const landing = estimateObserverBotDashLandingPosition(candidate.dx, candidate.dy);
+      resultX = landing.x;
+      resultY = landing.y;
+      outgoingDamage = (dashEval.hits || 0) * state.player.attack;
+      kills = Math.max(0, Number(dashEval.kills) || 0);
+      score += weights.progress * policy.aggression * (Number(dashEval.score) || 0) * 0.8;
+      score += weights.kill * policy.aggression * ((dashEval.hits || 0) * 19 + kills * 76);
+      if (isSpikeAt(resultX, resultY) && !hasRelic("ironboots")) {
+        score -= 24 * weights.spikeAversion;
+      }
+    } else if (candidate.kind === "move") {
+      if (!Number.isFinite(candidate.dx) || !Number.isFinite(candidate.dy)) return { score: -Infinity };
+      const nx = state.player.x + candidate.dx;
+      const ny = state.player.y + candidate.dy;
+      if (!inBounds(nx, ny)) return { score: -Infinity };
+      if (candidate.attack) {
+        const enemy = candidate.targetEnemy || getEnemyAt(nx, ny);
+        if (enemy) {
+          const predictedDamage = Math.min(Math.max(0, Number(enemy.hp) || 0), getObserverBotExpectedMeleeDamage());
+          outgoingDamage = predictedDamage;
+          kills = (Number(enemy.hp) || 0) <= predictedDamage ? 1 : 0;
+          score += weights.kill * policy.aggression * (28 + predictedDamage * 0.22 + kills * 70);
+        }
+      } else {
+        resultX = nx;
+        resultY = ny;
+      }
+      if (candidate.onChest && !state.roomCleared) {
+        score -= 110;
+      }
+      if (candidate.onSpike && !hasRelic("ironboots")) {
+        score -= 36 * weights.spikeAversion;
+      }
+      if (candidate.chase) score += 12;
+      if (candidate.risky) score -= 10;
+      if (candidate.fallback) score -= 4;
+    } else {
+      return { score: -Infinity };
+    }
+
+    const riskAtResult = threatMap.riskAt(resultX, resultY);
+    const damageAtResult = threatMap.damageAt(resultX, resultY);
+    const distAfter = nearestEnemy ? manhattan(resultX, resultY, nearestEnemy.x, nearestEnemy.y) : 0;
+    if (nearestEnemy) {
+      score += weights.progress * policy.aggression * (currentDist - distAfter) * 12;
+    }
+    score += weights.survival * policy.survival * (55 - riskAtResult * 0.42 - damageAtResult * 0.15);
+    score += weights.utility * policy.utility * (outgoingDamage * 0.06 + kills * 8);
+    return {
+      score,
+      resultX,
+      resultY,
+      riskAtResult,
+      damageAtResult,
+      outgoingDamage,
+      kills
+    };
+  }
+
+  function projectObserverBotCombatLookahead(candidate, context = {}) {
+    if (!candidate) return 0;
+    const turns = clamp(Math.floor(Number(context.lookaheadTurns) || 2), 2, 3);
+    const armor = Math.max(0, Number(state.player.armor) || 0);
+    let simX = state.player.x;
+    let simY = state.player.y;
+    let simHp = Math.max(1, Number(state.player.hp) || 1);
+    let simPotions = Math.max(0, Number(state.player.potions) || 0);
+    let simShieldTurns = Math.max(0, Number(state.player.barrierTurns) || 0);
+    let simEnemies = state.enemies.map((enemy) => ({
+      x: enemy.x,
+      y: enemy.y,
+      hp: Math.max(0, Number(enemy.hp) || 0),
+      attack: Math.max(MIN_EFFECTIVE_DAMAGE, Number(enemy.attack) || 0),
+      type: enemy.type,
+      aiming: Boolean(enemy.aiming),
+      slamAiming: Boolean(enemy.slamAiming),
+      volleyAiming: Boolean(enemy.volleyAiming),
+      burstAiming: Boolean(enemy.burstAiming)
+    }));
+
+    if (candidate.kind === "move") {
+      const nx = state.player.x + candidate.dx;
+      const ny = state.player.y + candidate.dy;
+      if (candidate.attack) {
+        const idx = simEnemies.findIndex((enemy) => enemy.x === nx && enemy.y === ny);
+        if (idx >= 0) {
+          simEnemies[idx].hp -= getObserverBotExpectedMeleeDamage();
+          if (simEnemies[idx].hp <= 0) simEnemies.splice(idx, 1);
+        }
+      } else {
+        simX = nx;
+        simY = ny;
+      }
+    } else if (candidate.kind === "potion") {
+      if (simPotions > 0) {
+        simHp = Math.min(state.player.maxHp, simHp + getPotionHealAmount());
+        simPotions -= 1;
+      }
+    } else if (candidate.kind === "shield") {
+      simShieldTurns = 3;
+    } else if (candidate.kind === "aoe") {
+      const aoeTier = getSkillTier("aoe");
+      const radius = aoeTier >= 2 ? 2 : 1;
+      const furySpent = Math.max(0, Math.floor(Number(state.player.adrenaline) || 0));
+      let baseDamage = Math.max(MIN_EFFECTIVE_DAMAGE, state.player.attack + Math.floor(getEffectiveAdrenaline() / 2));
+      if (aoeTier >= 1) {
+        baseDamage = Math.max(MIN_EFFECTIVE_DAMAGE, Math.round(baseDamage * 1.5));
+      }
+      simEnemies = simEnemies.filter((enemy) => {
+        if (Math.abs(enemy.x - simX) <= radius && Math.abs(enemy.y - simY) <= radius) {
+          const predicted = estimateObserverBotAoeDamage(enemy, aoeTier, furySpent, baseDamage);
+          enemy.hp -= predicted;
+        }
+        return enemy.hp > 0;
+      });
+    } else if (candidate.kind === "dash") {
+      const landing = estimateObserverBotDashLandingPosition(candidate.dx, candidate.dy);
+      simX = landing.x;
+      simY = landing.y;
+      const dashTier = getSkillTier("dash");
+      const lineDamage = Math.max(MIN_EFFECTIVE_DAMAGE, state.player.attack + scaledCombat(1));
+      for (const enemy of simEnemies) {
+        if (
+          (candidate.dx !== 0 && enemy.y === simY && Math.sign(enemy.x - state.player.x) === Math.sign(candidate.dx)) ||
+          (candidate.dy !== 0 && enemy.x === simX && Math.sign(enemy.y - state.player.y) === Math.sign(candidate.dy))
+        ) {
+          enemy.hp -= dashTier >= 1 ? Math.round(lineDamage * 1.7) : lineDamage;
+        }
+      }
+      simEnemies = simEnemies.filter((enemy) => enemy.hp > 0);
+    }
+
+    let score = 0;
+    for (let turn = 1; turn <= turns; turn += 1) {
+      const futureThreat = buildObserverBotThreatMap({
+        depth: state.depth,
+        playerArmor: armor,
+        enemies: simEnemies,
+        spikes: state.spikes,
+        chests: (state.chests || []).filter((chest) => !chest.opened)
+      });
+      let incoming = futureThreat.damageAt(simX, simY);
+      if (simShieldTurns > 0) {
+        incoming = 0;
+        simShieldTurns = Math.max(0, simShieldTurns - 1);
+      }
+      incoming = Math.max(0, incoming - Math.round(armor * 0.25));
+      simHp -= incoming;
+      if (simHp <= 0) {
+        return -260 + simHp;
+      }
+      score += (simHp / Math.max(1, state.player.maxHp)) * 14;
+      score -= futureThreat.riskAt(simX, simY) * 0.08;
+
+      const occupied = new Set(simEnemies.map((enemy) => tileKey(enemy.x, enemy.y)));
+      for (const enemy of simEnemies) {
+        const dist = manhattan(enemy.x, enemy.y, simX, simY);
+        if (dist <= 1) continue;
+        let best = null;
+        let bestDist = dist;
+        for (const dir of BOT_CARDINAL_DIRECTIONS) {
+          const nx = enemy.x + dir.dx;
+          const ny = enemy.y + dir.dy;
+          const key = tileKey(nx, ny);
+          if (!inBounds(nx, ny)) continue;
+          if (occupied.has(key)) continue;
+          if (getChestAt(nx, ny)) continue;
+          const d = manhattan(nx, ny, simX, simY);
+          if (d < bestDist) {
+            best = { x: nx, y: ny };
+            bestDist = d;
+          }
+        }
+        if (best) {
+          occupied.delete(tileKey(enemy.x, enemy.y));
+          enemy.x = best.x;
+          enemy.y = best.y;
+          occupied.add(tileKey(enemy.x, enemy.y));
+        }
+      }
+    }
+
+    let nearestDist = 0;
+    if (simEnemies.length > 0) {
+      nearestDist = Math.min(...simEnemies.map((enemy) => manhattan(enemy.x, enemy.y, simX, simY)));
+      score -= nearestDist * 3.5;
+      score += (state.enemies.length - simEnemies.length) * 11;
+    }
+    return score;
+  }
+
+  function chooseBestObserverBotCombatAction(options = {}) {
+    const forceAggro = Boolean(options.forceAggro);
+    const weights = getObserverBotAiWeights();
+    const policy = getObserverBotPolicyProfile();
+    const threatMap = buildObserverBotThreatMap();
+    const nearestEnemy = getNearestEnemyForBot();
+    const candidates = buildObserverBotCombatActionCandidates({ forceAggro });
+    if (candidates.length <= 0) return { best: null, ranked: [] };
+
+    const scored = [];
+    for (const candidate of candidates) {
+      const evaluation = evaluateObserverBotCombatAction(candidate, {
+        weights,
+        policy,
+        threatMap,
+        nearestEnemy
+      });
+      if (!Number.isFinite(evaluation.score)) continue;
+      scored.push({
+        ...candidate,
+        ...evaluation,
+        immediateScore: evaluation.score,
+        score: evaluation.score,
+        lookaheadBonus: 0
+      });
+    }
+    if (scored.length <= 0) return { best: null, ranked: [] };
+
+    scored.sort((a, b) => b.immediateScore - a.immediateScore);
+    const topCount = Math.min(6, scored.length);
+    for (let i = 0; i < topCount; i += 1) {
+      const lookaheadBonus = projectObserverBotCombatLookahead(scored[i], {
+        lookaheadTurns: policy.lookaheadTurns
+      });
+      scored[i].lookaheadBonus = lookaheadBonus;
+      scored[i].score = scored[i].immediateScore + weights.lookahead * lookaheadBonus;
+    }
+    scored.sort((a, b) => b.score - a.score || b.immediateScore - a.immediateScore);
+    return { best: scored[0], ranked: scored, policy, weights };
+  }
+
+  function getObserverBotDecisionLabel(candidate) {
+    if (!candidate) return "no_action";
+    if (candidate.kind === "move") {
+      if (candidate.attack) return "melee";
+      if (candidate.chase && candidate.risky) return "chase_enemy_risky";
+      if (candidate.chase) return "chase_enemy";
+      if (candidate.fallback) return "fallback_move";
+      return "move";
+    }
+    if (candidate.kind === "shield") return "skill_shield";
+    if (candidate.kind === "aoe") return "skill_aoe";
+    if (candidate.kind === "dash") return "skill_dash";
+    if (candidate.kind === "potion") return "drink_potion";
+    return "act";
+  }
+
+  function executeObserverBotCombatAction(candidate) {
+    if (!candidate) return false;
+    if (candidate.kind === "potion") {
+      if (state.player.potions <= 0 || state.player.hp >= state.player.maxHp) return false;
+      drinkPotion();
+      return true;
+    }
+    if (candidate.kind === "shield") {
+      return tryUseShieldSkill();
+    }
+    if (candidate.kind === "aoe") {
+      return tryUseAoeSkill();
+    }
+    if (candidate.kind === "dash") {
+      return tryUseDashSkill(candidate.dx, candidate.dy);
+    }
+    if (candidate.kind === "move") {
+      tryMove(candidate.dx, candidate.dy);
+      return true;
+    }
+    return false;
+  }
+
+  function runSmartBotCombatAction(options = {}) {
+    const forceAggro = Boolean(options.forceAggro);
+    const updateObserverDecision = Boolean(options.updateObserverDecision);
+    const decision = chooseBestObserverBotCombatAction({ forceAggro });
+    const ranked = Array.isArray(decision.ranked) ? decision.ranked : [];
+    if (state.observerBot && decision.policy) {
+      state.observerBot.lastPolicy = decision.policy.mode;
+    }
+    for (const candidate of ranked.slice(0, 8)) {
+      if (executeObserverBotCombatAction(candidate)) {
+        if (updateObserverDecision && state.observerBot) {
+          state.observerBot.lastDecision = getObserverBotDecisionLabel(candidate);
+        }
+        return true;
+      }
+    }
+    return false;
+  }
+
+  function runBotRelicDecision() {
+    if (state.phase !== "relic") return false;
+    if (state.legendarySwapPending) {
+      chooseRelic(1);
+      return true;
+    }
+    if (state.relicSwapPending) {
+      chooseRelic(0);
+      return true;
+    }
+    if (Array.isArray(state.relicDraft) && state.relicDraft.length > 0) {
+      for (let i = 0; i < state.relicDraft.length; i += 1) {
+        chooseRelic(i);
+        if (state.phase !== "relic") {
+          return true;
+        }
+      }
+    }
+    chooseRelic(getRelicDraftSkipIndex());
+    return true;
+  }
+
+  function flushBotTurnResolution(maxSteps = 256) {
+    let steps = 0;
+    while (state.phase === "playing" && isTurnInputLocked() && steps < maxSteps) {
+      if (state.enemyTurnInProgress) {
+        updateEnemyTurnSequence(9999);
+      } else if (state.turnInProgress) {
+        finishTurnAfterEnemySequence();
+      } else {
+        break;
+      }
+      steps += 1;
+    }
+    return steps < maxSteps;
+  }
+
+  function runSingleBotAction() {
+    if (state.phase !== "playing") return false;
+
+    if (state.roomCleared) {
+      if (isOnShrine()) {
+        activateShrine();
+        return true;
+      }
+      const shrineTarget = getNearestShrineForBot();
+      if (shrineTarget) {
+        const shrineStep = findBotStepWithSpikePolicy(shrineTarget.x, shrineTarget.y, { context: "utility" });
+        if (shrineStep) {
+          tryMove(shrineStep.dx, shrineStep.dy);
+          return true;
+        }
+      }
+      const postClearChest = getNearestChestForBot();
+      if (postClearChest) {
+        const chestStep = findBotStepWithSpikePolicy(postClearChest.x, postClearChest.y, { context: "utility" });
+        if (chestStep) {
+          tryMove(chestStep.dx, chestStep.dy);
+          return true;
+        }
+      }
+      if (isOnPortal()) {
+        attemptDescend();
+        return true;
+      }
+      const step = findBotStepWithSpikePolicy(state.portal.x, state.portal.y, { context: "extract" });
+      if (step) {
+        tryMove(step.dx, step.dy);
+        return true;
+      }
+      return false;
+    }
+
+    if (isOnShrine()) {
+      activateShrine();
+      return true;
+    }
+
+    if (runSmartBotCombatAction({ updateObserverDecision: false })) {
+      return true;
+    }
+
+    const fallbackStep = getFallbackStepForBot();
+    if (fallbackStep) {
+      tryMove(fallbackStep.dx, fallbackStep.dy);
+      return true;
+    }
+
+    return false;
+  }
+
+  function runSingleBotSimulation(maxActionsPerRun = 8000) {
+    startRun();
+    let actions = 0;
+    let stalledSteps = 0;
+    const maxActions = Math.max(200, Number(maxActionsPerRun) || 8000);
+
+    while (actions < maxActions) {
+      if (state.phase === "dead" || state.phase === "won") break;
+
+      if (state.phase === "relic") {
+        runSmartBotRelicDecision();
+        actions += 1;
+        continue;
+      }
+
+      if (state.phase !== "playing") break;
+
+      if (isTurnInputLocked()) {
+        if (!flushBotTurnResolution()) {
+          state.simulation.lastGameOverReason = "turn resolution timeout";
+          break;
+        }
+        continue;
+      }
+
+      const acted = runSingleBotAction();
+      actions += 1;
+      if (!acted) {
+        stalledSteps += 1;
+        if (stalledSteps >= 8) {
+          state.simulation.lastGameOverReason = "bot stalled";
+          break;
+        }
+      } else {
+        stalledSteps = 0;
+      }
+
+      if (state.phase === "playing" && isTurnInputLocked()) {
+        if (!flushBotTurnResolution()) {
+          state.simulation.lastGameOverReason = "turn resolution timeout";
+          break;
+        }
+      }
+    }
+
+    if (state.phase === "playing" && actions >= maxActions && !state.simulation.lastGameOverReason) {
+      state.simulation.lastGameOverReason = "simulation timeout";
+    }
+
+    let deathCause = "unknown";
+    if (state.phase === "won") {
+      deathCause = "victory";
+    } else if (state.phase === "dead") {
+      deathCause = classifyDeathCause(state.simulation.lastGameOverReason);
+    } else if (state.simulation.lastGameOverReason) {
+      deathCause = classifyDeathCause(state.simulation.lastGameOverReason);
+    } else {
+      deathCause = "other";
+    }
+
+    return {
+      depth: getRunMaxDepth(),
+      deathCause,
+      reason: state.simulation.lastGameOverReason || "",
+      phase: state.phase,
+      turns: Math.max(0, Number(state.turn) || 0),
+      potionsUsed: Math.max(0, Number(state.potionsUsedThisRun) || 0),
+      goldEarned: Math.max(0, Number(getRunGoldEarned()) || 0),
+      bossClears: Math.max(0, Math.floor(Math.max(0, Number(state.lastBossClearDepthThisRun) || 0) / 5))
+    };
+  }
+
+  function runBalanceSimulation(options = {}) {
+    const runCount = clamp(Math.floor(Number(options.runs) || 1000), 1, 10000);
+    const baseSeed = String(options.seed ?? "balance-seed");
+    const maxActionsInput = options.maxActionsPerRun ?? options.maxActions ?? options.maxTurns;
+    const maxActionsPerRun = clamp(Math.floor(Number(maxActionsInput) || 8000), 200, 100000);
+    const shouldLearn = options.learn === true;
+    const originalStateSnapshot = deepCloneValue(state);
+    const baselineStateSnapshot = deepCloneValue(state);
+    const localStorageSnapshot = captureLocalStorageSnapshot();
+    const results = [];
+    const depths = [];
+    const turns = [];
+    const potionsUsed = [];
+    const goldEarned = [];
+    const bossClears = [];
+    const causeCounts = {};
+    let victories = 0;
+    let bossClearRuns = 0;
+    let totalBossClears = 0;
+
+    try {
+      stopAllBgm(true);
+      stopSplashTrack(true);
+      stopDeathTrack(true);
+
+      for (let runIndex = 0; runIndex < runCount; runIndex += 1) {
+        restoreStateFromSnapshot(baselineStateSnapshot);
+        state.simulation.active = true;
+        state.simulation.suppressLogs = true;
+        state.simulation.suppressVisuals = true;
+        state.simulation.suppressAudio = true;
+        state.simulation.suppressPersistence = true;
+        state.simulation.runIndex = runIndex + 1;
+        state.simulation.runSeed = `${baseSeed}:${runIndex + 1}`;
+        state.simulation.lastGameOverReason = "";
+        state.currentRunId = null;
+        state.currentRunToken = "";
+        state.currentRunTokenExpiresAt = 0;
+        state.currentRunSubmitSeq = 1;
+        state.runLeaderboardSubmitted = false;
+        state.runMaxDepth = 0;
+        state.runGoldEarned = 0;
+        state.lives = MAX_LIVES;
+        state.deaths = 0;
+
+        let runResult;
+        try {
+          runResult = withSeededRandom(state.simulation.runSeed, () => runSingleBotSimulation(maxActionsPerRun));
+        } catch (error) {
+          runResult = {
+            depth: getRunMaxDepth(),
+            deathCause: "error",
+            reason: error instanceof Error ? error.message : String(error),
+            phase: state.phase,
+            turns: Math.max(0, Number(state.turn) || 0),
+            potionsUsed: 0,
+            goldEarned: Math.max(0, Number(getRunGoldEarned()) || 0),
+            bossClears: Math.max(0, Math.floor(Math.max(0, Number(state.lastBossClearDepthThisRun) || 0) / 5))
+          };
+        }
+
+        const normalizedDepth = Math.max(0, Number(runResult.depth) || 0);
+        const normalizedTurns = Math.max(0, Number(runResult.turns) || 0);
+        const normalizedPotionsUsed = Math.max(0, Number(runResult.potionsUsed) || 0);
+        const normalizedGoldEarned = Math.max(0, Number(runResult.goldEarned) || 0);
+        const normalizedBossClears = Math.max(0, Number(runResult.bossClears) || 0);
+        const normalizedDeathCause = String(runResult.deathCause || "other");
+        depths.push(normalizedDepth);
+        turns.push(normalizedTurns);
+        potionsUsed.push(normalizedPotionsUsed);
+        goldEarned.push(normalizedGoldEarned);
+        bossClears.push(normalizedBossClears);
+        causeCounts[normalizedDeathCause] = (causeCounts[normalizedDeathCause] || 0) + 1;
+        if (normalizedDeathCause === "victory") {
+          victories += 1;
+        }
+        if (normalizedBossClears > 0) {
+          bossClearRuns += 1;
+        }
+        totalBossClears += normalizedBossClears;
+        results.push({
+          run: runIndex + 1,
+          seed: state.simulation.runSeed,
+          depth: normalizedDepth,
+          deathCause: normalizedDeathCause,
+          reason: runResult.reason,
+          phase: runResult.phase,
+          turns: normalizedTurns,
+          potionsUsed: normalizedPotionsUsed,
+          goldEarned: normalizedGoldEarned,
+          bossClears: normalizedBossClears
+        });
+      }
+    } finally {
+      restoreStateFromSnapshot(originalStateSnapshot);
+      restoreLocalStorageSnapshot(localStorageSnapshot);
+      markUiDirty();
+      syncBgmWithState(true);
+    }
+
+    const minDepth = depths.length > 0 ? Math.min(...depths) : 0;
+    const maxDepth = depths.length > 0 ? Math.max(...depths) : 0;
+    const medianDepth = calculateMedian(depths);
+    const p10Depth = calculatePercentile(depths, 0.1);
+    const p90Depth = calculatePercentile(depths, 0.9);
+    const meanDepth = calculateMean(depths);
+    const meanTurns = calculateMean(turns);
+    const meanPotionsUsed = calculateMean(potionsUsed);
+    const meanGoldEarned = calculateMean(goldEarned);
+    const meanBossClears = calculateMean(bossClears);
+    const totalPotionsUsed = potionsUsed.reduce((sum, value) => sum + value, 0);
+    const totalGoldEarned = goldEarned.reduce((sum, value) => sum + value, 0);
+    const totalDepth = depths.reduce((sum, value) => sum + value, 0);
+    const potionEfficiency = totalPotionsUsed > 0 ? totalDepth / totalPotionsUsed : 0;
+    const victoryRate = runCount > 0 ? victories / runCount : 0;
+    const bossClearRate = runCount > 0 ? bossClearRuns / runCount : 0;
+    const deathCauses = summarizeCauseCounts(causeCounts);
+    const causeRows = Object.entries(deathCauses).map(([cause, count]) => ({
+      cause,
+      count,
+      percent: Number(((count / runCount) * 100).toFixed(2))
+    }));
+
+    const report = {
+      runs: runCount,
+      seed: baseSeed,
+      maxActionsPerRun,
+      medianDepth,
+      p10Depth,
+      p90Depth,
+      meanDepth,
+      minDepth,
+      maxDepth,
+      victories,
+      deathCauses,
+      metrics: {
+        victoryRate,
+        bossClearRate,
+        meanBossClears,
+        totalBossClears,
+        meanTurns,
+        meanPotionsUsed,
+        meanGoldEarned,
+        totalGoldEarned,
+        potionEfficiency
+      },
+      results
+    };
+
+    let learning = null;
+    if (shouldLearn) {
+      learning = learnObserverBotWeightsFromSimulation(report, {
+        targetMedianDepth: options.targetMedianDepth ?? options.targetMedian,
+        targetP10Depth: options.targetP10Depth,
+        learningRate: options.learningRate
+      });
+      if (learning) {
+        report.learning = learning;
+      }
+    }
+
+    window.DungeonLastSimReport = report;
+    console.info(
+      `[SimRunner] ${runCount} runs | seed="${baseSeed}" | p10=${p10Depth.toFixed(2)} median=${medianDepth} p90=${p90Depth.toFixed(2)} | mean=${meanDepth.toFixed(2)}`
+    );
+    console.table(causeRows);
+    if (learning?.applied) {
+      console.info(
+        `[SimRunner][Learn] updated AI weights (lr=${learning.learningRate.toFixed(3)} | updates=${learning.updates})`
+      );
+    }
+    return report;
+  }
+
+  function learnObserverBotWeightsFromSimulation(report, options = {}) {
+    if (!report || typeof report !== "object") return null;
+    const model = getObserverBotAiModel();
+    if (model.learningEnabled === false && options.force !== true) {
+      return {
+        applied: false,
+        reason: "learning_disabled",
+        updates: Math.max(0, Number(model.updates) || 0),
+        weights: getObserverBotAiWeights()
+      };
+    }
+
+    const runs = Math.max(
+      1,
+      Math.floor(Number(report.runs) || (Array.isArray(report.results) ? report.results.length : 0) || 1)
+    );
+    const results = Array.isArray(report.results) ? report.results : [];
+    const depths = results.map((entry) => Math.max(0, Number(entry?.depth) || 0));
+    const medianDepth = Math.max(0, Number(report.medianDepth) || calculateMedian(depths));
+    const p10Depth = Math.max(0, Number(report.p10Depth) || calculatePercentile(depths, 0.1));
+    const p90Depth = Math.max(0, Number(report.p90Depth) || calculatePercentile(depths, 0.9));
+    const causeCounts = report.deathCauses || {};
+    const enemyRate = getCauseRateFromCounts(causeCounts, "enemy_damage", runs);
+    const spikeRate = getCauseRateFromCounts(causeCounts, "spikes", runs);
+    const timeoutRate = getCauseRateFromCounts(causeCounts, "timeout", runs);
+    const victoryRate = Math.max(0, Number(report.victories) || 0) / runs;
+    const bossClearRate = clamp(Number(report.metrics?.bossClearRate) || 0, 0, 1);
+
+    let bossFailRuns = 0;
+    for (const entry of results) {
+      const depth = Math.max(0, Number(entry?.depth) || 0);
+      if (entry?.deathCause === "enemy_damage" && depth > 0 && depth % 5 === 0) {
+        bossFailRuns += 1;
+      }
+    }
+    const bossFailRate = bossFailRuns / runs;
+
+    const targetMedianDepth = Math.max(4, Number(options.targetMedianDepth ?? options.targetMedian ?? 18) || 18);
+    const targetP10Depth = Math.max(
+      2,
+      Number(options.targetP10Depth ?? Math.round(targetMedianDepth * 0.45)) || Math.round(targetMedianDepth * 0.45)
+    );
+    const confidence = clamp(Math.sqrt(runs / 1000), 0.35, 1.5);
+    const learningRate = clamp(Number(options.learningRate) || 0.45, 0.05, 1.25) * confidence;
+
+    const medianGap = targetMedianDepth - medianDepth;
+    const p10Gap = targetP10Depth - p10Depth;
+    const survivalPressure = clamp(
+      enemyRate * 1.2 + Math.max(0, medianGap) * 0.035 + Math.max(0, p10Gap) * 0.045 - victoryRate * 0.12,
+      -0.8,
+      1.3
+    );
+    const aggressionPressure = clamp(timeoutRate * 1.15 + Math.max(0, -medianGap) * 0.03 - enemyRate * 0.45, -0.9, 1.1);
+    const spikePressure = clamp(spikeRate * 1.7 - timeoutRate * 0.25, -0.7, 1.2);
+    const economyPressure = clamp(Math.max(0, medianGap) * 0.03 + bossFailRate * 0.35 - victoryRate * 0.18, -0.7, 1.1);
+    const bossPressure = clamp(bossFailRate * 1.5 + Math.max(0, 0.35 - bossClearRate), -0.6, 1.2);
+    const rawDeltas = {
+      survival: survivalPressure * 0.22 - aggressionPressure * 0.05,
+      kill: aggressionPressure * 0.18 - survivalPressure * 0.06 + victoryRate * 0.03,
+      progress: aggressionPressure * 0.22 - survivalPressure * 0.07,
+      utility: survivalPressure * 0.04 + spikePressure * 0.08,
+      economy: economyPressure * 0.2 + survivalPressure * 0.04,
+      lookahead: survivalPressure * 0.08 + spikePressure * 0.07 - timeoutRate * 0.07,
+      spikeAversion: spikePressure * 0.26 + survivalPressure * 0.03,
+      extractBias: economyPressure * 0.18 + survivalPressure * 0.08 - aggressionPressure * 0.05,
+      potionBias: survivalPressure * 0.2 + enemyRate * 0.12 + bossPressure * 0.05,
+      bossDefense: bossPressure * 0.24 + survivalPressure * 0.1
+    };
+
+    const beforeWeights = getObserverBotAiWeights();
+    const plannedDeltas = {};
+    let absoluteDeltaTotal = 0;
+    for (const [key, fallback] of Object.entries(OBSERVER_AI_DEFAULT_WEIGHTS)) {
+      const safeCurrent = Number.isFinite(Number(beforeWeights[key])) ? Number(beforeWeights[key]) : fallback;
+      const raw = clamp(Number(rawDeltas[key]) || 0, -0.3, 0.3);
+      const candidate = clamp(safeCurrent + raw * learningRate, 0.2, 3.5);
+      const appliedDelta = candidate - safeCurrent;
+      plannedDeltas[key] = appliedDelta;
+      absoluteDeltaTotal += Math.abs(appliedDelta);
+    }
+
+    const rates = {
+      enemyRate: Number(enemyRate.toFixed(4)),
+      spikeRate: Number(spikeRate.toFixed(4)),
+      timeoutRate: Number(timeoutRate.toFixed(4)),
+      victoryRate: Number(victoryRate.toFixed(4)),
+      bossFailRate: Number(bossFailRate.toFixed(4)),
+      bossClearRate: Number(bossClearRate.toFixed(4))
+    };
+    const baseSummary = {
+      learningRate: Number(learningRate.toFixed(3)),
+      targetMedianDepth,
+      targetP10Depth,
+      baselineMedianDepth: medianDepth,
+      baselineP10Depth: p10Depth,
+      baselineP90Depth: p90Depth,
+      rates
+    };
+
+    if (absoluteDeltaTotal <= 0.0001) {
+      return {
+        applied: false,
+        reason: "no_change",
+        updates: Math.max(0, Number(model.updates) || 0),
+        ...baseSummary,
+        weightsBefore: beforeWeights,
+        weightsAfter: beforeWeights
+      };
+    }
+
+    const nextWeights = updateObserverBotAiWeights((weights) => {
+      for (const [key, fallback] of Object.entries(OBSERVER_AI_DEFAULT_WEIGHTS)) {
+        const current = Number.isFinite(Number(weights[key])) ? Number(weights[key]) : fallback;
+        weights[key] = clamp(current + (plannedDeltas[key] || 0), 0.2, 3.5);
+      }
+      return weights;
+    });
+
+    const deltas = {};
+    for (const [key] of Object.entries(OBSERVER_AI_DEFAULT_WEIGHTS)) {
+      deltas[key] = Number((Number(nextWeights[key]) - Number(beforeWeights[key])).toFixed(4));
+    }
+    return {
+      applied: true,
+      updates: Math.max(0, Number(getObserverBotAiModel().updates) || 0),
+      ...baseSummary,
+      deltas,
+      weightsBefore: beforeWeights,
+      weightsAfter: nextWeights
+    };
+  }
+
+  function runObserverBotRegressionSuite(options = {}) {
+    const runsPerSeed = clamp(Math.floor(Number(options.runsPerSeed ?? options.runs) || 200), 20, 5000);
+    const suiteSeed = String(options.seed ?? "observer-regression");
+    const maxActionsInput = options.maxActionsPerRun ?? options.maxActions ?? options.maxTurns;
+    const maxActionsPerRun = clamp(Math.floor(Number(maxActionsInput) || 8000), 200, 100000);
+    const requestedSeeds = Array.isArray(options.seeds) && options.seeds.length > 0
+      ? options.seeds
+      : ["baseline", "boss-check", "spike-check", "merchant-check", "long-run"];
+    const seedNames = [];
+    for (const rawSeed of requestedSeeds) {
+      const normalized = String(rawSeed || "").trim().slice(0, 48);
+      if (!normalized) continue;
+      if (seedNames.includes(normalized)) continue;
+      seedNames.push(normalized);
+      if (seedNames.length >= 20) break;
+    }
+    if (seedNames.length <= 0) {
+      seedNames.push("baseline");
+    }
+
+    const includeReports = options.includeReports === true;
+    const allowLearning = options.learn === true;
+    const seedRows = [];
+    const reports = [];
+    for (const name of seedNames) {
+      const report = runBalanceSimulation({
+        runs: runsPerSeed,
+        seed: `${suiteSeed}:${name}`,
+        maxActionsPerRun,
+        learn: allowLearning,
+        targetMedianDepth: options.targetMedianDepth,
+        targetP10Depth: options.targetP10Depth,
+        learningRate: options.learningRate
+      });
+      const runs = Math.max(1, Number(report.runs) || runsPerSeed);
+      const deathCauses = report.deathCauses || {};
+      const row = {
+        seed: name,
+        medianDepth: Number(report.medianDepth) || 0,
+        p10Depth: Number(report.p10Depth) || 0,
+        p90Depth: Number(report.p90Depth) || 0,
+        meanDepth: Number(report.meanDepth) || 0,
+        victoryRate: Number((((Number(report.victories) || 0) / runs) * 100).toFixed(2)),
+        bossClearRate: Number((Math.max(0, Number(report.metrics?.bossClearRate) || 0) * 100).toFixed(2)),
+        enemyDeathRate: Number((getCauseRateFromCounts(deathCauses, "enemy_damage", runs) * 100).toFixed(2)),
+        spikeDeathRate: Number((getCauseRateFromCounts(deathCauses, "spikes", runs) * 100).toFixed(2)),
+        timeoutRate: Number((getCauseRateFromCounts(deathCauses, "timeout", runs) * 100).toFixed(2)),
+        potionEfficiency: Number((Number(report.metrics?.potionEfficiency) || 0).toFixed(3))
+      };
+      seedRows.push(row);
+      if (includeReports) {
+        reports.push({ seed: name, report });
+      }
+    }
+
+    const medianDepths = seedRows.map((row) => row.medianDepth);
+    const aggregate = {
+      suites: seedRows.length,
+      totalRuns: seedRows.length * runsPerSeed,
+      medianDepth: calculateMedian(medianDepths),
+      p10MedianDepth: calculatePercentile(medianDepths, 0.1),
+      p90MedianDepth: calculatePercentile(medianDepths, 0.9),
+      worstMedianDepth: medianDepths.length > 0 ? Math.min(...medianDepths) : 0,
+      bestMedianDepth: medianDepths.length > 0 ? Math.max(...medianDepths) : 0,
+      meanVictoryRate: Number(calculateMean(seedRows.map((row) => row.victoryRate)).toFixed(2)),
+      meanBossClearRate: Number(calculateMean(seedRows.map((row) => row.bossClearRate)).toFixed(2)),
+      meanEnemyDeathRate: Number(calculateMean(seedRows.map((row) => row.enemyDeathRate)).toFixed(2)),
+      meanTimeoutRate: Number(calculateMean(seedRows.map((row) => row.timeoutRate)).toFixed(2)),
+      meanPotionEfficiency: Number(calculateMean(seedRows.map((row) => row.potionEfficiency)).toFixed(3))
+    };
+    const suiteReport = {
+      suiteSeed,
+      runsPerSeed,
+      maxActionsPerRun,
+      aggregate,
+      seeds: seedRows
+    };
+    if (includeReports) {
+      suiteReport.reports = reports;
+    }
+
+    window.DungeonLastRegressionReport = suiteReport;
+    console.info(
+      `[Regression] ${seedRows.length} seeds x ${runsPerSeed} runs | median depth=${aggregate.medianDepth} | worst=${aggregate.worstMedianDepth} | best=${aggregate.bestMedianDepth}`
+    );
+    console.table(seedRows);
+    return suiteReport;
+  }
+
+  const BOT_RELIC_BASE_SCORES = {
+    fang: 48,
+    plating: 52,
+    lucky: 58,
+    flask: 62,
+    lifebloom: 68,
+    ironboots: 74,
+    idol: 78,
+    thornmail: 84,
+    vampfang: 102,
+    adrenal: 92,
+    scoutlens: 22,
+    magnet: 68,
+    shrineward: 76,
+    merchfavor: 80,
+    glasscannon: 70,
+    echostrike: 114,
+    phasecloak: 112,
+    soulharvest: 96,
+    burnblade: 110,
+    frostamulet: 92,
+    chronoloop: 160,
+    voidreaper: 148,
+    titanheart: 165,
+    chaosorb: 134
+  };
+
+  function getBotHpRatio() {
+    return state.player.hp / Math.max(1, state.player.maxHp);
+  }
+
+  function getBotRecommendedArmorForBossDepth(depth) {
+    const safeDepth = Math.max(0, Math.floor(Number(depth) || 0));
+    const bossTier = Math.max(1, Math.floor((safeDepth - 1) / 5) + 1);
+    return scaledCombat(2 + (bossTier - 1));
+  }
+
+  function getObserverBotCapabilityDepth() {
+    return Math.max(
+      0,
+      Number(state.highscore) || 0,
+      Number(state.runMaxDepth) || 0,
+      Number(state.lastBossClearDepthThisRun) || 0
+    );
+  }
+
+  function getGuardUpgradeForBot() {
+    return CAMP_UPGRADES.find((upgrade) => upgrade.id === "guard") || null;
+  }
+
+  function getCampUpgradeDefForBot(id) {
+    return CAMP_UPGRADES.find((upgrade) => upgrade.id === id) || null;
+  }
+
+  function getCampUpgradeMaxForBot(id) {
+    const def = getCampUpgradeDefForBot(id);
+    return def ? Math.max(0, Number(def.max) || 0) : 0;
+  }
+
+  function estimateCampUpgradeCostToTargetForBot(id, targetLevel, options = {}) {
+    const def = getCampUpgradeDefForBot(id);
+    if (!def) return 0;
+    const currentLevel = clamp(Math.floor(getCampUpgradeLevel(id)), 0, Math.max(0, Number(def.max) || 0));
+    const cappedTarget = clamp(
+      Math.floor(Number(targetLevel) || 0),
+      currentLevel,
+      Math.max(0, Number(def.max) || 0)
+    );
+    if (cappedTarget <= currentLevel) return 0;
+    const growth = Math.max(1, Number(def.costGrowth) || 2);
+    const visitMultRaw = options.visitMult ?? (
+      state.phase === "camp"
+        ? (state.campVisitShopCostMult || 1)
+        : (state.runMods?.shopCostMult || 1)
+    );
+    const visitMult = Math.max(0.1, Number(visitMultRaw) || 1);
+    let total = 0;
+    for (let level = currentLevel; level < cappedTarget; level += 1) {
+      const baseCost = Math.round(def.baseCost * growth ** level);
+      total += Math.round(baseCost * visitMult);
+    }
+    return total;
+  }
+
+  function clearObserverBotDepthPressure() {
+    if (!state.observerBot) return;
+    state.observerBot.pressureDepth = 0;
+    state.observerBot.pressureFailures = 0;
+    state.observerBot.farmMode = false;
+    state.observerBot.farmExtractDepth = 0;
+    state.observerBot.farmGoldTarget = 0;
+    state.observerBot.farmGuardTarget = 0;
+    state.observerBot.farmVitalityTarget = 0;
+    state.observerBot.farmBladeTarget = 0;
+  }
+
+  function getObserverBotDepthPressureStatus(options = {}) {
+    if (!state.observerBot) {
+      return {
+        active: false,
+        ready: true,
+        pressureDepth: 0,
+        failures: 0,
+        extractDepth: 0,
+        guardTarget: 0,
+        vitalityTarget: 0,
+        bladeTarget: 0,
+        guardMissing: 0,
+        vitalityMissing: 0,
+        bladeMissing: 0,
+        upgradeMissing: 0,
+        goldTarget: 0,
+        projectedCampGold: Math.max(0, Number(state.campGold) || 0),
+        goldShortage: 0,
+        remainingUpgradeCost: 0
+      };
+    }
+    const bot = state.observerBot;
+    const pressureDepth = Math.max(0, Number(bot.pressureDepth) || 0);
+    const active = Boolean(bot.farmMode) && pressureDepth > 0;
+    const guardTarget = Math.max(0, Number(bot.farmGuardTarget) || 0);
+    const vitalityTarget = Math.max(0, Number(bot.farmVitalityTarget) || 0);
+    const bladeTarget = Math.max(0, Number(bot.farmBladeTarget) || 0);
+    const guardMissing = Math.max(0, guardTarget - getCampUpgradeLevel("guard"));
+    const vitalityMissing = Math.max(0, vitalityTarget - getCampUpgradeLevel("vitality"));
+    const bladeMissing = Math.max(0, bladeTarget - getCampUpgradeLevel("blade"));
+    const upgradeMissing = guardMissing + vitalityMissing + bladeMissing;
+    const includeRunGold = Boolean(options.includeRunGold);
+    const projectedCampGold = Math.max(0, Number(state.campGold) || 0) + (
+      includeRunGold ? Math.max(0, Number(state.player?.gold) || 0) : 0
+    );
+    const goldTarget = Math.max(0, Number(bot.farmGoldTarget) || 0);
+    const goldShortage = Math.max(0, goldTarget - projectedCampGold);
+    const remainingUpgradeCost =
+      estimateCampUpgradeCostToTargetForBot("guard", guardTarget) +
+      estimateCampUpgradeCostToTargetForBot("vitality", vitalityTarget) +
+      estimateCampUpgradeCostToTargetForBot("blade", bladeTarget);
+    const ready = !active || upgradeMissing <= 0;
+    return {
+      active,
+      ready,
+      pressureDepth,
+      failures: Math.max(0, Number(bot.pressureFailures) || 0),
+      extractDepth: Math.max(0, Number(bot.farmExtractDepth) || 0),
+      guardTarget,
+      vitalityTarget,
+      bladeTarget,
+      guardMissing,
+      vitalityMissing,
+      bladeMissing,
+      upgradeMissing,
+      goldTarget,
+      projectedCampGold,
+      goldShortage,
+      remainingUpgradeCost
+    };
+  }
+
+  function configureObserverBotDepthPressure(depth, failures = 1) {
+    if (!state.observerBot) return;
+    const targetDepth = clamp(Math.floor(Number(depth) || 0), 0, MAX_DEPTH);
+    if (targetDepth <= 0) {
+      clearObserverBotDepthPressure();
+      return;
+    }
+
+    const safeFailures = clamp(Math.floor(Number(failures) || 1), 1, 99);
+    const tier = Math.max(1, Math.floor((targetDepth - 1) / 5) + 1);
+    const bossDepth = targetDepth > 0 && targetDepth % 5 === 0;
+
+    let guardTarget = 1 + tier + (bossDepth ? 1 : 0);
+    let vitalityTarget = 1 + tier + (bossDepth ? 1 : 0) + (targetDepth >= 10 ? 1 : 0);
+    let bladeTarget = Math.max(1, tier - 1) + (targetDepth >= 15 ? 1 : 0);
+    if (safeFailures >= 2) guardTarget += 1;
+    if (safeFailures >= 3) vitalityTarget += 1;
+    if (safeFailures >= 4) bladeTarget += 1;
+    if (safeFailures >= 5) guardTarget += 1;
+
+    guardTarget = clamp(guardTarget, 0, getCampUpgradeMaxForBot("guard"));
+    vitalityTarget = clamp(vitalityTarget, 0, getCampUpgradeMaxForBot("vitality"));
+    bladeTarget = clamp(bladeTarget, 0, getCampUpgradeMaxForBot("blade"));
+
+    const projectedShopMult = Math.max(
+      0.1,
+      Number(state.runMods?.shopCostMult) || Number(state.campVisitShopCostMult) || 1
+    );
+    const guardCostNeed = estimateCampUpgradeCostToTargetForBot("guard", guardTarget, { visitMult: projectedShopMult });
+    const vitalityCostNeed = estimateCampUpgradeCostToTargetForBot("vitality", vitalityTarget, { visitMult: projectedShopMult });
+    const bladeCostNeed = estimateCampUpgradeCostToTargetForBot("blade", bladeTarget, { visitMult: projectedShopMult });
+    const reserve = 70 + tier * 20 + safeFailures * 25;
+    const goldTarget = Math.max(
+      reserve,
+      guardCostNeed + vitalityCostNeed + Math.round(bladeCostNeed * 0.7) + reserve
+    );
+
+    state.observerBot.pressureDepth = targetDepth;
+    state.observerBot.pressureFailures = safeFailures;
+    state.observerBot.farmMode = true;
+    state.observerBot.farmExtractDepth = clamp(targetDepth - 1, 3, Math.max(3, targetDepth - 1));
+    state.observerBot.farmGoldTarget = Math.max(0, Math.round(goldTarget));
+    state.observerBot.farmGuardTarget = guardTarget;
+    state.observerBot.farmVitalityTarget = vitalityTarget;
+    state.observerBot.farmBladeTarget = bladeTarget;
+  }
+
+  function registerObserverBotDepthFailure(depth, reason = "") {
+    if (!isObserverBotActive()) return;
+    const safeDepth = clamp(Math.floor(Number(depth) || 0), 0, MAX_DEPTH);
+    if (safeDepth < 4) return;
+    const text = String(reason || "").toLowerCase();
+    if (text.includes("chest trap") || text.includes("shrine curse")) return;
+
+    const prevDepth = Math.max(0, Number(state.observerBot.pressureDepth) || 0);
+    const prevFailures = Math.max(0, Number(state.observerBot.pressureFailures) || 0);
+    const failures = prevDepth === safeDepth ? prevFailures + 1 : 1;
+    if (safeDepth <= 10 && failures < 2) {
+      state.observerBot.pressureDepth = safeDepth;
+      state.observerBot.pressureFailures = failures;
+      state.observerBot.farmMode = false;
+      state.observerBot.farmExtractDepth = 0;
+      state.observerBot.farmGoldTarget = 0;
+      state.observerBot.farmGuardTarget = 0;
+      state.observerBot.farmVitalityTarget = 0;
+      state.observerBot.farmBladeTarget = 0;
+      pushLog(`Observer Bot: depth ${safeDepth} failed once. Retrying without farm mode.`, "warn");
+      return;
+    }
+    configureObserverBotDepthPressure(safeDepth, failures);
+    pushLog(
+      `Observer Bot: depth ${safeDepth} too hard. Farming for Guard ${state.observerBot.farmGuardTarget}, Vitality ${state.observerBot.farmVitalityTarget}, Blade ${state.observerBot.farmBladeTarget}.`,
+      "warn"
+    );
+  }
+
+  function registerObserverBotDepthClear(depth) {
+    if (!isObserverBotActive() || !state.observerBot?.farmMode) return;
+    const safeDepth = clamp(Math.floor(Number(depth) || 0), 0, MAX_DEPTH);
+    const pressureDepth = Math.max(0, Number(state.observerBot.pressureDepth) || 0);
+    if (pressureDepth <= 0) {
+      clearObserverBotDepthPressure();
+      return;
+    }
+    if (safeDepth >= pressureDepth) {
+      clearObserverBotDepthPressure();
+      pushLog(`Observer Bot: depth ${safeDepth} stabilized. Farming mode disabled.`, "good");
+      return;
+    }
+    if (safeDepth >= pressureDepth - 1) {
+      state.observerBot.pressureFailures = Math.max(
+        1,
+        Math.floor(Math.max(1, Number(state.observerBot.pressureFailures) || 1) * 0.6)
+      );
+    }
+  }
+
+  function getObserverBotRunGoldReserveForFarm() {
+    const status = getObserverBotDepthPressureStatus({ includeRunGold: false });
+    if (!status.active || status.ready || status.upgradeMissing <= 0) return 0;
+    const reserveFromShortage = Math.round(Math.max(0, status.goldTarget - Math.max(0, Number(state.campGold) || 0)) * 0.7);
+    return Math.max(
+      0,
+      Math.min(Math.max(0, Number(state.player.gold) || 0), reserveFromShortage)
+    );
+  }
+
+  function getBotEnemyCountWithinDistanceFrom(x, y, maxDistance) {
+    if (!Array.isArray(state.enemies) || state.enemies.length <= 0) return 0;
+    let count = 0;
+    for (const enemy of state.enemies) {
+      if (manhattan(x, y, enemy.x, enemy.y) <= maxDistance) {
+        count += 1;
+      }
+    }
+    return count;
+  }
+
+  function getBotRelicScore(relic) {
+    if (!relic) return -9999;
+    const rarityScore = {
+      normal: 36,
+      rare: 74,
+      epic: 112,
+      legendary: 154
+    };
+    let score = (rarityScore[relic.rarity] || 30) + (BOT_RELIC_BASE_SCORES[relic.id] || 0);
+    const hpRatio = getBotHpRatio();
+    const stackCount = getRelicStackCount(relic.id);
+    if (isRelicStackable(relic) && stackCount > 0) {
+      score -= stackCount * 9;
+    }
+    if (relic.id === "glasscannon" && hpRatio < 0.65 && !hasRelic("titanheart")) {
+      score -= 45;
+    }
+    if (relic.id === "flask" && state.player.potions <= 1) {
+      score += 16;
+    }
+    if (relic.id === "merchfavor" && state.roomType === "merchant") {
+      score += 22;
+    }
+    if (hpRatio < 0.5 && ["chronoloop", "titanheart", "phasecloak", "vampfang", "plating", "lifebloom", "flask"].includes(relic.id)) {
+      score += 24;
+    }
+    if (state.bossRoom && ["voidreaper", "echostrike", "burnblade", "adrenal"].includes(relic.id)) {
+      score += 12;
+    }
+    return score;
+  }
+
+  function runSmartBotRelicDecision() {
+    if (state.phase !== "relic") return false;
+    if (state.legendarySwapPending) {
+      const incoming = getRelicById(state.legendarySwapPending.incomingRelicId);
+      const current = getRelicById(state.legendarySwapPending.currentRelicId);
+      const incomingScore = getBotRelicScore(incoming);
+      const currentScore = getBotRelicScore(current);
+      chooseRelic(incomingScore >= currentScore + 6 ? 1 : 0);
+      return true;
+    }
+
+    if (state.relicSwapPending) {
+      let worstIndex = 0;
+      let worstScore = Infinity;
+      for (let i = 0; i < state.relics.length; i += 1) {
+        const relic = getRelicById(state.relics[i]);
+        const score = getBotRelicScore(relic);
+        if (score < worstScore) {
+          worstScore = score;
+          worstIndex = i;
+        }
+      }
+      chooseRelic(worstIndex);
+      return true;
+    }
+
+    const choices = Array.isArray(state.relicDraft) ? state.relicDraft : [];
+    if (choices.length <= 0) {
+      chooseRelic(getRelicDraftSkipIndex());
+      return true;
+    }
+    let bestIndex = -1;
+    let bestScore = -Infinity;
+    for (let i = 0; i < choices.length; i += 1) {
+      const score = getBotRelicScore(choices[i]);
+      if (score > bestScore) {
+        bestScore = score;
+        bestIndex = i;
+      }
+    }
+    if (bestIndex >= 0 && bestScore > 35) {
+      chooseRelic(bestIndex);
+      return true;
+    }
+    chooseRelic(getRelicDraftSkipIndex());
+    return true;
+  }
+
+  function resolveCampRelicPromptForBot() {
+    const prompt = state.extractRelicPrompt;
+    if (!prompt) return false;
+    const carried = getExtractPromptCarriedRelics(prompt);
+    if (carried.length <= 0) {
+      resolveExtractRelicPrompt(false);
+      state.observerBot.lastDecision = "camp_relics_keep";
+      return true;
+    }
+
+    const scored = carried.map((relicId, index) => {
+      const relic = getRelicById(relicId);
+      return {
+        index,
+        relicId,
+        relic,
+        score: getBotRelicScore(relic)
+      };
+    });
+    scored.sort((a, b) => b.score - a.score || a.index - b.index);
+    const keepTarget = clamp(state.depth >= 12 ? 6 : 5, 3, 8);
+    const keepSet = new Set(
+      scored
+        .filter((entry) => entry.relic && entry.relic.rarity === "legendary")
+        .map((entry) => entry.index)
+    );
+    for (const entry of scored) {
+      if (keepSet.size >= keepTarget) break;
+      keepSet.add(entry.index);
+    }
+    const selectedIndices = scored
+      .filter((entry) => !keepSet.has(entry.index))
+      .map((entry) => entry.index);
+    prompt.selectedIndices = selectedIndices;
+    resolveExtractRelicPrompt(selectedIndices.length > 0);
+    state.observerBot.lastDecision = selectedIndices.length > 0
+      ? `camp_relics_sell_${selectedIndices.length}`
+      : "camp_relics_keep";
+    return true;
+  }
+
+  function getObserverBotSkillSavingsTarget(options = {}) {
+    const progressDepth = Math.max(
+      0,
+      Math.floor(Number(
+        options.depth ?? Math.max(
+          Number(state.depth) || 0,
+          Number(state.highscore) || 0,
+          Number(state.runMaxDepth) || 0,
+          Number(state.lastExtract?.depth) || 0
+        )
+      ) || 0)
+    );
+    const maxPlannedUpgrades =
+      progressDepth >= 22 ? 3 :
+      progressDepth >= 12 ? 2 :
+      progressDepth >= 6 ? 1 : 0;
+    if (maxPlannedUpgrades <= 0) {
+      return { reserve: 0, planned: [] };
+    }
+
+    const candidates = [];
+    for (const skillId of ["shield", "dash", "aoe"]) {
+      const tier = getSkillTier(skillId);
+      if (tier >= MAX_SKILL_TIER) continue;
+      const offer = getNextSkillUpgradeOffer(skillId);
+      if (!offer) continue;
+      const nextTier = tier + 1;
+      if (nextTier === 2 && progressDepth < 11) continue;
+      if (nextTier >= LEGENDARY_SKILL_TIER && progressDepth < 20) continue;
+      if (
+        nextTier >= LEGENDARY_SKILL_TIER &&
+        typeof canBuyLegendarySkillUpgrade === "function" &&
+        !canBuyLegendarySkillUpgrade(skillId)
+      ) {
+        continue;
+      }
+      const cost = merchantSkillUpgradeCost(skillId);
+      if (!Number.isFinite(cost) || cost <= 0) continue;
+
+      let priority = skillId === "shield" ? 300 : skillId === "dash" ? 250 : 220;
+      priority += nextTier * 46;
+      if (nextTier === 1) priority += 34;
+      if (nextTier === 2 && progressDepth >= 14) priority += 42;
+      if (nextTier >= LEGENDARY_SKILL_TIER && progressDepth >= 24) priority += 64;
+      candidates.push({ skillId, nextTier, cost, priority });
+    }
+
+    candidates.sort((a, b) => b.priority - a.priority || a.cost - b.cost);
+    const planned = candidates.slice(0, maxPlannedUpgrades);
+    const reserveRaw = planned.reduce((sum, entry) => sum + Math.round(entry.cost * 0.92), 0);
+    const reserveCap = progressDepth >= 24 ? 2200 : progressDepth >= 16 ? 1500 : 850;
+    const reserve = clamp(reserveRaw + (planned.length > 0 ? 50 : 0), 0, reserveCap);
+    return { reserve, planned };
+  }
+
+  function getBotCampUpgradeScore(upgrade, cost) {
+    if (!upgrade || cost <= 0) return -Infinity;
+    const level = getCampUpgradeLevel(upgrade.id);
+    const survivabilityLevel = getCampUpgradeLevel("vitality") + getCampUpgradeLevel("guard");
+    const lastExtractDepth = Math.max(0, Number(state.lastExtract?.depth) || 0);
+    const justExtractedBeforeBoss = lastExtractDepth > 0 && lastExtractDepth % 5 === 4;
+    let value = 0;
+    if (upgrade.id === "vitality") {
+      value = 135 - level * 9;
+      if (level < 4) value += 44;
+      if (survivabilityLevel < 7) value += 20;
+      if (justExtractedBeforeBoss) value += 26;
+    } else if (upgrade.id === "blade") {
+      value = 130 - level * 8;
+      if (level < 4) value += 38;
+      if (justExtractedBeforeBoss) value -= 24;
+    } else if (upgrade.id === "satchel") {
+      value = 108 - level * 16;
+      if (level < 2) value += 46;
+      if (level >= 4) value -= 30;
+    } else if (upgrade.id === "guard") {
+      value = 122 - level * 8;
+      if (level < 3) value += 30;
+      if (justExtractedBeforeBoss) value += 90;
+      if (level < 6 && justExtractedBeforeBoss) value += 28;
+    } else if (upgrade.id === "auto_potion") {
+      value = level > 0 ? -999 : 220;
+      if (state.lives <= 2) value += 25;
+    } else if (upgrade.id === "potion_strength") {
+      value = 96 - level * 14;
+      if (getCampUpgradeLevel("satchel") >= 2) value += 18;
+    } else if (upgrade.id === "crit_chance") {
+      value = 90 - level * 18;
+      if (getCampUpgradeLevel("blade") >= 4) value += 12;
+    } else if (upgrade.id === "treasure_sense") {
+      value = 82 - level * 13;
+      if (survivabilityLevel >= 8) value += 16;
+    } else if (upgrade.id === "emergency_stash") {
+      value = 74 - level * 20;
+      if (state.lives <= 2) value += 20;
+    } else if (upgrade.id === "bounty_contract") {
+      value = 84 - level * 13;
+      if (survivabilityLevel >= 8) value += 20;
+    }
+    const farmStatus = getObserverBotDepthPressureStatus({ includeRunGold: false });
+    if (farmStatus.active && !farmStatus.ready && farmStatus.upgradeMissing > 0) {
+      if (upgrade.id === "guard" && farmStatus.guardMissing > 0) {
+        value += 260 + farmStatus.guardMissing * 36;
+      } else if (upgrade.id === "vitality" && farmStatus.vitalityMissing > 0) {
+        value += 240 + farmStatus.vitalityMissing * 32;
+      } else if (upgrade.id === "blade" && farmStatus.bladeMissing > 0) {
+        value += 180 + farmStatus.bladeMissing * 24;
+      } else if (!["guard", "vitality", "blade"].includes(upgrade.id)) {
+        value -= 120;
+      }
+    }
+    if (value <= 0) return -Infinity;
+    const costFactor = Math.max(1, cost / 60);
+    return value / costFactor;
+  }
+
+  function chooseBestCampUpgradeIndexForBot() {
+    const farmStatus = getObserverBotDepthPressureStatus({ includeRunGold: false });
+    const coreOnly = farmStatus.active && !farmStatus.ready && farmStatus.upgradeMissing > 0;
+    const neededCore = new Set();
+    if (farmStatus.guardMissing > 0) neededCore.add("guard");
+    if (farmStatus.vitalityMissing > 0) neededCore.add("vitality");
+    if (farmStatus.bladeMissing > 0) neededCore.add("blade");
+    const skillSavings = getObserverBotSkillSavingsTarget();
+    const skillReserveFloor = Math.max(0, Math.round(Number(skillSavings.reserve) || 0));
+
+    let bestIndex = -1;
+    let bestScore = -Infinity;
+    for (let i = 0; i < CAMP_UPGRADES.length; i += 1) {
+      const upgrade = CAMP_UPGRADES[i];
+      if (coreOnly && !neededCore.has(upgrade.id)) continue;
+      const level = getCampUpgradeLevel(upgrade.id);
+      if (level >= upgrade.max) continue;
+      const cost = getCampUpgradeCost(upgrade);
+      if (cost > state.campGold) continue;
+      if (!coreOnly && skillReserveFloor > 0 && state.campGold - cost < skillReserveFloor) continue;
+      const score = getBotCampUpgradeScore(upgrade, cost);
+      if (score > bestScore) {
+        bestScore = score;
+        bestIndex = i;
+      }
+    }
+    return bestIndex;
+  }
+
+  function canBotSpendMerchantGold(cost, options = {}) {
+    const ignoreFarmReserve = Boolean(options.ignoreFarmReserve);
+    const ignoreEconomyPlan = Boolean(options.ignoreEconomyPlan);
+    let reserveCampGold = 220;
+    let reserveRunGold = 0;
+    if (!ignoreEconomyPlan) {
+      const economyPlan = getObserverBotEconomyPlan();
+      if (economyPlan) {
+        reserveCampGold = Math.max(0, Math.max(
+          reserveCampGold,
+          Math.round(Number(economyPlan.campGoldReserve) || 0)
+        ));
+        reserveRunGold = Math.max(0, Math.max(
+          reserveRunGold,
+          Math.round(Number(economyPlan.runGoldReserve) || 0)
+        ));
+        if (economyPlan.shouldBankSoon) {
+          reserveRunGold = Math.max(
+            reserveRunGold,
+            Math.round(Math.max(0, Number(economyPlan.runGoldBankThreshold) || 0) * 0.6)
+          );
+        }
+      }
+    }
+    if (!ignoreFarmReserve) {
+      const farmStatus = getObserverBotDepthPressureStatus({ includeRunGold: false });
+      if (farmStatus.active && !farmStatus.ready && farmStatus.upgradeMissing > 0) {
+        reserveCampGold = Math.max(reserveCampGold, farmStatus.remainingUpgradeCost + 40);
+        reserveRunGold = Math.max(reserveRunGold, getObserverBotRunGoldReserveForFarm());
+      }
+    }
+    const spendableRun = Math.max(0, (Number(state.player.gold) || 0) - reserveRunGold);
+    const spendableCamp = Math.max(0, (Number(state.campGold) || 0) - reserveCampGold);
+    const spendable = spendableRun + spendableCamp;
+    return spendable >= Math.max(0, Number(cost) || 0);
+  }
+
+  function getBotMerchantUpgradeScore(skillId, cost, nextTier) {
+    if (cost <= 0) return -Infinity;
+    const hpRatio = getBotHpRatio();
+    const progressDepth = Math.max(
+      0,
+      Number(state.depth) || 0,
+      Number(state.highscore) || 0,
+      Number(state.runMaxDepth) || 0,
+      Number(state.lastExtract?.depth) || 0
+    );
+    let value = 0;
+    if (skillId === "shield") {
+      value = nextTier === 1 ? 152 : nextTier === 2 ? 186 : 224;
+      if (hpRatio < 0.55) value += 30;
+      if (hpRatio < 0.35) value += 18;
+      if (state.bossRoom) value += 20;
+    } else if (skillId === "dash") {
+      value = nextTier === 1 ? 138 : nextTier === 2 ? 178 : 212;
+      if (state.bossRoom) value += 10;
+    } else if (skillId === "aoe") {
+      value = nextTier === 1 ? 122 : nextTier === 2 ? 168 : 206;
+      if (state.enemies.length >= 4) value += 16;
+    }
+    if (nextTier === 1 && progressDepth >= 6) value += 26;
+    if (nextTier === 2 && progressDepth >= 12) value += 38;
+    if (nextTier >= LEGENDARY_SKILL_TIER && progressDepth >= 20) value += 58;
+
+    const costPenalty = Math.pow(Math.max(1, cost) / 380, 0.72);
+    return value / Math.max(0.6, costPenalty);
+  }
+
+  function runObserverMerchantAction() {
+    if (state.phase !== "playing" || state.roomType !== "merchant" || !isOnMerchant()) return false;
+    if (state.observerBot.merchantPurchasesThisRoom >= 6) return false;
+
+    const hpRatio = getBotHpRatio();
+    const walletTotal = Math.max(0, Number(state.player.gold) || 0) + Math.max(0, Number(state.campGold) || 0);
+    const potionCost = merchantPotionCost();
+    const economyPlan = getObserverBotEconomyPlan({ forceRefresh: true });
+    const potionTarget = clamp(Math.floor(Number(economyPlan?.potionTarget) || 1), 1, state.player.maxPotions);
+    const farmStatus = getObserverBotDepthPressureStatus({ includeRunGold: true });
+    const preserveForFarm = (
+      farmStatus.active &&
+      !farmStatus.ready &&
+      farmStatus.upgradeMissing > 0
+    );
+    const preserveGoldForCamp = preserveForFarm || (
+      economyPlan &&
+      economyPlan.shouldBankSoon &&
+      walletTotal <
+        Math.max(0, Number(economyPlan.campGoldReserve) || 0)
+    );
+    const emergencyPotionBuy = state.player.potions <= 0 && hpRatio < 0.65;
+    const allowPotionSpend = !preserveGoldForCamp || emergencyPotionBuy || state.player.potions < potionTarget;
+    if (
+      allowPotionSpend &&
+      state.player.potions <= potionTarget &&
+      state.player.potions < state.player.maxPotions &&
+      canBotSpendMerchantGold(potionCost, {
+        ignoreFarmReserve: emergencyPotionBuy,
+        ignoreEconomyPlan: emergencyPotionBuy
+      }) &&
+      (state.player.potions <= 0 || state.player.potions < potionTarget || hpRatio < 0.8 || potionCost <= 20)
+    ) {
+      if (tryBuyPotionFromMerchant()) {
+        state.observerBot.merchantPurchasesThisRoom += 1;
+        state.observerBot.lastDecision = "merchant_potion";
+        return true;
+      }
+    }
+
+    let best = null;
+    for (const skillId of ["shield", "dash", "aoe"]) {
+      const tier = getSkillTier(skillId);
+      if (tier >= MAX_SKILL_TIER) continue;
+      const nextTier = tier + 1;
+      if (
+        nextTier >= LEGENDARY_SKILL_TIER &&
+        typeof canBuyLegendarySkillUpgrade === "function" &&
+        !canBuyLegendarySkillUpgrade(skillId)
+      ) {
+        continue;
+      }
+      const cost = merchantSkillUpgradeCost(skillId);
+      if (!Number.isFinite(cost) || cost <= 0 || walletTotal < cost) continue;
+      const score = getBotMerchantUpgradeScore(skillId, cost, nextTier);
+      if (!best || score > best.score) {
+        best = { skillId, score, cost, nextTier };
+      }
+    }
+
+    const campReserveTarget = Math.max(0, Number(economyPlan?.campGoldReserve) || 0);
+    const bankingReserveRatio = best
+      ? (best.nextTier >= LEGENDARY_SKILL_TIER ? 0.92 : best.nextTier === 2 ? 0.78 : 0.62)
+      : 1;
+    const canBuyBestWithReserves = Boolean(best) && canBotSpendMerchantGold(best.cost);
+    const canBuyBestWhileBanking = Boolean(best) &&
+      !preserveForFarm &&
+      walletTotal >= best.cost &&
+      walletTotal - best.cost >= Math.round(campReserveTarget * bankingReserveRatio);
+    if (best && (canBuyBestWithReserves || canBuyBestWhileBanking)) {
+      if (tryBuySkillUpgradeFromMerchant(best.skillId)) {
+        state.observerBot.merchantPurchasesThisRoom += 1;
+        state.observerBot.lastDecision = `merchant_upgrade_${best.skillId}`;
+        return true;
+      }
+    }
+
+    if (preserveGoldForCamp) {
+      state.observerBot.lastDecision = "merchant_save_gold";
+      return false;
+    }
+
+    if (!preserveGoldForCamp && state.player.potions < potionTarget && state.player.potions < state.player.maxPotions &&
+      canBotSpendMerchantGold(potionCost) && (potionCost <= 26 || hpRatio < 0.72)
+    ) {
+      if (tryBuyPotionFromMerchant()) {
+        state.observerBot.merchantPurchasesThisRoom += 1;
+        state.observerBot.lastDecision = "merchant_potion";
+        return true;
+      }
+    }
+    return false;
+  }
+
+  function shouldObserverBotEmergencyExtractNow() {
+    if (state.phase !== "playing" || state.roomCleared) return false;
+    if (state.depth < 4) return false;
+    if (state.player.gold < 25) return false;
+    const hpRatio = getBotHpRatio();
+    const closeThreat = getBotEnemyCountWithinDistanceFrom(state.player.x, state.player.y, 2);
+    if (state.player.potions > 0 && hpRatio > 0.16) return false;
+    if (hpRatio <= 0.12) return true;
+    if (hpRatio <= 0.2 && closeThreat >= 3) return true;
+    if (state.lives <= 1 && hpRatio <= 0.25 && closeThreat >= 2) return true;
+    return false;
+  }
+
+  function shouldObserverBotExtractNow() {
+    if (state.phase !== "playing" || !state.roomCleared) return false;
+    const depth = Math.max(0, Number(state.depth) || 0);
+    if (depth < 3) return false;
+    const nextDepth = Math.min(MAX_DEPTH, depth + 1);
+    const nextIsBoss = nextDepth > 0 && nextDepth % 5 === 0;
+    const hpRatio = getBotHpRatio();
+    const potions = Math.max(0, Number(state.player.potions) || 0);
+    const gold = Math.max(0, Number(state.player.gold) || 0);
+    const armor = Math.max(0, Number(state.player.armor) || 0);
+    const projectedCampGold = Math.max(0, Number(state.campGold) || 0) + gold;
+    const farmStatus = getObserverBotDepthPressureStatus({ includeRunGold: true });
+    const economyPlan = getObserverBotEconomyPlan({ forceRefresh: true });
+    const capabilityDepth = getObserverBotCapabilityDepth();
+
+    if (farmStatus.active && farmStatus.ready) {
+      clearObserverBotDepthPressure();
+    }
+
+    const recommendedArmor = nextIsBoss ? getBotRecommendedArmorForBossDepth(nextDepth) : 0;
+    const armorGap = Math.max(0, recommendedArmor - armor);
+    const armorStep = Math.max(1, scaledCombat(1));
+
+    let riskScore = 0;
+    riskScore += clamp((0.68 - hpRatio) * 130, 0, 80);
+    if (hpRatio < 0.5) riskScore += 10;
+    if (potions <= 0) {
+      riskScore += 28;
+    } else if (potions === 1) {
+      riskScore += 10;
+    }
+    if (state.lives <= 1) riskScore += 18;
+    if (depth >= 12) riskScore += 4;
+    if (nextIsBoss) {
+      riskScore += Math.round((armorGap / armorStep) * 16);
+      if (hpRatio < 0.72) riskScore += 14;
+      if (potions <= 0) riskScore += 18;
+    }
+
+    let resilienceScore = 0;
+    if (capabilityDepth >= nextDepth + 10) {
+      resilienceScore += 24;
+    } else if (capabilityDepth >= nextDepth + 5) {
+      resilienceScore += 12;
+    }
+    if (hpRatio >= 0.78) resilienceScore += 12;
+    if (potions >= 2) {
+      resilienceScore += 16;
+    } else if (potions === 1) {
+      resilienceScore += 7;
+    }
+    if (state.lives >= 3) resilienceScore += 7;
+    if (nextIsBoss && armorGap <= 0) resilienceScore += 12;
+
+    const dangerScore = riskScore - resilienceScore;
+    let economyUrgency = 0;
+    if (economyPlan) {
+      const reserveTarget = Math.max(0, Number(economyPlan.campGoldReserve) || 0);
+      const runBankThreshold = Math.max(0, Number(economyPlan.runGoldBankThreshold) || 0);
+      const potionTarget = Math.max(0, Number(economyPlan.potionTarget) || 0);
+      const upcomingBossDepth = Math.max(0, Number(economyPlan.upcomingBossDepth) || 0);
+      const meaningfulBank = gold >= Math.max(25, Math.round(runBankThreshold * 0.75));
+      if (economyPlan.shouldBankSoon && meaningfulBank) economyUrgency += 12;
+      if (reserveTarget > 0 && projectedCampGold >= reserveTarget && meaningfulBank) economyUrgency += 10;
+      if (
+        upcomingBossDepth > 0 &&
+        depth >= Math.max(3, upcomingBossDepth - 1) &&
+        gold >= Math.max(35, runBankThreshold - 20)
+      ) {
+        economyUrgency += 8;
+      }
+      if (
+        upcomingBossDepth > 0 &&
+        potions < potionTarget &&
+        depth >= Math.max(3, upcomingBossDepth - 2) &&
+        gold >= 30
+      ) {
+        economyUrgency += 8;
+      }
+    }
+
+    if (farmStatus.active && !farmStatus.ready) {
+      const allowShallowRetry = (
+        capabilityDepth >= 20 &&
+        farmStatus.pressureDepth > 0 &&
+        farmStatus.pressureDepth <= 10 &&
+        farmStatus.failures <= 2
+      );
+      const nearPressureDepth = farmStatus.pressureDepth > 0 && depth >= Math.max(3, farmStatus.pressureDepth - 1);
+      const atFarmExtractDepth = depth >= Math.max(3, Number(farmStatus.extractDepth) || 0);
+      const farmCashReady = (
+        farmStatus.projectedCampGold >= farmStatus.goldTarget ||
+        farmStatus.goldShortage <= Math.max(30, Math.round(farmStatus.remainingUpgradeCost * 0.2))
+      );
+      if (!allowShallowRetry && nearPressureDepth) economyUrgency += 14;
+      if (!allowShallowRetry && atFarmExtractDepth && farmCashReady) economyUrgency += 12;
+    }
+
+    const weightedDanger = dangerScore + economyUrgency * 0.65;
+    const extractThreshold = nextIsBoss ? 32 : 38;
+
+    if (gold >= 20 && potions <= 0 && hpRatio <= 0.24) return true;
+    if (gold >= 25 && state.lives <= 1 && hpRatio <= 0.34 && potions <= 1) return true;
+
+    if (nextIsBoss) {
+      if (weightedDanger >= 26 && gold >= 25) return true;
+      if (armorGap >= armorStep * 2 && hpRatio < 0.56 && gold >= 25) return true;
+    }
+
+    if (farmStatus.active && !farmStatus.ready) {
+      if (weightedDanger >= 24 && depth >= Math.max(3, Number(farmStatus.extractDepth) || 0) && gold >= 20) {
+        return true;
+      } else if (gold >= 30 && hpRatio < 0.52 && (armorGap >= scaledCombat(2) || potions <= 0)) {
+        return true;
+      }
+    }
+
+    if (weightedDanger >= extractThreshold && gold >= 20) return true;
+    return false;
+  }
+
+  function canObserverBotUseShieldNow() {
+    if (state.player.barrierTurns > 0) return false;
+    const tier = getSkillTier("shield");
+    if (tier >= 1) {
+      const charges = getShieldChargesInfo();
+      return Boolean(charges && charges.charges > 0);
+    }
+    return getSkillCooldownRemaining("shield") <= 0;
+  }
+
+  function maybeObserverBotUseShield() {
+    if (!canObserverBotUseShieldNow()) return false;
+    const hpRatio = getBotHpRatio();
+    const adjacent = getBotEnemyCountWithinDistanceFrom(state.player.x, state.player.y, 1);
+    const close = getBotEnemyCountWithinDistanceFrom(state.player.x, state.player.y, 2);
+    const incomingCast = state.enemies.some((enemy) => enemy.aiming || enemy.volleyAiming || enemy.burstAiming || enemy.slamAiming);
+    if (
+      adjacent >= 2 ||
+      close >= 3 ||
+      (hpRatio < 0.5 && close >= 1) ||
+      (state.bossRoom && (close >= 1 || incomingCast)) ||
+      (incomingCast && hpRatio < 0.7)
+    ) {
+      if (tryUseShieldSkill()) {
+        state.observerBot.lastDecision = "skill_shield";
+        return true;
+      }
+    }
+    return false;
+  }
+
+  function estimateObserverBotAoeDamage(enemy, aoeTier, furySpent, baseDamage) {
+    const dist = Math.max(Math.abs(enemy.x - state.player.x), Math.abs(enemy.y - state.player.y));
+    if (aoeTier >= LEGENDARY_SKILL_TIER) {
+      const ring1 = 1.2 + furySpent * 0.2;
+      const ring2 = 0.8 + furySpent * 0.2;
+      const mult = dist <= 1 ? ring1 : ring2;
+      return Math.max(MIN_EFFECTIVE_DAMAGE, Math.round(baseDamage * mult));
+    }
+    const furyMult = 0.6 + furySpent * 0.2;
+    const falloff = aoeTier >= 2 && dist >= 2 ? 0.7 : 1;
+    return Math.max(MIN_EFFECTIVE_DAMAGE, Math.round(baseDamage * furyMult * falloff));
+  }
+
+  function maybeObserverBotUseAoe() {
+    if (getSkillCooldownRemaining("aoe") > 0) return false;
+    const aoeTier = getSkillTier("aoe");
+    const radius = aoeTier >= 2 ? 2 : 1;
+    const furySpent = Math.max(0, Math.floor(Number(state.player.adrenaline) || 0));
+    let baseDamage = Math.max(MIN_EFFECTIVE_DAMAGE, state.player.attack + Math.floor(getEffectiveAdrenaline() / 2));
+    if (aoeTier >= 1) {
+      baseDamage = Math.max(MIN_EFFECTIVE_DAMAGE, Math.round(baseDamage * 1.5));
+    }
+    const targets = state.enemies.filter(
+      (enemy) => Math.abs(enemy.x - state.player.x) <= radius && Math.abs(enemy.y - state.player.y) <= radius
+    );
+    if (targets.length <= 0) return false;
+
+    let predictedKills = 0;
+    for (const enemy of targets) {
+      const predicted = estimateObserverBotAoeDamage(enemy, aoeTier, furySpent, baseDamage);
+      if ((Number(enemy.hp) || 0) <= predicted) predictedKills += 1;
+    }
+    const adjacentThreat = getBotEnemyCountWithinDistanceFrom(state.player.x, state.player.y, 1);
+    if (
+      targets.length >= 3 ||
+      (predictedKills >= 1 && targets.length >= 2) ||
+      (state.bossRoom && targets.length >= 2) ||
+      (adjacentThreat >= 2 && targets.length >= 2)
+    ) {
+      if (tryUseAoeSkill()) {
+        state.observerBot.lastDecision = "skill_aoe";
+        return true;
+      }
+    }
+    return false;
+  }
+
+  function evaluateObserverBotDashDirection(dx, dy) {
+    const dashTier = getSkillTier("dash");
+    const maxDashTiles = dashTier >= 2 ? 4 : 3;
+    let dashDamage = state.player.attack + scaledCombat(1) + Math.floor(getEffectiveAdrenaline() / 2);
+    if (dashTier >= 1) {
+      dashDamage = Math.max(MIN_EFFECTIVE_DAMAGE, dashDamage * 2);
+    }
+    const path = [];
+    let cx = state.player.x;
+    let cy = state.player.y;
+    for (let i = 0; i < maxDashTiles; i += 1) {
+      const nx = cx + dx;
+      const ny = cy + dy;
+      if (!inBounds(nx, ny)) break;
+      if (getChestAt(nx, ny)) break;
+      path.push({ x: nx, y: ny });
+      cx = nx;
+      cy = ny;
+    }
+    if (path.length <= 0) return null;
+
+    let score = path.length * 2;
+    let hits = 0;
+    let kills = 0;
+    const hitSet = new Set();
+    let firstHitBoost = false;
+    for (const step of path) {
+      const enemy = getEnemyAt(step.x, step.y);
+      if (!enemy || !state.enemies.includes(enemy) || hitSet.has(enemy)) continue;
+      const strikeDamage =
+        dashTier >= LEGENDARY_SKILL_TIER && !firstHitBoost
+          ? Math.max(MIN_EFFECTIVE_DAMAGE, Math.round(dashDamage * 1.6))
+          : dashDamage;
+      if (dashTier >= LEGENDARY_SKILL_TIER && !firstHitBoost) {
+        firstHitBoost = true;
+      }
+      hits += 1;
+      hitSet.add(enemy);
+      score += 38;
+      if ((Number(enemy.hp) || 0) <= strikeDamage) {
+        kills += 1;
+        score += 70;
+      } else if ((Number(enemy.hp) || 0) <= strikeDamage * 1.4) {
+        score += 22;
+      }
+    }
+    if (dashTier >= 2) {
+      const landing = path[path.length - 1];
+      for (const enemy of state.enemies) {
+        if (hitSet.has(enemy)) continue;
+        if (Math.abs(enemy.x - landing.x) <= 1 && Math.abs(enemy.y - landing.y) <= 1) {
+          score += 14;
+        }
+      }
+    }
+    if (!hasRelic("ironboots")) {
+      for (const step of path) {
+        if (isSpikeAt(step.x, step.y)) {
+          score -= 9;
+        }
+      }
+    }
+    const landing = path[path.length - 1];
+    const currentThreat = getBotEnemyCountWithinDistanceFrom(state.player.x, state.player.y, 1) * 1.5 +
+      getBotEnemyCountWithinDistanceFrom(state.player.x, state.player.y, 2) * 0.5;
+    const landingThreat = getBotEnemyCountWithinDistanceFrom(landing.x, landing.y, 1) * 1.5 +
+      getBotEnemyCountWithinDistanceFrom(landing.x, landing.y, 2) * 0.5;
+    score += Math.max(0, Math.round((currentThreat - landingThreat) * 10));
+    if (!hasRelic("ironboots") && isSpikeAt(landing.x, landing.y)) {
+      score -= 22;
+    }
+    return { dx, dy, score, hits, kills };
+  }
+
+  function maybeObserverBotUseDash() {
+    if (getSkillCooldownRemaining("dash") > 0) return false;
+    const candidates = [];
+    for (const dir of BOT_CARDINAL_DIRECTIONS) {
+      const evaluation = evaluateObserverBotDashDirection(dir.dx, dir.dy);
+      if (evaluation) candidates.push(evaluation);
+    }
+    if (candidates.length <= 0) return false;
+    candidates.sort((a, b) => b.score - a.score);
+    const best = candidates[0];
+    const hpRatio = getBotHpRatio();
+    const closeThreat = getBotEnemyCountWithinDistanceFrom(state.player.x, state.player.y, 1);
+    const threshold = closeThreat >= 2 || hpRatio < 0.55 ? 20 : (state.bossRoom ? 28 : 52);
+    if (best.score < threshold) return false;
+    if (tryUseDashSkill(best.dx, best.dy)) {
+      state.observerBot.lastDecision = "skill_dash";
+      return true;
+    }
+    return false;
+  }
+
+  function runObserverBotPlayingAction() {
+    if (state.phase !== "playing") return false;
+    const bot = state.observerBot;
+    const roomChanged = bot.currentRoomIndex !== state.roomIndex;
+    if (roomChanged) {
+      bot.currentRoomIndex = state.roomIndex;
+      bot.merchantPurchasesThisRoom = 0;
+      bot.merchantDoneRoomIndex = bot.merchantDoneRoomIndex === state.roomIndex
+        ? bot.merchantDoneRoomIndex
+        : -1;
+      bot.lastDecision = `room_${state.roomIndex}`;
+      bot.lastPolicy = getObserverBotPolicyProfile().mode;
+      resetObserverBotStallTracker();
+    }
+    getObserverBotEconomyPlan({ forceRefresh: roomChanged });
+
+    if (state.extractConfirm) {
+      confirmEmergencyExtract();
+      bot.lastDecision = "emergency_extract_confirm";
+      return true;
+    }
+    if (shouldObserverBotEmergencyExtractNow()) {
+      openEmergencyExtractConfirm();
+      confirmEmergencyExtract();
+      bot.lastDecision = "emergency_extract";
+      return true;
+    }
+
+    const merchantRoomActive = state.roomType === "merchant" && state.roomCleared && state.merchant;
+    if (merchantRoomActive && bot.merchantDoneRoomIndex !== state.roomIndex) {
+      if (!isOnMerchant()) {
+        const merchantStep = findBotStepWithSpikePolicy(state.merchant.x, state.merchant.y, { context: "utility" });
+        if (merchantStep) {
+          tryMove(merchantStep.dx, merchantStep.dy);
+          bot.lastDecision = "to_merchant";
+          return true;
+        }
+      } else {
+        if (runObserverMerchantAction()) {
+          return true;
+        }
+        bot.merchantDoneRoomIndex = state.roomIndex;
+        bot.lastDecision = "merchant_done";
+      }
+    }
+
+    if (state.roomCleared) {
+      resetObserverBotStallTracker();
+      if (isOnShrine()) {
+        activateShrine();
+        bot.lastDecision = "use_shrine_post_clear";
+        return true;
+      }
+      const shrineTarget = getNearestShrineForBot();
+      if (shrineTarget) {
+        const shrineStep = findBotStepWithSpikePolicy(shrineTarget.x, shrineTarget.y, { context: "utility" });
+        if (shrineStep) {
+          tryMove(shrineStep.dx, shrineStep.dy);
+          bot.lastDecision = "to_shrine_post_clear";
+          return true;
+        }
+      }
+      const postClearChest = getNearestChestForBot();
+      if (postClearChest) {
+        const chestStep = findBotStepWithSpikePolicy(postClearChest.x, postClearChest.y, { context: "utility" });
+        if (chestStep) {
+          tryMove(chestStep.dx, chestStep.dy);
+          bot.lastDecision = "to_chest_post_clear";
+          return true;
+        }
+      }
+      if (isOnPortal()) {
+        if (shouldObserverBotExtractNow()) {
+          extractRun();
+          bot.lastDecision = "extract";
+          return true;
+        }
+        attemptDescend();
+        bot.lastDecision = "descend";
+        return true;
+      }
+      const portalStep = findBotStepWithSpikePolicy(state.portal.x, state.portal.y, { context: "extract" });
+      if (portalStep) {
+        tryMove(portalStep.dx, portalStep.dy);
+        bot.lastDecision = "to_portal";
+        return true;
+      }
+      return false;
+    }
+
+    const forceAggro = shouldObserverBotForceAggro();
+
+    if (isOnShrine()) {
+      activateShrine();
+      bot.lastDecision = "use_shrine";
+      return true;
+    }
+
+    if (runSmartBotCombatAction({ forceAggro, updateObserverDecision: true })) {
+      return true;
+    }
+
+    const fallbackStep = getFallbackStepForBot();
+    if (fallbackStep) {
+      tryMove(fallbackStep.dx, fallbackStep.dy);
+      bot.lastDecision = "fallback_move";
+      return true;
+    }
+    return false;
+  }
+
+  function runObserverBotCampAction() {
+    if (state.phase !== "camp") return false;
+    if (state.extractRelicPrompt) {
+      return resolveCampRelicPromptForBot();
+    }
+    const pressureStatus = getObserverBotDepthPressureStatus({ includeRunGold: false });
+    if (pressureStatus.active && pressureStatus.ready) {
+      clearObserverBotDepthPressure();
+      pushLog(`Observer Bot: farm target reached. Retrying depth ${pressureStatus.pressureDepth}.`, "good");
+    }
+    const bestUpgradeIndex = chooseBestCampUpgradeIndexForBot();
+    if (bestUpgradeIndex >= 0) {
+      const upgrade = CAMP_UPGRADES[bestUpgradeIndex];
+      const beforeLevel = getCampUpgradeLevel(upgrade.id);
+      buyCampUpgrade(bestUpgradeIndex);
+      const afterLevel = getCampUpgradeLevel(upgrade.id);
+      if (afterLevel > beforeLevel) {
+        state.observerBot.lastDecision = `camp_upgrade_${upgrade.id}`;
+        return true;
+      }
+    }
+    startRun({ carriedRelics: [...state.relics] });
+    state.observerBot.lastDecision = "camp_start_run";
+    return true;
+  }
+
+  function runObserverBotStep() {
+    if (!isObserverBotActive()) return false;
+    if (state.phase === "boot" || state.phase === "splash") return false;
+
+    if (state.phase === "menu") {
+      if (state.menuOptionsOpen || state.leaderboardModalOpen || state.nameModalOpen) return false;
+      if (state.hasContinueRun && tryLoadRunSnapshot()) {
+        state.observerBot.lastDecision = "load_continue";
+        return true;
+      }
+      startRun({ carriedRelics: [...state.relics] });
+      state.observerBot.lastDecision = "menu_start_run";
+      return true;
+    }
+
+    if (state.phase === "relic") {
+      return runSmartBotRelicDecision();
+    }
+
+    if (state.phase === "camp") {
+      return runObserverBotCampAction();
+    }
+
+    if (state.phase === "dead") {
+      if (state.finalGameOverPrompt) {
+        setObserverBotEnabled(false, { silent: true });
+        pushLog("Observer Bot stopped: final GAME OVER reached.", "bad");
+        return false;
+      }
+      startRun({ carriedRelics: [...state.relics] });
+      state.observerBot.lastDecision = "restart_after_death";
+      return true;
+    }
+
+    if (state.phase === "won") {
+      enterMenu();
+      state.observerBot.lastDecision = "post_win_menu";
+      return true;
+    }
+
+    if (state.phase !== "playing") return false;
+    if (isTurnInputLocked()) return false;
+    return runObserverBotPlayingAction();
+  }
+
+  function updateObserverBot(dt) {
+    if (!isObserverBotActive()) return;
+    state.observerBot.actionTimerMs -= dt;
+    if (state.observerBot.actionTimerMs > 0) return;
+    state.observerBot.actionTimerMs = Math.max(30, Number(state.observerBot.actionIntervalMs) || 180);
+    runObserverBotStep();
+  }
+
+  // Console API: DungeonSimRunner.run({ runs: 1000, seed: "patch-xyz" })
+  window.DungeonSimRunner = {
+    run: runBalanceSimulation,
+    regression: runObserverBotRegressionSuite,
+    learn(options = {}) {
+      const sourceReport = options && typeof options === "object" && options.report && typeof options.report === "object"
+        ? options.report
+        : window.DungeonLastSimReport;
+      return learnObserverBotWeightsFromSimulation(sourceReport, options);
+    },
+    getModel() {
+      return deepCloneValue(getObserverBotAiModel());
+    },
+    setLearningEnabled(enabled = true) {
+      const model = getObserverBotAiModel();
+      model.learningEnabled = Boolean(enabled);
+      persistObserverBotAiModel();
+      return deepCloneValue(model);
+    },
+    resetModel() {
+      return deepCloneValue(resetObserverBotAiModel());
+    },
+    clearFarmMode() {
+      clearObserverBotDepthPressure();
+      return getObserverBotDepthPressureStatus({ includeRunGold: true });
+    },
+    getFarmMode() {
+      return getObserverBotDepthPressureStatus({ includeRunGold: true });
+    }
+  };
+
   function getDirectionFromKey(key) {
     if (key === "arrowup" || key === "w") return { dx: 0, dy: -1 };
     if (key === "arrowdown" || key === "s") return { dx: 0, dy: 1 };
@@ -11220,6 +14457,7 @@
       key === "z" ||
       key === "x" ||
       key === "c" ||
+      key === "b" ||
       key === "m" ||
       key === DEBUG_AI_OVERLAY_TOGGLE_KEY ||
       key === DEBUG_MENU_TOGGLE_KEY ||
@@ -11239,6 +14477,7 @@
       key === "y" ||
       key === "n" ||
       key === "t" ||
+      key === "v" ||
       key === "tab";
     if (!allowNameTyping && (isControl || state.phase === "boot" || state.phase === "splash" || state.phase === "menu")) {
       event.preventDefault();
@@ -11787,12 +15026,14 @@
   loadBruteSprites();
   loadAcolyteSprite();
   loadSkitterSprite();
+  loadGuardianSprite();
   loadWardenSprite();
   updateCanvasScale();
   syncBgmWithState();
   markUiDirty();
   requestAnimationFrame(frame);
 })();
+
 
 
 
