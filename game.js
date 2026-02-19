@@ -13833,10 +13833,13 @@
       }
     }
 
+    const missingSkillIds = [];
+    const candidates = [];
     let best = null;
     for (const skillId of ["shield", "dash", "aoe"]) {
       const tier = getSkillTier(skillId);
       if (tier >= MAX_SKILL_TIER) continue;
+      missingSkillIds.push(skillId);
       const nextTier = tier + 1;
       if (
         nextTier >= LEGENDARY_SKILL_TIER &&
@@ -13848,12 +13851,26 @@
       const cost = merchantSkillUpgradeCost(skillId);
       if (!Number.isFinite(cost) || cost <= 0 || walletTotal < cost) continue;
       const score = getBotMerchantUpgradeScore(skillId, cost, nextTier);
+      candidates.push({ skillId, score, cost, nextTier });
       if (!best || score > best.score) {
         best = { skillId, score, cost, nextTier };
       }
     }
 
     const campReserveTarget = Math.max(0, Number(economyPlan?.campGoldReserve) || 0);
+    const onlyAoeMissing = missingSkillIds.length === 1 && missingSkillIds[0] === "aoe";
+    const aoeCandidate = candidates.find((entry) => entry.skillId === "aoe") || null;
+    if (
+      onlyAoeMissing &&
+      aoeCandidate &&
+      canBotSpendMerchantGold(aoeCandidate.cost, { ignoreEconomyPlan: true })
+    ) {
+      if (tryBuySkillUpgradeFromMerchant("aoe")) {
+        state.observerBot.merchantPurchasesThisRoom += 1;
+        state.observerBot.lastDecision = "merchant_upgrade_aoe_finisher";
+        return true;
+      }
+    }
     const bankingReserveRatio = best
       ? (best.nextTier >= LEGENDARY_SKILL_TIER ? 0.92 : best.nextTier === 2 ? 0.78 : 0.62)
       : 1;
