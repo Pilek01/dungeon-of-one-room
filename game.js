@@ -5818,15 +5818,24 @@
     return state.player.potions - before;
   }
 
-  function randomFreeTile(occupied) {
-    let x;
-    let y;
-    do {
-      x = randInt(1, GRID_SIZE - 2);
-      y = randInt(1, GRID_SIZE - 2);
-    } while (occupied.has(tileKey(x, y)));
-    occupied.add(tileKey(x, y));
-    return { x, y };
+  function isBonfireFloorTile(x, y) {
+    return getFloorTilesetId(state.floorPattern?.[y]?.[x] ?? 0) === TILESET_IDS.floorBonfire;
+  }
+
+  function randomFreeTile(occupied, options = {}) {
+    const avoidBonfire = Boolean(options.avoidBonfire);
+    const candidates = [];
+    for (let y = 1; y <= GRID_SIZE - 2; y += 1) {
+      for (let x = 1; x <= GRID_SIZE - 2; x += 1) {
+        if (occupied.has(tileKey(x, y))) continue;
+        if (avoidBonfire && isBonfireFloorTile(x, y)) continue;
+        candidates.push({ x, y });
+      }
+    }
+    if (candidates.length <= 0) return null;
+    const choice = candidates[randInt(0, candidates.length - 1)];
+    occupied.add(tileKey(choice.x, choice.y));
+    return choice;
   }
 
   function buildDirectPath(fromX, fromY, toX, toY, horizontalFirst) {
@@ -6192,7 +6201,10 @@
       enemyCount = 0;
       chestCount = 0;
       spikeCount = 0;
-      const merchantSpot = randomFreeTile(occupied);
+      const merchantSpot =
+        randomFreeTile(occupied, { avoidBonfire: true }) ||
+        randomFreeTile(occupied);
+      if (!merchantSpot) return;
       state.merchant = { x: merchantSpot.x, y: merchantSpot.y };
       state.runMerchantRoomsSeen = Math.max(0, Number(state.runMerchantRoomsSeen) || 0) + 1;
       state.roomCleared = true;
@@ -6244,17 +6256,21 @@
       state.enemies.push(createEnemy(enemyType, spot.x, spot.y, { elite }));
     }
     for (let i = 0; i < chestCount; i += 1) {
-      const spot = randomFreeTile(occupied);
+      const spot = randomFreeTile(occupied, { avoidBonfire: true });
+      if (!spot) break;
       state.chests.push({ x: spot.x, y: spot.y, opened: false });
     }
     for (let i = 0; i < spikeCount; i += 1) {
-      const spot = randomFreeTile(occupied);
+      const spot = randomFreeTile(occupied, { avoidBonfire: true });
+      if (!spot) break;
       state.spikes.push({ x: spot.x, y: spot.y });
     }
 
     if (state.roomType === "shrine") {
-      const shrineSpot = randomFreeTile(occupied);
-      state.shrine = { x: shrineSpot.x, y: shrineSpot.y, used: false };
+      const shrineSpot = randomFreeTile(occupied, { avoidBonfire: true });
+      if (shrineSpot) {
+        state.shrine = { x: shrineSpot.x, y: shrineSpot.y, used: false };
+      }
     }
 
     pushLog(
@@ -6282,11 +6298,13 @@
       state.enemies.push(createEnemy(type, spot.x, spot.y, { elite: state.depth >= 6 && chance(0.3) }));
     }
     for (let i = 0; i < chestCount; i += 1) {
-      const spot = randomFreeTile(occupied);
+      const spot = randomFreeTile(occupied, { avoidBonfire: true });
+      if (!spot) break;
       state.chests.push({ x: spot.x, y: spot.y, opened: false });
     }
     for (let i = 0; i < spikeCount; i += 1) {
-      const spot = randomFreeTile(occupied);
+      const spot = randomFreeTile(occupied, { avoidBonfire: true });
+      if (!spot) break;
       state.spikes.push({ x: spot.x, y: spot.y });
     }
     pushLog(`Depth ${state.depth}: Warden chamber. Kill the mini-boss.`, "bad");
@@ -6325,7 +6343,9 @@
       buildRegularRoom(occupied);
     }
 
-    state.portal = randomFreeTile(occupied);
+    state.portal =
+      randomFreeTile(occupied, { avoidBonfire: true }) ||
+      randomFreeTile(occupied);
     carveSafeSpikePathToPortal();
     setupRoomIntroSplash();
     if (state.bossRoom) {
