@@ -3,12 +3,12 @@
   const SHRINE_BLESSING_CHANCE = 0.85;
 
   const CHEST_THRESHOLD_TREASURE = {
-    health: 0.14,
-    healing: 0.28,
-    attack: 0.46,
-    armor: 0.58,
-    potion: 0.72,
-    map_fragment: 0.82,
+    health: 0.12,
+    healing: 0.23,
+    attack: 0.38,
+    armor: 0.48,
+    potion: 0.59,
+    map_fragment: 0.84,
     gold: 0.97
   };
 

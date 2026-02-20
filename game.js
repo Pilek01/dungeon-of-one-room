@@ -689,6 +689,7 @@
     swipeStartY: 0,
     swipeLastX: 0,
     swipeLastY: 0,
+    buttonPointerIds: new Set(),
     hintSeen: localStorage.getItem(STORAGE_MOBILE_SWIPE_HINT_SEEN) === "1",
     hintVisible: false,
     hintHideTimer: null
@@ -852,12 +853,12 @@
     if (!canHandleMobileSwipe()) return;
     if (event.pointerType !== "touch") return;
     if (mobileUi.swipePointerId != null) return;
+    if (mobileUi.buttonPointerIds.has(event.pointerId)) return;
     mobileUi.swipePointerId = event.pointerId;
     mobileUi.swipeStartX = event.clientX;
     mobileUi.swipeStartY = event.clientY;
     mobileUi.swipeLastX = event.clientX;
     mobileUi.swipeLastY = event.clientY;
-    try { layoutTrackEl.setPointerCapture(event.pointerId); } catch (_) {}
   }
 
   function onMobileSwipePointerMove(event) {
@@ -1385,6 +1386,7 @@
     depth: 0,
     runMaxDepth: 0,
     runGoldEarned: 0,
+    runStartDepth: 0,
     turn: 0,
     roomIndex: 0,
     bossRoom: false,
@@ -2760,6 +2762,7 @@
     state.currentRunSubmitSeq = 1;
     state.runMaxDepth = 0;
     state.runGoldEarned = 0;
+    state.runStartDepth = 0;
     state.runLeaderboardSubmitted = false;
     startRun({ resetMapFragments: true });
   }
@@ -3297,6 +3300,7 @@
     state.currentRunSubmitSeq = submitSeq + 1;
     const ts = Date.now();
     const mutatorIds = getActiveMutatorIds();
+    const startDepth = Math.max(0, Number(state.runStartDepth) || 0);
     const entry = {
       id: `${ts}-${Math.random().toString(36).slice(2, 8)}`,
       runId,
@@ -3311,6 +3315,7 @@
       depth,
       gold,
       turns,
+      startDepth,
       score: calculateScore(depth, gold),
       mutatorCount: mutatorIds.length,
       mutatorIds,
@@ -7620,6 +7625,7 @@
     }
     state.currentRunSubmitSeq = Math.max(1, Number(state.currentRunSubmitSeq) || 1);
     state.turn = 0;
+    state.runStartDepth = selectedStartDepth;
     state.roomIndex = 0;
     state.bossRoom = false;
     state.roomType = "combat";
@@ -8808,6 +8814,10 @@
           }
         }
       }
+    }
+    if (state.roomType === "vault") {
+      const vaultGold = grantGold(50);
+      pushLog(`Vault chest: +${vaultGold} gold.`, "good");
     }
     spawnParticles(chest.x, chest.y, "#f2c57c", 10, 1.2);
     setShake(1.3);
@@ -16924,10 +16934,14 @@
     const el = document.getElementById(id);
     if (!el) return;
     el.addEventListener("pointerdown", (e) => {
-      e.stopPropagation();
+      mobileUi.buttonPointerIds.add(e.pointerId);
       ensureAudio();
       handler(e);
     });
+    const clearId = (e) => { mobileUi.buttonPointerIds.delete(e.pointerId); };
+    el.addEventListener("pointerup", clearId);
+    el.addEventListener("pointercancel", clearId);
+    el.addEventListener("pointerleave", clearId);
   }
 
   function mobileMoveHandler(dx, dy) {
