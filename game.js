@@ -48,6 +48,7 @@
   const STORAGE_WARDEN_FIRST_DROP_DEPTHS = "dungeonOneRoomWardenFirstDropDepths";
   const STORAGE_START_DEPTH_UNLOCKS = "dungeonOneRoomStartDepthUnlocksV1";
   const STORAGE_OBSERVER_AI_MODEL = "dungeonOneRoomObserverAiModelV2";
+  const STORAGE_MOBILE_SWIPE_HINT_SEEN = "dungeonOneRoomMobileSwipeHintSeenV1";
   const GAME_VERSION = (() => {
     const raw = typeof window !== "undefined" ? window.GAME_VERSION : "";
     const normalized = typeof raw === "string" ? raw.trim() : "";
@@ -665,6 +666,30 @@
   const appVersionEl = document.getElementById("appVersion");
   const bootScreenEl = document.getElementById("bootScreen");
   const gameAppEl = document.getElementById("gameApp");
+  const layoutEl = document.getElementById("layout");
+  const layoutTrackEl = document.getElementById("layoutTrack");
+  const mobileSwipeHintEl = document.getElementById("mobileSwipeHint");
+  const mobileMenuButtonEl = document.getElementById("mobileMenuButton");
+  const MOBILE_LAYOUT_MEDIA_QUERY = "(max-width: 920px)";
+  const MOBILE_PANE_LEFT = 0;
+  const MOBILE_PANE_BOARD = 1;
+  const MOBILE_PANE_RIGHT = 2;
+  const MOBILE_SWIPE_MIN_DISTANCE = 42;
+  const MOBILE_SWIPE_VERTICAL_RATIO_LIMIT = 0.65;
+  const MOBILE_SWIPE_HINT_AUTO_HIDE_MS = 5600;
+  const mobileLayoutMedia = typeof window.matchMedia === "function"
+    ? window.matchMedia(MOBILE_LAYOUT_MEDIA_QUERY)
+    : null;
+  const mobileUi = {
+    active: false,
+    paneIndex: MOBILE_PANE_BOARD,
+    swipePointerId: null,
+    swipeStartX: 0,
+    swipeStartY: 0,
+    hintSeen: localStorage.getItem(STORAGE_MOBILE_SWIPE_HINT_SEEN) === "1",
+    hintVisible: false,
+    hintHideTimer: null
+  };
   let hoveredEnemy = null;
 
   if (appVersionEl) {
@@ -686,6 +711,187 @@
   const inBounds = (x, y) => x >= 1 && x <= GRID_SIZE - 2 && y >= 1 && y <= GRID_SIZE - 2;
   const manhattan = (ax, ay, bx, by) => Math.abs(ax - bx) + Math.abs(ay - by);
   const scaledCombat = (base) => Math.round(base * COMBAT_SCALE);
+
+  function isScreenOverlayVisible() {
+    return Boolean(screenOverlayEl && screenOverlayEl.classList.contains("visible"));
+  }
+
+  function clearMobileSwipeHintTimer() {
+    if (mobileUi.hintHideTimer != null) {
+      clearTimeout(mobileUi.hintHideTimer);
+      mobileUi.hintHideTimer = null;
+    }
+  }
+
+  function dismissMobileSwipeHint() {
+    clearMobileSwipeHintTimer();
+    if (!mobileUi.hintVisible) return false;
+    mobileUi.hintVisible = false;
+    return true;
+  }
+
+  function markMobileSwipeHintSeen() {
+    if (mobileUi.hintSeen) return false;
+    mobileUi.hintSeen = true;
+    setStorageItem(STORAGE_MOBILE_SWIPE_HINT_SEEN, "1");
+    return true;
+  }
+
+  function shouldOfferMobileSwipeHint() {
+    if (!mobileUi.active) return false;
+    if (mobileUi.hintSeen) return false;
+    if (mobileUi.paneIndex !== MOBILE_PANE_BOARD) return false;
+    if (isScreenOverlayVisible()) return false;
+    if (state.phase === "boot" || state.phase === "splash" || state.phase === "menu") return false;
+    return true;
+  }
+
+  function shouldShowMobileSwipeHint() {
+    if (!mobileUi.hintVisible) return false;
+    if (!mobileUi.active) return false;
+    if (mobileUi.paneIndex !== MOBILE_PANE_BOARD) return false;
+    if (isScreenOverlayVisible()) return false;
+    return true;
+  }
+
+  function revealMobileSwipeHint() {
+    if (!shouldOfferMobileSwipeHint()) return false;
+    markMobileSwipeHintSeen();
+    mobileUi.hintVisible = true;
+    clearMobileSwipeHintTimer();
+    mobileUi.hintHideTimer = setTimeout(() => {
+      mobileUi.hintHideTimer = null;
+      if (!mobileUi.hintVisible) return;
+      mobileUi.hintVisible = false;
+      applyMobilePaneUiState();
+    }, MOBILE_SWIPE_HINT_AUTO_HIDE_MS);
+    return true;
+  }
+
+  function shouldShowMobileMenuButton() {
+    if (!mobileUi.active) return false;
+    if (mobileUi.paneIndex !== MOBILE_PANE_BOARD) return false;
+    if (isScreenOverlayVisible()) return false;
+    if (state.phase === "boot" || state.phase === "splash" || state.phase === "menu") return false;
+    return true;
+  }
+
+  function applyMobilePaneUiState() {
+    if (!layoutEl) return;
+    layoutEl.classList.toggle("mobile-layout", mobileUi.active);
+    if (mobileUi.active) {
+      layoutEl.style.setProperty("--mobile-pane-index", String(mobileUi.paneIndex));
+    } else {
+      layoutEl.style.removeProperty("--mobile-pane-index");
+    }
+    if (mobileMenuButtonEl) {
+      mobileMenuButtonEl.classList.toggle("visible", shouldShowMobileMenuButton());
+    }
+    if (mobileSwipeHintEl) {
+      mobileSwipeHintEl.classList.toggle("visible", shouldShowMobileSwipeHint());
+    }
+  }
+
+  function syncMobileUiState(options = {}) {
+    const shouldBeActive = Boolean(mobileLayoutMedia && mobileLayoutMedia.matches);
+    if (mobileUi.active !== shouldBeActive) {
+      mobileUi.active = shouldBeActive;
+      mobileUi.swipePointerId = null;
+      mobileUi.paneIndex = MOBILE_PANE_BOARD;
+    }
+    if (!mobileUi.active) {
+      dismissMobileSwipeHint();
+      mobileUi.paneIndex = MOBILE_PANE_BOARD;
+      applyMobilePaneUiState();
+      return;
+    }
+    const forceBoard = Boolean(options.forceBoard) || isScreenOverlayVisible();
+    if (forceBoard) {
+      mobileUi.paneIndex = MOBILE_PANE_BOARD;
+    } else {
+      mobileUi.paneIndex = clamp(mobileUi.paneIndex, MOBILE_PANE_LEFT, MOBILE_PANE_RIGHT);
+    }
+    if (shouldOfferMobileSwipeHint()) {
+      revealMobileSwipeHint();
+    } else if (!shouldShowMobileSwipeHint()) {
+      dismissMobileSwipeHint();
+    }
+    applyMobilePaneUiState();
+  }
+
+  function setMobilePaneIndex(nextPaneIndex) {
+    if (!mobileUi.active) return false;
+    const next = clamp(Number(nextPaneIndex) || MOBILE_PANE_BOARD, MOBILE_PANE_LEFT, MOBILE_PANE_RIGHT);
+    if (next === mobileUi.paneIndex) return false;
+    mobileUi.paneIndex = next;
+    dismissMobileSwipeHint();
+    applyMobilePaneUiState();
+    return true;
+  }
+
+  function canHandleMobileSwipe() {
+    if (!mobileUi.active) return false;
+    if (state.phase === "boot" || state.phase === "splash" || state.phase === "menu") return false;
+    if (isScreenOverlayVisible()) return false;
+    return true;
+  }
+
+  function onMobileSwipePointerDown(event) {
+    if (!layoutTrackEl) return;
+    if (!canHandleMobileSwipe()) return;
+    if (event.pointerType !== "touch") return;
+    mobileUi.swipePointerId = event.pointerId;
+    mobileUi.swipeStartX = event.clientX;
+    mobileUi.swipeStartY = event.clientY;
+  }
+
+  function onMobileSwipePointerEnd(event) {
+    if (mobileUi.swipePointerId == null) return;
+    if (event.pointerId !== mobileUi.swipePointerId) return;
+    const deltaX = event.clientX - mobileUi.swipeStartX;
+    const deltaY = event.clientY - mobileUi.swipeStartY;
+    mobileUi.swipePointerId = null;
+    if (!canHandleMobileSwipe()) return;
+    const absX = Math.abs(deltaX);
+    const absY = Math.abs(deltaY);
+    if (absX < MOBILE_SWIPE_MIN_DISTANCE) return;
+    if (absY > Math.max(16, absX * MOBILE_SWIPE_VERTICAL_RATIO_LIMIT)) return;
+    dismissMobileSwipeHint();
+    if (deltaX < 0) {
+      setMobilePaneIndex(mobileUi.paneIndex + 1);
+    } else {
+      setMobilePaneIndex(mobileUi.paneIndex - 1);
+    }
+  }
+
+  function onMobileSwipePointerCancel(event) {
+    if (mobileUi.swipePointerId == null) return;
+    if (!event || event.pointerId === mobileUi.swipePointerId) {
+      mobileUi.swipePointerId = null;
+    }
+  }
+
+  function openMainMenuFromMobileButton() {
+    if (state.phase === "boot") {
+      enterSplash();
+      return;
+    }
+    if (state.phase === "splash") {
+      enterMenu();
+      return;
+    }
+    if (state.phase === "menu") return;
+    if (state.phase === "playing" || state.phase === "relic" || state.phase === "camp") {
+      if (state.phase === "playing" && isTurnInputLocked()) {
+        pushLog("Wait for turn resolution before opening menu.", "bad");
+        return;
+      }
+      saveRunSnapshot();
+      enterMenu();
+      return;
+    }
+    enterMenu();
+  }
 
   function getFuryBlessingBonus() {
     return (state.player?.furyBlessingTurns || 0) > 0 ? 2 : 0;
@@ -878,7 +1084,10 @@
   }
 
   function updateCanvasScale() {
-    const viewportMax = Math.max(160, Math.min(window.innerWidth - 40, window.innerHeight - 220, 576));
+    const compactMobile = Boolean(mobileLayoutMedia && mobileLayoutMedia.matches);
+    const horizontalPadding = compactMobile ? 24 : 40;
+    const verticalPadding = compactMobile ? 146 : 220;
+    const viewportMax = Math.max(160, Math.min(window.innerWidth - horizontalPadding, window.innerHeight - verticalPadding, 576));
     const scale = clamp(Math.floor(viewportMax / CANVAS_SIZE), 1, 6);
     const size = CANVAS_SIZE * scale;
     canvas.style.width = `${size}px`;
@@ -11506,6 +11715,7 @@
     buildMutatorPanel();
     buildLog();
     buildScreenOverlay();
+    syncMobileUiState({ forceBoard: isScreenOverlayVisible() });
     state.uiDirty = false;
   }
 
@@ -16668,6 +16878,20 @@
     handleMovementKey(key);
   });
 
+  if (layoutTrackEl) {
+    layoutTrackEl.addEventListener("pointerdown", onMobileSwipePointerDown, { passive: true });
+  }
+  window.addEventListener("pointerup", onMobileSwipePointerEnd, { passive: true });
+  window.addEventListener("pointercancel", onMobileSwipePointerCancel, { passive: true });
+
+  if (mobileMenuButtonEl) {
+    mobileMenuButtonEl.addEventListener("click", () => {
+      dismissMobileSwipeHint();
+      openMainMenuFromMobileButton();
+      syncMobileUiState({ forceBoard: true });
+    });
+  }
+
   window.addEventListener("pointerdown", () => {
     ensureAudio();
     if (state.nameModalOpen) {
@@ -16729,7 +16953,19 @@
     if (hoveredEnemy) { hoveredEnemy = null; markUiDirty(); }
   });
 
-  window.addEventListener("resize", updateCanvasScale);
+  function handleViewportChange() {
+    updateCanvasScale();
+    syncMobileUiState({ forceBoard: isScreenOverlayVisible() });
+  }
+
+  window.addEventListener("resize", handleViewportChange);
+  if (mobileLayoutMedia) {
+    if (typeof mobileLayoutMedia.addEventListener === "function") {
+      mobileLayoutMedia.addEventListener("change", handleViewportChange);
+    } else if (typeof mobileLayoutMedia.addListener === "function") {
+      mobileLayoutMedia.addListener(handleViewportChange);
+    }
+  }
 
   let previous = performance.now();
   function frame(now) {
@@ -16765,7 +17001,7 @@
   loadSkitterSprite();
   loadGuardianSprite();
   loadWardenSprite();
-  updateCanvasScale();
+  handleViewportChange();
   syncBgmWithState();
   markUiDirty();
   requestAnimationFrame(frame);

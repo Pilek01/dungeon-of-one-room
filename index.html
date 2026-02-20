@@ -19,25 +19,32 @@
       <h1>Dungeon of One Room</h1>
       <p>One room. One chance. One more depth?</p>
     </header>
-    <section class="layout">
-      <aside class="panel panel-left">
-        <section class="hud" id="hud" aria-live="polite"></section>
-      </aside>
-      <div class="board">
-        <div id="depthBadge" class="depth-badge" aria-live="polite"></div>
-        <div class="canvas-wrap">
-          <canvas id="game" width="144" height="144" aria-label="Gra dungeon"></canvas>
-          <div id="roomIntroOverlay" class="room-intro-overlay" aria-hidden="true"></div>
-          <div id="screenOverlay" class="screen-overlay" aria-live="polite"></div>
+    <section class="layout" id="layout">
+      <div class="layout-track" id="layoutTrack">
+        <aside class="panel panel-left">
+          <section class="hud" id="hud" aria-live="polite"></section>
+        </aside>
+        <div class="board">
+          <div id="depthBadge" class="depth-badge" aria-live="polite"></div>
+          <div class="canvas-wrap">
+            <canvas id="game" width="144" height="144" aria-label="Gra dungeon"></canvas>
+            <div id="roomIntroOverlay" class="room-intro-overlay" aria-hidden="true"></div>
+            <div id="screenOverlay" class="screen-overlay" aria-live="polite"></div>
+          </div>
+          <section id="skillsBar" class="skills-bar" aria-live="polite"></section>
         </div>
-        <section id="skillsBar" class="skills-bar" aria-live="polite"></section>
+        <aside class="panel panel-right">
+          <section class="actions" id="actions"></section>
+          <section class="active-effects" id="activeEffects"></section>
+          <section class="mutators" id="mutators"></section>
+          <section class="log" id="log"></section>
+        </aside>
       </div>
-      <aside class="panel panel-right">
-        <section class="actions" id="actions"></section>
-        <section class="active-effects" id="activeEffects"></section>
-        <section class="mutators" id="mutators"></section>
-        <section class="log" id="log"></section>
-      </aside>
+      <div id="mobileSwipeHint" class="mobile-swipe-hint" aria-live="polite">
+        <strong>Swipe Panels</strong>
+        <span>Swipe left/right for stats and effects. Use Menu to open main menu.</span>
+      </div>
+      <button id="mobileMenuButton" class="mobile-menu-button" type="button" aria-label="Open main menu">Menu</button>
     </section>
     <footer class="app-footer">
       <span id="appVersion" aria-live="polite"></span>
