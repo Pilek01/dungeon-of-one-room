@@ -95,6 +95,11 @@
   const SHRINE_BLESSING_MAX_TURNS = 200;
   const SHRINE_BLESSING_DEPTH_SCALE_TIER_ONE = 20;
   const SHRINE_BLESSING_DEPTH_SCALE_TIER_TWO = 30;
+  const SHRINE_MAX_HP_BLESSING_DEPTH_SCALE_TIER_ONE = 11;
+  const SHRINE_MAX_HP_BLESSING_DEPTH_SCALE_TIER_TWO = 21;
+  const SHRINE_SWAPPING_INTERVAL_TURNS = 15;
+  const SHRINE_HUNGER_HEAL_PER_HIT = 5;
+  const SHRINE_HUNGER_MISS_DAMAGE = 1;
   const ENEMY_LATE_SCALE_START_DEPTH = 20;
   const ENEMY_LATE_SCALE_STEP_DEPTH = 10;
   const ENEMY_LATE_SCALE_PER_STEP = 0.2;
@@ -110,6 +115,18 @@
   const THORNMAIL_REFLECT_MULTIPLIER = 0.2;
   const VAMPFANG_LIFESTEAL_MULTIPLIER = 0.1;
   const VAMPFANG_MAX_HEAL_PER_HIT = 2 * COMBAT_SCALE;
+  const ENGINE_OF_WAR_TRIGGER_HP_RATIO = 0.3;
+  const ENGINE_OF_WAR_SHIELD_BONUS = 10 * COMBAT_SCALE;
+  const ENGINE_OF_WAR_DAMAGE_MULTIPLIER = 1.3;
+  const ENGINE_OF_WAR_LIFESTEAL_MULTIPLIER = 0.2;
+  const ENGINE_OF_WAR_TURNS = 3;
+  const STORM_SIGIL_HIT_INTERVAL = 10;
+  const STORM_SIGIL_BONUS_DAMAGE = 3 * COMBAT_SCALE;
+  const GRAVE_WHISPER_ATK_PER_KILL = Math.max(1, Math.round(0.5 * COMBAT_SCALE));
+  const GRAVE_WHISPER_ATK_CAP = Math.max(GRAVE_WHISPER_ATK_PER_KILL, Math.round(2.5 * COMBAT_SCALE));
+  const FIELD_RATIONS_DEPTH_HEAL = 2 * COMBAT_SCALE;
+  const QUICKLOADER_ATK_BONUS = 1 * COMBAT_SCALE;
+  const QUICKLOADER_ATK_TURNS = 3;
   const FURY_ATTACK_POWER_PER_STACK = 0.05;
   const FURY_ATTACK_POWER_MAX_BONUS = 0.3;
   const PHASE_CLOAK_DODGE_COOLDOWN_TURNS = 3;
@@ -700,7 +717,14 @@
   }
 
   function getShrineMaxHpBlessingBonus(depth = state.depth) {
-    return scaledCombat(1) * getShrineBlessingDepthMultiplier(depth);
+    const safeDepth = Math.max(0, Number(depth) || 0);
+    let mult = 1;
+    if (safeDepth >= SHRINE_MAX_HP_BLESSING_DEPTH_SCALE_TIER_TWO) {
+      mult = 3;
+    } else if (safeDepth >= SHRINE_MAX_HP_BLESSING_DEPTH_SCALE_TIER_ONE) {
+      mult = 2;
+    }
+    return scaledCombat(1) * mult;
   }
 
   function getShrineArmorBlessingBonus(depth = state.depth) {
@@ -712,7 +736,10 @@
       (state.player?.furyBlessingTurns || 0) > 0 ||
       (state.player?.shrineAttackTurns || 0) > 0 ||
       (state.player?.shrineArmorTurns || 0) > 0 ||
-      (state.player?.shrineMaxHpTurns || 0) > 0
+      (state.player?.shrineMaxHpTurns || 0) > 0 ||
+      (state.player?.shrineSwapTurns || 0) > 0 ||
+      (state.player?.shrineNoiseTurns || 0) > 0 ||
+      (state.player?.shrineHungerTurns || 0) > 0
     );
   }
 
@@ -1175,6 +1202,9 @@
     roomIntroDuration: 0,
     roomIntroTitle: "",
     roomIntroSubtitle: "",
+    treasureMapFragments: 0,
+    forcedNextRoomType: "",
+    playerHitEnemyThisTurn: false,
     turnInProgress: false,
     enemyTurnInProgress: false,
     enemyTurnQueue: [],
@@ -1313,6 +1343,14 @@
       lastMoveY: -1,
       barrierArmor: 0,
       barrierTurns: 0,
+      gamblerEdgeArmorPenalty: 0,
+      bloodVialShield: 0,
+      engineOfWarTurns: 0,
+      engineOfWarTriggeredDepth: -1,
+      stormSigilHitCount: 0,
+      graveWhisperAtkBonus: 0,
+      quickloaderAtkBonus: 0,
+      quickloaderAtkTurns: 0,
       soulHarvestCount: 0,
       soulHarvestGained: 0,
       chronoUsedThisRun: false,
@@ -1333,6 +1371,10 @@
       shrineArmorTurns: 0,
       shrineMaxHpBonus: 0,
       shrineMaxHpTurns: 0,
+      shrineSwapTurns: 0,
+      shrineSwapCounter: 0,
+      shrineNoiseTurns: 0,
+      shrineHungerTurns: 0,
       shieldCharges: 1,
       shieldChargeRegenTurns: 0,
       shieldStoredDamage: 0,
@@ -1408,6 +1450,10 @@
     spawnFloatingText,
     spawnParticles,
     killEnemy,
+    registerPlayerHitThisTurn,
+    getPlayerAttackForDamage,
+    getDashRelicDamageMultiplier,
+    applyRelicDamageModsToHit,
     applyVampfangLifesteal,
     findDashKnockbackTile,
     getFacingFromDelta,
@@ -2482,7 +2528,7 @@
     state.runMaxDepth = 0;
     state.runGoldEarned = 0;
     state.runLeaderboardSubmitted = false;
-    startRun();
+    startRun({ resetMapFragments: true });
   }
 
   function openLeaderboardModal() {
@@ -3138,6 +3184,8 @@
       roomIndex: state.roomIndex,
       bossRoom: state.bossRoom,
       roomType: state.roomType,
+      treasureMapFragments: state.treasureMapFragments,
+      forcedNextRoomType: state.forcedNextRoomType,
       runMerchantRoomsSeen: state.runMerchantRoomsSeen || 0,
       floorPattern: state.floorPattern,
       roomCleared: state.roomCleared,
@@ -3234,6 +3282,9 @@
     state.roomIndex = Math.max(0, Number(snapshot.roomIndex) || 0);
     state.bossRoom = Boolean(snapshot.bossRoom);
     state.roomType = ROOM_TYPE_LABELS[snapshot.roomType] ? snapshot.roomType : "combat";
+    state.treasureMapFragments = Math.max(0, Number(snapshot.treasureMapFragments) || 0);
+    const forcedRoomType = String(snapshot.forcedNextRoomType || "").trim();
+    state.forcedNextRoomType = ROOM_TYPE_LABELS[forcedRoomType] ? forcedRoomType : "";
     state.runMerchantRoomsSeen = Math.max(
       0,
       Number(snapshot.runMerchantRoomsSeen) || (state.roomType === "merchant" ? 1 : 0)
@@ -3404,6 +3455,14 @@
       lastMoveY: Number(snapshot.player.lastMoveY) || -1,
       barrierArmor: Math.max(0, Number(snapshot.player.barrierArmor) || 0),
       barrierTurns: Math.max(0, Number(snapshot.player.barrierTurns) || 0),
+      gamblerEdgeArmorPenalty: Math.max(0, Number(snapshot.player.gamblerEdgeArmorPenalty) || 0),
+      bloodVialShield: Math.max(0, Number(snapshot.player.bloodVialShield) || 0),
+      engineOfWarTurns: Math.max(0, Number(snapshot.player.engineOfWarTurns) || 0),
+      engineOfWarTriggeredDepth: Math.floor(Number(snapshot.player.engineOfWarTriggeredDepth)),
+      stormSigilHitCount: Math.max(0, Number(snapshot.player.stormSigilHitCount) || 0),
+      graveWhisperAtkBonus: Math.max(0, Number(snapshot.player.graveWhisperAtkBonus) || 0),
+      quickloaderAtkBonus: Math.max(0, Number(snapshot.player.quickloaderAtkBonus) || 0),
+      quickloaderAtkTurns: Math.max(0, Number(snapshot.player.quickloaderAtkTurns) || 0),
       maxAdrenaline: Math.max(3, Number(snapshot.player.maxAdrenaline) || 3),
       soulHarvestCount: Math.max(0, Number(snapshot.player.soulHarvestCount) || 0),
       soulHarvestGained: Math.max(0, Number(snapshot.player.soulHarvestGained) || 0),
@@ -3429,6 +3488,10 @@
       shrineArmorTurns: Math.max(0, Number(snapshot.player.shrineArmorTurns) || 0),
       shrineMaxHpBonus: Math.max(0, Number(snapshot.player.shrineMaxHpBonus) || 0),
       shrineMaxHpTurns: Math.max(0, Number(snapshot.player.shrineMaxHpTurns) || 0),
+      shrineSwapTurns: Math.max(0, Number(snapshot.player.shrineSwapTurns) || 0),
+      shrineSwapCounter: Math.max(0, Number(snapshot.player.shrineSwapCounter) || 0),
+      shrineNoiseTurns: Math.max(0, Number(snapshot.player.shrineNoiseTurns) || 0),
+      shrineHungerTurns: Math.max(0, Number(snapshot.player.shrineHungerTurns) || 0),
       shieldCharges: Math.max(0, Number(snapshot.player.shieldCharges) || 0),
       shieldChargeRegenTurns: Math.max(0, Number(snapshot.player.shieldChargeRegenTurns) || 0),
       shieldStoredDamage: Math.max(0, Number(snapshot.player.shieldStoredDamage) || 0),
@@ -3446,6 +3509,10 @@
     };
     state.player.hp = clamp(state.player.hp, 1, state.player.maxHp);
     state.player.crit = clamp(state.player.crit, 0.01, CRIT_CHANCE_CAP);
+    if (!Number.isFinite(state.player.engineOfWarTriggeredDepth)) {
+      state.player.engineOfWarTriggeredDepth = -1;
+    }
+    state.playerHitEnemyThisTurn = false;
     if (
       !state.player.dashAfterline ||
       state.player.dashAfterline.turns <= 0 ||
@@ -3459,6 +3526,26 @@
       state.player.chaosAtkTurns = 0;
       state.player.chaosKillHeal = 0;
       state.player.chaosRollCounter = 0;
+    }
+    if (!hasRelic("bloodvial")) {
+      state.player.bloodVialShield = 0;
+    }
+    if (!hasRelic("engineofwar")) {
+      state.player.engineOfWarTurns = 0;
+      state.player.engineOfWarTriggeredDepth = -1;
+    }
+    if (!hasRelic("gambleredge")) {
+      state.player.gamblerEdgeArmorPenalty = 0;
+    }
+    if (!hasRelic("stormsigil")) {
+      state.player.stormSigilHitCount = 0;
+    }
+    if (!hasRelic("gravewhisper")) {
+      state.player.graveWhisperAtkBonus = 0;
+    }
+    if (!hasRelic("quickloader")) {
+      state.player.quickloaderAtkBonus = 0;
+      state.player.quickloaderAtkTurns = 0;
     }
     if (hasRelic("titanheart") && (state.player.titanAttackPenalty || 0) > 0) {
       state.player.attack += state.player.titanAttackPenalty;
@@ -4778,6 +4865,11 @@
   }
 
   function chooseRoomType() {
+    if (state.forcedNextRoomType === "vault" && !isBossDepth()) {
+      state.forcedNextRoomType = "";
+      pushLog("Treasure Map complete: forced Vault room this depth.", "good");
+      return "vault";
+    }
     const guaranteedMerchantRoom = state.roomIndex === 18 || (
       state.roomIndex === 8 && Math.max(0, Number(state.runMerchantRoomsSeen) || 0) <= 0
     );
@@ -4969,7 +5061,8 @@
       relic.rarity === "normal" &&
       relic.id !== "shrineward" &&
       relic.id !== "ironboots" &&
-      relic.id !== "scoutlens"
+      relic.id !== "scoutlens" &&
+      relic.id !== "fieldrations"
     );
   }
 
@@ -4978,20 +5071,197 @@
     return Math.max(1, Math.round(base * THORNMAIL_REFLECT_MULTIPLIER));
   }
 
+  function healPlayer(amount, options = {}) {
+    const healAmount = Math.max(0, Math.round(Number(amount) || 0));
+    if (healAmount <= 0) {
+      return { restored: 0, shielded: 0 };
+    }
+    const visuals = options.visuals !== false;
+    const beforeHp = Math.max(0, Number(state.player.hp) || 0);
+    state.player.hp = Math.min(state.player.maxHp, state.player.hp + healAmount);
+    const restored = Math.max(0, state.player.hp - beforeHp);
+    let shielded = Math.max(0, healAmount - restored);
+    if (shielded > 0 && !hasRelic("bloodvial")) {
+      shielded = 0;
+    }
+    if (shielded > 0) {
+      state.player.bloodVialShield = Math.max(0, Number(state.player.bloodVialShield) || 0) + shielded;
+    }
+    if (visuals && restored > 0) {
+      spawnFloatingText(state.player.x, state.player.y, `+${restored}`, options.textColor || "#9ff7a9");
+      spawnParticles(
+        state.player.x,
+        state.player.y,
+        options.particleColor || "#7fe9a7",
+        options.particleCount || 4,
+        options.particleSpread || 0.8
+      );
+    }
+    if (visuals && shielded > 0) {
+      spawnFloatingText(state.player.x, state.player.y, `+${shielded} SH`, "#9fd9ff");
+      spawnParticles(state.player.x, state.player.y, "#98ccff", 4, 0.85);
+    }
+    return { restored, shielded };
+  }
+
+  function absorbPlayerShieldDamage(rawDamage) {
+    const incoming = Math.max(0, Math.round(Number(rawDamage) || 0));
+    if (incoming <= 0) {
+      return { remaining: 0, absorbed: 0 };
+    }
+    const shieldBefore = Math.max(0, Number(state.player.bloodVialShield) || 0);
+    if (shieldBefore <= 0) {
+      return { remaining: incoming, absorbed: 0 };
+    }
+    const absorbed = Math.min(incoming, shieldBefore);
+    state.player.bloodVialShield = shieldBefore - absorbed;
+    if (absorbed > 0) {
+      spawnFloatingText(state.player.x, state.player.y, `SH ${absorbed}`, "#9fd9ff");
+      spawnParticles(state.player.x, state.player.y, "#90c6ff", 5, 0.9);
+    }
+    return { remaining: Math.max(0, incoming - absorbed), absorbed };
+  }
+
+  function tryTriggerEngineOfWarEmergency(sourceLabel = "danger") {
+    if (!hasRelic("engineofwar")) return false;
+    if ((state.player.engineOfWarTurns || 0) > 0) return false;
+    if ((state.player.hp || 0) <= 0) return false;
+    const maxHp = Math.max(1, Number(state.player.maxHp) || 1);
+    const hpRatio = (Number(state.player.hp) || 0) / maxHp;
+    if (hpRatio >= ENGINE_OF_WAR_TRIGGER_HP_RATIO) return false;
+    const depthKey = Math.max(0, Math.floor(Number(state.depth) || 0));
+    if ((Number(state.player.engineOfWarTriggeredDepth) || -1) === depthKey) return false;
+
+    state.player.engineOfWarTriggeredDepth = depthKey;
+    state.player.engineOfWarTurns = ENGINE_OF_WAR_TURNS;
+    state.player.bloodVialShield = Math.max(0, Number(state.player.bloodVialShield) || 0) + ENGINE_OF_WAR_SHIELD_BONUS;
+    spawnShockwaveRing(state.player.x, state.player.y, {
+      color: "#ffb86e",
+      core: "#fff2d8",
+      maxRadius: TILE * 2.2,
+      life: 260
+    });
+    spawnParticles(state.player.x, state.player.y, "#ffbf66", 14, 1.3);
+    pushLog(
+      `Engine of War ignites (${sourceLabel}): +${ENGINE_OF_WAR_SHIELD_BONUS} shield, +30% damage, +20% lifesteal for ${ENGINE_OF_WAR_TURNS} turns.`,
+      "good"
+    );
+    return true;
+  }
+
+  function applyQuickloaderPotionBuff() {
+    if (!hasRelic("quickloader")) return;
+    const prevBonus = Math.max(0, Number(state.player.quickloaderAtkBonus) || 0);
+    if (prevBonus > 0) {
+      state.player.attack = Math.max(MIN_EFFECTIVE_DAMAGE, state.player.attack - prevBonus);
+    }
+    state.player.quickloaderAtkBonus = QUICKLOADER_ATK_BONUS;
+    state.player.quickloaderAtkTurns = QUICKLOADER_ATK_TURNS;
+    state.player.attack += QUICKLOADER_ATK_BONUS;
+    pushLog(`Quickloader: +${QUICKLOADER_ATK_BONUS} ATK for ${QUICKLOADER_ATK_TURNS} turns.`, "good");
+  }
+
+  function tickQuickloaderBuff() {
+    if ((state.player.quickloaderAtkTurns || 0) <= 0) {
+      state.player.quickloaderAtkTurns = 0;
+      return;
+    }
+    state.player.quickloaderAtkTurns -= 1;
+    if (state.player.quickloaderAtkTurns > 0) return;
+    const bonus = Math.max(0, Number(state.player.quickloaderAtkBonus) || 0);
+    state.player.quickloaderAtkBonus = 0;
+    if (bonus > 0) {
+      state.player.attack = Math.max(MIN_EFFECTIVE_DAMAGE, state.player.attack - bonus);
+      pushLog("Quickloader buff fades.", "warn");
+    }
+  }
+
+  function getPlayerRelicDamageMultiplier(enemy) {
+    let mult = 1;
+    if (hasRelic("risk")) mult *= 1.4;
+    if (hasRelic("mirrorcarapace")) mult *= 0.9;
+    if ((state.player.engineOfWarTurns || 0) > 0) mult *= ENGINE_OF_WAR_DAMAGE_MULTIPLIER;
+    if (enemy) {
+      const maxHp = Math.max(1, Number(enemy.maxHp) || Number(enemy.hp) || 1);
+      const hp = Math.max(0, Number(enemy.hp) || 0);
+      if (hasRelic("executionseal") && hp / maxHp <= 0.4) {
+        mult *= 1.25;
+      }
+      if (hasRelic("sharpsight") && hp >= maxHp) {
+        mult *= 1.1;
+      }
+    }
+    return mult;
+  }
+
+  function getLastStandTorqueAttackBonus() {
+    if (!hasRelic("laststandtorque")) return 0;
+    const hp = Math.max(0, Number(state.player.hp) || 0);
+    const maxHp = Math.max(1, Number(state.player.maxHp) || 1);
+    return hp / maxHp < 0.5 ? scaledCombat(2) : 0;
+  }
+
+  function getPlayerAttackForDamage(options = {}) {
+    const includeChaos = options.includeChaos !== false;
+    const base = Math.max(0, Number(state.player.attack) || 0);
+    const chaos = includeChaos ? Math.max(0, Number(state.player.chaosAtkBonus) || 0) : 0;
+    return Math.max(MIN_EFFECTIVE_DAMAGE, base + chaos + getLastStandTorqueAttackBonus());
+  }
+
+  function getDashRelicDamageMultiplier() {
+    return hasRelic("momentumengine") ? 1.2 : 1;
+  }
+
+  function applyRelicDamageModsToHit(baseDamage, enemy) {
+    const base = Math.max(MIN_EFFECTIVE_DAMAGE, Math.round(Number(baseDamage) || 0));
+    let damage = Math.max(MIN_EFFECTIVE_DAMAGE, Math.round(base * getPlayerRelicDamageMultiplier(enemy)));
+    let stormProc = false;
+    if (hasRelic("stormsigil")) {
+      state.player.stormSigilHitCount = Math.max(0, Number(state.player.stormSigilHitCount) || 0) + 1;
+      if (state.player.stormSigilHitCount % STORM_SIGIL_HIT_INTERVAL === 0) {
+        damage += STORM_SIGIL_BONUS_DAMAGE;
+        stormProc = true;
+      }
+    }
+    return { damage: Math.max(MIN_EFFECTIVE_DAMAGE, damage), stormProc };
+  }
+
+  function applyShrineHungerHitHeal() {
+    if ((state.player.shrineHungerTurns || 0) <= 0) return 0;
+    const healResult = healPlayer(SHRINE_HUNGER_HEAL_PER_HIT, {
+      visuals: true,
+      textColor: "#9ff7a9",
+      particleColor: "#7fe9a7",
+      particleCount: 4,
+      particleSpread: 0.8
+    });
+    const restored = healResult.restored;
+    if (restored > 0) {
+      return restored;
+    }
+    return 0;
+  }
+
+  function registerPlayerHitThisTurn() {
+    state.playerHitEnemyThisTurn = true;
+    applyShrineHungerHitHeal();
+  }
+
   function applyVampfangLifesteal(damageDealt, options = {}) {
-    if (!hasRelic("vampfang")) return 0;
     const dealt = Math.max(0, Number(damageDealt) || 0);
     if (dealt <= 0) return 0;
-    const rawHealAmount = Math.max(1, Math.round(dealt * VAMPFANG_LIFESTEAL_MULTIPLIER));
-    const healAmount = Math.min(VAMPFANG_MAX_HEAL_PER_HIT, rawHealAmount);
-    const before = state.player.hp;
-    state.player.hp = Math.min(state.player.maxHp, state.player.hp + healAmount);
-    const restored = Math.max(0, state.player.hp - before);
-    state.player.vampfangHealRun = Math.max(0, Number(state.player.vampfangHealRun) || 0) + restored;
-    if (restored > 0 && options.visuals !== false) {
-      spawnFloatingText(state.player.x, state.player.y, `+${restored}`, "#9ff7a9");
-      spawnParticles(state.player.x, state.player.y, "#7fe9a7", 4, 0.8);
+    let healAmount = 0;
+    if (hasRelic("vampfang")) {
+      const rawVampHealAmount = Math.max(1, Math.round(dealt * VAMPFANG_LIFESTEAL_MULTIPLIER));
+      healAmount += Math.min(VAMPFANG_MAX_HEAL_PER_HIT, rawVampHealAmount);
     }
+    if ((state.player.engineOfWarTurns || 0) > 0) {
+      healAmount += Math.max(1, Math.round(dealt * ENGINE_OF_WAR_LIFESTEAL_MULTIPLIER));
+    }
+    if (healAmount <= 0) return 0;
+    const healResult = healPlayer(healAmount, { visuals: options.visuals !== false });
+    const restored = healResult.restored;
+    state.player.vampfangHealRun = Math.max(0, Number(state.player.vampfangHealRun) || 0) + restored;
     return restored;
   }
 
@@ -5009,17 +5279,18 @@
     if (relicId === "lifebloom") {
       state.player.maxHp += scaledCombat(2);
       if (onGain) {
-        state.player.hp = Math.min(state.player.maxHp, state.player.hp + scaledCombat(2));
+        healPlayer(scaledCombat(2), { visuals: false });
       } else {
         state.player.hp = Math.min(state.player.hp, state.player.maxHp);
       }
       return;
     }
     if (relicId === "ironboots") { return; } // passive: checked in spike logic
+    if (relicId === "fieldrations") { return; } // passive: checked at room start
+    if (relicId === "quickloader") { return; } // passive: checked on potion use
     // Rare
     if (relicId === "idol") { state.runMods.goldMultiplier += GOLDEN_IDOL_GOLD_MULTIPLIER; return; }
     if (relicId === "thornmail") { return; } // passive: checked in enemy melee
-    if (relicId === "vampfang") { return; } // passive: checked in player damage hooks
     if (relicId === "adrenal") {
       state.player.maxAdrenaline += 2;
       if (onGain) {
@@ -5033,7 +5304,18 @@
     if (relicId === "magnet") { return; } // passive: checked after move
     if (relicId === "shrineward") { return; } // passive: checked in shrine
     if (relicId === "merchfavor") { return; } // passive: checked in merchant
+    if (relicId === "risk") { return; } // passive: checked in hit/potion hooks
+    if (relicId === "sharpsight") { return; } // passive: checked in hit hooks
+    if (relicId === "laststandtorque") { return; } // passive: checked in attack hooks
+    if (relicId === "gambleredge") {
+      state.player.crit = clamp(state.player.crit + 0.12, 0.01, CRIT_CHANCE_CAP);
+      const armorPenalty = Math.min(Math.max(0, Number(state.player.armor) || 0), scaledCombat(2));
+      state.player.gamblerEdgeArmorPenalty = armorPenalty;
+      state.player.armor = Math.max(0, state.player.armor - armorPenalty);
+      return;
+    }
     // Epic
+    if (relicId === "vampfang") { return; } // passive: checked in player damage hooks
     if (relicId === "glasscannon") {
       addScaledFlatAttack(scaledCombat(4));
       const maxReducible = Math.max(0, state.player.maxHp - scaledCombat(4));
@@ -5051,6 +5333,18 @@
     if (relicId === "soulharvest") { return; } // passive: checked in killEnemy
     if (relicId === "burnblade") { return; } // passive: checked in attackEnemy
     if (relicId === "frostamulet") { return; } // passive: checked in enemyTurn
+    if (relicId === "bloodvial") {
+      state.player.bloodVialShield = Math.max(0, Number(state.player.bloodVialShield) || 0);
+      return;
+    }
+    if (relicId === "executionseal") { return; } // passive: checked in hit hooks
+    if (relicId === "stormsigil") { return; } // passive: checked in hit hooks
+    if (relicId === "gravewhisper") {
+      state.player.graveWhisperAtkBonus = Math.max(0, Number(state.player.graveWhisperAtkBonus) || 0);
+      return;
+    }
+    if (relicId === "mirrorcarapace") { return; } // passive: checked in incoming/outgoing damage hooks
+    if (relicId === "momentumengine") { return; } // passive: checked in dash hooks
     // Legendary
     if (relicId === "chronoloop") {
       if (onGain) state.player.chronoUsedThisRun = false;
@@ -5078,6 +5372,11 @@
       state.player.chaosRollCounter = 0;
       return;
     } // passive: checked in finalizeTurn
+    if (relicId === "engineofwar") {
+      state.player.engineOfWarTurns = 0;
+      state.player.engineOfWarTriggeredDepth = -1;
+      return;
+    }
   }
 
   function removeRelicEffects(relicId) {
@@ -5099,13 +5398,22 @@
       return;
     }
     if (relicId === "ironboots") { return; }
+    if (relicId === "fieldrations") { return; }
+    if (relicId === "quickloader") {
+      const bonus = Math.max(0, Number(state.player.quickloaderAtkBonus) || 0);
+      if (bonus > 0) {
+        state.player.attack = Math.max(MIN_EFFECTIVE_DAMAGE, state.player.attack - bonus);
+      }
+      state.player.quickloaderAtkBonus = 0;
+      state.player.quickloaderAtkTurns = 0;
+      return;
+    }
     // Rare
     if (relicId === "idol") {
       state.runMods.goldMultiplier = Math.max(0.1, state.runMods.goldMultiplier - GOLDEN_IDOL_GOLD_MULTIPLIER);
       return;
     }
     if (relicId === "thornmail") { return; }
-    if (relicId === "vampfang") { return; }
     if (relicId === "adrenal") {
       state.player.maxAdrenaline = Math.max(3, state.player.maxAdrenaline - 2);
       state.player.adrenaline = Math.min(state.player.adrenaline, state.player.maxAdrenaline);
@@ -5115,7 +5423,17 @@
     if (relicId === "magnet") { return; }
     if (relicId === "shrineward") { return; }
     if (relicId === "merchfavor") { return; }
+    if (relicId === "risk") { return; }
+    if (relicId === "sharpsight") { return; }
+    if (relicId === "laststandtorque") { return; }
+    if (relicId === "gambleredge") {
+      state.player.crit = clamp(state.player.crit - 0.12, 0.01, CRIT_CHANCE_CAP);
+      state.player.armor += Math.max(0, Number(state.player.gamblerEdgeArmorPenalty) || 0);
+      state.player.gamblerEdgeArmorPenalty = 0;
+      return;
+    }
     // Epic
+    if (relicId === "vampfang") { return; }
     if (relicId === "glasscannon") {
       state.player.attack = Math.max(scaledCombat(1), state.player.attack - Math.max(1, scaleFlatAttackByBlade(scaledCombat(4))));
       const refund = Math.max(0, Number(state.player.glassCannonHpPenalty) || 0);
@@ -5141,6 +5459,25 @@
     }
     if (relicId === "burnblade") { return; }
     if (relicId === "frostamulet") { return; }
+    if (relicId === "bloodvial") {
+      state.player.bloodVialShield = 0;
+      return;
+    }
+    if (relicId === "executionseal") { return; }
+    if (relicId === "stormsigil") {
+      state.player.stormSigilHitCount = 0;
+      return;
+    }
+    if (relicId === "gravewhisper") {
+      const bonus = Math.max(0, Number(state.player.graveWhisperAtkBonus) || 0);
+      if (bonus > 0) {
+        state.player.attack = Math.max(MIN_EFFECTIVE_DAMAGE, state.player.attack - bonus);
+      }
+      state.player.graveWhisperAtkBonus = 0;
+      return;
+    }
+    if (relicId === "mirrorcarapace") { return; }
+    if (relicId === "momentumengine") { return; }
     // Legendary
     if (relicId === "chronoloop") { return; }
     if (relicId === "voidreaper") {
@@ -5159,6 +5496,11 @@
       state.player.chaosAtkTurns = 0;
       state.player.chaosKillHeal = 0;
       state.player.chaosRollCounter = 0;
+      return;
+    }
+    if (relicId === "engineofwar") {
+      state.player.engineOfWarTurns = 0;
+      state.player.engineOfWarTriggeredDepth = -1;
       return;
     }
   }
@@ -6158,6 +6500,7 @@
   function tryAutoPotion(triggerLabel = "low HP") {
     if (state.phase !== "playing") return false;
     if (getCampUpgradeLevel("auto_potion") < 1) return false;
+    if (hasRelic("risk")) return false;
     if (state.player.hp <= 0 || state.player.hp > AUTO_POTION_TRIGGER_HP) return false;
     if (state.player.autoPotionCooldown > 0) return false;
     if (state.player.potions <= 0) return false;
@@ -6165,12 +6508,16 @@
     state.player.potions -= 1;
     state.player.autoPotionCooldown = AUTO_POTION_INTERNAL_COOLDOWN_TURNS;
     state.potionsUsedThisRun = (state.potionsUsedThisRun || 0) + 1;
-    const heal = getPotionHealAmount();
-    state.player.hp = Math.min(state.player.maxHp, state.player.hp + heal);
-    spawnFloatingText(state.player.x, state.player.y, `+${heal}`, "#9ff7a9");
-    spawnParticles(state.player.x, state.player.y, "#8ce1a7", 12, 1.1);
+    const healResult = healPlayer(getPotionHealAmount(), {
+      visuals: true,
+      textColor: "#9ff7a9",
+      particleColor: "#8ce1a7",
+      particleCount: 12,
+      particleSpread: 1.1
+    });
+    applyQuickloaderPotionBuff();
     pushLog(
-      `Auto Potion (${triggerLabel}): +${heal} HP (CD ${AUTO_POTION_INTERNAL_COOLDOWN_TURNS} turns).`,
+      `Auto Potion (${triggerLabel}): +${healResult.restored} HP${healResult.shielded > 0 ? `, +${healResult.shielded} shield` : ""} (CD ${AUTO_POTION_INTERNAL_COOLDOWN_TURNS} turns).`,
       "good"
     );
     markUiDirty();
@@ -6276,6 +6623,93 @@
       minValue: scaledCombat(BASE_PLAYER_HP),
       fadeLog: "Shrine blessing fades: Max HP bonus expired."
     });
+    if (state.player.shrineSwapTurns > 0) {
+      state.player.shrineSwapTurns -= 1;
+      if (state.player.shrineSwapTurns <= 0) {
+        state.player.shrineSwapTurns = 0;
+        state.player.shrineSwapCounter = 0;
+        pushLog("Shrine blessing fades: Swapping expired.", "bad");
+      }
+    }
+    if (state.player.shrineNoiseTurns > 0) {
+      state.player.shrineNoiseTurns -= 1;
+      if (state.player.shrineNoiseTurns <= 0) {
+        state.player.shrineNoiseTurns = 0;
+        pushLog("Shrine blessing fades: Noise expired.", "bad");
+      }
+    }
+    if (state.player.shrineHungerTurns > 0) {
+      state.player.shrineHungerTurns -= 1;
+      if (state.player.shrineHungerTurns <= 0) {
+        state.player.shrineHungerTurns = 0;
+        pushLog("Shrine blessing fades: Hunger expired.", "bad");
+      }
+    }
+    if (state.player.engineOfWarTurns > 0) {
+      state.player.engineOfWarTurns -= 1;
+      if (state.player.engineOfWarTurns <= 0) {
+        state.player.engineOfWarTurns = 0;
+        pushLog("Engine of War overdrive fades.", "warn");
+      }
+    }
+  }
+
+  function triggerShrineSwappingIfReady() {
+    if ((state.player.shrineSwapTurns || 0) <= 0) {
+      state.player.shrineSwapCounter = 0;
+      return false;
+    }
+    state.player.shrineSwapCounter = Math.max(0, Number(state.player.shrineSwapCounter) || 0) + 1;
+    if (state.player.shrineSwapCounter < SHRINE_SWAPPING_INTERVAL_TURNS) return false;
+    if (!Array.isArray(state.enemies) || state.enemies.length <= 0) return false;
+    state.player.shrineSwapCounter = 0;
+    const randomEnemy = state.enemies[Math.floor(Math.random() * state.enemies.length)];
+    if (!randomEnemy) return false;
+    const px = state.player.x;
+    const py = state.player.y;
+    startTween(state.player);
+    startTween(randomEnemy);
+    state.player.x = randomEnemy.x;
+    state.player.y = randomEnemy.y;
+    randomEnemy.x = px;
+    randomEnemy.y = py;
+    spawnParticles(state.player.x, state.player.y, "#c0e7ff", 8, 1.1);
+    spawnParticles(randomEnemy.x, randomEnemy.y, "#c0e7ff", 8, 1.1);
+    pushLog(`Shrine of Swapping triggers: switched with ${randomEnemy.name}.`, "warn");
+    return true;
+  }
+
+  function applyShrineHungerMissPenalty() {
+    if ((state.player.shrineHungerTurns || 0) <= 0) return false;
+    if (state.playerHitEnemyThisTurn) return false;
+    if (blockDamageWithShield("hunger")) {
+      pushLog("Shrine of Hunger: miss penalty negated.", "good");
+      return false;
+    }
+    if (isDebugGodModeActive()) {
+      pushLog("Shrine of Hunger: miss penalty ignored (God Mode).", "warn");
+      return false;
+    }
+    const hungerAbsorb = absorbPlayerShieldDamage(SHRINE_HUNGER_MISS_DAMAGE);
+    const hungerDamage = hungerAbsorb.remaining;
+    if (hungerDamage <= 0) {
+      pushLog("Shrine of Hunger: miss penalty absorbed by shield.", "good");
+      return false;
+    }
+    state.player.hp -= hungerDamage;
+    tryTriggerEngineOfWarEmergency("hunger");
+    triggerPlayerHitFlash();
+    spawnFloatingText(state.player.x, state.player.y, `-${hungerDamage}`, "#ff7676");
+    pushLog(`Shrine of Hunger: no hit this turn (-${hungerDamage} HP).`, "bad");
+    tryAutoPotion("hunger");
+    if (state.player.hp <= 0) {
+      if (tryTriggerChronoLoop("hunger")) {
+        return true;
+      }
+      gameOver(`Hunger consumed you at depth ${state.depth}.`);
+      return true;
+    }
+    return false;
   }
 
   function applyMutatorsToRun() {
@@ -6872,6 +7306,30 @@
     state.player.y = 4;
     snapVisual(state.player);
     state.player.adrenaline = hasRelic("adrenal") ? 2 : 0;
+    if ((state.player.graveWhisperAtkBonus || 0) > 0) {
+      state.player.attack = Math.max(
+        MIN_EFFECTIVE_DAMAGE,
+        (Number(state.player.attack) || 0) - Math.max(0, Number(state.player.graveWhisperAtkBonus) || 0)
+      );
+      state.player.graveWhisperAtkBonus = 0;
+    }
+    if (hasRelic("fieldrations")) {
+      const fieldRationsHeal = healPlayer(FIELD_RATIONS_DEPTH_HEAL, {
+        visuals: true,
+        textColor: "#b8ef9b",
+        particleColor: "#9ddf7f",
+        particleCount: 8,
+        particleSpread: 1.0
+      });
+      if (fieldRationsHeal.restored > 0 || fieldRationsHeal.shielded > 0) {
+        pushLog(
+          `Field Rations: +${fieldRationsHeal.restored} HP${fieldRationsHeal.shielded > 0 ? `, +${fieldRationsHeal.shielded} shield` : ""}.`,
+          "good"
+        );
+      } else {
+        pushLog("Field Rations consumed.", "good");
+      }
+    }
 
     const occupied = new Set([tileKey(state.player.x, state.player.y)]);
     state.enemies = [];
@@ -6906,6 +7364,7 @@
       ? options.carriedRelics.filter((id) => typeof id === "string")
       : [];
     const carryRelics = carriedRelics.length > 0;
+    const resetMapFragments = Boolean(options.resetMapFragments);
     const carriesSoulHarvest = carriedRelics.includes("soulharvest");
     const requestedStartDepth = clamp(Math.max(0, Math.floor(Number(options.startDepth) || 0)), 0, MAX_DEPTH);
     const selectedStartDepth = isStartDepthUnlocked(requestedStartDepth) ? requestedStartDepth : 0;
@@ -6931,6 +7390,13 @@
     state.roomIndex = 0;
     state.bossRoom = false;
     state.roomType = "combat";
+    if (resetMapFragments) {
+      state.treasureMapFragments = 0;
+      state.forcedNextRoomType = "";
+    } else {
+      state.treasureMapFragments = Math.max(0, Number(state.treasureMapFragments) || 0);
+      state.forcedNextRoomType = state.forcedNextRoomType === "vault" ? "vault" : "";
+    }
     state.runMerchantRoomsSeen = 0;
     state.shake = 0;
     state.flash = 0;
@@ -6998,6 +7464,14 @@
     state.player.lastMoveY = -1;
     state.player.barrierArmor = 0;
     state.player.barrierTurns = 0;
+    state.player.gamblerEdgeArmorPenalty = 0;
+    state.player.bloodVialShield = 0;
+    state.player.engineOfWarTurns = 0;
+    state.player.engineOfWarTriggeredDepth = -1;
+    state.player.stormSigilHitCount = 0;
+    state.player.graveWhisperAtkBonus = 0;
+    state.player.quickloaderAtkBonus = 0;
+    state.player.quickloaderAtkTurns = 0;
     state.player.soulHarvestCount = carriesSoulHarvest ? preservedSoulHarvestCount : 0;
     state.player.soulHarvestGained = carriesSoulHarvest ? preservedSoulHarvestGained : 0;
     state.player.chronoUsedThisRun = false;
@@ -7018,10 +7492,15 @@
     state.player.shrineArmorTurns = 0;
     state.player.shrineMaxHpBonus = 0;
     state.player.shrineMaxHpTurns = 0;
+    state.player.shrineSwapTurns = 0;
+    state.player.shrineSwapCounter = 0;
+    state.player.shrineNoiseTurns = 0;
+    state.player.shrineHungerTurns = 0;
     state.player.shieldCharges = 1;
     state.player.shieldChargeRegenTurns = 0;
     state.player.shieldStoredDamage = 0;
     state.player.dashAfterline = null;
+    state.playerHitEnemyThisTurn = false;
     state.skillCooldowns = sanitizeSkillCooldowns({});
     stopDeathTrack(true);
 
@@ -7263,6 +7742,54 @@
     );
   }
 
+  function buildOccupiedTilesForShrineCurseSpawn() {
+    const occupied = new Set();
+    for (let y = 0; y < GRID_SIZE; y += 1) {
+      occupied.add(tileKey(0, y));
+      occupied.add(tileKey(GRID_SIZE - 1, y));
+    }
+    for (let x = 0; x < GRID_SIZE; x += 1) {
+      occupied.add(tileKey(x, 0));
+      occupied.add(tileKey(x, GRID_SIZE - 1));
+    }
+    occupied.add(tileKey(state.player.x, state.player.y));
+    occupied.add(tileKey(state.portal.x, state.portal.y));
+    if (state.shrine) {
+      occupied.add(tileKey(state.shrine.x, state.shrine.y));
+    }
+    if (state.merchant) {
+      occupied.add(tileKey(state.merchant.x, state.merchant.y));
+    }
+    for (const enemy of state.enemies) {
+      occupied.add(tileKey(enemy.x, enemy.y));
+    }
+    for (const chest of state.chests) {
+      if (!chest.opened) occupied.add(tileKey(chest.x, chest.y));
+    }
+    for (const spike of state.spikes) {
+      occupied.add(tileKey(spike.x, spike.y));
+    }
+    return occupied;
+  }
+
+  function spawnShrineCurseEnemies(count) {
+    const spawnCount = clamp(Math.max(0, Math.round(Number(count) || 0)), 0, 2);
+    if (spawnCount <= 0) return 0;
+    const occupied = buildOccupiedTilesForShrineCurseSpawn();
+    let spawned = 0;
+    for (let i = 0; i < spawnCount; i += 1) {
+      const spot = randomFreeTile(occupied, { avoidBonfire: true }) || randomFreeTile(occupied);
+      if (!spot) break;
+      const enemyType = rollEnemyTypeWithCaps();
+      const elite = state.depth >= 8 && chance(0.25);
+      const enemy = createEnemy(enemyType, spot.x, spot.y, { elite });
+      state.enemies.push(enemy);
+      spawned += 1;
+      spawnParticles(spot.x, spot.y, "#d7c6ff", 8, 1.1);
+    }
+    return spawned;
+  }
+
   function activateShrine() {
     if (!isOnShrine()) return;
     state.shrine.used = true;
@@ -7292,9 +7819,9 @@
           turns: duration,
           minValue: scaledCombat(BASE_PLAYER_HP)
         });
-        state.player.hp = Math.min(state.player.maxHp, state.player.hp + healAmount);
+        const healResult = healPlayer(healAmount, { visuals: true });
         pushLog(
-          `Shrine blessing: +${bonus} max HP for ${state.player.shrineMaxHpTurns} turns and heal ${healAmount}.`,
+          `Shrine blessing: +${bonus} max HP for ${state.player.shrineMaxHpTurns} turns and heal ${healResult.restored}${healResult.shielded > 0 ? ` (+${healResult.shielded} shield)` : ""}.`,
           "good"
         );
       } else if (shrineOutcome.blessing === "attack") {
@@ -7321,20 +7848,76 @@
           minValue: 0
         });
         pushLog(`Shrine blessing: +${bonus} ARM for ${state.player.shrineArmorTurns} turns.`, "good");
+      } else if (shrineOutcome.blessing === "swapping") {
+        const duration = rollShrineBlessingTurns();
+        state.player.shrineSwapTurns = Math.max(state.player.shrineSwapTurns || 0, duration);
+        state.player.shrineSwapCounter = 0;
+        pushLog(
+          `Shrine of Swapping: every ${SHRINE_SWAPPING_INTERVAL_TURNS} turns you swap with a random enemy (${state.player.shrineSwapTurns} turns).`,
+          "good"
+        );
+      } else if (shrineOutcome.blessing === "noise") {
+        const duration = rollShrineBlessingTurns();
+        state.player.shrineNoiseTurns = Math.max(state.player.shrineNoiseTurns || 0, duration);
+        pushLog(
+          `Shrine of Noise: kills push nearby enemies (no damage) for ${state.player.shrineNoiseTurns} turns.`,
+          "good"
+        );
+      } else if (shrineOutcome.blessing === "hunger") {
+        const duration = rollShrineBlessingTurns();
+        state.player.shrineHungerTurns = Math.max(state.player.shrineHungerTurns || 0, duration);
+        pushLog(
+          `Shrine of Hunger: +${SHRINE_HUNGER_HEAL_PER_HIT} HP per hit, but -${SHRINE_HUNGER_MISS_DAMAGE} HP each turn without a hit (${state.player.shrineHungerTurns} turns).`,
+          "warn"
+        );
       } else {
         grantPotion(1);
         pushLog("Shrine blessing: +1 potion.", "good");
       }
     } else {
-      if (blockDamageWithShield("shrine curse")) {
+      const curseType = String(shrineOutcome.curse || "pain");
+      if (curseType === "summon") {
+        const spawned = spawnShrineCurseEnemies(randInt(1, 2));
+        if (spawned > 0) {
+          state.roomCleared = false;
+          pushLog(`Cursed Shrine: ${spawned} ${spawned === 1 ? "enemy emerges" : "enemies emerge"} from the dark.`, "bad");
+        } else {
+          pushLog("Cursed Shrine stirs, but no space to summon enemies.", "warn");
+        }
+      } else if (curseType === "swap") {
+        if (!Array.isArray(state.enemies) || state.enemies.length <= 0) {
+          pushLog("Cursed Swapping fizzles: no enemy to swap with.", "warn");
+        } else {
+          const randomEnemy = state.enemies[randInt(0, state.enemies.length - 1)];
+          const px = state.player.x;
+          const py = state.player.y;
+          startTween(state.player);
+          startTween(randomEnemy);
+          state.player.x = randomEnemy.x;
+          state.player.y = randomEnemy.y;
+          randomEnemy.x = px;
+          randomEnemy.y = py;
+          spawnParticles(state.player.x, state.player.y, "#d8bbff", 8, 1.05);
+          spawnParticles(randomEnemy.x, randomEnemy.y, "#d8bbff", 8, 1.05);
+          pushLog(`Cursed Swapping: you switch places with ${randomEnemy.name}.`, "bad");
+        }
+      } else if (blockDamageWithShield("shrine curse")) {
         pushLog("Shrine curse negated.", "good");
       } else if (isDebugGodModeActive()) {
         pushLog("Shrine curse ignored (God Mode).", "warn");
       } else {
-        state.player.hp -= scaledCombat(2);
+        const shrineCurseBaseDamage = scaledCombat(2);
+        const shrineCurseAbsorb = absorbPlayerShieldDamage(shrineCurseBaseDamage);
+        const shrineCurseDamage = shrineCurseAbsorb.remaining;
+        if (shrineCurseDamage <= 0) {
+          pushLog("Cursed Shrine: damage absorbed by shield.", "good");
+          return;
+        }
+        state.player.hp -= shrineCurseDamage;
+        tryTriggerEngineOfWarEmergency("shrine curse");
         triggerPlayerHitFlash();
-        spawnFloatingText(state.player.x, state.player.y, `-${scaledCombat(2)}`, "#ff7676");
-        pushLog("Shrine curse: -20 HP.", "bad");
+        spawnFloatingText(state.player.x, state.player.y, `-${shrineCurseDamage}`, "#ff7676");
+        pushLog(`Cursed Shrine: -${shrineCurseDamage} HP.`, "bad");
         tryAutoPotion("shrine curse");
         if (state.player.hp <= 0) {
           if (tryTriggerChronoLoop("shrine curse")) {
@@ -7469,7 +8052,50 @@
     return Math.max(1, Math.round(boosted));
   }
 
+  function tryKnockbackEnemyFromPoint(enemy, originX, originY) {
+    if (!enemy || !state.enemies.includes(enemy)) return false;
+    const dx = sign(enemy.x - originX);
+    const dy = sign(enemy.y - originY);
+    if (dx === 0 && dy === 0) return false;
+    const nx = enemy.x + dx;
+    const ny = enemy.y + dy;
+    if (enemyTileBlocked(nx, ny, enemy)) return false;
+    startTween(enemy);
+    enemy.x = nx;
+    enemy.y = ny;
+    enemy.facing = getFacingFromDelta(dx, dy, enemy.facing);
+    spawnParticles(enemy.x, enemy.y, "#cde6ff", 5, 0.9);
+    applySpikeToEnemy(enemy);
+    return true;
+  }
+
+  function applyShrineNoiseKnockbackOnKill(originX, originY) {
+    if ((state.player.shrineNoiseTurns || 0) <= 0) return 0;
+    if (!Array.isArray(state.enemies) || state.enemies.length <= 0) return 0;
+    let pushed = 0;
+    for (const enemy of [...state.enemies]) {
+      if (!enemy) continue;
+      const dist = Math.max(Math.abs(enemy.x - originX), Math.abs(enemy.y - originY));
+      if (dist !== 1) continue;
+      if (tryKnockbackEnemyFromPoint(enemy, originX, originY)) {
+        pushed += 1;
+      }
+    }
+    if (pushed > 0) {
+      spawnShockwaveRing(originX, originY, {
+        color: "#d0e8ff",
+        core: "#f3fbff",
+        maxRadius: TILE * 1.8,
+        life: 220
+      });
+      pushLog(`Shrine of Noise: knockback ${pushed}.`, "good");
+    }
+    return pushed;
+  }
+
   function killEnemy(enemy, reason) {
+    const killX = enemy.x;
+    const killY = enemy.y;
     removeEnemy(enemy);
     const reward = grantGold(rewardForEnemy(enemy));
     state.player.adrenaline = clamp(state.player.adrenaline + 1, 0, state.player.maxAdrenaline);
@@ -7481,13 +8107,21 @@
     }
     spawnParticles(enemy.x, enemy.y, "#ffd57a", 8, 1.45);
     pushLog(`${enemy.name} down. +${reward} gold. ${reason ? `(${reason})` : ""}`, "good");
+    applyShrineNoiseKnockbackOnKill(killX, killY);
 
     if (hasRelic("chaosorb") && (state.player.chaosKillHeal || 0) > 0) {
       const healAmount = Math.max(MIN_EFFECTIVE_DAMAGE, state.player.chaosKillHeal);
-      state.player.hp = Math.min(state.player.maxHp, state.player.hp + healAmount);
-      spawnFloatingText(state.player.x, state.player.y, `+${healAmount}`, "#9ff7a9");
-      spawnParticles(state.player.x, state.player.y, "#8ce1a7", 6, 0.95);
-      pushLog(`Chaos: kill heal +${healAmount} HP.`, "good");
+      const healResult = healPlayer(healAmount, {
+        visuals: true,
+        textColor: "#9ff7a9",
+        particleColor: "#8ce1a7",
+        particleCount: 6,
+        particleSpread: 0.95
+      });
+      pushLog(
+        `Chaos: kill heal +${healResult.restored} HP${healResult.shielded > 0 ? `, +${healResult.shielded} shield` : ""}.`,
+        "good"
+      );
     }
 
     // Soul Harvest: +10 max HP every 30 kills (cap +100)
@@ -7499,6 +8133,19 @@
         state.player.hp = Math.min(state.player.maxHp, state.player.hp + scaledCombat(1));
         spawnParticles(enemy.x, enemy.y, "#b44dff", 8, 1.2);
         pushLog(`Soul Harvest: +10 max HP (${state.player.soulHarvestGained * 10}/100).`, "good");
+      }
+    }
+
+    if (hasRelic("gravewhisper")) {
+      const currentBonus = Math.max(0, Number(state.player.graveWhisperAtkBonus) || 0);
+      if (currentBonus < GRAVE_WHISPER_ATK_CAP) {
+        const gain = Math.min(GRAVE_WHISPER_ATK_PER_KILL, GRAVE_WHISPER_ATK_CAP - currentBonus);
+        state.player.graveWhisperAtkBonus = currentBonus + gain;
+        state.player.attack += gain;
+        pushLog(
+          `Grave Whisper: +${gain} ATK (${state.player.graveWhisperAtkBonus}/${GRAVE_WHISPER_ATK_CAP}) this encounter.`,
+          "good"
+        );
       }
     }
 
@@ -7652,8 +8299,19 @@
       Math.ceil(incomingDamage * (1 - ARMOR_DAMAGE_REDUCTION_CAP))
     );
     const reducedByArmor = Math.max(MIN_EFFECTIVE_DAMAGE, incomingDamage - state.player.armor);
-    const reduced = Math.max(minDamageFromCap, reducedByArmor);
+    let reduced = Math.max(minDamageFromCap, reducedByArmor);
+    if (hasRelic("mirrorcarapace")) {
+      reduced = Math.max(1, Math.round(reduced * 0.85));
+    }
+    const shieldAbsorb = absorbPlayerShieldDamage(reduced);
+    reduced = shieldAbsorb.remaining;
+    if (reduced <= 0) {
+      pushLog(`${source} hits your shield.`, "good");
+      markUiDirty();
+      return;
+    }
     state.player.hp -= reduced;
+    tryTriggerEngineOfWarEmergency(source);
     triggerPlayerHitFlash();
     spawnFloatingText(state.player.x, state.player.y, `-${reduced}`, "#ff7676");
     state.flash = 90;
@@ -7687,18 +8345,26 @@
     if (blockDamageWithShield("spikes", null, spikeDamage)) {
       return;
     }
-    state.player.hp -= spikeDamage;
+    const spikeAbsorb = absorbPlayerShieldDamage(spikeDamage);
+    const spikeFinalDamage = spikeAbsorb.remaining;
+    if (spikeFinalDamage <= 0) {
+      pushLog("Spikes hit your shield.", "good");
+      markUiDirty();
+      return;
+    }
+    state.player.hp -= spikeFinalDamage;
+    tryTriggerEngineOfWarEmergency("spikes");
     triggerPlayerHitFlash();
-    spawnFloatingText(state.player.x, state.player.y, `-${spikeDamage}`, "#ff7676");
+    spawnFloatingText(state.player.x, state.player.y, `-${spikeFinalDamage}`, "#ff7676");
     state.flash = 60;
     setShake(1.6);
     spawnParticles(state.player.x, state.player.y, "#d86b6b", 6, 1.1);
     // Glass Depths: spikes drop gold
     if (isMutatorActive("glassdepths")) {
       const spikeGold = grantGold(randInt(1, 3));
-      pushLog(`Spikes cut you for ${spikeDamage}, but drop ${spikeGold} gold.`, "bad");
+      pushLog(`Spikes cut you for ${spikeFinalDamage}, but drop ${spikeGold} gold.`, "bad");
     } else {
-      pushLog(`Spikes cut you for ${spikeDamage}.`, "bad");
+      pushLog(`Spikes cut you for ${spikeFinalDamage}.`, "bad");
     }
     tryAutoPotion("spikes");
     if (state.player.hp <= 0) {
@@ -7732,8 +8398,11 @@
     const pickHeal = canHeal && chance(0.5);
     if (pickHeal) {
       const healAmount = Math.max(MIN_EFFECTIVE_DAMAGE, scaledCombat(4) - state.runMods.chestHealPenalty);
-      state.player.hp = Math.min(state.player.maxHp, state.player.hp + healAmount);
-      pushLog(`Chest ${statLabel} cap (${bucketLabel}) reached: converted to +${healAmount} HP.`, "good");
+      const healResult = healPlayer(healAmount, { visuals: true });
+      pushLog(
+        `Chest ${statLabel} cap (${bucketLabel}) reached: converted to +${healResult.restored} HP${healResult.shielded > 0 ? `, +${healResult.shielded} shield` : ""}.`,
+        "good"
+      );
       return;
     }
     let rawGold = randInt(4, 8);
@@ -7803,11 +8472,32 @@
   }
 
   function handleChestHealingDrop() {
-    const healAmount = CHEST_HEALING_DROP_AMOUNT;
-    const before = state.player.hp;
-    state.player.hp = Math.min(state.player.maxHp, state.player.hp + healAmount);
-    const restored = Math.max(0, state.player.hp - before);
-    pushLog(`Chest: Healing +${restored}.`, "good");
+    const healResult = healPlayer(CHEST_HEALING_DROP_AMOUNT, {
+      visuals: true,
+      textColor: "#9ff7a9",
+      particleColor: "#8ce1a7",
+      particleCount: 8,
+      particleSpread: 1.0
+    });
+    pushLog(
+      `Chest: Healing +${healResult.restored}${healResult.shielded > 0 ? `, +${healResult.shielded} shield` : ""}.`,
+      "good"
+    );
+  }
+
+  function grantTreasureMapFragment(count = 1) {
+    const gained = Math.max(0, Math.floor(Number(count) || 0));
+    if (gained <= 0) return 0;
+    state.treasureMapFragments = Math.max(0, Number(state.treasureMapFragments) || 0) + gained;
+    let completions = 0;
+    while (state.treasureMapFragments >= 10) {
+      state.treasureMapFragments -= 10;
+      completions += 1;
+    }
+    if (completions > 0) {
+      state.forcedNextRoomType = "vault";
+    }
+    return completions;
   }
 
   function openChest(chest) {
@@ -7844,6 +8534,13 @@
     } else if (chestOutcome.outcome === "potion") {
       grantPotion(1);
       pushLog("Chest: +1 potion.", "good");
+    } else if (chestOutcome.outcome === "map_fragment") {
+      const completions = grantTreasureMapFragment(1);
+      if (completions > 0) {
+        pushLog("Chest: Treasure Map Fragment (10/10). Next depth is forced Vault.", "good");
+      } else {
+        pushLog(`Chest: Treasure Map Fragment (${state.treasureMapFragments}/10).`, "good");
+      }
     } else if (chestOutcome.outcome === "gold") {
       let raw = randInt(4, 8);
       if (inTreasureRoom) {
@@ -7858,16 +8555,24 @@
       } else if (isDebugGodModeActive()) {
         pushLog("Chest trap ignored (God Mode).", "warn");
       } else {
-        state.player.hp -= scaledCombat(3);
-        triggerPlayerHitFlash();
-        spawnFloatingText(state.player.x, state.player.y, `-${scaledCombat(3)}`, "#ff7676");
-        pushLog(`Chest trap! You take ${scaledCombat(3)}.`, "bad");
-        tryAutoPotion("chest trap");
-        if (state.player.hp <= 0) {
-          if (tryTriggerChronoLoop("chest trap")) {
-            return;
+        const chestTrapBaseDamage = scaledCombat(3);
+        const chestTrapAbsorb = absorbPlayerShieldDamage(chestTrapBaseDamage);
+        const chestTrapDamage = chestTrapAbsorb.remaining;
+        if (chestTrapDamage <= 0) {
+          pushLog("Chest trap absorbed by shield.", "good");
+        } else {
+          state.player.hp -= chestTrapDamage;
+          tryTriggerEngineOfWarEmergency("chest trap");
+          triggerPlayerHitFlash();
+          spawnFloatingText(state.player.x, state.player.y, `-${chestTrapDamage}`, "#ff7676");
+          pushLog(`Chest trap! You take ${chestTrapDamage}.`, "bad");
+          tryAutoPotion("chest trap");
+          if (state.player.hp <= 0) {
+            if (tryTriggerChronoLoop("chest trap")) {
+              return;
+            }
+            gameOver(`You died from a chest trap on depth ${state.depth}.`);
           }
-          gameOver(`You died from a chest trap on depth ${state.depth}.`);
         }
       }
     }
@@ -7983,11 +8688,13 @@
     const furyMult = getFuryAttackPowerMultiplier();
     const base = Math.max(
       MIN_EFFECTIVE_DAMAGE,
-      Math.round((state.player.attack + (state.player.chaosAtkBonus || 0)) * furyMult)
+      Math.round(getPlayerAttackForDamage({ includeChaos: true }) * furyMult)
     );
     const critical = chance(state.player.crit);
-    let damage = critical ? base * 2 : base;
+    const primaryHit = applyRelicDamageModsToHit(critical ? base * 2 : base, enemy);
+    let damage = primaryHit.damage;
     enemy.hp -= damage;
+    registerPlayerHitThisTurn();
     applyVampfangLifesteal(damage);
     triggerEnemyHitFlash(enemy, critical ? CRIT_HIT_FLASH_MS : ENTITY_HIT_FLASH_MS);
     spawnFloatingText(
@@ -8004,6 +8711,9 @@
       `You hit ${enemy.name} for ${damage}${critical ? " (CRIT)" : ""}.`,
       critical ? "good" : ""
     );
+    if (primaryHit.stormProc) {
+      pushLog(`Storm Sigil procs: +${STORM_SIGIL_BONUS_DAMAGE} bonus damage.`, "good");
+    }
 
     // Burning Blade: ignite enemy
     if (hasRelic("burnblade") && enemy.hp > 0) {
@@ -8032,13 +8742,21 @@
 
     // Echo Strike: 25% chance to hit again
     if (hasRelic("echostrike") && state.enemies.includes(enemy) && enemy.hp > 0 && chance(0.25)) {
-      const echoDmg = Math.max(MIN_EFFECTIVE_DAMAGE, state.player.attack);
+      const echoHit = applyRelicDamageModsToHit(
+        Math.max(MIN_EFFECTIVE_DAMAGE, getPlayerAttackForDamage({ includeChaos: false })),
+        enemy
+      );
+      const echoDmg = echoHit.damage;
       enemy.hp -= echoDmg;
+      registerPlayerHitThisTurn();
       applyVampfangLifesteal(echoDmg);
       triggerEnemyHitFlash(enemy);
       spawnFloatingText(enemy.x, enemy.y, `-${echoDmg}`, "#bde3ff");
       spawnParticles(enemy.x, enemy.y, "#9fdcff", 8, 1.2);
       pushLog(`Echo Strike! Extra ${echoDmg} damage.`, "good");
+      if (echoHit.stormProc) {
+        pushLog(`Storm Sigil procs: +${STORM_SIGIL_BONUS_DAMAGE} bonus damage.`, "good");
+      }
       if (enemy.hp <= 0) {
         killEnemy(enemy, "echo strike");
       }
@@ -8992,6 +9710,7 @@
   function finishTurnAfterEnemySequence() {
     clearEnemyTurnSequence();
     if (state.phase !== "playing") {
+      state.playerHitEnemyThisTurn = false;
       state.turnInProgress = false;
       markUiDirty();
       return;
@@ -8999,6 +9718,7 @@
 
     tickDashAfterline();
     if (state.phase !== "playing") {
+      state.playerHitEnemyThisTurn = false;
       state.turnInProgress = false;
       markUiDirty();
       return;
@@ -9007,6 +9727,7 @@
     // Burning Blade: tick burn damage on enemies
     tickBurningEnemies();
     if (state.phase !== "playing") {
+      state.playerHitEnemyThisTurn = false;
       state.turnInProgress = false;
       markUiDirty();
       return;
@@ -9014,6 +9735,21 @@
 
     checkRoomClearBonus();
     if (state.phase !== "playing") {
+      state.playerHitEnemyThisTurn = false;
+      state.turnInProgress = false;
+      markUiDirty();
+      return;
+    }
+
+    triggerShrineSwappingIfReady();
+    if (state.phase !== "playing") {
+      state.playerHitEnemyThisTurn = false;
+      state.turnInProgress = false;
+      markUiDirty();
+      return;
+    }
+    if (applyShrineHungerMissPenalty()) {
+      state.playerHitEnemyThisTurn = false;
       state.turnInProgress = false;
       markUiDirty();
       return;
@@ -9031,8 +9767,10 @@
     tickShieldChargeRegen();
     tickAutoPotionCooldown();
     tickDashImmunity();
+    tickQuickloaderBuff();
     tickFuryBlessing();
     tickBarrier();
+    state.playerHitEnemyThisTurn = false;
     saveMetaProgress();
     saveRunSnapshot();
     state.turnInProgress = false;
@@ -9313,6 +10051,10 @@
 
   function drinkPotion() {
     if (state.phase !== "playing") return;
+    if (hasRelic("risk")) {
+      pushLog("Risk prevents potion use.", "bad");
+      return;
+    }
     if (state.player.potions <= 0) {
       pushLog("No potion left.", "bad");
       return;
@@ -9323,11 +10065,18 @@
     }
     state.player.potions -= 1;
     state.potionsUsedThisRun = (state.potionsUsedThisRun || 0) + 1;
-    const heal = getPotionHealAmount();
-    state.player.hp = Math.min(state.player.maxHp, state.player.hp + heal);
-    spawnFloatingText(state.player.x, state.player.y, `+${heal}`, "#9ff7a9");
-    spawnParticles(state.player.x, state.player.y, "#8ce1a7", 10, 1.05);
-    pushLog(`Potion used. +${heal} HP.`, "good");
+    const healResult = healPlayer(getPotionHealAmount(), {
+      visuals: true,
+      textColor: "#9ff7a9",
+      particleColor: "#8ce1a7",
+      particleCount: 10,
+      particleSpread: 1.05
+    });
+    applyQuickloaderPotionBuff();
+    pushLog(
+      `Potion used. +${healResult.restored} HP${healResult.shielded > 0 ? `, +${healResult.shielded} shield` : ""}.`,
+      "good"
+    );
     markUiDirty();
     finalizeTurn();
   }
@@ -9344,7 +10093,13 @@
       return;
     }
     state.depth = Math.min(MAX_DEPTH, state.depth + 1);
-    state.player.hp = Math.min(state.player.maxHp, state.player.hp + scaledCombat(1));
+    healPlayer(scaledCombat(1), {
+      visuals: true,
+      textColor: "#9ff7a9",
+      particleColor: "#8ce1a7",
+      particleCount: 7,
+      particleSpread: 0.95
+    });
     saveMetaProgress();
     playSfx("portal");
     buildRoom();
@@ -9413,6 +10168,11 @@
       statRow("Depth Highscore", state.highscore, "Best depth reached across all runs."),
       statRow("Run Score", calculateScore(getRunMaxDepth(), getRunGoldEarned()), "Combined performance score for the current run."),
       statRow("Room", ROOM_TYPE_LABELS[state.roomType], "Current room type."),
+      statRow(
+        "Map Fragments",
+        `${state.treasureMapFragments}/10${state.forcedNextRoomType === "vault" ? " (Vault queued)" : ""}`,
+        "Collect 10 Treasure Map Fragments from chests to force the next eligible depth into a Vault room."
+      ),
       statRow("Turn", state.turn, "Total turns played in current run."),
       statRow("Camp Gold", state.campGold, "Persistent currency for camp upgrades."),
       statRow("Deaths", state.deaths, "Total deaths across your profile.")
@@ -9464,6 +10224,77 @@
           "Lifesteal",
           `${Math.round(VAMPFANG_LIFESTEAL_MULTIPLIER * 100)}% (cap ${VAMPFANG_MAX_HEAL_PER_HIT}/hit)`,
           "Vampiric Fang heals a percent of damage dealt, capped per hit."
+        )
+      );
+    }
+    if (hasRelic("laststandtorque")) {
+      const bonus = getLastStandTorqueAttackBonus();
+      activeEffectRows.push(
+        statRow(
+          "Last Stand",
+          bonus > 0 ? `+${bonus} ATK (active)` : "inactive",
+          "Below 50% HP grants +20 ATK."
+        )
+      );
+    }
+    if (hasRelic("momentumengine")) {
+      activeEffectRows.push(
+        statRow(
+          "Momentum",
+          "+20% Dash DMG",
+          "Momentum Engine increases Dash damage by 20%."
+        )
+      );
+    }
+    if (hasRelic("engineofwar") || (state.player.engineOfWarTurns || 0) > 0) {
+      const engineUsedThisDepth = (Number(state.player.engineOfWarTriggeredDepth) || -1) === Math.max(0, Number(state.depth) || 0);
+      const engineLabel = (state.player.engineOfWarTurns || 0) > 0
+        ? `${state.player.engineOfWarTurns}T | +30% DMG | +20% LS`
+        : (engineUsedThisDepth ? "spent this depth" : "ready");
+      activeEffectRows.push(
+        statRow(
+          "Engine of War",
+          engineLabel,
+          "Below 30% HP: gain shield and a short overdrive. Triggers once per depth."
+        )
+      );
+    }
+    if (hasRelic("bloodvial") || (state.player.bloodVialShield || 0) > 0) {
+      activeEffectRows.push(
+        statRow(
+          "Blood Shield",
+          `${Math.max(0, Number(state.player.bloodVialShield) || 0)}`,
+          "Blood Vial converts overheal into a shield that absorbs incoming damage."
+        )
+      );
+    }
+    if (hasRelic("stormsigil")) {
+      const hitCount = Math.max(0, Number(state.player.stormSigilHitCount) || 0);
+      const cyclePos = hitCount % STORM_SIGIL_HIT_INTERVAL;
+      const toProc = cyclePos === 0 ? STORM_SIGIL_HIT_INTERVAL : (STORM_SIGIL_HIT_INTERVAL - cyclePos);
+      activeEffectRows.push(
+        statRow(
+          "Storm Sigil",
+          `+${STORM_SIGIL_BONUS_DAMAGE} every ${STORM_SIGIL_HIT_INTERVAL}th hit (next ${toProc})`,
+          "Every 10th successful hit deals bonus damage."
+        )
+      );
+    }
+    if ((state.player.graveWhisperAtkBonus || 0) > 0) {
+      activeEffectRows.push(
+        statRow(
+          "Grave Whisper",
+          `+${state.player.graveWhisperAtkBonus}/${GRAVE_WHISPER_ATK_CAP} ATK`,
+          "Encounter-only attack bonus from kills."
+        )
+      );
+    }
+    if ((state.player.quickloaderAtkTurns || 0) > 0 && (state.player.quickloaderAtkBonus || 0) > 0) {
+      activeEffectRows.push(
+        statRow(
+          "Quickloader",
+          `+${state.player.quickloaderAtkBonus} (${state.player.quickloaderAtkTurns}T)`,
+          "Potion buff: temporary attack power."
         )
       );
     }
@@ -9549,6 +10380,37 @@
           "Shrine Max HP",
           `+${state.player.shrineMaxHpBonus} (${state.player.shrineMaxHpTurns}T)`,
           "Temporary max HP bonus from shrine blessing."
+        )
+      );
+    }
+    if (state.player.shrineSwapTurns > 0) {
+      const turnsUntilSwap = Math.max(
+        1,
+        SHRINE_SWAPPING_INTERVAL_TURNS - Math.max(0, Number(state.player.shrineSwapCounter) || 0)
+      );
+      activeEffectRows.push(
+        statRow(
+          "Shrine Swap",
+          `${state.player.shrineSwapTurns}T | next ${turnsUntilSwap}T`,
+          "Every 15 turns swaps your position with a random enemy."
+        )
+      );
+    }
+    if (state.player.shrineNoiseTurns > 0) {
+      activeEffectRows.push(
+        statRow(
+          "Shrine Noise",
+          `${state.player.shrineNoiseTurns}T`,
+          "Killing an enemy knocks back nearby enemies without dealing damage."
+        )
+      );
+    }
+    if (state.player.shrineHungerTurns > 0) {
+      activeEffectRows.push(
+        statRow(
+          "Shrine Hunger",
+          `+${SHRINE_HUNGER_HEAL_PER_HIT}/hit | ${state.player.shrineHungerTurns}T`,
+          `If you do not hit any enemy in a turn, you lose ${SHRINE_HUNGER_MISS_DAMAGE} HP.`
         )
       );
     }
@@ -9918,17 +10780,29 @@
 
     const rows = entries.map((entry, index) => {
       const outcomeLabel = entry.outcome === "extract" ? "EXTRACT" : "DEATH";
-      const mutatorLabel = entry.mutatorCount > 0 ? ` | Mut ${entry.mutatorCount}` : "";
+      const mutatorLabel = entry.mutatorCount > 0 ? `Mut ${entry.mutatorCount}` : "No Mut";
       const versionLabel = state.leaderboardScope === "legacy"
-        ? ` | Ver ${entry.version || "unknown"}`
+        ? `Ver ${entry.version || "unknown"}`
         : "";
-      const topClass = index === 0 ? " leaderboard-top" : "";
+      const rank = index + 1;
+      const rankClass = rank <= 3 ? ` leaderboard-rank-${rank}` : "";
+      const rankBadge = rank === 1 ? "I"
+        : rank === 2 ? "II"
+          : rank === 3 ? "III"
+            : String(rank);
       return [
-        `<div class="mut-row leaderboard-row${topClass}">`,
-        `<span class="mut-key">#${index + 1}</span>`,
-        `<div class="mut-body">`,
-        `<strong>${entry.playerName} <em>${entry.score} pts | Depth ${entry.depth} | Gold ${entry.gold} | ${outcomeLabel}${versionLabel}</em></strong>`,
-        `<small>${formatLeaderboardTimestamp(entry.ts)}${mutatorLabel}</small>`,
+        `<div class="leaderboard-entry${rankClass}">`,
+        `<div class="leaderboard-rank">#${rankBadge}</div>`,
+        `<div class="leaderboard-main">`,
+        `<strong class="leaderboard-name">${entry.playerName}</strong>`,
+        `<div class="leaderboard-stats">`,
+        `<span>${entry.score} pts</span>`,
+        `<span>Depth ${entry.depth}</span>`,
+        `<span>Gold ${entry.gold}</span>`,
+        `<span>${outcomeLabel}</span>`,
+        versionLabel ? `<span>${versionLabel}</span>` : "",
+        `</div>`,
+        `<small class="leaderboard-meta">${formatLeaderboardTimestamp(entry.ts)} | ${mutatorLabel}</small>`,
         `</div>`,
         `</div>`
       ].join("");
@@ -10213,7 +11087,7 @@
       const statusNote = getLeaderboardStatusNote();
       screenOverlayEl.className = "screen-overlay visible";
       screenOverlayEl.innerHTML = [
-        `<div class="overlay-card overlay-card-wide">`,
+        `<div class="overlay-card overlay-card-wide overlay-card-leaderboard">`,
         `<h2 class="overlay-title">Leaderboard</h2>`,
         `<p class="overlay-sub">Top ${Math.min(LEADERBOARD_MODAL_LIMIT, LEADERBOARD_LIMIT)} | Scope: ${scopeLabel} | Sort: ${modeLabel} | Source: ${sourceLabel}</p>`,
         statusNote ? `<p class="overlay-sub">${statusNote}</p>` : "",
@@ -12600,6 +13474,7 @@
   }
 
   function shouldBotDrinkPotion() {
+    if (hasRelic("risk")) return false;
     if (state.player.potions <= 0) return false;
     if (state.player.hp >= state.player.maxHp) return false;
     const hpRatio = state.player.hp / Math.max(1, state.player.maxHp);
@@ -12878,10 +13753,13 @@
     const furyMult = getFuryAttackPowerMultiplier();
     const base = Math.max(
       MIN_EFFECTIVE_DAMAGE,
-      Math.round((state.player.attack + (state.player.chaosAtkBonus || 0)) * furyMult)
+      Math.round(getPlayerAttackForDamage({ includeChaos: true }) * furyMult)
     );
+    let relicMult = 1;
+    if (hasRelic("risk")) relicMult *= 1.4;
+    if (hasRelic("mirrorcarapace")) relicMult *= 0.9;
     const critExpectedMult = 1 + Math.max(0, Number(state.player.crit) || 0) * 0.35;
-    return Math.max(MIN_EFFECTIVE_DAMAGE, Math.round(base * critExpectedMult));
+    return Math.max(MIN_EFFECTIVE_DAMAGE, Math.round(base * critExpectedMult * relicMult));
   }
 
   function estimateObserverBotDashLandingPosition(dx, dy) {
@@ -12914,7 +13792,7 @@
       out.push(candidate);
     };
 
-    if (state.player.potions > 0 && state.player.hp < state.player.maxHp) {
+    if (!hasRelic("risk") && state.player.potions > 0 && state.player.hp < state.player.maxHp) {
       addCandidate({ kind: "potion" });
     }
 
@@ -13001,6 +13879,9 @@
     let kills = 0;
 
     if (candidate.kind === "potion") {
+      if (hasRelic("risk")) {
+        return { score: -Infinity };
+      }
       if (state.player.potions <= 0 || state.player.hp >= state.player.maxHp) {
         return { score: -Infinity };
       }
@@ -13022,7 +13903,10 @@
       const radius = aoeTier >= 2 ? 2 : 1;
       const furySpent = Math.max(0, Math.floor(Number(state.player.adrenaline) || 0));
       const furyMult = getFuryAttackPowerMultiplier();
-      let baseDamage = Math.max(MIN_EFFECTIVE_DAMAGE, Math.round(state.player.attack * furyMult));
+      let baseDamage = Math.max(
+        MIN_EFFECTIVE_DAMAGE,
+        Math.round(getPlayerAttackForDamage({ includeChaos: false }) * furyMult)
+      );
       if (aoeTier >= 1) {
         baseDamage = Math.max(MIN_EFFECTIVE_DAMAGE, Math.round(baseDamage * 1.5));
       }
@@ -13048,7 +13932,7 @@
       const landing = estimateObserverBotDashLandingPosition(candidate.dx, candidate.dy);
       resultX = landing.x;
       resultY = landing.y;
-      outgoingDamage = (dashEval.hits || 0) * state.player.attack;
+      outgoingDamage = (dashEval.hits || 0) * getPlayerAttackForDamage({ includeChaos: false });
       kills = Math.max(0, Number(dashEval.kills) || 0);
       score += weights.progress * policy.aggression * (Number(dashEval.score) || 0) * 0.8;
       score += weights.kill * policy.aggression * ((dashEval.hits || 0) * 19 + kills * 76);
@@ -13154,7 +14038,10 @@
       const radius = aoeTier >= 2 ? 2 : 1;
       const furySpent = Math.max(0, Math.floor(Number(state.player.adrenaline) || 0));
       const furyMult = getFuryAttackPowerMultiplier();
-      let baseDamage = Math.max(MIN_EFFECTIVE_DAMAGE, Math.round(state.player.attack * furyMult));
+      let baseDamage = Math.max(
+        MIN_EFFECTIVE_DAMAGE,
+        Math.round(getPlayerAttackForDamage({ includeChaos: false }) * furyMult)
+      );
       if (aoeTier >= 1) {
         baseDamage = Math.max(MIN_EFFECTIVE_DAMAGE, Math.round(baseDamage * 1.5));
       }
@@ -13171,9 +14058,10 @@
       simY = landing.y;
       const dashTier = getSkillTier("dash");
       const furyMult = getFuryAttackPowerMultiplier();
+      const dashRelicMult = getDashRelicDamageMultiplier();
       const lineDamage = Math.max(
         MIN_EFFECTIVE_DAMAGE,
-        Math.round((state.player.attack + scaledCombat(1)) * furyMult)
+        Math.round((getPlayerAttackForDamage({ includeChaos: false }) + scaledCombat(1)) * furyMult * dashRelicMult)
       );
       for (const enemy of simEnemies) {
         if (
@@ -13305,6 +14193,7 @@
   function executeObserverBotCombatAction(candidate) {
     if (!candidate) return false;
     if (candidate.kind === "potion") {
+      if (hasRelic("risk")) return false;
       if (state.player.potions <= 0 || state.player.hp >= state.player.maxHp) return false;
       drinkPotion();
       return true;
@@ -14829,7 +15718,10 @@
     const radius = aoeTier >= 2 ? 2 : 1;
     const furySpent = Math.max(0, Math.floor(Number(state.player.adrenaline) || 0));
     const furyMult = getFuryAttackPowerMultiplier();
-    let baseDamage = Math.max(MIN_EFFECTIVE_DAMAGE, Math.round(state.player.attack * furyMult));
+    let baseDamage = Math.max(
+      MIN_EFFECTIVE_DAMAGE,
+      Math.round(getPlayerAttackForDamage({ includeChaos: false }) * furyMult)
+    );
     if (aoeTier >= 1) {
       baseDamage = Math.max(MIN_EFFECTIVE_DAMAGE, Math.round(baseDamage * 1.5));
     }
@@ -14862,9 +15754,10 @@
     const dashTier = getSkillTier("dash");
     const maxDashTiles = dashTier >= 2 ? 4 : 3;
     const furyMult = getFuryAttackPowerMultiplier();
+    const dashRelicMult = getDashRelicDamageMultiplier();
     let dashDamage = Math.max(
       MIN_EFFECTIVE_DAMAGE,
-      Math.round((state.player.attack + scaledCombat(1)) * furyMult)
+      Math.round((getPlayerAttackForDamage({ includeChaos: false }) + scaledCombat(1)) * furyMult * dashRelicMult)
     );
     if (dashTier >= 1) {
       dashDamage = Math.max(MIN_EFFECTIVE_DAMAGE, dashDamage * 2);
@@ -15115,7 +16008,7 @@
         state.observerBot.lastDecision = "load_continue";
         return true;
       }
-      startRun({ carriedRelics: [...state.relics] });
+      startRun({ carriedRelics: [...state.relics], resetMapFragments: true });
       state.observerBot.lastDecision = "menu_start_run";
       return true;
     }

@@ -20,6 +20,10 @@
       spawnFloatingText,
       spawnParticles,
       killEnemy,
+      registerPlayerHitThisTurn,
+      getPlayerAttackForDamage,
+      getDashRelicDamageMultiplier,
+      applyRelicDamageModsToHit,
       applyVampfangLifesteal,
       findDashKnockbackTile,
       getFacingFromDelta,
@@ -89,9 +93,16 @@
       const furyMult = typeof getFuryAttackPowerMultiplier === "function"
         ? getFuryAttackPowerMultiplier(getEffectiveAdrenaline())
         : 1;
+      const dashRelicMult = typeof getDashRelicDamageMultiplier === "function"
+        ? getDashRelicDamageMultiplier()
+        : 1;
       let damage = Math.max(
         MIN_EFFECTIVE_DAMAGE,
-        Math.round((state.player.attack + scaledCombat(1)) * furyMult)
+        Math.round(((
+          typeof getPlayerAttackForDamage === "function"
+            ? getPlayerAttackForDamage({ includeChaos: false })
+            : state.player.attack
+        ) + scaledCombat(1)) * furyMult * dashRelicMult)
       );
       if (dashTier >= 1) {
         damage = Math.max(MIN_EFFECTIVE_DAMAGE, damage * 2);
@@ -127,17 +138,27 @@
 
         const enemy = getEnemyAt(step.x, step.y);
         if (enemy && state.enemies.includes(enemy) && !hitSet.has(enemy)) {
-          const strikeDamage =
+          const strikeRawDamage =
             dashTier >= LEGENDARY_SKILL_TIER && !firstHitBoostApplied
               ? Math.max(MIN_EFFECTIVE_DAMAGE, Math.round(damage * DASH_LEGENDARY_FIRST_HIT_MULT))
               : damage;
+          const strikeResult = typeof applyRelicDamageModsToHit === "function"
+            ? applyRelicDamageModsToHit(strikeRawDamage, enemy)
+            : { damage: strikeRawDamage, stormProc: false };
+          const strikeDamage = Math.max(MIN_EFFECTIVE_DAMAGE, Number(strikeResult.damage) || strikeRawDamage);
           enemy.hp -= strikeDamage;
+          if (typeof registerPlayerHitThisTurn === "function") {
+            registerPlayerHitThisTurn();
+          }
           if (typeof applyVampfangLifesteal === "function") {
             applyVampfangLifesteal(strikeDamage);
           }
           triggerEnemyHitFlash(enemy);
           spawnFloatingText(enemy.x, enemy.y, `-${strikeDamage}`, "#f4f7ff");
           spawnParticles(enemy.x, enemy.y, "#8ee9ff", 11, 1.3);
+          if (strikeResult.stormProc) {
+            pushLog("Storm Sigil procs on Dash hit.", "good");
+          }
           if (dashTier >= LEGENDARY_SKILL_TIER && !firstHitBoostApplied) {
             firstHitBoostApplied = true;
           }
@@ -172,14 +193,24 @@
         for (const enemy of [...state.enemies]) {
           if (hitSet.has(enemy)) continue;
           if (Math.abs(enemy.x - state.player.x) > 1 || Math.abs(enemy.y - state.player.y) > 1) continue;
-          enemy.hp -= splashDamage;
+          const splashResult = typeof applyRelicDamageModsToHit === "function"
+            ? applyRelicDamageModsToHit(splashDamage, enemy)
+            : { damage: splashDamage, stormProc: false };
+          const finalSplashDamage = Math.max(MIN_EFFECTIVE_DAMAGE, Number(splashResult.damage) || splashDamage);
+          enemy.hp -= finalSplashDamage;
+          if (typeof registerPlayerHitThisTurn === "function") {
+            registerPlayerHitThisTurn();
+          }
           if (typeof applyVampfangLifesteal === "function") {
-            applyVampfangLifesteal(splashDamage);
+            applyVampfangLifesteal(finalSplashDamage);
           }
           triggerEnemyHitFlash(enemy);
-          spawnFloatingText(enemy.x, enemy.y, `-${splashDamage}`, "#dff0ff");
+          spawnFloatingText(enemy.x, enemy.y, `-${finalSplashDamage}`, "#dff0ff");
           splashHits += 1;
           spawnParticles(enemy.x, enemy.y, "#7fc9ff", 8, 1.2);
+          if (splashResult.stormProc) {
+            pushLog("Storm Sigil procs on Dash splash.", "good");
+          }
           if (enemy.hp <= 0) {
             killEnemy(enemy, "dash splash");
             splashKills += 1;
@@ -264,7 +295,14 @@
       const furyMult = typeof getFuryAttackPowerMultiplier === "function"
         ? getFuryAttackPowerMultiplier(getEffectiveAdrenaline())
         : 1;
-      let baseDamage = Math.max(MIN_EFFECTIVE_DAMAGE, Math.round(state.player.attack * furyMult));
+      let baseDamage = Math.max(
+        MIN_EFFECTIVE_DAMAGE,
+        Math.round((
+          typeof getPlayerAttackForDamage === "function"
+            ? getPlayerAttackForDamage({ includeChaos: false })
+            : state.player.attack
+        ) * furyMult)
+      );
       if (aoeTier >= 1) {
         baseDamage = Math.max(MIN_EFFECTIVE_DAMAGE, Math.round(baseDamage * 1.5));
       }
@@ -319,13 +357,23 @@
             Math.round(baseDamage * furyDamageMultiplier * falloff)
           );
         }
-        enemy.hp -= damage;
+        const aoeResult = typeof applyRelicDamageModsToHit === "function"
+          ? applyRelicDamageModsToHit(damage, enemy)
+          : { damage, stormProc: false };
+        const finalAoeDamage = Math.max(MIN_EFFECTIVE_DAMAGE, Number(aoeResult.damage) || damage);
+        enemy.hp -= finalAoeDamage;
+        if (typeof registerPlayerHitThisTurn === "function") {
+          registerPlayerHitThisTurn();
+        }
         if (typeof applyVampfangLifesteal === "function") {
-          applyVampfangLifesteal(damage);
+          applyVampfangLifesteal(finalAoeDamage);
         }
         triggerEnemyHitFlash(enemy);
-        spawnFloatingText(enemy.x, enemy.y, `-${damage}`, "#ffe7c8");
+        spawnFloatingText(enemy.x, enemy.y, `-${finalAoeDamage}`, "#ffe7c8");
         spawnParticles(enemy.x, enemy.y, "#ffd8a1", 8, 1.25);
+        if (aoeResult.stormProc) {
+          pushLog("Storm Sigil procs on Shockwave.", "good");
+        }
         if (enemy.hp <= 0) {
           killEnemy(enemy, "shockwave");
           kills += 1;

@@ -621,6 +621,168 @@ canvas.boss-pulse {
   padding-right: 2px;
 }
 
+.overlay-card.overlay-card-leaderboard {
+  border-color: #b49a6a;
+  background:
+    radial-gradient(120% 90% at 50% -20%, #f0ddb933 0%, transparent 55%),
+    linear-gradient(180deg, #262118f2, #1a1711ea 58%, #14110ce8 100%);
+  box-shadow: 0 14px 28px #00000082, inset 0 0 0 1px #f1d39f22;
+}
+
+.overlay-card.overlay-card-leaderboard .overlay-title {
+  color: #ead4aa;
+  text-shadow: 0 1px 0 #000, 0 0 14px #d7b27244;
+  letter-spacing: 0.8px;
+}
+
+.overlay-card.overlay-card-leaderboard .overlay-sub {
+  color: #cab993;
+}
+
+.overlay-card.overlay-card-leaderboard .overlay-hint {
+  color: #efdfc0;
+}
+
+.overlay-card.overlay-card-leaderboard .leaderboard-modal-list {
+  width: min(680px, 100%);
+  padding: 4px 6px 2px;
+  border: 1px solid #c7aa7445;
+  border-radius: 10px;
+  background:
+    repeating-linear-gradient(
+      0deg,
+      #ffffff03 0,
+      #ffffff03 2px,
+      transparent 2px,
+      transparent 18px
+    ),
+    linear-gradient(180deg, #0f0d0ad6, #0d0b08ca);
+  box-shadow: inset 0 0 0 1px #ffffff05;
+}
+
+.leaderboard-entry {
+  display: grid;
+  grid-template-columns: 42px 1fr;
+  gap: 10px;
+  align-items: start;
+  border: 1px solid #7c6b4a80;
+  background: linear-gradient(180deg, #2c2419b8, #221c14af);
+  border-radius: 9px;
+  padding: 8px 10px;
+  text-align: left;
+}
+
+.leaderboard-rank {
+  width: 32px;
+  min-height: 26px;
+  display: grid;
+  place-items: center;
+  border-radius: 7px;
+  border: 1px solid #9b86609e;
+  background: linear-gradient(180deg, #3b3022, #2b241a);
+  color: #e2c893;
+  font-weight: 700;
+  font-size: 0.85rem;
+  letter-spacing: 0.3px;
+}
+
+.leaderboard-main {
+  display: grid;
+  gap: 4px;
+}
+
+.leaderboard-name {
+  color: #f0dfbf;
+  font-size: clamp(12px, 1.35vw, 15px);
+  line-height: 1.2;
+}
+
+.leaderboard-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.leaderboard-stats span {
+  display: inline-block;
+  border: 1px solid #b798664f;
+  border-radius: 999px;
+  padding: 1px 7px;
+  background: #f5cd8d14;
+  color: #dec59a;
+  font-size: clamp(10px, 1.05vw, 12px);
+  line-height: 1.3;
+}
+
+.leaderboard-meta {
+  color: #bca881;
+  font-size: clamp(10px, 1.02vw, 12px);
+  line-height: 1.3;
+}
+
+.leaderboard-entry.leaderboard-rank-1 {
+  border-color: #e3bf75d9;
+  background: linear-gradient(180deg, #4a3920ca, #302515c0);
+  box-shadow: 0 0 12px #f3c56b36, inset 0 0 0 1px #f6d9a34d;
+  animation: leaderboardEngravedGlow 2.6s ease-in-out infinite;
+}
+
+.leaderboard-entry.leaderboard-rank-1 .leaderboard-rank {
+  border-color: #ffd792;
+  background: linear-gradient(180deg, #82602b, #5c431f);
+  color: #fff1cf;
+  animation: leaderboardEngravedBadgeGlow 2.6s ease-in-out infinite;
+}
+
+.leaderboard-entry.leaderboard-rank-2 {
+  border-color: #c7cedcaa;
+  background: linear-gradient(180deg, #33353bc7, #25272caf);
+}
+
+.leaderboard-entry.leaderboard-rank-2 .leaderboard-rank {
+  border-color: #d7deecaa;
+  background: linear-gradient(180deg, #5f6774, #454c58);
+  color: #edf2ff;
+}
+
+.leaderboard-entry.leaderboard-rank-3 {
+  border-color: #caa681b8;
+  background: linear-gradient(180deg, #3b2a1ec4, #2e2118b0);
+}
+
+.leaderboard-entry.leaderboard-rank-3 .leaderboard-rank {
+  border-color: #e0b48aa8;
+  background: linear-gradient(180deg, #7a4f30, #5c3e28);
+  color: #ffe1cb;
+}
+
+@keyframes leaderboardEngravedGlow {
+  0% {
+    border-color: #d6b06cd0;
+    box-shadow: 0 0 8px #f3c56b1f, inset 0 0 0 1px #f6d9a336;
+  }
+  50% {
+    border-color: #f2d08ddd;
+    box-shadow: 0 0 16px #f3c56b4a, inset 0 0 0 1px #f6d9a366;
+  }
+  100% {
+    border-color: #d6b06cd0;
+    box-shadow: 0 0 8px #f3c56b1f, inset 0 0 0 1px #f6d9a336;
+  }
+}
+
+@keyframes leaderboardEngravedBadgeGlow {
+  0% {
+    box-shadow: 0 0 0 #ffd79200, inset 0 0 0 1px #fff2d31f;
+  }
+  50% {
+    box-shadow: 0 0 12px #ffd79259, inset 0 0 0 1px #fff2d366;
+  }
+  100% {
+    box-shadow: 0 0 0 #ffd79200, inset 0 0 0 1px #fff2d31f;
+  }
+}
+
 .name-modal-wrap {
   margin: 12px auto 0;
   width: min(420px, 100%);
