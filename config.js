@@ -9,7 +9,7 @@ window.DUNGEON_DEBUG_CHEATS_ENABLED = true;
 // Enable/disable test mode.
 // true  = leaderboard fully disabled (no start/finalize/submit, no new entries)
 // false = normal leaderboard behavior
-window.DUNGEON_TEST_MODE = true;
+window.DUNGEON_TEST_MODE = false;
 
 // Optional online leaderboard endpoint.
 // Example:
