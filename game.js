@@ -670,6 +670,7 @@
   const layoutTrackEl = document.getElementById("layoutTrack");
   const mobileSwipeHintEl = document.getElementById("mobileSwipeHint");
   const mobileMenuButtonEl = document.getElementById("mobileMenuButton");
+  const mobileControlsEl = document.getElementById("mobileControls");
   const MOBILE_LAYOUT_MEDIA_QUERY = "(max-width: 920px)";
   const MOBILE_PANE_LEFT = 0;
   const MOBILE_PANE_BOARD = 1;
@@ -789,6 +790,14 @@
     }
     if (mobileSwipeHintEl) {
       mobileSwipeHintEl.classList.toggle("visible", shouldShowMobileSwipeHint());
+    }
+    if (mobileControlsEl) {
+      const phase = state.phase;
+      const onBoard = mobileUi.active && mobileUi.paneIndex === MOBILE_PANE_BOARD && !isScreenOverlayVisible();
+      const showPlaying = onBoard && phase === "playing";
+      const showRestart = onBoard && (phase === "camp" || phase === "dead");
+      mobileControlsEl.classList.toggle("hidden", !showPlaying && !showRestart);
+      mobileControlsEl.classList.toggle("show-restart", showRestart);
     }
   }
 
@@ -16891,6 +16900,85 @@
       syncMobileUiState({ forceBoard: true });
     });
   }
+
+  // Mobile on-screen controls (D-pad + action buttons)
+  function bindMobileButton(id, handler) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.addEventListener("pointerdown", (e) => {
+      e.stopPropagation();
+      ensureAudio();
+      handler(e);
+    });
+  }
+
+  function mobileMoveHandler(dx, dy) {
+    return () => {
+      if (state.phase !== "playing") return;
+      if (isTurnInputLocked()) return;
+      if (state.dashAimActive) {
+        tryUseDashSkill(dx, dy);
+        return;
+      }
+      tryMove(dx, dy);
+    };
+  }
+
+  bindMobileButton("mbtnUp",    mobileMoveHandler(0, -1));
+  bindMobileButton("mbtnDown",  mobileMoveHandler(0,  1));
+  bindMobileButton("mbtnLeft",  mobileMoveHandler(-1, 0));
+  bindMobileButton("mbtnRight", mobileMoveHandler(1,  0));
+
+  bindMobileButton("mbtnZ", () => {
+    if (state.phase !== "playing") return;
+    if (isTurnInputLocked()) return;
+    tryUseSkillByKey("z");
+  });
+  bindMobileButton("mbtnX", () => {
+    if (state.phase !== "playing") return;
+    if (isTurnInputLocked()) return;
+    tryUseSkillByKey("x");
+  });
+  bindMobileButton("mbtnC", () => {
+    if (state.phase !== "playing") return;
+    if (isTurnInputLocked()) return;
+    tryUseSkillByKey("c");
+  });
+
+  bindMobileButton("mbtnF", () => {
+    if (state.phase !== "playing") return;
+    if (isTurnInputLocked()) return;
+    drinkPotion();
+  });
+  bindMobileButton("mbtnE", () => {
+    if (state.phase !== "playing") return;
+    if (isTurnInputLocked()) return;
+    if (state.roomType === "merchant" && isOnMerchant()) {
+      if (state.merchantMenuOpen) {
+        closeMerchantMenu();
+      } else {
+        openMerchantMenu();
+      }
+      return;
+    }
+    attemptDescend();
+  });
+  bindMobileButton("mbtnQ", () => {
+    if (state.phase !== "playing") return;
+    if (isTurnInputLocked()) return;
+    if (isOnPortal() && state.roomCleared) {
+      extractRun();
+    } else {
+      openEmergencyExtractConfirm();
+    }
+  });
+  bindMobileButton("mbtnR", () => {
+    if (state.phase === "camp") {
+      openCampStartDepthPrompt();
+    } else if (state.phase === "dead") {
+      startRun({ carriedRelics: [...state.relics], startDepth: 0 });
+    }
+  });
 
   window.addEventListener("pointerdown", () => {
     ensureAudio();

@@ -32,6 +32,30 @@
             <div id="screenOverlay" class="screen-overlay" aria-live="polite"></div>
           </div>
           <section id="skillsBar" class="skills-bar" aria-live="polite"></section>
+          <div class="mobile-controls" id="mobileControls" aria-label="Sterowanie dotykowe">
+            <div class="mobile-controls-row">
+              <div class="mobile-dpad" aria-label="Kierunki ruchu">
+                <button class="dpad-btn dpad-up"    id="mbtnUp"    type="button" aria-label="Góra">▲</button>
+                <div class="dpad-middle-row">
+                  <button class="dpad-btn dpad-left"  id="mbtnLeft"  type="button" aria-label="Lewo">◀</button>
+                  <span class="dpad-center"></span>
+                  <button class="dpad-btn dpad-right" id="mbtnRight" type="button" aria-label="Prawo">▶</button>
+                </div>
+                <button class="dpad-btn dpad-down"  id="mbtnDown"  type="button" aria-label="Dół">▼</button>
+              </div>
+              <div class="mobile-action-buttons">
+                <button class="mact-btn mact-skill mact-z" id="mbtnZ" type="button" aria-label="Umiejętność Z">Z</button>
+                <button class="mact-btn mact-skill mact-x" id="mbtnX" type="button" aria-label="Umiejętność X">X</button>
+                <button class="mact-btn mact-skill mact-c" id="mbtnC" type="button" aria-label="Umiejętność C">C</button>
+                <button class="mact-btn mact-action mact-f" id="mbtnF" type="button" aria-label="Mikstura (F)">F</button>
+                <button class="mact-btn mact-action mact-e" id="mbtnE" type="button" aria-label="Akcja (E)">E</button>
+                <button class="mact-btn mact-action mact-q" id="mbtnQ" type="button" aria-label="Odwrót (Q)">Q</button>
+              </div>
+            </div>
+            <div class="mobile-restart-row" id="mobileRestartRow">
+              <button class="mact-btn mact-restart" id="mbtnR" type="button" aria-label="Restart / Nowy run (R)">▶ Start / Restart (R)</button>
+            </div>
+          </div>
         </div>
         <aside class="panel panel-right">
           <section class="actions" id="actions"></section>

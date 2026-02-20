@@ -174,6 +174,10 @@ body {
   display: none;
 }
 
+.mobile-controls {
+  display: none;
+}
+
 .depth-badge {
   width: min(576px, 92vw);
   display: grid;
@@ -1276,7 +1280,8 @@ canvas.boss-pulse {
   }
 
   .layout.mobile-layout .layout-track {
-    transform: translate3d(calc(var(--mobile-pane-index, 1) * -100%), 0, 0);
+    width: 300%;
+    transform: translate3d(calc(var(--mobile-pane-index, 1) * -33.333%), 0, 0);
   }
 
   .layout-track > .panel,
@@ -1285,6 +1290,13 @@ canvas.boss-pulse {
     max-width: 100%;
     flex: 0 0 100%;
     justify-self: stretch;
+  }
+
+  .layout.mobile-layout .layout-track > .panel,
+  .layout.mobile-layout .layout-track > .board {
+    width: 33.333%;
+    max-width: 33.333%;
+    flex: 0 0 33.333%;
   }
 
   .layout-track > .panel {
@@ -1390,4 +1402,147 @@ canvas.boss-pulse {
     opacity: 1;
     transform: translate(-50%, 0);
   }
+
+  /* Mobile Controls: D-pad + action buttons */
+  .mobile-controls {
+    display: block;
+    width: min(576px, calc(100vw - 28px));
+    margin-top: 10px;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  .mobile-controls.hidden {
+    display: none;
+  }
+
+  .mobile-controls-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+  }
+
+  /* D-pad */
+  .mobile-dpad {
+    display: grid;
+    grid-template-rows: auto auto auto;
+    gap: 4px;
+    flex-shrink: 0;
+  }
+
+  .dpad-middle-row {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+  }
+
+  .dpad-center {
+    width: 44px;
+    height: 44px;
+    background: #1c2128;
+    border-radius: 6px;
+    opacity: 0.3;
+    flex-shrink: 0;
+  }
+
+  .dpad-btn {
+    width: 44px;
+    height: 44px;
+    border: 1px solid #ffffff22;
+    border-radius: 8px;
+    background: linear-gradient(180deg, #1e2a3a, #141a23);
+    color: #c8d8f0;
+    font-size: 1.1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    transition: background 80ms ease, transform 60ms ease;
+    flex-shrink: 0;
+  }
+
+  .dpad-btn:active {
+    background: linear-gradient(180deg, #2a3d55, #1a2435);
+    transform: scale(0.92);
+  }
+
+  /* Action buttons grid */
+  .mobile-action-buttons {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+    flex: 1;
+  }
+
+  .mact-btn {
+    height: 44px;
+    border-radius: 8px;
+    border: 1px solid #ffffff22;
+    font-family: inherit;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    cursor: pointer;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    transition: background 80ms ease, transform 60ms ease;
+  }
+
+  .mact-btn:active {
+    transform: scale(0.92);
+  }
+
+  /* Skill buttons (Z/X/C) - niebieskawy akcent */
+  .mact-skill {
+    background: linear-gradient(180deg, #1a2d45, #111e2e);
+    color: #7eb8f5;
+    border-color: #3a6090;
+  }
+
+  .mact-skill:active {
+    background: linear-gradient(180deg, #1f3a5a, #152436);
+  }
+
+  /* Action buttons (F/E/Q) - cieplejszy akcent */
+  .mact-action {
+    background: linear-gradient(180deg, #2a1e10, #1a1208);
+    color: #d4a060;
+    border-color: #7a5030;
+  }
+
+  .mact-action:active {
+    background: linear-gradient(180deg, #3a2a14, #20180a);
+  }
+
+  /* Restart button row (camp / dead phases) */
+  .mobile-restart-row {
+    display: none;
+    margin-top: 8px;
+  }
+
+  .mobile-controls.show-restart .mobile-restart-row {
+    display: block;
+  }
+
+  .mobile-controls.show-restart .mobile-controls-row {
+    display: none;
+  }
+
+  .mact-restart {
+    width: 100%;
+    height: 48px;
+    background: linear-gradient(180deg, #1a3a1a, #0f220f);
+    color: #7bd389;
+    border-color: #3a7a3a;
+    font-size: 0.85rem;
+  }
+
+  .mact-restart:active {
+    background: linear-gradient(180deg, #234a23, #142814);
+  }
+
 }
