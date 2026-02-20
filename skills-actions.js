@@ -10,6 +10,7 @@
       scaledCombat,
       MIN_EFFECTIVE_DAMAGE,
       getEffectiveAdrenaline,
+      getFuryAttackPowerMultiplier,
       inBounds,
       getChestAt,
       startTween,
@@ -85,7 +86,13 @@
         return false;
       }
 
-      let damage = state.player.attack + scaledCombat(1) + Math.floor(getEffectiveAdrenaline() / 2);
+      const furyMult = typeof getFuryAttackPowerMultiplier === "function"
+        ? getFuryAttackPowerMultiplier(getEffectiveAdrenaline())
+        : 1;
+      let damage = Math.max(
+        MIN_EFFECTIVE_DAMAGE,
+        Math.round((state.player.attack + scaledCombat(1)) * furyMult)
+      );
       if (dashTier >= 1) {
         damage = Math.max(MIN_EFFECTIVE_DAMAGE, damage * 2);
       }
@@ -254,7 +261,10 @@
         return false;
       }
 
-      let baseDamage = Math.max(MIN_EFFECTIVE_DAMAGE, state.player.attack + Math.floor(getEffectiveAdrenaline() / 2));
+      const furyMult = typeof getFuryAttackPowerMultiplier === "function"
+        ? getFuryAttackPowerMultiplier(getEffectiveAdrenaline())
+        : 1;
+      let baseDamage = Math.max(MIN_EFFECTIVE_DAMAGE, Math.round(state.player.attack * furyMult));
       if (aoeTier >= 1) {
         baseDamage = Math.max(MIN_EFFECTIVE_DAMAGE, Math.round(baseDamage * 1.5));
       }

@@ -46,6 +46,7 @@
   const STORAGE_LEADERBOARD = "dungeonOneRoomLeaderboardV1";
   const STORAGE_LEADERBOARD_PENDING = "dungeonOneRoomLeaderboardPendingV1";
   const STORAGE_WARDEN_FIRST_DROP_DEPTHS = "dungeonOneRoomWardenFirstDropDepths";
+  const STORAGE_START_DEPTH_UNLOCKS = "dungeonOneRoomStartDepthUnlocksV1";
   const STORAGE_OBSERVER_AI_MODEL = "dungeonOneRoomObserverAiModelV2";
   const GAME_VERSION = (() => {
     const raw = typeof window !== "undefined" ? window.GAME_VERSION : "";
@@ -53,6 +54,8 @@
     return normalized || "dev";
   })();
   const MAX_DEPTH = 100;
+  const START_DEPTH_CHECKPOINTS = Object.freeze([11, 21, 31, 41]);
+  const START_DEPTH_UNLOCK_BOSS_DEPTHS = Object.freeze([10, 20, 30, 40]);
   const MAX_LIVES = 5;
   const MAX_RELICS = 8;
   const MAX_NORMAL_RELIC_STACK = 5;
@@ -78,6 +81,10 @@
   const CHEST_ATTACK_UPGRADE_FLAT = 2;
   const CHEST_ARMOR_UPGRADE_FLAT = 2;
   const CHEST_HEALTH_UPGRADE_FLAT = 5;
+  const CHEST_UPGRADE_TIER_TWO_MIN_DEPTH = 11;
+  const CHEST_UPGRADE_TIER_THREE_MIN_DEPTH = 21;
+  const CHEST_UPGRADE_TIER_TWO_MULT = 1.2;
+  const CHEST_UPGRADE_TIER_THREE_MULT = 1.35;
   const CHEST_HEALING_DROP_AMOUNT = 4 * COMBAT_SCALE; // 40 HP
   const CHEST_ATTACK_BUCKET_SIZE = 10;
   const CHEST_ATTACK_BUCKET_MAX = 5;
@@ -103,6 +110,8 @@
   const THORNMAIL_REFLECT_MULTIPLIER = 0.2;
   const VAMPFANG_LIFESTEAL_MULTIPLIER = 0.1;
   const VAMPFANG_MAX_HEAL_PER_HIT = 2 * COMBAT_SCALE;
+  const FURY_ATTACK_POWER_PER_STACK = 0.05;
+  const FURY_ATTACK_POWER_MAX_BONUS = 0.3;
   const PHASE_CLOAK_DODGE_COOLDOWN_TURNS = 3;
   const SOUL_HARVEST_KILL_INTERVAL = 30;
   const BURNING_BLADE_DOT_DAMAGE = 3 * COMBAT_SCALE;
@@ -128,6 +137,8 @@
   const ONLINE_RUN_TOKEN_MAX_LEN = 256;
   const ONLINE_FINALIZE_NONCE_MAX_LEN = 256;
   const OBSERVER_AI_MODEL_VERSION = 2;
+  const OBSERVER_TRACE_MAX_EVENTS = 12000;
+  const OBSERVER_TRACE_TURN_INTERVAL = 6;
   const OBSERVER_AI_DEFAULT_WEIGHTS = Object.freeze({
     survival: 1.25,
     kill: 1.1,
@@ -174,6 +185,7 @@
   }
   const DEBUG_CHEATS_ENABLED = readGlobalFlag("DUNGEON_DEBUG_CHEATS_ENABLED", true);
   const DEBUG_MENU_TOGGLE_KEY = "f9";
+  const DEBUG_BOT_MENU_TOGGLE_KEY = "f10";
   const DEBUG_AI_OVERLAY_TOGGLE_KEY = "f8";
   const MUSIC_TRACKS = {
     normal: "assets/Dungeon Descent.mp3",
@@ -629,6 +641,7 @@
   const depthBadgeEl = document.getElementById("depthBadge");
   const hudEl = document.getElementById("hud");
   const actionsEl = document.getElementById("actions");
+  const activeEffectsEl = document.getElementById("activeEffects");
   const skillsBarEl = document.getElementById("skillsBar");
   const mutatorsEl = document.getElementById("mutators");
   const logEl = document.getElementById("log");
@@ -667,6 +680,12 @@
 
   function getEffectiveMaxAdrenaline() {
     return Math.max(0, Number(state.player.maxAdrenaline) || 0) + getFuryBlessingBonus();
+  }
+
+  function getFuryAttackPowerMultiplier(effectiveFury = getEffectiveAdrenaline()) {
+    const stacks = Math.max(0, Number(effectiveFury) || 0);
+    const bonus = clamp(stacks * FURY_ATTACK_POWER_PER_STACK, 0, FURY_ATTACK_POWER_MAX_BONUS);
+    return 1 + bonus;
   }
 
   function rollShrineBlessingTurns() {
@@ -909,6 +928,15 @@
     return output;
   }
 
+  function sanitizeStartDepthUnlocks(input) {
+    const output = {};
+    if (!input || typeof input !== "object") return output;
+    for (const depth of START_DEPTH_CHECKPOINTS) {
+      output[String(depth)] = Boolean(input[String(depth)]);
+    }
+    return output;
+  }
+
   function sanitizeObserverAiWeights(input) {
     const output = { ...OBSERVER_AI_DEFAULT_WEIGHTS };
     if (!input || typeof input !== "object") return output;
@@ -1085,6 +1113,9 @@
   const initialWardenFirstDropDepths = sanitizeWardenFirstDropDepths(
     readJsonStorage(STORAGE_WARDEN_FIRST_DROP_DEPTHS, {})
   );
+  const initialStartDepthUnlocks = sanitizeStartDepthUnlocks(
+    readJsonStorage(STORAGE_START_DEPTH_UNLOCKS, {})
+  );
   const initialObserverAiModel = sanitizeObserverAiModel(readJsonStorage(STORAGE_OBSERVER_AI_MODEL, null));
   const initialPlayerName = sanitizePlayerName(localStorage.getItem(STORAGE_PLAYER_NAME) || "");
   const initialEnemySpeedMode = sanitizeEnemySpeedMode(localStorage.getItem(STORAGE_ENEMY_SPEED) || "");
@@ -1159,6 +1190,9 @@
     lastDeathRelicLossText: "",
     wardenRelicMissStreak: 0,
     wardenFirstDropDepths: initialWardenFirstDropDepths,
+    startDepthUnlocks: initialStartDepthUnlocks,
+    campStartDepthPromptOpen: false,
+    campStartDepthSelectionIndex: 0,
     finalGameOverPrompt: null,
     finalVictoryPrompt: null,
     merchantMenuOpen: false,
@@ -1197,6 +1231,7 @@
     campPanelView: "shop", // "shop" or "mutators"
     campVisitShopCostMult: 1,
     debugCheatOpen: false,
+    debugCheatBotOnly: false,
     debugCheatView: "actions", // "actions" | "relic_picker"
     debugCheatRelicPage: 0,
     debugCheatSectionIndex: 0,
@@ -1225,7 +1260,19 @@
       farmBladeTarget: 0,
       aiModel: initialObserverAiModel,
       economyPlan: null,
-      lastPolicy: "default"
+      lastPolicy: "default",
+      traceEnabled: true,
+      traceSessionId: "",
+      traceRunSeq: 0,
+      traceEvents: [],
+      traceLastSampleTurn: -1,
+      traceLastDecision: "idle",
+      traceLastPhase: "boot",
+      traceLastVampfangHeal: 0,
+      loopRecentPositions: [],
+      loopPingPongTicks: 0,
+      loopPingPongActive: false,
+      loopAcolytePingPongTicks: 0
     },
     enemySpeedMode: initialEnemySpeedMode,
     merchantPotionsBought: 0,
@@ -1254,6 +1301,7 @@
       hp: scaledCombat(BASE_PLAYER_HP),
       maxHp: scaledCombat(BASE_PLAYER_HP),
       attack: scaledCombat(BASE_PLAYER_ATTACK),
+      vampfangHealRun: 0,
       armor: scaledCombat(BASE_PLAYER_ARMOR),
       potions: 1,
       maxPotions: 5,
@@ -1350,6 +1398,7 @@
     scaledCombat,
     MIN_EFFECTIVE_DAMAGE,
     getEffectiveAdrenaline,
+    getFuryAttackPowerMultiplier,
     inBounds,
     getChestAt,
     startTween,
@@ -1518,23 +1567,351 @@
   function setObserverBotEnabled(enabled, options = {}) {
     const next = Boolean(enabled);
     if (!state.observerBot || state.observerBot.enabled === next) return false;
+    ensureObserverBotTraceState();
     state.observerBot.enabled = next;
     state.observerBot.actionTimerMs = 0;
     state.observerBot.currentRoomIndex = -1;
     state.observerBot.merchantPurchasesThisRoom = 0;
     state.observerBot.merchantDoneRoomIndex = -1;
     state.observerBot.lastDecision = next ? "online" : "offline";
+    state.observerBot.traceLastVampfangHeal = Math.max(0, Number(state.player?.vampfangHealRun) || 0);
     resetObserverBotStallTracker();
     if (!options.silent) {
       pushLog(`Observer Bot ${next ? "ON" : "OFF"}.`, "warn");
     } else {
       markUiDirty();
     }
+    appendObserverBotTrace(next ? "bot_on" : "bot_off", { silent: Boolean(options.silent) }, { force: true });
     return true;
   }
 
   function toggleObserverBot() {
     return setObserverBotEnabled(!isObserverBotActive());
+  }
+
+  function makeObserverTraceSessionId() {
+    return `bottrace-${Date.now().toString(36)}-${Math.floor(Math.random() * 0x7fffffff).toString(36)}`;
+  }
+
+  function ensureObserverBotTraceState() {
+    if (!state.observerBot) return null;
+    const bot = state.observerBot;
+    if (typeof bot.traceEnabled !== "boolean") bot.traceEnabled = true;
+    if (typeof bot.traceSessionId !== "string" || bot.traceSessionId.length <= 0) {
+      bot.traceSessionId = makeObserverTraceSessionId();
+    }
+    if (!Array.isArray(bot.traceEvents)) bot.traceEvents = [];
+    bot.traceRunSeq = Math.max(0, Number(bot.traceRunSeq) || 0);
+    bot.traceLastSampleTurn = Math.max(-1, Number(bot.traceLastSampleTurn) || -1);
+    bot.traceLastDecision = String(bot.traceLastDecision || bot.lastDecision || "idle");
+    bot.traceLastPhase = String(bot.traceLastPhase || state.phase || "boot");
+    bot.traceLastVampfangHeal = Math.max(0, Number(bot.traceLastVampfangHeal) || 0);
+    if (!Array.isArray(bot.loopRecentPositions)) bot.loopRecentPositions = [];
+    bot.loopPingPongTicks = Math.max(0, Number(bot.loopPingPongTicks) || 0);
+    bot.loopAcolytePingPongTicks = Math.max(0, Number(bot.loopAcolytePingPongTicks) || 0);
+    bot.loopPingPongActive = Boolean(bot.loopPingPongActive);
+    if (bot.traceEvents.length > OBSERVER_TRACE_MAX_EVENTS) {
+      bot.traceEvents = bot.traceEvents.slice(bot.traceEvents.length - OBSERVER_TRACE_MAX_EVENTS);
+    }
+    return bot;
+  }
+
+  function getObserverEnemyTypeCounts() {
+    const counts = {};
+    if (!Array.isArray(state.enemies) || state.enemies.length <= 0) return counts;
+    for (const enemy of state.enemies) {
+      if (!enemy) continue;
+      const type = String(enemy.type || "unknown");
+      counts[type] = (counts[type] || 0) + 1;
+    }
+    return counts;
+  }
+
+  function getObserverTargetType() {
+    if (state.phase !== "playing") {
+      if (state.phase === "camp") return "camp";
+      if (state.phase === "relic") return "relic";
+      if (state.phase === "menu") return "menu";
+      return "none";
+    }
+    if (state.roomCleared) {
+      const shrineTarget = getNearestShrineForBot();
+      if (shrineTarget || isOnShrine()) return "shrine";
+      if (getNearestChestForBot()) return "chest";
+      if (state.roomType === "merchant" && state.merchant) {
+        return isOnMerchant() ? "merchant_trade" : "merchant";
+      }
+      return "portal";
+    }
+    if (!Array.isArray(state.enemies) || state.enemies.length <= 0) return "none";
+    const counts = getObserverEnemyTypeCounts();
+    if ((counts.acolyte || 0) > 0 && Object.keys(counts).length === 1) {
+      return "acolyte";
+    }
+    const nearest = getNearestEnemyForBot();
+    return nearest?.type ? String(nearest.type) : "enemy";
+  }
+
+  function updateObserverBotLoopTracker() {
+    if (!state.observerBot) return;
+    const bot = state.observerBot;
+    if (state.phase !== "playing") {
+      bot.loopRecentPositions = [];
+      bot.loopPingPongTicks = 0;
+      bot.loopPingPongActive = false;
+      bot.loopAcolytePingPongTicks = 0;
+      return;
+    }
+    const posKey = `${state.player.x},${state.player.y}`;
+    bot.loopRecentPositions.push(posKey);
+    if (bot.loopRecentPositions.length > 8) {
+      bot.loopRecentPositions.shift();
+    }
+    const recent = bot.loopRecentPositions;
+    let pingPong = false;
+    if (recent.length >= 4) {
+      const a = recent[recent.length - 4];
+      const b = recent[recent.length - 3];
+      const c = recent[recent.length - 2];
+      const d = recent[recent.length - 1];
+      pingPong = a === c && b === d && a !== b;
+    }
+    if (pingPong && Array.isArray(state.enemies) && state.enemies.length > 0) {
+      bot.loopPingPongTicks = Math.min(999, bot.loopPingPongTicks + 1);
+      if (state.enemies.some((enemy) => enemy && enemy.type === "acolyte")) {
+        bot.loopAcolytePingPongTicks = Math.min(999, bot.loopAcolytePingPongTicks + 1);
+      } else {
+        bot.loopAcolytePingPongTicks = 0;
+      }
+    } else {
+      bot.loopPingPongTicks = 0;
+      bot.loopAcolytePingPongTicks = 0;
+    }
+    bot.loopPingPongActive = bot.loopPingPongTicks >= 2;
+  }
+
+  function buildObserverTraceSnapshot() {
+    const player = state.player || {};
+    const enemyTypeCounts = getObserverEnemyTypeCounts();
+    return {
+      phase: state.phase,
+      depth: Math.max(0, Number(state.depth) || 0),
+      turn: Math.max(0, Number(state.turn) || 0),
+      roomIndex: Math.max(0, Number(state.roomIndex) || 0),
+      roomType: String(state.roomType || "combat"),
+      bossRoom: Boolean(state.bossRoom),
+      hp: Math.max(0, Number(player.hp) || 0),
+      maxHp: Math.max(1, Number(player.maxHp) || 1),
+      hpRatio: Number(((Number(player.hp) || 0) / Math.max(1, Number(player.maxHp) || 1)).toFixed(3)),
+      armor: Math.max(0, Number(player.armor) || 0),
+      attack: Math.max(0, Number(player.attack) || 0),
+      vampfangHealRun: Math.max(0, Number(player.vampfangHealRun) || 0),
+      hasVampfang: hasRelic("vampfang"),
+      aoeTier: Math.max(0, Number(getSkillTier("aoe")) || 0),
+      dashTier: Math.max(0, Number(getSkillTier("dash")) || 0),
+      runGold: Math.max(0, Number(player.gold) || 0),
+      campGold: Math.max(0, Number(state.campGold) || 0),
+      potions: Math.max(0, Number(player.potions) || 0),
+      maxPotions: Math.max(0, Number(player.maxPotions) || 0),
+      lives: Math.max(0, Number(state.lives) || 0),
+      enemies: Array.isArray(state.enemies) ? state.enemies.length : 0,
+      enemyHpTotal: getBotEnemyHpTotal(),
+      enemyTypeCounts,
+      targetType: getObserverTargetType(),
+      decision: String(state.observerBot?.lastDecision || "idle"),
+      policy: String(state.observerBot?.lastPolicy || "default"),
+      farmMode: Boolean(state.observerBot?.farmMode),
+      pressureDepth: Math.max(0, Number(state.observerBot?.pressureDepth) || 0),
+      pressureFailures: Math.max(0, Number(state.observerBot?.pressureFailures) || 0),
+      farmExtractDepth: Math.max(0, Number(state.observerBot?.farmExtractDepth) || 0),
+      farmGoldTarget: Math.max(0, Number(state.observerBot?.farmGoldTarget) || 0),
+      farmGuardTarget: Math.max(0, Number(state.observerBot?.farmGuardTarget) || 0),
+      farmVitalityTarget: Math.max(0, Number(state.observerBot?.farmVitalityTarget) || 0),
+      farmBladeTarget: Math.max(0, Number(state.observerBot?.farmBladeTarget) || 0),
+      loopPingPong: Boolean(state.observerBot?.loopPingPongActive),
+      loopPingPongTicks: Math.max(0, Number(state.observerBot?.loopPingPongTicks) || 0),
+      loopAcolytePingPongTicks: Math.max(0, Number(state.observerBot?.loopAcolytePingPongTicks) || 0)
+    };
+  }
+
+  function appendObserverBotTrace(eventType, details = {}, options = {}) {
+    const bot = ensureObserverBotTraceState();
+    if (!bot || !bot.traceEnabled) return false;
+    const force = Boolean(options.force);
+    if (!force && !isObserverBotActive()) return false;
+    const now = new Date();
+    const snapshot = buildObserverTraceSnapshot();
+    const prevVampfangHeal = Math.max(0, Number(bot.traceLastVampfangHeal) || 0);
+    const currentVampfangHeal = Math.max(0, Number(snapshot.vampfangHealRun) || 0);
+    const entry = {
+      idx: bot.traceEvents.length + 1,
+      ts: now.toISOString(),
+      event: String(eventType || "tick"),
+      runSeq: Math.max(0, Number(bot.traceRunSeq) || 0),
+      vampfangHealDelta: Math.max(0, currentVampfangHeal - prevVampfangHeal),
+      ...snapshot,
+      ...details
+    };
+    bot.traceEvents.push(entry);
+    if (bot.traceEvents.length > OBSERVER_TRACE_MAX_EVENTS) {
+      bot.traceEvents.splice(0, bot.traceEvents.length - OBSERVER_TRACE_MAX_EVENTS);
+    }
+    bot.traceLastDecision = snapshot.decision;
+    bot.traceLastPhase = snapshot.phase;
+    bot.traceLastVampfangHeal = currentVampfangHeal;
+    return true;
+  }
+
+  function buildObserverBotTraceText() {
+    const bot = ensureObserverBotTraceState();
+    const events = Array.isArray(bot?.traceEvents) ? bot.traceEvents : [];
+    const decisionCounts = {};
+    const eventCounts = {};
+    const farmStartDepthCounts = {};
+    const extractReasonCounts = {};
+    const uniqueExtractKeys = new Set();
+    let deathEventCount = 0;
+    let deathHpRatioSum = 0;
+    let deathHpSum = 0;
+    let extractCount = 0;
+    let emergencyExtractCount = 0;
+    let farmTicks = 0;
+    let loopPingPongTicks = 0;
+    let loopAcolytePingPongTicks = 0;
+    let vampfangHealTotal = 0;
+    const classifyExtractReason = (row) => {
+      if (!row || row.decision !== "extract") return "";
+      if (row.farmMode && row.farmExtractDepth > 0 && row.depth >= row.farmExtractDepth) {
+        return "farm_target_reached";
+      }
+      if (row.bossRoom) return "post_boss_bank";
+      if ((Number(row.hpRatio) || 0) <= 0.45 && (Number(row.potions) || 0) <= 1) {
+        return "low_survivability";
+      }
+      if ((Number(row.potions) || 0) <= 0 && (Number(row.depth) || 0) >= 8) {
+        return "no_potions";
+      }
+      if ((Number(row.campGold) || 0) + (Number(row.runGold) || 0) >= (Number(row.farmGoldTarget) || Infinity)) {
+        return "bank_gold_target";
+      }
+      return "strategic_bank";
+    };
+    for (const row of events) {
+      const decision = String(row?.decision || "");
+      const eventName = String(row?.event || "");
+      if (decision) decisionCounts[decision] = (decisionCounts[decision] || 0) + 1;
+      if (eventName) eventCounts[eventName] = (eventCounts[eventName] || 0) + 1;
+      if (eventName === "farm_mode_configured") {
+        const depthKey = Math.max(0, Number(row?.targetDepth) || Number(row?.depth) || 0);
+        farmStartDepthCounts[depthKey] = (farmStartDepthCounts[depthKey] || 0) + 1;
+      }
+      if (eventName === "run_death") {
+        deathEventCount += 1;
+        deathHpRatioSum += Number(row?.hpRatio) || 0;
+        deathHpSum += Number(row?.hp) || 0;
+      }
+      if (decision === "extract" || decision === "emergency_extract") {
+        const extractKey = `${row?.runSeq || 0}:${row?.depth || 0}:${row?.turn || 0}:${decision}`;
+        if (!uniqueExtractKeys.has(extractKey)) {
+          uniqueExtractKeys.add(extractKey);
+          extractCount += 1;
+          if (decision === "emergency_extract") {
+            emergencyExtractCount += 1;
+            extractReasonCounts.emergency_low_hp = (extractReasonCounts.emergency_low_hp || 0) + 1;
+          } else {
+            const reason = classifyExtractReason(row);
+            extractReasonCounts[reason] = (extractReasonCounts[reason] || 0) + 1;
+          }
+        }
+      }
+      if (row?.farmMode) farmTicks += 1;
+      if (row?.loopPingPong) loopPingPongTicks += 1;
+      if (row?.loopPingPong && (Number(row?.enemyTypeCounts?.acolyte) || 0) > 0) {
+        loopAcolytePingPongTicks += 1;
+      }
+      vampfangHealTotal += Math.max(0, Number(row?.vampfangHealDelta) || 0);
+    }
+    const topDecisions = Object.entries(decisionCounts)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 15)
+      .map(([name, count]) => `${name}:${count}`)
+      .join(", ");
+    const topEvents = Object.entries(eventCounts)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 10)
+      .map(([name, count]) => `${name}:${count}`)
+      .join(", ");
+    const topFarmStartDepths = Object.entries(farmStartDepthCounts)
+      .sort((a, b) => b[1] - a[1] || Number(a[0]) - Number(b[0]))
+      .slice(0, 5)
+      .map(([depth, count]) => `d${depth}:${count}`)
+      .join(", ");
+    const topExtractReasons = Object.entries(extractReasonCounts)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5)
+      .map(([reason, count]) => `${reason}:${count}`)
+      .join(", ");
+    const avgHpOnDeath = deathEventCount > 0 ? Number((deathHpSum / deathEventCount).toFixed(2)) : 0;
+    const avgHpRatioOnDeath = deathEventCount > 0 ? Number((deathHpRatioSum / deathEventCount).toFixed(3)) : 0;
+    const lines = [];
+    lines.push(`# Observer Bot Analysis Trace`);
+    lines.push(`generated_at=${new Date().toISOString()}`);
+    lines.push(`game_version=${GAME_VERSION}`);
+    lines.push(`trace_session_id=${String(bot?.traceSessionId || "none")}`);
+    lines.push(`events_total=${events.length}`);
+    lines.push(`extract_count=${extractCount}`);
+    lines.push(`emergency_extract_count=${emergencyExtractCount}`);
+    lines.push(`farm_mode_tick_count=${farmTicks}`);
+    lines.push(`loop_ping_pong_tick_count=${loopPingPongTicks}`);
+    lines.push(`loop_ping_pong_with_acolyte_tick_count=${loopAcolytePingPongTicks}`);
+    lines.push(`vampfang_heal_total=${Math.round(vampfangHealTotal)}`);
+    lines.push(`top_decisions=${topDecisions || "none"}`);
+    lines.push(`top_event_types=${topEvents || "none"}`);
+    lines.push("");
+    lines.push("# Mini Balance Report");
+    lines.push("The extract reason labels are heuristic inferences from telemetry.");
+    lines.push(`avg_hp_on_death=${avgHpOnDeath}`);
+    lines.push(`avg_hp_ratio_on_death=${avgHpRatioOnDeath}`);
+    lines.push(`farm_mode_start_depth_top=${topFarmStartDepths || "none"}`);
+    lines.push(`extract_reason_top=${topExtractReasons || "none"}`);
+    lines.push("");
+    lines.push("# Schema");
+    lines.push("Each line below is JSON with: ts,event,runSeq,vampfangHealDelta,phase,depth,turn,roomIndex,roomType,bossRoom,hp,maxHp,hpRatio,armor,attack,vampfangHealRun,hasVampfang,aoeTier,dashTier,runGold,campGold,potions,maxPotions,lives,enemies,enemyHpTotal,enemyTypeCounts,targetType,decision,policy,farmMode,pressureDepth,pressureFailures,farmExtractDepth,farmGoldTarget,farmGuardTarget,farmVitalityTarget,farmBladeTarget,loopPingPong,loopPingPongTicks,loopAcolytePingPongTicks plus event-specific fields.");
+    lines.push("");
+    lines.push("# Events (JSONL)");
+    for (const row of events) {
+      lines.push(JSON.stringify(row));
+    }
+    return lines.join("\n");
+  }
+
+  function downloadTextFile(filename, text) {
+    if (typeof document === "undefined" || typeof URL === "undefined" || typeof Blob === "undefined") {
+      return false;
+    }
+    const blob = new Blob([String(text || "")], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    a.style.display = "none";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+    return true;
+  }
+
+  function exportObserverBotTraceToFile() {
+    const text = buildObserverBotTraceText();
+    const stamp = new Date().toISOString().replace(/[:.]/g, "-");
+    const filename = `observer-bot-trace-${stamp}.txt`;
+    if (downloadTextFile(filename, text)) {
+      pushLog(`Observer Bot trace exported: ${filename}`, "good");
+      return true;
+    }
+    pushLog("Observer Bot trace export failed (download API unavailable).", "bad");
+    return false;
   }
 
   function setStorageItem(key, value) {
@@ -1585,11 +1962,22 @@
     return model;
   }
 
-  function toggleDebugCheatMenu(forceOpen = null) {
+  function toggleDebugCheatMenu(forceOpen = null, options = {}) {
     if (!canUseDebugCheats()) return false;
     if (state.phase === "boot" || state.phase === "splash") return false;
-    const next = forceOpen == null ? !state.debugCheatOpen : Boolean(forceOpen);
+    const botOnly = Boolean(options.botOnly);
+    let next;
+    if (forceOpen == null) {
+      if (state.debugCheatOpen && state.debugCheatBotOnly !== botOnly) {
+        next = true;
+      } else {
+        next = !state.debugCheatOpen;
+      }
+    } else {
+      next = Boolean(forceOpen);
+    }
     state.debugCheatOpen = next;
+    state.debugCheatBotOnly = next ? botOnly : false;
     state.debugCheatView = "actions";
     state.debugCheatRelicPage = 0;
     state.debugCheatSectionIndex = 0;
@@ -1695,11 +2083,20 @@
   }
 
   function getDebugCheatSections() {
+    const actions = getVisibleDebugCheatActions();
     const available = new Set(
-      getDebugCheatActions().map((action) => action.section || "Misc")
+      actions.map((action) => action.section || "Misc")
     );
-    const ordered = ["Run", "Combat", "Meta", "System", "Misc"].filter((name) => available.has(name));
+    const ordered = state.debugCheatBotOnly
+      ? ["System", "Run", "Combat", "Meta", "Misc"].filter((name) => available.has(name))
+      : ["Run", "Combat", "Meta", "System", "Misc"].filter((name) => available.has(name));
     return ordered.length > 0 ? ordered : ["Run"];
+  }
+
+  function getVisibleDebugCheatActions() {
+    const actions = getDebugCheatActions();
+    if (!state.debugCheatBotOnly) return actions;
+    return actions.filter((action) => action.botMenu === true);
   }
 
   function getCurrentDebugCheatSection() {
@@ -1831,6 +2228,7 @@
         section: "System",
         name: "Sim Runner 1000",
         desc: "Run 1000 seeded bot sims (median depth + death causes).",
+        botMenu: true,
         available: () => true,
         run: () => {
           const seed = `${GAME_VERSION}-debug-sim`;
@@ -1856,6 +2254,7 @@
         section: "System",
         name: "Regression Suite",
         desc: "Run 5 fixed seeds x 200 sims and print p10/p50/p90 stats.",
+        botMenu: true,
         available: () => true,
         run: () => {
           const seed = `${GAME_VERSION}-debug-regression`;
@@ -1875,10 +2274,23 @@
         }
       },
       {
+        key: "l",
+        section: "System",
+        name: "Export Bot Trace",
+        desc: "Save observer bot telemetry as .txt for balance analysis.",
+        botMenu: true,
+        available: () => true,
+        run: () => {
+          exportObserverBotTraceToFile();
+          markUiDirty();
+        }
+      },
+      {
         key: "b",
         section: "System",
         name: "Toggle Observer Bot",
         desc: "Auto-play visible run: skills, extract logic, camp upgrades, merchant.",
+        botMenu: true,
         available: () => true,
         run: () => {
           toggleObserverBot();
@@ -1937,7 +2349,7 @@
   function triggerDebugCheatHotkey(key) {
     if (!canUseDebugCheats()) return false;
     const currentSection = getCurrentDebugCheatSection();
-    const action = getDebugCheatActions().find((item) =>
+    const action = getVisibleDebugCheatActions().find((item) =>
       (item.section || "Misc") === currentSection && item.key === key
     );
     if (!action) return false;
@@ -1962,6 +2374,7 @@
     setStorageItem(STORAGE_LIVES, String(state.lives));
     setStorageItem(STORAGE_CAMP_UPGRADES, JSON.stringify(state.campUpgrades));
     setStorageItem(STORAGE_SKILL_TIERS, JSON.stringify(state.skillTiers));
+    setStorageItem(STORAGE_START_DEPTH_UNLOCKS, JSON.stringify(sanitizeStartDepthUnlocks(state.startDepthUnlocks)));
   }
 
   function persistWardenFirstDropDepths() {
@@ -2665,6 +3078,9 @@
     state.lastBossClearDepthThisRun = 0;
     state.wardenRelicMissStreak = 0;
     state.wardenFirstDropDepths = {};
+    state.startDepthUnlocks = sanitizeStartDepthUnlocks({});
+    state.campStartDepthPromptOpen = false;
+    state.campStartDepthSelectionIndex = 0;
     resetSessionChestBonuses();
     state.campVisitShopCostMult = 1;
     state.leaderboardModalOpen = false;
@@ -2742,6 +3158,9 @@
       lastBossClearDepthThisRun: state.lastBossClearDepthThisRun,
       wardenRelicMissStreak: state.wardenRelicMissStreak,
       wardenFirstDropDepths: state.wardenFirstDropDepths,
+      startDepthUnlocks: state.startDepthUnlocks,
+      campStartDepthPromptOpen: state.campStartDepthPromptOpen,
+      campStartDepthSelectionIndex: state.campStartDepthSelectionIndex,
       sessionChestAttackFlat: state.sessionChestAttackFlat,
       sessionChestAttackDepthBuckets: state.sessionChestAttackDepthBuckets,
       sessionChestArmorFlat: state.sessionChestArmorFlat,
@@ -2898,28 +3317,42 @@
     state.wardenFirstDropDepths = sanitizeWardenFirstDropDepths(
       snapshot.wardenFirstDropDepths || state.wardenFirstDropDepths
     );
+    state.startDepthUnlocks = sanitizeStartDepthUnlocks(
+      snapshot.startDepthUnlocks || state.startDepthUnlocks
+    );
+    state.campStartDepthPromptOpen = nextPhase === "camp" && Boolean(snapshot.campStartDepthPromptOpen);
+    state.campStartDepthSelectionIndex = Math.max(0, Number(snapshot.campStartDepthSelectionIndex) || 0);
     state.sessionChestAttackDepthBuckets = sanitizeChestAttackDepthBuckets(snapshot.sessionChestAttackDepthBuckets);
-    const maxSessionChestFlat =
-      Object.values(state.sessionChestAttackDepthBuckets)
-        .reduce((sum, count) => sum + (Number(count) || 0), 0) * CHEST_ATTACK_UPGRADE_FLAT;
+    const maxSessionChestFlat = Object.entries(state.sessionChestAttackDepthBuckets)
+      .reduce((sum, [bucketKey, rawCount]) => {
+        const bucketIndex = Math.max(0, Math.floor(Number(bucketKey) || 0));
+        const count = Math.max(0, Number(rawCount) || 0);
+        return sum + count * getChestUpgradeFlatByBucket(CHEST_ATTACK_UPGRADE_FLAT, bucketIndex);
+      }, 0);
     state.sessionChestAttackFlat = clamp(
       Math.max(0, Number(snapshot.sessionChestAttackFlat) || 0),
       0,
       Math.max(0, maxSessionChestFlat)
     );
     state.sessionChestArmorDepthBuckets = sanitizeChestAttackDepthBuckets(snapshot.sessionChestArmorDepthBuckets);
-    const maxSessionChestArmorFlat =
-      Object.values(state.sessionChestArmorDepthBuckets)
-        .reduce((sum, count) => sum + (Number(count) || 0), 0) * CHEST_ARMOR_UPGRADE_FLAT;
+    const maxSessionChestArmorFlat = Object.entries(state.sessionChestArmorDepthBuckets)
+      .reduce((sum, [bucketKey, rawCount]) => {
+        const bucketIndex = Math.max(0, Math.floor(Number(bucketKey) || 0));
+        const count = Math.max(0, Number(rawCount) || 0);
+        return sum + count * getChestUpgradeFlatByBucket(CHEST_ARMOR_UPGRADE_FLAT, bucketIndex);
+      }, 0);
     state.sessionChestArmorFlat = clamp(
       Math.max(0, Number(snapshot.sessionChestArmorFlat) || 0),
       0,
       Math.max(0, maxSessionChestArmorFlat)
     );
     state.sessionChestHealthDepthBuckets = sanitizeChestAttackDepthBuckets(snapshot.sessionChestHealthDepthBuckets);
-    const maxSessionChestHealthFlat =
-      Object.values(state.sessionChestHealthDepthBuckets)
-        .reduce((sum, count) => sum + (Number(count) || 0), 0) * CHEST_HEALTH_UPGRADE_FLAT;
+    const maxSessionChestHealthFlat = Object.entries(state.sessionChestHealthDepthBuckets)
+      .reduce((sum, [bucketKey, rawCount]) => {
+        const bucketIndex = Math.max(0, Math.floor(Number(bucketKey) || 0));
+        const count = Math.max(0, Number(rawCount) || 0);
+        return sum + count * getChestHealthUpgradeFlatByBucket(bucketIndex);
+      }, 0);
     state.sessionChestHealthFlat = clamp(
       Math.max(0, Number(snapshot.sessionChestHealthFlat) || 0),
       0,
@@ -2960,6 +3393,7 @@
       hp: Number(snapshot.player.hp) || scaledCombat(BASE_PLAYER_HP),
       maxHp: Number(snapshot.player.maxHp) || scaledCombat(BASE_PLAYER_HP),
       attack: Number(snapshot.player.attack) || scaledCombat(BASE_PLAYER_ATTACK),
+      vampfangHealRun: Math.max(0, Number(snapshot.player.vampfangHealRun) || 0),
       armor: Number(snapshot.player.armor) || scaledCombat(BASE_PLAYER_ARMOR),
       potions: Number(snapshot.player.potions) || 1,
       maxPotions: Math.max(5, Number(snapshot.player.maxPotions) || 5),
@@ -4388,7 +4822,7 @@
 
   function merchantPotionCost() {
     const bought = state.merchantPotionsBought || 0;
-    const base = 10 * Math.pow(2, bought); // 10, 20, 40, 80, 160...
+    const base = Math.min(50, 10 * (bought + 1)); // 10, 20, 30, 40, 50 (cap)
     const discounted = hasRelic("merchfavor") ? Math.round(base * 0.5) : base;
     return Math.round(discounted * (state.runMods?.shopCostMult || 1));
   }
@@ -4478,6 +4912,13 @@
     return relicRuntime.getRelicById(relicId);
   }
 
+  function formatRelicNameForOverlay(relic) {
+    if (!relic) return "";
+    const rarityInfo = RARITY[relic.rarity] || RARITY.normal;
+    const safeName = escapeHtmlAttr(relic.name || "Unknown relic");
+    return `<strong style="color:${rarityInfo.color}">${safeName}</strong>`;
+  }
+
   function isLegendaryRelic(relicId) {
     return relicRuntime.isLegendaryRelic(relicId);
   }
@@ -4546,6 +4987,7 @@
     const before = state.player.hp;
     state.player.hp = Math.min(state.player.maxHp, state.player.hp + healAmount);
     const restored = Math.max(0, state.player.hp - before);
+    state.player.vampfangHealRun = Math.max(0, Number(state.player.vampfangHealRun) || 0) + restored;
     if (restored > 0 && options.visuals !== false) {
       spawnFloatingText(state.player.x, state.player.y, `+${restored}`, "#9ff7a9");
       spawnParticles(state.player.x, state.player.y, "#7fe9a7", 4, 0.8);
@@ -4619,9 +5061,13 @@
       return;
     }
     if (relicId === "titanheart") {
-      state.player.maxHp += scaledCombat(8);
+      const hpBonus = scaledCombat(8);
+      state.player.maxHp += hpBonus;
       state.player.armor += scaledCombat(2);
       state.player.titanAttackPenalty = 0;
+      if (onGain) {
+        state.player.hp = Math.min(state.player.maxHp, state.player.hp + hpBonus);
+      }
       state.player.hp = Math.min(state.player.hp, state.player.maxHp);
       return;
     }
@@ -5129,7 +5575,7 @@
     for (const mutator of unlockedNow) {
       pushLog(`Unlocked: [${mutator.key}] ${mutator.name}!`, "good");
     }
-    pushLog("Camp shop: keys 1-0 buy upgrades. Press R for a new run.");
+    pushLog("Camp shop: keys 1-0 buy upgrades. Press R to choose start depth.");
     saveRunSnapshot();
     markUiDirty();
   }
@@ -5162,12 +5608,12 @@
       state.extractRelicPrompt = null;
       if (soldSummary.count > 0) {
         pushLog(
-          `Relics sold: ${soldSummary.count} for +${soldSummary.total} camp gold. Kept ${state.relics.length}. Camp shop: keys 1-0 buy upgrades. Press R for a new run.`,
+          `Relics sold: ${soldSummary.count} for +${soldSummary.total} camp gold. Kept ${state.relics.length}. Camp shop: keys 1-0 buy upgrades. Press R to choose start depth.`,
           "good"
         );
       } else {
         pushLog(
-          `No relics selected. Relics kept (${state.relics.length}). Camp shop: keys 1-0 buy upgrades. Press R for a new run.`,
+          `No relics selected. Relics kept (${state.relics.length}). Camp shop: keys 1-0 buy upgrades. Press R to choose start depth.`,
           "good"
         );
       }
@@ -5184,11 +5630,75 @@
     state.relicSwapPending = null;
     state.extractRelicPrompt = null;
     pushLog(
-      `Relics kept (${state.relics.length}). You can shop now. Press R to start next run with kept relics.`,
+      `Relics kept (${state.relics.length}). You can shop now. Press R to choose next run start depth.`,
       "good"
     );
     saveRunSnapshot();
     markUiDirty();
+    return true;
+  }
+
+  function getAvailableStartDepths() {
+    const depths = [0];
+    const unlocks = sanitizeStartDepthUnlocks(state.startDepthUnlocks);
+    for (const depth of START_DEPTH_CHECKPOINTS) {
+      if (unlocks[String(depth)]) depths.push(depth);
+    }
+    return depths;
+  }
+
+  function isStartDepthUnlocked(depth) {
+    const normalizedDepth = Math.max(0, Math.floor(Number(depth) || 0));
+    if (normalizedDepth <= 0) return true;
+    return Boolean(sanitizeStartDepthUnlocks(state.startDepthUnlocks)[String(normalizedDepth)]);
+  }
+
+  function getCampStartDepthBySelectionIndex(index = state.campStartDepthSelectionIndex) {
+    const options = getAvailableStartDepths();
+    if (options.length <= 0) return 0;
+    const safeIndex = clamp(Math.floor(Number(index) || 0), 0, options.length - 1);
+    return options[safeIndex];
+  }
+
+  function openCampStartDepthPrompt() {
+    if (state.phase !== "camp") return false;
+    if (state.extractRelicPrompt) return false;
+    const options = getAvailableStartDepths();
+    if (options.length <= 1) {
+      startRun({ carriedRelics: [...state.relics], startDepth: 0 });
+      return true;
+    }
+    state.campStartDepthPromptOpen = true;
+    state.campStartDepthSelectionIndex = options.length - 1;
+    markUiDirty();
+    return true;
+  }
+
+  function closeCampStartDepthPrompt() {
+    if (!state.campStartDepthPromptOpen) return false;
+    state.campStartDepthPromptOpen = false;
+    markUiDirty();
+    return true;
+  }
+
+  function confirmCampStartDepthPrompt() {
+    if (!state.campStartDepthPromptOpen) return false;
+    const selectedDepth = getCampStartDepthBySelectionIndex();
+    state.campStartDepthPromptOpen = false;
+    startRun({ carriedRelics: [...state.relics], startDepth: selectedDepth });
+    return true;
+  }
+
+  function tryUnlockStartDepthFromBossClear(depth = state.depth) {
+    const bossDepth = Math.max(0, Math.floor(Number(depth) || 0));
+    const unlockIndex = START_DEPTH_UNLOCK_BOSS_DEPTHS.indexOf(bossDepth);
+    if (unlockIndex < 0) return false;
+    const startDepth = START_DEPTH_CHECKPOINTS[unlockIndex];
+    const key = String(startDepth);
+    if (state.startDepthUnlocks[key]) return false;
+    state.startDepthUnlocks[key] = true;
+    persistCampProgress();
+    pushLog(`Checkpoint unlocked: start depth ${startDepth} available in camp.`, "good");
     return true;
   }
 
@@ -5289,6 +5799,42 @@
   function getChestAttackBucketIndex(depth = state.depth) {
     const safeDepth = Math.max(0, Number(depth) || 0);
     return Math.floor(safeDepth / CHEST_ATTACK_BUCKET_SIZE);
+  }
+
+  function getChestUpgradeDepthMultiplier(depth = state.depth) {
+    const safeDepth = Math.max(0, Math.floor(Number(depth) || 0));
+    if (safeDepth >= CHEST_UPGRADE_TIER_THREE_MIN_DEPTH) return CHEST_UPGRADE_TIER_THREE_MULT;
+    if (safeDepth >= CHEST_UPGRADE_TIER_TWO_MIN_DEPTH) return CHEST_UPGRADE_TIER_TWO_MULT;
+    return 1;
+  }
+
+  function getChestUpgradeFlatByDepth(baseFlat, depth = state.depth) {
+    const base = Math.max(1, Number(baseFlat) || 1);
+    const mult = getChestUpgradeDepthMultiplier(depth);
+    const scaled = Math.max(1, Math.round(base * mult));
+    if (mult > 1 && scaled <= base) {
+      return base + 1;
+    }
+    return scaled;
+  }
+
+  function getChestUpgradeFlatByBucket(baseFlat, bucketIndex) {
+    const safeBucket = Math.max(0, Math.floor(Number(bucketIndex) || 0));
+    const bucketStartDepth = safeBucket * CHEST_ATTACK_BUCKET_SIZE;
+    return getChestUpgradeFlatByDepth(baseFlat, bucketStartDepth);
+  }
+
+  function getChestHealthUpgradeFlatByDepth(depth = state.depth) {
+    const safeDepth = Math.max(0, Math.floor(Number(depth) || 0));
+    if (safeDepth >= CHEST_UPGRADE_TIER_THREE_MIN_DEPTH) return 10;
+    if (safeDepth >= CHEST_UPGRADE_TIER_TWO_MIN_DEPTH) return 7;
+    return CHEST_HEALTH_UPGRADE_FLAT;
+  }
+
+  function getChestHealthUpgradeFlatByBucket(bucketIndex) {
+    const safeBucket = Math.max(0, Math.floor(Number(bucketIndex) || 0));
+    const bucketStartDepth = safeBucket * CHEST_ATTACK_BUCKET_SIZE;
+    return getChestHealthUpgradeFlatByDepth(bucketStartDepth);
   }
 
   function getChestAttackBucketLabel(bucketIndex) {
@@ -6360,9 +6906,18 @@
       ? options.carriedRelics.filter((id) => typeof id === "string")
       : [];
     const carryRelics = carriedRelics.length > 0;
+    const carriesSoulHarvest = carriedRelics.includes("soulharvest");
+    const requestedStartDepth = clamp(Math.max(0, Math.floor(Number(options.startDepth) || 0)), 0, MAX_DEPTH);
+    const selectedStartDepth = isStartDepthUnlocked(requestedStartDepth) ? requestedStartDepth : 0;
+    const preservedSoulHarvestGained = carriesSoulHarvest
+      ? clamp(Math.max(0, Number(state.player.soulHarvestGained) || 0), 0, 10)
+      : 0;
+    const preservedSoulHarvestCount = carriesSoulHarvest
+      ? Math.max(0, Number(state.player.soulHarvestCount) || 0)
+      : 0;
     stopSplashTrack(true);
     state.phase = "playing";
-    state.depth = 0;
+    state.depth = selectedStartDepth;
     if (!state.currentRunId) {
       state.currentRunId = makeRunId();
       state.currentRunToken = "";
@@ -6395,6 +6950,8 @@
     state.log = [];
     state.extractConfirm = null;
     state.extractRelicPrompt = null;
+    state.campStartDepthPromptOpen = false;
+    state.campStartDepthSelectionIndex = 0;
     state.lastDeathRelicLossText = "";
     state.finalGameOverPrompt = null;
     state.finalVictoryPrompt = null;
@@ -6420,12 +6977,16 @@
     state.observerBot.merchantDoneRoomIndex = -1;
     state.observerBot.stallTicks = 0;
     state.observerBot.lastDecision = "run_start";
+    state.observerBot.traceRunSeq = Math.max(0, Number(state.observerBot.traceRunSeq) || 0) + 1;
+    state.observerBot.traceLastSampleTurn = -1;
+    state.observerBot.traceLastVampfangHeal = 0;
 
     state.merchantPotionsBought = 0;
     state.potionsUsedThisRun = 0;
     state.player.hp = scaledCombat(BASE_PLAYER_HP);
     state.player.maxHp = scaledCombat(BASE_PLAYER_HP);
     state.player.attack = scaledCombat(BASE_PLAYER_ATTACK);
+    state.player.vampfangHealRun = 0;
     state.player.armor = scaledCombat(BASE_PLAYER_ARMOR);
     state.player.potions = 1;
     state.player.maxPotions = 5;
@@ -6437,8 +6998,8 @@
     state.player.lastMoveY = -1;
     state.player.barrierArmor = 0;
     state.player.barrierTurns = 0;
-    state.player.soulHarvestCount = 0;
-    state.player.soulHarvestGained = 0;
+    state.player.soulHarvestCount = carriesSoulHarvest ? preservedSoulHarvestCount : 0;
+    state.player.soulHarvestGained = carriesSoulHarvest ? preservedSoulHarvestGained : 0;
     state.player.chronoUsedThisRun = false;
     state.player.phaseCooldown = 0;
     state.player.titanAttackPenalty = 0;
@@ -6472,6 +7033,10 @@
       }
       normalizeRelicInventory();
     }
+    if (carriesSoulHarvest && preservedSoulHarvestGained > 0) {
+      state.player.maxHp += preservedSoulHarvestGained * scaledCombat(1);
+      state.player.hp = Math.min(state.player.maxHp, state.player.hp);
+    }
     ensureShieldChargeState();
     const carriedChestAttack = applySessionChestAttackBonusToRun();
     const carriedChestArmor = applySessionChestArmorBonusToRun();
@@ -6482,9 +7047,9 @@
     resetObserverBotStallTracker();
     syncBgmWithState(true);
     if (carryRelics) {
-      pushLog(`New run started with ${state.relics.length} carried relics.`);
+      pushLog(`New run started on depth ${selectedStartDepth} with ${state.relics.length} carried relics.`);
     } else {
-      pushLog("New run started.");
+      pushLog(`New run started on depth ${selectedStartDepth}.`);
     }
     if (carriedChestAttack > 0) {
       pushLog(`Session chest attack carried: +${carriedChestAttack} ATK.`, "good");
@@ -6498,6 +7063,11 @@
     if (activeMutatorCount() > 0) {
       pushLog(`Active mutators: ${activeMutatorCount()}.`);
     }
+    appendObserverBotTrace("run_start", {
+      startDepth: selectedStartDepth,
+      carriedRelics: state.relics.length,
+      mutators: activeMutatorCount()
+    }, { force: isObserverBotActive() });
     saveRunSnapshot();
     ensureOnlineRunSessionForCurrentRun(false);
     markUiDirty();
@@ -6568,6 +7138,11 @@
     pushLog(`DEPTH ${MAX_DEPTH} CONQUERED!`, "good");
     pushLog("Abyss shattered. You are the champion of the dungeon.", "good");
     pushLog("Victory achieved. 1 = Main Menu, 2 = Leaderboard.", "good");
+    appendObserverBotTrace("run_victory", {
+      finalDepth,
+      finalGold,
+      finalScore
+    }, { force: isObserverBotActive() });
     markUiDirty();
   }
 
@@ -6580,11 +7155,15 @@
       pushLog("Chrono Loop was already spent this run.", "bad");
     }
     state.simulation.lastGameOverReason = String(reason || "");
+    appendObserverBotTrace("run_death", {
+      reason: String(reason || "")
+    }, { force: isObserverBotActive() });
     registerObserverBotDepthFailure(state.depth, reason);
     recordRunOnLeaderboard("death");
     const lostRelic = loseRandomRelicOnDeath();
+    const lostRelicOverlayName = formatRelicNameForOverlay(lostRelic);
     state.lastDeathRelicLossText = lostRelic
-      ? `Death penalty: lost relic ${lostRelic.name}.`
+      ? `Death penalty: lost relic ${lostRelicOverlayName}.`
       : "Death penalty: no relic lost.";
     state.phase = "dead";
     state.finalVictoryPrompt = null;
@@ -6634,7 +7213,7 @@
         pushLog(`Unlocked: [${mutator.key}] ${mutator.name}.`, "good");
       }
     }
-    pushLog("Press 1-0 to toggle mutators, R to start a new run.");
+    pushLog("Press 1-0 to toggle mutators, R to choose start depth.");
     clearRunSnapshot();
   }
 
@@ -6958,6 +7537,7 @@
         Number(state.lastBossClearDepthThisRun) || 0,
         Number(state.depth) || 0
       );
+      tryUnlockStartDepthFromBossClear(state.depth);
       goldBonus += 10;
       if (state.depth >= MAX_DEPTH) {
         pushLog(`Final boss of depth ${MAX_DEPTH} defeated!`, "good");
@@ -7176,8 +7756,9 @@
     }
 
     const nextBucketCount = incrementChestAttackBucketCount(bucketIndex);
-    state.sessionChestAttackFlat += CHEST_ATTACK_UPGRADE_FLAT;
-    const gainedAttack = addScaledFlatAttack(CHEST_ATTACK_UPGRADE_FLAT);
+    const chestAttackFlat = getChestUpgradeFlatByDepth(CHEST_ATTACK_UPGRADE_FLAT, state.depth);
+    state.sessionChestAttackFlat += chestAttackFlat;
+    const gainedAttack = addScaledFlatAttack(chestAttackFlat);
     pushLog(
       `Chest: Attack +${gainedAttack}. Depth ${bucketLabel} chest ATK ${nextBucketCount}/${CHEST_ATTACK_BUCKET_MAX}.`,
       "good"
@@ -7193,10 +7774,11 @@
       return;
     }
     const nextBucketCount = incrementChestArmorBucketCount(bucketIndex);
-    state.sessionChestArmorFlat += CHEST_ARMOR_UPGRADE_FLAT;
-    state.player.armor += CHEST_ARMOR_UPGRADE_FLAT;
+    const chestArmorFlat = getChestUpgradeFlatByDepth(CHEST_ARMOR_UPGRADE_FLAT, state.depth);
+    state.sessionChestArmorFlat += chestArmorFlat;
+    state.player.armor += chestArmorFlat;
     pushLog(
-      `Chest: Armor +${CHEST_ARMOR_UPGRADE_FLAT}. Depth ${bucketLabel} chest ARM ${nextBucketCount}/${CHEST_ATTACK_BUCKET_MAX}.`,
+      `Chest: Armor +${chestArmorFlat}. Depth ${bucketLabel} chest ARM ${nextBucketCount}/${CHEST_ATTACK_BUCKET_MAX}.`,
       "good"
     );
   }
@@ -7210,11 +7792,12 @@
       return;
     }
     const nextBucketCount = incrementChestHealthBucketCount(bucketIndex);
-    state.sessionChestHealthFlat += CHEST_HEALTH_UPGRADE_FLAT;
-    state.player.maxHp += CHEST_HEALTH_UPGRADE_FLAT;
-    state.player.hp = Math.min(state.player.maxHp, state.player.hp + CHEST_HEALTH_UPGRADE_FLAT);
+    const chestHealthFlat = getChestHealthUpgradeFlatByDepth(state.depth);
+    state.sessionChestHealthFlat += chestHealthFlat;
+    state.player.maxHp += chestHealthFlat;
+    state.player.hp = Math.min(state.player.maxHp, state.player.hp + chestHealthFlat);
     pushLog(
-      `Chest: Health +${CHEST_HEALTH_UPGRADE_FLAT}. Depth ${bucketLabel} chest HP ${nextBucketCount}/${CHEST_ATTACK_BUCKET_MAX}.`,
+      `Chest: Health +${chestHealthFlat}. Depth ${bucketLabel} chest HP ${nextBucketCount}/${CHEST_ATTACK_BUCKET_MAX}.`,
       "good"
     );
   }
@@ -7397,7 +7980,11 @@
 
   function attackEnemy(enemy) {
     if (state.phase !== "playing") return;
-    const base = state.player.attack + getEffectiveAdrenaline() + (state.player.chaosAtkBonus || 0);
+    const furyMult = getFuryAttackPowerMultiplier();
+    const base = Math.max(
+      MIN_EFFECTIVE_DAMAGE,
+      Math.round((state.player.attack + (state.player.chaosAtkBonus || 0)) * furyMult)
+    );
     const critical = chance(state.player.crit);
     let damage = critical ? base * 2 : base;
     enemy.hp -= damage;
@@ -8781,6 +9368,9 @@
         `<div class="statline"><span>Deaths</span><strong>${state.deaths}</strong></div>`,
         `<div class="statline"><span>Continue</span><strong>${state.hasContinueRun ? "YES" : "NO"}</strong></div>`
       ].join("");
+      if (activeEffectsEl) {
+        activeEffectsEl.innerHTML = "";
+      }
       return;
     }
 
@@ -8867,13 +9457,7 @@
         : `<div class="hud-relic-empty">No relics</div>`
     ].join("");
 
-    const activeEffectRows = [
-      statRow(
-        "Crit Total",
-        `${Math.round(state.player.crit * 100)}%`,
-        "Final crit chance after all run bonuses, upgrades, and relics."
-      )
-    ];
+    const activeEffectRows = [];
     if (hasRelic("vampfang")) {
       activeEffectRows.push(
         statRow(
@@ -8889,6 +9473,50 @@
           "Burn DPS",
           `${BURNING_BLADE_DOT_DAMAGE}/turn`,
           "Burning Blade applies this damage each turn for 3 turns."
+        )
+      );
+    }
+    if (hasRelic("soulharvest") || (state.player.soulHarvestGained || 0) > 0) {
+      const gainedStacks = Math.max(0, Number(state.player.soulHarvestGained) || 0);
+      const killProgress = Math.max(0, Number(state.player.soulHarvestCount) || 0) % SOUL_HARVEST_KILL_INTERVAL;
+      const perStackHp = scaledCombat(1);
+      const gainedHp = gainedStacks * perStackHp;
+      const capHp = 10 * perStackHp;
+      const killsToNext = gainedStacks >= 10
+        ? "CAP"
+        : String(Math.max(1, SOUL_HARVEST_KILL_INTERVAL - killProgress));
+      activeEffectRows.push(
+        statRow(
+          "Soul Harvest",
+          `Next +${perStackHp} in ${killsToNext} | Gained +${gainedHp}/${capHp} Max HP`,
+          "Shows kills remaining to next Soul Harvest bonus and total max HP gained this run."
+        )
+      );
+    }
+    if (state.sessionChestAttackFlat > 0) {
+      activeEffectRows.push(
+        statRow(
+          "Chest ATK",
+          `+${state.sessionChestAttackFlat}`,
+          "Flat attack gained from chest upgrades in this run."
+        )
+      );
+    }
+    if (state.sessionChestArmorFlat > 0) {
+      activeEffectRows.push(
+        statRow(
+          "Chest ARM",
+          `+${state.sessionChestArmorFlat}`,
+          "Flat armor gained from chest upgrades in this run."
+        )
+      );
+    }
+    if (state.sessionChestHealthFlat > 0) {
+      activeEffectRows.push(
+        statRow(
+          "Chest Max HP",
+          `+${state.sessionChestHealthFlat}`,
+          "Flat max HP gained from chest upgrades in this run."
         )
       );
     }
@@ -8934,16 +9562,18 @@
       );
     }
     const activeEffectsBody = [
-      statRow("Active Effects", `${Math.max(0, activeEffectRows.length - 1)}`, "Current temporary and relic-driven combat effects."),
-      activeEffectRows.join("")
+      statRow("Active Effects", `${Math.max(0, activeEffectRows.length)}`, "Current temporary and relic-driven combat effects."),
+      activeEffectRows.length > 0 ? activeEffectRows.join("") : `<div class="hud-relic-empty">No active effects</div>`
     ].join("");
 
     hudEl.innerHTML = [
       section(combatRows.join("")),
       section(runMetaRows.join("")),
-      section(relicBody),
-      section(activeEffectsBody)
+      section(relicBody)
     ].join("");
+    if (activeEffectsEl) {
+      activeEffectsEl.innerHTML = activeEffectsBody;
+    }
   }
 
   function buildDepthBadge() {
@@ -8968,10 +9598,17 @@
     if (state.phase === "playing" || state.phase === "relic") {
       const roomLabel = ROOM_TYPE_LABELS[state.roomType] || "Room";
       const bossStatus = state.bossRoom ? "BOSS NOW" : `BOSS IN ${getRoomsUntilBoss()}`;
+      const furyNow = Math.max(0, Number(state.player.adrenaline) || 0);
+      const furyMax = Math.max(0, Number(state.player.maxAdrenaline) || 0);
+      const furyBonus = Math.max(0, Number(getFuryBlessingBonus()) || 0);
+      const effectiveFury = getEffectiveAdrenaline();
+      const effectiveMaxFury = getEffectiveMaxAdrenaline();
+      const furyPctPerStack = Math.round(FURY_ATTACK_POWER_PER_STACK * 100);
+      const furyPctCap = Math.round(FURY_ATTACK_POWER_MAX_BONUS * 100);
       title = `Depth ${state.depth}`;
       subtitle = `${roomLabel} Room - ${bossStatus}${observerBotTag}`;
-      leftMetaTop = `Fury ${getEffectiveAdrenaline()}/${getEffectiveMaxAdrenaline()}`;
-      leftMetaTopTooltip = `Fury is gained mainly by killing enemies (+1 per kill). Some relics and shrine blessings can grant extra Fury. Fury boosts attack damage and powers certain skills.`;
+      leftMetaTop = `Fury ${effectiveFury}/${effectiveMaxFury}`;
+      leftMetaTopTooltip = `Current Fury: ${furyNow}/${furyMax}${furyBonus > 0 ? ` (+${furyBonus} from Fury Blessing)` : ""}. Effective Fury is ${effectiveFury}/${effectiveMaxFury}. Fury is gained mainly on kill (+1, capped by max). Fury grants +${furyPctPerStack}% attack power per stack (cap +${furyPctCap}%). This scales basic attacks and the base damage of Dash/Shockwave. Shockwave still spends all current Fury on cast.`;
       rightMetaTop = `Run Gold ${state.player.gold}`;
       rightMetaBottom = `Potions ${state.player.potions}/${state.player.maxPotions}`;
     } else if (state.phase === "won") {
@@ -9495,7 +10132,8 @@
 
       const sections = getDebugCheatSections();
       const currentSection = getCurrentDebugCheatSection();
-      const sectionRows = getDebugCheatActions()
+      const visibleActions = getVisibleDebugCheatActions();
+      const sectionRows = visibleActions
         .filter((action) => (action.section || "Misc") === currentSection)
         .map((action) => {
           const enabled = action.available ? action.available() : true;
@@ -9518,14 +10156,19 @@
         })
         .join("  ");
       const sectionLabel = `${state.debugCheatSectionIndex + 1}/${sections.length}`;
+      const closeKey = state.debugCheatBotOnly ? DEBUG_BOT_MENU_TOGGLE_KEY : DEBUG_MENU_TOGGLE_KEY;
+      const menuTitle = state.debugCheatBotOnly ? "Observer Bot Menu" : "Debug Cheats";
+      const menuHint = state.debugCheatBotOnly
+        ? `A/D or arrows switch section | listed letter key execute | ${closeKey.toUpperCase()} or Esc close`
+        : `A/D or arrows switch section | 1-0 / listed letter key execute | ${closeKey.toUpperCase()} or Esc close`;
 
       screenOverlayEl.className = "screen-overlay visible";
       screenOverlayEl.innerHTML = [
         `<div class="overlay-card overlay-card-wide">`,
-        `<h2 class="overlay-title">Debug Cheats</h2>`,
+        `<h2 class="overlay-title">${menuTitle}</h2>`,
         `<p class="overlay-sub">God Mode: ${state.debugGodMode ? "ON" : "OFF"} | Observer Bot: ${isObserverBotActive() ? "ON" : "OFF"} | Test Mode: ${TEST_MODE_ENABLED ? "ON" : "OFF"} | Phase: ${state.phase}</p>`,
         `<p class="overlay-sub">Section ${sectionLabel}: ${sectionTabs}</p>`,
-        `<p class="overlay-hint">A/D or arrows switch section | 1-0 / listed letter key execute | ${DEBUG_MENU_TOGGLE_KEY.toUpperCase()} or Esc close</p>`,
+        `<p class="overlay-hint">${menuHint}</p>`,
         `<div class="overlay-menu">${sectionRows}</div>`,
         `</div>`
       ].join("");
@@ -9761,6 +10404,36 @@
       return;
     }
 
+    if (state.phase === "camp" && state.campStartDepthPromptOpen) {
+      const options = getAvailableStartDepths();
+      const safeIndex = clamp(
+        Math.floor(Number(state.campStartDepthSelectionIndex) || 0),
+        0,
+        Math.max(0, options.length - 1)
+      );
+      state.campStartDepthSelectionIndex = safeIndex;
+      const rows = options.map((depth, index) => {
+        const selected = index === safeIndex;
+        const rowClass = ["overlay-menu-row", selected ? "selected" : ""].join(" ").trim();
+        return [
+          `<div class="${rowClass}">`,
+          `<div class="overlay-menu-key">${index + 1}</div>`,
+          `<div><strong>Start Depth ${depth}</strong><br /><span>${depth === 0 ? "Full run (farm/economy)." : "Checkpoint start for push."}</span></div>`,
+          `</div>`
+        ].join("");
+      }).join("");
+      screenOverlayEl.className = "screen-overlay visible";
+      screenOverlayEl.innerHTML = [
+        `<div class="overlay-card overlay-card-wide">`,
+        `<h2 class="overlay-title">Choose Start Depth</h2>`,
+        `<p class="overlay-sub">Unlocked checkpoints this life: ${options.join(", ")}</p>`,
+        `<div class="overlay-menu">${rows}</div>`,
+        `<p class="overlay-hint">W/S or Arrows - move | 1-${options.length} quick select | Enter/Y confirm | Esc/N cancel</p>`,
+        `</div>`
+      ].join("");
+      return;
+    }
+
     let title = "Paused";
     let subtitle = "";
     let subtitleDetail = "";
@@ -9791,6 +10464,7 @@
     } else if (state.phase === "camp") {
       title = "Camp Shop";
       subtitle = `Camp Gold ${state.campGold} | Lives ${state.lives}/${MAX_LIVES}`;
+      subtitleDetail = `Unlocked start depths: ${getAvailableStartDepths().join(", ")}`;
     } else if (state.phase === "relic") {
       if (state.legendarySwapPending) {
         const incoming = getRelicById(state.legendarySwapPending.incomingRelicId);
@@ -9817,8 +10491,8 @@
     if (state.phase === "dead") hint = "R restart | Esc menu";
     if (state.phase === "camp") {
       hint = state.campPanelView === "mutators"
-        ? "1-0 toggle mutators | T shop | R new run"
-        : "1-0 buy upgrade | T mutators | R new run";
+        ? "1-0 toggle mutators | T shop | R choose start depth"
+        : "1-0 buy upgrade | T mutators | R choose start depth";
     }
     if (state.phase === "relic") {
       const draftSize = Math.max(1, (state.relicDraft || []).length);
@@ -11821,6 +12495,10 @@
     state.observerBot.lastPosY = Math.max(0, Number(state.player?.y) || 0);
     state.observerBot.lastEnemyCount = Array.isArray(state.enemies) ? state.enemies.length : 0;
     state.observerBot.lastEnemyHpTotal = getBotEnemyHpTotal();
+    state.observerBot.loopRecentPositions = [];
+    state.observerBot.loopPingPongTicks = 0;
+    state.observerBot.loopPingPongActive = false;
+    state.observerBot.loopAcolytePingPongTicks = 0;
   }
 
   function shouldObserverBotForceAggro() {
@@ -11954,9 +12632,16 @@
   function getEnemyRangedRangeForBot(enemy) {
     if (!enemy) return 0;
     if (enemy.type === "skeleton") return Math.max(2, Number(enemy.range) || 3);
-    if (enemy.type === "acolyte") return Math.max(2, Number(enemy.range) || 4);
+    // Acolyte has support cast (ally buff), not a direct ranged damage attack.
+    // Treating it as ranged threat makes bot over-defensive and causes stalls.
+    if (enemy.type === "acolyte") return 0;
     if (enemy.type === "warden") return Math.max(2, Number(enemy.range) || 4);
     return 0;
+  }
+
+  function isAcolyteOnlyRoomForBot() {
+    if (!Array.isArray(state.enemies) || state.enemies.length <= 0) return false;
+    return state.enemies.every((enemy) => enemy && enemy.type === "acolyte");
   }
 
   function buildObserverBotThreatMap(options = {}) {
@@ -12190,7 +12875,11 @@
   }
 
   function getObserverBotExpectedMeleeDamage() {
-    const base = state.player.attack + getEffectiveAdrenaline() + (state.player.chaosAtkBonus || 0);
+    const furyMult = getFuryAttackPowerMultiplier();
+    const base = Math.max(
+      MIN_EFFECTIVE_DAMAGE,
+      Math.round((state.player.attack + (state.player.chaosAtkBonus || 0)) * furyMult)
+    );
     const critExpectedMult = 1 + Math.max(0, Number(state.player.crit) || 0) * 0.35;
     return Math.max(MIN_EFFECTIVE_DAMAGE, Math.round(base * critExpectedMult));
   }
@@ -12332,7 +13021,8 @@
       const aoeTier = getSkillTier("aoe");
       const radius = aoeTier >= 2 ? 2 : 1;
       const furySpent = Math.max(0, Math.floor(Number(state.player.adrenaline) || 0));
-      let baseDamage = Math.max(MIN_EFFECTIVE_DAMAGE, state.player.attack + Math.floor(getEffectiveAdrenaline() / 2));
+      const furyMult = getFuryAttackPowerMultiplier();
+      let baseDamage = Math.max(MIN_EFFECTIVE_DAMAGE, Math.round(state.player.attack * furyMult));
       if (aoeTier >= 1) {
         baseDamage = Math.max(MIN_EFFECTIVE_DAMAGE, Math.round(baseDamage * 1.5));
       }
@@ -12377,6 +13067,10 @@
           outgoingDamage = predictedDamage;
           kills = (Number(enemy.hp) || 0) <= predictedDamage ? 1 : 0;
           score += weights.kill * policy.aggression * (28 + predictedDamage * 0.22 + kills * 70);
+          if (enemy.type === "acolyte" && isAcolyteOnlyRoomForBot()) {
+            // If only acolytes remain, clean them up aggressively instead of kiting.
+            score += 38;
+          }
         }
       } else {
         resultX = nx;
@@ -12459,7 +13153,8 @@
       const aoeTier = getSkillTier("aoe");
       const radius = aoeTier >= 2 ? 2 : 1;
       const furySpent = Math.max(0, Math.floor(Number(state.player.adrenaline) || 0));
-      let baseDamage = Math.max(MIN_EFFECTIVE_DAMAGE, state.player.attack + Math.floor(getEffectiveAdrenaline() / 2));
+      const furyMult = getFuryAttackPowerMultiplier();
+      let baseDamage = Math.max(MIN_EFFECTIVE_DAMAGE, Math.round(state.player.attack * furyMult));
       if (aoeTier >= 1) {
         baseDamage = Math.max(MIN_EFFECTIVE_DAMAGE, Math.round(baseDamage * 1.5));
       }
@@ -12475,7 +13170,11 @@
       simX = landing.x;
       simY = landing.y;
       const dashTier = getSkillTier("dash");
-      const lineDamage = Math.max(MIN_EFFECTIVE_DAMAGE, state.player.attack + scaledCombat(1));
+      const furyMult = getFuryAttackPowerMultiplier();
+      const lineDamage = Math.max(
+        MIN_EFFECTIVE_DAMAGE,
+        Math.round((state.player.attack + scaledCombat(1)) * furyMult)
+      );
       for (const enemy of simEnemies) {
         if (
           (candidate.dx !== 0 && enemy.y === simY && Math.sign(enemy.x - state.player.x) === Math.sign(candidate.dx)) ||
@@ -13406,6 +14105,14 @@
     state.observerBot.farmGuardTarget = guardTarget;
     state.observerBot.farmVitalityTarget = vitalityTarget;
     state.observerBot.farmBladeTarget = bladeTarget;
+    appendObserverBotTrace("farm_mode_configured", {
+      targetDepth,
+      failures: safeFailures,
+      guardTarget,
+      vitalityTarget,
+      bladeTarget,
+      goldTarget
+    });
   }
 
   function registerObserverBotDepthFailure(depth, reason = "") {
@@ -13427,10 +14134,20 @@
       state.observerBot.farmGuardTarget = 0;
       state.observerBot.farmVitalityTarget = 0;
       state.observerBot.farmBladeTarget = 0;
+      appendObserverBotTrace("depth_failed_retry", {
+        failedDepth: safeDepth,
+        failures,
+        reason: String(reason || "")
+      });
       pushLog(`Observer Bot: depth ${safeDepth} failed once. Retrying without farm mode.`, "warn");
       return;
     }
     configureObserverBotDepthPressure(safeDepth, failures);
+    appendObserverBotTrace("depth_failed_farm", {
+      failedDepth: safeDepth,
+      failures,
+      reason: String(reason || "")
+    });
     pushLog(
       `Observer Bot: depth ${safeDepth} too hard. Farming for Guard ${state.observerBot.farmGuardTarget}, Vitality ${state.observerBot.farmVitalityTarget}, Blade ${state.observerBot.farmBladeTarget}.`,
       "warn"
@@ -13447,6 +14164,10 @@
     }
     if (safeDepth >= pressureDepth) {
       clearObserverBotDepthPressure();
+      appendObserverBotTrace("farm_mode_cleared", {
+        clearedDepth: safeDepth,
+        previousPressureDepth: pressureDepth
+      });
       pushLog(`Observer Bot: depth ${safeDepth} stabilized. Farming mode disabled.`, "good");
       return;
     }
@@ -14107,7 +14828,8 @@
     const aoeTier = getSkillTier("aoe");
     const radius = aoeTier >= 2 ? 2 : 1;
     const furySpent = Math.max(0, Math.floor(Number(state.player.adrenaline) || 0));
-    let baseDamage = Math.max(MIN_EFFECTIVE_DAMAGE, state.player.attack + Math.floor(getEffectiveAdrenaline() / 2));
+    const furyMult = getFuryAttackPowerMultiplier();
+    let baseDamage = Math.max(MIN_EFFECTIVE_DAMAGE, Math.round(state.player.attack * furyMult));
     if (aoeTier >= 1) {
       baseDamage = Math.max(MIN_EFFECTIVE_DAMAGE, Math.round(baseDamage * 1.5));
     }
@@ -14139,7 +14861,11 @@
   function evaluateObserverBotDashDirection(dx, dy) {
     const dashTier = getSkillTier("dash");
     const maxDashTiles = dashTier >= 2 ? 4 : 3;
-    let dashDamage = state.player.attack + scaledCombat(1) + Math.floor(getEffectiveAdrenaline() / 2);
+    const furyMult = getFuryAttackPowerMultiplier();
+    let dashDamage = Math.max(
+      MIN_EFFECTIVE_DAMAGE,
+      Math.round((state.player.attack + scaledCombat(1)) * furyMult)
+    );
     if (dashTier >= 1) {
       dashDamage = Math.max(MIN_EFFECTIVE_DAMAGE, dashDamage * 2);
     }
@@ -14342,6 +15068,16 @@
     return false;
   }
 
+  function chooseObserverBotCampStartDepth() {
+    const options = getAvailableStartDepths();
+    if (options.length <= 0) return 0;
+    if (options.length === 1) return options[0];
+    if (state.observerBot?.farmMode) return 0;
+    const pressureStatus = getObserverBotDepthPressureStatus({ includeRunGold: false });
+    if (pressureStatus.active) return 0;
+    return options[options.length - 1];
+  }
+
   function runObserverBotCampAction() {
     if (state.phase !== "camp") return false;
     if (state.extractRelicPrompt) {
@@ -14363,7 +15099,8 @@
         return true;
       }
     }
-    startRun({ carriedRelics: [...state.relics] });
+    const startDepth = chooseObserverBotCampStartDepth();
+    startRun({ carriedRelics: [...state.relics], startDepth });
     state.observerBot.lastDecision = "camp_start_run";
     return true;
   }
@@ -14417,8 +15154,39 @@
     if (!isObserverBotActive()) return;
     state.observerBot.actionTimerMs -= dt;
     if (state.observerBot.actionTimerMs > 0) return;
+    const prevDecision = String(state.observerBot.lastDecision || "idle");
+    const prevPhase = String(state.phase || "playing");
+    const prevDepth = Math.max(0, Number(state.depth) || 0);
+    const prevRoomIndex = Math.max(0, Number(state.roomIndex) || 0);
+    const prevFarmMode = Boolean(state.observerBot.farmMode);
     state.observerBot.actionTimerMs = Math.max(30, Number(state.observerBot.actionIntervalMs) || 180);
-    runObserverBotStep();
+    const acted = Boolean(runObserverBotStep());
+    updateObserverBotLoopTracker();
+    const nextDecision = String(state.observerBot.lastDecision || "idle");
+    const nextPhase = String(state.phase || "playing");
+    const nextDepth = Math.max(0, Number(state.depth) || 0);
+    const nextRoomIndex = Math.max(0, Number(state.roomIndex) || 0);
+    const decisionChanged = nextDecision !== prevDecision;
+    const phaseChanged = nextPhase !== prevPhase;
+    const depthChanged = nextDepth !== prevDepth;
+    const roomChanged = nextRoomIndex !== prevRoomIndex;
+    const farmModeChanged = Boolean(state.observerBot.farmMode) !== prevFarmMode;
+    const traceTurn = Math.max(0, Number(state.turn) || 0);
+    const periodicTick = traceTurn % OBSERVER_TRACE_TURN_INTERVAL === 0 &&
+      traceTurn !== Math.max(-1, Number(state.observerBot.traceLastSampleTurn) || -1);
+    if (acted || decisionChanged || phaseChanged || depthChanged || roomChanged || farmModeChanged || periodicTick) {
+      appendObserverBotTrace("tick", {
+        acted,
+        decisionChanged,
+        phaseChanged,
+        depthChanged,
+        roomChanged,
+        farmModeChanged,
+        prevDecision,
+        nextDecision
+      });
+      state.observerBot.traceLastSampleTurn = traceTurn;
+    }
   }
 
   // Console API: DungeonSimRunner.run({ runs: 1000, seed: "patch-xyz" })
@@ -14498,6 +15266,7 @@
       key === "m" ||
       key === DEBUG_AI_OVERLAY_TOGGLE_KEY ||
       key === DEBUG_MENU_TOGGLE_KEY ||
+      key === DEBUG_BOT_MENU_TOGGLE_KEY ||
       key === "escape" ||
       key === "enter" ||
       key === " " ||
@@ -14536,7 +15305,12 @@
     }
 
     if (canUseDebugCheats() && key === DEBUG_MENU_TOGGLE_KEY) {
-      toggleDebugCheatMenu();
+      toggleDebugCheatMenu(null, { botOnly: false });
+      return;
+    }
+
+    if (canUseDebugCheats() && key === DEBUG_BOT_MENU_TOGGLE_KEY) {
+      toggleDebugCheatMenu(null, { botOnly: true });
       return;
     }
 
@@ -14576,6 +15350,37 @@
         return;
       }
       if (triggerDebugCheatHotkey(key)) {
+        return;
+      }
+      return;
+    }
+
+    if (state.phase === "camp" && state.campStartDepthPromptOpen) {
+      const options = getAvailableStartDepths();
+      if (key === "arrowup" || key === "w") {
+        state.campStartDepthSelectionIndex = (state.campStartDepthSelectionIndex - 1 + options.length) % options.length;
+        markUiDirty();
+        return;
+      }
+      if (key === "arrowdown" || key === "s") {
+        state.campStartDepthSelectionIndex = (state.campStartDepthSelectionIndex + 1) % options.length;
+        markUiDirty();
+        return;
+      }
+      if (key >= "1" && key <= "9") {
+        const index = Number(key) - 1;
+        if (index >= 0 && index < options.length) {
+          state.campStartDepthSelectionIndex = index;
+          confirmCampStartDepthPrompt();
+        }
+        return;
+      }
+      if (isConfirm || key === "y" || key === "r") {
+        confirmCampStartDepthPrompt();
+        return;
+      }
+      if (key === "escape" || key === "n") {
+        closeCampStartDepthPrompt();
         return;
       }
       return;
@@ -14872,8 +15677,10 @@
     }
 
     if (key === "r") {
-      if (state.phase === "camp" || state.phase === "dead") {
-        startRun({ carriedRelics: [...state.relics] });
+      if (state.phase === "camp") {
+        openCampStartDepthPrompt();
+      } else if (state.phase === "dead") {
+        startRun({ carriedRelics: [...state.relics], startDepth: 0 });
       } else if (state.phase === "playing" || state.phase === "relic") {
         pushLog("Restart disabled during a run. Use Esc -> menu if needed.", "bad");
       }

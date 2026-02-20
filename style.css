@@ -834,6 +834,7 @@ canvas.boss-pulse {
 }
 
 .actions,
+.active-effects,
 .mutators,
 .log {
   border: 1px solid #ffffff1a;
@@ -847,6 +848,16 @@ canvas.boss-pulse {
   min-height: 44px;
   font-size: 0.94rem;
   line-height: 1.45;
+}
+
+.active-effects {
+  background: #0f141c;
+  display: grid;
+  gap: 4px;
+}
+
+.active-effects .statline span[title] {
+  cursor: help;
 }
 
 .log {
