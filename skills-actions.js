@@ -441,15 +441,15 @@
     function tryUseShieldSkill() {
       const skill = SKILL_BY_ID.shield;
       const shieldTier = getSkillTier(skill.id);
-      const shieldCharges = shieldTier >= 1 && typeof getShieldChargesInfo === "function"
+      const shieldCharges = shieldTier >= 2 && typeof getShieldChargesInfo === "function"
         ? getShieldChargesInfo()
         : null;
       const remaining = getSkillCooldownRemaining(skill.id);
-      if (shieldTier < 1 && remaining > 0) {
+      if (shieldTier < 2 && remaining > 0) {
         pushLog(`${skill.name} cooldown: ${remaining} turns.`, "bad");
         return false;
       }
-      if (shieldTier >= 1) {
+      if (shieldTier >= 2) {
         if (!shieldCharges || shieldCharges.charges <= 0) {
           const regenTurns = Math.max(1, Number(shieldCharges?.regenTurns) || 1);
           pushLog(`${skill.name} charges empty. Next charge in ${regenTurns} turns.`, "bad");
@@ -460,7 +460,7 @@
         pushLog("Shield is already active.", "bad");
         return false;
       }
-      if (shieldTier >= 1 && typeof consumeShieldCharge === "function" && !consumeShieldCharge()) {
+      if (shieldTier >= 2 && typeof consumeShieldCharge === "function" && !consumeShieldCharge()) {
         pushLog(`${skill.name} charge could not be consumed.`, "bad");
         return false;
       }
@@ -521,7 +521,7 @@
         }
       }
       setShake(1.2);
-      const shieldChargesAfter = shieldTier >= 1 && typeof getShieldChargesInfo === "function"
+      const shieldChargesAfter = shieldTier >= 2 && typeof getShieldChargesInfo === "function"
         ? getShieldChargesInfo()
         : null;
       pushLog(
@@ -534,8 +534,13 @@
         }.`,
         "good"
       );
-      if (shieldTier < 1) {
-        putSkillOnCooldown(skill.id);
+      if (shieldTier < 2) {
+        if (shieldTier === 1) {
+          // Rare: skrócony cooldown 15 (zamiast bazowego 20). +1 offsetuje tick w tej samej turze.
+          state.skillCooldowns[skill.id] = 16;
+        } else {
+          putSkillOnCooldown(skill.id);
+        }
       }
       finalizeTurn();
       return true;

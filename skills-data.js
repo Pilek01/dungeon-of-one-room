@@ -40,8 +40,8 @@
       { tier: 3, label: "Legendary", cost: 2400, desc: "Overload Wave: ring1 120%, ring2 80%. Ring1 disorients for 2 turns." }
     ],
     shield: [
-      { tier: 1, label: "Rare", cost: 300, desc: "Shield stores 2 charges. One returns every 20 turns. Cast pushes nearby enemies." },
-      { tier: 2, label: "Epic", cost: 600, desc: "Keeps Rare charge system. Blocking reflects x2 damage and taunts enemies." },
+      { tier: 1, label: "Rare", cost: 300, desc: "Cooldown reduced to 15 turns. Cast pushes nearby enemies." },
+      { tier: 2, label: "Epic", cost: 600, desc: "2 charges, one returns every 25 turns. Blocking reflects x2 damage." },
       { tier: 3, label: "Legendary", cost: 1200, desc: "Aegis Counter: store 40% blocked damage. On fade, blast 2 rings." }
     ]
   };

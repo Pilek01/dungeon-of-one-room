@@ -231,6 +231,10 @@
       return !hasUsedWardenFirstDropAtDepth(safeDepth);
     }
 
+    function getRelicsByRarity(rarity) {
+      return RELICS.filter(r => r.rarity === rarity);
+    }
+
     return {
       hasRelic,
       getRelicById,
@@ -257,7 +261,8 @@
       getWardenDepthKey,
       hasUsedWardenFirstDropAtDepth,
       markWardenFirstDropUsedAtDepth,
-      shouldForceWardenFirstDrop
+      shouldForceWardenFirstDrop,
+      getRelicsByRarity
     };
   }
 

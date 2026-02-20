@@ -136,8 +136,11 @@
   const CHRONO_LOOP_BURST_DAMAGE = 10 * COMBAT_SCALE;
   const CHRONO_LOOP_BURST_RADIUS = 2;
   const VOID_REAPER_CRIT_KILL_GOLD = 10;
-  const SHIELD_RARE_CHARGE_MAX = 2;
-  const SHIELD_RARE_CHARGE_REGEN_TURNS = 20;
+  const SHIELD_RARE_COOLDOWN = 15;
+  const SHIELD_EPIC_CHARGE_MAX = 2;
+  const SHIELD_EPIC_CHARGE_REGEN_TURNS = 25;
+  const SHIELD_RARE_CHARGE_MAX = SHIELD_EPIC_CHARGE_MAX;   // kept for legacy clamp refs
+  const SHIELD_RARE_CHARGE_REGEN_TURNS = SHIELD_EPIC_CHARGE_REGEN_TURNS; // kept for legacy clamp refs
   const CHAOS_ORB_ROLL_INTERVAL = 10;
   const CHAOS_ORB_ATK_BONUS = 2 * COMBAT_SCALE; // +20 ATK
   const CHAOS_ORB_KILL_HEAL = 2 * COMBAT_SCALE; // +20 HP per kill
@@ -1462,6 +1465,11 @@
     finalVictoryPrompt: null,
     merchantMenuOpen: false,
     merchantUpgradeBoughtThisRoom: false,
+    merchantSecondChancePurchases: 0,
+    merchantRelicSlot: null,
+    merchantServiceSlot: null,
+    blackMarketPending: null,
+    merchantRelicSwapPending: null,
     dashAimActive: false,
     relicDraft: null,
     legendarySwapPending: null,
@@ -1600,6 +1608,8 @@
       autoPotionCooldown: 0,
       dashImmunityTurns: 0,
       furyBlessingTurns: 0,
+      combatBoostTurns: 0,
+      hasSecondChance: false,
       shrineAttackBonus: 0,
       shrineAttackTurns: 0,
       shrineArmorBonus: 0,
@@ -1643,6 +1653,15 @@
     persistWardenFirstDropDepths
   });
 
+  const MERCHANT_RELIC_TIERS = [
+    { rarity: "normal",    weight: 60, price: 300 },
+    { rarity: "rare",      weight: 25, price: 600 },
+    { rarity: "epic",      weight: 12, price: 1000 },
+    { rarity: "legendary", weight: 3,  price: 2000 },
+  ];
+  const MERCHANT_SERVICE_POOL = ["fullheal", "combatboost", "secondchance", "blackmarket"];
+  const MERCHANT_SECOND_CHANCE_MAX_PURCHASES = 5;
+
   const campRuntime = campRuntimeApi.create({
     state,
     isOnMerchant,
@@ -1662,7 +1681,13 @@
     saveRunSnapshot,
     grantPotion,
     merchantPotionCost,
-    STORAGE_TOTAL_MERCHANT_POTS
+    STORAGE_TOTAL_MERCHANT_POTS,
+    applyRelic,
+    hasRelic,
+    removeRelic,
+    getRelicById,
+    MERCHANT_SECOND_CHANCE_MAX_PURCHASES,
+    MAX_RELICS
   });
 
   const skillsActionsApi = skillsActionsApiFactory.create({
@@ -3720,6 +3745,8 @@
       autoPotionCooldown: Math.max(0, Number(snapshot.player.autoPotionCooldown) || 0),
       dashImmunityTurns: Math.max(0, Number(snapshot.player.dashImmunityTurns) || 0),
       furyBlessingTurns: Math.max(0, Number(snapshot.player.furyBlessingTurns) || 0),
+      combatBoostTurns: Math.max(0, Number(snapshot.player.combatBoostTurns) || 0),
+      hasSecondChance: Boolean(snapshot.player.hasSecondChance),
       shrineAttackBonus: Math.max(0, Number(snapshot.player.shrineAttackBonus) || 0),
       shrineAttackTurns: Math.max(0, Number(snapshot.player.shrineAttackTurns) || 0),
       shrineArmorBonus: Math.max(0, Number(snapshot.player.shrineArmorBonus) || 0),
@@ -3863,6 +3890,11 @@
     state.nameModalOpen = false;
     state.nameModalAction = null;
     state.merchantUpgradeBoughtThisRoom = Boolean(snapshot.merchantUpgradeBoughtThisRoom);
+    state.merchantSecondChancePurchases = Math.max(0, Number(snapshot.merchantSecondChancePurchases) || 0);
+    state.merchantRelicSlot = null;
+    state.merchantServiceSlot = null;
+    state.blackMarketPending = null;
+    state.merchantRelicSwapPending = null;
 
     state.hasContinueRun = true;
     ensureOnlineRunSessionForCurrentRun(false);
@@ -5150,6 +5182,31 @@
     return type;
   }
 
+  function generateMerchantSlots() {
+    // --- Relic slot ---
+    const totalWeight = MERCHANT_RELIC_TIERS.reduce((s, t) => s + t.weight, 0);
+    let roll = Math.random() * totalWeight;
+    let chosenTier = MERCHANT_RELIC_TIERS[MERCHANT_RELIC_TIERS.length - 1];
+    for (const tier of MERCHANT_RELIC_TIERS) {
+      roll -= tier.weight;
+      if (roll <= 0) { chosenTier = tier; break; }
+    }
+    const relicsOfTier = relicRuntime.getRelicsByRarity(chosenTier.rarity);
+    const unowned = relicsOfTier.filter(r => !state.relics.includes(r.id));
+    const pool = unowned.length > 0 ? unowned : relicsOfTier;
+    const chosenRelic = pool[Math.floor(Math.random() * pool.length)];
+    let relicPrice = chosenTier.price;
+    if (hasRelic("merchfavor")) relicPrice = Math.round(relicPrice * 0.5);
+    state.merchantRelicSlot = chosenRelic ? { relicId: chosenRelic.id, price: relicPrice } : null;
+
+    // --- Service slot ---
+    const availableServices = MERCHANT_SERVICE_POOL.filter(s => {
+      if (s === "secondchance" && state.merchantSecondChancePurchases >= MERCHANT_SECOND_CHANCE_MAX_PURCHASES) return false;
+      return true;
+    });
+    state.merchantServiceSlot = availableServices[Math.floor(Math.random() * availableServices.length)] || null;
+  }
+
   function merchantPotionCost() {
     const bought = state.merchantPotionsBought || 0;
     const base = Math.min(50, 10 * (bought + 1)); // 10, 20, 30, 40, 50 (cap)
@@ -5212,6 +5269,9 @@
   }
 
   function openMerchantMenu() {
+    if (!state.merchantRelicSlot && !state.merchantServiceSlot) {
+      generateMerchantSlots();
+    }
     return campRuntime.openMerchantMenu();
   }
 
@@ -5225,6 +5285,30 @@
 
   function tryBuyPotionFromMerchant() {
     return campRuntime.tryBuyPotionFromMerchant();
+  }
+
+  function tryBuyRelicFromMerchant() {
+    return campRuntime.tryBuyRelicFromMerchant();
+  }
+
+  function tryBuyFullHeal() {
+    return campRuntime.tryBuyFullHeal();
+  }
+
+  function tryBuyCombatBoost() {
+    return campRuntime.tryBuyCombatBoost();
+  }
+
+  function tryBuySecondChance() {
+    return campRuntime.tryBuySecondChance();
+  }
+
+  function tryUseBlackMarket(relicId) {
+    return campRuntime.tryUseBlackMarket(relicId);
+  }
+
+  function tryMerchantRelicSwap(idx) {
+    return campRuntime.tryBuyRelicSwap(idx);
   }
 
   function pickEliteAffix() {
@@ -6510,7 +6594,7 @@
   }
 
   function getShieldChargeMaxByTier(tier = getSkillTier("shield")) {
-    return tier >= 1 ? SHIELD_RARE_CHARGE_MAX : 1;
+    return tier >= 2 ? SHIELD_EPIC_CHARGE_MAX : 1;
   }
 
   function ensureShieldChargeState() {
@@ -6522,7 +6606,7 @@
     if (tier < LEGENDARY_SKILL_TIER) {
       state.player.shieldStoredDamage = 0;
     }
-    if (tier < 1) {
+    if (tier < 2) {
       state.player.shieldCharges = 1;
       state.player.shieldChargeRegenTurns = 0;
       return { enabled: false, max: 1, charges: 1, regenTurns: 0 };
@@ -6830,6 +6914,18 @@
       pushLog(fadeLog, "bad");
     }
     return true;
+  }
+
+  function tickCombatBoost() {
+    if (state.player.combatBoostTurns > 0) {
+      state.player.combatBoostTurns -= 1;
+      if (state.player.combatBoostTurns <= 0) {
+        state.player.combatBoostTurns = 0;
+        state.player.attack = Math.max(MIN_EFFECTIVE_DAMAGE, state.player.attack - 20);
+        state.player.armor = Math.max(0, state.player.armor - 20);
+        pushLog("Combat Boost fades.", "bad");
+      }
+    }
   }
 
   function tickFuryBlessing() {
@@ -7534,6 +7630,10 @@
     state.extractConfirm = null;
     state.merchantMenuOpen = false;
     state.merchantUpgradeBoughtThisRoom = false;
+    state.merchantRelicSlot = null;
+    state.merchantServiceSlot = null;
+    state.blackMarketPending = null;
+    state.merchantRelicSwapPending = null;
     state.dashAimActive = false;
     state.bossRoom = isBossDepth();
     state.shrine = null;
@@ -7669,6 +7769,11 @@
     state.nameModalAction = null;
     state.merchantMenuOpen = false;
     state.merchantUpgradeBoughtThisRoom = false;
+    state.merchantSecondChancePurchases = 0;
+    state.merchantRelicSlot = null;
+    state.merchantServiceSlot = null;
+    state.blackMarketPending = null;
+    state.merchantRelicSwapPending = null;
     state.dashAimActive = false;
     state.relicDraft = null;
     state.legendarySwapPending = null;
@@ -7725,6 +7830,8 @@
     state.player.autoPotionCooldown = 0;
     state.player.dashImmunityTurns = 0;
     state.player.furyBlessingTurns = 0;
+    state.player.combatBoostTurns = 0;
+    state.player.hasSecondChance = false;
     state.player.shrineAttackBonus = 0;
     state.player.shrineAttackTurns = 0;
     state.player.shrineArmorBonus = 0;
@@ -7869,6 +7976,13 @@
     if (state.player.hp <= 0 && tryTriggerChronoLoop("fatal blow")) {
       return;
     }
+    if (state.player.hp <= 0 && state.player.hasSecondChance) {
+      state.player.hasSecondChance = false;
+      state.player.hp = Math.min(100, state.player.maxHp);
+      pushLog("Second Chance activated! Survived with 100 HP.", "good");
+      markUiDirty();
+      return;
+    }
     if (state.player.hp <= 0 && hasRelic("chronoloop") && state.player.chronoUsedThisRun) {
       pushLog("Chrono Loop was already spent this run.", "bad");
     }
@@ -7895,6 +8009,11 @@
     state.enemyDebugPlans = [];
     state.extractConfirm = null;
     state.merchantMenuOpen = false;
+    if (state.player.combatBoostTurns > 0) {
+      state.player.attack = Math.max(MIN_EFFECTIVE_DAMAGE, state.player.attack - 20);
+      state.player.armor = Math.max(0, state.player.armor - 20);
+      state.player.combatBoostTurns = 0;
+    }
     syncBgmWithState();
     const usedSample = playDeathTrack();
     if (!usedSample && !state.audioMuted) {
@@ -10012,6 +10131,7 @@
     tickDashImmunity();
     tickQuickloaderBuff();
     tickFuryBlessing();
+    tickCombatBoost();
     tickBarrier();
     state.playerHitEnemyThisTurn = false;
     saveMetaProgress();
@@ -10599,6 +10719,16 @@
         statRow("Fury Bless", `${state.player.furyBlessingTurns}T`, "Fury Blessing active: +2 effective Fury.")
       );
     }
+    if (state.player.combatBoostTurns > 0) {
+      activeEffectRows.push(
+        statRow("Combat Boost", `+20 ATK/ARM (${state.player.combatBoostTurns}T)`, "Temporary combat boost from merchant: +20 ATK and +20 ARM.")
+      );
+    }
+    if (state.player.hasSecondChance) {
+      activeEffectRows.push(
+        statRow("Second Chance", "Ready", "You will survive the next fatal blow with 100 HP.")
+      );
+    }
     if (state.player.shrineAttackTurns > 0 && state.player.shrineAttackBonus > 0) {
       activeEffectRows.push(
         statRow(
@@ -10922,7 +11052,18 @@
       return;
     }
     if (state.phase === "playing" && state.merchantMenuOpen) {
-      actionsEl.textContent = "Merchant menu: 1 potion (run + camp gold), 2 dash/3 shockwave/4 shield (run + camp gold). E/Esc - close.";
+      const relicSlot = state.merchantRelicSlot;
+      const serviceSlot = state.merchantServiceSlot;
+      const relicHint = relicSlot ? `5 relic (${relicSlot.price}g)` : "";
+      const serviceHints = {
+        fullheal: "6 Full Heal (150g)",
+        combatboost: "6 Combat Boost (200g)",
+        secondchance: "6 Second Chance (800g)",
+        blackmarket: "6 Black Market (trade)",
+      };
+      const serviceHint = serviceSlot ? (serviceHints[serviceSlot] || "") : "";
+      const extras = [relicHint, serviceHint].filter(Boolean).join(", ");
+      actionsEl.textContent = `Merchant: 1 potion, 2/3/4 skill upgrades${extras ? ", " + extras : ""}. E/Esc close.`;
       return;
     }
     if (state.phase === "playing" && state.dashAimActive) {
@@ -10956,8 +11097,7 @@
       return;
     }
     if (isOnMerchant()) {
-      const cost = merchantPotionCost();
-      actionsEl.textContent = `Merchant: Press E to open shop (potion ${cost}g). Press Q for emergency extract. Press F for potion.`;
+      actionsEl.textContent = `Merchant: Press E to open shop. Press Q for emergency extract. Press F for potion.`;
       return;
     }
     if (isOnPortal()) {
@@ -11567,7 +11707,7 @@
     } else if (state.phase === "playing" && state.merchantMenuOpen) {
       title = "Merchant";
       subtitle = `Run ${state.player.gold} | Camp ${state.campGold} | Total ${getMerchantUpgradeWalletTotal()} | Potions ${state.player.potions}/${state.player.maxPotions}`;
-      hint = "1 potion | 2 dash | 3 shockwave | 4 shield | E/Esc close";
+      hint = "1 potion | 2 dash | 3 shockwave | 4 shield | 5 relic | 6 service | E/Esc close";
     } else if (state.phase === "boot") {
       // Boot handled by HTML overlay
       return;
@@ -11719,13 +11859,116 @@
         );
       };
 
-      const rows = [
-        buildMerchantRow("1", "Potion", potionBody, { disabled: potionDisabled }),
-        buildSkillRow("2", "dash"),
-        buildSkillRow("3", "aoe"),
-        buildSkillRow("4", "shield")
-      ].join("");
-      menuBlock = `<div class="overlay-menu">${rows}</div>`;
+      // Slot 5 — Relic
+      const relicSlot = state.merchantRelicSlot;
+      let relicRow = "";
+      if (relicSlot) {
+        const slotRelic = getRelicById(relicSlot.relicId);
+        const slotRelicName = slotRelic ? slotRelic.name : relicSlot.relicId;
+        const slotRelicDesc = slotRelic ? slotRelic.desc : "";
+        const relicRarityLabel = slotRelic ? (RARITY[slotRelic.rarity]?.label || slotRelic.rarity) : "";
+        const relicTierClass = getMerchantTierClass(relicRarityLabel);
+        const relicCanAfford = getMerchantUpgradeWalletTotal() >= relicSlot.price;
+        relicRow = buildMerchantRow(
+          "5",
+          `${slotRelicName}`,
+          `${slotRelicDesc ? slotRelicDesc + " " : ""}Cost ${relicSlot.price} gold.${!relicCanAfford ? ` Need ${relicSlot.price} gold.` : ""}`,
+          { disabled: !relicCanAfford, tierLabel: relicRarityLabel, tierClass: relicTierClass }
+        );
+      } else {
+        relicRow = buildMerchantRow("5", "Relic", "No relic available.", { disabled: true });
+      }
+
+      // Slot 6 — Service
+      const serviceSlot = state.merchantServiceSlot;
+      let serviceRow = "";
+      if (serviceSlot === "fullheal") {
+        const healCost = hasRelic("merchfavor") ? 75 : 150;
+        const alreadyFull = state.player.hp >= state.player.maxHp;
+        const canAffordHeal = getMerchantUpgradeWalletTotal() >= healCost;
+        serviceRow = buildMerchantRow(
+          "6", "Full Heal",
+          alreadyFull ? "Already at full HP." : `Restore HP to max. Cost ${healCost} gold.`,
+          { disabled: alreadyFull || !canAffordHeal }
+        );
+      } else if (serviceSlot === "combatboost") {
+        const boostCost = hasRelic("merchfavor") ? 100 : 200;
+        const alreadyActive = state.player.combatBoostTurns > 0;
+        const canAffordBoost = getMerchantUpgradeWalletTotal() >= boostCost;
+        serviceRow = buildMerchantRow(
+          "6", "Combat Boost",
+          alreadyActive ? "Already active." : `+20 ATK & ARM for 30 turns. Cost ${boostCost} gold.`,
+          { disabled: alreadyActive || !canAffordBoost }
+        );
+      } else if (serviceSlot === "secondchance") {
+        const scCost = hasRelic("merchfavor") ? 400 : 800;
+        const alreadyHas = state.player.hasSecondChance;
+        const canAffordSC = getMerchantUpgradeWalletTotal() >= scCost;
+        serviceRow = buildMerchantRow(
+          "6", "Second Chance",
+          alreadyHas ? "Already active." : `Survive next fatal blow with 100 HP. Cost ${scCost} gold.`,
+          { disabled: alreadyHas || !canAffordSC }
+        );
+      } else if (serviceSlot === "blackmarket") {
+        const eligibleRelics = state.relics.filter(id => {
+          const r = getRelicById(id);
+          return r && (r.rarity === "normal" || r.rarity === "rare");
+        });
+        const hasEligible = eligibleRelics.length > 0;
+        serviceRow = buildMerchantRow(
+          "6", "Black Market",
+          hasEligible
+            ? `Trade a Normal/Rare relic for a higher tier. Press 6 to choose.`
+            : `No eligible relics (need Normal or Rare).`,
+          { disabled: !hasEligible }
+        );
+      } else {
+        serviceRow = buildMerchantRow("6", "Service", "No service available today.", { disabled: true });
+      }
+
+      // Black Market mode: show eligible relics to trade up
+      if (state.blackMarketPending) {
+        const bmRelic = getRelicById(state.blackMarketPending[0]);
+        const targetRarity = bmRelic?.rarity === "normal" ? "Rare" : "Epic";
+        hint = `Choose a relic to trade for a ${targetRarity}. Press 6 or E/Esc to cancel.`;
+        const bmRows = state.blackMarketPending.map((relicId, index) => {
+          const r = getRelicById(relicId);
+          const rarityLabel = r ? (RARITY[r.rarity]?.label || r.rarity) : "";
+          const tierClass = getMerchantTierClass(rarityLabel);
+          return buildMerchantRow(
+            String(index + 1),
+            r ? r.name : relicId,
+            r ? r.desc : "",
+            { tierLabel: rarityLabel, tierClass }
+          );
+        }).join("");
+        menuBlock = `<div class="overlay-menu">${bmRows}</div>`;
+      // Relic swap mode: show current relics to pick which to replace
+      } else if (state.merchantRelicSwapPending) {
+        const swapRelic = getRelicById(state.merchantRelicSwapPending.relicId);
+        const swapRows = state.relics.map((relicId, index) => {
+          const r = getRelicById(relicId);
+          const rarityLabel = r ? (RARITY[r.rarity]?.label || r.rarity) : "";
+          const tierClass = getMerchantTierClass(rarityLabel);
+          return buildMerchantRow(
+            String(index + 1),
+            r ? r.name : relicId,
+            r ? r.desc : "",
+            { tierLabel: rarityLabel, tierClass }
+          );
+        }).join("");
+        menuBlock = `<div class="overlay-menu">${swapRows}</div>`;
+      } else {
+        const rows = [
+          buildMerchantRow("1", "Potion", potionBody, { disabled: potionDisabled }),
+          buildSkillRow("2", "dash"),
+          buildSkillRow("3", "aoe"),
+          buildSkillRow("4", "shield"),
+          relicRow,
+          serviceRow
+        ].join("");
+        menuBlock = `<div class="overlay-menu">${rows}</div>`;
+      }
     }
 
     screenOverlayEl.className = "screen-overlay visible";
@@ -15915,7 +16158,7 @@
   function canObserverBotUseShieldNow() {
     if (state.player.barrierTurns > 0) return false;
     const tier = getSkillTier("shield");
-    if (tier >= 1) {
+    if (tier >= 2) {
       const charges = getShieldChargesInfo();
       return Boolean(charges && charges.charges > 0);
     }
@@ -16741,6 +16984,23 @@
         closeMerchantMenu();
         return;
       }
+      // Relic swap mode: player picks which relic to replace (inventory full)
+      if (state.merchantRelicSwapPending) {
+        const idx = parseInt(key, 10) - 1;
+        if (!isNaN(idx) && idx >= 0 && idx < state.relics.length) {
+          tryMerchantRelicSwap(idx);
+        }
+        return;
+      }
+      // Black Market relic selection mode: pick which relic to trade up
+      if (state.blackMarketPending) {
+        const idx = parseInt(key, 10) - 1;
+        if (!isNaN(idx) && idx >= 0 && idx < state.blackMarketPending.length) {
+          tryUseBlackMarket(state.blackMarketPending[idx]);
+          state.blackMarketPending = null;
+        }
+        return;
+      }
       if (key === "1") {
         tryBuyPotionFromMerchant();
         return;
@@ -16755,6 +17015,43 @@
       }
       if (key === "4") {
         tryBuySkillUpgradeFromMerchant("shield");
+        return;
+      }
+      if (key === "5") {
+        tryBuyRelicFromMerchant();
+        return;
+      }
+      if (key === "6") {
+        const s = state.merchantServiceSlot;
+        if (s === "fullheal") {
+          tryBuyFullHeal();
+        } else if (s === "combatboost") {
+          tryBuyCombatBoost();
+        } else if (s === "secondchance") {
+          tryBuySecondChance();
+        } else if (s === "blackmarket") {
+          if (state.blackMarketPending) {
+            state.blackMarketPending = null;
+            pushLog("Black Market: cancelled.", "neutral");
+            markUiDirty();
+          } else {
+            const eligible = state.relics.filter(id => {
+              const r = getRelicById(id);
+              return r && (r.rarity === "normal" || r.rarity === "rare");
+            });
+            if (eligible.length === 0) {
+              pushLog("Black Market: no eligible relics to trade (need Normal or Rare relic).", "bad");
+            } else if (eligible.length === 1) {
+              tryUseBlackMarket(eligible[0]);
+            } else {
+              state.blackMarketPending = eligible;
+              pushLog(`Black Market: choose which relic to trade up (see shop). Press 6 or E/Esc to cancel.`, "neutral");
+              markUiDirty();
+            }
+          }
+        } else {
+          pushLog("No service available today.", "bad");
+        }
         return;
       }
       return;
