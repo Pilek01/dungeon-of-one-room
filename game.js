@@ -687,6 +687,8 @@
     swipePointerId: null,
     swipeStartX: 0,
     swipeStartY: 0,
+    swipeLastX: 0,
+    swipeLastY: 0,
     hintSeen: localStorage.getItem(STORAGE_MOBILE_SWIPE_HINT_SEEN) === "1",
     hintVisible: false,
     hintHideTimer: null
@@ -849,16 +851,29 @@
     if (!layoutTrackEl) return;
     if (!canHandleMobileSwipe()) return;
     if (event.pointerType !== "touch") return;
+    if (mobileUi.swipePointerId != null) return;
     mobileUi.swipePointerId = event.pointerId;
     mobileUi.swipeStartX = event.clientX;
     mobileUi.swipeStartY = event.clientY;
+    mobileUi.swipeLastX = event.clientX;
+    mobileUi.swipeLastY = event.clientY;
+    try { layoutTrackEl.setPointerCapture(event.pointerId); } catch (_) {}
+  }
+
+  function onMobileSwipePointerMove(event) {
+    if (mobileUi.swipePointerId == null) return;
+    if (event.pointerId !== mobileUi.swipePointerId) return;
+    mobileUi.swipeLastX = event.clientX;
+    mobileUi.swipeLastY = event.clientY;
   }
 
   function onMobileSwipePointerEnd(event) {
     if (mobileUi.swipePointerId == null) return;
     if (event.pointerId !== mobileUi.swipePointerId) return;
-    const deltaX = event.clientX - mobileUi.swipeStartX;
-    const deltaY = event.clientY - mobileUi.swipeStartY;
+    const endX = event.type === "pointerup" ? event.clientX : mobileUi.swipeLastX;
+    const endY = event.type === "pointerup" ? event.clientY : mobileUi.swipeLastY;
+    const deltaX = endX - mobileUi.swipeStartX;
+    const deltaY = endY - mobileUi.swipeStartY;
     mobileUi.swipePointerId = null;
     if (!canHandleMobileSwipe()) return;
     const absX = Math.abs(deltaX);
@@ -16889,6 +16904,9 @@
 
   if (layoutTrackEl) {
     layoutTrackEl.addEventListener("pointerdown", onMobileSwipePointerDown, { passive: true });
+    layoutTrackEl.addEventListener("pointermove", onMobileSwipePointerMove, { passive: true });
+    layoutTrackEl.addEventListener("pointerup", onMobileSwipePointerEnd, { passive: true });
+    layoutTrackEl.addEventListener("pointercancel", onMobileSwipePointerCancel, { passive: true });
   }
   window.addEventListener("pointerup", onMobileSwipePointerEnd, { passive: true });
   window.addEventListener("pointercancel", onMobileSwipePointerCancel, { passive: true });

@@ -1266,7 +1266,11 @@ canvas.boss-pulse {
   }
 
   .layout.mobile-layout {
-    touch-action: pan-y pinch-zoom;
+    touch-action: none;
+  }
+
+  .layout.mobile-layout .layout-track > .panel {
+    touch-action: pan-y;
   }
 
   .layout-track {
