@@ -575,52 +575,52 @@
   const MUTATORS = [
     {
       id: "berserker", name: "Berserker", key: "1",
-      bonus: "+30 ATK", drawback: "-50 Max HP", campGoldBonus: 0.15,
-      unlockText: "Kill 50 enemies"
+      bonus: "+25% ATK", drawback: "-25% Max HP",
+      unlockText: "Kill 60 enemies"
     },
     {
       id: "bulwark", name: "Bulwark", key: "2",
-      bonus: "+30 Armor", drawback: "-20 ATK", campGoldBonus: 0.15,
+      bonus: "+30% Armor", drawback: "-20% ATK",
       unlockText: "Reach depth 8"
     },
     {
       id: "alchemist", name: "Alchemist", key: "3",
-      bonus: "+3 Potions", drawback: "Chests don't heal", campGoldBonus: 0.10,
-      unlockText: "Buy 10 merchant potions"
+      bonus: "+2 potion slots, potions heal +30%", drawback: "Chests don't restore HP",
+      unlockText: "Buy 5 potions from merchant"
     },
     {
       id: "greed", name: "Greed", key: "4",
-      bonus: "+40% Gold", drawback: "+2 enemies, +20 enemy HP, shop +20%", campGoldBonus: 0.05,
-      unlockText: "Earn 1000 gold total"
+      bonus: "+40% gold", drawback: "+2 enemies/room, enemies +20% HP, shop +25%",
+      unlockText: "Earn 1000 gold"
     },
     {
       id: "hunter", name: "Hunter", key: "5",
-      bonus: "+15% Crit", drawback: "Enemies deal +20 damage", campGoldBonus: 0.15,
+      bonus: "+20% Crit", drawback: "Enemies deal +25% more damage",
       unlockText: "Kill 30 elites"
     },
     {
-      id: "glassdepths", name: "Glass Depths", key: "6",
-      bonus: "Spikes drop gold", drawback: "+50% spikes per room", campGoldBonus: 0.20,
-      unlockText: "Reach depth 12"
+      id: "resilience", name: "Resilience", key: "6",
+      bonus: "Shield = 20% Max HP on room entry", drawback: "Enemies deal +20% more damage",
+      unlockText: "Use shield skill 50 times"
     },
     {
-      id: "haste", name: "Haste", key: "7",
-      bonus: "Player moves first", drawback: "15% enemy double move", campGoldBonus: 0.20,
+      id: "momentum", name: "Momentum", key: "7",
+      bonus: "+1.5% ATK per depth reached (stacks)", drawback: "Enemies deal +15% more damage",
       unlockText: "Reach depth 10"
     },
     {
       id: "famine", name: "Famine", key: "8",
-      bonus: "+20 Max HP", drawback: "No merchants, potions heal 50%", campGoldBonus: 0.25,
-      unlockText: "Extract depth 10+ without potions"
+      bonus: "+30% Max HP", drawback: "-50% potion heal, -3 max potion slots",
+      unlockText: "Clear 10 rooms without using a potion"
     },
     {
       id: "elitist", name: "Elitist", key: "9",
-      bonus: "Elites drop +50% gold", drawback: "+30% elite spawn, elites +20 HP", campGoldBonus: 0.20,
-      unlockText: "Kill 100 elites"
+      bonus: "Elites drop +60% gold", drawback: "+30% elite spawn, elites +25% HP",
+      unlockText: "Kill 25 elites"
     },
     {
       id: "ascension", name: "Ascension", key: "0",
-      bonus: "+1 relic choice", drawback: "Enemy ATK scales +10 per 3 depths", campGoldBonus: 0.30,
+      bonus: "+1 relic choice per draft", drawback: "Enemies +3% ATK per 3 depths reached",
       unlockText: "Reach depth 15"
     }
   ];
@@ -997,7 +997,8 @@
 
   function getEnemyEffectiveAttack(enemy) {
     const baseAttack = Math.max(MIN_EFFECTIVE_DAMAGE, Number(enemy?.attack) || 0);
-    return Math.max(MIN_EFFECTIVE_DAMAGE, baseAttack + getEnemyAcolyteBuffAttackBonus(enemy));
+    const effectiveAtk = Math.round((baseAttack + getEnemyAcolyteBuffAttackBonus(enemy)) * (state.runMods.enemyAtkMult || 1.0) * (state.runMods.enemyDamageMult || 1.0));
+    return Math.max(MIN_EFFECTIVE_DAMAGE, effectiveAtk);
   }
 
   function getBladeAttackMultiplier(level = getCampUpgradeLevel("blade")) {
@@ -1654,10 +1655,10 @@
   });
 
   const MERCHANT_RELIC_TIERS = [
-    { rarity: "normal",    weight: 60, price: 300 },
-    { rarity: "rare",      weight: 25, price: 600 },
-    { rarity: "epic",      weight: 12, price: 1000 },
-    { rarity: "legendary", weight: 3,  price: 2000 },
+    { rarity: "normal", weight: 60, price: 300 },
+    { rarity: "rare", weight: 25, price: 600 },
+    { rarity: "epic", weight: 12, price: 1000 },
+    { rarity: "legendary", weight: 3, price: 2000 },
   ];
   const MERCHANT_SERVICE_POOL = ["fullheal", "combatboost", "secondchance", "blackmarket"];
   const MERCHANT_SECOND_CHANCE_MAX_PURCHASES = 5;
@@ -3693,6 +3694,12 @@
     };
     state.merchantPotionsBought = Number(snapshot.merchantPotionsBought) || 0;
     state.potionsUsedThisRun = Number(snapshot.potionsUsedThisRun) || 0;
+    state.killsThisRun = Number(snapshot.killsThisRun) || 0;
+    state.eliteKillsThisRun = Number(snapshot.eliteKillsThisRun) || 0;
+    state.merchantPotsThisRun = Number(snapshot.merchantPotsThisRun) || 0;
+    state.shieldUsesThisRun = Number(snapshot.shieldUsesThisRun) || 0;
+    state.potionFreeRoomStreak = Number(snapshot.potionFreeRoomStreak) || 0;
+    state.potionUsedInRoom = Boolean(snapshot.potionUsedInRoom) || false;
     const snapshotCampVisitShopCostMult = Number(snapshot.campVisitShopCostMult);
     state.campVisitShopCostMult =
       snapshotCampVisitShopCostMult > 0
@@ -3762,14 +3769,14 @@
       shieldStoredDamage: Math.max(0, Number(snapshot.player.shieldStoredDamage) || 0),
       dashAfterline:
         snapshot.player.dashAfterline &&
-        typeof snapshot.player.dashAfterline === "object" &&
-        Array.isArray(snapshot.player.dashAfterline.tiles)
+          typeof snapshot.player.dashAfterline === "object" &&
+          Array.isArray(snapshot.player.dashAfterline.tiles)
           ? {
-              turns: Math.max(0, Number(snapshot.player.dashAfterline.turns) || 0),
-              tiles: snapshot.player.dashAfterline.tiles
-                .filter((tile) => tile && Number.isFinite(tile.x) && Number.isFinite(tile.y))
-                .map((tile) => ({ x: Math.round(tile.x), y: Math.round(tile.y) }))
-            }
+            turns: Math.max(0, Number(snapshot.player.dashAfterline.turns) || 0),
+            tiles: snapshot.player.dashAfterline.tiles
+              .filter((tile) => tile && Number.isFinite(tile.x) && Number.isFinite(tile.y))
+              .map((tile) => ({ x: Math.round(tile.x), y: Math.round(tile.y) }))
+          }
           : null
     };
     state.player.hp = clamp(state.player.hp, 1, state.player.maxHp);
@@ -4843,16 +4850,16 @@
   function syncMutatorUnlocks() {
     const newlyUnlocked = [];
     const rules = [
-      { id: "berserker", ok: state.totalKills >= 50 },
-      { id: "bulwark", ok: state.highscore >= 8 },
-      { id: "alchemist", ok: state.totalMerchantPots >= 10 },
-      { id: "greed", ok: state.totalGoldEarned >= 1000 },
-      { id: "hunter", ok: state.eliteKills >= 30 },
-      { id: "haste", ok: state.highscore >= 10 },
-      { id: "glassdepths", ok: state.highscore >= 12 },
-      { id: "famine", ok: state.potionFreeExtract >= 1 },
-      { id: "elitist", ok: state.eliteKills >= 100 },
-      { id: "ascension", ok: state.highscore >= 15 }
+      { id: "berserker", ok: state.killsThisRun >= 60 },
+      { id: "bulwark", ok: (state.runMaxDepth || 0) >= 8 },
+      { id: "alchemist", ok: (state.merchantPotsThisRun || 0) >= 5 },
+      { id: "greed", ok: (state.runGoldEarned || 0) >= 1000 },
+      { id: "hunter", ok: (state.eliteKillsThisRun || 0) >= 30 },
+      { id: "resilience", ok: (state.shieldUsesThisRun || 0) >= 50 },
+      { id: "momentum", ok: (state.runMaxDepth || 0) >= 10 },
+      { id: "famine", ok: (state.potionFreeRoomStreak || 0) >= 10 },
+      { id: "elitist", ok: (state.eliteKillsThisRun || 0) >= 25 },
+      { id: "ascension", ok: (state.runMaxDepth || 0) >= 15 }
     ];
 
     for (const rule of rules) {
@@ -4863,6 +4870,9 @@
     }
 
     if (newlyUnlocked.length > 0) {
+      for (const mutator of newlyUnlocked) {
+        pushLog(`Mutator unlocked: ${mutator.name}! Activate at camp (${mutator.bonus}).`, "good");
+      }
       persistMutatorState();
       markUiDirty();
     }
@@ -4893,8 +4903,19 @@
       pushLog("Max 3 active mutators.", "bad");
       return;
     }
+    // Mid-run (in dungeon): once activated, cannot deactivate — stat changes are permanent
+    if (!willEnable && state.phase === "playing") {
+      pushLog(`${mutator.name} cannot be deactivated during a run.`, "bad");
+      return;
+    }
     state.activeMutators[mutator.id] = willEnable;
     persistMutatorState();
+    // Mid-run activation: apply effects immediately
+    if (willEnable && state.phase === "playing") {
+      applyMutatorMidRun(mutator.id);
+      return;
+    }
+    // Camp (between runs): just flag for next run — applyMutatorsToRun() handles effects at run start
     pushLog(`${mutator.name} ${willEnable ? "enabled" : "disabled"} for next run.`);
     markUiDirty();
   }
@@ -5177,8 +5198,7 @@
       else if (roll < 0.96) type = "cursed";
       else type = "merchant";
     }
-    // Famine mutator: no merchants
-    if (type === "merchant" && state.runMods.noMerchants && !guaranteedMerchantRoom) type = "combat";
+    // (noMerchants was removed; Famine no longer blocks merchants)
     return type;
   }
 
@@ -5204,7 +5224,12 @@
       if (s === "secondchance" && state.merchantSecondChancePurchases >= MERCHANT_SECOND_CHANCE_MAX_PURCHASES) return false;
       return true;
     });
-    state.merchantServiceSlot = availableServices[Math.floor(Math.random() * availableServices.length)] || null;
+    // Very rare offer: +1 Life (~10% chance, only if below max lives)
+    if (state.lives < MAX_LIVES && Math.random() < 0.10) {
+      state.merchantServiceSlot = "onelife";
+    } else {
+      state.merchantServiceSlot = availableServices[Math.floor(Math.random() * availableServices.length)] || null;
+    }
   }
 
   function merchantPotionCost() {
@@ -5297,6 +5322,10 @@
 
   function tryBuyCombatBoost() {
     return campRuntime.tryBuyCombatBoost();
+  }
+
+  function tryBuyOneLife() {
+    return campRuntime.tryBuyOneLife();
   }
 
   function tryBuySecondChance() {
@@ -6003,12 +6032,12 @@
       (relic) => {
         const stackable = isRelicStackable(relic);
         return (
-        (!unlockedRarities || unlockedRarities.has(relic.rarity)) &&
-        (
-          (stackable && !isNormalRelicStackAtCap(relic.id)) ||
-          (!stackable && !state.relics.includes(relic.id))
-        )
-      );
+          (!unlockedRarities || unlockedRarities.has(relic.rarity)) &&
+          (
+            (stackable && !isNormalRelicStackAtCap(relic.id)) ||
+            (!stackable && !state.relics.includes(relic.id))
+          )
+        );
       }
     );
     if (pool.length === 0) return;
@@ -6189,10 +6218,8 @@
     state.campVisitShopCostMult = Number(state.runMods?.shopCostMult) || 1;
     recordRunOnLeaderboard("extract");
     const baseGold = Math.max(0, Math.round(state.player.gold));
-    const bonusMult = state.runMods.campGoldBonus || 0;
-    const bonusGold = Math.round(baseGold * bonusMult);
     const relicReturn = getRelicReturnSummary(state.relics);
-    const gainedCampGold = baseGold + bonusGold;
+    const gainedCampGold = baseGold;
     state.campGold += gainedCampGold;
     state.lastExtract = {
       depth: state.depth,
@@ -6211,15 +6238,10 @@
     syncBgmWithState();
     saveMetaProgress();
     const unlockedNow = syncMutatorUnlocks();
-    if (bonusGold > 0) {
-      pushLog(`Extraction: +${baseGold} gold +${bonusGold} mutator bonus = ${gainedCampGold} camp gold.`, "good");
-    } else {
-      pushLog(`Extraction success: +${gainedCampGold} camp gold.`, "good");
-    }
+    pushLog(`Extraction success: +${gainedCampGold} camp gold.`, "good");
     if (relicReturn.count > 0) {
       state.extractRelicPrompt = {
         baseGold,
-        bonusGold,
         relicReturn,
         carriedRelics: [...state.relics],
         selectedIndices: []
@@ -6417,6 +6439,12 @@
     state.runMods.enemyAtkPerDepth = 0;
     state.runMods.campGoldBonus = 0;
     state.runMods.extraRelicChoices = 0;
+    state.runMods.enemyHpMult = 1.0;
+    state.runMods.enemyDamageMult = 1.0;
+    state.runMods.enemyAtkMult = 1.0;
+    state.runMods.eliteHpMult = 1.0;
+    state.runMods.momentumAtkBonus = 0;
+    state.runMods.momentumBaseAtk = 0;
   }
 
   function applyCampUpgradesToRun() {
@@ -6708,8 +6736,7 @@
       life: 320
     });
     pushLog(
-      `Aegis Counter bursts: ${hitCount} hit${hitCount === 1 ? "" : "s"}${
-        killCount > 0 ? `, ${killCount} kill${killCount === 1 ? "" : "s"}` : ""
+      `Aegis Counter bursts: ${hitCount} hit${hitCount === 1 ? "" : "s"}${killCount > 0 ? `, ${killCount} kill${killCount === 1 ? "" : "s"}` : ""
       }.`,
       "good"
     );
@@ -6807,8 +6834,7 @@
     afterline.turns = turns - 1;
     if (hitCount > 0) {
       pushLog(
-        `Void afterline hits ${hitCount} ${hitCount === 1 ? "enemy" : "enemies"}${
-          killCount > 0 ? ` (${killCount} kill${killCount === 1 ? "" : "s"})` : ""
+        `Void afterline hits ${hitCount} ${hitCount === 1 ? "enemy" : "enemies"}${killCount > 0 ? ` (${killCount} kill${killCount === 1 ? "" : "s"})` : ""
         }.`,
         "good"
       );
@@ -6830,6 +6856,8 @@
     state.player.potions -= 1;
     state.player.autoPotionCooldown = AUTO_POTION_INTERNAL_COOLDOWN_TURNS;
     state.potionsUsedThisRun = (state.potionsUsedThisRun || 0) + 1;
+    state.potionUsedInRoom = true;
+    state.potionFreeRoomStreak = 0;
     const healResult = healPlayer(getPotionHealAmount(), {
       visuals: true,
       textColor: "#9ff7a9",
@@ -7034,7 +7062,7 @@
     tryTriggerEngineOfWarEmergency("hunger");
     triggerPlayerHitFlash();
     spawnFloatingText(state.player.x, state.player.y, `-${hungerDamage}`, "#ff7676");
-    pushLog(`Shrine of Hunger: no hit this turn (-${hungerDamage} HP).`, "bad");
+    // silent — log would spam every turn without a hit
     tryAutoPotion("hunger");
     if (state.player.hp <= 0) {
       if (tryTriggerChronoLoop("hunger")) {
@@ -7046,70 +7074,151 @@
     return false;
   }
 
+  function getAscensionEnemyAtkMult() {
+    if (!isMutatorActive("ascension")) return 1.0;
+    const levels = Math.floor((state.runMaxDepth || 0) / 3);
+    return 1.0 + (levels * 0.03);
+  }
+
+  function updateMomentumBonus() {
+    if (!isMutatorActive("momentum")) return;
+    const baseAtk = state.runMods.momentumBaseAtk || state.player.attack;
+    if (!state.runMods.momentumBaseAtk) {
+      state.runMods.momentumBaseAtk = state.player.attack;
+    }
+    const newBonus = Math.round(baseAtk * (state.runMaxDepth || 0) * 0.015);
+    const oldBonus = state.runMods.momentumAtkBonus || 0;
+    const delta = newBonus - oldBonus;
+    if (delta > 0) {
+      state.player.attack += delta;
+      state.runMods.momentumAtkBonus = newBonus;
+    }
+  }
+
+  function updateDepthScalingMutators() {
+    updateMomentumBonus();
+    state.runMods.enemyAtkMult = getAscensionEnemyAtkMult();
+  }
+
+  function applyResilienceShield() {
+    if (!isMutatorActive("resilience")) return;
+    const shield = Math.floor(state.player.maxHp * 0.20);
+    state.player.barrier = Math.max(state.player.barrier || 0, shield);
+  }
+
   function applyMutatorsToRun() {
     resetRunModifiers();
-    let totalCampGoldBonus = 0;
 
     if (isMutatorActive("berserker")) {
-      addScaledFlatAttack(scaledCombat(3));
-      state.player.maxHp -= scaledCombat(5);
-      totalCampGoldBonus += 0.15;
+      state.player.attack = Math.round(state.player.attack * 1.25);
+      state.player.maxHp = Math.round(state.player.maxHp * 0.75);
     }
     if (isMutatorActive("bulwark")) {
-      state.player.armor += scaledCombat(3);
-      state.player.attack -= Math.max(1, Math.abs(scaleFlatAttackByBlade(-scaledCombat(2))));
-      totalCampGoldBonus += 0.15;
+      state.player.armor = Math.round(state.player.armor * 1.30);
+      state.player.attack = Math.round(state.player.attack * 0.80);
     }
     if (isMutatorActive("alchemist")) {
-      state.player.potions += 3;
-      state.player.maxPotions += 3;
-      state.runMods.chestHealPenalty = 999; // chests don't heal
-      totalCampGoldBonus += 0.10;
+      state.player.maxPotions += 2;
+      state.player.potions = Math.min(state.player.potions + 2, state.player.maxPotions);
+      state.runMods.potionHealMult *= 1.30;
+      state.runMods.chestHealPenalty = 999;
     }
     if (isMutatorActive("greed")) {
-      state.runMods.goldMultiplier += 0.4;
+      state.runMods.goldMultiplier += 0.40;
       state.runMods.extraEnemies += 2;
-      state.runMods.enemyHpBonus += scaledCombat(2);
-      state.runMods.shopCostMult *= 1.2;
-      totalCampGoldBonus += 0.05;
+      state.runMods.enemyHpMult *= 1.20;
+      state.runMods.shopCostMult *= 1.25;
     }
     if (isMutatorActive("hunter")) {
-      state.player.crit += 0.15;
-      state.runMods.enemyDamageBonus += scaledCombat(2);
-      totalCampGoldBonus += 0.15;
+      state.player.crit = Math.min(CRIT_CHANCE_CAP, state.player.crit + 0.20);
+      state.runMods.enemyDamageMult *= 1.25;
     }
-    if (isMutatorActive("glassdepths")) {
-      state.runMods.extraSpikeMult = 1.5;
-      totalCampGoldBonus += 0.20;
+    if (isMutatorActive("resilience")) {
+      state.runMods.enemyDamageMult *= 1.20;
     }
-    if (isMutatorActive("haste")) {
-      state.runMods.enemyDoubleMoveChance = 0.15;
-      totalCampGoldBonus += 0.20;
+    if (isMutatorActive("momentum")) {
+      state.runMods.enemyDamageMult *= 1.15;
     }
     if (isMutatorActive("famine")) {
-      state.player.maxHp += scaledCombat(2);
-      state.runMods.noMerchants = true;
-      state.runMods.potionHealMult = 0.5;
-      totalCampGoldBonus += 0.25;
+      state.player.maxHp = Math.round(state.player.maxHp * 1.30);
+      state.player.maxPotions = Math.max(1, state.player.maxPotions - 3);
+      state.player.potions = Math.min(state.player.potions, state.player.maxPotions);
+      state.runMods.potionHealMult *= 0.50;
+      state.runMods.noMerchants = false;
     }
     if (isMutatorActive("elitist")) {
       state.runMods.eliteChance += 0.30;
-      state.runMods.eliteHpBonus = scaledCombat(2); // elites specifically get +20 HP
-      state.runMods.eliteGoldMult = 1.5;
-      totalCampGoldBonus += 0.20;
+      state.runMods.eliteHpMult *= 1.25;
+      state.runMods.eliteGoldMult *= 1.60;
     }
     if (isMutatorActive("ascension")) {
       state.runMods.extraRelicChoices += 1;
-      state.runMods.enemyAtkPerDepth = scaledCombat(1); // +10 ATK per 3 depths
-      totalCampGoldBonus += 0.30;
     }
 
-    state.runMods.campGoldBonus = totalCampGoldBonus;
+    // Task 8: Uniform gold bonus — +20% per active mutator except Greed
+    for (const mutator of MUTATORS) {
+      if (mutator.id === "greed") continue;
+      if (isMutatorActive(mutator.id)) {
+        state.runMods.goldMultiplier += 0.20;
+      }
+    }
 
+    // Clamp player stats to sane bounds
     state.player.maxHp = clamp(state.player.maxHp, scaledCombat(4), scaledCombat(40));
     state.player.attack = clamp(state.player.attack, scaledCombat(1), scaledCombat(500));
     state.player.armor = clamp(state.player.armor, 0, scaledCombat(10));
     state.player.crit = clamp(state.player.crit, 0.01, CRIT_CHANCE_CAP);
+    state.player.hp = Math.min(state.player.hp, state.player.maxHp);
+  }
+
+  function applyMutatorMidRun(id) {
+    if (id === "berserker") {
+      state.player.attack = Math.round(state.player.attack * 1.25);
+      state.player.maxHp = Math.round(state.player.maxHp * 0.75);
+      state.player.hp = Math.min(state.player.hp, state.player.maxHp);
+    } else if (id === "bulwark") {
+      state.player.armor = Math.round(state.player.armor * 1.30);
+      state.player.attack = Math.round(state.player.attack * 0.80);
+    } else if (id === "alchemist") {
+      state.player.maxPotions += 2;
+      state.runMods.potionHealMult = (state.runMods.potionHealMult || 1.0) * 1.30;
+      state.runMods.chestHealPenalty = 999;
+    } else if (id === "greed") {
+      state.runMods.goldMultiplier += 0.40;
+      state.runMods.extraEnemies += 2;
+      state.runMods.enemyHpMult = (state.runMods.enemyHpMult || 1.0) * 1.20;
+      state.runMods.shopCostMult = (state.runMods.shopCostMult || 1.0) * 1.25;
+    } else if (id === "hunter") {
+      state.player.crit = Math.min(CRIT_CHANCE_CAP, state.player.crit + 0.20);
+      state.runMods.enemyDamageMult = (state.runMods.enemyDamageMult || 1.0) * 1.25;
+    } else if (id === "resilience") {
+      state.runMods.enemyDamageMult = (state.runMods.enemyDamageMult || 1.0) * 1.20;
+      applyResilienceShield();
+    } else if (id === "momentum") {
+      state.runMods.enemyDamageMult = (state.runMods.enemyDamageMult || 1.0) * 1.15;
+      updateDepthScalingMutators();
+    } else if (id === "famine") {
+      state.player.maxHp = Math.round(state.player.maxHp * 1.30);
+      state.player.maxPotions = Math.max(1, state.player.maxPotions - 3);
+      state.player.potions = Math.min(state.player.potions, state.player.maxPotions);
+      state.runMods.potionHealMult = (state.runMods.potionHealMult || 1.0) * 0.50;
+    } else if (id === "elitist") {
+      state.runMods.eliteChance += 0.30;
+      state.runMods.eliteHpMult = (state.runMods.eliteHpMult || 1.0) * 1.25;
+      state.runMods.eliteGoldMult = (state.runMods.eliteGoldMult || 1.0) * 1.60;
+    } else if (id === "ascension") {
+      state.runMods.extraRelicChoices += 1;
+      updateDepthScalingMutators();
+    }
+    if (id !== "greed") {
+      state.runMods.goldMultiplier += 0.20;
+    }
+    const mutDef = MUTATORS.find(m => m.id === id);
+    if (mutDef) {
+      pushLog(`${mutDef.name} activated! Effects now in play.`, "good");
+    }
+    saveRunSnapshot();
+    markUiDirty();
   }
 
   function grantGold(amount, options = {}) {
@@ -7362,7 +7471,6 @@
 
   function createEnemy(type, x, y, options = {}) {
     const depthScale = Math.floor(state.depth / 2);
-    const damageBonus = state.runMods.enemyDamageBonus;
     let enemy;
     if (type === "skeleton") {
       enemy = {
@@ -7371,7 +7479,7 @@
         x,
         y,
         hp: scaledCombat(4 + depthScale),
-        attack: scaledCombat(1 + Math.floor(state.depth / 4)) + damageBonus,
+        attack: scaledCombat(1 + Math.floor(state.depth / 4)),
         range: 3,
         cooldown: 0,
         aiming: false
@@ -7383,7 +7491,7 @@
         x,
         y,
         hp: scaledCombat(4 + depthScale),
-        attack: scaledCombat(2 + Math.floor(state.depth / 5)) + damageBonus,
+        attack: scaledCombat(2 + Math.floor(state.depth / 5)),
         range: 4,
         cooldown: 0,
         aiming: false
@@ -7395,7 +7503,7 @@
         x,
         y,
         hp: scaledCombat(3 + depthScale),
-        attack: scaledCombat(2 + Math.floor(state.depth / 4)) + damageBonus,
+        attack: scaledCombat(2 + Math.floor(state.depth / 4)),
         cooldown: 0
       };
     } else if (type === "brute") {
@@ -7405,7 +7513,7 @@
         x,
         y,
         hp: scaledCombat(7 + state.depth),
-        attack: scaledCombat(3 + Math.floor(state.depth / 3)) + damageBonus,
+        attack: scaledCombat(3 + Math.floor(state.depth / 3)),
         cooldown: 0,
         rests: false
       };
@@ -7416,7 +7524,7 @@
         x,
         y,
         hp: scaledCombat(12 + Math.floor(state.depth * 1.8)),
-        attack: scaledCombat(4 + Math.floor(state.depth / 3)) + damageBonus,
+        attack: scaledCombat(4 + Math.floor(state.depth / 3)),
         cooldown: 0,
         rests: false
       };
@@ -7427,7 +7535,7 @@
         x,
         y,
         hp: scaledCombat(16 + state.depth * 2),
-        attack: scaledCombat(4 + Math.floor(state.depth / 3)) + damageBonus,
+        attack: scaledCombat(4 + Math.floor(state.depth / 3)),
         range: 4,
         cooldown: 0,
         aiming: false
@@ -7439,16 +7547,15 @@
         x,
         y,
         hp: scaledCombat(3 + depthScale),
-        attack: scaledCombat(1 + Math.floor(state.depth / 5)) + damageBonus
+        attack: scaledCombat(1 + Math.floor(state.depth / 5))
       };
     }
 
-    // Mutator: enemy HP bonus (scaled for x10 combat values).
-    enemy.hp += state.runMods.enemyHpBonus;
-    // Ascension: enemy ATK scales +10 per 3 depths.
-    if (state.runMods.enemyAtkPerDepth > 0) {
-      enemy.attack += Math.floor(state.depth / 3) * state.runMods.enemyAtkPerDepth;
+    // Mutator: enemy HP multiplier (replaces old flat enemyHpBonus).
+    if (state.runMods.enemyHpMult && state.runMods.enemyHpMult !== 1.0) {
+      enemy.hp = Math.round(enemy.hp * state.runMods.enemyHpMult);
     }
+    // (enemyAtkPerDepth removed — Ascension now uses getAscensionEnemyAtkMult() via getEnemyEffectiveAttack())
 
     const lateScale = getEnemyLateDepthMultiplier(state.depth);
     if (lateScale > 1) {
@@ -7481,7 +7588,11 @@
     if (options.elite && enemy.type !== "warden" && state.depth >= 6) {
       enemy.elite = true;
       enemy.rewardBonus += 3;
-      enemy.hp = Math.round(enemy.hp * 1.4) + (state.runMods.eliteHpBonus || 0);
+      enemy.hp = Math.round(enemy.hp * 1.4);
+      // Mutator: eliteHpMult applied after base elite scaling and after enemyHpMult.
+      if (state.runMods.eliteHpMult && state.runMods.eliteHpMult !== 1.0) {
+        enemy.hp = Math.round(enemy.hp * state.runMods.eliteHpMult);
+      }
       enemy.attack += scaledCombat(1);
       enemy.affix = pickEliteAffix();
 
@@ -7553,7 +7664,7 @@
       0,
       Math.min(MAX_SPIKES_PER_ROOM, ROOM_INNER_TILES - reservedTiles)
     );
-    spikeCount = clamp(Math.round(spikeCount * SPIKE_MULTIPLIER * state.runMods.extraSpikeMult), 0, maxSpikesByRoom);
+    spikeCount = clamp(Math.round(spikeCount * SPIKE_MULTIPLIER), 0, maxSpikesByRoom);
 
     const elitesEnabled = state.depth >= 6;
     let eliteChance = state.runMods.eliteChance + state.depth * 0.01;
@@ -7627,6 +7738,7 @@
   function buildRoom() {
     state.roomIndex += 1;
     state.roomCleared = false;
+    state.potionUsedInRoom = false;
     state.extractConfirm = null;
     state.merchantMenuOpen = false;
     state.merchantUpgradeBoughtThisRoom = false;
@@ -7694,6 +7806,7 @@
       playSfx("bosswarn");
     }
     syncBgmWithState();
+    applyResilienceShield();
     markUiDirty();
   }
 
@@ -7793,6 +7906,12 @@
 
     state.merchantPotionsBought = 0;
     state.potionsUsedThisRun = 0;
+    state.killsThisRun = 0;
+    state.eliteKillsThisRun = 0;
+    state.merchantPotsThisRun = 0;
+    state.shieldUsesThisRun = 0;
+    state.potionFreeRoomStreak = 0;
+    state.potionUsedInRoom = false;
     state.player.hp = scaledCombat(BASE_PLAYER_HP);
     state.player.maxHp = scaledCombat(BASE_PLAYER_HP);
     state.player.attack = scaledCombat(BASE_PLAYER_ATTACK);
@@ -7849,6 +7968,10 @@
     state.playerHitEnemyThisTurn = false;
     state.skillCooldowns = sanitizeSkillCooldowns({});
     stopDeathTrack(true);
+
+    // Note: unlockedMutators and activeMutators are NOT reset here.
+    // Unlocks persist between runs within the same session.
+    // Full reset happens in resetMetaProgressForFreshStart() on game over.
 
     applyCampUpgradesToRun();
     applyMutatorsToRun();
@@ -8086,17 +8209,17 @@
   function isOnShrine() {
     return Boolean(
       state.shrine &&
-        !state.shrine.used &&
-        state.player.x === state.shrine.x &&
-        state.player.y === state.shrine.y
+      !state.shrine.used &&
+      state.player.x === state.shrine.x &&
+      state.player.y === state.shrine.y
     );
   }
 
   function isOnMerchant() {
     return Boolean(
       state.merchant &&
-        state.player.x === state.merchant.x &&
-        state.player.y === state.merchant.y
+      state.player.x === state.merchant.x &&
+      state.player.y === state.merchant.y
     );
   }
 
@@ -8458,11 +8581,14 @@
     const reward = grantGold(rewardForEnemy(enemy));
     state.player.adrenaline = clamp(state.player.adrenaline + 1, 0, state.player.maxAdrenaline);
     state.totalKills += 1;
+    state.killsThisRun += 1;                         // NEW
     setStorageItem(STORAGE_TOTAL_KILLS, String(state.totalKills));
     if (enemy.elite) {
       state.eliteKills += 1;
+      state.eliteKillsThisRun += 1;                  // NEW
       setStorageItem(STORAGE_ELITE_KILLS, String(state.eliteKills));
     }
+    syncMutatorUnlocks();
     spawnParticles(enemy.x, enemy.y, "#ffd57a", 8, 1.45);
     pushLog(`${enemy.name} down. +${reward} gold. ${reason ? `(${reason})` : ""}`, "good");
     applyShrineNoiseKnockbackOnKill(killX, killY);
@@ -8513,7 +8639,16 @@
   function checkRoomClearBonus() {
     if (state.roomCleared || state.enemies.length > 0) return;
     state.roomCleared = true;
+    if (!state.potionUsedInRoom) {
+      state.potionFreeRoomStreak = (state.potionFreeRoomStreak || 0) + 1;
+      syncMutatorUnlocks();
+    } else {
+      state.potionFreeRoomStreak = 0;
+    }
+    state.potionUsedInRoom = false;
     state.runMaxDepth = Math.max(state.runMaxDepth, state.depth);
+    updateDepthScalingMutators();
+    syncMutatorUnlocks();   // depth-based unlocks (bulwark, momentum, ascension) fire on room clear
     registerObserverBotDepthClear(state.depth);
     revealPortalFx();
     pushLog("Room cleared! Portal revealed.", "good");
@@ -8717,13 +8852,7 @@
     state.flash = 60;
     setShake(1.6);
     spawnParticles(state.player.x, state.player.y, "#d86b6b", 6, 1.1);
-    // Glass Depths: spikes drop gold
-    if (isMutatorActive("glassdepths")) {
-      const spikeGold = grantGold(randInt(1, 3));
-      pushLog(`Spikes cut you for ${spikeFinalDamage}, but drop ${spikeGold} gold.`, "bad");
-    } else {
-      pushLog(`Spikes cut you for ${spikeFinalDamage}.`, "bad");
-    }
+    pushLog(`Spikes cut you for ${spikeFinalDamage}.`, "bad");
     tryAutoPotion("spikes");
     if (state.player.hp <= 0) {
       if (tryTriggerChronoLoop("spikes")) {
@@ -9038,7 +9167,12 @@
   }
 
   function tryUseShieldSkill() {
-    return skillsActionsApi.tryUseShieldSkill();
+    const result = skillsActionsApi.tryUseShieldSkill();
+    if (result) {
+      state.shieldUsesThisRun = (state.shieldUsesThisRun || 0) + 1;
+      syncMutatorUnlocks();
+    }
+    return result;
   }
 
   function tryUseSkillByKey(key) {
@@ -9513,7 +9647,7 @@
 
   function applyAcolyteSupport(caster, target) {
     if (!caster || !target || state.phase !== "playing") return false;
-    const healAmount = scaledCombat(ACOLYTE_SUPPORT_HEAL_BASE);
+    const healAmount = Math.max(1, Math.round(target.maxHp * 0.3));
     const beforeHp = target.hp;
     target.hp = Math.min(target.maxHp, target.hp + healAmount);
     const healed = target.hp - beforeHp;
@@ -10030,10 +10164,9 @@
     currentDistance = manhattan(enemy.x, enemy.y, state.player.x, state.player.y);
     lineDistance = Math.abs(enemy.x - state.player.x) + Math.abs(enemy.y - state.player.y);
 
-    // Fast affix or Haste mutator double move
+    // Fast affix double move (skitter or fast affix)
     const hasDoubleMove = enemy.type === "skitter" ||
-      enemy.affix === "fast" ||
-      (state.runMods.enemyDoubleMoveChance > 0 && chance(state.runMods.enemyDoubleMoveChance));
+      enemy.affix === "fast";
     if (hasDoubleMove && state.phase === "playing" && state.enemies.includes(enemy)) {
       if (currentDistance > 1) {
         const bonusPlan = buildEnemyDirectorPlan(enemy, currentDistance);
@@ -10428,6 +10561,8 @@
     }
     state.player.potions -= 1;
     state.potionsUsedThisRun = (state.potionsUsedThisRun || 0) + 1;
+    state.potionUsedInRoom = true;
+    state.potionFreeRoomStreak = 0;
     const healResult = healPlayer(getPotionHealAmount(), {
       visuals: true,
       textColor: "#9ff7a9",
@@ -10807,7 +10942,13 @@
       section(relicBody)
     ].join("");
     if (activeEffectsEl) {
-      activeEffectsEl.innerHTML = activeEffectsBody;
+      if (state.phase === "camp") {
+        activeEffectsEl.innerHTML = "";
+        activeEffectsEl.style.display = "none";
+      } else {
+        activeEffectsEl.innerHTML = activeEffectsBody;
+        activeEffectsEl.style.display = "";
+      }
     }
   }
 
@@ -10899,8 +11040,8 @@
     }
     if (skillId === "shield") {
       if (tier >= 3) return "3-turn immunity, charges, reflect x2 + taunt, store 40% blocked, 2-ring blast";
-      if (tier >= 2) return "3-turn immunity, 2 charges (1 returns every 20 turns), smart knockback, reflect x2 + taunt";
-      if (tier >= 1) return "3-turn immunity, 2 charges (1 returns every 20 turns), smart knockback";
+      if (tier >= 2) return "3-turn immunity, 2 charges (1 returns every 25 turns), smart knockback, reflect x2 + taunt";
+      if (tier >= 1) return "3-turn immunity, cooldown 15T, smart knockback";
       return "Full immunity for 3 turns after cast";
     }
     return "";
@@ -10951,10 +11092,10 @@
         dashArmed
           ? "Choose direction (WASD/Arrows)"
           : skill.id === "shield" && state.player.barrierTurns > 0
-          ? `Immunity (${state.player.barrierTurns}T)`
-          : skill.id === "shield" && shieldCharges?.enabled
-          ? `Charges ${shieldCharges.charges}/${shieldCharges.max}${shieldCharges.charges < shieldCharges.max ? ` (+1 in ${shieldCharges.regenTurns}T)` : ""}`
-          : getSkillTierEffectsSummary(skill.id);
+            ? `Immunity (${state.player.barrierTurns}T)`
+            : skill.id === "shield" && shieldCharges?.enabled
+              ? `Charges ${shieldCharges.charges}/${shieldCharges.max}${shieldCharges.charges < shieldCharges.max ? ` (+1 in ${shieldCharges.regenTurns}T)` : ""}`
+              : getSkillTierEffectsSummary(skill.id);
       return [
         `<div class="${cardClass}" data-skill="${skill.id}">`,
         `<div class="skill-head">`,
@@ -10998,11 +11139,10 @@
         return;
       }
       const summary = state.lastExtract
-        ? `Last run: depth ${state.lastExtract.depth}, +${state.lastExtract.campGold} camp gold${
-            state.lastExtract.relicReturned > 0
-              ? ` (${state.lastExtract.relicReturned} relics returned for +${state.lastExtract.relicGold})`
-              : ""
-          }.`
+        ? `Last run: depth ${state.lastExtract.depth}, +${state.lastExtract.campGold} camp gold${state.lastExtract.relicReturned > 0
+          ? ` (${state.lastExtract.relicReturned} relics returned for +${state.lastExtract.relicGold})`
+          : ""
+        }.`
         : "";
       const panelHint = state.campPanelView === "mutators" ? "1-0 toggle mutators" : "1-0 buy upgrades";
       const carryHint = state.relics.length > 0
@@ -11118,13 +11258,13 @@
   function buildMutatorRows(canToggle) {
     return MUTATORS.map((mutator) => {
       const unlocked = state.unlockedMutators[mutator.id];
-      const active = state.activeMutators[mutator.id];
+      const active = isMutatorActive(mutator.id);
       const rowClass = unlocked ? (active ? "mut-row mut-on" : "mut-row") : "mut-row mut-locked";
       const status = unlocked ? (active ? "ON" : "OFF") : "LOCKED";
-      const goldPct = mutator.campGoldBonus > 0 ? ` +${Math.round(mutator.campGoldBonus * 100)}% gold` : "";
+      const goldSuffix = mutator.id !== "greed" ? ` | +20% gold` : "";
       const desc = unlocked
-        ? `${mutator.bonus}; ${mutator.drawback}${goldPct}`
-        : `Unlock: ${mutator.unlockText}`;
+        ? `${mutator.bonus} | ${mutator.drawback}${goldSuffix}`
+        : `Locked: ${mutator.unlockText}`;
       return [
         `<div class="${rowClass}">`,
         `<span class="mut-key">${mutator.key}</span>`,
@@ -11138,12 +11278,18 @@
   }
 
   function buildActiveMutatorSummary() {
-    const active = MUTATORS.filter((m) => state.activeMutators[m.id]);
-    if (active.length === 0) return `<h3>Mutators</h3><small>None active</small>`;
+    const active = MUTATORS.filter((m) => isMutatorActive(m.id));
+    const unlockedNotActive = MUTATORS.filter((m) => state.unlockedMutators && state.unlockedMutators[m.id] && !isMutatorActive(m.id));
+    if (active.length === 0 && unlockedNotActive.length === 0) {
+      return `<h3>Mutators</h3><small>None unlocked yet</small>`;
+    }
     const rows = active.map((m) => {
-      return `<div class="mut-row mut-on"><span class="mut-key">${m.key}</span><div class="mut-body"><strong>${m.name}</strong><small>${m.bonus}; ${m.drawback}</small></div></div>`;
+      return `<div class="mut-row mut-on"><span class="mut-key">${m.key}</span><div class="mut-body"><strong>${m.name}</strong><small>${m.bonus}</small></div></div>`;
     }).join("");
-    return `<h3>Mutators (${active.length}/3)</h3>${rows}`;
+    const unlockedNotice = unlockedNotActive.length > 0
+      ? `<small style="color:#ffd700">${unlockedNotActive.length} mutator(s) unlocked — activate at camp</small>`
+      : "";
+    return `<h3>Mutators (${active.length}/3)</h3>${rows}${unlockedNotice}`;
   }
 
   function buildLeaderboardRows(limit = LEADERBOARD_MODAL_LIMIT) {
@@ -11277,8 +11423,8 @@
           const relic = getRelicById(relicId);
           const rarityInfo = RARITY[relic?.rarity] || RARITY.normal;
           const rarityClass = relic?.rarity === "legendary" ? "mut-row mut-legendary" :
-                              relic?.rarity === "epic" ? "mut-row mut-epic" :
-                              relic?.rarity === "rare" ? "mut-row mut-rare" : "mut-row mut-on";
+            relic?.rarity === "epic" ? "mut-row mut-epic" :
+              relic?.rarity === "rare" ? "mut-row mut-rare" : "mut-row mut-on";
           return [
             `<div class="${rarityClass}" style="border-color:${rarityInfo.border};background:${rarityInfo.bg}">`,
             `<span class="mut-key">${relicHotkeyForIndex(index)}</span>`,
@@ -11297,8 +11443,8 @@
       const rows = (state.relicDraft || []).map((relic, index) => {
         const rarityInfo = RARITY[relic.rarity] || RARITY.normal;
         const rarityClass = relic.rarity === "legendary" ? "mut-row mut-legendary" :
-                            relic.rarity === "epic" ? "mut-row mut-epic" :
-                            relic.rarity === "rare" ? "mut-row mut-rare" : "mut-row mut-on";
+          relic.rarity === "epic" ? "mut-row mut-epic" :
+            relic.rarity === "rare" ? "mut-row mut-rare" : "mut-row mut-on";
         return [
           `<div class="${rarityClass}" style="border-color:${rarityInfo.border};background:${rarityInfo.bg}">`,
           `<span class="mut-key">${index + 1}</span>`,
@@ -11487,17 +11633,17 @@
       const enemySpeedView = state.menuOptionsView === "enemy_speed";
       const rows = rootView
         ? getMenuOptionsRootItems().map((item, index) => {
-            const classes = [
-              "overlay-menu-row",
-              state.menuOptionsIndex === index ? "selected" : ""
-            ].join(" ").trim();
-            return [
-              `<div class="${classes}">`,
-              `<div class="overlay-menu-key">${item.key}</div>`,
-              `<div><strong>${item.title}</strong><br /><span>${item.desc}</span></div>`,
-              `</div>`
-            ].join("");
-          }).join("")
+          const classes = [
+            "overlay-menu-row",
+            state.menuOptionsIndex === index ? "selected" : ""
+          ].join(" ").trim();
+          return [
+            `<div class="${classes}">`,
+            `<div class="overlay-menu-key">${item.key}</div>`,
+            `<div><strong>${item.title}</strong><br /><span>${item.desc}</span></div>`,
+            `</div>`
+          ].join("");
+        }).join("")
         : enemySpeedView
           ? getEnemySpeedOptionsItems().map((option, index) => {
             const optionDelay = Math.max(
@@ -11533,16 +11679,14 @@
       screenOverlayEl.innerHTML = [
         `<div class="overlay-card">`,
         `<h2 class="overlay-title">Options</h2>`,
-        `<p class="overlay-sub">${
-          rootView ? "Choose a category" : enemySpeedView ? "Enemy Speed" : "Audio"
+        `<p class="overlay-sub">${rootView ? "Choose a category" : enemySpeedView ? "Enemy Speed" : "Audio"
         }</p>`,
         `<div class="overlay-menu">${rows}</div>`,
-        `<p class="overlay-hint">${
-          rootView
-            ? "W/S or Arrows - move | Enter - open | Esc - close"
-            : enemySpeedView
-              ? "W/S or Arrows - move | Enter - apply | 1-3 quick set | Esc - back"
-              : "W/S or Arrows - move | Enter - apply | 1-2 quick set | Esc - back"
+        `<p class="overlay-hint">${rootView
+          ? "W/S or Arrows - move | Enter - open | Esc - close"
+          : enemySpeedView
+            ? "W/S or Arrows - move | Enter - apply | 1-3 quick set | Esc - back"
+            : "W/S or Arrows - move | Enter - apply | 1-2 quick set | Esc - back"
         }</p>`,
         `</div>`
       ].join("");
@@ -11629,22 +11773,22 @@
       const selectedSummary = getExtractPromptSelectedSummary(prompt);
       const relicRowsHtml = carriedRelics.length > 0
         ? carriedRelics.map((relicId, index) => {
-            const relic = getRelicById(relicId);
-            const rarity = RELIC_RETURN_VALUE[relic?.rarity] != null ? relic.rarity : "normal";
-            const rarityInfo = RARITY[rarity] || RARITY.normal;
-            const unitValue = RELIC_RETURN_VALUE[rarity];
-            const selected = selectedIndexSet.has(index);
-            const hotkeyLabel = index < 8 ? String(index + 1) : "-";
-            return [
-              `<div class="relic-exchange-row" style="border-color:${selected ? rarityInfo.color : rarityInfo.border};background:${rarityInfo.bg};opacity:${selected ? 1 : 0.78}">`,
-              `<div class="relic-exchange-main">`,
-              `<strong style="color:${rarityInfo.color}">[${hotkeyLabel}] ${relic?.name || relicId}</strong>`,
-              `<span>${rarityInfo.label} | +${unitValue} camp gold${selected ? " | SELECTED" : ""}</span>`,
-              `</div>`,
-              `<div class="relic-exchange-gold">${selected ? "SELL" : "KEEP"}</div>`,
-              `</div>`
-            ].join("");
-          }).join("")
+          const relic = getRelicById(relicId);
+          const rarity = RELIC_RETURN_VALUE[relic?.rarity] != null ? relic.rarity : "normal";
+          const rarityInfo = RARITY[rarity] || RARITY.normal;
+          const unitValue = RELIC_RETURN_VALUE[rarity];
+          const selected = selectedIndexSet.has(index);
+          const hotkeyLabel = index < 8 ? String(index + 1) : "-";
+          return [
+            `<div class="relic-exchange-row" style="border-color:${selected ? rarityInfo.color : rarityInfo.border};background:${rarityInfo.bg};opacity:${selected ? 1 : 0.78}">`,
+            `<div class="relic-exchange-main">`,
+            `<strong style="color:${rarityInfo.color}">[${hotkeyLabel}] ${relic?.name || relicId}</strong>`,
+            `<span>${rarityInfo.label} | +${unitValue} camp gold${selected ? " | SELECTED" : ""}</span>`,
+            `</div>`,
+            `<div class="relic-exchange-gold">${selected ? "SELL" : "KEEP"}</div>`,
+            `</div>`
+          ].join("");
+        }).join("")
         : `<div class="relic-exchange-empty">No relics to exchange.</div>`;
       screenOverlayEl.className = "screen-overlay visible";
       screenOverlayEl.innerHTML = [
@@ -11786,6 +11930,7 @@
         if (normalized === "rare") return "merchant-tier-rare";
         if (normalized === "epic") return "merchant-tier-epic";
         if (normalized === "legendary") return "merchant-tier-legendary";
+        if (normalized === "life") return "merchant-tier-life";
         return "";
       };
 
@@ -11845,8 +11990,8 @@
         const reason = legendaryLocked
           ? lockReason
           : cannotAfford
-          ? `Need ${cost} gold (run + camp).`
-          : `Upgrade to ${nextLabel}: ${offer.desc}. Cost ${cost} gold (run + camp).`;
+            ? `Need ${cost} gold (run + camp).`
+            : `Upgrade to ${nextLabel}: ${offer.desc}. Cost ${cost} gold (run + camp).`;
         return buildMerchantRow(
           key,
           `${skill.name} [${currentLabel} -> ${nextLabel}]`,
@@ -11897,7 +12042,7 @@
         const canAffordBoost = getMerchantUpgradeWalletTotal() >= boostCost;
         serviceRow = buildMerchantRow(
           "6", "Combat Boost",
-          alreadyActive ? "Already active." : `+20 ATK & ARM for 30 turns. Cost ${boostCost} gold.`,
+          alreadyActive ? "Already active." : `+20 ATK & ARM for 100 turns. Cost ${boostCost} gold.`,
           { disabled: alreadyActive || !canAffordBoost }
         );
       } else if (serviceSlot === "secondchance") {
@@ -11908,6 +12053,15 @@
           "6", "Second Chance",
           alreadyHas ? "Already active." : `Survive next fatal blow with 100 HP. Cost ${scCost} gold.`,
           { disabled: alreadyHas || !canAffordSC }
+        );
+      } else if (serviceSlot === "onelife") {
+        const lifeCost = hasRelic("merchfavor") ? 1000 : 2000;
+        const atMaxLives = state.lives >= MAX_LIVES;
+        const canAffordLife = getMerchantUpgradeWalletTotal() >= lifeCost;
+        serviceRow = buildMerchantRow(
+          "6", "Extra Life",
+          atMaxLives ? "Already at max lives." : `+1 life (${state.lives}/${MAX_LIVES}). Cost ${lifeCost} gold.`,
+          { disabled: atMaxLives || !canAffordLife, tierLabel: "Life", tierClass: "merchant-tier-life" }
         );
       } else if (serviceSlot === "blackmarket") {
         const eligibleRelics = state.relics.filter(id => {
@@ -11943,7 +12097,7 @@
           );
         }).join("");
         menuBlock = `<div class="overlay-menu">${bmRows}</div>`;
-      // Relic swap mode: show current relics to pick which to replace
+        // Relic swap mode: show current relics to pick which to replace
       } else if (state.merchantRelicSwapPending) {
         const swapRelic = getRelicById(state.merchantRelicSwapPending.relicId);
         const swapRows = state.relics.map((relicId, index) => {
@@ -15711,8 +15865,8 @@
     );
     const maxPlannedUpgrades =
       progressDepth >= 22 ? 3 :
-      progressDepth >= 12 ? 2 :
-      progressDepth >= 6 ? 1 : 0;
+        progressDepth >= 12 ? 2 :
+          progressDepth >= 6 ? 1 : 0;
     if (maxPlannedUpgrades <= 0) {
       return { reserve: 0, planned: [] };
     }
@@ -15929,7 +16083,7 @@
       economyPlan &&
       economyPlan.shouldBankSoon &&
       walletTotal <
-        Math.max(0, Number(economyPlan.campGoldReserve) || 0)
+      Math.max(0, Number(economyPlan.campGoldReserve) || 0)
     );
     const emergencyPotionBuy = state.player.potions <= 0 && hpRatio < 0.65;
     const allowPotionSpend = !preserveGoldForCamp || emergencyPotionBuy || state.player.potions < potionTarget;
@@ -17029,6 +17183,8 @@
           tryBuyCombatBoost();
         } else if (s === "secondchance") {
           tryBuySecondChance();
+        } else if (s === "onelife") {
+          tryBuyOneLife();
         } else if (s === "blackmarket") {
           if (state.blackMarketPending) {
             state.blackMarketPending = null;
@@ -17253,10 +17409,10 @@
     };
   }
 
-  bindMobileButton("mbtnUp",    mobileMoveHandler(0, -1));
-  bindMobileButton("mbtnDown",  mobileMoveHandler(0,  1));
-  bindMobileButton("mbtnLeft",  mobileMoveHandler(-1, 0));
-  bindMobileButton("mbtnRight", mobileMoveHandler(1,  0));
+  bindMobileButton("mbtnUp", mobileMoveHandler(0, -1));
+  bindMobileButton("mbtnDown", mobileMoveHandler(0, 1));
+  bindMobileButton("mbtnLeft", mobileMoveHandler(-1, 0));
+  bindMobileButton("mbtnRight", mobileMoveHandler(1, 0));
 
   bindMobileButton("mbtnZ", () => {
     if (state.phase !== "playing") return;
