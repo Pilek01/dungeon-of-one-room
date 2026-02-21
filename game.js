@@ -576,7 +576,7 @@
     {
       id: "berserker", name: "Berserker", key: "1",
       bonus: "+25% ATK", drawback: "-25% Max HP",
-      unlockText: "Kill 60 enemies"
+      unlockText: "Kill 100 enemies"
     },
     {
       id: "bulwark", name: "Bulwark", key: "2",
@@ -596,12 +596,12 @@
     {
       id: "hunter", name: "Hunter", key: "5",
       bonus: "+20% Crit", drawback: "Enemies deal +25% more damage",
-      unlockText: "Kill 30 elites"
+      unlockText: "Kill 10 elites"
     },
     {
       id: "resilience", name: "Resilience", key: "6",
       bonus: "Shield = 20% Max HP on room entry", drawback: "Enemies deal +20% more damage",
-      unlockText: "Use shield skill 50 times"
+      unlockText: "Use shield skill 15 times"
     },
     {
       id: "momentum", name: "Momentum", key: "7",
@@ -616,7 +616,7 @@
     {
       id: "elitist", name: "Elitist", key: "9",
       bonus: "Elites drop +60% gold", drawback: "+30% elite spawn, elites +25% HP",
-      unlockText: "Kill 25 elites"
+      unlockText: "Kill 50 elites"
     },
     {
       id: "ascension", name: "Ascension", key: "0",
@@ -1268,7 +1268,8 @@
   function calculateScore(depth, gold) {
     const safeDepth = Math.max(0, Number(depth) || 0);
     const safeGold = Math.max(0, Number(gold) || 0);
-    return Math.round(safeDepth * 1000 + safeGold * 3);
+    const bossMilestones = Math.floor(safeDepth / 5);
+    return Math.round(safeDepth * 1000 + safeGold * 2 + bossMilestones * 2500);
   }
 
   function getRunMaxDepth() {
@@ -1283,12 +1284,17 @@
     if (!rawEntry || typeof rawEntry !== "object") return null;
     const depth = Math.max(0, Number(rawEntry.depth) || 0);
     const gold = Math.max(0, Number(rawEntry.gold) || 0);
+    const startDepth = clamp(
+      Math.max(0, Number(rawEntry.startDepth ?? rawEntry.start_depth) || 0),
+      0,
+      depth
+    );
     const turns = Math.max(0, Number(rawEntry.turns) || Number(rawEntry.turn) || 0);
     const submitSeq = Math.max(
       1,
       Number(rawEntry.submitSeq ?? rawEntry.submit_seq ?? rawEntry.seq) || 1
     );
-    const score = Math.max(0, Number(rawEntry.score) || calculateScore(depth, gold));
+    const score = calculateScore(depth, gold);
     const outcome = rawEntry.outcome === "extract" ? "extract" : "death";
     const ts = Math.max(0, Number(rawEntry.ts) || Date.now());
     const mutatorIds = Array.isArray(rawEntry.mutatorIds)
@@ -1312,6 +1318,7 @@
       outcome,
       depth,
       gold,
+      startDepth,
       turns,
       submitSeq,
       score,
@@ -1404,6 +1411,9 @@
     totalGoldEarned: Number(localStorage.getItem(STORAGE_TOTAL_GOLD) || 0),
     totalMerchantPots: Number(localStorage.getItem(STORAGE_TOTAL_MERCHANT_POTS) || 0),
     potionFreeExtract: Number(localStorage.getItem(STORAGE_POTION_FREE_EXTRACT) || 0),
+    killsThisRun: 0,
+    eliteKillsThisRun: 0,
+    shieldUsesThisRun: 0,
     campGold: Number(localStorage.getItem(STORAGE_CAMP_GOLD) || localStorage.getItem(STORAGE_ESSENCE_LEGACY) || 0),
     lives: clamp(Number(localStorage.getItem(STORAGE_LIVES) || MAX_LIVES), 0, MAX_LIVES),
     leaderboard: initialLeaderboard,
@@ -1588,6 +1598,7 @@
       barrierArmor: 0,
       barrierTurns: 0,
       gamblerEdgeArmorPenalty: 0,
+      hpShield: 0,
       bloodVialShield: 0,
       engineOfWarTurns: 0,
       engineOfWarTriggeredDepth: -1,
@@ -1688,7 +1699,10 @@
     removeRelic,
     getRelicById,
     MERCHANT_SECOND_CHANCE_MAX_PURCHASES,
-    MAX_RELICS
+    MAX_RELICS,
+    syncMutatorUnlocks,
+    grantLife,
+    MAX_LIVES
   });
 
   const skillsActionsApi = skillsActionsApiFactory.create({
@@ -3115,6 +3129,18 @@
         outcome: entry.outcome === "extract" ? "extract" : "death",
         depth: Math.max(0, Number(entry.depth) || 0),
         gold: Math.max(0, Number(entry.gold) || 0),
+        startDepth: clamp(
+          Math.max(
+            0,
+            Number(
+              entry.startDepth ??
+              entry.start_depth ??
+              (String(state.currentRunId || "") === runId ? state.runStartDepth : 0)
+            ) || 0
+          ),
+          0,
+          Math.max(0, Number(entry.depth) || 0)
+        ),
         turns: Math.max(0, Number(entry.turns) || 0),
         submitSeq,
         score: Math.max(0, Number(entry.score) || 0),
@@ -3392,6 +3418,9 @@
     state.campStartDepthPromptOpen = false;
     state.campStartDepthSelectionIndex = 0;
     resetSessionChestBonuses();
+    state.killsThisRun = 0;
+    state.eliteKillsThisRun = 0;
+    state.shieldUsesThisRun = 0;
     state.campVisitShopCostMult = 1;
     state.leaderboardModalOpen = false;
     state.nameModalOpen = false;
@@ -3442,6 +3471,7 @@
       gameVersion: GAME_VERSION,
       phase: state.phase,
       depth: state.depth,
+      runStartDepth: state.runStartDepth,
       runMaxDepth: state.runMaxDepth,
       runGoldEarned: state.runGoldEarned,
       turn: state.turn,
@@ -3499,7 +3529,10 @@
       campVisitShopCostMult: state.campVisitShopCostMult,
       merchantUpgradeBoughtThisRoom: state.merchantUpgradeBoughtThisRoom,
       merchantPotionsBought: state.merchantPotionsBought || 0,
-      potionsUsedThisRun: state.potionsUsedThisRun || 0
+      potionsUsedThisRun: state.potionsUsedThisRun || 0,
+      killsThisRun: state.killsThisRun || 0,
+      eliteKillsThisRun: state.eliteKillsThisRun || 0,
+      shieldUsesThisRun: state.shieldUsesThisRun || 0
     };
   }
 
@@ -3527,6 +3560,11 @@
 
     state.phase = nextPhase;
     state.depth = Math.max(0, Number(snapshot.depth) || 0);
+    state.runStartDepth = clamp(
+      Math.max(0, Number(snapshot.runStartDepth) || 0),
+      0,
+      state.depth
+    );
     const snapshotRunMaxDepth = Number(snapshot.runMaxDepth);
     if (Number.isFinite(snapshotRunMaxDepth) && snapshotRunMaxDepth >= 0) {
       state.runMaxDepth = Math.max(0, Math.floor(snapshotRunMaxDepth));
@@ -3726,6 +3764,7 @@
       barrierArmor: Math.max(0, Number(snapshot.player.barrierArmor) || 0),
       barrierTurns: Math.max(0, Number(snapshot.player.barrierTurns) || 0),
       gamblerEdgeArmorPenalty: Math.max(0, Number(snapshot.player.gamblerEdgeArmorPenalty) || 0),
+      hpShield: Math.max(0, Number(snapshot.player.hpShield) || 0),
       bloodVialShield: Math.max(0, Number(snapshot.player.bloodVialShield) || 0),
       engineOfWarTurns: Math.max(0, Number(snapshot.player.engineOfWarTurns) || 0),
       engineOfWarTriggeredDepth: Math.floor(Number(snapshot.player.engineOfWarTriggeredDepth)),
@@ -4850,15 +4889,15 @@
   function syncMutatorUnlocks() {
     const newlyUnlocked = [];
     const rules = [
-      { id: "berserker", ok: state.killsThisRun >= 60 },
+      { id: "berserker", ok: state.killsThisRun >= 100 },
       { id: "bulwark", ok: (state.runMaxDepth || 0) >= 8 },
       { id: "alchemist", ok: (state.merchantPotsThisRun || 0) >= 5 },
       { id: "greed", ok: (state.runGoldEarned || 0) >= 1000 },
-      { id: "hunter", ok: (state.eliteKillsThisRun || 0) >= 30 },
-      { id: "resilience", ok: (state.shieldUsesThisRun || 0) >= 50 },
+      { id: "hunter", ok: (state.eliteKillsThisRun || 0) >= 10 },
+      { id: "resilience", ok: (state.shieldUsesThisRun || 0) >= 15 },
       { id: "momentum", ok: (state.runMaxDepth || 0) >= 10 },
       { id: "famine", ok: (state.potionFreeRoomStreak || 0) >= 10 },
-      { id: "elitist", ok: (state.eliteKillsThisRun || 0) >= 25 },
+      { id: "elitist", ok: (state.eliteKillsThisRun || 0) >= 50 },
       { id: "ascension", ok: (state.runMaxDepth || 0) >= 15 }
     ];
 
@@ -5460,17 +5499,38 @@
     if (incoming <= 0) {
       return { remaining: 0, absorbed: 0 };
     }
-    const shieldBefore = Math.max(0, Number(state.player.bloodVialShield) || 0);
-    if (shieldBefore <= 0) {
-      return { remaining: incoming, absorbed: 0 };
+    let remaining = incoming;
+    let totalAbsorbed = 0;
+
+    // 1) hpShield (Resilience mutator) absorbs first
+    const hpShieldBefore = Math.max(0, Number(state.player.hpShield) || 0);
+    if (hpShieldBefore > 0) {
+      const hpShieldAbsorb = Math.min(remaining, hpShieldBefore);
+      state.player.hpShield = hpShieldBefore - hpShieldAbsorb;
+      remaining -= hpShieldAbsorb;
+      totalAbsorbed += hpShieldAbsorb;
+      if (hpShieldAbsorb > 0) {
+        spawnFloatingText(state.player.x, state.player.y, `SH -${hpShieldAbsorb}`, "#7be0ff");
+        spawnParticles(state.player.x, state.player.y, "#60ccff", 4, 0.85);
+      }
     }
-    const absorbed = Math.min(incoming, shieldBefore);
-    state.player.bloodVialShield = shieldBefore - absorbed;
-    if (absorbed > 0) {
-      spawnFloatingText(state.player.x, state.player.y, `SH ${absorbed}`, "#9fd9ff");
-      spawnParticles(state.player.x, state.player.y, "#90c6ff", 5, 0.9);
+
+    // 2) bloodVialShield (Blood Vial relic) absorbs next
+    if (remaining > 0) {
+      const bloodShieldBefore = Math.max(0, Number(state.player.bloodVialShield) || 0);
+      if (bloodShieldBefore > 0) {
+        const bloodAbsorb = Math.min(remaining, bloodShieldBefore);
+        state.player.bloodVialShield = bloodShieldBefore - bloodAbsorb;
+        remaining -= bloodAbsorb;
+        totalAbsorbed += bloodAbsorb;
+        if (bloodAbsorb > 0) {
+          spawnFloatingText(state.player.x, state.player.y, `SH ${bloodAbsorb}`, "#9fd9ff");
+          spawnParticles(state.player.x, state.player.y, "#90c6ff", 5, 0.9);
+        }
+      }
     }
-    return { remaining: Math.max(0, incoming - absorbed), absorbed };
+
+    return { remaining: Math.max(0, remaining), absorbed: totalAbsorbed };
   }
 
   function tryTriggerEngineOfWarEmergency(sourceLabel = "danger") {
@@ -7102,8 +7162,10 @@
 
   function applyResilienceShield() {
     if (!isMutatorActive("resilience")) return;
-    const shield = Math.floor(state.player.maxHp * 0.20);
-    state.player.barrier = Math.max(state.player.barrier || 0, shield);
+    // Top up hpShield to at least 20% maxHp on room entry.
+    // Math.max ensures we never reduce a higher shield (e.g. stacked from a shrine).
+    const resShield = Math.floor(state.player.maxHp * 0.20);
+    state.player.hpShield = Math.max(Number(state.player.hpShield) || 0, resShield);
   }
 
   function applyMutatorsToRun() {
@@ -7906,10 +7968,8 @@
 
     state.merchantPotionsBought = 0;
     state.potionsUsedThisRun = 0;
-    state.killsThisRun = 0;
-    state.eliteKillsThisRun = 0;
+    // killsThisRun, eliteKillsThisRun, shieldUsesThisRun are session-wide (reset only on game over)
     state.merchantPotsThisRun = 0;
-    state.shieldUsesThisRun = 0;
     state.potionFreeRoomStreak = 0;
     state.potionUsedInRoom = false;
     state.player.hp = scaledCombat(BASE_PLAYER_HP);
@@ -7928,6 +7988,7 @@
     state.player.barrierArmor = 0;
     state.player.barrierTurns = 0;
     state.player.gamblerEdgeArmorPenalty = 0;
+    state.player.hpShield = 0;
     state.player.bloodVialShield = 0;
     state.player.engineOfWarTurns = 0;
     state.player.engineOfWarTriggeredDepth = -1;
@@ -10643,7 +10704,13 @@
     const combatRows = [
       statRow("Player", state.playerName || "Not set", "Your current nickname used for leaderboard entries."),
       statRow("Lives", `${state.lives}/${MAX_LIVES}`, "Lives are lost on death. At 0 lives, meta progress resets."),
-      statRow("HP", `${state.player.hp}/${state.player.maxHp}`, "Current and maximum health. Reaching 0 HP kills the run."),
+      statRow("HP", (() => {
+        const hpShield = Math.max(0, Number(state.player.hpShield) || 0);
+        const base = `${state.player.hp}/${state.player.maxHp}`;
+        return hpShield > 0
+          ? `${base} <span style="color:#7be0ff;font-weight:700">(+${hpShield})</span>`
+          : base;
+      })(), "Current and maximum health. Reaching 0 HP kills the run."),
       statRow(
         "ATK",
         `${state.player.attack}${chaosAtkBonus > 0 ? ` (+${chaosAtkBonus})` : ""}`,
@@ -11864,7 +11931,7 @@
       subtitleDetail = state.lastDeathRelicLossText || "Death penalty: no relic lost.";
     } else if (state.phase === "camp") {
       title = "Camp Shop";
-      subtitle = `Camp Gold ${state.campGold} | Lives ${state.lives}/${MAX_LIVES}`;
+      subtitle = `Camp Gold <span style="color:#ffd700;font-weight:700">${state.campGold}</span> | Lives <span style="color:#ff4d7e;font-weight:700">${state.lives}/${MAX_LIVES}</span>`;
       subtitleDetail = `Unlocked start depths: ${getAvailableStartDepths().join(", ")}`;
     } else if (state.phase === "relic") {
       if (state.legendarySwapPending) {

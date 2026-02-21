@@ -25,7 +25,10 @@
       removeRelic,
       getRelicById,
       MERCHANT_SECOND_CHANCE_MAX_PURCHASES,
-      MAX_RELICS
+      MAX_RELICS,
+      syncMutatorUnlocks,
+      grantLife,
+      MAX_LIVES
     } = deps;
 
     function getMerchantUpgradeWalletTotal() {

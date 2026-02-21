@@ -53,7 +53,7 @@
       if (curseRoll === 2) return { type: "curse", curse: "summon" };
       return { type: "curse", curse: "swap" };
     }
-    const roll = Math.floor(rng() * 8) + 1;
+    const roll = Math.floor(rng() * 9) + 1;
     if (roll === 1) return { type: "blessing", blessing: "max_hp" };
     if (roll === 2) return { type: "blessing", blessing: "attack" };
     if (roll === 3) return { type: "blessing", blessing: "armor" };
@@ -61,7 +61,8 @@
     if (roll === 5) return { type: "blessing", blessing: "fury" };
     if (roll === 6) return { type: "blessing", blessing: "swapping" };
     if (roll === 7) return { type: "blessing", blessing: "noise" };
-    return { type: "blessing", blessing: "hunger" };
+    if (roll === 8) return { type: "blessing", blessing: "hunger" };
+    return { type: "blessing", blessing: "shield" };
   }
 
   window.DungeonLootTables = {
