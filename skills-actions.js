@@ -36,6 +36,8 @@
       setShake,
       getShieldChargesInfo,
       consumeShieldCharge,
+      getPlayerHpShieldCap,
+      capPlayerHpShield,
       putSkillOnCooldown,
       finalizeTurn,
       markUiDirty
@@ -43,6 +45,12 @@
     const LEGENDARY_SKILL_TIER = 3;
     const DASH_LEGENDARY_FIRST_HIT_MULT = 1.6;
     const DASH_LEGENDARY_AFTERLINE_TURNS = 4;
+    const SHIELD_BASE_HP_MULTIPLIER = 1.0;
+    const SHIELD_RARE_HP_MULTIPLIER = 1.25;
+
+    function hasCombatTargets() {
+      return Array.isArray(state.enemies) && state.enemies.length > 0;
+    }
 
     function cancelDashAim(logText = "Dash canceled.") {
       if (!state.dashAimActive) return false;
@@ -56,6 +64,10 @@
     }
 
     function tryArmDashSkill() {
+      if (!hasCombatTargets()) {
+        pushLog("No targets. Skills are combat-only.", "bad");
+        return false;
+      }
       const skill = SKILL_BY_ID.dash;
       const remaining = getSkillCooldownRemaining(skill.id);
       if (remaining > 0) {
@@ -72,6 +84,11 @@
     }
 
     function tryUseDashSkill(forcedDx = null, forcedDy = null) {
+      if (!hasCombatTargets()) {
+        state.dashAimActive = false;
+        pushLog("No targets. Skills are combat-only.", "bad");
+        return false;
+      }
       const skill = SKILL_BY_ID.dash;
       const dashTier = getSkillTier(skill.id);
       const remaining = getSkillCooldownRemaining(skill.id);
@@ -272,6 +289,10 @@
     }
 
     function tryUseAoeSkill() {
+      if (!hasCombatTargets()) {
+        pushLog("No targets. Skills are combat-only.", "bad");
+        return false;
+      }
       const skill = SKILL_BY_ID.aoe;
       const aoeTier = getSkillTier(skill.id);
       const remaining = getSkillCooldownRemaining(skill.id);
@@ -439,6 +460,10 @@
     }
 
     function tryUseShieldSkill() {
+      if (!hasCombatTargets()) {
+        pushLog("No targets. Skills are combat-only.", "bad");
+        return false;
+      }
       const skill = SKILL_BY_ID.shield;
       const shieldTier = getSkillTier(skill.id);
       const shieldCharges = shieldTier >= 2 && typeof getShieldChargesInfo === "function"
@@ -468,7 +493,23 @@
       state.player.barrierArmor = 0;
       state.player.barrierTurns = 4;
       state.player.shieldStoredDamage = 0;
+      const shieldBefore = Math.max(0, Number(state.player.hpShield) || 0);
+      const shieldMultiplier = shieldTier >= 1 ? SHIELD_RARE_HP_MULTIPLIER : SHIELD_BASE_HP_MULTIPLIER;
+      const shieldGain = Math.max(
+        MIN_EFFECTIVE_DAMAGE,
+        Math.round(Math.max(1, Number(state.player.maxHp) || 1) * shieldMultiplier)
+      );
+      state.player.hpShield = shieldBefore + shieldGain;
+      if (typeof capPlayerHpShield === "function") {
+        capPlayerHpShield();
+      }
+      const shieldAfter = Math.max(0, Number(state.player.hpShield) || 0);
+      const shieldCap = typeof getPlayerHpShieldCap === "function"
+        ? Math.max(0, Number(getPlayerHpShieldCap()) || 0)
+        : Math.max(shieldAfter, Math.round((Number(state.player.maxHp) || 0) * 1.5));
+      const appliedShield = Math.max(0, shieldAfter - shieldBefore);
       spawnParticles(state.player.x, state.player.y, "#b4d3ff", 12, 1.15);
+      spawnFloatingText(state.player.x, state.player.y, `+${appliedShield} SH`, "#d8ecff");
       let pushed = 0;
       if (shieldTier >= 1) {
         function pushEnemyChain(enemy, dx, dy, visited = new Set()) {
@@ -525,22 +566,17 @@
         ? getShieldChargesInfo()
         : null;
       pushLog(
-        `Shield up: full immunity for 3 turns after cast${
+        `Shield up: +${appliedShield} HP shield (${shieldAfter}/${shieldCap})${
           shieldTier >= 1 ? `, knockback ${pushed}` : ""
-        }${shieldTier >= 2 ? ", reflect x2 + taunt active" : ""}${
-          shieldTier >= LEGENDARY_SKILL_TIER ? ", stores 40% blocked damage for Aegis Counter" : ""
+        }${shieldTier >= 2 ? ", melee counter + taunt active" : ""}${
+          shieldTier >= LEGENDARY_SKILL_TIER ? ", stores 25% absorbed shield damage for Aegis Counter" : ""
         }${
           shieldChargesAfter?.enabled ? `, charges ${shieldChargesAfter.charges}/${shieldChargesAfter.max}` : ""
         }.`,
         "good"
       );
       if (shieldTier < 2) {
-        if (shieldTier === 1) {
-          // Rare: skrócony cooldown 15 (zamiast bazowego 20). +1 offsetuje tick w tej samej turze.
-          state.skillCooldowns[skill.id] = 16;
-        } else {
-          putSkillOnCooldown(skill.id);
-        }
+        putSkillOnCooldown(skill.id);
       }
       finalizeTurn();
       return true;

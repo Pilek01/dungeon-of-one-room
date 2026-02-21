@@ -108,6 +108,20 @@
     const lane = context.lane || "support";
     const wantsPressure = playerLowHp && !playerShieldActive;
 
+    if (focusMode === "intercept") {
+      if (role === "zoning" || role === "ranged") {
+        if (enemy.aiming || canCastNow) return "cast";
+        return distance <= 1 ? "retreat" : "flank";
+      }
+      if (role === "bruiser") {
+        return distance <= 2 ? "cutoff" : "flank";
+      }
+      if (lane === "frontline") {
+        return distance <= 2 ? "cutoff" : "chase";
+      }
+      return "flank";
+    }
+
     if (role === "zoning" || role === "ranged") {
       if (enemy.aiming || canCastNow) {
         if (playerShieldActive) {
@@ -154,16 +168,23 @@
       blackboard
     } = context;
 
-    const distance = manhattan(tile.x, tile.y, player.x, player.y);
+    const focusMode = String(blackboard?.focusMode || "normal");
+    const strafeData = blackboard?.strafe;
+    const interceptActive = Boolean(focusMode === "intercept" && strafeData?.active && strafeData?.predicted);
+    const targetX = interceptActive ? Number(strafeData.predicted.x) : player.x;
+    const targetY = interceptActive ? Number(strafeData.predicted.y) : player.y;
+    const distance = manhattan(tile.x, tile.y, targetX, targetY);
     const portalDistance = manhattan(tile.x, tile.y, portal.x, portal.y);
-    const sameAxis = tile.x === player.x || tile.y === player.y;
+    const sameAxis = tile.x === targetX || tile.y === targetY;
     const flankBonus = !sameAxis && distance <= 2 ? 5 : 0;
     const castFromTile = canCastFrom(enemy, tile, player, chests);
+    const castFromPredicted =
+      interceptActive &&
+      hasLineOfSightFrom(tile.x, tile.y, targetX, targetY, chests);
     const allyDensity = countAdjacentAllies(tile, enemies, enemy);
     const onSpike = spikes.has(`${tile.x},${tile.y}`);
     const meleeRange = distance === 1;
     const tileThreat = Number(blackboard?.threatMap?.[`${tile.x},${tile.y}`]) || 0;
-    const focusMode = String(blackboard?.focusMode || "normal");
 
     let score = 0;
     if (intent === "chase") {
@@ -187,6 +208,7 @@
     }
 
     if (castFromTile && (role === "zoning" || role === "ranged")) score += 5;
+    if (castFromPredicted && (role === "zoning" || role === "ranged")) score += 4;
     if (onSpike) score -= 26;
     score -= tileThreat * 0.22;
     score -= allyDensity * 3.5;
@@ -196,6 +218,10 @@
     }
 
     if (focusMode === "pressure" && distance <= 2) score += 3;
+    if (focusMode === "intercept") {
+      score += Math.max(0, 12 - distance * 4);
+      if (castFromPredicted) score += 5;
+    }
     if (focusMode === "bait" && castFromTile) score -= 3;
 
     if (meleeRange && meleeSlotsUsed >= meleeSlotsLimit && role !== "bruiser") {

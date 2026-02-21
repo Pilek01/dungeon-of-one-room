@@ -66,6 +66,34 @@
     return map;
   }
 
+  function detectStrafePattern(recentPositions = []) {
+    if (!Array.isArray(recentPositions) || recentPositions.length < 4) {
+      return { active: false, predicted: null, axis: "" };
+    }
+    const last4 = recentPositions.slice(-4).map((item) => ({
+      x: Math.round(Number(item?.x) || 0),
+      y: Math.round(Number(item?.y) || 0)
+    }));
+    const a = last4[0];
+    const b = last4[1];
+    const c = last4[2];
+    const d = last4[3];
+    const toggles =
+      a.x === c.x &&
+      a.y === c.y &&
+      b.x === d.x &&
+      b.y === d.y &&
+      !(a.x === b.x && a.y === b.y) &&
+      manhattan(a.x, a.y, b.x, b.y) === 1;
+    if (!toggles) {
+      return { active: false, predicted: null, axis: "" };
+    }
+    const axis = a.x !== b.x ? "x" : "y";
+    // Pattern A-B-A-B => next likely A (the position from 2 turns ago).
+    const predicted = { x: c.x, y: c.y };
+    return { active: true, predicted, axis };
+  }
+
   function createBlackboard(input = {}) {
     const enemies = Array.isArray(input.enemies) ? input.enemies : [];
     const player = input.player || { x: 4, y: 4, hp: 100, maxHp: 100 };
@@ -77,12 +105,18 @@
     );
     const playerLowHp = Boolean(input.playerLowHp);
     const playerShieldActive = Boolean(input.playerShieldActive);
-    const focusMode = playerShieldActive ? "bait" : (playerLowHp ? "pressure" : "normal");
+    const strafe = detectStrafePattern(input.playerRecentPositions || []);
+    const focusMode = strafe.active
+      ? "intercept"
+      : playerShieldActive
+        ? "bait"
+        : (playerLowHp ? "pressure" : "normal");
 
     return {
       id: `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`,
       createdAt: Date.now(),
       focusMode,
+      strafe,
       melee: {
         limit: meleeLimit,
         committed: 0
