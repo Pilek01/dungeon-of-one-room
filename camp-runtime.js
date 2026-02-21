@@ -168,6 +168,8 @@
         `Merchant deal: -${cost} gold (${payment.fromRun} run, ${payment.fromCamp} camp), +1 potion (${state.player.potions}/${state.player.maxPotions}). Next: ${nextCost}g.`,
         "good"
       );
+      state.merchantPotsThisRun = (state.merchantPotsThisRun || 0) + 1;
+      syncMutatorUnlocks();
       saveRunSnapshot();
       markUiDirty();
       return true;
@@ -264,7 +266,7 @@
         return false;
       }
       spendMerchantUpgradeGold(cost);
-      state.player.combatBoostTurns = 30;
+      state.player.combatBoostTurns = 100;
       state.player.attack += 20;
       state.player.armor += 20;
       state.merchantServiceSlot = null;
@@ -304,6 +306,35 @@
       state.merchantServiceSlot = null;
       spawnParticles(state.player.x, state.player.y, "#cc44ff", 14, 1.3);
       pushLog(`Merchant: Second Chance purchased. Next fatal blow survived. -${cost} gold.`, "good");
+      saveRunSnapshot();
+      markUiDirty();
+      return true;
+    }
+
+    function tryBuyOneLife() {
+      if (state.phase !== "playing") return false;
+      if (state.roomType !== "merchant") return false;
+      if (!isOnMerchant()) return false;
+      if (state.merchantServiceSlot !== "onelife") {
+        pushLog("Extra Life not available today.", "bad");
+        return false;
+      }
+      if (state.lives >= MAX_LIVES) {
+        pushLog("Extra Life: already at max lives.", "bad");
+        return false;
+      }
+      const baseCost = 2000;
+      const cost = hasRelic("merchfavor") ? Math.round(baseCost * 0.5) : baseCost;
+      const wallet = getMerchantUpgradeWalletTotal();
+      if (wallet < cost) {
+        pushLog(`Merchant: need ${cost} gold for Extra Life.`, "bad");
+        return false;
+      }
+      spendMerchantUpgradeGold(cost);
+      state.merchantServiceSlot = null;
+      grantLife("Merchant", 1);
+      spawnParticles(state.player.x, state.player.y, "#ff4d7e", 20, 1.5);
+      pushLog(`Merchant: Extra Life purchased! Lives: ${state.lives}/${MAX_LIVES}. -${cost} gold.`, "good");
       saveRunSnapshot();
       markUiDirty();
       return true;
@@ -400,6 +431,7 @@
       tryBuyFullHeal,
       tryBuyCombatBoost,
       tryBuySecondChance,
+      tryBuyOneLife,
       tryUseBlackMarket
     };
   }

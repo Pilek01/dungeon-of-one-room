@@ -870,6 +870,13 @@ canvas.boss-pulse {
   animation: merchantLegendaryPulse 1.8s ease-in-out infinite;
 }
 
+.overlay-menu-row.merchant-tier-life {
+  border-left-color: #ff4d7ecc;
+  background: linear-gradient(90deg, #ff4d7e2e, #ff4d7e18);
+  box-shadow: inset 0 0 0 1px #ff4d7e45, 0 0 12px #ff4d7e35;
+  animation: legendaryPulse 1.5s ease-in-out infinite;
+}
+
 .merchant-tier-badge {
   display: inline-block;
   margin-left: 6px;
@@ -902,6 +909,12 @@ canvas.boss-pulse {
   color: #ffd892;
   border-color: #ffb0208f;
   background: #ffb0202b;
+}
+
+.merchant-tier-badge.merchant-tier-life {
+  color: #ffb3c6;
+  border-color: #ff4d7e90;
+  background: #ff4d7e28;
 }
 
 .overlay-menu-key {
