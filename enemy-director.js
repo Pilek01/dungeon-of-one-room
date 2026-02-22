@@ -101,25 +101,76 @@
     return false;
   }
 
+  function getAntiStrafePressureProfile(depth) {
+    const safeDepth = Math.max(0, Math.floor(Number(depth) || 0));
+    if (safeDepth >= 40) {
+      return {
+        band: "late",
+        forceCutoffChance: 1.0,
+        laneCutoffDistance: 4,
+        cutoffBonus: 16,
+        castBonus: 10,
+        predictedCastBonus: 8,
+        portalBonus: 7,
+        interceptDistanceBonusBase: 18,
+        interceptDistanceBonusStep: 5
+      };
+    }
+    if (safeDepth >= 20) {
+      return {
+        band: "mid",
+        forceCutoffChance: 0.8,
+        laneCutoffDistance: 3,
+        cutoffBonus: 11,
+        castBonus: 7,
+        predictedCastBonus: 6,
+        portalBonus: 5,
+        interceptDistanceBonusBase: 14,
+        interceptDistanceBonusStep: 5
+      };
+    }
+    return {
+      band: "early",
+      forceCutoffChance: 0.55,
+      laneCutoffDistance: 2,
+      cutoffBonus: 6,
+      castBonus: 4,
+      predictedCastBonus: 3,
+      portalBonus: 2,
+      interceptDistanceBonusBase: 8,
+      interceptDistanceBonusStep: 4
+    };
+  }
+
   function chooseIntent(role, enemy, distance, canCastNow, canSeePlayer, context) {
     const playerLowHp = context.playerLowHp;
     const playerShieldActive = context.playerShieldActive;
     const focusMode = context.focusMode || "normal";
     const lane = context.lane || "support";
+    const hardAntiStrafe = Boolean(context.hardAntiStrafe);
+    const antiStrafeProfile = context.antiStrafeProfile || getAntiStrafePressureProfile(0);
+    const forceCutoff =
+      hardAntiStrafe &&
+      Math.random() < Math.max(0, Math.min(1, Number(antiStrafeProfile.forceCutoffChance) || 0));
     const wantsPressure = playerLowHp && !playerShieldActive;
 
     if (focusMode === "intercept") {
       if (role === "zoning" || role === "ranged") {
         if (enemy.aiming || canCastNow) return "cast";
-        return distance <= 1 ? "retreat" : "flank";
+        if (distance <= 1) return "retreat";
+        return forceCutoff ? "cutoff" : "flank";
       }
       if (role === "bruiser") {
+        if (forceCutoff) return "cutoff";
         return distance <= 2 ? "cutoff" : "flank";
       }
       if (lane === "frontline") {
+        if (hardAntiStrafe) {
+          return distance <= antiStrafeProfile.laneCutoffDistance ? "cutoff" : "chase";
+        }
         return distance <= 2 ? "cutoff" : "chase";
       }
-      return "flank";
+      return forceCutoff ? "cutoff" : "flank";
     }
 
     if (role === "zoning" || role === "ranged") {
@@ -165,11 +216,15 @@
       meleeSlotsUsed,
       meleeSlotsLimit,
       playerShieldActive,
-      blackboard
+      blackboard,
+      depth
     } = context;
 
     const focusMode = String(blackboard?.focusMode || "normal");
     const strafeData = blackboard?.strafe;
+    const antiStrafeData = blackboard?.antiStrafe;
+    const hardAntiStrafe = Boolean(antiStrafeData?.active);
+    const antiStrafeProfile = getAntiStrafePressureProfile(depth);
     const interceptActive = Boolean(focusMode === "intercept" && strafeData?.active && strafeData?.predicted);
     const targetX = interceptActive ? Number(strafeData.predicted.x) : player.x;
     const targetY = interceptActive ? Number(strafeData.predicted.y) : player.y;
@@ -222,6 +277,15 @@
       score += Math.max(0, 12 - distance * 4);
       if (castFromPredicted) score += 5;
     }
+    if (hardAntiStrafe) {
+      if (intent === "cutoff") score += antiStrafeProfile.cutoffBonus;
+      if (intent === "cast") score += antiStrafeProfile.castBonus;
+      if (castFromPredicted && (role === "zoning" || role === "ranged")) {
+        score += antiStrafeProfile.predictedCastBonus;
+      }
+      if (portalDistance <= 2) score += antiStrafeProfile.portalBonus;
+      score += Math.max(0, antiStrafeProfile.interceptDistanceBonusBase - distance * antiStrafeProfile.interceptDistanceBonusStep);
+    }
     if (focusMode === "bait" && castFromTile) score -= 3;
 
     if (meleeRange && meleeSlotsUsed >= meleeSlotsLimit && role !== "bruiser") {
@@ -253,6 +317,8 @@
     const playerShieldActive = Boolean(input.playerShieldActive);
     const playerLowHp = Boolean(input.playerLowHp);
     const blackboard = input.blackboard || null;
+    const depth = Math.max(0, Math.floor(Number(input.depth) || 0));
+    const antiStrafeProfile = getAntiStrafePressureProfile(depth);
 
     const role = roleForEnemy(enemy);
     const lane = blackboard?.roleAssignments?.get(enemy) || "support";
@@ -271,7 +337,9 @@
       playerLowHp,
       playerShieldActive,
       focusMode: blackboard?.focusMode || "normal",
-      lane
+      lane,
+      hardAntiStrafe: Boolean(blackboard?.antiStrafe?.active),
+      antiStrafeProfile
     });
 
     const candidates = [];
@@ -295,7 +363,8 @@
         meleeSlotsUsed,
         meleeSlotsLimit,
         playerShieldActive,
-        blackboard
+        blackboard,
+        depth
       });
       candidates.push({
         tile,

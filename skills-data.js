@@ -19,7 +19,7 @@
       key: "C",
       name: "Shield",
       cooldown: 20,
-      desc: "Gain shield equal to 100% Max HP"
+      desc: "100% Max HP shield. Decays 20% each combat turn."
     }
   ];
 
@@ -41,7 +41,7 @@
     ],
     shield: [
       { tier: 1, label: "Rare", cost: 300, desc: "Shield is 25% bigger. Cast pushes nearby enemies." },
-      { tier: 2, label: "Epic", cost: 600, desc: "2 charges. One charge returns every 30 turns. Melee hits trigger counter damage." },
+      { tier: 2, label: "Epic", cost: 600, desc: "2 charges. One charge returns every 20 combat turns. Melee hits trigger counter damage." },
       { tier: 3, label: "Legendary", cost: 1200, desc: "Aegis Counter: stores part of absorbed damage and explodes when Shield ends." }
     ]
   };

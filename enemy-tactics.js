@@ -4,6 +4,11 @@
     enemy.slamAiming = Boolean(enemy.slamAiming);
     enemy.volleyAiming = Boolean(enemy.volleyAiming);
     enemy.burstAiming = Boolean(enemy.burstAiming);
+    const acolyteCastType = String(enemy.acolyteCastType || "").toLowerCase();
+    enemy.acolyteCastType =
+      acolyteCastType === "heal" || acolyteCastType === "buff" || acolyteCastType === "attack"
+        ? acolyteCastType
+        : "";
     enemy.volleyCooldown = Math.max(0, Number(enemy.volleyCooldown) || 0);
     enemy.burstCooldown = Math.max(0, Number(enemy.burstCooldown) || 0);
     enemy.telegraphAge = Math.max(0, Number(enemy.telegraphAge) || 0);
@@ -53,6 +58,7 @@
   function handleWarden(enemy, context = {}) {
     ensureEnemyState(enemy);
     const distance = Math.max(0, Number(context.distance) || 0);
+    const depth = Math.max(0, Number(context.depth) || 0);
     const hasLineShot = Boolean(context.hasLineShot);
     const canBurstHit = hasLineShot && distance > 1 && distance <= 3;
     if (enemy.burstAiming) {
@@ -78,13 +84,19 @@
 
     const canStartTelegraph = Boolean(context.canStartTelegraph);
     const wantsCast = context.intent === "cast";
+    const focusMode = String(context.focusMode || "normal");
     const playerShieldActive = Boolean(context.playerShieldActive);
     if (!wantsCast || playerShieldActive) return { type: "none" };
     if (!canBurstHit) return { type: "none" };
     if (enemy.burstCooldown > 0) return { type: "none" };
     if (!canStartTelegraph) return { type: "none" };
 
-    if (Math.random() < 0.35) {
+    let burstChance = depth >= 20 ? 0.48 : 0.35;
+    if (wantsCast) burstChance += depth >= 20 ? 0.1 : 0.05;
+    if (focusMode === "intercept" || focusMode === "pressure") burstChance += 0.08;
+    burstChance = Math.max(0.05, Math.min(0.85, burstChance));
+
+    if (Math.random() < burstChance) {
       enemy.burstAiming = true;
       enemy.telegraphAge = 0;
       return { type: "start_burst" };

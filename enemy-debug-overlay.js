@@ -95,17 +95,23 @@
     const teleLimit = Number(blackboard?.telegraph?.limit) || 1;
     const teleActive = Number(blackboard?.telegraph?.active) || 0;
     const focus = String(blackboard?.focusMode || "normal").toUpperCase();
+    const strafeCycles = Math.max(0, Number(blackboard?.strafe?.cycles) || 0);
+    const antiStrafeActive = Boolean(blackboard?.antiStrafe?.active);
+    const antiStrafeTurns = Math.max(0, Number(blackboard?.antiStrafe?.turnsRemaining) || 0);
+    const antiStrafeCooldown = Math.max(0, Number(blackboard?.antiStrafe?.cooldownRemaining) || 0);
+    const antiStrafeBand = String(blackboard?.antiStrafe?.depthBand || "early").toUpperCase();
 
     ctx.globalAlpha = 0.75;
     ctx.fillStyle = "#060b12";
-    ctx.fillRect(2, 2, 108, 20);
+    ctx.fillRect(2, 2, 132, 26);
     ctx.globalAlpha = 1;
     ctx.fillStyle = "#d9ecff";
     ctx.font = "5px monospace";
     ctx.textAlign = "left";
     ctx.textBaseline = "top";
     ctx.fillText(`AI:${focus} M:${meleeCommitted}/${meleeLimit} T:${teleActive}/${teleLimit}`, 4, 4);
-    ctx.fillText("F flank  C cast  X cutoff", 4, 11);
+    ctx.fillText(`Strafe:${strafeCycles} Anti:${antiStrafeBand} ${antiStrafeActive ? `ON ${antiStrafeTurns}T` : `CD ${antiStrafeCooldown}T`}`, 4, 11);
+    ctx.fillText("F flank  C cast  X cutoff", 4, 18);
   }
 
   function draw(ctx, options = {}) {

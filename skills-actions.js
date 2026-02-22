@@ -36,8 +36,6 @@
       setShake,
       getShieldChargesInfo,
       consumeShieldCharge,
-      getPlayerHpShieldCap,
-      capPlayerHpShield,
       putSkillOnCooldown,
       finalizeTurn,
       markUiDirty
@@ -481,7 +479,8 @@
           return false;
         }
       }
-      if (state.player.barrierTurns > 0) {
+      const activeShield = Math.max(0, Math.round(Number(state.player.skillShield) || 0));
+      if (activeShield > 0) {
         pushLog("Shield is already active.", "bad");
         return false;
       }
@@ -491,23 +490,16 @@
       }
 
       state.player.barrierArmor = 0;
-      state.player.barrierTurns = 4;
+      state.player.barrierTurns = 0;
       state.player.shieldStoredDamage = 0;
-      const shieldBefore = Math.max(0, Number(state.player.hpShield) || 0);
-      const shieldMultiplier = shieldTier >= 1 ? SHIELD_RARE_HP_MULTIPLIER : SHIELD_BASE_HP_MULTIPLIER;
-      const shieldGain = Math.max(
+      const appliedShield = Math.max(
         MIN_EFFECTIVE_DAMAGE,
-        Math.round(Math.max(1, Number(state.player.maxHp) || 1) * shieldMultiplier)
+        Math.round(
+          Math.max(1, Number(state.player.maxHp) || 1) *
+          (shieldTier >= 1 ? SHIELD_RARE_HP_MULTIPLIER : SHIELD_BASE_HP_MULTIPLIER)
+        )
       );
-      state.player.hpShield = shieldBefore + shieldGain;
-      if (typeof capPlayerHpShield === "function") {
-        capPlayerHpShield();
-      }
-      const shieldAfter = Math.max(0, Number(state.player.hpShield) || 0);
-      const shieldCap = typeof getPlayerHpShieldCap === "function"
-        ? Math.max(0, Number(getPlayerHpShieldCap()) || 0)
-        : Math.max(shieldAfter, Math.round((Number(state.player.maxHp) || 0) * 1.5));
-      const appliedShield = Math.max(0, shieldAfter - shieldBefore);
+      state.player.skillShield = appliedShield;
       spawnParticles(state.player.x, state.player.y, "#b4d3ff", 12, 1.15);
       spawnFloatingText(state.player.x, state.player.y, `+${appliedShield} SH`, "#d8ecff");
       let pushed = 0;
@@ -566,13 +558,7 @@
         ? getShieldChargesInfo()
         : null;
       pushLog(
-        `Shield up: +${appliedShield} HP shield (${shieldAfter}/${shieldCap})${
-          shieldTier >= 1 ? `, knockback ${pushed}` : ""
-        }${shieldTier >= 2 ? ", melee counter + taunt active" : ""}${
-          shieldTier >= LEGENDARY_SKILL_TIER ? ", stores 25% absorbed shield damage for Aegis Counter" : ""
-        }${
-          shieldChargesAfter?.enabled ? `, charges ${shieldChargesAfter.charges}/${shieldChargesAfter.max}` : ""
-        }.`,
+        `Shield up: +${appliedShield} shield${shieldTier >= 1 ? `, knockback ${pushed}` : ""}${shieldChargesAfter?.enabled ? `, charges ${shieldChargesAfter.charges}/${shieldChargesAfter.max}` : ""}.`,
         "good"
       );
       if (shieldTier < 2) {

@@ -105,10 +105,15 @@
   const ENEMY_LATE_SCALE_STEP_DEPTH = 10;
   const ENEMY_LATE_SCALE_PER_STEP = 0.2;
   const ACOLYTE_SUPPORT_RANGE = 4;
-  const ACOLYTE_SUPPORT_HEAL_BASE = 2;
+  const ACOLYTE_HEAL_MIN_MISSING_HP_RATIO = 0.15;
+  const ACOLYTE_HEAL_HP_RATIO_PRIORITY = 0.65;
+  const ACOLYTE_SUPPORT_HEAL_MULT = 0.3;
   const ACOLYTE_SUPPORT_BUFF_ATTACK_MULT = 0.3;
   const ACOLYTE_SUPPORT_BUFF_TURNS = 3;
-  const ACOLYTE_SUPPORT_CAST_COOLDOWN = 4;
+  const ACOLYTE_SUPPORT_HEAL_CAST_COOLDOWN = 4;
+  const ACOLYTE_SUPPORT_BUFF_CAST_COOLDOWN = 4;
+  const ACOLYTE_ATTACK_CAST_COOLDOWN = 4;
+  const ACOLYTE_ATTACK_DAMAGE_MULT = 0.7;
   const ACOLYTE_SUPPORT_CANCEL_COOLDOWN = 2;
   const MAX_ACOLYTES_PER_ROOM = 2;
   const SKELETON_MELEE_DAMAGE_MULTIPLIER = 0.7;
@@ -137,13 +142,15 @@
   const CHRONO_LOOP_BURST_RADIUS = 2;
   const VOID_REAPER_CRIT_KILL_GOLD = 10;
   const SHIELD_HP_CAP_MULTIPLIER = 1.5;
+  const SHIELD_BASE_HP_MULTIPLIER = 1.0;
+  const SHIELD_RARE_HP_MULTIPLIER = 1.25;
   const SHIELD_EPIC_CHARGE_MAX = 2;
-  const SHIELD_EPIC_CHARGE_REGEN_TURNS = 30;
-  const SHIELD_EPIC_REFLECT_MULTIPLIER = 1.0;
+  const SHIELD_EPIC_CHARGE_REGEN_TURNS = 20;
+  const SHIELD_EPIC_REFLECT_MULTIPLIER = 0.35;
   const SHIELD_LEGENDARY_STORE_MULTIPLIER = 0.25;
-  const SHIELD_LEGENDARY_STORE_CAP = 30 * COMBAT_SCALE;
-  const SHIELD_LEGENDARY_BLAST_RING1_MULTIPLIER = 0.85;
-  const SHIELD_LEGENDARY_BLAST_RING2_MULTIPLIER = 0.55;
+  const SHIELD_LEGENDARY_STORE_CAP_MULTIPLIER = 0.8;
+  const SHIELD_LEGENDARY_BLAST_RING1_MULTIPLIER = 0.7;
+  const SHIELD_LEGENDARY_BLAST_RING2_MULTIPLIER = 0.4;
   const CHAOS_ORB_ROLL_INTERVAL = 10;
   const CHAOS_ORB_ATK_BONUS = 2 * COMBAT_SCALE; // +20 ATK
   const CHAOS_ORB_KILL_HEAL = 2 * COMBAT_SCALE; // +20 HP per kill
@@ -163,7 +170,7 @@
   const OBSERVER_AI_MODEL_VERSION = 2;
   const OBSERVER_TRACE_MAX_EVENTS = 12000;
   const OBSERVER_TRACE_TURN_INTERVAL = 6;
-  const PLAYER_COMBAT_TRAIL_MAX = 6;
+  const PLAYER_COMBAT_TRAIL_MAX = 10;
   const OBSERVER_AI_DEFAULT_WEIGHTS = Object.freeze({
     survival: 1.25,
     kill: 1.1,
@@ -222,6 +229,8 @@
   };
   const SPLASH_TRACK = "assets/Blue glow on my face.mp3";
   const DEATH_TRACK = "assets/death.mp3";
+  const VICTORY_TRACK = "assets/DEPTH 100.mp3";
+  const FINAL_GAME_OVER_TRACK = "assets/TRY AGAIN.mp3";
   const CHEST_SPRITE_PATH = "assets/sprite/chest.png";
   const CHEST_SPRITE_VERSION = "20260209_2001";
   const PORTAL_SPRITE_FRAME_PATHS = [
@@ -1036,6 +1045,7 @@
   };
   const ENEMY_ADJACENT_PRESSURE_CHANCE = 0.65;
   const ENEMY_ADJACENT_PRESSURE_MAX = 2;
+  const WARDEN_SMART_DEPTH_THRESHOLD = 20;
 
   function startTween(entity) {
     entity._tweenFromX = entity.x * TILE;
@@ -1458,6 +1468,7 @@
     treasureMapFragments: 0,
     forcedNextRoomType: "",
     playerHitEnemyThisTurn: false,
+    playerShieldBrokeThisTurn: false,
     turnInProgress: false,
     enemyTurnInProgress: false,
     enemyTurnQueue: [],
@@ -1466,7 +1477,9 @@
     enemyMeleeCommitLimit: 1,
     enemyMeleeCommitted: 0,
     enemyMeleeOverflowCommitted: 0,
+    enemyAcolyteBuffCastThisTurn: false,
     enemyBlackboard: null,
+    enemyAntiStrafe: null,
     enemyDebugPlans: [],
     playerCombatTrail: [],
     extractConfirm: null,
@@ -1604,6 +1617,7 @@
       barrierTurns: 0,
       gamblerEdgeArmorPenalty: 0,
       hpShield: 0,
+      skillShield: 0,
       bloodVialShield: 0,
       engineOfWarTurns: 0,
       engineOfWarTriggeredDepth: -1,
@@ -1767,7 +1781,11 @@
     bgmWarned: false,
     splash: null,
     deathSample: null,
-    deathWarned: false
+    deathWarned: false,
+    victorySample: null,
+    victoryWarned: false,
+    finalGameOverSample: null,
+    finalGameOverWarned: false
   };
 
   const playerSprites = {};
@@ -3772,6 +3790,7 @@
       barrierTurns: Math.max(0, Number(snapshot.player.barrierTurns) || 0),
       gamblerEdgeArmorPenalty: Math.max(0, Number(snapshot.player.gamblerEdgeArmorPenalty) || 0),
       hpShield: Math.max(0, Number(snapshot.player.hpShield) || 0),
+      skillShield: Math.max(0, Number(snapshot.player.skillShield) || 0),
       bloodVialShield: Math.max(0, Number(snapshot.player.bloodVialShield) || 0),
       engineOfWarTurns: Math.max(0, Number(snapshot.player.engineOfWarTurns) || 0),
       engineOfWarTriggeredDepth: Math.floor(Number(snapshot.player.engineOfWarTriggeredDepth)),
@@ -3832,6 +3851,8 @@
       state.player.engineOfWarTriggeredDepth = -1;
     }
     state.playerHitEnemyThisTurn = false;
+    state.playerShieldBrokeThisTurn = false;
+    state.enemyAntiStrafe = null;
     state.playerCombatTrail = [{
       x: Math.round(Number(state.player.x) || 0),
       y: Math.round(Number(state.player.y) || 0)
@@ -3890,6 +3911,11 @@
       if (enemy.cooldown == null) enemy.cooldown = 0;
       enemy.aiming = Boolean(enemy.aiming);
       enemy.slamAiming = Boolean(enemy.slamAiming);
+      const castType = String(enemy.acolyteCastType || "").toLowerCase();
+      enemy.acolyteCastType =
+        castType === "heal" || castType === "buff" || castType === "attack"
+          ? castType
+          : "";
       enemy.intent = typeof enemy.intent === "string" ? enemy.intent : "chase";
       enemy.aiLastSeenX = Number.isFinite(enemy.aiLastSeenX) ? enemy.aiLastSeenX : enemy.x;
       enemy.aiLastSeenY = Number.isFinite(enemy.aiLastSeenY) ? enemy.aiLastSeenY : enemy.y;
@@ -3919,6 +3945,7 @@
     state.roomIntroTitle = "";
     state.roomIntroSubtitle = "";
     state.turnInProgress = false;
+    state.playerShieldBrokeThisTurn = false;
     state.enemyTurnInProgress = false;
     state.enemyTurnQueue = [];
     state.enemyTurnStepTimer = 0;
@@ -4417,6 +4444,82 @@
     return true;
   }
 
+  function ensureVictoryTrack() {
+    if (audio.victorySample) return;
+    audio.victorySample = new Audio(VICTORY_TRACK);
+    audio.victorySample.loop = false;
+    audio.victorySample.preload = "auto";
+    audio.victorySample.volume = 0.65;
+    audio.victorySample.addEventListener("error", () => {
+      pushLog(`Music file failed: ${VICTORY_TRACK}`, "bad");
+    });
+    audio.victorySample.load();
+  }
+
+  function stopVictoryTrack(resetTime = false) {
+    if (!audio.victorySample) return;
+    audio.victorySample.pause();
+    if (resetTime) {
+      audio.victorySample.currentTime = 0;
+    }
+  }
+
+  function playVictoryTrack() {
+    if (isSimulationActive() && state.simulation.suppressAudio) return false;
+    if (state.audioMuted) return false;
+    ensureVictoryTrack();
+    if (!audio.victorySample) return false;
+    stopVictoryTrack(true);
+    const playPromise = audio.victorySample.play();
+    if (playPromise && typeof playPromise.catch === "function") {
+      playPromise.catch(() => {
+        if (!audio.victoryWarned) {
+          pushLog("Browser blocked autoplay. Press any key or click game area.", "bad");
+          audio.victoryWarned = true;
+        }
+      });
+    }
+    return true;
+  }
+
+  function ensureFinalGameOverTrack() {
+    if (audio.finalGameOverSample) return;
+    audio.finalGameOverSample = new Audio(FINAL_GAME_OVER_TRACK);
+    audio.finalGameOverSample.loop = false;
+    audio.finalGameOverSample.preload = "auto";
+    audio.finalGameOverSample.volume = 0.65;
+    audio.finalGameOverSample.addEventListener("error", () => {
+      pushLog(`Music file failed: ${FINAL_GAME_OVER_TRACK}`, "bad");
+    });
+    audio.finalGameOverSample.load();
+  }
+
+  function stopFinalGameOverTrack(resetTime = false) {
+    if (!audio.finalGameOverSample) return;
+    audio.finalGameOverSample.pause();
+    if (resetTime) {
+      audio.finalGameOverSample.currentTime = 0;
+    }
+  }
+
+  function playFinalGameOverTrack() {
+    if (isSimulationActive() && state.simulation.suppressAudio) return false;
+    if (state.audioMuted) return false;
+    ensureFinalGameOverTrack();
+    if (!audio.finalGameOverSample) return false;
+    stopFinalGameOverTrack(true);
+    const playPromise = audio.finalGameOverSample.play();
+    if (playPromise && typeof playPromise.catch === "function") {
+      playPromise.catch(() => {
+        if (!audio.finalGameOverWarned) {
+          pushLog("Browser blocked autoplay. Press any key or click game area.", "bad");
+          audio.finalGameOverWarned = true;
+        }
+      });
+    }
+    return true;
+  }
+
   function createBgmTrack(src, volume) {
     const track = new Audio(src);
     track.loop = true;
@@ -4481,6 +4584,8 @@
       stopAllBgm(false);
       stopSplashTrack(false);
       stopDeathTrack(false);
+      stopVictoryTrack(false);
+      stopFinalGameOverTrack(false);
       return;
     }
     ensureBgmTracks();
@@ -4712,6 +4817,8 @@
     if (state.audioMuted) {
       stopSplashTrack(false);
       stopDeathTrack(false);
+      stopVictoryTrack(false);
+      stopFinalGameOverTrack(false);
     }
     syncBgmWithState(true);
     pushLog(`Audio ${state.audioMuted ? "muted" : "enabled"}.`);
@@ -5096,6 +5203,9 @@
     const options = getMenuOptions();
     const firstEnabled = options.findIndex((item) => !item.disabled);
     state.menuIndex = firstEnabled >= 0 ? firstEnabled : 0;
+    stopDeathTrack(true);
+    stopVictoryTrack(true);
+    stopFinalGameOverTrack(true);
     syncBgmWithState();
     playSplashTrack();
     if (isOnlineLeaderboardEnabled()) {
@@ -5518,32 +5628,69 @@
     return state.player.hpShield;
   }
 
+  function getTotalPlayerShield() {
+    const skillShield = Math.max(0, Number(state.player.skillShield) || 0);
+    const hpShield = Math.max(0, Number(state.player.hpShield) || 0);
+    const bloodShield = Math.max(0, Number(state.player.bloodVialShield) || 0);
+    return skillShield + hpShield + bloodShield;
+  }
+
+  function clearCombatShield() {
+    state.player.skillShield = 0;
+    state.player.barrierTurns = 0;
+    state.player.barrierArmor = 0;
+    state.player.shieldStoredDamage = 0;
+    state.playerShieldBrokeThisTurn = false;
+  }
+
   function absorbPlayerShieldDamage(rawDamage) {
     const incoming = Math.max(0, Math.round(Number(rawDamage) || 0));
     if (incoming <= 0) {
-      return { remaining: 0, absorbed: 0, hpShieldAbsorbed: 0, bloodShieldAbsorbed: 0 };
+      return { remaining: 0, absorbed: 0, skillShieldAbsorbed: 0, hpShieldAbsorbed: 0, bloodShieldAbsorbed: 0 };
     }
     let remaining = incoming;
     let totalAbsorbed = 0;
+    let skillShieldAbsorbed = 0;
     let hpShieldAbsorbed = 0;
     let bloodShieldAbsorbed = 0;
 
-    // 1) hpShield (Resilience mutator) absorbs first
+    // 1) Shield skill pool absorbs first
+    const skillShieldBefore = Math.max(0, Number(state.player.skillShield) || 0);
+    if (skillShieldBefore > 0) {
+      const skillShieldAbsorb = Math.min(remaining, skillShieldBefore);
+      state.player.skillShield = skillShieldBefore - skillShieldAbsorb;
+      remaining -= skillShieldAbsorb;
+      totalAbsorbed += skillShieldAbsorb;
+      skillShieldAbsorbed += skillShieldAbsorb;
+      if (skillShieldAbsorb > 0 && state.player.skillShield <= 0) {
+        state.player.skillShield = 0;
+        state.playerShieldBrokeThisTurn = true;
+      }
+      if (skillShieldAbsorb > 0) {
+        spawnFloatingText(state.player.x, state.player.y, `SH -${skillShieldAbsorb}`, "#cfe9ff");
+        spawnParticles(state.player.x, state.player.y, "#9fd7ff", 5, 0.9);
+      }
+    }
+
+    // 2) hpShield (mutators/shrine) absorbs next
     capPlayerHpShield();
-    const hpShieldBefore = Math.max(0, Number(state.player.hpShield) || 0);
-    if (hpShieldBefore > 0) {
-      const hpShieldAbsorb = Math.min(remaining, hpShieldBefore);
-      state.player.hpShield = hpShieldBefore - hpShieldAbsorb;
+    const mutatorShieldBefore = Math.max(0, Number(state.player.hpShield) || 0);
+    if (mutatorShieldBefore > 0 && remaining > 0) {
+      const hpShieldAbsorb = Math.min(remaining, mutatorShieldBefore);
+      state.player.hpShield = mutatorShieldBefore - hpShieldAbsorb;
       remaining -= hpShieldAbsorb;
       totalAbsorbed += hpShieldAbsorb;
       hpShieldAbsorbed += hpShieldAbsorb;
+      if (hpShieldAbsorb > 0 && state.player.hpShield <= 0) {
+        state.player.hpShield = 0;
+      }
       if (hpShieldAbsorb > 0) {
         spawnFloatingText(state.player.x, state.player.y, `SH -${hpShieldAbsorb}`, "#7be0ff");
         spawnParticles(state.player.x, state.player.y, "#60ccff", 4, 0.85);
       }
     }
 
-    // 2) bloodVialShield (Blood Vial relic) absorbs next
+    // 3) bloodVialShield (Blood Vial relic) absorbs last
     if (remaining > 0) {
       const bloodShieldBefore = Math.max(0, Number(state.player.bloodVialShield) || 0);
       if (bloodShieldBefore > 0) {
@@ -5562,6 +5709,7 @@
     return {
       remaining: Math.max(0, remaining),
       absorbed: totalAbsorbed,
+      skillShieldAbsorbed,
       hpShieldAbsorbed,
       bloodShieldAbsorbed
     };
@@ -6877,33 +7025,44 @@
   }
 
   function tickBarrier() {
-    if (state.player.barrierTurns <= 0) return;
-    state.player.barrierTurns -= 1;
-    if (state.player.barrierTurns <= 0) {
-      const shieldTier = getSkillTier("shield");
-      state.player.barrierTurns = 0;
-      state.player.barrierArmor = 0;
+    const shieldTier = getSkillTier("shield");
+    const currentShield = Math.max(0, Math.floor(Number(state.player.skillShield) || 0));
+    if (currentShield <= 0) {
+      if (state.playerShieldBrokeThisTurn && shieldTier >= LEGENDARY_SKILL_TIER) {
+        triggerLegendaryShieldBlast();
+      } else if (shieldTier < LEGENDARY_SKILL_TIER) {
+        state.player.shieldStoredDamage = 0;
+      }
+      state.player.skillShield = 0;
+      state.playerShieldBrokeThisTurn = false;
+      return;
+    }
+    if (state.playerShieldBrokeThisTurn) {
+      state.playerShieldBrokeThisTurn = false;
+      return;
+    }
+    const nextShield = Math.max(0, Math.floor(currentShield * 0.8));
+    state.player.skillShield = nextShield;
+    if (nextShield <= 0) {
       if (shieldTier >= LEGENDARY_SKILL_TIER) {
         triggerLegendaryShieldBlast();
       } else {
         state.player.shieldStoredDamage = 0;
       }
-      pushLog("Shield fades.");
     }
   }
 
   function isShieldActive() {
-    return state.player.barrierTurns > 0;
+    return Math.max(0, Number(state.player.skillShield) || 0) > 0;
   }
 
   function isEpicShieldReflectActive() {
     return isShieldActive() && getSkillTier("shield") >= 2;
   }
 
-  function handleShieldAbsorbEffects(_sourceLabel, attacker = null, absorbedHpShield = 0) {
-    const absorbed = Math.max(0, Math.round(Number(absorbedHpShield) || 0));
+  function handleShieldAbsorbEffects(_sourceLabel, attacker = null, absorbedSkillShield = 0) {
+    const absorbed = Math.max(0, Math.round(Number(absorbedSkillShield) || 0));
     if (absorbed <= 0) return false;
-    if (!isShieldActive()) return false;
 
     spawnParticles(state.player.x, state.player.y, "#a9cfff", 6, 0.95);
     setShake(0.9);
@@ -6914,8 +7073,12 @@
         Math.round(absorbed * SHIELD_LEGENDARY_STORE_MULTIPLIER)
       );
       if (storeGain > 0) {
+        const storeCap = Math.max(
+          MIN_EFFECTIVE_DAMAGE,
+          Math.round(Math.max(1, Number(state.player.maxHp) || 1) * SHIELD_LEGENDARY_STORE_CAP_MULTIPLIER)
+        );
         const nextStored = Math.max(0, Number(state.player.shieldStoredDamage) || 0) + storeGain;
-        state.player.shieldStoredDamage = Math.min(SHIELD_LEGENDARY_STORE_CAP, nextStored);
+        state.player.shieldStoredDamage = Math.min(storeCap, nextStored);
       }
     }
 
@@ -7197,7 +7360,7 @@
       return false;
     }
     const hungerAbsorb = absorbPlayerShieldDamage(SHRINE_HUNGER_MISS_DAMAGE);
-    handleShieldAbsorbEffects("hunger", null, hungerAbsorb.hpShieldAbsorbed);
+    handleShieldAbsorbEffects("hunger", null, hungerAbsorb.skillShieldAbsorbed);
     const hungerDamage = hungerAbsorb.remaining;
     if (hungerDamage <= 0) {
       pushLog("Shrine of Hunger: miss penalty absorbed by shield.", "good");
@@ -7723,6 +7886,7 @@
     enemy.facing = "south";
     enemy.intent = "chase";
     enemy.slamAiming = false;
+    enemy.acolyteCastType = "";
     enemy.acolyteBuffTurns = Math.max(0, Number(enemy.acolyteBuffTurns) || 0);
     enemy.aiLastSeenX = x;
     enemy.aiLastSeenY = y;
@@ -7902,6 +8066,7 @@
     state.floorPattern = makeFloorPattern();
     state.player.x = 4;
     state.player.y = 4;
+    state.enemyAntiStrafe = null;
     resetPlayerCombatTrail();
     snapVisual(state.player);
     state.player.adrenaline = hasRelic("adrenal") ? 2 : 0;
@@ -7975,6 +8140,8 @@
       ? Math.max(0, Number(state.player.soulHarvestCount) || 0)
       : 0;
     stopSplashTrack(true);
+    stopVictoryTrack(true);
+    stopFinalGameOverTrack(true);
     state.phase = "playing";
     state.depth = selectedStartDepth;
     if (!state.currentRunId) {
@@ -8007,6 +8174,7 @@
     state.enemyTurnStepTimer = 0;
     state.enemyTurnStepIndex = 0;
     state.enemyBlackboard = null;
+    state.enemyAntiStrafe = null;
     state.enemyDebugPlans = [];
     state.particles = [];
     state.floatingTexts = [];
@@ -8076,6 +8244,7 @@
     state.player.barrierTurns = 0;
     state.player.gamblerEdgeArmorPenalty = 0;
     state.player.hpShield = 0;
+    state.player.skillShield = 0;
     state.player.bloodVialShield = 0;
     state.player.engineOfWarTurns = 0;
     state.player.engineOfWarTriggeredDepth = -1;
@@ -8204,6 +8373,7 @@
     recordRunOnLeaderboard("extract");
     state.phase = "won";
     state.turnInProgress = false;
+    state.playerShieldBrokeThisTurn = false;
     state.enemyTurnInProgress = false;
     state.enemyTurnQueue = [];
     state.enemyTurnStepTimer = 0;
@@ -8212,6 +8382,7 @@
     state.enemyMeleeCommitted = 0;
     state.enemyMeleeOverflowCommitted = 0;
     state.enemyBlackboard = null;
+    state.enemyAntiStrafe = null;
     state.enemyDebugPlans = [];
     state.extractConfirm = null;
     state.merchantMenuOpen = false;
@@ -8232,6 +8403,12 @@
     saveMetaProgress();
     clearRunSnapshot();
     syncBgmWithState();
+    stopDeathTrack(true);
+    stopFinalGameOverTrack(true);
+    const usedVictoryTrack = playVictoryTrack();
+    if (!usedVictoryTrack && !state.audioMuted) {
+      playSfx("bosswarn");
+    }
     pushLog(`DEPTH ${MAX_DEPTH} CONQUERED!`, "good");
     pushLog("Abyss shattered. You are the champion of the dungeon.", "good");
     pushLog("Victory achieved. 1 = Main Menu, 2 = Leaderboard.", "good");
@@ -8272,12 +8449,14 @@
     state.phase = "dead";
     state.finalVictoryPrompt = null;
     state.turnInProgress = false;
+    state.playerShieldBrokeThisTurn = false;
     state.enemyTurnInProgress = false;
     state.enemyTurnQueue = [];
     state.enemyTurnStepTimer = 0;
     state.enemyTurnStepIndex = 0;
     state.enemyMeleeOverflowCommitted = 0;
     state.enemyBlackboard = null;
+    state.enemyAntiStrafe = null;
     state.enemyDebugPlans = [];
     state.extractConfirm = null;
     state.merchantMenuOpen = false;
@@ -8287,10 +8466,8 @@
       state.player.combatBoostTurns = 0;
     }
     syncBgmWithState();
-    const usedSample = playDeathTrack();
-    if (!usedSample && !state.audioMuted) {
-      playSfx("death");
-    }
+    stopVictoryTrack(true);
+    stopFinalGameOverTrack(true);
     const lossSummary = lostRelic ? ` Lost relic: ${lostRelic.name}.` : " No relic lost.";
     pushLog(`${reason}${lossSummary}`, "bad");
     state.lives = Math.max(0, state.lives - 1);
@@ -8309,6 +8486,11 @@
       };
       pushLog(`Progress reset. Lives restored to ${MAX_LIVES}.`, "good");
       pushLog("GAME OVER. Choose Main Menu or Leaderboard.", "bad");
+      stopDeathTrack(true);
+      const usedFinalTrack = playFinalGameOverTrack();
+      if (!usedFinalTrack && !state.audioMuted) {
+        playSfx("death");
+      }
       clearRunSnapshot();
       return;
     }
@@ -8321,6 +8503,10 @@
       for (const mutator of unlockedNow) {
         pushLog(`Unlocked: [${mutator.key}] ${mutator.name}.`, "good");
       }
+    }
+    const usedDeathTrack = playDeathTrack();
+    if (!usedDeathTrack && !state.audioMuted) {
+      playSfx("death");
     }
     pushLog("Press 1-0 to toggle mutators, R to choose start depth.");
     clearRunSnapshot();
@@ -8543,7 +8729,7 @@
       } else {
         const shrineCurseBaseDamage = scaledCombat(2);
         const shrineCurseAbsorb = absorbPlayerShieldDamage(shrineCurseBaseDamage);
-        handleShieldAbsorbEffects("shrine curse", null, shrineCurseAbsorb.hpShieldAbsorbed);
+        handleShieldAbsorbEffects("shrine curse", null, shrineCurseAbsorb.skillShieldAbsorbed);
         const shrineCurseDamage = shrineCurseAbsorb.remaining;
         if (shrineCurseDamage <= 0) {
           pushLog("Cursed Shrine: damage absorbed by shield.", "good");
@@ -8805,6 +8991,7 @@
     updateDepthScalingMutators();
     syncMutatorUnlocks();   // depth-based unlocks (bulwark, momentum, ascension) fire on room clear
     registerObserverBotDepthClear(state.depth);
+    clearCombatShield();
     revealPortalFx();
     pushLog("Room cleared! Portal revealed.", "good");
     let goldBonus = 2 + Math.floor(state.depth / 2);
@@ -8939,22 +9126,22 @@
       return;
     }
     const incomingDamage = Math.max(MIN_EFFECTIVE_DAMAGE, Math.round(rawDamage));
-    const minDamageFromCap = Math.max(
-      MIN_EFFECTIVE_DAMAGE,
-      Math.ceil(incomingDamage * (1 - ARMOR_DAMAGE_REDUCTION_CAP))
-    );
-    const reducedByArmor = Math.max(MIN_EFFECTIVE_DAMAGE, incomingDamage - state.player.armor);
-    let reduced = Math.max(minDamageFromCap, reducedByArmor);
-    if (hasRelic("mirrorcarapace")) {
-      reduced = Math.max(1, Math.round(reduced * 0.85));
-    }
-    const shieldAbsorb = absorbPlayerShieldDamage(reduced);
-    handleShieldAbsorbEffects(source, attacker, shieldAbsorb.hpShieldAbsorbed);
-    reduced = shieldAbsorb.remaining;
-    if (reduced <= 0) {
+    const shieldAbsorb = absorbPlayerShieldDamage(incomingDamage);
+    handleShieldAbsorbEffects(source, attacker, shieldAbsorb.skillShieldAbsorbed);
+    let remainingDamage = shieldAbsorb.remaining;
+    if (remainingDamage <= 0) {
       pushLog(`${source} hits your shield.`, "good");
       markUiDirty();
       return;
+    }
+    const minDamageFromCap = Math.max(
+      MIN_EFFECTIVE_DAMAGE,
+      Math.ceil(remainingDamage * (1 - ARMOR_DAMAGE_REDUCTION_CAP))
+    );
+    const reducedByArmor = Math.max(MIN_EFFECTIVE_DAMAGE, remainingDamage - state.player.armor);
+    let reduced = Math.max(minDamageFromCap, reducedByArmor);
+    if (hasRelic("mirrorcarapace")) {
+      reduced = Math.max(1, Math.round(reduced * 0.85));
     }
     state.player.hp -= reduced;
     tryTriggerEngineOfWarEmergency(source);
@@ -8989,7 +9176,7 @@
     }
     const spikeDamage = getSpikeDamageByDepth();
     const spikeAbsorb = absorbPlayerShieldDamage(spikeDamage);
-    handleShieldAbsorbEffects("spikes", null, spikeAbsorb.hpShieldAbsorbed);
+    handleShieldAbsorbEffects("spikes", null, spikeAbsorb.skillShieldAbsorbed);
     const spikeFinalDamage = spikeAbsorb.remaining;
     if (spikeFinalDamage <= 0) {
       pushLog("Spikes hit your shield.", "good");
@@ -9193,7 +9380,7 @@
       } else {
         const chestTrapBaseDamage = scaledCombat(3);
         const chestTrapAbsorb = absorbPlayerShieldDamage(chestTrapBaseDamage);
-        handleShieldAbsorbEffects("chest trap", null, chestTrapAbsorb.hpShieldAbsorbed);
+        handleShieldAbsorbEffects("chest trap", null, chestTrapAbsorb.skillShieldAbsorbed);
         const chestTrapDamage = chestTrapAbsorb.remaining;
         if (chestTrapDamage <= 0) {
           pushLog("Chest trap absorbed by shield.", "good");
@@ -9659,6 +9846,52 @@
     return dist >= 2 && dist <= range && hasLineOfSightFromTile(x, y);
   }
 
+  function isWardenCastPositionAt(x, y, range = 4, minRange = 2) {
+    const dist = manhattan(x, y, state.player.x, state.player.y);
+    return dist >= minRange && dist <= range && hasLineOfSightFromTile(x, y);
+  }
+
+  function getWardenSetupStep(enemy, options = {}) {
+    if (!enemy) return null;
+    const range = Math.max(2, Number(enemy.range) || 4);
+    const smartMode = options.smartMode !== false && state.depth >= WARDEN_SMART_DEPTH_THRESHOLD;
+    const wantsCast = Boolean(options.wantsCast);
+    const preferRetreat = Boolean(options.preferRetreat);
+    const startDistance = manhattan(enemy.x, enemy.y, state.player.x, state.player.y);
+    const idealDistance = smartMode ? 3 : 2;
+    const minCastDistance = smartMode ? 2 : 2;
+    const optionsScored = [];
+    for (let oy = -1; oy <= 1; oy += 1) {
+      for (let ox = -1; ox <= 1; ox += 1) {
+        if (ox === 0 && oy === 0) continue;
+        const x = enemy.x + ox;
+        const y = enemy.y + oy;
+        if (enemyTileBlocked(x, y, enemy)) continue;
+        const dist = manhattan(x, y, state.player.x, state.player.y);
+        const castReady = isWardenCastPositionAt(x, y, range, minCastDistance);
+        const spikePenalty = isSpikeAt(x, y) ? 22 : 0;
+        let score = 0;
+        if (castReady) score += 56;
+        score -= Math.abs(dist - idealDistance) * 6;
+        if (dist === 1) score -= smartMode ? 36 : 24;
+        score -= spikePenalty;
+        if (preferRetreat) {
+          if (dist > startDistance) score += 10;
+          else score -= 6;
+        }
+        if (wantsCast && castReady) score += 8;
+        optionsScored.push({ x, y, dist, score, castReady });
+      }
+    }
+    if (optionsScored.length <= 0) return null;
+    optionsScored.sort((a, b) =>
+      b.score - a.score ||
+      Number(b.castReady) - Number(a.castReady) ||
+      Math.abs(a.dist - idealDistance) - Math.abs(b.dist - idealDistance)
+    );
+    return { x: optionsScored[0].x, y: optionsScored[0].y };
+  }
+
   function getSkeletonSetupStep(enemy) {
     if (!enemy) return null;
     const range = Math.max(2, Number(enemy.range) || 3);
@@ -9738,83 +9971,162 @@
     spawnParticles(state.player.x, state.player.y, boltColor, 7, 1.35);
   }
 
-  function healNearestEnemyAlly(caster, amount = scaledCombat(1), maxRange = 3) {
-    if (!caster || state.phase !== "playing") return 0;
-    const healBase = Math.max(MIN_EFFECTIVE_DAMAGE, Number(amount) || 0);
-    if (healBase <= 0) return 0;
-    const nearbyAllies = state.enemies
+  function getAcolyteSupportPriority(enemy) {
+    if (!enemy) return 0;
+    if (enemy.type === "warden") return 6;
+    if (enemy.type === "guardian" || enemy.type === "brute") return 5;
+    if (enemy.type === "skeleton" || enemy.type === "skitter") return 4;
+    if (enemy.type === "slime") return 3;
+    if (enemy.type === "acolyte") return 1;
+    return 2;
+  }
+
+  function getAcolyteHealTarget(caster, maxRange = ACOLYTE_SUPPORT_RANGE) {
+    if (!caster || state.phase !== "playing") return null;
+    const healCandidates = state.enemies
       .filter((enemy) =>
         enemy &&
         enemy !== caster &&
-        enemy.hp < enemy.maxHp &&
-        manhattan(enemy.x, enemy.y, caster.x, caster.y) <= maxRange
+        manhattan(enemy.x, enemy.y, caster.x, caster.y) <= maxRange &&
+        enemy.hp < enemy.maxHp
+      )
+      .map((enemy) => {
+        const maxHp = Math.max(1, Number(enemy.maxHp) || 1);
+        const missing = Math.max(0, maxHp - Math.max(0, Number(enemy.hp) || 0));
+        const missingRatio = missing / maxHp;
+        return {
+          enemy,
+          missing,
+          missingRatio,
+          dist: manhattan(enemy.x, enemy.y, caster.x, caster.y),
+          priority: getAcolyteSupportPriority(enemy)
+        };
+      })
+      .filter((item) =>
+        item.missingRatio >= ACOLYTE_HEAL_MIN_MISSING_HP_RATIO ||
+        (Number(item.enemy.hp) || 0) / Math.max(1, Number(item.enemy.maxHp) || 1) <= ACOLYTE_HEAL_HP_RATIO_PRIORITY
       )
       .sort((a, b) =>
-        manhattan(a.x, a.y, caster.x, caster.y) - manhattan(b.x, b.y, caster.x, caster.y) ||
-        (a.hp / Math.max(1, a.maxHp)) - (b.hp / Math.max(1, b.maxHp))
+        b.priority - a.priority ||
+        b.missingRatio - a.missingRatio ||
+        b.missing - a.missing ||
+        a.dist - b.dist
       );
-    const target = nearbyAllies[0];
-    if (!target) return 0;
-    const before = target.hp;
-    target.hp = Math.min(target.maxHp, target.hp + healBase);
-    const healed = target.hp - before;
-    if (healed > 0) {
-      spawnParticles(target.x, target.y, "#b7a9ff", 7, 0.95);
-      spawnFloatingText(target.x, target.y, `+${healed}`, "#cdbdff");
-      pushLog(`${caster.name} restores ${healed} HP to ${target.name}.`, "bad");
-      markUiDirty();
-    }
-    return healed;
+    return healCandidates[0]?.enemy || null;
   }
 
-  function getAcolyteSupportTarget(caster, maxRange = ACOLYTE_SUPPORT_RANGE) {
+  function getAcolyteBuffTarget(caster, maxRange = ACOLYTE_SUPPORT_RANGE) {
     if (!caster || state.phase !== "playing") return null;
-    const allies = state.enemies
+    const buffCandidates = state.enemies
       .filter((enemy) =>
         enemy &&
         enemy !== caster &&
-        manhattan(enemy.x, enemy.y, caster.x, caster.y) <= maxRange
-      );
-    if (allies.length <= 0) return null;
-
-    const needsHeal = allies
-      .filter((enemy) => enemy.hp < enemy.maxHp)
+        enemy.type !== "acolyte" &&
+        manhattan(enemy.x, enemy.y, caster.x, caster.y) <= maxRange &&
+        (Number(enemy.acolyteBuffTurns) || 0) <= 0
+      )
+      .map((enemy) => ({
+        enemy,
+        dist: manhattan(enemy.x, enemy.y, caster.x, caster.y),
+        priority: getAcolyteSupportPriority(enemy)
+      }))
       .sort((a, b) =>
-        (a.hp / Math.max(1, a.maxHp)) - (b.hp / Math.max(1, b.maxHp)) ||
-        manhattan(a.x, a.y, caster.x, caster.y) - manhattan(b.x, b.y, caster.x, caster.y)
+        b.priority - a.priority ||
+        a.dist - b.dist ||
+        (b.hp || 0) - (a.hp || 0)
       );
-    if (needsHeal.length > 0) return needsHeal[0];
-
-    const needsBuff = allies
-      .filter((enemy) => (Number(enemy.acolyteBuffTurns) || 0) <= 1)
-      .sort((a, b) =>
-        manhattan(a.x, a.y, caster.x, caster.y) - manhattan(b.x, b.y, caster.x, caster.y)
-      );
-    if (needsBuff.length > 0) return needsBuff[0];
-
-    return allies[0];
+    return buffCandidates[0]?.enemy || null;
   }
 
-  function applyAcolyteSupport(caster, target) {
+  function getAcolyteCastPlan(caster, options = {}) {
+    const canAttackCast = Boolean(options.canAttackCast);
+    const wantsCast = options.wantsCast !== false;
+    const healTarget = getAcolyteHealTarget(caster, ACOLYTE_SUPPORT_RANGE);
+    if (healTarget) {
+      return { type: "heal", target: healTarget };
+    }
+
+    const buffTarget = getAcolyteBuffTarget(caster, ACOLYTE_SUPPORT_RANGE);
+    const teamBuffLocked = Boolean(state.enemyAcolyteBuffCastThisTurn);
+    if (buffTarget && !teamBuffLocked) {
+      return { type: "buff", target: buffTarget };
+    }
+    if (!canAttackCast) return { type: "none", target: null };
+
+    // Support-first behavior:
+    // - If there are allies nearby and team buff is locked this turn, hold instead of instantly swapping to DPS.
+    // - Attack only as a true fallback (no heal target and no available buff target).
+    const nearbyNonAcolyteAllies = state.enemies.filter((enemy) =>
+      enemy &&
+      enemy !== caster &&
+      enemy.type !== "acolyte" &&
+      manhattan(enemy.x, enemy.y, caster.x, caster.y) <= ACOLYTE_SUPPORT_RANGE
+    );
+    if (nearbyNonAcolyteAllies.length > 0 && buffTarget && teamBuffLocked) {
+      return { type: "none", target: null };
+    }
+    if (!wantsCast && nearbyNonAcolyteAllies.length > 0) {
+      return { type: "none", target: null };
+    }
+    if (!buffTarget) {
+      return { type: "attack", target: state.player };
+    }
+    return { type: "none", target: null };
+  }
+
+  function getAcolyteTelegraphTarget(caster, castType) {
+    if (!caster || state.phase !== "playing") return null;
+    if (castType === "heal") return getAcolyteHealTarget(caster, ACOLYTE_SUPPORT_RANGE);
+    if (castType === "buff") return getAcolyteBuffTarget(caster, ACOLYTE_SUPPORT_RANGE);
+    return state.player;
+  }
+
+  function getAcolyteCastTypeLabel(castType) {
+    const normalized = String(castType || "").toLowerCase();
+    if (normalized === "heal") return "HEAL";
+    if (normalized === "buff") return "BUFF";
+    if (normalized === "attack") return "BOLT";
+    return "CAST";
+  }
+
+  function applyAcolyteHeal(caster, target) {
     if (!caster || !target || state.phase !== "playing") return false;
-    const healAmount = Math.max(1, Math.round(target.maxHp * 0.3));
+    const healAmount = Math.max(MIN_EFFECTIVE_DAMAGE, Math.round(Math.max(1, target.maxHp) * ACOLYTE_SUPPORT_HEAL_MULT));
     const beforeHp = target.hp;
     target.hp = Math.min(target.maxHp, target.hp + healAmount);
-    const healed = target.hp - beforeHp;
-    target.acolyteBuffTurns = Math.max(
-      Number(target.acolyteBuffTurns) || 0,
-      ACOLYTE_SUPPORT_BUFF_TURNS
-    );
+    const healed = Math.max(0, target.hp - beforeHp);
+    caster.castFlash = 120;
+    spawnParticles(caster.x, caster.y, "#8edcc3", 8, 1.05);
+    spawnParticles(target.x, target.y, "#baf7dc", 10, 1.05);
+    if (healed > 0) {
+      spawnFloatingText(target.x, target.y, `+${healed}`, "#c8ffe3");
+    }
+    pushLog(`${caster.name} restores ${target.name}${healed > 0 ? ` (+${healed} HP)` : ""}.`, "bad");
+    return true;
+  }
+
+  function applyAcolyteBuff(caster, target) {
+    if (!caster || !target || state.phase !== "playing") return false;
+    if (target.type === "acolyte") return false;
+    if ((Number(target.acolyteBuffTurns) || 0) > 0) return false;
+    target.acolyteBuffTurns = ACOLYTE_SUPPORT_BUFF_TURNS;
+    state.enemyAcolyteBuffCastThisTurn = true;
     caster.castFlash = 120;
     spawnParticles(caster.x, caster.y, "#b89dff", 8, 1.05);
     spawnParticles(target.x, target.y, "#cbb7ff", 10, 1.05);
-    if (healed > 0) {
-      spawnFloatingText(target.x, target.y, `+${healed}`, "#d6c7ff");
-    }
-    pushLog(
-      `${caster.name} blesses ${target.name}${healed > 0 ? ` (+${healed} HP)` : ""}.`,
-      "bad"
-    );
+    spawnFloatingText(target.x, target.y, "EMPOWER", "#e1d5ff");
+    pushLog(`${caster.name} empowers ${target.name}.`, "bad");
+    return true;
+  }
+
+  function executeAcolyteAttack(caster) {
+    if (!caster || state.phase !== "playing") return false;
+    enemyRanged(caster, {
+      source: `${caster.name} shadow bolt`,
+      damageMultiplier: ACOLYTE_ATTACK_DAMAGE_MULT,
+      color: "#c88bff"
+    });
+    pushLog("Acolyte fires a shadow bolt.", "bad");
     return true;
   }
 
@@ -9869,6 +10181,9 @@
       spikes: state.spikes,
       chests: unopenedChests,
       playerRecentPositions: Array.isArray(state.playerCombatTrail) ? state.playerCombatTrail : [],
+      currentTurn: Math.max(0, Number(state.turn) || 0),
+      currentDepth: Math.max(0, Number(state.depth) || 0),
+      antiStrafeState: state.enemyAntiStrafe || null,
       meleeLimit: getEnemyMeleeCommitLimit(),
       telegraphLimit: getEnemyTelegraphLimit(),
       playerLowHp: state.player.hp <= LOW_HP_THRESHOLD,
@@ -9953,6 +10268,7 @@
       playerShieldActive: isEpicShieldReflectActive(),
       playerLowHp: state.player.hp <= LOW_HP_THRESHOLD,
       playerDistance: distance,
+      depth: Math.max(0, Number(state.depth) || 0),
       blackboard: state.enemyBlackboard
     });
     if (!plan || typeof plan !== "object") {
@@ -10013,6 +10329,7 @@
         playerShieldActive: isEpicShieldReflectActive(),
         playerLowHp: state.player.hp <= LOW_HP_THRESHOLD,
         playerDistance: distance,
+        depth: Math.max(0, Number(state.depth) || 0),
         blackboard: board,
         previewOnly: true
       });
@@ -10094,10 +10411,13 @@
     let preferredMoveStep = null;
 
     if (enemy.type === "warden") {
+      const smartWarden = state.depth >= WARDEN_SMART_DEPTH_THRESHOLD;
       const wardenCanLineShot = hasLineOfSight(enemy);
       if (enemyTactics && typeof enemyTactics.handleWarden === "function") {
         const wardenTactical = enemyTactics.handleWarden(enemy, {
           distance: currentDistance,
+          depth: state.depth,
+          focusMode: state.enemyBlackboard?.focusMode || "normal",
           intent: enemy.intent,
           hasLineShot: wardenCanLineShot,
           playerShieldActive: isEpicShieldReflectActive(),
@@ -10140,6 +10460,20 @@
         enemy.aiming = true;
         pushLog("Warden charges a pulse blast.", "bad");
         return;
+      }
+      if (smartWarden) {
+        const alreadyInCastPosition = isWardenCastPositionAt(enemy.x, enemy.y, enemy.range, 2);
+        const wantsReposition =
+          (enemy.cooldown === 0 && wantsCast && !canBlast) ||
+          (enemy.cooldown > 0 && currentDistance <= 2) ||
+          (!alreadyInCastPosition && currentDistance > 1 && (enemy.cooldown > 0 || wantsCast));
+        if (wantsReposition) {
+          preferredMoveStep = getWardenSetupStep(enemy, {
+            smartMode: true,
+            wantsCast,
+            preferRetreat: currentDistance <= 2
+          }) || preferredMoveStep;
+        }
       }
     }
 
@@ -10200,20 +10534,78 @@
     }
 
     if (enemy.type === "acolyte") {
-      const supportTarget = getAcolyteSupportTarget(enemy, ACOLYTE_SUPPORT_RANGE);
+      const canAcolyteAttackCast =
+        hasLineOfSight(enemy) &&
+        lineDistance >= 2 &&
+        lineDistance <= enemy.range;
+      const acolytePlan = getAcolyteCastPlan(enemy, {
+        wantsCast: enemy.intent === "cast",
+        canAttackCast: canAcolyteAttackCast
+      });
       if (enemy.aiming) {
-        if (supportTarget && state.enemies.includes(supportTarget)) {
-          enemy.facing = getFacingFromDelta(supportTarget.x - enemy.x, supportTarget.y - enemy.y, enemy.facing);
-          applyAcolyteSupport(enemy, supportTarget);
-          enemy.cooldown = ACOLYTE_SUPPORT_CAST_COOLDOWN;
-          return;
+        const castType = String(enemy.acolyteCastType || "buff").toLowerCase();
+        if (castType === "heal") {
+          const healTarget = getAcolyteHealTarget(enemy, ACOLYTE_SUPPORT_RANGE);
+          if (healTarget && state.enemies.includes(healTarget)) {
+            enemy.facing = getFacingFromDelta(healTarget.x - enemy.x, healTarget.y - enemy.y, enemy.facing);
+            applyAcolyteHeal(enemy, healTarget);
+            enemy.cooldown = ACOLYTE_SUPPORT_HEAL_CAST_COOLDOWN;
+            enemy.aiming = false;
+            enemy.acolyteCastType = "";
+            return;
+          }
+        } else if (castType === "attack") {
+          if (canAcolyteAttackCast) {
+            enemy.facing = getFacingFromDelta(state.player.x - enemy.x, state.player.y - enemy.y, enemy.facing);
+            executeAcolyteAttack(enemy);
+            enemy.cooldown = ACOLYTE_ATTACK_CAST_COOLDOWN;
+            enemy.aiming = false;
+            enemy.acolyteCastType = "";
+            return;
+          }
+        } else {
+          const buffTarget = getAcolyteBuffTarget(enemy, ACOLYTE_SUPPORT_RANGE);
+          if (
+            buffTarget &&
+            state.enemies.includes(buffTarget) &&
+            !state.enemyAcolyteBuffCastThisTurn
+          ) {
+            enemy.facing = getFacingFromDelta(buffTarget.x - enemy.x, buffTarget.y - enemy.y, enemy.facing);
+            applyAcolyteBuff(enemy, buffTarget);
+            enemy.cooldown = ACOLYTE_SUPPORT_BUFF_CAST_COOLDOWN;
+            enemy.aiming = false;
+            enemy.acolyteCastType = "";
+            return;
+          }
         }
         enemy.aiming = false;
+        enemy.acolyteCastType = "";
         enemy.cooldown = Math.max(enemy.cooldown || 0, ACOLYTE_SUPPORT_CANCEL_COOLDOWN);
+        return;
       }
-      if (supportTarget && enemy.cooldown === 0 && canStartEnemyTelegraph()) {
+      if (acolytePlan.type !== "none" && enemy.cooldown === 0 && canStartEnemyTelegraph()) {
         enemy.aiming = true;
-        pushLog("Acolyte begins a dark blessing.", "bad");
+        enemy.acolyteCastType = acolytePlan.type;
+        if (acolytePlan.type === "heal") {
+          pushLog("Acolyte begins a mending chant.", "bad");
+        } else if (acolytePlan.type === "buff") {
+          pushLog("Acolyte begins a dark blessing.", "bad");
+        } else {
+          pushLog("Acolyte gathers shadow energy.", "bad");
+        }
+        return;
+      }
+      if (
+        acolytePlan.type === "attack" &&
+        enemy.cooldown === 0 &&
+        canAcolyteAttackCast &&
+        !canStartEnemyTelegraph()
+      ) {
+        enemy.facing = getFacingFromDelta(state.player.x - enemy.x, state.player.y - enemy.y, enemy.facing);
+        executeAcolyteAttack(enemy);
+        enemy.cooldown = ACOLYTE_ATTACK_CAST_COOLDOWN;
+        enemy.aiming = false;
+        enemy.acolyteCastType = "";
         return;
       }
     }
@@ -10260,6 +10652,26 @@
         if (tryUseSkitterLunge(enemy)) {
           return;
         }
+      }
+    }
+
+    if (
+      enemy.type === "warden" &&
+      state.depth >= WARDEN_SMART_DEPTH_THRESHOLD &&
+      currentDistance === 1
+    ) {
+      const retreatStep = getWardenSetupStep(enemy, {
+        smartMode: true,
+        wantsCast: enemy.intent === "cast",
+        preferRetreat: true
+      });
+      if (
+        retreatStep &&
+        (retreatStep.x !== enemy.x || retreatStep.y !== enemy.y)
+      ) {
+        const retreatMove = applyEnemyMoveStep(enemy, retreatStep);
+        if (retreatMove.removed) return;
+        if (retreatMove.moved) return;
       }
     }
 
@@ -10349,6 +10761,7 @@
     state.enemyTurnStepIndex = 0;
     state.enemyMeleeCommitted = 0;
     state.enemyMeleeOverflowCommitted = 0;
+    state.enemyAcolyteBuffCastThisTurn = false;
     state.enemyBlackboard = null;
     state.enemyDebugPlans = [];
   }
@@ -10441,7 +10854,11 @@
     state.enemyMeleeCommitLimit = getEnemyMeleeCommitLimit();
     state.enemyMeleeCommitted = 0;
     state.enemyMeleeOverflowCommitted = 0;
+    state.enemyAcolyteBuffCastThisTurn = false;
     state.enemyBlackboard = createEnemyBlackboard();
+    if (state.enemyBlackboard && state.enemyBlackboard.antiStrafe) {
+      state.enemyAntiStrafe = state.enemyBlackboard.antiStrafe;
+    }
     if (state.enemyBlackboard && state.enemyBlackboard.melee) {
       state.enemyMeleeCommitLimit = state.enemyBlackboard.melee.limit || state.enemyMeleeCommitLimit;
     }
@@ -10635,17 +11052,20 @@
     if (state.phase !== "playing") return;
     if (state.turnInProgress) return;
     state.turnInProgress = true;
+    state.playerShieldBrokeThisTurn = false;
     const hasCombatTurn = state.enemies.length > 0 || state.playerHitEnemyThisTurn;
 
     // Magnetic Shard: auto-loot adjacent chests
     tickMagneticShard();
     if (state.phase !== "playing") {
+      state.playerShieldBrokeThisTurn = false;
       state.turnInProgress = false;
       return;
     }
 
     applySpikeToPlayer();
     if (state.phase !== "playing") {
+      state.playerShieldBrokeThisTurn = false;
       state.turnInProgress = false;
       return;
     }
@@ -10653,6 +11073,7 @@
     // Out-of-combat movement should not advance turn-based timers/cooldowns.
     if (!hasCombatTurn) {
       state.playerHitEnemyThisTurn = false;
+      state.playerShieldBrokeThisTurn = false;
       saveMetaProgress();
       saveRunSnapshot();
       state.turnInProgress = false;
@@ -10808,10 +11229,10 @@
       statRow("Player", state.playerName || "Not set", "Your current nickname used for leaderboard entries."),
       statRow("Lives", `${state.lives}/${MAX_LIVES}`, "Lives are lost on death. At 0 lives, meta progress resets."),
       statRow("HP", (() => {
-        const hpShield = Math.max(0, Number(state.player.hpShield) || 0);
+        const totalShield = Math.max(0, Math.round(getTotalPlayerShield()));
         const base = `${state.player.hp}/${state.player.maxHp}`;
-        return hpShield > 0
-          ? `${base} <span style="color:#7be0ff;font-weight:700">(+${hpShield})</span>`
+        return totalShield > 0
+          ? `${base} <span style="color:#7be0ff;font-weight:700">(+${totalShield})</span>`
           : base;
       })(), "Current and maximum health. Reaching 0 HP kills the run."),
       statRow(
@@ -11209,10 +11630,10 @@
       return "Base 60% damage, +20% per Fury spent";
     }
     if (skillId === "shield") {
-      if (tier >= 3) return "125% shield, 2 charges, melee counter, stored burst on end";
-      if (tier >= 2) return "125% shield, 2 charges (30T), melee counter + taunt";
-      if (tier >= 1) return "125% shield + cast knockback";
-      return "100% Max HP shield";
+      if (tier >= 3) return "125% shield, decays 20%/turn, knockback, 2 charges, melee reflect, stores absorbed dmg for blast";
+      if (tier >= 2) return "125% shield, decays 20%/turn, knockback, 2 charges (20T), melee reflect";
+      if (tier >= 1) return "125% shield, decays 20%/turn, cast knockback";
+      return "100% Max HP shield, decays 20% each combat turn";
     }
     return "";
   }
@@ -11232,27 +11653,35 @@
       const tierLabel = getSkillTierLabel(skill.id);
       const tier = getSkillTier(skill.id);
       const shieldCharges = skill.id === "shield" ? getShieldChargesInfo() : null;
+      const activeShield = skill.id === "shield"
+        ? Math.max(0, Math.round(Number(state.player.skillShield) || 0))
+        : 0;
       const tierClass = tier >= 3 ? "tier-legendary" : tier >= 2 ? "tier-epic" : tier >= 1 ? "tier-rare" : "tier-base";
       const dashArmed = inRun && skill.id === "dash" && state.dashAimActive;
       const ready = inRun && (
         skill.id === "shield" && shieldCharges?.enabled
-          ? shieldCharges.charges > 0
-          : cd <= 0
+          ? shieldCharges.charges > 0 && activeShield <= 0
+          : skill.id === "shield"
+            ? (cd <= 0 && activeShield <= 0)
+            : cd <= 0
       );
       const stateClass = dashArmed
         ? "armed"
         : ready
           ? "ready"
-          : (skill.id === "shield" && shieldCharges?.enabled && shieldCharges.charges <= 0) || cd > 0
+          : (skill.id === "shield" && shieldCharges?.enabled && shieldCharges.charges <= 0) ||
+            cd > 0 || (skill.id === "shield" && activeShield > 0)
             ? "cooling"
             : "idle";
       const cardClass = `skill-card ${stateClass} ${tierClass}`;
       const status = dashArmed
         ? "ARMED"
-        : skill.id === "shield" && shieldCharges?.enabled
-          ? shieldCharges.charges > 0
-            ? `CH ${shieldCharges.charges}/${shieldCharges.max}`
-            : `${shieldCharges.regenTurns}T`
+        : skill.id === "shield" && activeShield > 0
+          ? "ACTIVE"
+          : skill.id === "shield" && shieldCharges?.enabled
+            ? shieldCharges.charges > 0
+              ? `CH ${shieldCharges.charges}/${shieldCharges.max}`
+              : `${shieldCharges.regenTurns}T`
           : cd > 0
             ? `${cd}T`
             : inRun
@@ -11261,8 +11690,8 @@
       const detail =
         dashArmed
           ? "Choose direction (WASD/Arrows)"
-          : skill.id === "shield" && state.player.barrierTurns > 0
-            ? `Aegis active (${state.player.barrierTurns}T)`
+          : skill.id === "shield" && activeShield > 0
+            ? `Shield active (${activeShield})`
             : skill.id === "shield" && shieldCharges?.enabled
               ? `Charges ${shieldCharges.charges}/${shieldCharges.max}${shieldCharges.charges < shieldCharges.max ? ` (+1 in ${shieldCharges.regenTurns}T)` : ""}`
               : getSkillTierEffectsSummary(skill.id);
@@ -11391,7 +11820,13 @@
       const e = hoveredEnemy;
       let info = `${e.name} - HP: ${e.hp}/${e.maxHp}, ATK: ${getEnemyEffectiveAttack(e)}`;
       if (e.range) info += `, Range: ${e.range}`;
-      if (e.aiming) info += ", Aiming!";
+      if (e.aiming) {
+        if (e.type === "acolyte") {
+          info += `, Aiming ${getAcolyteCastTypeLabel(e.acolyteCastType)}!`;
+        } else {
+          info += ", Aiming!";
+        }
+      }
       if (e.slamAiming) info += ", Slam Ready!";
       if (e.volleyAiming) info += ", Volley Ready!";
       if (e.burstAiming) info += ", Burst Ready!";
@@ -13231,9 +13666,12 @@
       if (!telegraphKind) continue;
       const fromX = visualX(enemy) + TILE / 2;
       const fromY = visualY(enemy) + TILE / 2;
-      const isAcolyteBlessing = enemy.type === "acolyte" && telegraphKind === "cast";
-      const acolyteTarget = isAcolyteBlessing
-        ? getAcolyteSupportTarget(enemy, ACOLYTE_SUPPORT_RANGE)
+      const isAcolyteCast = enemy.type === "acolyte" && telegraphKind === "cast";
+      const acolyteCastType = isAcolyteCast
+        ? String(enemy.acolyteCastType || "buff").toLowerCase()
+        : "";
+      const acolyteTarget = isAcolyteCast
+        ? getAcolyteTelegraphTarget(enemy, acolyteCastType)
         : null;
       const toX = acolyteTarget
         ? visualX(acolyteTarget) + TILE / 2
@@ -13254,18 +13692,22 @@
         continue;
       }
 
-      const style = isAcolyteBlessing
-        ? { stroke: "#be9aff", target: "#ead8ff", dash: [1, 1] }
+      const style = isAcolyteCast
+        ? acolyteCastType === "heal"
+          ? { stroke: "#8ecfb4", target: "#d8f5e8", icon: "#b6ffe0", dash: [1, 1] }
+          : acolyteCastType === "attack"
+            ? { stroke: "#f39bc3", target: "#ffd8ea", icon: "#ffd4e9", dash: [2, 1] }
+            : { stroke: "#be9aff", target: "#ead8ff", icon: "#ead8ff", dash: [1, 1] }
         : telegraphKind === "burst"
-          ? { stroke: "#cda8ff", target: "#f0e2ff", dash: [3, 2] }
+          ? { stroke: "#cda8ff", target: "#f0e2ff", icon: "#f0e2ff", dash: [3, 2] }
           : telegraphKind === "volley"
-            ? { stroke: "#d4e8ff", target: "#eef7ff", dash: [1, 2] }
-            : { stroke: "#8bb4ff", target: "#d9e8ff", dash: [2, 2] };
+            ? { stroke: "#d4e8ff", target: "#eef7ff", icon: "#eef7ff", dash: [1, 2] }
+            : { stroke: "#8bb4ff", target: "#d9e8ff", icon: "#d9e8ff", dash: [2, 2] };
 
       ctx.globalAlpha = 0.25 + pulse * 0.45;
       ctx.strokeStyle = style.stroke;
       ctx.lineWidth = 1.5;
-      if (!isAcolyteBlessing || acolyteTarget) {
+      if (!isAcolyteCast || acolyteTarget) {
         ctx.setLineDash(style.dash);
         ctx.beginPath();
         ctx.moveTo(fromX, fromY);
@@ -13283,32 +13725,44 @@
         ctx.arc(fromX, fromY, TILE * 3.1, 0, Math.PI * 2);
         ctx.stroke();
       }
-      if (isAcolyteBlessing) {
+      if (isAcolyteCast) {
         const iconX = fromX;
         const iconY = fromY - 9;
         ctx.globalAlpha = 0.26 + pulse * 0.38;
-        ctx.strokeStyle = "#be9aff";
+        ctx.strokeStyle = style.stroke;
         ctx.lineWidth = 1.2;
         ctx.beginPath();
         ctx.arc(iconX, iconY, 4 + pulse * 0.6, 0, Math.PI * 2);
         ctx.stroke();
 
         ctx.globalAlpha = 0.38 + pulse * 0.52;
-        ctx.fillStyle = "#ead8ff";
-        ctx.fillRect(iconX - 1, iconY - 3, 2, 6);
-        ctx.fillRect(iconX - 3, iconY - 1, 6, 2);
+        ctx.fillStyle = style.icon;
+        if (acolyteCastType === "attack") {
+          ctx.fillRect(iconX - 2, iconY - 2, 4, 1);
+          ctx.fillRect(iconX - 1, iconY - 1, 2, 3);
+          ctx.fillRect(iconX - 2, iconY + 2, 4, 1);
+        } else {
+          ctx.fillRect(iconX - 1, iconY - 3, 2, 6);
+          ctx.fillRect(iconX - 3, iconY - 1, 6, 2);
+        }
 
         if (acolyteTarget) {
           ctx.globalAlpha = 0.22 + pulse * 0.45;
-          ctx.strokeStyle = "#be9aff";
+          ctx.strokeStyle = style.stroke;
           ctx.lineWidth = 1.2;
           ctx.beginPath();
           ctx.arc(toX, toY, 5 + pulse * 0.9, 0, Math.PI * 2);
           ctx.stroke();
           ctx.globalAlpha = 0.4 + pulse * 0.45;
-          ctx.fillStyle = "#ead8ff";
-          ctx.fillRect(toX - 1, toY - 2, 2, 4);
-          ctx.fillRect(toX - 2, toY - 1, 4, 2);
+          ctx.fillStyle = style.icon;
+          if (acolyteCastType === "attack") {
+            ctx.fillRect(toX - 2, toY - 2, 4, 1);
+            ctx.fillRect(toX - 1, toY - 1, 2, 3);
+            ctx.fillRect(toX - 2, toY + 2, 4, 1);
+          } else {
+            ctx.fillRect(toX - 1, toY - 2, 2, 4);
+            ctx.fillRect(toX - 2, toY - 1, 4, 2);
+          }
         }
       }
       ctx.globalAlpha = 1;
@@ -13468,8 +13922,8 @@
   }
 
   function drawShieldAura() {
-    const hpShield = Math.max(0, Number(state.player?.hpShield) || 0);
-    if (!isShieldActive() && hpShield <= 0) return;
+    const totalShield = Math.max(0, Math.round(getTotalPlayerShield()));
+    if (totalShield <= 0) return;
     const px = visualX(state.player);
     const py = visualY(state.player);
     if (shieldSprite.ready && shieldSprite.sheet) {
@@ -14794,14 +15248,15 @@
         getBotEnemyCountWithinDistanceFrom(state.player.x, state.player.y, 2);
       const hpRatio = getBotHpRatio();
       const shieldTier = getSkillTier("shield");
-      const shieldCap = Math.max(0, Number(getPlayerHpShieldCap()) || 0);
-      const currentShield = Math.max(0, Number(state.player.hpShield) || 0);
+      const currentShield = Math.max(0, Number(state.player.skillShield) || 0);
       const shieldGain = Math.max(
         MIN_EFFECTIVE_DAMAGE,
-        Math.round(Math.max(1, Number(state.player.maxHp) || 1) * (shieldTier >= 1 ? 1.25 : 1.0))
+        Math.round(
+          Math.max(1, Number(state.player.maxHp) || 1) *
+          (shieldTier >= 1 ? SHIELD_RARE_HP_MULTIPLIER : SHIELD_BASE_HP_MULTIPLIER)
+        )
       );
-      const projectedShield = Math.min(shieldCap, currentShield + shieldGain);
-      const effectiveGain = Math.max(0, projectedShield - currentShield);
+      const effectiveGain = currentShield > 0 ? 0 : shieldGain;
       score += weights.survival * policy.survival * (incoming * 0.95 + closeThreat * 16 + effectiveGain * 0.18);
       if (state.bossRoom) score += weights.bossDefense * 34;
       if (effectiveGain <= 0) score -= 140;
@@ -14816,7 +15271,7 @@
           closeThreat <= 1 &&
           incoming < scaledCombat(3)
         ) {
-          score -= 45;
+          score -= 28;
         }
       }
       if (mutators.haste || mutators.hunter) score += 10;
@@ -14932,17 +15387,19 @@
     if (!candidate) return 0;
     const turns = clamp(Math.floor(Number(context.lookaheadTurns) || 2), 2, 3);
     const armor = Math.max(0, Number(state.player.armor) || 0);
+    const shieldTier = getSkillTier("shield");
     let simX = state.player.x;
     let simY = state.player.y;
     let simHp = Math.max(1, Number(state.player.hp) || 1);
     let simPotions = Math.max(0, Number(state.player.potions) || 0);
-    const simShieldCap = Math.max(0, Number(getPlayerHpShieldCap()) || 0);
     const simShieldGainOnCast = Math.max(
       MIN_EFFECTIVE_DAMAGE,
-      Math.round(Math.max(1, Number(state.player.maxHp) || 1) * (getSkillTier("shield") >= 1 ? 1.25 : 1.0))
+      Math.round(
+        Math.max(1, Number(state.player.maxHp) || 1) *
+        (shieldTier >= 1 ? SHIELD_RARE_HP_MULTIPLIER : SHIELD_BASE_HP_MULTIPLIER)
+      )
     );
-    let simShieldPool = Math.max(0, Number(state.player.hpShield) || 0);
-    let simShieldTurns = Math.max(0, Number(state.player.barrierTurns) || 0);
+    let simShieldPool = Math.max(0, Number(getTotalPlayerShield()) || 0);
     let simEnemies = state.enemies.map((enemy) => ({
       x: enemy.x,
       y: enemy.y,
@@ -14974,8 +15431,7 @@
         simPotions -= 1;
       }
     } else if (candidate.kind === "shield") {
-      simShieldTurns = 3;
-      simShieldPool = Math.min(simShieldCap, simShieldPool + simShieldGainOnCast);
+      simShieldPool += simShieldGainOnCast;
     } else if (candidate.kind === "aoe") {
       const aoeTier = getSkillTier("aoe");
       const radius = aoeTier >= 2 ? 2 : 1;
@@ -15028,13 +15484,13 @@
       });
       let incoming = futureThreat.damageAt(simX, simY);
       incoming = Math.max(0, incoming - Math.round(armor * 0.25));
-      if (simShieldTurns > 0 && simShieldPool > 0 && incoming > 0) {
+      if (simShieldPool > 0 && incoming > 0) {
         const absorbed = Math.min(incoming, simShieldPool);
         simShieldPool = Math.max(0, simShieldPool - absorbed);
         incoming -= absorbed;
       }
-      if (simShieldTurns > 0) {
-        simShieldTurns = Math.max(0, simShieldTurns - 1);
+      if (simShieldPool > 0) {
+        simShieldPool = Math.max(0, Math.floor(simShieldPool * 0.8));
       }
       simHp -= incoming;
       if (simHp <= 0) {
@@ -15369,6 +15825,8 @@
       stopAllBgm(true);
       stopSplashTrack(true);
       stopDeathTrack(true);
+      stopVictoryTrack(true);
+      stopFinalGameOverTrack(true);
 
       for (let runIndex = 0; runIndex < runCount; runIndex += 1) {
         restoreStateFromSnapshot(baselineStateSnapshot);
@@ -16634,11 +17092,11 @@
 
   function canObserverBotUseShieldNow() {
     if (!Array.isArray(state.enemies) || state.enemies.length <= 0) return false;
-    if (state.player.barrierTurns > 0) return false;
+    if (Math.max(0, Number(state.player.skillShield) || 0) > 0) return false;
     const tier = getSkillTier("shield");
     if (tier >= 2) {
       const charges = getShieldChargesInfo();
-      return Boolean(charges && charges.charges > 0);
+      return Boolean(charges && charges.enabled && charges.charges > 0);
     }
     return getSkillCooldownRemaining("shield") <= 0;
   }
@@ -16648,9 +17106,8 @@
     const hpRatio = getBotHpRatio();
     const adjacent = getBotEnemyCountWithinDistanceFrom(state.player.x, state.player.y, 1);
     const close = getBotEnemyCountWithinDistanceFrom(state.player.x, state.player.y, 2);
-    const shieldCap = Math.max(0, Number(getPlayerHpShieldCap()) || 0);
-    const shieldNow = Math.max(0, Number(state.player.hpShield) || 0);
-    const shieldRatio = shieldCap > 0 ? shieldNow / shieldCap : 0;
+    const shieldNow = Math.max(0, Number(state.player.skillShield) || 0);
+    const shieldRatio = shieldNow / Math.max(1, Number(state.player.maxHp) || 1);
     const incomingCast = state.enemies.some((enemy) => enemy.aiming || enemy.volleyAiming || enemy.burstAiming || enemy.slamAiming);
     if (
       shieldRatio < 0.5 &&
