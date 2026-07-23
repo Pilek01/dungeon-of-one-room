@@ -1,0 +1,940 @@
+{
+  "detectedLayout": {
+    "combat": {
+      "x": [
+        0,
+        273,
+        512,
+        748,
+        1024
+      ],
+      "y": [
+        0,
+        268,
+        496,
+        734,
+        1024
+      ]
+    },
+    "special": {
+      "x": [
+        0,
+        263,
+        504,
+        756,
+        1024
+      ],
+      "y": [
+        0,
+        283,
+        514,
+        750,
+        1024
+      ]
+    }
+  },
+  "emblems": [
+    {
+      "alphaBounds": [
+        13,
+        9,
+        50,
+        55
+      ],
+      "column": 1,
+      "file": "bleed.png",
+      "id": "bleed",
+      "label": "Bleed",
+      "row": 1,
+      "sharedScale": 0.30434783,
+      "sourceAtlas": "combat",
+      "sourceBounds": [
+        96,
+        85,
+        219,
+        236
+      ],
+      "sourceCell": [
+        0,
+        0,
+        273,
+        268
+      ],
+      "tone": "harmful"
+    },
+    {
+      "alphaBounds": [
+        14,
+        9,
+        50,
+        54
+      ],
+      "column": 2,
+      "file": "poison.png",
+      "id": "poison",
+      "label": "Poison",
+      "row": 1,
+      "sharedScale": 0.30434783,
+      "sourceAtlas": "combat",
+      "sourceBounds": [
+        58,
+        85,
+        177,
+        233
+      ],
+      "sourceCell": [
+        273,
+        0,
+        512,
+        268
+      ],
+      "tone": "harmful"
+    },
+    {
+      "alphaBounds": [
+        10,
+        7,
+        54,
+        56
+      ],
+      "column": 3,
+      "file": "burn.png",
+      "id": "burn",
+      "label": "Burn",
+      "row": 1,
+      "sharedScale": 0.30434783,
+      "sourceAtlas": "combat",
+      "sourceBounds": [
+        48,
+        79,
+        192,
+        240
+      ],
+      "sourceCell": [
+        512,
+        0,
+        748,
+        268
+      ],
+      "tone": "harmful"
+    },
+    {
+      "alphaBounds": [
+        15,
+        9,
+        48,
+        55
+      ],
+      "column": 4,
+      "file": "freeze.png",
+      "id": "freeze",
+      "label": "Freeze",
+      "row": 1,
+      "sharedScale": 0.30434783,
+      "sourceAtlas": "combat",
+      "sourceBounds": [
+        61,
+        85,
+        170,
+        237
+      ],
+      "sourceCell": [
+        748,
+        0,
+        1024,
+        268
+      ],
+      "tone": "harmful"
+    },
+    {
+      "alphaBounds": [
+        9,
+        7,
+        55,
+        56
+      ],
+      "column": 1,
+      "file": "disorient.png",
+      "id": "disorient",
+      "label": "Disorient",
+      "row": 2,
+      "sharedScale": 0.30434783,
+      "sourceAtlas": "combat",
+      "sourceBounds": [
+        83,
+        34,
+        234,
+        196
+      ],
+      "sourceCell": [
+        0,
+        268,
+        273,
+        496
+      ],
+      "tone": "harmful"
+    },
+    {
+      "alphaBounds": [
+        14,
+        7,
+        50,
+        57
+      ],
+      "column": 2,
+      "file": "enemy-buff.png",
+      "id": "enemy_buff",
+      "label": "Enemy Buff",
+      "row": 2,
+      "sharedScale": 0.30434783,
+      "sourceAtlas": "combat",
+      "sourceBounds": [
+        59,
+        34,
+        178,
+        197
+      ],
+      "sourceCell": [
+        273,
+        268,
+        512,
+        496
+      ],
+      "tone": "arcane"
+    },
+    {
+      "alphaBounds": [
+        10,
+        8,
+        54,
+        55
+      ],
+      "column": 3,
+      "file": "fury.png",
+      "id": "fury",
+      "label": "Fury",
+      "row": 2,
+      "sharedScale": 0.30434783,
+      "sourceAtlas": "combat",
+      "sourceBounds": [
+        46,
+        41,
+        191,
+        196
+      ],
+      "sourceCell": [
+        512,
+        268,
+        748,
+        496
+      ],
+      "tone": "positive"
+    },
+    {
+      "alphaBounds": [
+        14,
+        5,
+        50,
+        59
+      ],
+      "column": 4,
+      "file": "attack-up.png",
+      "id": "attack_up",
+      "label": "Attack Up",
+      "row": 2,
+      "sharedScale": 0.30434783,
+      "sourceAtlas": "combat",
+      "sourceBounds": [
+        57,
+        29,
+        174,
+        208
+      ],
+      "sourceCell": [
+        748,
+        268,
+        1024,
+        496
+      ],
+      "tone": "positive"
+    },
+    {
+      "alphaBounds": [
+        12,
+        11,
+        52,
+        53
+      ],
+      "column": 1,
+      "file": "armor-up.png",
+      "id": "armor_up",
+      "label": "Armor Up",
+      "row": 3,
+      "sharedScale": 0.30434783,
+      "sourceAtlas": "combat",
+      "sourceBounds": [
+        93,
+        61,
+        223,
+        198
+      ],
+      "sourceCell": [
+        0,
+        496,
+        273,
+        734
+      ],
+      "tone": "positive"
+    },
+    {
+      "alphaBounds": [
+        8,
+        4,
+        55,
+        60
+      ],
+      "column": 2,
+      "file": "max-hp-up.png",
+      "id": "max_hp_up",
+      "label": "Max HP Up",
+      "row": 3,
+      "sharedScale": 0.30434783,
+      "sourceAtlas": "combat",
+      "sourceBounds": [
+        40,
+        21,
+        195,
+        205
+      ],
+      "sourceCell": [
+        273,
+        496,
+        512,
+        734
+      ],
+      "tone": "positive"
+    },
+    {
+      "alphaBounds": [
+        12,
+        11,
+        51,
+        52
+      ],
+      "column": 3,
+      "file": "lifesteal.png",
+      "id": "lifesteal",
+      "label": "Lifesteal",
+      "row": 3,
+      "sharedScale": 0.30434783,
+      "sourceAtlas": "combat",
+      "sourceBounds": [
+        59,
+        57,
+        187,
+        193
+      ],
+      "sourceCell": [
+        512,
+        496,
+        748,
+        734
+      ],
+      "tone": "positive"
+    },
+    {
+      "alphaBounds": [
+        8,
+        7,
+        55,
+        57
+      ],
+      "column": 4,
+      "file": "elixir.png",
+      "id": "elixir",
+      "label": "Elixir",
+      "row": 3,
+      "sharedScale": 0.30434783,
+      "sourceAtlas": "combat",
+      "sourceBounds": [
+        39,
+        44,
+        193,
+        207
+      ],
+      "sourceCell": [
+        748,
+        496,
+        1024,
+        734
+      ],
+      "tone": "positive"
+    },
+    {
+      "alphaBounds": [
+        9,
+        9,
+        54,
+        54
+      ],
+      "column": 1,
+      "file": "shield.png",
+      "id": "shield",
+      "label": "Shield",
+      "row": 4,
+      "sharedScale": 0.30434783,
+      "sourceAtlas": "combat",
+      "sourceBounds": [
+        83,
+        47,
+        232,
+        196
+      ],
+      "sourceCell": [
+        0,
+        734,
+        273,
+        1024
+      ],
+      "tone": "protection"
+    },
+    {
+      "alphaBounds": [
+        12,
+        6,
+        52,
+        58
+      ],
+      "column": 2,
+      "file": "barrier.png",
+      "id": "barrier",
+      "label": "Barrier",
+      "row": 4,
+      "sharedScale": 0.30434783,
+      "sourceAtlas": "combat",
+      "sourceBounds": [
+        52,
+        31,
+        184,
+        201
+      ],
+      "sourceCell": [
+        273,
+        734,
+        512,
+        1024
+      ],
+      "tone": "protection"
+    },
+    {
+      "alphaBounds": [
+        8,
+        6,
+        55,
+        58
+      ],
+      "column": 3,
+      "file": "second-chance.png",
+      "id": "second_chance",
+      "label": "Second Chance",
+      "row": 4,
+      "sharedScale": 0.30434783,
+      "sourceAtlas": "combat",
+      "sourceBounds": [
+        44,
+        31,
+        198,
+        202
+      ],
+      "sourceCell": [
+        512,
+        734,
+        748,
+        1024
+      ],
+      "tone": "positive"
+    },
+    {
+      "alphaBounds": [
+        13,
+        7,
+        50,
+        56
+      ],
+      "column": 4,
+      "file": "shrine-blessing.png",
+      "id": "shrine_blessing",
+      "label": "Shrine Blessing",
+      "row": 4,
+      "sharedScale": 0.30434783,
+      "sourceAtlas": "combat",
+      "sourceBounds": [
+        55,
+        36,
+        176,
+        198
+      ],
+      "sourceCell": [
+        748,
+        734,
+        1024,
+        1024
+      ],
+      "tone": "positive"
+    },
+    {
+      "alphaBounds": [
+        12,
+        8,
+        52,
+        56
+      ],
+      "column": 1,
+      "file": "chaos.png",
+      "id": "chaos",
+      "label": "Chaos",
+      "row": 1,
+      "sharedScale": 0.30434783,
+      "sourceAtlas": "special",
+      "sourceBounds": [
+        84,
+        80,
+        215,
+        238
+      ],
+      "sourceCell": [
+        0,
+        0,
+        263,
+        283
+      ],
+      "tone": "special"
+    },
+    {
+      "alphaBounds": [
+        10,
+        13,
+        54,
+        50
+      ],
+      "column": 2,
+      "file": "pact.png",
+      "id": "pact",
+      "label": "Pact",
+      "row": 1,
+      "sharedScale": 0.30434783,
+      "sourceAtlas": "special",
+      "sourceBounds": [
+        48,
+        102,
+        193,
+        225
+      ],
+      "sourceCell": [
+        263,
+        0,
+        504,
+        283
+      ],
+      "tone": "special"
+    },
+    {
+      "alphaBounds": [
+        11,
+        10,
+        53,
+        54
+      ],
+      "column": 3,
+      "file": "hunger.png",
+      "id": "hunger",
+      "label": "Hunger",
+      "row": 1,
+      "sharedScale": 0.30434783,
+      "sourceAtlas": "special",
+      "sourceBounds": [
+        58,
+        90,
+        196,
+        233
+      ],
+      "sourceCell": [
+        504,
+        0,
+        756,
+        283
+      ],
+      "tone": "harmful"
+    },
+    {
+      "alphaBounds": [
+        15,
+        13,
+        48,
+        50
+      ],
+      "column": 4,
+      "file": "swap.png",
+      "id": "swap",
+      "label": "Swap",
+      "row": 1,
+      "sharedScale": 0.30434783,
+      "sourceAtlas": "special",
+      "sourceBounds": [
+        58,
+        105,
+        168,
+        226
+      ],
+      "sourceCell": [
+        756,
+        0,
+        1024,
+        283
+      ],
+      "tone": "special"
+    },
+    {
+      "alphaBounds": [
+        10,
+        11,
+        53,
+        53
+      ],
+      "column": 1,
+      "file": "noise.png",
+      "id": "noise",
+      "label": "Noise",
+      "row": 2,
+      "sharedScale": 0.30434783,
+      "sourceAtlas": "special",
+      "sourceBounds": [
+        74,
+        45,
+        214,
+        184
+      ],
+      "sourceCell": [
+        0,
+        283,
+        263,
+        514
+      ],
+      "tone": "harmful"
+    },
+    {
+      "alphaBounds": [
+        14,
+        11,
+        49,
+        52
+      ],
+      "column": 2,
+      "file": "soul-harvest.png",
+      "id": "soul_harvest",
+      "label": "Soul Harvest",
+      "row": 2,
+      "sharedScale": 0.30434783,
+      "sourceAtlas": "special",
+      "sourceBounds": [
+        61,
+        53,
+        176,
+        189
+      ],
+      "sourceCell": [
+        263,
+        283,
+        504,
+        514
+      ],
+      "tone": "special"
+    },
+    {
+      "alphaBounds": [
+        11,
+        10,
+        52,
+        54
+      ],
+      "column": 3,
+      "file": "storm-sigil.png",
+      "id": "storm_sigil",
+      "label": "Storm Sigil",
+      "row": 2,
+      "sharedScale": 0.30434783,
+      "sourceAtlas": "special",
+      "sourceBounds": [
+        60,
+        48,
+        196,
+        192
+      ],
+      "sourceCell": [
+        504,
+        283,
+        756,
+        514
+      ],
+      "tone": "special"
+    },
+    {
+      "alphaBounds": [
+        11,
+        11,
+        52,
+        52
+      ],
+      "column": 4,
+      "file": "quickloader.png",
+      "id": "quickloader",
+      "label": "Quickloader",
+      "row": 2,
+      "sharedScale": 0.30434783,
+      "sourceAtlas": "special",
+      "sourceBounds": [
+        44,
+        50,
+        180,
+        186
+      ],
+      "sourceCell": [
+        756,
+        283,
+        1024,
+        514
+      ],
+      "tone": "positive"
+    },
+    {
+      "alphaBounds": [
+        11,
+        9,
+        52,
+        54
+      ],
+      "column": 1,
+      "file": "chest-upgrade.png",
+      "id": "chest_upgrade",
+      "label": "Chest Upgrade",
+      "row": 3,
+      "sharedScale": 0.30434783,
+      "sourceAtlas": "special",
+      "sourceBounds": [
+        76,
+        40,
+        212,
+        188
+      ],
+      "sourceCell": [
+        0,
+        514,
+        263,
+        750
+      ],
+      "tone": "positive"
+    },
+    {
+      "alphaBounds": [
+        13,
+        9,
+        50,
+        54
+      ],
+      "column": 2,
+      "file": "last-stand.png",
+      "id": "last_stand",
+      "label": "Last Stand",
+      "row": 3,
+      "sharedScale": 0.30434783,
+      "sourceAtlas": "special",
+      "sourceBounds": [
+        60,
+        49,
+        181,
+        198
+      ],
+      "sourceCell": [
+        263,
+        514,
+        504,
+        750
+      ],
+      "tone": "positive"
+    },
+    {
+      "alphaBounds": [
+        10,
+        11,
+        53,
+        53
+      ],
+      "column": 3,
+      "file": "elite.png",
+      "id": "elite",
+      "label": "Elite",
+      "row": 3,
+      "sharedScale": 0.30434783,
+      "sourceAtlas": "special",
+      "sourceBounds": [
+        56,
+        50,
+        197,
+        189
+      ],
+      "sourceCell": [
+        504,
+        514,
+        756,
+        750
+      ],
+      "tone": "elite"
+    },
+    {
+      "alphaBounds": [
+        8,
+        14,
+        55,
+        50
+      ],
+      "column": 4,
+      "file": "relentless.png",
+      "id": "relentless",
+      "label": "Relentless",
+      "row": 3,
+      "sharedScale": 0.30434783,
+      "sourceAtlas": "special",
+      "sourceBounds": [
+        44,
+        64,
+        198,
+        182
+      ],
+      "sourceCell": [
+        756,
+        514,
+        1024,
+        750
+      ],
+      "tone": "affix"
+    },
+    {
+      "alphaBounds": [
+        9,
+        10,
+        55,
+        54
+      ],
+      "column": 1,
+      "file": "juggernaut.png",
+      "id": "juggernaut",
+      "label": "Juggernaut",
+      "row": 4,
+      "sharedScale": 0.30434783,
+      "sourceAtlas": "special",
+      "sourceBounds": [
+        70,
+        47,
+        220,
+        190
+      ],
+      "sourceCell": [
+        0,
+        750,
+        263,
+        1024
+      ],
+      "tone": "affix"
+    },
+    {
+      "alphaBounds": [
+        8,
+        11,
+        55,
+        53
+      ],
+      "column": 2,
+      "file": "blooddrinker.png",
+      "id": "blooddrinker",
+      "label": "Blooddrinker",
+      "row": 4,
+      "sharedScale": 0.30434783,
+      "sourceAtlas": "special",
+      "sourceBounds": [
+        44,
+        53,
+        198,
+        191
+      ],
+      "sourceCell": [
+        263,
+        750,
+        504,
+        1024
+      ],
+      "tone": "affix"
+    },
+    {
+      "alphaBounds": [
+        6,
+        6,
+        57,
+        57
+      ],
+      "column": 3,
+      "file": "thorned.png",
+      "id": "thorned",
+      "label": "Thorned",
+      "row": 4,
+      "sharedScale": 0.30434783,
+      "sourceAtlas": "special",
+      "sourceBounds": [
+        43,
+        39,
+        209,
+        208
+      ],
+      "sourceCell": [
+        504,
+        750,
+        756,
+        1024
+      ],
+      "tone": "affix"
+    },
+    {
+      "alphaBounds": [
+        11,
+        7,
+        53,
+        56
+      ],
+      "column": 4,
+      "file": "volatile.png",
+      "id": "volatile",
+      "label": "Volatile",
+      "row": 4,
+      "sharedScale": 0.30434783,
+      "sourceAtlas": "special",
+      "sourceBounds": [
+        44,
+        42,
+        182,
+        202
+      ],
+      "sourceCell": [
+        756,
+        750,
+        1024,
+        1024
+      ],
+      "tone": "affix"
+    }
+  ],
+  "schema": 1,
+  "sharedScale": 0.30434783,
+  "size": [
+    64,
+    64
+  ]
+}

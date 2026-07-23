@@ -1,0 +1,519 @@
+/* HD Merchant - Underground Curio Market. Classic presentation remains unchanged. */
+@media (min-width: 1201px) {
+  body.graphics-hd-ui:has(#game.graphics-hd) .screen-overlay.visible:has(.merchant-sanctuary) {
+    position: fixed;
+    inset: 0;
+    z-index: 1050;
+    width: 100vw;
+    height: 100vh;
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    padding: clamp(34px, 5vh, 62px) clamp(42px, 4vw, 76px);
+    overflow: hidden;
+    background: #020303 url("assets/hd/ui/merchant/curio-market-background.png") center / cover no-repeat;
+    backdrop-filter: none;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .merchant-sanctuary {
+    width: min(920px, 64vw);
+    flex: 0 0 min(920px, 64vw);
+    max-width: none;
+    height: min(820px, 90vh);
+    max-height: none;
+    box-sizing: border-box;
+    display: grid;
+    grid-template-areas:
+      "title"
+      "tagline"
+      "wallet"
+      "menu"
+      "hint";
+    grid-template-rows: auto auto auto minmax(0, 1fr) auto;
+    gap: clamp(8px, 1.15vh, 13px);
+    padding: 0;
+    overflow: visible;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+    filter: drop-shadow(0 14px 30px #000c);
+    color: #c9bfb2;
+    text-shadow: 0 2px 3px #000;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .merchant-sanctuary > .overlay-title {
+    grid-area: title;
+    margin: 0;
+    color: #e3d7c3;
+    font: 600 clamp(2rem, 3vw, 3.1rem)/0.95 Georgia, "Times New Roman", serif;
+    letter-spacing: clamp(3px, 0.42vw, 7px);
+    text-align: center;
+    text-transform: uppercase;
+    text-shadow: 0 4px 5px #000, 0 0 22px #a3773430;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .merchant-sanctuary > .overlay-sub:not(:has(.merchant-wallet)) {
+    grid-area: tagline;
+    margin: 0;
+    color: #8e8273;
+    font-size: clamp(0.6rem, 0.72vw, 0.73rem);
+    letter-spacing: clamp(1.4px, 0.17vw, 2.5px);
+    text-align: center;
+    text-transform: uppercase;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .merchant-sanctuary > .overlay-sub:has(.merchant-wallet) {
+    grid-area: wallet;
+    margin: 0;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .merchant-sanctuary .merchant-wallet {
+    min-height: 46px;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 0;
+    padding: 0;
+    border-block: 1px solid #5c4b38;
+    background: #080806eb url("assets/hd/ui/abyssal-gothic/panel-texture.png") center / 320px 320px;
+    box-shadow: inset 0 0 24px #000c;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .merchant-sanctuary .merchant-summary-line {
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 7px 10px;
+    border-right: 1px solid #4f4133;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .merchant-sanctuary .merchant-summary-line:last-child {
+    border-right: 0;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .merchant-sanctuary .merchant-summary-label {
+    color: #817364;
+    font-size: clamp(0.49rem, 0.57vw, 0.59rem);
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .merchant-sanctuary .merchant-wallet strong {
+    color: #d4c3a1;
+    font: 700 clamp(0.68rem, 0.82vw, 0.83rem)/1 "Courier Prime", "Cascadia Mono", monospace;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .merchant-sanctuary > .overlay-menu {
+    grid-area: menu;
+    width: 100%;
+    min-height: 0;
+    max-height: none;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .merchant-sanctuary > .overlay-hint {
+    grid-area: hint;
+    margin: 0;
+    color: #74695d;
+    font-size: clamp(0.5rem, 0.59vw, 0.61rem);
+    letter-spacing: 0.75px;
+    text-align: center;
+    text-transform: uppercase;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .merchant-sanctuary .merchant-menu-dashboard {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-areas:
+      "skills relics"
+      "consumables utilities"
+      "buyback buyback";
+    grid-template-rows: minmax(0, 1fr) auto auto;
+    gap: 11px 13px;
+    align-content: stretch;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .merchant-sanctuary .merchant-section-skills { grid-area: skills; }
+  body.graphics-hd-ui:has(#game.graphics-hd) .merchant-sanctuary .merchant-section-relics { grid-area: relics; }
+  body.graphics-hd-ui:has(#game.graphics-hd) .merchant-sanctuary .merchant-section-consumables { grid-area: consumables; }
+  body.graphics-hd-ui:has(#game.graphics-hd) .merchant-sanctuary .merchant-section-utilities { grid-area: utilities; }
+  body.graphics-hd-ui:has(#game.graphics-hd) .merchant-sanctuary .merchant-section-buyback { grid-area: buyback; }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .merchant-sanctuary .overlay-menu-section {
+    min-width: 0;
+    min-height: 0;
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr);
+    gap: 7px;
+    padding: 9px 10px 10px;
+    overflow: hidden;
+    border: 1px solid #5a4d3f;
+    background: #080908eb url("assets/hd/ui/abyssal-gothic/panel-texture.png") center / 320px 320px;
+    box-shadow: inset 0 0 30px #000d, 0 10px 24px #0007;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .merchant-sanctuary .overlay-menu-section-title {
+    min-height: 38px;
+    display: grid;
+    grid-template-columns: 28px minmax(0, 1fr);
+    align-items: center;
+    gap: 9px;
+    margin: 0;
+    padding: 4px 10px;
+    border: 0;
+    background-color: #090907e8;
+    background-image: url("assets/hd/ui/abyssal-gothic/section-plaque.png");
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: 100% 100%;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .merchant-sanctuary .overlay-menu-section-title > img {
+    width: 27px;
+    height: 27px;
+    object-fit: contain;
+    filter: saturate(0.7) brightness(0.9) drop-shadow(0 3px 5px #000c);
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .merchant-sanctuary .overlay-menu-section-title > span {
+    min-width: 0;
+    display: grid;
+    gap: 2px;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .merchant-sanctuary .overlay-menu-section-title strong {
+    color: #cfc4b4;
+    font: 600 clamp(0.68rem, 0.79vw, 0.8rem)/1 Georgia, "Times New Roman", serif;
+    letter-spacing: 1.25px;
+    text-transform: uppercase;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .merchant-sanctuary .overlay-menu-section-title small {
+    overflow: hidden;
+    color: #746b60;
+    font-size: 0.5rem;
+    letter-spacing: 0.45px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .merchant-sanctuary .overlay-menu-section-rows {
+    min-height: 0;
+    display: grid;
+    gap: 7px;
+    align-content: stretch;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .merchant-sanctuary .merchant-row {
+    position: relative;
+    min-width: 0;
+    min-height: 62px;
+    display: grid;
+    grid-template-columns: 30px 43px minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 9px;
+    padding: 7px 9px;
+    overflow: hidden;
+    border: 1px solid #51483d;
+    background: #090a09ee url("assets/hd/ui/abyssal-gothic/panel-texture.png") center / 280px 280px;
+    box-shadow: inset 0 0 22px #000c;
+    cursor: pointer;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .merchant-sanctuary .merchant-row::after {
+    content: "";
+    position: absolute;
+    inset: 4px;
+    border: 1px solid #564a3c5c;
+    pointer-events: none;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .merchant-sanctuary .merchant-row .overlay-menu-key {
+    position: relative;
+    z-index: 1;
+    width: 28px;
+    min-width: 28px;
+    height: 28px;
+    display: grid;
+    place-items: center;
+    border: 1px solid #665948;
+    background: #080806;
+    color: #c7ad79;
+    font-size: 0.7rem;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .merchant-sanctuary .merchant-row-icon {
+    position: relative;
+    z-index: 1;
+    width: 40px;
+    height: 40px;
+    object-fit: contain;
+    filter: saturate(0.82) brightness(0.92) drop-shadow(0 4px 7px #000c);
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .merchant-sanctuary .merchant-row-copy,
+  body.graphics-hd-ui:has(#game.graphics-hd) .merchant-sanctuary .merchant-buyback-copy {
+    position: relative;
+    z-index: 1;
+    min-width: 0;
+    display: grid;
+    align-content: center;
+    gap: 4px;
+    text-align: left;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .merchant-sanctuary .merchant-row-copy > strong,
+  body.graphics-hd-ui:has(#game.graphics-hd) .merchant-sanctuary .merchant-buyback-copy > strong {
+    min-width: 0;
+    overflow: hidden;
+    color: #d6cec2;
+    font: 600 clamp(0.7rem, 0.83vw, 0.84rem)/1.05 Georgia, "Times New Roman", serif;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .merchant-sanctuary .merchant-row-copy > span,
+  body.graphics-hd-ui:has(#game.graphics-hd) .merchant-sanctuary .merchant-buyback-copy > span {
+    display: -webkit-box;
+    overflow: hidden;
+    color: #8d857c;
+    font-size: clamp(0.54rem, 0.63vw, 0.64rem);
+    line-height: 1.25;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .merchant-sanctuary .merchant-tier-badge {
+    padding: 1px 4px;
+    font-size: 0.48rem;
+    letter-spacing: 0.55px;
+    vertical-align: 1px;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .merchant-sanctuary .merchant-row-action {
+    position: relative;
+    z-index: 1;
+    min-width: 46px;
+    display: grid;
+    justify-items: end;
+    gap: 2px;
+    padding-left: 8px;
+    border-left: 1px solid #5b4d3b75;
+    text-align: right;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .merchant-sanctuary .merchant-row-action small {
+    color: #74695a;
+    font-size: 0.45rem;
+    letter-spacing: 0.7px;
+    text-transform: uppercase;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .merchant-sanctuary .merchant-row-action strong {
+    color: #d6b868;
+    font: 700 clamp(0.62rem, 0.73vw, 0.74rem)/1 "Courier Prime", "Cascadia Mono", monospace;
+    white-space: nowrap;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .merchant-sanctuary .merchant-row-action strong em {
+    margin-left: 2px;
+    color: #937d51;
+    font-size: 0.52rem;
+    font-style: normal;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .merchant-sanctuary .merchant-row-action-label strong {
+    color: #aa9a82;
+    font: 600 0.51rem/1 Georgia, "Times New Roman", serif;
+    letter-spacing: 0.75px;
+    text-transform: uppercase;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .merchant-sanctuary .merchant-row:hover,
+  body.graphics-hd-ui:has(#game.graphics-hd) .merchant-sanctuary .merchant-row:focus-visible,
+  body.graphics-hd-ui:has(#game.graphics-hd) .merchant-sanctuary .merchant-row.hd-nav-selected {
+    outline: 2px solid #d2aa61;
+    outline-offset: 2px;
+    border-color: #aa7d43;
+    background-color: #151008ee;
+    box-shadow: inset 0 0 34px #6a3b1838, 0 0 22px #c57c2834;
+    filter: brightness(1.08);
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .merchant-sanctuary .merchant-row.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    filter: saturate(0.45);
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .merchant-sanctuary .merchant-row.disabled:hover,
+  body.graphics-hd-ui:has(#game.graphics-hd) .merchant-sanctuary .merchant-row.disabled:focus-visible,
+  body.graphics-hd-ui:has(#game.graphics-hd) .merchant-sanctuary .merchant-row.disabled.hd-nav-selected {
+    outline-color: #665e53;
+    border-color: #5d554b;
+    box-shadow: inset 0 0 24px #000c;
+    filter: saturate(0.45);
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .merchant-sanctuary .merchant-section-consumables .merchant-row,
+  body.graphics-hd-ui:has(#game.graphics-hd) .merchant-sanctuary .merchant-section-utilities .merchant-row,
+  body.graphics-hd-ui:has(#game.graphics-hd) .merchant-sanctuary .merchant-section-buyback .merchant-row {
+    min-height: 58px;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .merchant-sanctuary .merchant-menu-selection {
+    min-height: 0;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px 12px;
+    align-content: start;
+    padding: 12px;
+    border: 1px solid #5a4d3f;
+    background: #080908e8 url("assets/hd/ui/abyssal-gothic/panel-texture.png") center / 320px 320px;
+    box-shadow: inset 0 0 34px #000d;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .merchant-sanctuary .merchant-menu-selection .merchant-row {
+    min-height: 94px;
+    grid-template-columns: 30px 58px minmax(0, 1fr) auto;
+    padding: 10px 12px;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .merchant-sanctuary .merchant-menu-selection .merchant-row-icon {
+    width: 54px;
+    height: 54px;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .merchant-sanctuary .merchant-menu-legendary-swap {
+    align-content: center;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .merchant-sanctuary .merchant-menu-legendary-swap .merchant-row {
+    min-height: 250px;
+    grid-template-columns: 30px minmax(0, 1fr);
+    grid-template-rows: 118px auto auto;
+    justify-items: center;
+    text-align: center;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .merchant-sanctuary .merchant-menu-legendary-swap .merchant-row-icon {
+    grid-column: 1 / -1;
+    width: 112px;
+    height: 112px;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .merchant-sanctuary .merchant-menu-legendary-swap .merchant-row-copy {
+    grid-column: 1 / -1;
+    justify-items: center;
+    text-align: center;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .merchant-sanctuary .merchant-menu-legendary-swap .merchant-row-action {
+    grid-column: 1 / -1;
+    justify-items: center;
+    padding: 7px 0 0;
+    border-left: 0;
+    border-top: 1px solid #5b4d3b75;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .merchant-sanctuary .merchant-menu-buyback {
+    min-height: 0;
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr);
+    gap: 10px;
+    padding: 11px;
+    border: 1px solid #5a4d3f;
+    background: #080908e8 url("assets/hd/ui/abyssal-gothic/panel-texture.png") center / 320px 320px;
+    box-shadow: inset 0 0 34px #000d;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .merchant-sanctuary .merchant-buyback-summary {
+    min-height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    padding: 7px 13px;
+    border: 0;
+    background-color: #090907e8;
+    background-image: url("assets/hd/ui/abyssal-gothic/section-plaque.png");
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: 100% 100%;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .merchant-sanctuary .merchant-buyback-summary strong {
+    color: #d2c5b3;
+    font: 600 0.74rem/1 Georgia, "Times New Roman", serif;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .merchant-sanctuary .merchant-buyback-summary span,
+  body.graphics-hd-ui:has(#game.graphics-hd) .merchant-sanctuary .merchant-buyback-summary em {
+    color: #84786a;
+    font-size: 0.53rem;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .merchant-sanctuary .merchant-buyback-grid {
+    min-height: 0;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px 10px;
+    align-content: start;
+    overflow: auto;
+    scrollbar-width: thin;
+    scrollbar-color: #69563d #090806;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .merchant-sanctuary .merchant-buyback-row {
+    min-height: 76px;
+    grid-template-columns: 30px 48px minmax(0, 1fr) auto;
+    padding: 8px 10px;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .merchant-sanctuary .merchant-buyback-action {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    gap: 2px;
+    padding-left: 9px;
+    border-left: 1px solid #5b4d3b75;
+    text-align: right;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .merchant-sanctuary .merchant-buyback-action span {
+    color: #74695a;
+    font-size: 0.45rem;
+    letter-spacing: 0.65px;
+    text-transform: uppercase;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .merchant-sanctuary .merchant-buyback-action strong {
+    color: #d6b868;
+    font: 700 0.64rem/1 "Courier Prime", "Cascadia Mono", monospace;
+    white-space: nowrap;
+  }
+
+  @media (max-height: 820px) {
+    body.graphics-hd-ui:has(#game.graphics-hd) .merchant-sanctuary {
+      height: min(740px, 92vh);
+      gap: 8px;
+    }
+
+    body.graphics-hd-ui:has(#game.graphics-hd) .merchant-sanctuary .merchant-row {
+      min-height: 54px;
+      padding-block: 5px;
+    }
+
+    body.graphics-hd-ui:has(#game.graphics-hd) .merchant-sanctuary .overlay-menu-section {
+      gap: 5px;
+      padding: 7px 8px 8px;
+    }
+  }
+}

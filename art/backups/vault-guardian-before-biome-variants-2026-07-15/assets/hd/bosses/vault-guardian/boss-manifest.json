@@ -1,0 +1,714 @@
+{
+  "schemaVersion": 1,
+  "profile": "vault-guardian",
+  "type": "guardian",
+  "frameSize": [
+    128,
+    128
+  ],
+  "renderSize": [
+    128,
+    128
+  ],
+  "renderSizeRationale": "A two-tile 128 px frame preserves the monumental vault sentinel silhouette while retaining a bottom-center gameplay root.",
+  "anchor": [
+    0.5,
+    1
+  ],
+  "group": "bosses",
+  "clips": [
+    {
+      "name": "idle",
+      "frameCount": 4,
+      "fps": 4,
+      "loop": true
+    },
+    {
+      "name": "move",
+      "frameCount": 4,
+      "fps": 8,
+      "loop": true
+    },
+    {
+      "name": "attack",
+      "frameCount": 4,
+      "fps": 10,
+      "loop": false
+    },
+    {
+      "name": "hit",
+      "frameCount": 2,
+      "fps": 10,
+      "loop": false
+    },
+    {
+      "name": "death",
+      "frameCount": 2,
+      "fps": 6,
+      "loop": false
+    }
+  ],
+  "source": {
+    "sha256": "f8b933446782bad6a1187b57edf97144f7333efc4957ed31065dd4cf7bec5401",
+    "sheets": {
+      "south": {
+        "path": "art/source/boss-hd/vault-guardian/vault-guardian-animation-south-source-1024.png",
+        "sha256": "cdc2ba89888c41bc086e83648ef98667d7c03410261de759bc1392c185a0cef5"
+      },
+      "north": {
+        "path": "art/source/boss-hd/vault-guardian/vault-guardian-animation-north-source-1024.png",
+        "sha256": "4dd3b8e862fa4b18c60da9c495d004040d1d84f34e8d0dea352a4fc4ede57f4f"
+      },
+      "east": {
+        "path": "art/source/boss-hd/vault-guardian/vault-guardian-animation-east-source-1024.png",
+        "sha256": "751c00634025f805ba2c3cb7b1d6b762fbba41c455775d430ae1f15c232d137c"
+      },
+      "west": {
+        "path": "art/source/boss-hd/vault-guardian/vault-guardian-animation-west-source-1024.png",
+        "sha256": "f5bec8a0ae8bd1b500960d78b97d064cf21987fdfe26df5698bfa0adb46f2bed"
+      }
+    }
+  },
+  "frames": [
+    {
+      "type": "guardian",
+      "direction": "south",
+      "clip": "idle",
+      "frame": 1,
+      "key": "boss.guardian.south.idle.01",
+      "src": "assets/hd/bosses/vault-guardian/frames/south-idle-01.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "guardian",
+      "direction": "south",
+      "clip": "idle",
+      "frame": 2,
+      "key": "boss.guardian.south.idle.02",
+      "src": "assets/hd/bosses/vault-guardian/frames/south-idle-02.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "guardian",
+      "direction": "south",
+      "clip": "idle",
+      "frame": 3,
+      "key": "boss.guardian.south.idle.03",
+      "src": "assets/hd/bosses/vault-guardian/frames/south-idle-03.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "guardian",
+      "direction": "south",
+      "clip": "idle",
+      "frame": 4,
+      "key": "boss.guardian.south.idle.04",
+      "src": "assets/hd/bosses/vault-guardian/frames/south-idle-04.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "guardian",
+      "direction": "south",
+      "clip": "move",
+      "frame": 1,
+      "key": "boss.guardian.south.move.01",
+      "src": "assets/hd/bosses/vault-guardian/frames/south-move-01.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "guardian",
+      "direction": "south",
+      "clip": "move",
+      "frame": 2,
+      "key": "boss.guardian.south.move.02",
+      "src": "assets/hd/bosses/vault-guardian/frames/south-move-02.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "guardian",
+      "direction": "south",
+      "clip": "move",
+      "frame": 3,
+      "key": "boss.guardian.south.move.03",
+      "src": "assets/hd/bosses/vault-guardian/frames/south-move-03.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "guardian",
+      "direction": "south",
+      "clip": "move",
+      "frame": 4,
+      "key": "boss.guardian.south.move.04",
+      "src": "assets/hd/bosses/vault-guardian/frames/south-move-04.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "guardian",
+      "direction": "south",
+      "clip": "attack",
+      "frame": 1,
+      "key": "boss.guardian.south.attack.01",
+      "src": "assets/hd/bosses/vault-guardian/frames/south-attack-01.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "guardian",
+      "direction": "south",
+      "clip": "attack",
+      "frame": 2,
+      "key": "boss.guardian.south.attack.02",
+      "src": "assets/hd/bosses/vault-guardian/frames/south-attack-02.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "guardian",
+      "direction": "south",
+      "clip": "attack",
+      "frame": 3,
+      "key": "boss.guardian.south.attack.03",
+      "src": "assets/hd/bosses/vault-guardian/frames/south-attack-03.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "guardian",
+      "direction": "south",
+      "clip": "attack",
+      "frame": 4,
+      "key": "boss.guardian.south.attack.04",
+      "src": "assets/hd/bosses/vault-guardian/frames/south-attack-04.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "guardian",
+      "direction": "south",
+      "clip": "hit",
+      "frame": 1,
+      "key": "boss.guardian.south.hit.01",
+      "src": "assets/hd/bosses/vault-guardian/frames/south-hit-01.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "guardian",
+      "direction": "south",
+      "clip": "hit",
+      "frame": 2,
+      "key": "boss.guardian.south.hit.02",
+      "src": "assets/hd/bosses/vault-guardian/frames/south-hit-02.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "guardian",
+      "direction": "south",
+      "clip": "death",
+      "frame": 1,
+      "key": "boss.guardian.south.death.01",
+      "src": "assets/hd/bosses/vault-guardian/frames/south-death-01.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "guardian",
+      "direction": "south",
+      "clip": "death",
+      "frame": 2,
+      "key": "boss.guardian.south.death.02",
+      "src": "assets/hd/bosses/vault-guardian/frames/south-death-02.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "guardian",
+      "direction": "north",
+      "clip": "idle",
+      "frame": 1,
+      "key": "boss.guardian.north.idle.01",
+      "src": "assets/hd/bosses/vault-guardian/frames/north-idle-01.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "guardian",
+      "direction": "north",
+      "clip": "idle",
+      "frame": 2,
+      "key": "boss.guardian.north.idle.02",
+      "src": "assets/hd/bosses/vault-guardian/frames/north-idle-02.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "guardian",
+      "direction": "north",
+      "clip": "idle",
+      "frame": 3,
+      "key": "boss.guardian.north.idle.03",
+      "src": "assets/hd/bosses/vault-guardian/frames/north-idle-03.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "guardian",
+      "direction": "north",
+      "clip": "idle",
+      "frame": 4,
+      "key": "boss.guardian.north.idle.04",
+      "src": "assets/hd/bosses/vault-guardian/frames/north-idle-04.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "guardian",
+      "direction": "north",
+      "clip": "move",
+      "frame": 1,
+      "key": "boss.guardian.north.move.01",
+      "src": "assets/hd/bosses/vault-guardian/frames/north-move-01.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "guardian",
+      "direction": "north",
+      "clip": "move",
+      "frame": 2,
+      "key": "boss.guardian.north.move.02",
+      "src": "assets/hd/bosses/vault-guardian/frames/north-move-02.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "guardian",
+      "direction": "north",
+      "clip": "move",
+      "frame": 3,
+      "key": "boss.guardian.north.move.03",
+      "src": "assets/hd/bosses/vault-guardian/frames/north-move-03.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "guardian",
+      "direction": "north",
+      "clip": "move",
+      "frame": 4,
+      "key": "boss.guardian.north.move.04",
+      "src": "assets/hd/bosses/vault-guardian/frames/north-move-04.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "guardian",
+      "direction": "north",
+      "clip": "attack",
+      "frame": 1,
+      "key": "boss.guardian.north.attack.01",
+      "src": "assets/hd/bosses/vault-guardian/frames/north-attack-01.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "guardian",
+      "direction": "north",
+      "clip": "attack",
+      "frame": 2,
+      "key": "boss.guardian.north.attack.02",
+      "src": "assets/hd/bosses/vault-guardian/frames/north-attack-02.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "guardian",
+      "direction": "north",
+      "clip": "attack",
+      "frame": 3,
+      "key": "boss.guardian.north.attack.03",
+      "src": "assets/hd/bosses/vault-guardian/frames/north-attack-03.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "guardian",
+      "direction": "north",
+      "clip": "attack",
+      "frame": 4,
+      "key": "boss.guardian.north.attack.04",
+      "src": "assets/hd/bosses/vault-guardian/frames/north-attack-04.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "guardian",
+      "direction": "north",
+      "clip": "hit",
+      "frame": 1,
+      "key": "boss.guardian.north.hit.01",
+      "src": "assets/hd/bosses/vault-guardian/frames/north-hit-01.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "guardian",
+      "direction": "north",
+      "clip": "hit",
+      "frame": 2,
+      "key": "boss.guardian.north.hit.02",
+      "src": "assets/hd/bosses/vault-guardian/frames/north-hit-02.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "guardian",
+      "direction": "north",
+      "clip": "death",
+      "frame": 1,
+      "key": "boss.guardian.north.death.01",
+      "src": "assets/hd/bosses/vault-guardian/frames/north-death-01.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "guardian",
+      "direction": "north",
+      "clip": "death",
+      "frame": 2,
+      "key": "boss.guardian.north.death.02",
+      "src": "assets/hd/bosses/vault-guardian/frames/north-death-02.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "guardian",
+      "direction": "east",
+      "clip": "idle",
+      "frame": 1,
+      "key": "boss.guardian.east.idle.01",
+      "src": "assets/hd/bosses/vault-guardian/frames/east-idle-01.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "guardian",
+      "direction": "east",
+      "clip": "idle",
+      "frame": 2,
+      "key": "boss.guardian.east.idle.02",
+      "src": "assets/hd/bosses/vault-guardian/frames/east-idle-02.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "guardian",
+      "direction": "east",
+      "clip": "idle",
+      "frame": 3,
+      "key": "boss.guardian.east.idle.03",
+      "src": "assets/hd/bosses/vault-guardian/frames/east-idle-03.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "guardian",
+      "direction": "east",
+      "clip": "idle",
+      "frame": 4,
+      "key": "boss.guardian.east.idle.04",
+      "src": "assets/hd/bosses/vault-guardian/frames/east-idle-04.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "guardian",
+      "direction": "east",
+      "clip": "move",
+      "frame": 1,
+      "key": "boss.guardian.east.move.01",
+      "src": "assets/hd/bosses/vault-guardian/frames/east-move-01.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "guardian",
+      "direction": "east",
+      "clip": "move",
+      "frame": 2,
+      "key": "boss.guardian.east.move.02",
+      "src": "assets/hd/bosses/vault-guardian/frames/east-move-02.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "guardian",
+      "direction": "east",
+      "clip": "move",
+      "frame": 3,
+      "key": "boss.guardian.east.move.03",
+      "src": "assets/hd/bosses/vault-guardian/frames/east-move-03.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "guardian",
+      "direction": "east",
+      "clip": "move",
+      "frame": 4,
+      "key": "boss.guardian.east.move.04",
+      "src": "assets/hd/bosses/vault-guardian/frames/east-move-04.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "guardian",
+      "direction": "east",
+      "clip": "attack",
+      "frame": 1,
+      "key": "boss.guardian.east.attack.01",
+      "src": "assets/hd/bosses/vault-guardian/frames/east-attack-01.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "guardian",
+      "direction": "east",
+      "clip": "attack",
+      "frame": 2,
+      "key": "boss.guardian.east.attack.02",
+      "src": "assets/hd/bosses/vault-guardian/frames/east-attack-02.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "guardian",
+      "direction": "east",
+      "clip": "attack",
+      "frame": 3,
+      "key": "boss.guardian.east.attack.03",
+      "src": "assets/hd/bosses/vault-guardian/frames/east-attack-03.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "guardian",
+      "direction": "east",
+      "clip": "attack",
+      "frame": 4,
+      "key": "boss.guardian.east.attack.04",
+      "src": "assets/hd/bosses/vault-guardian/frames/east-attack-04.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "guardian",
+      "direction": "east",
+      "clip": "hit",
+      "frame": 1,
+      "key": "boss.guardian.east.hit.01",
+      "src": "assets/hd/bosses/vault-guardian/frames/east-hit-01.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "guardian",
+      "direction": "east",
+      "clip": "hit",
+      "frame": 2,
+      "key": "boss.guardian.east.hit.02",
+      "src": "assets/hd/bosses/vault-guardian/frames/east-hit-02.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "guardian",
+      "direction": "east",
+      "clip": "death",
+      "frame": 1,
+      "key": "boss.guardian.east.death.01",
+      "src": "assets/hd/bosses/vault-guardian/frames/east-death-01.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "guardian",
+      "direction": "east",
+      "clip": "death",
+      "frame": 2,
+      "key": "boss.guardian.east.death.02",
+      "src": "assets/hd/bosses/vault-guardian/frames/east-death-02.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "guardian",
+      "direction": "west",
+      "clip": "idle",
+      "frame": 1,
+      "key": "boss.guardian.west.idle.01",
+      "src": "assets/hd/bosses/vault-guardian/frames/west-idle-01.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "guardian",
+      "direction": "west",
+      "clip": "idle",
+      "frame": 2,
+      "key": "boss.guardian.west.idle.02",
+      "src": "assets/hd/bosses/vault-guardian/frames/west-idle-02.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "guardian",
+      "direction": "west",
+      "clip": "idle",
+      "frame": 3,
+      "key": "boss.guardian.west.idle.03",
+      "src": "assets/hd/bosses/vault-guardian/frames/west-idle-03.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "guardian",
+      "direction": "west",
+      "clip": "idle",
+      "frame": 4,
+      "key": "boss.guardian.west.idle.04",
+      "src": "assets/hd/bosses/vault-guardian/frames/west-idle-04.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "guardian",
+      "direction": "west",
+      "clip": "move",
+      "frame": 1,
+      "key": "boss.guardian.west.move.01",
+      "src": "assets/hd/bosses/vault-guardian/frames/west-move-01.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "guardian",
+      "direction": "west",
+      "clip": "move",
+      "frame": 2,
+      "key": "boss.guardian.west.move.02",
+      "src": "assets/hd/bosses/vault-guardian/frames/west-move-02.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "guardian",
+      "direction": "west",
+      "clip": "move",
+      "frame": 3,
+      "key": "boss.guardian.west.move.03",
+      "src": "assets/hd/bosses/vault-guardian/frames/west-move-03.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "guardian",
+      "direction": "west",
+      "clip": "move",
+      "frame": 4,
+      "key": "boss.guardian.west.move.04",
+      "src": "assets/hd/bosses/vault-guardian/frames/west-move-04.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "guardian",
+      "direction": "west",
+      "clip": "attack",
+      "frame": 1,
+      "key": "boss.guardian.west.attack.01",
+      "src": "assets/hd/bosses/vault-guardian/frames/west-attack-01.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "guardian",
+      "direction": "west",
+      "clip": "attack",
+      "frame": 2,
+      "key": "boss.guardian.west.attack.02",
+      "src": "assets/hd/bosses/vault-guardian/frames/west-attack-02.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "guardian",
+      "direction": "west",
+      "clip": "attack",
+      "frame": 3,
+      "key": "boss.guardian.west.attack.03",
+      "src": "assets/hd/bosses/vault-guardian/frames/west-attack-03.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "guardian",
+      "direction": "west",
+      "clip": "attack",
+      "frame": 4,
+      "key": "boss.guardian.west.attack.04",
+      "src": "assets/hd/bosses/vault-guardian/frames/west-attack-04.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "guardian",
+      "direction": "west",
+      "clip": "hit",
+      "frame": 1,
+      "key": "boss.guardian.west.hit.01",
+      "src": "assets/hd/bosses/vault-guardian/frames/west-hit-01.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "guardian",
+      "direction": "west",
+      "clip": "hit",
+      "frame": 2,
+      "key": "boss.guardian.west.hit.02",
+      "src": "assets/hd/bosses/vault-guardian/frames/west-hit-02.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "guardian",
+      "direction": "west",
+      "clip": "death",
+      "frame": 1,
+      "key": "boss.guardian.west.death.01",
+      "src": "assets/hd/bosses/vault-guardian/frames/west-death-01.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "guardian",
+      "direction": "west",
+      "clip": "death",
+      "frame": 2,
+      "key": "boss.guardian.west.death.02",
+      "src": "assets/hd/bosses/vault-guardian/frames/west-death-02.png",
+      "group": "bosses",
+      "critical": true
+    }
+  ]
+}

@@ -1,0 +1,1314 @@
+{
+  "schemaVersion": 1,
+  "source": {
+    "path": "art/source/player-hd/player-animation-atlas-rejected-layout.png",
+    "sha256": "3ae0de590ca039525d1db721c1539df146affc57a90939631cfccbc667d96d64",
+    "width": 1254,
+    "height": 1254,
+    "mode": "RGB"
+  },
+  "helperDetectedKey": "#f603f4",
+  "alphaThreshold": 16,
+  "minimumMeaningfulArea": 500,
+  "rawComponentCount": 72,
+  "componentCount": 70,
+  "detectedLayout": "10x7",
+  "requiredLayout": "8x8",
+  "shippable": false,
+  "rejectionReason": "Detected 70 meaningful poses in a 10x7 layout, not 64 poses in the required 8x8 layout; six surplus poses and shifted row/column clusters prevent exact semantic slot mapping.",
+  "columnClusters": [
+    {
+      "index": 1,
+      "count": 7,
+      "center": 67.631,
+      "minimum": 60.375,
+      "maximum": 75.467
+    },
+    {
+      "index": 2,
+      "count": 7,
+      "center": 188.529,
+      "minimum": 181.586,
+      "maximum": 195.92
+    },
+    {
+      "index": 3,
+      "count": 7,
+      "center": 309.218,
+      "minimum": 300.615,
+      "maximum": 328.912
+    },
+    {
+      "index": 4,
+      "count": 7,
+      "center": 427.384,
+      "minimum": 419.382,
+      "maximum": 445.607
+    },
+    {
+      "index": 5,
+      "count": 7,
+      "center": 546.718,
+      "minimum": 538.697,
+      "maximum": 555.355
+    },
+    {
+      "index": 6,
+      "count": 7,
+      "center": 677.015,
+      "minimum": 669.066,
+      "maximum": 682.894
+    },
+    {
+      "index": 7,
+      "count": 7,
+      "center": 796.838,
+      "minimum": 790.968,
+      "maximum": 807.38
+    },
+    {
+      "index": 8,
+      "count": 7,
+      "center": 917.951,
+      "minimum": 908.969,
+      "maximum": 928.552
+    },
+    {
+      "index": 9,
+      "count": 7,
+      "center": 1042.316,
+      "minimum": 1034.02,
+      "maximum": 1049.556
+    },
+    {
+      "index": 10,
+      "count": 7,
+      "center": 1167.575,
+      "minimum": 1156.24,
+      "maximum": 1175.689
+    }
+  ],
+  "rowClusters": [
+    {
+      "index": 1,
+      "count": 10,
+      "center": 103.233,
+      "minimum": 95.076,
+      "maximum": 133.79
+    },
+    {
+      "index": 2,
+      "count": 10,
+      "center": 279.625,
+      "minimum": 270.353,
+      "maximum": 309.788
+    },
+    {
+      "index": 3,
+      "count": 10,
+      "center": 457.063,
+      "minimum": 446.918,
+      "maximum": 488.7
+    },
+    {
+      "index": 4,
+      "count": 10,
+      "center": 642.652,
+      "minimum": 633.722,
+      "maximum": 672.213
+    },
+    {
+      "index": 5,
+      "count": 10,
+      "center": 829.7,
+      "minimum": 817.417,
+      "maximum": 865.394
+    },
+    {
+      "index": 6,
+      "count": 10,
+      "center": 1011.949,
+      "minimum": 998.697,
+      "maximum": 1047.644
+    },
+    {
+      "index": 7,
+      "count": 10,
+      "center": 1177.903,
+      "minimum": 1172.692,
+      "maximum": 1192.659
+    }
+  ],
+  "directionAnchors": {
+    "north": {
+      "grid": [
+        3,
+        1
+      ],
+      "confidence": "high",
+      "rationale": "unmistakable back-facing helmet, cape, shoulders, and no visible chest front",
+      "component": 21,
+      "bounds": [
+        30,
+        378,
+        116,
+        510
+      ],
+      "area": 7069
+    },
+    "east": {
+      "grid": [
+        4,
+        1
+      ],
+      "confidence": "high",
+      "rationale": "unmistakable screen-right helmet, torso, feet, and sword orientation",
+      "component": 31,
+      "bounds": [
+        34,
+        564,
+        102,
+        699
+      ],
+      "area": 5285
+    },
+    "west": {
+      "grid": [
+        6,
+        1
+      ],
+      "confidence": "high",
+      "rationale": "unmistakable screen-left helmet, torso, feet, and sword orientation",
+      "component": 51,
+      "bounds": [
+        52,
+        931,
+        102,
+        1066
+      ],
+      "area": 4942
+    }
+  },
+  "components": [
+    {
+      "area": 7355,
+      "bounds": [
+        24,
+        27,
+        112,
+        165
+      ],
+      "centroid": [
+        70.662,
+        97.561
+      ],
+      "column": 1,
+      "row": 1,
+      "component": 1
+    },
+    {
+      "area": 7284,
+      "bounds": [
+        145,
+        27,
+        232,
+        165
+      ],
+      "centroid": [
+        191.024,
+        97.701
+      ],
+      "column": 2,
+      "row": 1,
+      "component": 2
+    },
+    {
+      "area": 6878,
+      "bounds": [
+        267,
+        27,
+        351,
+        165
+      ],
+      "centroid": [
+        309.092,
+        95.213
+      ],
+      "column": 3,
+      "row": 1,
+      "component": 3
+    },
+    {
+      "area": 6684,
+      "bounds": [
+        384,
+        31,
+        470,
+        165
+      ],
+      "centroid": [
+        427.723,
+        96.305
+      ],
+      "column": 4,
+      "row": 1,
+      "component": 4
+    },
+    {
+      "area": 6815,
+      "bounds": [
+        495,
+        31,
+        588,
+        165
+      ],
+      "centroid": [
+        544.211,
+        95.076
+      ],
+      "column": 5,
+      "row": 1,
+      "component": 5
+    },
+    {
+      "area": 6013,
+      "bounds": [
+        633,
+        38,
+        755,
+        165
+      ],
+      "centroid": [
+        677.674,
+        98.55
+      ],
+      "column": 6,
+      "row": 1,
+      "component": 6
+    },
+    {
+      "area": 5558,
+      "bounds": [
+        759,
+        39,
+        870,
+        165
+      ],
+      "centroid": [
+        795.05,
+        98.119
+      ],
+      "column": 7,
+      "row": 1,
+      "component": 7
+    },
+    {
+      "area": 5580,
+      "bounds": [
+        883,
+        45,
+        958,
+        165
+      ],
+      "centroid": [
+        917.018,
+        99.85
+      ],
+      "column": 8,
+      "row": 1,
+      "component": 8
+    },
+    {
+      "area": 4694,
+      "bounds": [
+        983,
+        77,
+        1090,
+        166
+      ],
+      "centroid": [
+        1049.556,
+        120.166
+      ],
+      "column": 9,
+      "row": 1,
+      "component": 9
+    },
+    {
+      "area": 4254,
+      "bounds": [
+        1102,
+        98,
+        1216,
+        168
+      ],
+      "centroid": [
+        1169.772,
+        133.79
+      ],
+      "column": 10,
+      "row": 1,
+      "component": 10
+    },
+    {
+      "area": 6893,
+      "bounds": [
+        25,
+        207,
+        110,
+        342
+      ],
+      "centroid": [
+        69.742,
+        276.393
+      ],
+      "column": 1,
+      "row": 2,
+      "component": 11
+    },
+    {
+      "area": 6643,
+      "bounds": [
+        135,
+        207,
+        245,
+        342
+      ],
+      "centroid": [
+        195.92,
+        273.477
+      ],
+      "column": 2,
+      "row": 2,
+      "component": 12
+    },
+    {
+      "area": 6458,
+      "bounds": [
+        249,
+        213,
+        367,
+        341
+      ],
+      "centroid": [
+        328.912,
+        270.353
+      ],
+      "column": 3,
+      "row": 2,
+      "component": 13
+    },
+    {
+      "area": 6541,
+      "bounds": [
+        370,
+        219,
+        487,
+        341
+      ],
+      "centroid": [
+        445.607,
+        272.475
+      ],
+      "column": 4,
+      "row": 2,
+      "component": 14
+    },
+    {
+      "area": 6080,
+      "bounds": [
+        508,
+        214,
+        607,
+        334
+      ],
+      "centroid": [
+        553.966,
+        273.603
+      ],
+      "column": 5,
+      "row": 2,
+      "component": 15
+    },
+    {
+      "area": 6527,
+      "bounds": [
+        645,
+        206,
+        722,
+        342
+      ],
+      "centroid": [
+        682.894,
+        271.323
+      ],
+      "column": 6,
+      "row": 2,
+      "component": 16
+    },
+    {
+      "area": 6347,
+      "bounds": [
+        766,
+        210,
+        845,
+        334
+      ],
+      "centroid": [
+        807.38,
+        271.781
+      ],
+      "column": 7,
+      "row": 2,
+      "component": 17
+    },
+    {
+      "area": 5123,
+      "bounds": [
+        881,
+        225,
+        957,
+        343
+      ],
+      "centroid": [
+        920.89,
+        276.073
+      ],
+      "column": 8,
+      "row": 2,
+      "component": 18
+    },
+    {
+      "area": 5081,
+      "bounds": [
+        978,
+        262,
+        1089,
+        345
+      ],
+      "centroid": [
+        1041.264,
+        300.985
+      ],
+      "column": 9,
+      "row": 2,
+      "component": 19
+    },
+    {
+      "area": 4942,
+      "bounds": [
+        1084,
+        271,
+        1215,
+        345
+      ],
+      "centroid": [
+        1164.679,
+        309.788
+      ],
+      "column": 10,
+      "row": 2,
+      "component": 20
+    },
+    {
+      "area": 7069,
+      "bounds": [
+        30,
+        378,
+        116,
+        510
+      ],
+      "centroid": [
+        70.334,
+        448.551
+      ],
+      "column": 1,
+      "row": 3,
+      "component": 21
+    },
+    {
+      "area": 7002,
+      "bounds": [
+        151,
+        378,
+        233,
+        511
+      ],
+      "centroid": [
+        190.068,
+        447.785
+      ],
+      "column": 2,
+      "row": 3,
+      "component": 22
+    },
+    {
+      "area": 7054,
+      "bounds": [
+        270,
+        377,
+        360,
+        510
+      ],
+      "centroid": [
+        309.663,
+        447.098
+      ],
+      "column": 3,
+      "row": 3,
+      "component": 23
+    },
+    {
+      "area": 6793,
+      "bounds": [
+        389,
+        381,
+        475,
+        511
+      ],
+      "centroid": [
+        427.97,
+        448.959
+      ],
+      "column": 4,
+      "row": 3,
+      "component": 24
+    },
+    {
+      "area": 6977,
+      "bounds": [
+        507,
+        383,
+        595,
+        509
+      ],
+      "centroid": [
+        549.885,
+        449.266
+      ],
+      "column": 5,
+      "row": 3,
+      "component": 25
+    },
+    {
+      "area": 6533,
+      "bounds": [
+        646,
+        379,
+        722,
+        517
+      ],
+      "centroid": [
+        680.235,
+        446.918
+      ],
+      "column": 6,
+      "row": 3,
+      "component": 26
+    },
+    {
+      "area": 6361,
+      "bounds": [
+        755,
+        390,
+        832,
+        517
+      ],
+      "centroid": [
+        791.229,
+        454.139
+      ],
+      "column": 7,
+      "row": 3,
+      "component": 27
+    },
+    {
+      "area": 6433,
+      "bounds": [
+        859,
+        389,
+        959,
+        516
+      ],
+      "centroid": [
+        914.135,
+        450.826
+      ],
+      "column": 8,
+      "row": 3,
+      "component": 28
+    },
+    {
+      "area": 4716,
+      "bounds": [
+        977,
+        445,
+        1082,
+        541
+      ],
+      "centroid": [
+        1034.02,
+        488.391
+      ],
+      "column": 9,
+      "row": 3,
+      "component": 29
+    },
+    {
+      "area": 4764,
+      "bounds": [
+        1101,
+        457,
+        1212,
+        539
+      ],
+      "centroid": [
+        1156.24,
+        488.7
+      ],
+      "column": 10,
+      "row": 3,
+      "component": 30
+    },
+    {
+      "area": 5285,
+      "bounds": [
+        34,
+        564,
+        102,
+        699
+      ],
+      "centroid": [
+        62.434,
+        633.722
+      ],
+      "column": 1,
+      "row": 4,
+      "component": 31
+    },
+    {
+      "area": 5305,
+      "bounds": [
+        152,
+        567,
+        232,
+        701
+      ],
+      "centroid": [
+        181.586,
+        636.048
+      ],
+      "column": 2,
+      "row": 4,
+      "component": 32
+    },
+    {
+      "area": 5492,
+      "bounds": [
+        267,
+        569,
+        368,
+        700
+      ],
+      "centroid": [
+        300.615,
+        636.779
+      ],
+      "column": 3,
+      "row": 4,
+      "component": 33
+    },
+    {
+      "area": 5519,
+      "bounds": [
+        388,
+        572,
+        492,
+        701
+      ],
+      "centroid": [
+        422.59,
+        637.945
+      ],
+      "column": 4,
+      "row": 4,
+      "component": 34
+    },
+    {
+      "area": 5665,
+      "bounds": [
+        511,
+        572,
+        608,
+        703
+      ],
+      "centroid": [
+        542.439,
+        637.453
+      ],
+      "column": 5,
+      "row": 4,
+      "component": 35
+    },
+    {
+      "area": 5697,
+      "bounds": [
+        642,
+        573,
+        736,
+        687
+      ],
+      "centroid": [
+        676.036,
+        633.812
+      ],
+      "column": 6,
+      "row": 4,
+      "component": 36
+    },
+    {
+      "area": 6147,
+      "bounds": [
+        755,
+        575,
+        860,
+        707
+      ],
+      "centroid": [
+        793.148,
+        640.643
+      ],
+      "column": 7,
+      "row": 4,
+      "component": 37
+    },
+    {
+      "area": 5745,
+      "bounds": [
+        875,
+        577,
+        955,
+        699
+      ],
+      "centroid": [
+        908.969,
+        640.0
+      ],
+      "column": 8,
+      "row": 4,
+      "component": 38
+    },
+    {
+      "area": 6022,
+      "bounds": [
+        984,
+        628,
+        1120,
+        710
+      ],
+      "centroid": [
+        1047.824,
+        672.213
+      ],
+      "column": 9,
+      "row": 4,
+      "component": 39
+    },
+    {
+      "area": 5490,
+      "bounds": [
+        1132,
+        605,
+        1226,
+        708
+      ],
+      "centroid": [
+        1175.689,
+        657.906
+      ],
+      "column": 10,
+      "row": 4,
+      "component": 40
+    },
+    {
+      "area": 5369,
+      "bounds": [
+        36,
+        746,
+        107,
+        885
+      ],
+      "centroid": [
+        64.4,
+        817.417
+      ],
+      "column": 1,
+      "row": 5,
+      "component": 41
+    },
+    {
+      "area": 5301,
+      "bounds": [
+        155,
+        747,
+        228,
+        886
+      ],
+      "centroid": [
+        183.355,
+        818.029
+      ],
+      "column": 2,
+      "row": 5,
+      "component": 42
+    },
+    {
+      "area": 5226,
+      "bounds": [
+        274,
+        747,
+        349,
+        886
+      ],
+      "centroid": [
+        301.259,
+        818.49
+      ],
+      "column": 3,
+      "row": 5,
+      "component": 43
+    },
+    {
+      "area": 5321,
+      "bounds": [
+        389,
+        750,
+        473,
+        886
+      ],
+      "centroid": [
+        419.382,
+        821.373
+      ],
+      "column": 4,
+      "row": 5,
+      "component": 44
+    },
+    {
+      "area": 5761,
+      "bounds": [
+        509,
+        750,
+        608,
+        887
+      ],
+      "centroid": [
+        542.475,
+        821.357
+      ],
+      "column": 5,
+      "row": 5,
+      "component": 45
+    },
+    {
+      "area": 5675,
+      "bounds": [
+        637,
+        747,
+        711,
+        887
+      ],
+      "centroid": [
+        669.066,
+        819.868
+      ],
+      "column": 6,
+      "row": 5,
+      "component": 46
+    },
+    {
+      "area": 5796,
+      "bounds": [
+        756,
+        755,
+        831,
+        881
+      ],
+      "centroid": [
+        790.968,
+        822.862
+      ],
+      "column": 7,
+      "row": 5,
+      "component": 47
+    },
+    {
+      "area": 6318,
+      "bounds": [
+        864,
+        764,
+        964,
+        887
+      ],
+      "centroid": [
+        912.903,
+        827.127
+      ],
+      "column": 8,
+      "row": 5,
+      "component": 48
+    },
+    {
+      "area": 4173,
+      "bounds": [
+        991,
+        831,
+        1106,
+        899
+      ],
+      "centroid": [
+        1045.724,
+        865.394
+      ],
+      "column": 9,
+      "row": 5,
+      "component": 49
+    },
+    {
+      "area": 4385,
+      "bounds": [
+        1116,
+        833,
+        1222,
+        906
+      ],
+      "centroid": [
+        1167.035,
+        865.077
+      ],
+      "column": 10,
+      "row": 5,
+      "component": 50
+    },
+    {
+      "area": 4942,
+      "bounds": [
+        52,
+        931,
+        102,
+        1066
+      ],
+      "centroid": [
+        75.467,
+        998.697
+      ],
+      "column": 1,
+      "row": 6,
+      "component": 51
+    },
+    {
+      "area": 5363,
+      "bounds": [
+        146,
+        933,
+        230,
+        1060
+      ],
+      "centroid": [
+        195.834,
+        1001.709
+      ],
+      "column": 2,
+      "row": 6,
+      "component": 52
+    },
+    {
+      "area": 5331,
+      "bounds": [
+        255,
+        935,
+        350,
+        1062
+      ],
+      "centroid": [
+        312.455,
+        1001.716
+      ],
+      "column": 3,
+      "row": 6,
+      "component": 53
+    },
+    {
+      "area": 5103,
+      "bounds": [
+        377,
+        937,
+        463,
+        1063
+      ],
+      "centroid": [
+        427.654,
+        1002.758
+      ],
+      "column": 4,
+      "row": 6,
+      "component": 54
+    },
+    {
+      "area": 5619,
+      "bounds": [
+        492,
+        939,
+        592,
+        1065
+      ],
+      "centroid": [
+        555.355,
+        1003.468
+      ],
+      "column": 5,
+      "row": 6,
+      "component": 55
+    },
+    {
+      "area": 5628,
+      "bounds": [
+        628,
+        938,
+        710,
+        1065
+      ],
+      "centroid": [
+        680.248,
+        1005.582
+      ],
+      "column": 6,
+      "row": 6,
+      "component": 56
+    },
+    {
+      "area": 5519,
+      "bounds": [
+        764,
+        940,
+        834,
+        1063
+      ],
+      "centroid": [
+        802.215,
+        1004.62
+      ],
+      "column": 7,
+      "row": 6,
+      "component": 57
+    },
+    {
+      "area": 6211,
+      "bounds": [
+        887,
+        944,
+        965,
+        1066
+      ],
+      "centroid": [
+        928.552,
+        1010.214
+      ],
+      "column": 8,
+      "row": 6,
+      "component": 58
+    },
+    {
+      "area": 3631,
+      "bounds": [
+        979,
+        1012,
+        1088,
+        1077
+      ],
+      "centroid": [
+        1041.917,
+        1043.08
+      ],
+      "column": 9,
+      "row": 6,
+      "component": 59
+    },
+    {
+      "area": 4093,
+      "bounds": [
+        1098,
+        1018,
+        1220,
+        1076
+      ],
+      "centroid": [
+        1168.131,
+        1047.644
+      ],
+      "column": 10,
+      "row": 6,
+      "component": 60
+    },
+    {
+      "area": 4918,
+      "bounds": [
+        33,
+        1109,
+        102,
+        1239
+      ],
+      "centroid": [
+        60.375,
+        1175.337
+      ],
+      "column": 1,
+      "row": 7,
+      "component": 61
+    },
+    {
+      "area": 5131,
+      "bounds": [
+        151,
+        1110,
+        238,
+        1239
+      ],
+      "centroid": [
+        181.914,
+        1176.791
+      ],
+      "column": 2,
+      "row": 7,
+      "component": 62
+    },
+    {
+      "area": 5247,
+      "bounds": [
+        273,
+        1108,
+        365,
+        1239
+      ],
+      "centroid": [
+        302.533,
+        1175.866
+      ],
+      "column": 3,
+      "row": 7,
+      "component": 63
+    },
+    {
+      "area": 5276,
+      "bounds": [
+        391,
+        1108,
+        479,
+        1239
+      ],
+      "centroid": [
+        420.765,
+        1174.625
+      ],
+      "column": 4,
+      "row": 7,
+      "component": 64
+    },
+    {
+      "area": 5311,
+      "bounds": [
+        508,
+        1109,
+        576,
+        1239
+      ],
+      "centroid": [
+        538.697,
+        1174.265
+      ],
+      "column": 5,
+      "row": 7,
+      "component": 65
+    },
+    {
+      "area": 5315,
+      "bounds": [
+        642,
+        1109,
+        730,
+        1239
+      ],
+      "centroid": [
+        672.953,
+        1176.775
+      ],
+      "column": 6,
+      "row": 7,
+      "component": 66
+    },
+    {
+      "area": 5501,
+      "bounds": [
+        767,
+        1110,
+        834,
+        1239
+      ],
+      "centroid": [
+        797.878,
+        1175.528
+      ],
+      "column": 7,
+      "row": 7,
+      "component": 67
+    },
+    {
+      "area": 5610,
+      "bounds": [
+        891,
+        1109,
+        957,
+        1239
+      ],
+      "centroid": [
+        923.189,
+        1172.692
+      ],
+      "column": 8,
+      "row": 7,
+      "component": 68
+    },
+    {
+      "area": 4973,
+      "bounds": [
+        987,
+        1153,
+        1116,
+        1232
+      ],
+      "centroid": [
+        1035.91,
+        1192.659
+      ],
+      "column": 9,
+      "row": 7,
+      "component": 69
+    },
+    {
+      "area": 4466,
+      "bounds": [
+        1120,
+        1152,
+        1226,
+        1223
+      ],
+      "centroid": [
+        1171.477,
+        1184.495
+      ],
+      "column": 10,
+      "row": 7,
+      "component": 70
+    }
+  ]
+}

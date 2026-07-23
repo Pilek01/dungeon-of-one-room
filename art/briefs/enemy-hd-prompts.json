@@ -1,0 +1,68 @@
+{
+  "schemaVersion": 1,
+  "task": "graphics-overhaul-task-7-standard-enemies",
+  "style": "Abyssal Gothic HD, top-down orthographic, hand-painted materials, crisp at 64 px, upper-left key light",
+  "chromaKey": "#ff00ff",
+  "frameSize": [64, 64],
+  "anchor": [0.5, 1],
+  "sourceSheet": {
+    "layout": "4x4",
+    "canvasSize": [1024, 1024],
+    "slotSize": [256, 256],
+    "mobileRows": ["idle-01..04", "move-01..04", "attack-01..04", "hit-01,hit-02,death-01,death-02"],
+    "totemRows": ["idle-01..04", "awaken-01..04", "cast-01..04", "hit-01,hit-02,death-01,death-02"]
+  },
+  "sharedPromptSuffix": "Single production sprite seed, top-down orthographic 2D game art, Abyssal Gothic HD, detailed hand-painted materials with crisp readable edges at 64 px gameplay scale, consistent upper-left key light, centered with generous untouched padding. Entire background perfectly flat uniform #ff00ff. No floor, contact shadow, scenery, border, grid, text, UI, extra character, loose debris, glow crossing the silhouette, or magenta inside the subject.",
+  "roster": {
+    "slime": {
+      "mobile": true,
+      "silhouette": "low broad wet swarm",
+      "seedPrompt": "A low broad wet dungeon slime, muted moss-green and ashen teal translucent flesh, heavy puddle-shaped base, two dim amber eyes, tiny dark iron fragments suspended inside; threatening swarm silhouette, not cute. South-facing idle."
+    },
+    "skeleton": {
+      "mobile": true,
+      "silhouette": "angular ranged attacker",
+      "seedPrompt": "An angular skeletal ranged attacker, chipped cold ivory bones, narrow rusted iron harness, asymmetrical bone bow and compact quiver, sharp elbows and readable firing silhouette. South-facing idle."
+    },
+    "brute": {
+      "mobile": true,
+      "silhouette": "wide heavy melee",
+      "seedPrompt": "A massive wide dungeon brute built for melee slams, corpse-pale muscular arms, battered oxblood and blackened iron plate, huge shoulders, heavy slab mace, low aggressive stance. South-facing idle."
+    },
+    "acolyte": {
+      "mobile": true,
+      "silhouette": "tall violet-focus caster",
+      "seedPrompt": "A tall hooded abyssal acolyte, layered charcoal robes with restrained dark-purple trim, thin ritual staff, bright violet focus held before the chest, hidden face with two faint cold eyes. South-facing idle."
+    },
+    "skitter": {
+      "mobile": true,
+      "silhouette": "low fast multi-leg predator",
+      "seedPrompt": "A very low fast multi-legged dungeon predator, red-black segmented chitin, six long hooked legs, bone-white mandibles and small pale eyes, stretched horizontal hunting silhouette. South-facing idle."
+    },
+    "totem": {
+      "mobile": false,
+      "silhouette": "stationary vertical magical threat",
+      "seedPrompt": "A stationary vertical hex totem made from cracked bone, black iron and dark stone, restrained violet runes, narrow sickly-green venom vents, heavy stable base, unmistakable magical threat. Base idle."
+    },
+    "otter": {
+      "mobile": true,
+      "silhouette": "rare naturalistic abyss-touched otter",
+      "seedPrompt": "A rare hostile abyss-touched otter combatant, unmistakable natural otter anatomy, wet dark-brown fur, pale muzzle, small blackened iron shoulder pieces, burgundy cloth wrap and short bone knife; grim dark-fantasy tone, never mascot-like or comedic. South-facing idle."
+    }
+  },
+  "existingSignalOnly": {
+    "priority": ["hp<=0:death", "hitFlash>0:hit", "telegraph-or-cast:attack", "_tweenT<120:move", "idle"],
+    "skeleton": ["aiming", "volleyAiming", "castFlash"],
+    "acolyte": ["aiming", "castFlash", "acolyteCastType"],
+    "brute": ["slamAiming", "rests"],
+    "totem": ["castFlash"],
+    "limitations": [
+      "ordinary slime, skitter and otter melee attacks expose no persistent attack signal",
+      "dead enemies are normally removed before a death clip can render",
+      "totem awaken exposes no current presentation signal",
+      "Task 7 must not add simulation signals or change AI, combat, movement or timing"
+    ]
+  },
+  "affixes": ["relentless", "juggernaut", "blooddrinker", "thorned", "volatile"],
+  "affixAliases": {"fast": "relentless", "tank": "juggernaut", "vampiric": "blooddrinker"}
+}

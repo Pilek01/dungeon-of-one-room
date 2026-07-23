@@ -1,0 +1,4751 @@
+{
+  "chromaKey": "#ff00ff",
+  "normalization": {
+    "globalScaleAndRootPerProfile": true,
+    "meaningfulComponentArea": 500,
+    "nearChromaPolicy": "zero visible exact or near #ff00ff",
+    "semanticLayout": "strict 4x4/16"
+  },
+  "outputs": {
+    "art/source/boss-hd/blacksmith-guardian/blacksmith-guardian-animation-contact-sheet.png": "a596b0dd7d0b57d1cd84e64941a094f854d5a47f91dbb77c530940bceec5c7ee",
+    "art/source/boss-hd/blacksmith-guardian/blacksmith-guardian-animation-east-normalized-1024.png": "14ad77fd99fd607300d66af1e5094b0c4e93548bd2e364b4093614023e22f040",
+    "art/source/boss-hd/blacksmith-guardian/blacksmith-guardian-animation-north-normalized-1024.png": "ecb4f3baa4495bff50f77f33967e8c7adfdbd503c541eaa432d2b01d7610211f",
+    "art/source/boss-hd/blacksmith-guardian/blacksmith-guardian-animation-south-normalized-1024.png": "574753bd2b8e56dd918fd831c0010afa7ca6ba836e8d0d78c7c9a81714efbcb7",
+    "art/source/boss-hd/blacksmith-guardian/blacksmith-guardian-animation-west-normalized-1024.png": "e6792287f6475329b5eb118c84cfe88d18d018e2708bbf6f4e0bdc1af5355ae0",
+    "art/source/boss-hd/boss-animation-contact-sheet.png": "4f06f67d13bb10737f385d7a1caef82eadd813d4ddc0c8a056c2ef2b69e3d8eb",
+    "art/source/boss-hd/boss-animation-source-layout.json": "242a40f8f333b5fce4f52a18bd338597adce05c02cba1c35223dad12f083c63b",
+    "art/source/boss-hd/vault-guardian/vault-guardian-animation-contact-sheet.png": "fe6eaaedaa1e8c2e13c457381c7f41f6c1a2898962d32b669906e99d472765ec",
+    "art/source/boss-hd/vault-guardian/vault-guardian-animation-east-normalized-1024.png": "079aea8401ce83814481c1382c1e3c0a641384d6e7eb20988bda4e6c6525fd44",
+    "art/source/boss-hd/vault-guardian/vault-guardian-animation-north-normalized-1024.png": "3454bb4b08b58491187d0066a39f553f43b379bc3b97305c3fa8ce3d429656df",
+    "art/source/boss-hd/vault-guardian/vault-guardian-animation-south-normalized-1024.png": "4ac5504c1bc9c3a47fec81d6e6a2614b718cb5df3bf469d15da9e36cc506228e",
+    "art/source/boss-hd/vault-guardian/vault-guardian-animation-west-normalized-1024.png": "83ba2dd4db1de56a0eb73b04aed3d3beaa5b4a2991beb3541a9a9c4ea508b2d3",
+    "art/source/boss-hd/warden-biome-abyss/warden-biome-abyss-animation-contact-sheet.png": "1d546992a1253ad7786885835d1972bcf71c165e351ea01f99b7b9e216bbf767",
+    "art/source/boss-hd/warden-biome-abyss/warden-biome-abyss-animation-east-normalized-1024.png": "30e18bf6d42f7f54984301e2e1de810172af836234cc562ffcf4d3333c1a8c8e",
+    "art/source/boss-hd/warden-biome-abyss/warden-biome-abyss-animation-north-normalized-1024.png": "7a72b3b36fab57b5b70cc1674406db6005bb013c45420e5f0949b9be937d3fda",
+    "art/source/boss-hd/warden-biome-abyss/warden-biome-abyss-animation-south-normalized-1024.png": "1001a85d9ae5dcb8d2bb703a5dda4bbc1fbfb5cc6dcf5cae8aa555751f0d37a6",
+    "art/source/boss-hd/warden-biome-abyss/warden-biome-abyss-animation-west-normalized-1024.png": "430066f430c17574751c5ff1dbfd7a179f56953ab29cda6954e5257bba165fd4",
+    "art/source/boss-hd/warden-biome-corruption/warden-biome-corruption-animation-contact-sheet.png": "802383a0e22052e4f6ead86ba365351c308835541d67a70280e014bd3b9112e2",
+    "art/source/boss-hd/warden-biome-corruption/warden-biome-corruption-animation-east-normalized-1024.png": "6f3aead61a444083f8add98c662982fd876e21e7217f0101f3592d5a0b5ee379",
+    "art/source/boss-hd/warden-biome-corruption/warden-biome-corruption-animation-north-normalized-1024.png": "9b01ce7a38dfaac60f63d1720ec7930aece9f85f1d8ef32bfff68878aae4901b",
+    "art/source/boss-hd/warden-biome-corruption/warden-biome-corruption-animation-south-normalized-1024.png": "f958a7faaa2eb78ba7cf47b9a69532a7a56cd871a2ed17501d4c274dab2de74e",
+    "art/source/boss-hd/warden-biome-corruption/warden-biome-corruption-animation-west-normalized-1024.png": "bbb2e2e65e1c7e42148f1374639df79a7ba278ee8c252c7938cbf2b4feca2ffe",
+    "art/source/boss-hd/warden-biome-descent/warden-biome-descent-animation-contact-sheet.png": "83b273e0ffd6b98ea2c548e676cfdef22d34b42fd07dbdcc161996c15d4a3266",
+    "art/source/boss-hd/warden-biome-descent/warden-biome-descent-animation-east-normalized-1024.png": "c5321443e7df0d9445e7182df708db3e016620211b987d04bb1592f7e572f3c6",
+    "art/source/boss-hd/warden-biome-descent/warden-biome-descent-animation-north-normalized-1024.png": "44eb435bbbcd78a700bbf6b4d5c014c3716bf392bed81acf47881cee0d18268e",
+    "art/source/boss-hd/warden-biome-descent/warden-biome-descent-animation-south-normalized-1024.png": "087be5fbbb9e252ce9112e95dec89361c82fd0acddae5b112576d1cde3169f47",
+    "art/source/boss-hd/warden-biome-descent/warden-biome-descent-animation-west-normalized-1024.png": "c68fa52d5a4f46fb2b8bd5c840981bae86878236ad42a1c978c2587a15df4cda",
+    "art/source/boss-hd/warden-phase-1/warden-phase-1-animation-contact-sheet.png": "daf3ed8c377f688811b1aa34a46fd9c60a49530d94a6df0a3c0b297a3b2afe22",
+    "art/source/boss-hd/warden-phase-1/warden-phase-1-animation-east-normalized-1024.png": "383e17b82fcda39ac4c89eda49fd4f159ee858bb33476f9f1c595ab6ad6de9a3",
+    "art/source/boss-hd/warden-phase-1/warden-phase-1-animation-north-normalized-1024.png": "477979a2d9703709d1edb096af5887151480473cce8c9c26a6dcaa01239de021",
+    "art/source/boss-hd/warden-phase-1/warden-phase-1-animation-south-normalized-1024.png": "42d380794e1ac522c5a01c58726e8806b800448a3b8b3e7144fa0cba86c84100",
+    "art/source/boss-hd/warden-phase-1/warden-phase-1-animation-west-normalized-1024.png": "4c9851f895884aa10c410c08eaab3b1a8f4bd6e27eb95bdf1d70a13a44fbe818",
+    "art/source/boss-hd/warden-phase-2/warden-phase-2-animation-contact-sheet.png": "939d090c8d1f241fb1840ddf3b7b2e9177b8cc28c74d7e8edce176b138fcf34d",
+    "art/source/boss-hd/warden-phase-2/warden-phase-2-animation-east-normalized-1024.png": "35b32283c735c48f79105dbeb1242ee6ddb78184b3fd3d5afc5cc10ee275c7cd",
+    "art/source/boss-hd/warden-phase-2/warden-phase-2-animation-north-normalized-1024.png": "7f8483e2f3c07a9d77789eec1a6408c21ee577786b225079fdd690ed70aef613",
+    "art/source/boss-hd/warden-phase-2/warden-phase-2-animation-south-normalized-1024.png": "b423bad39a19e163b35202618c1abba9a398965cb71a8d087e4d9dae0a1575fa",
+    "art/source/boss-hd/warden-phase-2/warden-phase-2-animation-west-normalized-1024.png": "9981291ec0349c4194a163f6b948b4fe5fc38c0315f703fbc80d651090b0d50f",
+    "assets/hd/bosses/blacksmith-guardian/boss-manifest.json": "aaa8a15f1c5b3e5ebe1c87e088b1e467792349820d377ff01c927dd7337f4b5b",
+    "assets/hd/bosses/blacksmith-guardian/frames/east-attack-01.png": "1d8e0a53675ea3a00fde028f6795b2479cfa7f5ea0a91cd51808870685512593",
+    "assets/hd/bosses/blacksmith-guardian/frames/east-attack-02.png": "d04a91df3477a038d0791a6966280eb6bd2a8a87b383d17eb789789bc686dadf",
+    "assets/hd/bosses/blacksmith-guardian/frames/east-attack-03.png": "02d80cfcdbdeee34658071215eff0b5138ecad8c577ee312a3e81b4041c4814d",
+    "assets/hd/bosses/blacksmith-guardian/frames/east-attack-04.png": "de631216d0bab1ef21af6674b13720a28369fc53ef9981af3a72f93280c013e1",
+    "assets/hd/bosses/blacksmith-guardian/frames/east-death-01.png": "17cb1a01d1c935092b6c0155d2a3b9db02f448db286940056515d8da298567e0",
+    "assets/hd/bosses/blacksmith-guardian/frames/east-death-02.png": "fbb49238b614b0ad3ca91260e7d77d14a69de1c809c1eccc6b49134613cb61a2",
+    "assets/hd/bosses/blacksmith-guardian/frames/east-hit-01.png": "6f41eedccf86b95cfe5e7ffc05f32dbd5b769e7878c3f03358b87c33d0bb1511",
+    "assets/hd/bosses/blacksmith-guardian/frames/east-hit-02.png": "f8976a722818fd0f693d319274e5ae17a2bd85df73b79927db63b7077e23e16d",
+    "assets/hd/bosses/blacksmith-guardian/frames/east-idle-01.png": "94b63e5d06d22faaec158c30a1c49758ee0deac96ea6ae3c843f41a9d054f225",
+    "assets/hd/bosses/blacksmith-guardian/frames/east-idle-02.png": "e0a971514b1496b5cf78b0adfb9ea246a79e3ac36efb0722046313f46e21dddd",
+    "assets/hd/bosses/blacksmith-guardian/frames/east-idle-03.png": "93d885d1b8cba20587a63b91dfed2736cfb9f02fa6880a4eb773e6e7d3eafc60",
+    "assets/hd/bosses/blacksmith-guardian/frames/east-idle-04.png": "94c1d1b60597070fa6d1da0b719cca8b44bcf5a2ccc8111ff3d5b7dda99a2b5e",
+    "assets/hd/bosses/blacksmith-guardian/frames/east-move-01.png": "71df52ceeee1c5e61c5db974b2595abce36bf26056b26e24a0a15d350e29c8a5",
+    "assets/hd/bosses/blacksmith-guardian/frames/east-move-02.png": "d496ad569bd7cd57193fa15c53aaffc8e8e5c3225354c24923d09cf7a88e3d5a",
+    "assets/hd/bosses/blacksmith-guardian/frames/east-move-03.png": "f7f483a46d7622b02259257269cdcdfacb4939e888ac716cea37e7a3e99a8458",
+    "assets/hd/bosses/blacksmith-guardian/frames/east-move-04.png": "55c9d16891e07d9f25f16df5da0a77fa65a694fab0525e2998a374a4645b6515",
+    "assets/hd/bosses/blacksmith-guardian/frames/north-attack-01.png": "0cb78460bb6867c06b678a3dd7e561428b627cd5da0c2358a83dad2aaeb36593",
+    "assets/hd/bosses/blacksmith-guardian/frames/north-attack-02.png": "9abab4733159dcb9ccfeb6596d531cbcab26bf738270c7d22a7b942b1004a5a4",
+    "assets/hd/bosses/blacksmith-guardian/frames/north-attack-03.png": "97a995033f1c618bd61463eb6ff79d94a2b0b1cc4d60887d72b9b02861d679ac",
+    "assets/hd/bosses/blacksmith-guardian/frames/north-attack-04.png": "4b12500ed9924ed5adf27bc6217926e0a39b893055bab3ced9a591bc09c2ff66",
+    "assets/hd/bosses/blacksmith-guardian/frames/north-death-01.png": "e1f5d5aadb791a7ec6b2402247ce250b34e7695caa6a2a51fff4bc2db5c67e0a",
+    "assets/hd/bosses/blacksmith-guardian/frames/north-death-02.png": "729d88982d9d8591d495a4cec18bb4b7d4d21a753c3e5525bf07af48ad2ff651",
+    "assets/hd/bosses/blacksmith-guardian/frames/north-hit-01.png": "760bed3df76d8b2f40098212e0689ab1f0e91cdc29d45bab48d03d9a2324a612",
+    "assets/hd/bosses/blacksmith-guardian/frames/north-hit-02.png": "d737745b3c2a4864a32b1fe50edee60a7c50b5c6087c74224bdb0d63e7a330b5",
+    "assets/hd/bosses/blacksmith-guardian/frames/north-idle-01.png": "ca5144c09428b9efd5d38ee5aee340dbc3379a5f56446860f22ee68d47145e49",
+    "assets/hd/bosses/blacksmith-guardian/frames/north-idle-02.png": "61f8efa8405bc3783963ff6a847d17199235d86f1e159200622a1ed93c733ab9",
+    "assets/hd/bosses/blacksmith-guardian/frames/north-idle-03.png": "92ce5a59b604d6c302193e558325a406bc17866b079564b01227577fe32c6b54",
+    "assets/hd/bosses/blacksmith-guardian/frames/north-idle-04.png": "9a37633125b332b79c0255ecdc12514dc693ab8d4bba7d01feaf000bf76e24f8",
+    "assets/hd/bosses/blacksmith-guardian/frames/north-move-01.png": "b7cde00ccf7c6f4fdddb9ad7faab9b101e113d343e06062134a2989a36ec5235",
+    "assets/hd/bosses/blacksmith-guardian/frames/north-move-02.png": "ebad319845f77a7017bd4e3557b0be9f83fdd2bcf6f9919b6355cd424c75de56",
+    "assets/hd/bosses/blacksmith-guardian/frames/north-move-03.png": "65253a3a4e600af051fcb955b5ef1afb094ca08b9d5c11e81ddc75704c9e37d8",
+    "assets/hd/bosses/blacksmith-guardian/frames/north-move-04.png": "09907ecefeced77a1856295b521dd5859a1efe768133ada7a6725ddc0aa18235",
+    "assets/hd/bosses/blacksmith-guardian/frames/south-attack-01.png": "b7d3231ccc5f2167c9b884e174cc803f853699066fa48bc2fedb673725e329cc",
+    "assets/hd/bosses/blacksmith-guardian/frames/south-attack-02.png": "35b944c33e9413c84ecae83f7eca9d73fdb2e35a2d4eed5db5f8a69ba9a1103d",
+    "assets/hd/bosses/blacksmith-guardian/frames/south-attack-03.png": "127c1333f09bf78ad90a4c8a559d97fec94eb9c3ea3c64ac3f0b7094a7246b86",
+    "assets/hd/bosses/blacksmith-guardian/frames/south-attack-04.png": "0fd6d83ee05ab34c4a9b38b0fd362815c097e3877f4412f389347e2aeb0d3fae",
+    "assets/hd/bosses/blacksmith-guardian/frames/south-death-01.png": "ff302287a983ed11b1079fc3382cd9116e8e8b1bb88005384e225b904f22c547",
+    "assets/hd/bosses/blacksmith-guardian/frames/south-death-02.png": "ec42d054d7532b12e30720499658fdbedb9699f178f4af9d47c36fdf84adaea6",
+    "assets/hd/bosses/blacksmith-guardian/frames/south-hit-01.png": "1850c53c32e7ac8f4d80da68b2bf89e570f8866c22f1737832b679880561be43",
+    "assets/hd/bosses/blacksmith-guardian/frames/south-hit-02.png": "316c922457678d2da0a3d31f84fad5e27df173a3b8e75421672fec1e5d464de2",
+    "assets/hd/bosses/blacksmith-guardian/frames/south-idle-01.png": "636fab15f06d0ce56be6e7e1d367dd4cfc8445e1226b57be530c24f7b1432bf6",
+    "assets/hd/bosses/blacksmith-guardian/frames/south-idle-02.png": "e32f2174ce8f9d794e3a992211dbdc7658e0a3eff0cf4f39eb9e9752a7547837",
+    "assets/hd/bosses/blacksmith-guardian/frames/south-idle-03.png": "bd03722b30316f4a44f66dc53d167ef8a3d961cfa68932f0731b7adbc6b77bb7",
+    "assets/hd/bosses/blacksmith-guardian/frames/south-idle-04.png": "5083c5e11bc16d318e7ec61ef7f83239ef15165b35e0a8706159ebe8c3dbef21",
+    "assets/hd/bosses/blacksmith-guardian/frames/south-move-01.png": "c5959ee75818d95ca1e43e8a60661cca2521cc5a77d11f74ce89678540e93d90",
+    "assets/hd/bosses/blacksmith-guardian/frames/south-move-02.png": "36ff67fd10bd5aae1f4c3b342dbe765c273980cc7033148433c9a04e1cad6ce5",
+    "assets/hd/bosses/blacksmith-guardian/frames/south-move-03.png": "808c0f99328246a6dfb031fafd080775b6903142268a40d870bdb8195a4dc035",
+    "assets/hd/bosses/blacksmith-guardian/frames/south-move-04.png": "d61c157e1f37256423c9a36ec3a0e0269a456e832a5e1a56d976a5342ce5eaca",
+    "assets/hd/bosses/blacksmith-guardian/frames/west-attack-01.png": "7f7e32e7714396461e1ef47720b54690732705e7bf01b7dd8b95bdda869df240",
+    "assets/hd/bosses/blacksmith-guardian/frames/west-attack-02.png": "150b8bf32c3e3b35a6728d71db67b47c27935c6e1eadaf9f17efb738232cc3bb",
+    "assets/hd/bosses/blacksmith-guardian/frames/west-attack-03.png": "1ff34237d67f7c23717e4801b6edb392a7c3926e22bcdb24e115cda87ba8e6d6",
+    "assets/hd/bosses/blacksmith-guardian/frames/west-attack-04.png": "27c982aa38ffa2edce606829309e30d2d85bd94f21512ce6d581cc6ee6772291",
+    "assets/hd/bosses/blacksmith-guardian/frames/west-death-01.png": "314b44d402a0f842d4d145e3650e9f6cf40c05a8398ea7b80ae432820125a41c",
+    "assets/hd/bosses/blacksmith-guardian/frames/west-death-02.png": "4088a06fd226675103ba3dd0f0c90a48b08ac83137504e54125b400ef6f393b5",
+    "assets/hd/bosses/blacksmith-guardian/frames/west-hit-01.png": "78ebfc90eb50f717920f632d078ca866938a609cc259c2e3ab2185787324e265",
+    "assets/hd/bosses/blacksmith-guardian/frames/west-hit-02.png": "37f26d57f450996877123dcc9062a42e76dc30b260d6b2cfc02aecfc60b715fd",
+    "assets/hd/bosses/blacksmith-guardian/frames/west-idle-01.png": "687f4337e1e2b6a76fd6916b91e3a01757697c505f1c3d0edb42dffee9be06f5",
+    "assets/hd/bosses/blacksmith-guardian/frames/west-idle-02.png": "b76cfd09aac1dd7b5b1f318618628a5f3150fa7d4942cd6eb90d4ee23ab3a8a8",
+    "assets/hd/bosses/blacksmith-guardian/frames/west-idle-03.png": "92cd5587dc2c853ada44369fbeb4bddc4e827569ed7b55a831209a36b971e087",
+    "assets/hd/bosses/blacksmith-guardian/frames/west-idle-04.png": "2dcd320b0953f7cad6b3715ccf29d766c49cfdad545e55385c50a7af712c2133",
+    "assets/hd/bosses/blacksmith-guardian/frames/west-move-01.png": "5a564e05b874185c243942e6964ffbb5e4349fefa6d6a2f33858c352b524cf5e",
+    "assets/hd/bosses/blacksmith-guardian/frames/west-move-02.png": "30f6d2d2fb992eced4435fedbd87fd9b4d80a16442edbeda73f0dd4bf7f00e33",
+    "assets/hd/bosses/blacksmith-guardian/frames/west-move-03.png": "a77d3fc13ecb950a401c5cdf0931216a0b8bc8bb93f68eeb2618549ce2fc8dbd",
+    "assets/hd/bosses/blacksmith-guardian/frames/west-move-04.png": "7ebd89a3a40eaa8e54648384c4619350576c40955c249c03f63e0921a7ed728d",
+    "assets/hd/bosses/overlays/blacksmith-barrier-manifest.json": "92f4f02364565967cd452ac66856ca553e5371c989d31f79ffc271d47da8f011",
+    "assets/hd/bosses/overlays/frames/blacksmith-barrier-01.png": "8d0e88139856904b3e760ae10145f052e09856eb398c7c8d8834cf26ee5729b7",
+    "assets/hd/bosses/overlays/frames/blacksmith-barrier-02.png": "f757f3daaf5a4a74648426b8ce4a96699e0c780f2634ae4c05bfde5cc014b27a",
+    "assets/hd/bosses/overlays/frames/blacksmith-barrier-03.png": "2d1c386dd19ea512ef66c51332be6f3d38bd7961dab8fb2e42ce3a1720d1f8c7",
+    "assets/hd/bosses/overlays/frames/blacksmith-barrier-04.png": "8c6a4e5c6d96f2e846c9f3bb3058bf55650e88a1b51ca32e8a4b5408b24bc588",
+    "assets/hd/bosses/overlays/frames/warden-void-aegis-01.png": "b15c1d3c2cd348c5b63ead1de6534062bc5dceb85938e2f95faafd950bb03a75",
+    "assets/hd/bosses/overlays/frames/warden-void-aegis-02.png": "f4bad4f116da3b296798278b2e649f5063092de3dc5edaceb9a2654ae388840d",
+    "assets/hd/bosses/overlays/frames/warden-void-aegis-03.png": "1a3751618dc8a2314537e19ba4a4bf1deddaba3a95a1b4565b520debf226e9ff",
+    "assets/hd/bosses/overlays/frames/warden-void-aegis-04.png": "379d0a2f73a7b144cadd631fe0145c6b3cf02dd437a9747cd1b18529aba76d5e",
+    "assets/hd/bosses/overlays/warden-void-aegis-manifest.json": "56a94e2cebe83a0676b86fe025da98a2cbeaa9bc8d9b6b839327d60b76596d85",
+    "assets/hd/bosses/vault-guardian/boss-manifest.json": "4a4f1601387eb90fb7a2e0175d10aaf774a7b3bcffdb85a7f0c3febbbe7872d6",
+    "assets/hd/bosses/vault-guardian/frames/east-attack-01.png": "56cbdfc6f33125a0a07f5e7b020a02cd99154f4f2012b1f3c970cdcf82de6b4e",
+    "assets/hd/bosses/vault-guardian/frames/east-attack-02.png": "9a118dc272260a61d19861a2ce03b1a9a56c1e15d66190f025b2d68c819deabe",
+    "assets/hd/bosses/vault-guardian/frames/east-attack-03.png": "3aee8ffd3c1284e440191c71f210623e20382ad309f8541f08dc621514456614",
+    "assets/hd/bosses/vault-guardian/frames/east-attack-04.png": "5c50e6c8f08740ad22d9760ba57d07ad10dedb8989291bfc663d1c5b36cb1590",
+    "assets/hd/bosses/vault-guardian/frames/east-death-01.png": "959b9efad12d9ab4fe3f02b72af61cfab3b24671291f57e5e187460683abdb03",
+    "assets/hd/bosses/vault-guardian/frames/east-death-02.png": "31b091e42ab401d2ee771014e7cc69332a586dfa4328f26a71f3096c6ebe775f",
+    "assets/hd/bosses/vault-guardian/frames/east-hit-01.png": "ab1de1d9b11843a077c153bc70312213c713d79fafe607f9ecae240a1e0d902c",
+    "assets/hd/bosses/vault-guardian/frames/east-hit-02.png": "4333638b3956a269b36e48a45f75163b7d6802be45e702bda87d27b65a3cda00",
+    "assets/hd/bosses/vault-guardian/frames/east-idle-01.png": "a9fbd0443dc900df16fd2281c7fe3d12ed08c0da0b244f9f1198f43b7b2c311f",
+    "assets/hd/bosses/vault-guardian/frames/east-idle-02.png": "556349e2290067f8d391e0c1d941cfb3c1a1466890f81830ed304bb78507e9bb",
+    "assets/hd/bosses/vault-guardian/frames/east-idle-03.png": "34a0f0e207b76f413bee8bdcb2251cf549b22b848ea1ec3b83033297f077c2b0",
+    "assets/hd/bosses/vault-guardian/frames/east-idle-04.png": "7b9d4b3967a2987e1f4b9308d706060a783f821a5f22168a152f8560203caacb",
+    "assets/hd/bosses/vault-guardian/frames/east-move-01.png": "289f843290ab96f175552333fae178acba5d8a27944c001b874dca9f07241841",
+    "assets/hd/bosses/vault-guardian/frames/east-move-02.png": "7f5605ddc2ec00484a4555666eea06a69aa9adf51c046a4ec5f45689bd05b8ea",
+    "assets/hd/bosses/vault-guardian/frames/east-move-03.png": "47322a46055cffc67201a9b8cb6c1969c820cd4a52d5bf4e20e50c04ab02bc1b",
+    "assets/hd/bosses/vault-guardian/frames/east-move-04.png": "3a092066edffb77f95fbeffc7faa0cd598f0ee220d8a4e36c256569a3bd55781",
+    "assets/hd/bosses/vault-guardian/frames/north-attack-01.png": "c1b64e2005556df36d77d34c290e4922801a262a8defd19b496f990edf67d53f",
+    "assets/hd/bosses/vault-guardian/frames/north-attack-02.png": "b9f7c99b20a68f2a466081ffbc3443767fbdc2e6f345f585bb87c3c4fb699280",
+    "assets/hd/bosses/vault-guardian/frames/north-attack-03.png": "84897bfdb401c8e968c7ddd253e8a69e7e7096b5c27128d7eac5f64e228884ec",
+    "assets/hd/bosses/vault-guardian/frames/north-attack-04.png": "44c60dc7bd8958bba78f0d804b60d854d281bcb15f5c08ebadef8c5c42ecaab2",
+    "assets/hd/bosses/vault-guardian/frames/north-death-01.png": "de7b34b796a85ae5b02dc84932161c049caad80a37afa89a2d7cad3c819fd642",
+    "assets/hd/bosses/vault-guardian/frames/north-death-02.png": "809b2807eec8f93573fa0b33eff55d0e20fc64508813ea1e962ea7e8c6255269",
+    "assets/hd/bosses/vault-guardian/frames/north-hit-01.png": "93b1ee371085c4657d2717669f2e6efbd0bcc65a7cee39b876900d8dbff514b2",
+    "assets/hd/bosses/vault-guardian/frames/north-hit-02.png": "9dc00ecd3e4cad788602065c405314e2e011f474dd1e45b303bd521834bc8726",
+    "assets/hd/bosses/vault-guardian/frames/north-idle-01.png": "af693e679cc54e25152717fb8ad28bdc481dc410f83981bb8c005568b164f3a1",
+    "assets/hd/bosses/vault-guardian/frames/north-idle-02.png": "95ef73b4740cedf91a4b99b28339c62c499a7fa300549664c440a80d5567df07",
+    "assets/hd/bosses/vault-guardian/frames/north-idle-03.png": "f34e7e7a4509175f3ab74b68249cb5b74bf7ec33ac3f2388336a0e09905de590",
+    "assets/hd/bosses/vault-guardian/frames/north-idle-04.png": "de5ac246a3f5ffed67d395a9d60814a2e5df8a3ccc27fa6d5d21ad3d0f2b47e9",
+    "assets/hd/bosses/vault-guardian/frames/north-move-01.png": "6b33fcccfd4b3bc77eb23930761ca36f965aee05a0f28eb1485a8514f1586101",
+    "assets/hd/bosses/vault-guardian/frames/north-move-02.png": "f711f2a27882a76fdd672df3e996a1fb015b0f8536c494268970fd7328154bca",
+    "assets/hd/bosses/vault-guardian/frames/north-move-03.png": "e43e65512b1cf383acabeb3d228e936fbf818118362b440cefbdedb03f3620ff",
+    "assets/hd/bosses/vault-guardian/frames/north-move-04.png": "569422860e0fb17ee8561bdeb43c9d3f6c409b3f5d6cdd98c28e32578aeb203f",
+    "assets/hd/bosses/vault-guardian/frames/south-attack-01.png": "db7a36d7c622f70ebaddafa180a650c5f963c80c750944521ff7096c12a0e479",
+    "assets/hd/bosses/vault-guardian/frames/south-attack-02.png": "2a09e439aab3024a918e666ddf782795d55c630ffe042e9d2097e42cfdfb56fd",
+    "assets/hd/bosses/vault-guardian/frames/south-attack-03.png": "dead3749b1e46c0fd0e98ceb4318d575eb5fa0c358a74c5c45b97fd81a6610a1",
+    "assets/hd/bosses/vault-guardian/frames/south-attack-04.png": "482f62cfb75bf0e11f68c4e526f1d800d7fed006836413711834ddce1d2c464e",
+    "assets/hd/bosses/vault-guardian/frames/south-death-01.png": "6eb7b2f815ad3f23d2b7ef92a4a57525e0e667dbb739d732f0da7dbea77d8558",
+    "assets/hd/bosses/vault-guardian/frames/south-death-02.png": "3cc972c6d28903d8dc1c279f661d188e1028835d0505ab7183a8f0764eb14f38",
+    "assets/hd/bosses/vault-guardian/frames/south-hit-01.png": "f3f8e61fcab083ccbc9048fc77e931d01787007191329189bc7e91a39355cb7e",
+    "assets/hd/bosses/vault-guardian/frames/south-hit-02.png": "95424aaf1e668a7622534479ce6bb35d976537ddff84944d2e1a4679c97567b6",
+    "assets/hd/bosses/vault-guardian/frames/south-idle-01.png": "324db714dee35a9f6d32e371d46f4b6e57ca8c8a9e86412688cc0ea10c0ab594",
+    "assets/hd/bosses/vault-guardian/frames/south-idle-02.png": "5ec613a80c3817d1de363f5e6ea80d7d08f386a96a1a06701da4c94fc03204ed",
+    "assets/hd/bosses/vault-guardian/frames/south-idle-03.png": "55f764a14fbc98c63131d38942198b02a993af2fd135cdc195c4739beef880ad",
+    "assets/hd/bosses/vault-guardian/frames/south-idle-04.png": "ae6b2ecd55796f9a70bc7aa05307f836fd49a35d5bf795b90d0e2bab5ada4f2e",
+    "assets/hd/bosses/vault-guardian/frames/south-move-01.png": "c04041bd147def4281ea01f481c3b40e17af65b686d1e83c7d773ef59f908ef5",
+    "assets/hd/bosses/vault-guardian/frames/south-move-02.png": "02e71620d9a3036f877bb8191eab233ee91d1cca7a89b4881c81c36d6fe2ae39",
+    "assets/hd/bosses/vault-guardian/frames/south-move-03.png": "edd9a88a4a4766763ec8f72e22cb9e4ab62383d330eeba4a5918fe9cac725e5c",
+    "assets/hd/bosses/vault-guardian/frames/south-move-04.png": "eda42dd2cd0b5b429e81ac5ab1692ec61611c7be6840f42ac29b902b9d0e1ff9",
+    "assets/hd/bosses/vault-guardian/frames/west-attack-01.png": "18590d9752bfa3e1a17d49b79aeb083686c3f509e73f2c7f7dce21a1f77fc0c2",
+    "assets/hd/bosses/vault-guardian/frames/west-attack-02.png": "a4d3924d32433aca651a9d36fcfa2e3fdb5c10ccb0761421f40d5c91cf41be71",
+    "assets/hd/bosses/vault-guardian/frames/west-attack-03.png": "86a14797031c23a88bb29b5b095507029a2f87b7bec3419ead022b177b2f8883",
+    "assets/hd/bosses/vault-guardian/frames/west-attack-04.png": "c872a2aa5bf72979abbe7fd676dbe169e1a78983ae5ef670afd73f4d81d8ac89",
+    "assets/hd/bosses/vault-guardian/frames/west-death-01.png": "fddbd8c04c748642c82d4e7874b95ffd39bf61ce7b616131d85a0990f68bf14b",
+    "assets/hd/bosses/vault-guardian/frames/west-death-02.png": "01627ff04f84548c880ba5d67ed49aacdfe36eab3044bbeeb4db7e20e660e66c",
+    "assets/hd/bosses/vault-guardian/frames/west-hit-01.png": "4349ea495f7592aa0f2f3d97b87b0f33c412ab426b63dfeab2a7313e21e068ee",
+    "assets/hd/bosses/vault-guardian/frames/west-hit-02.png": "501b3946f6f13bccd7f0b2ab355f1c1146507dfdf6d5e3be544ce118ca79d900",
+    "assets/hd/bosses/vault-guardian/frames/west-idle-01.png": "68cf9990f1757055a1a883731b128c2047c2758780f2f67cb14928ba9a2c7051",
+    "assets/hd/bosses/vault-guardian/frames/west-idle-02.png": "7cd1bd1f7df924a145d2a31adf2cc4319794cf35fd2fb0dc17bb4ce08eb3d598",
+    "assets/hd/bosses/vault-guardian/frames/west-idle-03.png": "a5e7dfcc242e0e485b05b8e17428da671d44a15d62dcf08cf010d909fe102260",
+    "assets/hd/bosses/vault-guardian/frames/west-idle-04.png": "4129ee7be9c383f70aa9046d15b883ba28db5638114bae78763a75923e5e27c0",
+    "assets/hd/bosses/vault-guardian/frames/west-move-01.png": "7caa1bb4633c82b27f09c86e9b479f1d46deb283ad5f054ddde909adead9f4f8",
+    "assets/hd/bosses/vault-guardian/frames/west-move-02.png": "4b7eb89b598f4ab1eb0f3175ff3c460cd8311383ad3d0b7f2b3b3a3039b991ec",
+    "assets/hd/bosses/vault-guardian/frames/west-move-03.png": "40eb440d6872f790d1654722a364468fe5f4d5d18ea6a2916ba65efca0ec3e1d",
+    "assets/hd/bosses/vault-guardian/frames/west-move-04.png": "5e803891c616fa53839c4911616613009abaa4c1462ceb9aebec98d3a3389f68",
+    "assets/hd/bosses/warden-biome-abyss/boss-manifest.json": "93f9a9bd5c3c918bc1b4aa94c09252de8ee507616c1ef449921ed1a976958f5e",
+    "assets/hd/bosses/warden-biome-abyss/frames/east-cast-01.png": "c529ede5e3a11ff7db8b89c1f29e2c03265db6f4b20e1fed65a801b4272aff82",
+    "assets/hd/bosses/warden-biome-abyss/frames/east-cast-02.png": "351c459328d8b35a5bea2df66dee02975411b2aa4e610f0ce248490ac786c361",
+    "assets/hd/bosses/warden-biome-abyss/frames/east-cast-03.png": "6640cd693a0c215e271142d0212478baccbd10b0b3f7ee87ea5fcd49affd329b",
+    "assets/hd/bosses/warden-biome-abyss/frames/east-cast-04.png": "c16bc04bbee6e8ee2807b3778b5739f3ea1873a8feb5ec898d79d12d1a0ad66c",
+    "assets/hd/bosses/warden-biome-abyss/frames/east-death-01.png": "4fb17a4b94390fce8f95f1ded59a96c2b115d7115dfd6db1f95d3d5c02188012",
+    "assets/hd/bosses/warden-biome-abyss/frames/east-death-02.png": "269af0c87766c69b2c05070e4602b9408d9b681a91525d54b50f2dd575698e68",
+    "assets/hd/bosses/warden-biome-abyss/frames/east-hit-01.png": "8ee7c1bd02be1e77da2a8502decade4a097e232f7768282e14a2f478bb361e84",
+    "assets/hd/bosses/warden-biome-abyss/frames/east-hit-02.png": "12725dc2ab15f3cd7ddd53145b888b15dc314f64d97e5e80029e9db70e2f42a0",
+    "assets/hd/bosses/warden-biome-abyss/frames/east-idle-01.png": "46cb427055582b0aad2992443a67196a00d041f6f6a4d92afa217713d54da206",
+    "assets/hd/bosses/warden-biome-abyss/frames/east-idle-02.png": "9911e0bf8f3f18e2ddaeaccd73efd7ecfb00a59d5032385301729c6311a9af78",
+    "assets/hd/bosses/warden-biome-abyss/frames/east-idle-03.png": "03cf192f0120315963ce9c534a07d70405ad7bc9743825413a621c866a07a956",
+    "assets/hd/bosses/warden-biome-abyss/frames/east-idle-04.png": "543908bc130c0d2696e1dbb7fa4a10a593c2173895e290c57c38ed6fedc6673c",
+    "assets/hd/bosses/warden-biome-abyss/frames/east-move-01.png": "a6b6e0f6212bb2e9e700ddd2d6eb1bb1b170fc0e8aa27b09ffdbed052efff084",
+    "assets/hd/bosses/warden-biome-abyss/frames/east-move-02.png": "019fb2d955ec08d63e73abcd05dd62239fc02cddc505427d7f2eb303aa2152dd",
+    "assets/hd/bosses/warden-biome-abyss/frames/east-move-03.png": "9eeb61cdbe9dc5bf50748983ec89b1395a203cc912d2fba8a4f568ecaf625f54",
+    "assets/hd/bosses/warden-biome-abyss/frames/east-move-04.png": "f1ee4b26541b2ced9ae502854c8fd96d9b8c4a85af9e66c652646a351e2a3f8a",
+    "assets/hd/bosses/warden-biome-abyss/frames/north-cast-01.png": "f5c5eb809e08aaa695b79289b17427754c1d3c5988a4efaa0badcb630f18fe4c",
+    "assets/hd/bosses/warden-biome-abyss/frames/north-cast-02.png": "a8ff3b8b6a2155b0b955fdee0a2e08f7dff8c3700962529b40248b1ddb710977",
+    "assets/hd/bosses/warden-biome-abyss/frames/north-cast-03.png": "6f0e08e72f24f3ce48def79674fe9485ad87e041739d4a4b1cd1ba8408e78746",
+    "assets/hd/bosses/warden-biome-abyss/frames/north-cast-04.png": "fa7e97c24457dcdb0b88ad0f43ada28aca23bd9bee2f101fce6f34a38f36f012",
+    "assets/hd/bosses/warden-biome-abyss/frames/north-death-01.png": "e2a196a3138519ddc61e79d2ddb592bcebef54a2c6e3ed54755995abbe89ea0a",
+    "assets/hd/bosses/warden-biome-abyss/frames/north-death-02.png": "e1c7216915d48a3a8977f8901f862562c9bdcc67350e974a0890849b030fddba",
+    "assets/hd/bosses/warden-biome-abyss/frames/north-hit-01.png": "8aec385ef7c73f074e92a9d34a196d3005e422298bdb3bfe68eb4f899efd9cee",
+    "assets/hd/bosses/warden-biome-abyss/frames/north-hit-02.png": "890c3c62fe3457f96bb8b942ca80790ec58e6a8544126bf6b63ef409f56d1c58",
+    "assets/hd/bosses/warden-biome-abyss/frames/north-idle-01.png": "f42faf739fca29fbeb008e0360a7a8b74d25c77cbfbfdd1e65dba5dabd36dee4",
+    "assets/hd/bosses/warden-biome-abyss/frames/north-idle-02.png": "0ad9fddba3025caea03427668bd5e6574bfb22a6dc97571d29d4cf1f4bfa5e43",
+    "assets/hd/bosses/warden-biome-abyss/frames/north-idle-03.png": "8e542a6626bd234711b1cf5ba9d92ecf5a91158c49d939c471229eac6ceec4c9",
+    "assets/hd/bosses/warden-biome-abyss/frames/north-idle-04.png": "68cc0c74717dc62fca9669bbcad6bd3ae53116ae01e6685da961eaeff2686b51",
+    "assets/hd/bosses/warden-biome-abyss/frames/north-move-01.png": "7443342c5a934af8eb3d8b8e78fff6d6e3aab7717166656b8258767638db9927",
+    "assets/hd/bosses/warden-biome-abyss/frames/north-move-02.png": "deb6d1468969e5e0a09da5b110d8880de174ca2e5128b57f78b1cc1eccebcc15",
+    "assets/hd/bosses/warden-biome-abyss/frames/north-move-03.png": "7d88b1d88d7c1067ccef3a81373ac85d09ee47df6b0d92113508cedf4f66b68d",
+    "assets/hd/bosses/warden-biome-abyss/frames/north-move-04.png": "14f6f345caf10428d72423c4620fb00a0c4e1bba8235052eb111a88f1306d4fd",
+    "assets/hd/bosses/warden-biome-abyss/frames/south-cast-01.png": "e943b6ab8de9d8fcebe5c2a595f56a3bca67ac8c2a1173be625a01f1312669fa",
+    "assets/hd/bosses/warden-biome-abyss/frames/south-cast-02.png": "e870b04b40a3a3eea518c33fc637da23da05b8d05780c441c4a15beb7ebce57f",
+    "assets/hd/bosses/warden-biome-abyss/frames/south-cast-03.png": "93b3b66d9607b610fe7491e9843538e6c9edcd0a40430deb03800c093fce08e3",
+    "assets/hd/bosses/warden-biome-abyss/frames/south-cast-04.png": "6aa48cdbb638fb1ae1c165128ac32836f0bc92edbd48585d259fbe8ff9800f3e",
+    "assets/hd/bosses/warden-biome-abyss/frames/south-death-01.png": "6874caa9f0eb7cb4b865b13bcfe5d06d77f29209593548ad80f5d8000e9765ec",
+    "assets/hd/bosses/warden-biome-abyss/frames/south-death-02.png": "619874aac18c6d6f19a80efa9d72cb429579b1a67fe51f89cc29eee6345774f4",
+    "assets/hd/bosses/warden-biome-abyss/frames/south-hit-01.png": "6f0c41a5801d0efafdbeb509033f70769930853be1783113da60af9c05ceea83",
+    "assets/hd/bosses/warden-biome-abyss/frames/south-hit-02.png": "b7eb8f1a3d7618d81ea18e40113b2983e818e00f280e1f18a29a28f0349c2e86",
+    "assets/hd/bosses/warden-biome-abyss/frames/south-idle-01.png": "63ae935b68eaec3dda51896bf0458e6dcfa9cb0e63037e6c141f733eeb103e17",
+    "assets/hd/bosses/warden-biome-abyss/frames/south-idle-02.png": "ec4aecaa4107db4c0a42581e16f7eaa76dc1cd4a32575ec792fcc3c345589b14",
+    "assets/hd/bosses/warden-biome-abyss/frames/south-idle-03.png": "b225f576df7be0b2addca1829ce306794306c50ab720e6b5b4a1410f8b22ccba",
+    "assets/hd/bosses/warden-biome-abyss/frames/south-idle-04.png": "30b7564e09a1650c9858b26952cbfcbe5618d5feec541769db71ec1e4e3e1f20",
+    "assets/hd/bosses/warden-biome-abyss/frames/south-move-01.png": "19026228e485e74a0489d89e3ab0f061a9709cbf3099c177fd40679a32ce8561",
+    "assets/hd/bosses/warden-biome-abyss/frames/south-move-02.png": "5e4ec8e6be91b41ac01213f0a8096e994cf3771ee877fc3fbaa383937f228841",
+    "assets/hd/bosses/warden-biome-abyss/frames/south-move-03.png": "9d68ac25d149d5a351485c0bd3a22ea33be4ae5c80daa20b04e7d9e0a6346c8e",
+    "assets/hd/bosses/warden-biome-abyss/frames/south-move-04.png": "a073cfec33dbe4c1931cc61e27e3ba283e4ae6404c87ceb700261df7626b9c00",
+    "assets/hd/bosses/warden-biome-abyss/frames/west-cast-01.png": "4850b2428c78f56c627ea33a8eb6e4b07f1dc4ceee02be88ce051d4d6428f58c",
+    "assets/hd/bosses/warden-biome-abyss/frames/west-cast-02.png": "1a95090951c854f9c3edc2b7cf7adcf4f4136438220f341233cc3d1e8d4e9e1d",
+    "assets/hd/bosses/warden-biome-abyss/frames/west-cast-03.png": "85fc2180f7052beff38552d19ce56b33198d5b856479057f533fec995858e58d",
+    "assets/hd/bosses/warden-biome-abyss/frames/west-cast-04.png": "a0198818cf2e9368a4d5d20ced8cb383ec289778f0a530dd6914f006d79c637a",
+    "assets/hd/bosses/warden-biome-abyss/frames/west-death-01.png": "39668567ae1a36887a407f0b09157df099b1cd851d2964616b20b4757985def0",
+    "assets/hd/bosses/warden-biome-abyss/frames/west-death-02.png": "4a4f7c5e6969f4ba5b38b1c1593526a6fd47592ec8c70708d9ec7122661b4cae",
+    "assets/hd/bosses/warden-biome-abyss/frames/west-hit-01.png": "1b19d72ab3d678ccccffc57aafa927f11930b0589c64f37e1128036afc1a9d11",
+    "assets/hd/bosses/warden-biome-abyss/frames/west-hit-02.png": "31e8387448724a5ac65209e2fa99ae6a2820bd20c285857547f30b5e69323324",
+    "assets/hd/bosses/warden-biome-abyss/frames/west-idle-01.png": "22beea1d8c3053a389871ad8b16932e01ccaf70d8238d10569ebdaa815808671",
+    "assets/hd/bosses/warden-biome-abyss/frames/west-idle-02.png": "da59a6475440b36fec2d2daff9276759c63e34cb06e292ccdee4bd03a7d1e444",
+    "assets/hd/bosses/warden-biome-abyss/frames/west-idle-03.png": "79ef7bf5e49b94c699d2af473570079c0682a2191bb47f8e24d0075a6f03bba6",
+    "assets/hd/bosses/warden-biome-abyss/frames/west-idle-04.png": "3bc6d08e50681a592f6c86efb4702092a90e3a13b48e77ecf3a2b954a9c7f70b",
+    "assets/hd/bosses/warden-biome-abyss/frames/west-move-01.png": "1ac61947c1177640411e923931477099d0d1061d506f097a66c4e231b389cda6",
+    "assets/hd/bosses/warden-biome-abyss/frames/west-move-02.png": "8a412e37428a16ba4cebf416e543c55fe69dbe6b042faffb0f64c2b41b7e983c",
+    "assets/hd/bosses/warden-biome-abyss/frames/west-move-03.png": "fb3015146f37ef1296e388656f1caa483ed0fc1eff4bf52db38a70a16d3914b9",
+    "assets/hd/bosses/warden-biome-abyss/frames/west-move-04.png": "a10e5fc2ff65f04f80542a658c99831aebf31471c89f8eb12b15eec336edcd38",
+    "assets/hd/bosses/warden-biome-corruption/boss-manifest.json": "72b0197a5cc980459b0848933092779174601e3b0144b8f765abb7d14a456032",
+    "assets/hd/bosses/warden-biome-corruption/frames/east-cast-01.png": "b16dc5b6660e4f8d848a52c7c53221863b898fb5bab4fb488417af94a6163d3c",
+    "assets/hd/bosses/warden-biome-corruption/frames/east-cast-02.png": "993da8ccd2dfb2d5d75a87a52a5a0cec9333eba687f17a184b21d0438d9d1f3a",
+    "assets/hd/bosses/warden-biome-corruption/frames/east-cast-03.png": "59d7606314a4486ce7ae97ac3047e42d567d7026168079563ff55509d7d97c12",
+    "assets/hd/bosses/warden-biome-corruption/frames/east-cast-04.png": "659963766ba7427cfd9438e660127e07551080a87967b1c0baed4ca2504a46f9",
+    "assets/hd/bosses/warden-biome-corruption/frames/east-death-01.png": "dd57ddf2df3af8661f0430636c5d4422f57bdb9194550864647c473798f65d61",
+    "assets/hd/bosses/warden-biome-corruption/frames/east-death-02.png": "edad163f90e01362570e92650e77352497b24dabb8f623bb26c124046448adf3",
+    "assets/hd/bosses/warden-biome-corruption/frames/east-hit-01.png": "38c42dd7e8d852f04f6e96dab9f900b1ef1cf8a4be38d5234fea7523f036cf79",
+    "assets/hd/bosses/warden-biome-corruption/frames/east-hit-02.png": "79f5f5c1b67bb15fc4daaee432d54d4ed3802da6d1017e8369f0f08d43dad3b7",
+    "assets/hd/bosses/warden-biome-corruption/frames/east-idle-01.png": "bfc60ffc3fce5a6746c747b1c074466f102b7a62a8bec9291ef802b0067e0f8c",
+    "assets/hd/bosses/warden-biome-corruption/frames/east-idle-02.png": "d7cd484e66a6ef8ff000ce9002a525abf9b5cd3027afb0d55547b7fffee0f52c",
+    "assets/hd/bosses/warden-biome-corruption/frames/east-idle-03.png": "8ab44d86d1f0a38ffc7b64f622a3aef0101e7da51551bb3046b9e967ada58a7d",
+    "assets/hd/bosses/warden-biome-corruption/frames/east-idle-04.png": "a884d2937cbd53971eb6492538b683ff07da2b4083f4b1109dbf0272895ab138",
+    "assets/hd/bosses/warden-biome-corruption/frames/east-move-01.png": "b6511c72fab9a185f612fb4898981bb06918d10ea97b2fe50caa1a2a6beff05a",
+    "assets/hd/bosses/warden-biome-corruption/frames/east-move-02.png": "13dd648279f7db529a995c291643df4c3dd095888152588b9e4685233aaf4c76",
+    "assets/hd/bosses/warden-biome-corruption/frames/east-move-03.png": "2865b3c764436020490a18b28593016e54e052b19c258c486f52bef66dfcb5b8",
+    "assets/hd/bosses/warden-biome-corruption/frames/east-move-04.png": "6c54b57b67ad2979c39c95f496c16fcf0ea11d478caba5bf0a365dabb5a8a51a",
+    "assets/hd/bosses/warden-biome-corruption/frames/north-cast-01.png": "7561349652ca17bc5c204993b4902654d7ad1a0ae4087d5bdf441ad008ceb332",
+    "assets/hd/bosses/warden-biome-corruption/frames/north-cast-02.png": "0373c41d6c3ed7d7c7b66852a480854185b1922984adc89834bd842a0bcc1e0a",
+    "assets/hd/bosses/warden-biome-corruption/frames/north-cast-03.png": "ec2b05768320f969adae4f4b39ed60bf39ae28b412ef78991fb83907731179d1",
+    "assets/hd/bosses/warden-biome-corruption/frames/north-cast-04.png": "2fcfd680b9970d8b46e8ba265171c1dfac10f6f0cd2f5d9b608eb09f80acb697",
+    "assets/hd/bosses/warden-biome-corruption/frames/north-death-01.png": "a5b70fb0e66c81b1122f3fec7bd20cba32805d28c73c26d265bbf3def50f80ff",
+    "assets/hd/bosses/warden-biome-corruption/frames/north-death-02.png": "b06141499b46b4274542b49414d2dd09111683e15b4664ac48a29f3ceea094ce",
+    "assets/hd/bosses/warden-biome-corruption/frames/north-hit-01.png": "3e821f1160c9103a29408484261a767c2d52fe9ac96ac85390eb0ca51696830c",
+    "assets/hd/bosses/warden-biome-corruption/frames/north-hit-02.png": "0fd506e495e4881fe3b51f4595e77ef1c8b0fbdf2156ab2d74272544ec42fc29",
+    "assets/hd/bosses/warden-biome-corruption/frames/north-idle-01.png": "8663070a226d4c0b0ae3252866222a385597d40bfb2d46f1d92b46a3ea465fa4",
+    "assets/hd/bosses/warden-biome-corruption/frames/north-idle-02.png": "c80abe650892792cc548a664b2e626593addf6ddac8d6f5bb4a2df535574a047",
+    "assets/hd/bosses/warden-biome-corruption/frames/north-idle-03.png": "a442d034259f69ebd8cc52d1cfb2ac3e5ce21b096c9d61f0105ee98ce4e2295d",
+    "assets/hd/bosses/warden-biome-corruption/frames/north-idle-04.png": "b534956f7704d3bd51675e6873aba840e09563a08b13a7bfa5c64be05204ccf2",
+    "assets/hd/bosses/warden-biome-corruption/frames/north-move-01.png": "9ebbf50d8fa7db079141119ae29d7b30d34d1943c3067885f35270c2add2eb8d",
+    "assets/hd/bosses/warden-biome-corruption/frames/north-move-02.png": "81aa976f91a484d959e4d7d19331f5121c49139777800943306c135ba3a527d8",
+    "assets/hd/bosses/warden-biome-corruption/frames/north-move-03.png": "53e000f6ed1ab2846337571d46b52fb79af3345d955f7f624db169262e8cccf9",
+    "assets/hd/bosses/warden-biome-corruption/frames/north-move-04.png": "0ddc338e9428284d00726afd6850fc38b627c5251adfa2b4620bfd587dea2910",
+    "assets/hd/bosses/warden-biome-corruption/frames/south-cast-01.png": "0ff4811d72c38f460a87b7dc14310cdfaff633fc1e835f53228d6e05b3e45e63",
+    "assets/hd/bosses/warden-biome-corruption/frames/south-cast-02.png": "4f69285facefcba6ce9e7668d2fe841dbc99046e1ea12b5246376c0237920662",
+    "assets/hd/bosses/warden-biome-corruption/frames/south-cast-03.png": "9749340da0053509df30fd9227c21e1787220482355282527127ec94dceb61fc",
+    "assets/hd/bosses/warden-biome-corruption/frames/south-cast-04.png": "bbe5bddd34cae66dab596e44dd22599a62e8c30826a65e43d7226db8a9f6a8f0",
+    "assets/hd/bosses/warden-biome-corruption/frames/south-death-01.png": "7b5c9da6c563c738f1b9210ce3e4bb91d3c4372c2cf47641d08ae7a72bafc22d",
+    "assets/hd/bosses/warden-biome-corruption/frames/south-death-02.png": "cbaae7261924b1b2ee8276940985ca240ec9500ee1e4eba3d13299ff05d08fa5",
+    "assets/hd/bosses/warden-biome-corruption/frames/south-hit-01.png": "a443b2ed85fc3ea451e8819b3de37a6ed664e5c55bb14f365b0a1b365380b9e1",
+    "assets/hd/bosses/warden-biome-corruption/frames/south-hit-02.png": "ff36a98a15169bf1dcf478a2a56578eae413a8cdeab5a50e3023663a198e0624",
+    "assets/hd/bosses/warden-biome-corruption/frames/south-idle-01.png": "f8c1a381099a76b5620adbf94fb00a4152ff8bb6a7634da07cf2f9fece6d1328",
+    "assets/hd/bosses/warden-biome-corruption/frames/south-idle-02.png": "8033f83cae629aeeee0c2d9505ed2c226250ecb9b4390138290c80701862fc8e",
+    "assets/hd/bosses/warden-biome-corruption/frames/south-idle-03.png": "0c594ddafc07a960d331fe17f3a19462ea61dac6ba81570ab695ac69a53a8f17",
+    "assets/hd/bosses/warden-biome-corruption/frames/south-idle-04.png": "bc6bbd3d71db725f3705e0da604101233dfe404f83383eef5a2a6e8a92455bb5",
+    "assets/hd/bosses/warden-biome-corruption/frames/south-move-01.png": "cd2473e2247a02b6331816601243ad2af9f924ddf9759671f7444272f0a45c5f",
+    "assets/hd/bosses/warden-biome-corruption/frames/south-move-02.png": "73050872116a79cd87c6aa04dce64c052db575d20a9f2c0369b4b39bda303ec4",
+    "assets/hd/bosses/warden-biome-corruption/frames/south-move-03.png": "cbab5adbdc513fdba277b7d81071a9729edb42f5f62ed9beb2d5f48efa32934e",
+    "assets/hd/bosses/warden-biome-corruption/frames/south-move-04.png": "00e119b915a0568ed680cc26231699a13405b3465474c69de4253e1bd537e89f",
+    "assets/hd/bosses/warden-biome-corruption/frames/west-cast-01.png": "5ad40f44c46aa2309cc0b592000ce6a9e2cc7590fbf724362031eee1b5703fef",
+    "assets/hd/bosses/warden-biome-corruption/frames/west-cast-02.png": "7b84d61a2f82d5b7f20036382fef6cb2c2b91523204dec5072014b3f1ce67aae",
+    "assets/hd/bosses/warden-biome-corruption/frames/west-cast-03.png": "1ca1f1bc1db974a4de24a364a67be667c6a353e2b42e64da1f93e438a7004cc6",
+    "assets/hd/bosses/warden-biome-corruption/frames/west-cast-04.png": "3d1952a5d10c24e8a38d1f69ffb625a834735ceb651f5aacecae12d5396b514f",
+    "assets/hd/bosses/warden-biome-corruption/frames/west-death-01.png": "74ad2b937535a8b0a6c543ff55fa1ead7ee1678e0ec1cf722672cbcfb1171389",
+    "assets/hd/bosses/warden-biome-corruption/frames/west-death-02.png": "5a04eb1aee211318d4c3df9adf742a70af8603e369e75f3231cc11ca87944d05",
+    "assets/hd/bosses/warden-biome-corruption/frames/west-hit-01.png": "a161b79ec45647497b580a09b021f6ee5bad6c5ef07d797ce75a3bba40cde344",
+    "assets/hd/bosses/warden-biome-corruption/frames/west-hit-02.png": "80c5d74747d092b5c72b7ea6776eba25e8efc09f2e338f950227d6a1bc9b6906",
+    "assets/hd/bosses/warden-biome-corruption/frames/west-idle-01.png": "4e11f5e334db8a89c8cfd06f097b1a2d35aaf8556168a3b285878921a9682d24",
+    "assets/hd/bosses/warden-biome-corruption/frames/west-idle-02.png": "134aa381de6dc9dcd8bf8664867fb5388d648313f47e3210f92bd6be117caa9c",
+    "assets/hd/bosses/warden-biome-corruption/frames/west-idle-03.png": "5d9d3f6b04f70b0d5c71ef38c1409f6b208275a180dab4b26a81481eb16c48a5",
+    "assets/hd/bosses/warden-biome-corruption/frames/west-idle-04.png": "c71be211a16d102de4f16bbd114829d05763bbff2eba45ee3662210ab35aad92",
+    "assets/hd/bosses/warden-biome-corruption/frames/west-move-01.png": "57d28f3bd1ccdaecb7bb9cb39b1dcf6d84c3211ff79905a508089df6ec428275",
+    "assets/hd/bosses/warden-biome-corruption/frames/west-move-02.png": "2621fa72090e28bccbd85c6477060baaebef3de6e3feafa2ce24d029102f580d",
+    "assets/hd/bosses/warden-biome-corruption/frames/west-move-03.png": "f01030f421b6acfde3837db605b0eef6dc44b0c538aa5b7e9073c7a500df9cd8",
+    "assets/hd/bosses/warden-biome-corruption/frames/west-move-04.png": "758342214e3ac04bae90fcad52542c1ff2a2a9d4de23172ff0d92f7910e6a107",
+    "assets/hd/bosses/warden-biome-descent/boss-manifest.json": "a3343ed635856997df58e3d23d1aeff94f1b5423edf0f10ce12da140d0c83f0c",
+    "assets/hd/bosses/warden-biome-descent/frames/east-cast-01.png": "eaabf1821c715caa4d14b041f97e6894b68a7093c82f420e552b31652ac9e665",
+    "assets/hd/bosses/warden-biome-descent/frames/east-cast-02.png": "ada90b36985e1ae22ee97963054873462567d3ac8317da8d9fcc2ec47dd9eca6",
+    "assets/hd/bosses/warden-biome-descent/frames/east-cast-03.png": "2d8d54df88019e531507d1cdb8ce086530861a1a314e20a75fb3a998e6665d0b",
+    "assets/hd/bosses/warden-biome-descent/frames/east-cast-04.png": "2adec972a6eda3bc6286aca7e35c4c4e3e6ea108047a5c7d9666d771f4cd708a",
+    "assets/hd/bosses/warden-biome-descent/frames/east-death-01.png": "813968ebfb3640cb3c35945ee4a8557a1ebf044b257396a7daafff46f2f81c85",
+    "assets/hd/bosses/warden-biome-descent/frames/east-death-02.png": "e72cd96df766e184c7418dab9947ff017f7ff22687a7178d63cbb6c857e867ad",
+    "assets/hd/bosses/warden-biome-descent/frames/east-hit-01.png": "4eba492e3743dbc1691bbfcee8907374bb8226d7f12390afb097f9e633e2d7b7",
+    "assets/hd/bosses/warden-biome-descent/frames/east-hit-02.png": "9a70d556a4c179e3735d18f5bea63c5ad1af0e852c1c46952741fa512935a299",
+    "assets/hd/bosses/warden-biome-descent/frames/east-idle-01.png": "713ab56ec440098b19310a6891332c284b509de3d883792dfaa0239f37f2a107",
+    "assets/hd/bosses/warden-biome-descent/frames/east-idle-02.png": "5e8cb13b37487461ea6d1c3afbccadc575212f1db82eb674cdd47ed3b43c37a8",
+    "assets/hd/bosses/warden-biome-descent/frames/east-idle-03.png": "7138c1093b3908604f3d84027120d30f87d3c02b68ad7303e81fa0b82b559fd7",
+    "assets/hd/bosses/warden-biome-descent/frames/east-idle-04.png": "147db3a081e967981eafbae864638c1146590b0b0046f4f0dadda416ed34bf94",
+    "assets/hd/bosses/warden-biome-descent/frames/east-move-01.png": "3dbda1236c9edccdd154ad2287610f5d8c0092fe3782af9cd624a34588e0ac41",
+    "assets/hd/bosses/warden-biome-descent/frames/east-move-02.png": "2bfaceffb8a7094cf3aaa447c652e6fa81d4921eefa42ed7cb9f119cedf8366c",
+    "assets/hd/bosses/warden-biome-descent/frames/east-move-03.png": "a2e096311343531c7a88d661941e39f5abb67b41c5785d1b453515c8ef8ff972",
+    "assets/hd/bosses/warden-biome-descent/frames/east-move-04.png": "35ee0580cae04480080c95b6e41f2baa8951906076443138bdec23527001e4b2",
+    "assets/hd/bosses/warden-biome-descent/frames/north-cast-01.png": "2aa0973f2cd0e8eaa8af31b5d101e2f9347d012ef42c5b0b04a4eeddb089eb53",
+    "assets/hd/bosses/warden-biome-descent/frames/north-cast-02.png": "507af809deb210df060ad644cc765c99e05a78a5ceec4e5e3af2a6663788a0c6",
+    "assets/hd/bosses/warden-biome-descent/frames/north-cast-03.png": "b8a65f01f210baf855fafcaad4f8b57831a03190a155381fec2bd6f2feb76581",
+    "assets/hd/bosses/warden-biome-descent/frames/north-cast-04.png": "a1b62c76c9153076490cfa6e50895807c9916730456d2e52af687542789bdd78",
+    "assets/hd/bosses/warden-biome-descent/frames/north-death-01.png": "8d248a97959fe85b97cc24df85495bdf72f449899ecdd95ac74598d2254862a9",
+    "assets/hd/bosses/warden-biome-descent/frames/north-death-02.png": "4bdf23cc50628c7e5045e13484f4a6ee126d2eb15b0b3f4fc387853d63e615f0",
+    "assets/hd/bosses/warden-biome-descent/frames/north-hit-01.png": "994dc6bdedac57cef42834664b25493f89d0b35a318062a2ab94451441cf242c",
+    "assets/hd/bosses/warden-biome-descent/frames/north-hit-02.png": "1d71da0a9a44cf90dcc2e1b11d0ec2b53c9462a5e2e32ece5b191f8df517f6c9",
+    "assets/hd/bosses/warden-biome-descent/frames/north-idle-01.png": "b07c2ac996fb6bf26608cc9b09e72b3cb0492e705565f6d644ec19b795fcc2e1",
+    "assets/hd/bosses/warden-biome-descent/frames/north-idle-02.png": "9ce5b95be014effc6ac88e4b340ac434ce106e6a4f1a4d3360273dd9e60a50ca",
+    "assets/hd/bosses/warden-biome-descent/frames/north-idle-03.png": "7ad2f8d1837d91ef4db410e65147b9d90a18f668f56cc2bf8898455341150e48",
+    "assets/hd/bosses/warden-biome-descent/frames/north-idle-04.png": "80af31c7b90cc5df0c42e523b99ae8ad366fcd84463aa906de917320fb37110c",
+    "assets/hd/bosses/warden-biome-descent/frames/north-move-01.png": "040ea06fe271408ab9358018de979b21c590ce69235bb85fb5734ece00d235e0",
+    "assets/hd/bosses/warden-biome-descent/frames/north-move-02.png": "e9def621305a26df387be81522f1126e6870cc09d216c4a9f59806dcc63c2964",
+    "assets/hd/bosses/warden-biome-descent/frames/north-move-03.png": "4230fa59eecf90d4046deef2e0955d127727cb8a1a9d4b9447e452cf63532301",
+    "assets/hd/bosses/warden-biome-descent/frames/north-move-04.png": "d2cbfc576947376ebd5c14fc65a9a841308df688dca2dcbdf2b527850bab5309",
+    "assets/hd/bosses/warden-biome-descent/frames/south-cast-01.png": "d90313800668e449b5993bdd73077ef5a3888c7ad8592026b62aab648f6b2272",
+    "assets/hd/bosses/warden-biome-descent/frames/south-cast-02.png": "77203a5955a2e6bde76f430a6e1a9eba6bed32a879acaec505cc46ae7eeff52a",
+    "assets/hd/bosses/warden-biome-descent/frames/south-cast-03.png": "d396acac129726667e9e39e5f9d59761c2f4e3a7780f06a9fdf2b7f65cd1be13",
+    "assets/hd/bosses/warden-biome-descent/frames/south-cast-04.png": "8bdc2e4da233741b2500c5170abfefdb5e5cbfd7a9edf69dd5ff013ea2250488",
+    "assets/hd/bosses/warden-biome-descent/frames/south-death-01.png": "b34ec3b9e42e5941f38c18e2d98f739f7161d9c993d28a6fed5f5a186e4963e0",
+    "assets/hd/bosses/warden-biome-descent/frames/south-death-02.png": "591ce4b8eccfb83326ae09de331ee5e0fe6537016e2e28820b685a5e4f98e978",
+    "assets/hd/bosses/warden-biome-descent/frames/south-hit-01.png": "68724d22dd1efc89f64ef4003a3576650e436a85613e55ed5a54fa3b651a2a41",
+    "assets/hd/bosses/warden-biome-descent/frames/south-hit-02.png": "d2fe90abd99480388a262c07ddf2e66a3898eb983937aa2a7254ec42a3a3817b",
+    "assets/hd/bosses/warden-biome-descent/frames/south-idle-01.png": "0b969c035a9190578caab80bb6cf760929b18195146d531873194e42c40a6d12",
+    "assets/hd/bosses/warden-biome-descent/frames/south-idle-02.png": "d7674e7aab12e3a8a613805075eab59f3e414ddcd792903f73baa98d751ad4c0",
+    "assets/hd/bosses/warden-biome-descent/frames/south-idle-03.png": "5df120a136f97c8dbb2b47d8244da3559bbb62cb7a71357d35daab350f0132b0",
+    "assets/hd/bosses/warden-biome-descent/frames/south-idle-04.png": "e529c4a9030b5524a3fdf1fda4665648c328c594c95d7c67e5d18136f34d3fd1",
+    "assets/hd/bosses/warden-biome-descent/frames/south-move-01.png": "1a1a1b8afc635c232f72e51b2ba617b4ac962e0d2570a29f77174912765a4188",
+    "assets/hd/bosses/warden-biome-descent/frames/south-move-02.png": "d811f17c7653977e72f1f56a0098fc61f3d157b18e503c2984bbeb671a4f73a7",
+    "assets/hd/bosses/warden-biome-descent/frames/south-move-03.png": "aebc5c1bd5edeedaebb269c241f12f55fabb14924819bbdca821b702323c0360",
+    "assets/hd/bosses/warden-biome-descent/frames/south-move-04.png": "6c215c94d3cc9fda00703d83271aa7a205bcb6c3d75556e2ba5d7eb1d403c910",
+    "assets/hd/bosses/warden-biome-descent/frames/west-cast-01.png": "6cbfe819e5a94cbddb95822a45d70abe2a3cfcfe93d770a6f5be3a13a4769940",
+    "assets/hd/bosses/warden-biome-descent/frames/west-cast-02.png": "3cd387964ad91a85b6f4f5f8470c1903006685f4c96b970fc83a452a30485beb",
+    "assets/hd/bosses/warden-biome-descent/frames/west-cast-03.png": "7e8bc9cedd87568f2f5d49fede1bb247e74c747ccb0a7cd1ce335e265069f158",
+    "assets/hd/bosses/warden-biome-descent/frames/west-cast-04.png": "1cae8592a8de7c7037ec06d8d961d3b4cf98a308b2ea56bb26ec7338fa717669",
+    "assets/hd/bosses/warden-biome-descent/frames/west-death-01.png": "6b71f3b3b2dc573fd755795ad3740814bb940d7f0f8e7a07adb2f140edb1f060",
+    "assets/hd/bosses/warden-biome-descent/frames/west-death-02.png": "51bf5bcd7016073701727c2adeebfcaaaeee1002ee0e9988d087d53fd17356db",
+    "assets/hd/bosses/warden-biome-descent/frames/west-hit-01.png": "9423382fb1991594fa333e9ba63b7bf8e40e68755b8a2d305db86a850788f03b",
+    "assets/hd/bosses/warden-biome-descent/frames/west-hit-02.png": "109875a887722dbfe8684c950ba2dbf135618d82ca399aacdf130b7c91e5bdcf",
+    "assets/hd/bosses/warden-biome-descent/frames/west-idle-01.png": "a6b80e8e2bb5bcecc860259020c9d464dab88a9f261a21de159c7c3262d909ef",
+    "assets/hd/bosses/warden-biome-descent/frames/west-idle-02.png": "ac3375d984d4e2f5fd6090d9f24724566d891c7bd5fa21d3a033d8d9822367b0",
+    "assets/hd/bosses/warden-biome-descent/frames/west-idle-03.png": "0444bb6aca37d4b0cefbe01600d0ff29cb5ea5adfe52fa8feaba4b5697846291",
+    "assets/hd/bosses/warden-biome-descent/frames/west-idle-04.png": "56ecca571880f7b8fd1dc1c974308f5ccf33b568bb950977f97e1466df1e8044",
+    "assets/hd/bosses/warden-biome-descent/frames/west-move-01.png": "8c24b62f93aa1dd4f9c6343a4d07e0e4e82b2c60a0ca5b14674a03a126358cb1",
+    "assets/hd/bosses/warden-biome-descent/frames/west-move-02.png": "090fb177111e21680c1b110bacdd18f5706ff452cc11291b873f6a3be1832916",
+    "assets/hd/bosses/warden-biome-descent/frames/west-move-03.png": "97ce52fc4d20217773169487738b87b48d60c9919b0ee7f5a56e7701cf3cec9e",
+    "assets/hd/bosses/warden-biome-descent/frames/west-move-04.png": "1608b2c5318559a6e16a1c25849ae61a2e27b6272e8d8ffe74aaad8feecf67e8",
+    "assets/hd/bosses/warden/phase-1/boss-manifest.json": "4c8c5a1bec88de0e5d82c4fff2ccbb2b89c1dc7db30f1410c3c9057feacbb30e",
+    "assets/hd/bosses/warden/phase-1/frames/east-cast-01.png": "101923dc816dbfa564e30bfd6f6f0ab3a299655e17bd7e0f42092078741db7f1",
+    "assets/hd/bosses/warden/phase-1/frames/east-cast-02.png": "f6a76507763cb6637832ef823284cf1406daab3a9c9c7adeb6133f3cedc5531d",
+    "assets/hd/bosses/warden/phase-1/frames/east-cast-03.png": "ffe4a04f6bd42ad22b1e1518b250aa974d0b13181072b559981c41153a3d711b",
+    "assets/hd/bosses/warden/phase-1/frames/east-cast-04.png": "acee05794beb3378278d9237b92250c2153263a64348d4b9722ee39680db8e3c",
+    "assets/hd/bosses/warden/phase-1/frames/east-death-01.png": "990efa0e9743d500a96fd002d59e645241ae6befe0860ef4c3d5317ad81015ea",
+    "assets/hd/bosses/warden/phase-1/frames/east-death-02.png": "0da8c33262315ac8a7e3c86f3100ce65cc4e500eaee5ecff0e25171eeaede626",
+    "assets/hd/bosses/warden/phase-1/frames/east-hit-01.png": "7ba047ebe50dc58af8c1a2581be2b12fd2c89a731d761bf04d023e13042b31dc",
+    "assets/hd/bosses/warden/phase-1/frames/east-hit-02.png": "6a458ec1001e7b0c590ce5ac2129dac5b99cab9d5e1bdae23fc70bceca13f107",
+    "assets/hd/bosses/warden/phase-1/frames/east-idle-01.png": "58ecbfbf55f556660427d76e2bd097e79156a86cef478aefc009868465217a56",
+    "assets/hd/bosses/warden/phase-1/frames/east-idle-02.png": "ed1036ed9ca51ae433709bbdd9bdc1088e90429730be3375c1733e3219ae67e8",
+    "assets/hd/bosses/warden/phase-1/frames/east-idle-03.png": "4716e77452a5f10794eef2a12671d44ea16e568dcb7a11ac9d4f272580eff877",
+    "assets/hd/bosses/warden/phase-1/frames/east-idle-04.png": "ff20dbd6b06172f5239e7885e71f9d584ae4f227d18eedcf215b2a54a670341e",
+    "assets/hd/bosses/warden/phase-1/frames/east-move-01.png": "9629ca601c70a90ea5c99f8f5e6ba38f65bddd5ca7401c498fbd865d836ad715",
+    "assets/hd/bosses/warden/phase-1/frames/east-move-02.png": "457ac38d061bc0b34674db977d5bffda00a1333c208bbfcfe5686fa73ce87225",
+    "assets/hd/bosses/warden/phase-1/frames/east-move-03.png": "4527c2747ce493c56ac79e693b6223ddbd150483eddb9d6dd054997f2d313e4f",
+    "assets/hd/bosses/warden/phase-1/frames/east-move-04.png": "88742f7c0257f47aaf6d0f20d0e6e9de5987135dac29d49ee81a49846bcd2d7e",
+    "assets/hd/bosses/warden/phase-1/frames/north-cast-01.png": "899bbf72f2a752cbc65ce599e4a3262d667ae167eb1c42749310e051f9cbde89",
+    "assets/hd/bosses/warden/phase-1/frames/north-cast-02.png": "1af4e141ae8bf7c2da8eb5db05436bdaf7eb0aa807327eaf43447836e9a636b8",
+    "assets/hd/bosses/warden/phase-1/frames/north-cast-03.png": "a0c23b33cd36f3060323fd71a4f72272faf4a07270dea9a59a783b3b7e4faa20",
+    "assets/hd/bosses/warden/phase-1/frames/north-cast-04.png": "c4ba9f5b2088b9407364570f624a87a2610618d9ae6d82530553ccf6bca5b13c",
+    "assets/hd/bosses/warden/phase-1/frames/north-death-01.png": "a5ab61ae382cee8a6e2e996a3a7e2987a2b7eb23dde5897042c84959cb64136e",
+    "assets/hd/bosses/warden/phase-1/frames/north-death-02.png": "23b75d2f2fa40cdcefc61e59652868a69e2dbfa9bc0782eeadc66f15bf50349f",
+    "assets/hd/bosses/warden/phase-1/frames/north-hit-01.png": "172f49a52fe389ea282b5d0a0922928a759ad4d67707b90bc326e109308799da",
+    "assets/hd/bosses/warden/phase-1/frames/north-hit-02.png": "6bdb6700a3b6fd33de254c51b72ca82202df652c359c77ef37f0934476816e91",
+    "assets/hd/bosses/warden/phase-1/frames/north-idle-01.png": "3819440e8c2c546d91698142fce130aae44101817806f085969b3994eef2a6ac",
+    "assets/hd/bosses/warden/phase-1/frames/north-idle-02.png": "8b831fd426305bf5402af16d36b38eb59197c1bd70c2f8be64f716dd08a7adb8",
+    "assets/hd/bosses/warden/phase-1/frames/north-idle-03.png": "8df79d8f0b9ecb9dbf3ccbd1db98970101bfc943383059e93cd9c78660042e50",
+    "assets/hd/bosses/warden/phase-1/frames/north-idle-04.png": "dbe53bacd655c43cca3ddc701f91a2fa8b6ef3bc79ea88ca3b171b1345b4e132",
+    "assets/hd/bosses/warden/phase-1/frames/north-move-01.png": "a0f651d6b017e55e61fbd3ffff58a4c2104cf6bdc41a0e57ab4c66eeeecbf0ea",
+    "assets/hd/bosses/warden/phase-1/frames/north-move-02.png": "95cb89b68dfd885529d1fd948ff8642b29ad57b869958c05bff3f0a7967365df",
+    "assets/hd/bosses/warden/phase-1/frames/north-move-03.png": "9e5738e8cbb31670e4dd537862048d735a64fca3140945cce048f5cdd3e3e313",
+    "assets/hd/bosses/warden/phase-1/frames/north-move-04.png": "1c6739c55e102c69a4d88a47299e51a27bd69c87b8f64f37ccf8f8652df122cf",
+    "assets/hd/bosses/warden/phase-1/frames/south-cast-01.png": "9f84673446499675e6734444ca7d4b52bbc4e867c39f6dbe13a6a787eccca05f",
+    "assets/hd/bosses/warden/phase-1/frames/south-cast-02.png": "d79f58edb3a2eccbd4c62172ee8f07754f6c9edc9336aa51fd8abe0bf362f061",
+    "assets/hd/bosses/warden/phase-1/frames/south-cast-03.png": "9fc69be4b40c9b39f9a491dd1c8fa238e70389905d671521555f1da01ab52a4b",
+    "assets/hd/bosses/warden/phase-1/frames/south-cast-04.png": "1a48a33630434b60160e5eb9379f60ae35b3f6857c13c9fb4257d3908ac6c4ce",
+    "assets/hd/bosses/warden/phase-1/frames/south-death-01.png": "138b368d73bcaca48b811904dd8023ba12d0abadb580025af58ab3f0f1ca102b",
+    "assets/hd/bosses/warden/phase-1/frames/south-death-02.png": "b197cd7ca357c7a5d72aeb8311bfcaab48c685b723852173ad6dcacae3261d33",
+    "assets/hd/bosses/warden/phase-1/frames/south-hit-01.png": "6cc9fd023f7570ec1d4945c3680e6880b13871f8df834d3edb8aa20e886e3f16",
+    "assets/hd/bosses/warden/phase-1/frames/south-hit-02.png": "c22ce9f14067bfb76be009929eb20c0af56699d2ddb195a403b3b74968907585",
+    "assets/hd/bosses/warden/phase-1/frames/south-idle-01.png": "5e19e5181e438c4f83dd94ab2c7468a403438c65e271ee1cdcebb1e44171fb31",
+    "assets/hd/bosses/warden/phase-1/frames/south-idle-02.png": "f85c132367c69d3cbf3620fdd79cf0694665fe3480296d5fb142be9575555c60",
+    "assets/hd/bosses/warden/phase-1/frames/south-idle-03.png": "0113fe250d1675374d0f4cea22c54b1c64a854eb3c1b14de1530057a2bc4d6e9",
+    "assets/hd/bosses/warden/phase-1/frames/south-idle-04.png": "8e132e7f9d567ef686cd4323b186bf206083845bdac80c974c42efa34d3a6ebf",
+    "assets/hd/bosses/warden/phase-1/frames/south-move-01.png": "f5d58a5c2eec053c45f1d75a13e8269a21b1cb9970d8b3b3eadb91b70e682b13",
+    "assets/hd/bosses/warden/phase-1/frames/south-move-02.png": "e15b56b77ea59c4ee567aa06f31303bf6fb885f517bacc32dd11c3a2b55af0ea",
+    "assets/hd/bosses/warden/phase-1/frames/south-move-03.png": "3c8eff246670a58c83927eed04e88f7c42fecc2a2602cd49b5327b0c420177c2",
+    "assets/hd/bosses/warden/phase-1/frames/south-move-04.png": "c431cc6f239ff06d86fd716520e4cb7cb0630fed80d17a98a7d35812e78bad34",
+    "assets/hd/bosses/warden/phase-1/frames/west-cast-01.png": "c9ecb8e0d0c3213491f6b00f1016c6b65976bd422a89a1d9d8486330303a486b",
+    "assets/hd/bosses/warden/phase-1/frames/west-cast-02.png": "5a6313454d22a6cb92781fd6e21ea6afbb3889a1eb63196b442035a325c59b13",
+    "assets/hd/bosses/warden/phase-1/frames/west-cast-03.png": "629ed084ced5e99a6a25b38d57d2d53e08c7b1f3ed543f223f47a43501726155",
+    "assets/hd/bosses/warden/phase-1/frames/west-cast-04.png": "21627cb5d7d5e4802fa50341a1d2990362cd30c3f841431517a41a26f179eb68",
+    "assets/hd/bosses/warden/phase-1/frames/west-death-01.png": "aec54aacffdb77821a7cb0af909ca60816b6879288ab48513c593992e58dc78a",
+    "assets/hd/bosses/warden/phase-1/frames/west-death-02.png": "c1d8cd72d5159b7d7174234ada26f30d26a96ecf4c4fb45fa961a009dc3f10d2",
+    "assets/hd/bosses/warden/phase-1/frames/west-hit-01.png": "1542c48d30386c520fe9c0d2891244fe646dc7d3f28b6c1da1b2ad6d822db49c",
+    "assets/hd/bosses/warden/phase-1/frames/west-hit-02.png": "b67e013c369d971790e227b4a86f6da5fdb3a9a5d27af47a0321001891c3a25d",
+    "assets/hd/bosses/warden/phase-1/frames/west-idle-01.png": "feb75a7fe5efffff1277f8c37a1e1f59b74a2c2be5c5657d9a03ac01f2dc3e73",
+    "assets/hd/bosses/warden/phase-1/frames/west-idle-02.png": "01951f596cdcb99c0c6ee185a32f4a2ad0616a29d898fbf1b3a8b962edf7ef38",
+    "assets/hd/bosses/warden/phase-1/frames/west-idle-03.png": "d3c3dae1a3475d6cf7474da149a559a1d8ad16b33396f9bb6480b6bbe80424b1",
+    "assets/hd/bosses/warden/phase-1/frames/west-idle-04.png": "2d82326c6ba2db87c1ca3ae91a6b6837b571c15346ae4c21ffeb5919d79345ea",
+    "assets/hd/bosses/warden/phase-1/frames/west-move-01.png": "1ad44a9e359bc458ee3409ff2da6efc4c7f5880bfe44da1c07fecf9b41198003",
+    "assets/hd/bosses/warden/phase-1/frames/west-move-02.png": "c8e9cde7a24db13fc1bd4b6e3c1770955aa82abcf1b5f5ac5458c9d7398eeaab",
+    "assets/hd/bosses/warden/phase-1/frames/west-move-03.png": "e13a57406f4cde0664232e1252329c772d9b4325968ed774639a4cb9ae414d02",
+    "assets/hd/bosses/warden/phase-1/frames/west-move-04.png": "571f5ab7a1920f76be1d8a092c69011535b4e5c8eb073cfa7d7beac4a0333254",
+    "assets/hd/bosses/warden/phase-2/boss-manifest.json": "ead8994e26f9b04c8722289db90064110130a681fb320e0dee2529871307f494",
+    "assets/hd/bosses/warden/phase-2/frames/east-cast-01.png": "78a1aa02fcba7a69fa78da21f157d327eab152a25a9942f6dc22909dc7f5fd6f",
+    "assets/hd/bosses/warden/phase-2/frames/east-cast-02.png": "d6481953a8ee3371660343f5cff4360ab7fb32f88756a73f4fdf84312d7316ab",
+    "assets/hd/bosses/warden/phase-2/frames/east-cast-03.png": "6a2158497d7ca6c0d31bf35c7efbbd8cb420ca039fdb5494cc9ced45cff0beb4",
+    "assets/hd/bosses/warden/phase-2/frames/east-cast-04.png": "a72a490063cdd7666b7abaaee904d35cf74ca447cc1a0f88fd93e673a20f47b6",
+    "assets/hd/bosses/warden/phase-2/frames/east-death-01.png": "403232afd90bb20ef6dcfb31493d60dc39524267dba37d58cd9c2691ad6da4b5",
+    "assets/hd/bosses/warden/phase-2/frames/east-death-02.png": "35cb0a3897890d8f860eee0770dde0a4905d6d6977f4436cc5ae61de32343851",
+    "assets/hd/bosses/warden/phase-2/frames/east-hit-01.png": "071c67ab26e397ec0b1c1a85b3dda85faa221b15eff334708d3b3971a3051364",
+    "assets/hd/bosses/warden/phase-2/frames/east-hit-02.png": "58cdf77ac4e04122e79707bebd27533cea8408516b379345492102b85f5b1b15",
+    "assets/hd/bosses/warden/phase-2/frames/east-idle-01.png": "6d6c88d1c6c4de3651dc1187148214bea3acee5c1b53cff21fd14e91ddec378e",
+    "assets/hd/bosses/warden/phase-2/frames/east-idle-02.png": "dab3de1497250499d4bc707c413352c9d1ba3bd958f46049bf9c4e6075a79e30",
+    "assets/hd/bosses/warden/phase-2/frames/east-idle-03.png": "5a28f6cb00a66ae5552b76ae5e0efef237fa69312a501a98370f755b80c43dd2",
+    "assets/hd/bosses/warden/phase-2/frames/east-idle-04.png": "65877cd56f09222b09695aadb401e84bfe0a428194d6b0cf674cc53a43e2c5e5",
+    "assets/hd/bosses/warden/phase-2/frames/east-move-01.png": "cacd44b54ba58904c585c568be28a6a58818df82fb8584d2cf4aeb7f1bfc0d8e",
+    "assets/hd/bosses/warden/phase-2/frames/east-move-02.png": "e483fe9037e9ba5ff42f7534aa81e8c1b23e9e8736518128850cae8b9db119f6",
+    "assets/hd/bosses/warden/phase-2/frames/east-move-03.png": "d75fabe1b4f1fc7d87f87fb4e4cb3ca15b16c4dd2fae69ba6850c2b62d44887f",
+    "assets/hd/bosses/warden/phase-2/frames/east-move-04.png": "0dc83c1178aaaee11d5eb946c620c00e4508df4d238e764a2a04989b7fb65b70",
+    "assets/hd/bosses/warden/phase-2/frames/north-cast-01.png": "bc9e2caea43ab94c2b555d8871fc0cf8ab51dd5daa267449ea2259d656cc5401",
+    "assets/hd/bosses/warden/phase-2/frames/north-cast-02.png": "9a947b3565b8f630304d9513b9576da41e381253939a36a1eb15344b37b569cf",
+    "assets/hd/bosses/warden/phase-2/frames/north-cast-03.png": "1391b3ccc11b95918aaef268cd940868abf4c2adfff77e4496389be1d39ecf79",
+    "assets/hd/bosses/warden/phase-2/frames/north-cast-04.png": "7a472312d1de4b1274cea8ddd4914f89e011225975d9083a7198c7cb09fbf2d7",
+    "assets/hd/bosses/warden/phase-2/frames/north-death-01.png": "ea28e07f08d9b22c940be68261ec5efc32758d35989a5fedff4e73754271dd54",
+    "assets/hd/bosses/warden/phase-2/frames/north-death-02.png": "661ca8c7fde864c08fa1fc0bcebd1d258740946bbfeba9f722800cfaeea0ae8f",
+    "assets/hd/bosses/warden/phase-2/frames/north-hit-01.png": "97278c669fc5f888dbf5b10a9cca4eaf831cbccff96e769072d4ffa48b93d4aa",
+    "assets/hd/bosses/warden/phase-2/frames/north-hit-02.png": "2751ab1ec8c3a773b2bd2a43fe8b8240383e6e3f452f4a377d51208ea6a7de95",
+    "assets/hd/bosses/warden/phase-2/frames/north-idle-01.png": "1ed823b4b2b9f7c78cd9838a5133a95d645c43406a6995643ca0dd484255706a",
+    "assets/hd/bosses/warden/phase-2/frames/north-idle-02.png": "9c4fe12899cc8b77cbd4109245692a1bf4a43e0b9ef85e2c226161ab6c291640",
+    "assets/hd/bosses/warden/phase-2/frames/north-idle-03.png": "760a0bad4071b91f92761333b91ae3be5c4691b41eb6f701583dfb2174b5c10c",
+    "assets/hd/bosses/warden/phase-2/frames/north-idle-04.png": "5687dc8f48ded24c5446aa6ed9ab5bd7cfb262f0fff295e1f13090e592dd1c12",
+    "assets/hd/bosses/warden/phase-2/frames/north-move-01.png": "8978848bdc696f3a2e2013cb03c102300ee8d97401dce90e2d36100e2064833d",
+    "assets/hd/bosses/warden/phase-2/frames/north-move-02.png": "8297642d052156791ff91b886b819368e247bb21884b65d66080576d317a9473",
+    "assets/hd/bosses/warden/phase-2/frames/north-move-03.png": "6096ca991e7e5e4d982d63b03f09445a9e0706516ed10537ac0b4bc9aee13ef6",
+    "assets/hd/bosses/warden/phase-2/frames/north-move-04.png": "6bfc9288f37127dd099d34a1be4285c4511799453f0c85a35ebec5cf2d2ef4fe",
+    "assets/hd/bosses/warden/phase-2/frames/south-cast-01.png": "28374241d8b3b76c5a4a4c7267da21f8ee361c4b68388048a6e55341cddeda13",
+    "assets/hd/bosses/warden/phase-2/frames/south-cast-02.png": "b41106b4a00d7fd27cc1dda3307e900d1982d68fcc0f3c498a2be33f75ec6f32",
+    "assets/hd/bosses/warden/phase-2/frames/south-cast-03.png": "8584e8527a27d7fbed00c25f76efab04020c16d37cea02d402fd2e1cbe9536db",
+    "assets/hd/bosses/warden/phase-2/frames/south-cast-04.png": "8f27539e5c8da5e546097608f8710bc207dd603a08b0dc61805b5f2a7d77320b",
+    "assets/hd/bosses/warden/phase-2/frames/south-death-01.png": "ab6c313630c3bce8e838dbd696c384df9af2d45bd01e14eadc4e6a3685b1bca1",
+    "assets/hd/bosses/warden/phase-2/frames/south-death-02.png": "066f5ae4159043dfd881d79cddc03c3786a8c9e17ba9b3019e26ffe95469d394",
+    "assets/hd/bosses/warden/phase-2/frames/south-hit-01.png": "8ce363f99f4c8ba6d357bee803010e10118b5dc026319eb51a2bbee0be394fe2",
+    "assets/hd/bosses/warden/phase-2/frames/south-hit-02.png": "5c043fbcf0ebfb01221c320ec7152c372d234deee9780b2ac59ac74241d9f2b8",
+    "assets/hd/bosses/warden/phase-2/frames/south-idle-01.png": "8f451bac3b2bd9b19499031814456bb67510525fe8929837a58c65d2e134d0b2",
+    "assets/hd/bosses/warden/phase-2/frames/south-idle-02.png": "36c3bb6af2bdaffb333c50a6bf3234c037323985d2ef1b39de7fd9a33a5c04c7",
+    "assets/hd/bosses/warden/phase-2/frames/south-idle-03.png": "60700845ff7f5a710b6a95a69e2d65f32575336ebff2519c9c72886d0061cadc",
+    "assets/hd/bosses/warden/phase-2/frames/south-idle-04.png": "5240e4a8eae7c5c66cdc4fa67353994c6f694be9a87ee2723a88f42dffd1f73f",
+    "assets/hd/bosses/warden/phase-2/frames/south-move-01.png": "9beb71b809f5ed6eb0905c81e1315164c8f2946f311eed4bcd16b66e504c16f2",
+    "assets/hd/bosses/warden/phase-2/frames/south-move-02.png": "44f4412020ae6641b17d2a7636db5b59436bcdd02aaf0ed5f8d782d0dcd47c4f",
+    "assets/hd/bosses/warden/phase-2/frames/south-move-03.png": "821eac0bc361f3042d3793640902108d94bb67d2ff863294074b581f5d9e35cd",
+    "assets/hd/bosses/warden/phase-2/frames/south-move-04.png": "9aca90c8b0a0cf1f89e9eac94e98def49c086b4a46d82969fd46fb347e67d2a9",
+    "assets/hd/bosses/warden/phase-2/frames/west-cast-01.png": "fb28313c339bcfcdb6691efe77bc74fbede096423bdb53cb010b09ed4abba811",
+    "assets/hd/bosses/warden/phase-2/frames/west-cast-02.png": "772013e17beae88e2af158762a2c345f2caa2db8028c7fd7d6a042deb63b6757",
+    "assets/hd/bosses/warden/phase-2/frames/west-cast-03.png": "318f66aa92a3993b8c76b3da89672f86cfa9a75a5630c8e3e07610713fbb6681",
+    "assets/hd/bosses/warden/phase-2/frames/west-cast-04.png": "3027039886cff1ef2d22b164cfae7471787867c5d320d827f3c5341d9de28b8c",
+    "assets/hd/bosses/warden/phase-2/frames/west-death-01.png": "4e1aa07579567909c39592a3f45673cc2b9b918280f99c5ab500ca50f9aa183a",
+    "assets/hd/bosses/warden/phase-2/frames/west-death-02.png": "e6cf4fdfa9c677a3f849ba6be6572bc5ea7fb7b6f1d2e711fc70049c7d9dd8f4",
+    "assets/hd/bosses/warden/phase-2/frames/west-hit-01.png": "aa29275b2c20d84e4c0a8fd2a13137189f34849e6d9b8fb842c215a4f0bfcc2e",
+    "assets/hd/bosses/warden/phase-2/frames/west-hit-02.png": "db17ebf6096a97f92bc0d9af15816bf316077960a52eb5319b681c97999ae9f5",
+    "assets/hd/bosses/warden/phase-2/frames/west-idle-01.png": "b22baaf2cc77453a3c45758b57ee2160390e9acc9dec1b9f7488c196e8d1848d",
+    "assets/hd/bosses/warden/phase-2/frames/west-idle-02.png": "53a6bd46da3cf73f97fc01a1b876c3352e432a73286fd1eeeec01396297c3ed3",
+    "assets/hd/bosses/warden/phase-2/frames/west-idle-03.png": "896e2ff37a512ceb8c8821aef6eed21d806013fc9b82ba7c62e99028fdc48154",
+    "assets/hd/bosses/warden/phase-2/frames/west-idle-04.png": "fbca96c6bcfcb761db913aba08ec538c0aad73dec619ce2e9e21586ad9734bc7",
+    "assets/hd/bosses/warden/phase-2/frames/west-move-01.png": "0c88862831200d6401b63c09b5de9eb7c657e477d2c16c387e684e054aa209fb",
+    "assets/hd/bosses/warden/phase-2/frames/west-move-02.png": "93306cc1d9b0f026395d90e994b7b2daf1cc1ceef4d28eb7a0aa15aeeb53b9dc",
+    "assets/hd/bosses/warden/phase-2/frames/west-move-03.png": "55969956b6179fdfa42759e6db135731fb514ea0a1c1a57c123705b5a40fa523",
+    "assets/hd/bosses/warden/phase-2/frames/west-move-04.png": "4a149898432ec7777871e5be5d02f22f029732bde1c1f84f7de39dd3676ef4b0"
+  },
+  "pillowVersion": "12.1.1",
+  "profiles": {
+    "blacksmith-guardian": {
+      "actionClip": "attack",
+      "anchor": [
+        0.5,
+        1
+      ],
+      "frameSize": [
+        128,
+        128
+      ],
+      "metrics": {
+        "bottomCenterRoot": [
+          64,
+          124
+        ],
+        "frames": [
+          {
+            "bounds": [
+              25,
+              26,
+              103,
+              125
+            ],
+            "key": "boss.blacksmith_guardian.south.idle.01"
+          },
+          {
+            "bounds": [
+              28,
+              28,
+              101,
+              125
+            ],
+            "key": "boss.blacksmith_guardian.south.idle.02"
+          },
+          {
+            "bounds": [
+              28,
+              28,
+              101,
+              125
+            ],
+            "key": "boss.blacksmith_guardian.south.idle.03"
+          },
+          {
+            "bounds": [
+              27,
+              28,
+              101,
+              125
+            ],
+            "key": "boss.blacksmith_guardian.south.idle.04"
+          },
+          {
+            "bounds": [
+              25,
+              30,
+              103,
+              125
+            ],
+            "key": "boss.blacksmith_guardian.south.move.01"
+          },
+          {
+            "bounds": [
+              25,
+              28,
+              103,
+              125
+            ],
+            "key": "boss.blacksmith_guardian.south.move.02"
+          },
+          {
+            "bounds": [
+              25,
+              27,
+              104,
+              125
+            ],
+            "key": "boss.blacksmith_guardian.south.move.03"
+          },
+          {
+            "bounds": [
+              25,
+              28,
+              103,
+              125
+            ],
+            "key": "boss.blacksmith_guardian.south.move.04"
+          },
+          {
+            "bounds": [
+              30,
+              37,
+              99,
+              125
+            ],
+            "key": "boss.blacksmith_guardian.south.attack.01"
+          },
+          {
+            "bounds": [
+              22,
+              30,
+              107,
+              125
+            ],
+            "key": "boss.blacksmith_guardian.south.attack.02"
+          },
+          {
+            "bounds": [
+              30,
+              33,
+              99,
+              125
+            ],
+            "key": "boss.blacksmith_guardian.south.attack.03"
+          },
+          {
+            "bounds": [
+              34,
+              21,
+              95,
+              125
+            ],
+            "key": "boss.blacksmith_guardian.south.attack.04"
+          },
+          {
+            "bounds": [
+              24,
+              31,
+              104,
+              125
+            ],
+            "key": "boss.blacksmith_guardian.south.hit.01"
+          },
+          {
+            "bounds": [
+              24,
+              33,
+              105,
+              125
+            ],
+            "key": "boss.blacksmith_guardian.south.hit.02"
+          },
+          {
+            "bounds": [
+              17,
+              55,
+              111,
+              125
+            ],
+            "key": "boss.blacksmith_guardian.south.death.01"
+          },
+          {
+            "bounds": [
+              18,
+              62,
+              111,
+              125
+            ],
+            "key": "boss.blacksmith_guardian.south.death.02"
+          },
+          {
+            "bounds": [
+              30,
+              32,
+              99,
+              125
+            ],
+            "key": "boss.blacksmith_guardian.north.idle.01"
+          },
+          {
+            "bounds": [
+              29,
+              31,
+              100,
+              125
+            ],
+            "key": "boss.blacksmith_guardian.north.idle.02"
+          },
+          {
+            "bounds": [
+              29,
+              30,
+              100,
+              125
+            ],
+            "key": "boss.blacksmith_guardian.north.idle.03"
+          },
+          {
+            "bounds": [
+              28,
+              31,
+              100,
+              125
+            ],
+            "key": "boss.blacksmith_guardian.north.idle.04"
+          },
+          {
+            "bounds": [
+              28,
+              29,
+              100,
+              125
+            ],
+            "key": "boss.blacksmith_guardian.north.move.01"
+          },
+          {
+            "bounds": [
+              30,
+              29,
+              99,
+              125
+            ],
+            "key": "boss.blacksmith_guardian.north.move.02"
+          },
+          {
+            "bounds": [
+              28,
+              30,
+              101,
+              125
+            ],
+            "key": "boss.blacksmith_guardian.north.move.03"
+          },
+          {
+            "bounds": [
+              31,
+              29,
+              98,
+              125
+            ],
+            "key": "boss.blacksmith_guardian.north.move.04"
+          },
+          {
+            "bounds": [
+              23,
+              32,
+              105,
+              125
+            ],
+            "key": "boss.blacksmith_guardian.north.attack.01"
+          },
+          {
+            "bounds": [
+              28,
+              24,
+              100,
+              125
+            ],
+            "key": "boss.blacksmith_guardian.north.attack.02"
+          },
+          {
+            "bounds": [
+              38,
+              24,
+              91,
+              125
+            ],
+            "key": "boss.blacksmith_guardian.north.attack.03"
+          },
+          {
+            "bounds": [
+              19,
+              34,
+              110,
+              125
+            ],
+            "key": "boss.blacksmith_guardian.north.attack.04"
+          },
+          {
+            "bounds": [
+              25,
+              35,
+              103,
+              125
+            ],
+            "key": "boss.blacksmith_guardian.north.hit.01"
+          },
+          {
+            "bounds": [
+              26,
+              37,
+              103,
+              125
+            ],
+            "key": "boss.blacksmith_guardian.north.hit.02"
+          },
+          {
+            "bounds": [
+              27,
+              55,
+              102,
+              125
+            ],
+            "key": "boss.blacksmith_guardian.north.death.01"
+          },
+          {
+            "bounds": [
+              19,
+              63,
+              110,
+              125
+            ],
+            "key": "boss.blacksmith_guardian.north.death.02"
+          },
+          {
+            "bounds": [
+              33,
+              21,
+              96,
+              125
+            ],
+            "key": "boss.blacksmith_guardian.east.idle.01"
+          },
+          {
+            "bounds": [
+              36,
+              21,
+              93,
+              125
+            ],
+            "key": "boss.blacksmith_guardian.east.idle.02"
+          },
+          {
+            "bounds": [
+              38,
+              23,
+              90,
+              125
+            ],
+            "key": "boss.blacksmith_guardian.east.idle.03"
+          },
+          {
+            "bounds": [
+              31,
+              24,
+              97,
+              125
+            ],
+            "key": "boss.blacksmith_guardian.east.idle.04"
+          },
+          {
+            "bounds": [
+              20,
+              32,
+              109,
+              125
+            ],
+            "key": "boss.blacksmith_guardian.east.move.01"
+          },
+          {
+            "bounds": [
+              18,
+              31,
+              110,
+              125
+            ],
+            "key": "boss.blacksmith_guardian.east.move.02"
+          },
+          {
+            "bounds": [
+              22,
+              30,
+              106,
+              125
+            ],
+            "key": "boss.blacksmith_guardian.east.move.03"
+          },
+          {
+            "bounds": [
+              16,
+              34,
+              112,
+              125
+            ],
+            "key": "boss.blacksmith_guardian.east.move.04"
+          },
+          {
+            "bounds": [
+              30,
+              20,
+              98,
+              125
+            ],
+            "key": "boss.blacksmith_guardian.east.attack.01"
+          },
+          {
+            "bounds": [
+              21,
+              38,
+              107,
+              125
+            ],
+            "key": "boss.blacksmith_guardian.east.attack.02"
+          },
+          {
+            "bounds": [
+              20,
+              42,
+              109,
+              125
+            ],
+            "key": "boss.blacksmith_guardian.east.attack.03"
+          },
+          {
+            "bounds": [
+              12,
+              39,
+              116,
+              125
+            ],
+            "key": "boss.blacksmith_guardian.east.attack.04"
+          },
+          {
+            "bounds": [
+              17,
+              41,
+              111,
+              125
+            ],
+            "key": "boss.blacksmith_guardian.east.hit.01"
+          },
+          {
+            "bounds": [
+              23,
+              57,
+              106,
+              125
+            ],
+            "key": "boss.blacksmith_guardian.east.hit.02"
+          },
+          {
+            "bounds": [
+              16,
+              74,
+              112,
+              125
+            ],
+            "key": "boss.blacksmith_guardian.east.death.01"
+          },
+          {
+            "bounds": [
+              10,
+              74,
+              119,
+              125
+            ],
+            "key": "boss.blacksmith_guardian.east.death.02"
+          },
+          {
+            "bounds": [
+              34,
+              23,
+              94,
+              125
+            ],
+            "key": "boss.blacksmith_guardian.west.idle.01"
+          },
+          {
+            "bounds": [
+              36,
+              24,
+              93,
+              125
+            ],
+            "key": "boss.blacksmith_guardian.west.idle.02"
+          },
+          {
+            "bounds": [
+              40,
+              23,
+              88,
+              125
+            ],
+            "key": "boss.blacksmith_guardian.west.idle.03"
+          },
+          {
+            "bounds": [
+              35,
+              23,
+              94,
+              125
+            ],
+            "key": "boss.blacksmith_guardian.west.idle.04"
+          },
+          {
+            "bounds": [
+              30,
+              29,
+              99,
+              125
+            ],
+            "key": "boss.blacksmith_guardian.west.move.01"
+          },
+          {
+            "bounds": [
+              32,
+              30,
+              97,
+              125
+            ],
+            "key": "boss.blacksmith_guardian.west.move.02"
+          },
+          {
+            "bounds": [
+              29,
+              32,
+              99,
+              125
+            ],
+            "key": "boss.blacksmith_guardian.west.move.03"
+          },
+          {
+            "bounds": [
+              30,
+              34,
+              98,
+              125
+            ],
+            "key": "boss.blacksmith_guardian.west.move.04"
+          },
+          {
+            "bounds": [
+              25,
+              30,
+              103,
+              125
+            ],
+            "key": "boss.blacksmith_guardian.west.attack.01"
+          },
+          {
+            "bounds": [
+              12,
+              41,
+              116,
+              125
+            ],
+            "key": "boss.blacksmith_guardian.west.attack.02"
+          },
+          {
+            "bounds": [
+              7,
+              43,
+              121,
+              125
+            ],
+            "key": "boss.blacksmith_guardian.west.attack.03"
+          },
+          {
+            "bounds": [
+              28,
+              7,
+              101,
+              125
+            ],
+            "key": "boss.blacksmith_guardian.west.attack.04"
+          },
+          {
+            "bounds": [
+              21,
+              30,
+              108,
+              125
+            ],
+            "key": "boss.blacksmith_guardian.west.hit.01"
+          },
+          {
+            "bounds": [
+              22,
+              43,
+              107,
+              125
+            ],
+            "key": "boss.blacksmith_guardian.west.hit.02"
+          },
+          {
+            "bounds": [
+              18,
+              82,
+              111,
+              125
+            ],
+            "key": "boss.blacksmith_guardian.west.death.01"
+          },
+          {
+            "bounds": [
+              16,
+              73,
+              113,
+              125
+            ],
+            "key": "boss.blacksmith_guardian.west.death.02"
+          }
+        ],
+        "sharedScale": 0.36085626911314983,
+        "sourceMaxBounds": [
+          315,
+          327
+        ]
+      }
+    },
+    "vault-guardian": {
+      "actionClip": "attack",
+      "anchor": [
+        0.5,
+        1
+      ],
+      "frameSize": [
+        128,
+        128
+      ],
+      "metrics": {
+        "bottomCenterRoot": [
+          64,
+          124
+        ],
+        "frames": [
+          {
+            "bounds": [
+              22,
+              27,
+              107,
+              125
+            ],
+            "key": "boss.guardian.south.idle.01"
+          },
+          {
+            "bounds": [
+              24,
+              26,
+              105,
+              125
+            ],
+            "key": "boss.guardian.south.idle.02"
+          },
+          {
+            "bounds": [
+              25,
+              27,
+              104,
+              125
+            ],
+            "key": "boss.guardian.south.idle.03"
+          },
+          {
+            "bounds": [
+              24,
+              27,
+              105,
+              125
+            ],
+            "key": "boss.guardian.south.idle.04"
+          },
+          {
+            "bounds": [
+              26,
+              28,
+              103,
+              125
+            ],
+            "key": "boss.guardian.south.move.01"
+          },
+          {
+            "bounds": [
+              25,
+              29,
+              104,
+              125
+            ],
+            "key": "boss.guardian.south.move.02"
+          },
+          {
+            "bounds": [
+              25,
+              31,
+              103,
+              125
+            ],
+            "key": "boss.guardian.south.move.03"
+          },
+          {
+            "bounds": [
+              27,
+              31,
+              102,
+              125
+            ],
+            "key": "boss.guardian.south.move.04"
+          },
+          {
+            "bounds": [
+              18,
+              23,
+              110,
+              125
+            ],
+            "key": "boss.guardian.south.attack.01"
+          },
+          {
+            "bounds": [
+              16,
+              24,
+              112,
+              125
+            ],
+            "key": "boss.guardian.south.attack.02"
+          },
+          {
+            "bounds": [
+              15,
+              39,
+              114,
+              125
+            ],
+            "key": "boss.guardian.south.attack.03"
+          },
+          {
+            "bounds": [
+              29,
+              31,
+              100,
+              125
+            ],
+            "key": "boss.guardian.south.attack.04"
+          },
+          {
+            "bounds": [
+              26,
+              34,
+              102,
+              125
+            ],
+            "key": "boss.guardian.south.hit.01"
+          },
+          {
+            "bounds": [
+              25,
+              37,
+              103,
+              125
+            ],
+            "key": "boss.guardian.south.hit.02"
+          },
+          {
+            "bounds": [
+              25,
+              55,
+              103,
+              125
+            ],
+            "key": "boss.guardian.south.death.01"
+          },
+          {
+            "bounds": [
+              5,
+              78,
+              123,
+              125
+            ],
+            "key": "boss.guardian.south.death.02"
+          },
+          {
+            "bounds": [
+              24,
+              27,
+              105,
+              125
+            ],
+            "key": "boss.guardian.north.idle.01"
+          },
+          {
+            "bounds": [
+              23,
+              27,
+              105,
+              125
+            ],
+            "key": "boss.guardian.north.idle.02"
+          },
+          {
+            "bounds": [
+              24,
+              26,
+              105,
+              125
+            ],
+            "key": "boss.guardian.north.idle.03"
+          },
+          {
+            "bounds": [
+              25,
+              27,
+              103,
+              125
+            ],
+            "key": "boss.guardian.north.idle.04"
+          },
+          {
+            "bounds": [
+              25,
+              28,
+              103,
+              125
+            ],
+            "key": "boss.guardian.north.move.01"
+          },
+          {
+            "bounds": [
+              25,
+              27,
+              103,
+              125
+            ],
+            "key": "boss.guardian.north.move.02"
+          },
+          {
+            "bounds": [
+              24,
+              27,
+              104,
+              125
+            ],
+            "key": "boss.guardian.north.move.03"
+          },
+          {
+            "bounds": [
+              25,
+              28,
+              104,
+              125
+            ],
+            "key": "boss.guardian.north.move.04"
+          },
+          {
+            "bounds": [
+              21,
+              35,
+              108,
+              125
+            ],
+            "key": "boss.guardian.north.attack.01"
+          },
+          {
+            "bounds": [
+              18,
+              34,
+              110,
+              125
+            ],
+            "key": "boss.guardian.north.attack.02"
+          },
+          {
+            "bounds": [
+              16,
+              36,
+              112,
+              125
+            ],
+            "key": "boss.guardian.north.attack.03"
+          },
+          {
+            "bounds": [
+              15,
+              37,
+              114,
+              125
+            ],
+            "key": "boss.guardian.north.attack.04"
+          },
+          {
+            "bounds": [
+              21,
+              33,
+              107,
+              125
+            ],
+            "key": "boss.guardian.north.hit.01"
+          },
+          {
+            "bounds": [
+              21,
+              34,
+              108,
+              125
+            ],
+            "key": "boss.guardian.north.hit.02"
+          },
+          {
+            "bounds": [
+              15,
+              44,
+              113,
+              125
+            ],
+            "key": "boss.guardian.north.death.01"
+          },
+          {
+            "bounds": [
+              12,
+              84,
+              117,
+              125
+            ],
+            "key": "boss.guardian.north.death.02"
+          },
+          {
+            "bounds": [
+              32,
+              30,
+              96,
+              125
+            ],
+            "key": "boss.guardian.east.idle.01"
+          },
+          {
+            "bounds": [
+              32,
+              31,
+              96,
+              125
+            ],
+            "key": "boss.guardian.east.idle.02"
+          },
+          {
+            "bounds": [
+              35,
+              32,
+              94,
+              125
+            ],
+            "key": "boss.guardian.east.idle.03"
+          },
+          {
+            "bounds": [
+              33,
+              30,
+              95,
+              125
+            ],
+            "key": "boss.guardian.east.idle.04"
+          },
+          {
+            "bounds": [
+              27,
+              35,
+              101,
+              125
+            ],
+            "key": "boss.guardian.east.move.01"
+          },
+          {
+            "bounds": [
+              25,
+              36,
+              103,
+              125
+            ],
+            "key": "boss.guardian.east.move.02"
+          },
+          {
+            "bounds": [
+              27,
+              35,
+              102,
+              125
+            ],
+            "key": "boss.guardian.east.move.03"
+          },
+          {
+            "bounds": [
+              28,
+              35,
+              101,
+              125
+            ],
+            "key": "boss.guardian.east.move.04"
+          },
+          {
+            "bounds": [
+              22,
+              37,
+              107,
+              125
+            ],
+            "key": "boss.guardian.east.attack.01"
+          },
+          {
+            "bounds": [
+              21,
+              36,
+              108,
+              125
+            ],
+            "key": "boss.guardian.east.attack.02"
+          },
+          {
+            "bounds": [
+              10,
+              40,
+              119,
+              125
+            ],
+            "key": "boss.guardian.east.attack.03"
+          },
+          {
+            "bounds": [
+              25,
+              37,
+              104,
+              125
+            ],
+            "key": "boss.guardian.east.attack.04"
+          },
+          {
+            "bounds": [
+              24,
+              41,
+              105,
+              125
+            ],
+            "key": "boss.guardian.east.hit.01"
+          },
+          {
+            "bounds": [
+              32,
+              43,
+              97,
+              125
+            ],
+            "key": "boss.guardian.east.hit.02"
+          },
+          {
+            "bounds": [
+              21,
+              73,
+              108,
+              125
+            ],
+            "key": "boss.guardian.east.death.01"
+          },
+          {
+            "bounds": [
+              12,
+              87,
+              116,
+              125
+            ],
+            "key": "boss.guardian.east.death.02"
+          },
+          {
+            "bounds": [
+              31,
+              28,
+              98,
+              125
+            ],
+            "key": "boss.guardian.west.idle.01"
+          },
+          {
+            "bounds": [
+              32,
+              29,
+              96,
+              125
+            ],
+            "key": "boss.guardian.west.idle.02"
+          },
+          {
+            "bounds": [
+              33,
+              29,
+              95,
+              125
+            ],
+            "key": "boss.guardian.west.idle.03"
+          },
+          {
+            "bounds": [
+              33,
+              29,
+              95,
+              125
+            ],
+            "key": "boss.guardian.west.idle.04"
+          },
+          {
+            "bounds": [
+              32,
+              30,
+              96,
+              125
+            ],
+            "key": "boss.guardian.west.move.01"
+          },
+          {
+            "bounds": [
+              32,
+              29,
+              97,
+              125
+            ],
+            "key": "boss.guardian.west.move.02"
+          },
+          {
+            "bounds": [
+              33,
+              34,
+              96,
+              125
+            ],
+            "key": "boss.guardian.west.move.03"
+          },
+          {
+            "bounds": [
+              31,
+              36,
+              97,
+              125
+            ],
+            "key": "boss.guardian.west.move.04"
+          },
+          {
+            "bounds": [
+              29,
+              32,
+              100,
+              125
+            ],
+            "key": "boss.guardian.west.attack.01"
+          },
+          {
+            "bounds": [
+              23,
+              41,
+              106,
+              125
+            ],
+            "key": "boss.guardian.west.attack.02"
+          },
+          {
+            "bounds": [
+              16,
+              45,
+              113,
+              125
+            ],
+            "key": "boss.guardian.west.attack.03"
+          },
+          {
+            "bounds": [
+              15,
+              43,
+              114,
+              125
+            ],
+            "key": "boss.guardian.west.attack.04"
+          },
+          {
+            "bounds": [
+              35,
+              44,
+              94,
+              125
+            ],
+            "key": "boss.guardian.west.hit.01"
+          },
+          {
+            "bounds": [
+              23,
+              58,
+              106,
+              125
+            ],
+            "key": "boss.guardian.west.hit.02"
+          },
+          {
+            "bounds": [
+              16,
+              89,
+              112,
+              125
+            ],
+            "key": "boss.guardian.west.death.01"
+          },
+          {
+            "bounds": [
+              12,
+              94,
+              116,
+              125
+            ],
+            "key": "boss.guardian.west.death.02"
+          }
+        ],
+        "sharedScale": 0.3460410557184751,
+        "sourceMaxBounds": [
+          341,
+          294
+        ]
+      }
+    },
+    "warden-biome-abyss": {
+      "actionClip": "cast",
+      "anchor": [
+        0.5,
+        1
+      ],
+      "frameSize": [
+        160,
+        160
+      ],
+      "metrics": {
+        "bottomCenterRoot": [
+          80,
+          156
+        ],
+        "frames": [
+          {
+            "bounds": [
+              27,
+              37,
+              133,
+              157
+            ],
+            "key": "boss.warden.abyss.south.idle.01"
+          },
+          {
+            "bounds": [
+              28,
+              37,
+              133,
+              157
+            ],
+            "key": "boss.warden.abyss.south.idle.02"
+          },
+          {
+            "bounds": [
+              28,
+              38,
+              132,
+              157
+            ],
+            "key": "boss.warden.abyss.south.idle.03"
+          },
+          {
+            "bounds": [
+              28,
+              37,
+              132,
+              157
+            ],
+            "key": "boss.warden.abyss.south.idle.04"
+          },
+          {
+            "bounds": [
+              25,
+              37,
+              136,
+              157
+            ],
+            "key": "boss.warden.abyss.south.move.01"
+          },
+          {
+            "bounds": [
+              26,
+              41,
+              135,
+              157
+            ],
+            "key": "boss.warden.abyss.south.move.02"
+          },
+          {
+            "bounds": [
+              28,
+              39,
+              133,
+              157
+            ],
+            "key": "boss.warden.abyss.south.move.03"
+          },
+          {
+            "bounds": [
+              26,
+              39,
+              134,
+              157
+            ],
+            "key": "boss.warden.abyss.south.move.04"
+          },
+          {
+            "bounds": [
+              24,
+              38,
+              137,
+              157
+            ],
+            "key": "boss.warden.abyss.south.cast.01"
+          },
+          {
+            "bounds": [
+              31,
+              67,
+              130,
+              157
+            ],
+            "key": "boss.warden.abyss.south.cast.02"
+          },
+          {
+            "bounds": [
+              13,
+              56,
+              147,
+              157
+            ],
+            "key": "boss.warden.abyss.south.cast.03"
+          },
+          {
+            "bounds": [
+              25,
+              41,
+              135,
+              157
+            ],
+            "key": "boss.warden.abyss.south.cast.04"
+          },
+          {
+            "bounds": [
+              26,
+              36,
+              134,
+              157
+            ],
+            "key": "boss.warden.abyss.south.hit.01"
+          },
+          {
+            "bounds": [
+              21,
+              50,
+              140,
+              157
+            ],
+            "key": "boss.warden.abyss.south.hit.02"
+          },
+          {
+            "bounds": [
+              23,
+              58,
+              138,
+              157
+            ],
+            "key": "boss.warden.abyss.south.death.01"
+          },
+          {
+            "bounds": [
+              11,
+              95,
+              149,
+              157
+            ],
+            "key": "boss.warden.abyss.south.death.02"
+          },
+          {
+            "bounds": [
+              32,
+              46,
+              128,
+              157
+            ],
+            "key": "boss.warden.abyss.north.idle.01"
+          },
+          {
+            "bounds": [
+              32,
+              46,
+              129,
+              157
+            ],
+            "key": "boss.warden.abyss.north.idle.02"
+          },
+          {
+            "bounds": [
+              32,
+              47,
+              128,
+              157
+            ],
+            "key": "boss.warden.abyss.north.idle.03"
+          },
+          {
+            "bounds": [
+              32,
+              46,
+              128,
+              157
+            ],
+            "key": "boss.warden.abyss.north.idle.04"
+          },
+          {
+            "bounds": [
+              31,
+              38,
+              129,
+              157
+            ],
+            "key": "boss.warden.abyss.north.move.01"
+          },
+          {
+            "bounds": [
+              31,
+              41,
+              129,
+              157
+            ],
+            "key": "boss.warden.abyss.north.move.02"
+          },
+          {
+            "bounds": [
+              31,
+              39,
+              130,
+              157
+            ],
+            "key": "boss.warden.abyss.north.move.03"
+          },
+          {
+            "bounds": [
+              31,
+              40,
+              129,
+              157
+            ],
+            "key": "boss.warden.abyss.north.move.04"
+          },
+          {
+            "bounds": [
+              28,
+              41,
+              133,
+              157
+            ],
+            "key": "boss.warden.abyss.north.cast.01"
+          },
+          {
+            "bounds": [
+              27,
+              59,
+              134,
+              157
+            ],
+            "key": "boss.warden.abyss.north.cast.02"
+          },
+          {
+            "bounds": [
+              32,
+              69,
+              128,
+              157
+            ],
+            "key": "boss.warden.abyss.north.cast.03"
+          },
+          {
+            "bounds": [
+              33,
+              46,
+              128,
+              157
+            ],
+            "key": "boss.warden.abyss.north.cast.04"
+          },
+          {
+            "bounds": [
+              29,
+              36,
+              131,
+              157
+            ],
+            "key": "boss.warden.abyss.north.hit.01"
+          },
+          {
+            "bounds": [
+              34,
+              41,
+              126,
+              157
+            ],
+            "key": "boss.warden.abyss.north.hit.02"
+          },
+          {
+            "bounds": [
+              24,
+              71,
+              136,
+              157
+            ],
+            "key": "boss.warden.abyss.north.death.01"
+          },
+          {
+            "bounds": [
+              15,
+              98,
+              145,
+              157
+            ],
+            "key": "boss.warden.abyss.north.death.02"
+          },
+          {
+            "bounds": [
+              34,
+              35,
+              127,
+              157
+            ],
+            "key": "boss.warden.abyss.east.idle.01"
+          },
+          {
+            "bounds": [
+              33,
+              37,
+              127,
+              157
+            ],
+            "key": "boss.warden.abyss.east.idle.02"
+          },
+          {
+            "bounds": [
+              35,
+              37,
+              126,
+              157
+            ],
+            "key": "boss.warden.abyss.east.idle.03"
+          },
+          {
+            "bounds": [
+              35,
+              37,
+              126,
+              157
+            ],
+            "key": "boss.warden.abyss.east.idle.04"
+          },
+          {
+            "bounds": [
+              25,
+              36,
+              135,
+              157
+            ],
+            "key": "boss.warden.abyss.east.move.01"
+          },
+          {
+            "bounds": [
+              25,
+              37,
+              135,
+              157
+            ],
+            "key": "boss.warden.abyss.east.move.02"
+          },
+          {
+            "bounds": [
+              25,
+              37,
+              136,
+              157
+            ],
+            "key": "boss.warden.abyss.east.move.03"
+          },
+          {
+            "bounds": [
+              25,
+              37,
+              135,
+              157
+            ],
+            "key": "boss.warden.abyss.east.move.04"
+          },
+          {
+            "bounds": [
+              22,
+              44,
+              139,
+              157
+            ],
+            "key": "boss.warden.abyss.east.cast.01"
+          },
+          {
+            "bounds": [
+              24,
+              55,
+              136,
+              157
+            ],
+            "key": "boss.warden.abyss.east.cast.02"
+          },
+          {
+            "bounds": [
+              9,
+              58,
+              151,
+              157
+            ],
+            "key": "boss.warden.abyss.east.cast.03"
+          },
+          {
+            "bounds": [
+              29,
+              44,
+              131,
+              157
+            ],
+            "key": "boss.warden.abyss.east.cast.04"
+          },
+          {
+            "bounds": [
+              32,
+              49,
+              128,
+              157
+            ],
+            "key": "boss.warden.abyss.east.hit.01"
+          },
+          {
+            "bounds": [
+              30,
+              45,
+              130,
+              157
+            ],
+            "key": "boss.warden.abyss.east.hit.02"
+          },
+          {
+            "bounds": [
+              17,
+              77,
+              143,
+              157
+            ],
+            "key": "boss.warden.abyss.east.death.01"
+          },
+          {
+            "bounds": [
+              6,
+              101,
+              155,
+              157
+            ],
+            "key": "boss.warden.abyss.east.death.02"
+          },
+          {
+            "bounds": [
+              45,
+              33,
+              115,
+              157
+            ],
+            "key": "boss.warden.abyss.west.idle.01"
+          },
+          {
+            "bounds": [
+              45,
+              33,
+              115,
+              157
+            ],
+            "key": "boss.warden.abyss.west.idle.02"
+          },
+          {
+            "bounds": [
+              45,
+              33,
+              115,
+              157
+            ],
+            "key": "boss.warden.abyss.west.idle.03"
+          },
+          {
+            "bounds": [
+              45,
+              33,
+              115,
+              157
+            ],
+            "key": "boss.warden.abyss.west.idle.04"
+          },
+          {
+            "bounds": [
+              33,
+              35,
+              127,
+              157
+            ],
+            "key": "boss.warden.abyss.west.move.01"
+          },
+          {
+            "bounds": [
+              32,
+              34,
+              129,
+              157
+            ],
+            "key": "boss.warden.abyss.west.move.02"
+          },
+          {
+            "bounds": [
+              35,
+              36,
+              126,
+              157
+            ],
+            "key": "boss.warden.abyss.west.move.03"
+          },
+          {
+            "bounds": [
+              31,
+              34,
+              130,
+              157
+            ],
+            "key": "boss.warden.abyss.west.move.04"
+          },
+          {
+            "bounds": [
+              31,
+              42,
+              129,
+              157
+            ],
+            "key": "boss.warden.abyss.west.cast.01"
+          },
+          {
+            "bounds": [
+              29,
+              60,
+              132,
+              157
+            ],
+            "key": "boss.warden.abyss.west.cast.02"
+          },
+          {
+            "bounds": [
+              16,
+              65,
+              145,
+              157
+            ],
+            "key": "boss.warden.abyss.west.cast.03"
+          },
+          {
+            "bounds": [
+              30,
+              42,
+              130,
+              157
+            ],
+            "key": "boss.warden.abyss.west.cast.04"
+          },
+          {
+            "bounds": [
+              23,
+              42,
+              137,
+              157
+            ],
+            "key": "boss.warden.abyss.west.hit.01"
+          },
+          {
+            "bounds": [
+              30,
+              55,
+              131,
+              157
+            ],
+            "key": "boss.warden.abyss.west.hit.02"
+          },
+          {
+            "bounds": [
+              19,
+              75,
+              141,
+              157
+            ],
+            "key": "boss.warden.abyss.west.death.01"
+          },
+          {
+            "bounds": [
+              5,
+              95,
+              155,
+              157
+            ],
+            "key": "boss.warden.abyss.west.death.02"
+          }
+        ],
+        "sharedScale": 0.5033557046979866,
+        "sourceMaxBounds": [
+          298,
+          247
+        ]
+      }
+    },
+    "warden-biome-corruption": {
+      "actionClip": "cast",
+      "anchor": [
+        0.5,
+        1
+      ],
+      "frameSize": [
+        160,
+        160
+      ],
+      "metrics": {
+        "bottomCenterRoot": [
+          80,
+          156
+        ],
+        "frames": [
+          {
+            "bounds": [
+              28,
+              37,
+              132,
+              157
+            ],
+            "key": "boss.warden.corruption.south.idle.01"
+          },
+          {
+            "bounds": [
+              29,
+              37,
+              132,
+              157
+            ],
+            "key": "boss.warden.corruption.south.idle.02"
+          },
+          {
+            "bounds": [
+              29,
+              37,
+              131,
+              157
+            ],
+            "key": "boss.warden.corruption.south.idle.03"
+          },
+          {
+            "bounds": [
+              30,
+              36,
+              130,
+              157
+            ],
+            "key": "boss.warden.corruption.south.idle.04"
+          },
+          {
+            "bounds": [
+              33,
+              40,
+              127,
+              157
+            ],
+            "key": "boss.warden.corruption.south.move.01"
+          },
+          {
+            "bounds": [
+              31,
+              36,
+              129,
+              157
+            ],
+            "key": "boss.warden.corruption.south.move.02"
+          },
+          {
+            "bounds": [
+              31,
+              36,
+              130,
+              157
+            ],
+            "key": "boss.warden.corruption.south.move.03"
+          },
+          {
+            "bounds": [
+              24,
+              36,
+              137,
+              157
+            ],
+            "key": "boss.warden.corruption.south.move.04"
+          },
+          {
+            "bounds": [
+              17,
+              40,
+              144,
+              157
+            ],
+            "key": "boss.warden.corruption.south.cast.01"
+          },
+          {
+            "bounds": [
+              32,
+              63,
+              129,
+              157
+            ],
+            "key": "boss.warden.corruption.south.cast.02"
+          },
+          {
+            "bounds": [
+              16,
+              69,
+              145,
+              157
+            ],
+            "key": "boss.warden.corruption.south.cast.03"
+          },
+          {
+            "bounds": [
+              29,
+              48,
+              131,
+              157
+            ],
+            "key": "boss.warden.corruption.south.cast.04"
+          },
+          {
+            "bounds": [
+              21,
+              40,
+              140,
+              157
+            ],
+            "key": "boss.warden.corruption.south.hit.01"
+          },
+          {
+            "bounds": [
+              23,
+              39,
+              138,
+              157
+            ],
+            "key": "boss.warden.corruption.south.hit.02"
+          },
+          {
+            "bounds": [
+              25,
+              67,
+              135,
+              157
+            ],
+            "key": "boss.warden.corruption.south.death.01"
+          },
+          {
+            "bounds": [
+              13,
+              94,
+              147,
+              157
+            ],
+            "key": "boss.warden.corruption.south.death.02"
+          },
+          {
+            "bounds": [
+              31,
+              38,
+              129,
+              157
+            ],
+            "key": "boss.warden.corruption.north.idle.01"
+          },
+          {
+            "bounds": [
+              31,
+              38,
+              129,
+              157
+            ],
+            "key": "boss.warden.corruption.north.idle.02"
+          },
+          {
+            "bounds": [
+              32,
+              38,
+              129,
+              157
+            ],
+            "key": "boss.warden.corruption.north.idle.03"
+          },
+          {
+            "bounds": [
+              31,
+              38,
+              129,
+              157
+            ],
+            "key": "boss.warden.corruption.north.idle.04"
+          },
+          {
+            "bounds": [
+              32,
+              40,
+              128,
+              157
+            ],
+            "key": "boss.warden.corruption.north.move.01"
+          },
+          {
+            "bounds": [
+              32,
+              38,
+              128,
+              157
+            ],
+            "key": "boss.warden.corruption.north.move.02"
+          },
+          {
+            "bounds": [
+              32,
+              39,
+              128,
+              157
+            ],
+            "key": "boss.warden.corruption.north.move.03"
+          },
+          {
+            "bounds": [
+              33,
+              38,
+              128,
+              157
+            ],
+            "key": "boss.warden.corruption.north.move.04"
+          },
+          {
+            "bounds": [
+              25,
+              45,
+              136,
+              157
+            ],
+            "key": "boss.warden.corruption.north.cast.01"
+          },
+          {
+            "bounds": [
+              30,
+              53,
+              130,
+              157
+            ],
+            "key": "boss.warden.corruption.north.cast.02"
+          },
+          {
+            "bounds": [
+              14,
+              69,
+              146,
+              157
+            ],
+            "key": "boss.warden.corruption.north.cast.03"
+          },
+          {
+            "bounds": [
+              31,
+              38,
+              129,
+              157
+            ],
+            "key": "boss.warden.corruption.north.cast.04"
+          },
+          {
+            "bounds": [
+              30,
+              34,
+              131,
+              157
+            ],
+            "key": "boss.warden.corruption.north.hit.01"
+          },
+          {
+            "bounds": [
+              34,
+              40,
+              127,
+              157
+            ],
+            "key": "boss.warden.corruption.north.hit.02"
+          },
+          {
+            "bounds": [
+              23,
+              65,
+              137,
+              157
+            ],
+            "key": "boss.warden.corruption.north.death.01"
+          },
+          {
+            "bounds": [
+              13,
+              91,
+              148,
+              157
+            ],
+            "key": "boss.warden.corruption.north.death.02"
+          },
+          {
+            "bounds": [
+              38,
+              36,
+              123,
+              157
+            ],
+            "key": "boss.warden.corruption.east.idle.01"
+          },
+          {
+            "bounds": [
+              39,
+              36,
+              122,
+              157
+            ],
+            "key": "boss.warden.corruption.east.idle.02"
+          },
+          {
+            "bounds": [
+              39,
+              38,
+              122,
+              157
+            ],
+            "key": "boss.warden.corruption.east.idle.03"
+          },
+          {
+            "bounds": [
+              39,
+              37,
+              121,
+              157
+            ],
+            "key": "boss.warden.corruption.east.idle.04"
+          },
+          {
+            "bounds": [
+              32,
+              37,
+              128,
+              157
+            ],
+            "key": "boss.warden.corruption.east.move.01"
+          },
+          {
+            "bounds": [
+              35,
+              38,
+              125,
+              157
+            ],
+            "key": "boss.warden.corruption.east.move.02"
+          },
+          {
+            "bounds": [
+              34,
+              40,
+              126,
+              157
+            ],
+            "key": "boss.warden.corruption.east.move.03"
+          },
+          {
+            "bounds": [
+              35,
+              39,
+              125,
+              157
+            ],
+            "key": "boss.warden.corruption.east.move.04"
+          },
+          {
+            "bounds": [
+              30,
+              45,
+              131,
+              157
+            ],
+            "key": "boss.warden.corruption.east.cast.01"
+          },
+          {
+            "bounds": [
+              28,
+              49,
+              132,
+              157
+            ],
+            "key": "boss.warden.corruption.east.cast.02"
+          },
+          {
+            "bounds": [
+              16,
+              62,
+              145,
+              157
+            ],
+            "key": "boss.warden.corruption.east.cast.03"
+          },
+          {
+            "bounds": [
+              33,
+              45,
+              128,
+              157
+            ],
+            "key": "boss.warden.corruption.east.cast.04"
+          },
+          {
+            "bounds": [
+              23,
+              43,
+              137,
+              157
+            ],
+            "key": "boss.warden.corruption.east.hit.01"
+          },
+          {
+            "bounds": [
+              29,
+              46,
+              131,
+              157
+            ],
+            "key": "boss.warden.corruption.east.hit.02"
+          },
+          {
+            "bounds": [
+              19,
+              79,
+              142,
+              157
+            ],
+            "key": "boss.warden.corruption.east.death.01"
+          },
+          {
+            "bounds": [
+              11,
+              96,
+              150,
+              157
+            ],
+            "key": "boss.warden.corruption.east.death.02"
+          },
+          {
+            "bounds": [
+              41,
+              38,
+              119,
+              157
+            ],
+            "key": "boss.warden.corruption.west.idle.01"
+          },
+          {
+            "bounds": [
+              42,
+              38,
+              118,
+              157
+            ],
+            "key": "boss.warden.corruption.west.idle.02"
+          },
+          {
+            "bounds": [
+              43,
+              38,
+              118,
+              157
+            ],
+            "key": "boss.warden.corruption.west.idle.03"
+          },
+          {
+            "bounds": [
+              42,
+              38,
+              119,
+              157
+            ],
+            "key": "boss.warden.corruption.west.idle.04"
+          },
+          {
+            "bounds": [
+              34,
+              40,
+              126,
+              157
+            ],
+            "key": "boss.warden.corruption.west.move.01"
+          },
+          {
+            "bounds": [
+              38,
+              41,
+              122,
+              157
+            ],
+            "key": "boss.warden.corruption.west.move.02"
+          },
+          {
+            "bounds": [
+              33,
+              40,
+              128,
+              157
+            ],
+            "key": "boss.warden.corruption.west.move.03"
+          },
+          {
+            "bounds": [
+              34,
+              40,
+              126,
+              157
+            ],
+            "key": "boss.warden.corruption.west.move.04"
+          },
+          {
+            "bounds": [
+              33,
+              39,
+              128,
+              157
+            ],
+            "key": "boss.warden.corruption.west.cast.01"
+          },
+          {
+            "bounds": [
+              35,
+              62,
+              126,
+              157
+            ],
+            "key": "boss.warden.corruption.west.cast.02"
+          },
+          {
+            "bounds": [
+              5,
+              61,
+              155,
+              157
+            ],
+            "key": "boss.warden.corruption.west.cast.03"
+          },
+          {
+            "bounds": [
+              39,
+              47,
+              121,
+              157
+            ],
+            "key": "boss.warden.corruption.west.cast.04"
+          },
+          {
+            "bounds": [
+              31,
+              39,
+              129,
+              157
+            ],
+            "key": "boss.warden.corruption.west.hit.01"
+          },
+          {
+            "bounds": [
+              29,
+              65,
+              132,
+              157
+            ],
+            "key": "boss.warden.corruption.west.hit.02"
+          },
+          {
+            "bounds": [
+              18,
+              84,
+              143,
+              157
+            ],
+            "key": "boss.warden.corruption.west.death.01"
+          },
+          {
+            "bounds": [
+              11,
+              101,
+              149,
+              157
+            ],
+            "key": "boss.warden.corruption.west.death.02"
+          }
+        ],
+        "sharedScale": 0.4854368932038835,
+        "sourceMaxBounds": [
+          309,
+          253
+        ]
+      }
+    },
+    "warden-biome-descent": {
+      "actionClip": "cast",
+      "anchor": [
+        0.5,
+        1
+      ],
+      "frameSize": [
+        160,
+        160
+      ],
+      "metrics": {
+        "bottomCenterRoot": [
+          80,
+          156
+        ],
+        "frames": [
+          {
+            "bounds": [
+              29,
+              39,
+              131,
+              157
+            ],
+            "key": "boss.warden.descent.south.idle.01"
+          },
+          {
+            "bounds": [
+              30,
+              44,
+              131,
+              157
+            ],
+            "key": "boss.warden.descent.south.idle.02"
+          },
+          {
+            "bounds": [
+              29,
+              42,
+              131,
+              157
+            ],
+            "key": "boss.warden.descent.south.idle.03"
+          },
+          {
+            "bounds": [
+              29,
+              43,
+              131,
+              157
+            ],
+            "key": "boss.warden.descent.south.idle.04"
+          },
+          {
+            "bounds": [
+              30,
+              39,
+              130,
+              157
+            ],
+            "key": "boss.warden.descent.south.move.01"
+          },
+          {
+            "bounds": [
+              32,
+              39,
+              128,
+              157
+            ],
+            "key": "boss.warden.descent.south.move.02"
+          },
+          {
+            "bounds": [
+              32,
+              40,
+              128,
+              157
+            ],
+            "key": "boss.warden.descent.south.move.03"
+          },
+          {
+            "bounds": [
+              32,
+              39,
+              129,
+              157
+            ],
+            "key": "boss.warden.descent.south.move.04"
+          },
+          {
+            "bounds": [
+              26,
+              34,
+              135,
+              157
+            ],
+            "key": "boss.warden.descent.south.cast.01"
+          },
+          {
+            "bounds": [
+              32,
+              59,
+              129,
+              157
+            ],
+            "key": "boss.warden.descent.south.cast.02"
+          },
+          {
+            "bounds": [
+              29,
+              70,
+              132,
+              157
+            ],
+            "key": "boss.warden.descent.south.cast.03"
+          },
+          {
+            "bounds": [
+              31,
+              44,
+              130,
+              157
+            ],
+            "key": "boss.warden.descent.south.cast.04"
+          },
+          {
+            "bounds": [
+              28,
+              45,
+              133,
+              157
+            ],
+            "key": "boss.warden.descent.south.hit.01"
+          },
+          {
+            "bounds": [
+              25,
+              58,
+              136,
+              157
+            ],
+            "key": "boss.warden.descent.south.hit.02"
+          },
+          {
+            "bounds": [
+              30,
+              72,
+              130,
+              157
+            ],
+            "key": "boss.warden.descent.south.death.01"
+          },
+          {
+            "bounds": [
+              14,
+              93,
+              147,
+              157
+            ],
+            "key": "boss.warden.descent.south.death.02"
+          },
+          {
+            "bounds": [
+              32,
+              48,
+              128,
+              157
+            ],
+            "key": "boss.warden.descent.north.idle.01"
+          },
+          {
+            "bounds": [
+              32,
+              48,
+              128,
+              157
+            ],
+            "key": "boss.warden.descent.north.idle.02"
+          },
+          {
+            "bounds": [
+              32,
+              48,
+              128,
+              157
+            ],
+            "key": "boss.warden.descent.north.idle.03"
+          },
+          {
+            "bounds": [
+              32,
+              48,
+              128,
+              157
+            ],
+            "key": "boss.warden.descent.north.idle.04"
+          },
+          {
+            "bounds": [
+              33,
+              46,
+              127,
+              157
+            ],
+            "key": "boss.warden.descent.north.move.01"
+          },
+          {
+            "bounds": [
+              33,
+              45,
+              128,
+              157
+            ],
+            "key": "boss.warden.descent.north.move.02"
+          },
+          {
+            "bounds": [
+              33,
+              45,
+              127,
+              157
+            ],
+            "key": "boss.warden.descent.north.move.03"
+          },
+          {
+            "bounds": [
+              33,
+              46,
+              127,
+              157
+            ],
+            "key": "boss.warden.descent.north.move.04"
+          },
+          {
+            "bounds": [
+              30,
+              49,
+              131,
+              157
+            ],
+            "key": "boss.warden.descent.north.cast.01"
+          },
+          {
+            "bounds": [
+              30,
+              67,
+              130,
+              157
+            ],
+            "key": "boss.warden.descent.north.cast.02"
+          },
+          {
+            "bounds": [
+              15,
+              77,
+              146,
+              157
+            ],
+            "key": "boss.warden.descent.north.cast.03"
+          },
+          {
+            "bounds": [
+              34,
+              52,
+              126,
+              157
+            ],
+            "key": "boss.warden.descent.north.cast.04"
+          },
+          {
+            "bounds": [
+              32,
+              41,
+              129,
+              157
+            ],
+            "key": "boss.warden.descent.north.hit.01"
+          },
+          {
+            "bounds": [
+              34,
+              50,
+              127,
+              157
+            ],
+            "key": "boss.warden.descent.north.hit.02"
+          },
+          {
+            "bounds": [
+              25,
+              75,
+              135,
+              157
+            ],
+            "key": "boss.warden.descent.north.death.01"
+          },
+          {
+            "bounds": [
+              17,
+              101,
+              143,
+              157
+            ],
+            "key": "boss.warden.descent.north.death.02"
+          },
+          {
+            "bounds": [
+              38,
+              42,
+              122,
+              157
+            ],
+            "key": "boss.warden.descent.east.idle.01"
+          },
+          {
+            "bounds": [
+              38,
+              42,
+              122,
+              157
+            ],
+            "key": "boss.warden.descent.east.idle.02"
+          },
+          {
+            "bounds": [
+              39,
+              42,
+              122,
+              157
+            ],
+            "key": "boss.warden.descent.east.idle.03"
+          },
+          {
+            "bounds": [
+              35,
+              43,
+              126,
+              157
+            ],
+            "key": "boss.warden.descent.east.idle.04"
+          },
+          {
+            "bounds": [
+              30,
+              45,
+              131,
+              157
+            ],
+            "key": "boss.warden.descent.east.move.01"
+          },
+          {
+            "bounds": [
+              33,
+              45,
+              128,
+              157
+            ],
+            "key": "boss.warden.descent.east.move.02"
+          },
+          {
+            "bounds": [
+              34,
+              44,
+              126,
+              157
+            ],
+            "key": "boss.warden.descent.east.move.03"
+          },
+          {
+            "bounds": [
+              38,
+              44,
+              123,
+              157
+            ],
+            "key": "boss.warden.descent.east.move.04"
+          },
+          {
+            "bounds": [
+              28,
+              45,
+              133,
+              157
+            ],
+            "key": "boss.warden.descent.east.cast.01"
+          },
+          {
+            "bounds": [
+              33,
+              63,
+              128,
+              157
+            ],
+            "key": "boss.warden.descent.east.cast.02"
+          },
+          {
+            "bounds": [
+              19,
+              61,
+              141,
+              157
+            ],
+            "key": "boss.warden.descent.east.cast.03"
+          },
+          {
+            "bounds": [
+              27,
+              47,
+              133,
+              157
+            ],
+            "key": "boss.warden.descent.east.cast.04"
+          },
+          {
+            "bounds": [
+              36,
+              43,
+              124,
+              157
+            ],
+            "key": "boss.warden.descent.east.hit.01"
+          },
+          {
+            "bounds": [
+              37,
+              50,
+              123,
+              157
+            ],
+            "key": "boss.warden.descent.east.hit.02"
+          },
+          {
+            "bounds": [
+              21,
+              83,
+              140,
+              157
+            ],
+            "key": "boss.warden.descent.east.death.01"
+          },
+          {
+            "bounds": [
+              12,
+              104,
+              148,
+              157
+            ],
+            "key": "boss.warden.descent.east.death.02"
+          },
+          {
+            "bounds": [
+              46,
+              45,
+              115,
+              157
+            ],
+            "key": "boss.warden.descent.west.idle.01"
+          },
+          {
+            "bounds": [
+              46,
+              46,
+              115,
+              157
+            ],
+            "key": "boss.warden.descent.west.idle.02"
+          },
+          {
+            "bounds": [
+              45,
+              46,
+              115,
+              157
+            ],
+            "key": "boss.warden.descent.west.idle.03"
+          },
+          {
+            "bounds": [
+              45,
+              45,
+              116,
+              157
+            ],
+            "key": "boss.warden.descent.west.idle.04"
+          },
+          {
+            "bounds": [
+              43,
+              50,
+              118,
+              157
+            ],
+            "key": "boss.warden.descent.west.move.01"
+          },
+          {
+            "bounds": [
+              35,
+              52,
+              126,
+              157
+            ],
+            "key": "boss.warden.descent.west.move.02"
+          },
+          {
+            "bounds": [
+              38,
+              52,
+              122,
+              157
+            ],
+            "key": "boss.warden.descent.west.move.03"
+          },
+          {
+            "bounds": [
+              39,
+              51,
+              122,
+              157
+            ],
+            "key": "boss.warden.descent.west.move.04"
+          },
+          {
+            "bounds": [
+              36,
+              39,
+              124,
+              157
+            ],
+            "key": "boss.warden.descent.west.cast.01"
+          },
+          {
+            "bounds": [
+              35,
+              72,
+              125,
+              157
+            ],
+            "key": "boss.warden.descent.west.cast.02"
+          },
+          {
+            "bounds": [
+              17,
+              66,
+              143,
+              157
+            ],
+            "key": "boss.warden.descent.west.cast.03"
+          },
+          {
+            "bounds": [
+              32,
+              58,
+              128,
+              157
+            ],
+            "key": "boss.warden.descent.west.cast.04"
+          },
+          {
+            "bounds": [
+              35,
+              52,
+              126,
+              157
+            ],
+            "key": "boss.warden.descent.west.hit.01"
+          },
+          {
+            "bounds": [
+              35,
+              50,
+              125,
+              157
+            ],
+            "key": "boss.warden.descent.west.hit.02"
+          },
+          {
+            "bounds": [
+              19,
+              75,
+              142,
+              157
+            ],
+            "key": "boss.warden.descent.west.death.01"
+          },
+          {
+            "bounds": [
+              5,
+              93,
+              155,
+              157
+            ],
+            "key": "boss.warden.descent.west.death.02"
+          }
+        ],
+        "sharedScale": 0.47770700636942676,
+        "sourceMaxBounds": [
+          314,
+          258
+        ]
+      }
+    },
+    "warden/phase-1": {
+      "actionClip": "cast",
+      "anchor": [
+        0.5,
+        1
+      ],
+      "frameSize": [
+        160,
+        160
+      ],
+      "metrics": {
+        "bottomCenterRoot": [
+          80,
+          156
+        ],
+        "frames": [
+          {
+            "bounds": [
+              53,
+              20,
+              107,
+              157
+            ],
+            "key": "boss.warden.phase1.south.idle.01"
+          },
+          {
+            "bounds": [
+              52,
+              18,
+              109,
+              157
+            ],
+            "key": "boss.warden.phase1.south.idle.02"
+          },
+          {
+            "bounds": [
+              52,
+              18,
+              109,
+              157
+            ],
+            "key": "boss.warden.phase1.south.idle.03"
+          },
+          {
+            "bounds": [
+              51,
+              17,
+              109,
+              157
+            ],
+            "key": "boss.warden.phase1.south.idle.04"
+          },
+          {
+            "bounds": [
+              49,
+              23,
+              111,
+              157
+            ],
+            "key": "boss.warden.phase1.south.move.01"
+          },
+          {
+            "bounds": [
+              49,
+              25,
+              111,
+              157
+            ],
+            "key": "boss.warden.phase1.south.move.02"
+          },
+          {
+            "bounds": [
+              48,
+              26,
+              112,
+              157
+            ],
+            "key": "boss.warden.phase1.south.move.03"
+          },
+          {
+            "bounds": [
+              48,
+              24,
+              112,
+              157
+            ],
+            "key": "boss.warden.phase1.south.move.04"
+          },
+          {
+            "bounds": [
+              46,
+              23,
+              115,
+              157
+            ],
+            "key": "boss.warden.phase1.south.cast.01"
+          },
+          {
+            "bounds": [
+              36,
+              22,
+              125,
+              157
+            ],
+            "key": "boss.warden.phase1.south.cast.02"
+          },
+          {
+            "bounds": [
+              26,
+              26,
+              135,
+              157
+            ],
+            "key": "boss.warden.phase1.south.cast.03"
+          },
+          {
+            "bounds": [
+              38,
+              18,
+              122,
+              157
+            ],
+            "key": "boss.warden.phase1.south.cast.04"
+          },
+          {
+            "bounds": [
+              39,
+              20,
+              121,
+              157
+            ],
+            "key": "boss.warden.phase1.south.hit.01"
+          },
+          {
+            "bounds": [
+              35,
+              21,
+              125,
+              157
+            ],
+            "key": "boss.warden.phase1.south.hit.02"
+          },
+          {
+            "bounds": [
+              21,
+              76,
+              140,
+              157
+            ],
+            "key": "boss.warden.phase1.south.death.01"
+          },
+          {
+            "bounds": [
+              15,
+              88,
+              145,
+              157
+            ],
+            "key": "boss.warden.phase1.south.death.02"
+          },
+          {
+            "bounds": [
+              48,
+              10,
+              113,
+              157
+            ],
+            "key": "boss.warden.phase1.north.idle.01"
+          },
+          {
+            "bounds": [
+              48,
+              10,
+              113,
+              157
+            ],
+            "key": "boss.warden.phase1.north.idle.02"
+          },
+          {
+            "bounds": [
+              45,
+              10,
+              116,
+              157
+            ],
+            "key": "boss.warden.phase1.north.idle.03"
+          },
+          {
+            "bounds": [
+              47,
+              10,
+              113,
+              157
+            ],
+            "key": "boss.warden.phase1.north.idle.04"
+          },
+          {
+            "bounds": [
+              39,
+              15,
+              122,
+              157
+            ],
+            "key": "boss.warden.phase1.north.move.01"
+          },
+          {
+            "bounds": [
+              41,
+              15,
+              120,
+              157
+            ],
+            "key": "boss.warden.phase1.north.move.02"
+          },
+          {
+            "bounds": [
+              39,
+              15,
+              122,
+              157
+            ],
+            "key": "boss.warden.phase1.north.move.03"
+          },
+          {
+            "bounds": [
+              42,
+              15,
+              119,
+              157
+            ],
+            "key": "boss.warden.phase1.north.move.04"
+          },
+          {
+            "bounds": [
+              38,
+              19,
+              123,
+              157
+            ],
+            "key": "boss.warden.phase1.north.cast.01"
+          },
+          {
+            "bounds": [
+              35,
+              17,
+              126,
+              157
+            ],
+            "key": "boss.warden.phase1.north.cast.02"
+          },
+          {
+            "bounds": [
+              34,
+              15,
+              127,
+              157
+            ],
+            "key": "boss.warden.phase1.north.cast.03"
+          },
+          {
+            "bounds": [
+              35,
+              16,
+              125,
+              157
+            ],
+            "key": "boss.warden.phase1.north.cast.04"
+          },
+          {
+            "bounds": [
+              39,
+              31,
+              121,
+              157
+            ],
+            "key": "boss.warden.phase1.north.hit.01"
+          },
+          {
+            "bounds": [
+              33,
+              38,
+              128,
+              157
+            ],
+            "key": "boss.warden.phase1.north.hit.02"
+          },
+          {
+            "bounds": [
+              25,
+              75,
+              135,
+              157
+            ],
+            "key": "boss.warden.phase1.north.death.01"
+          },
+          {
+            "bounds": [
+              21,
+              98,
+              139,
+              157
+            ],
+            "key": "boss.warden.phase1.north.death.02"
+          },
+          {
+            "bounds": [
+              42,
+              7,
+              119,
+              157
+            ],
+            "key": "boss.warden.phase1.east.idle.01"
+          },
+          {
+            "bounds": [
+              43,
+              7,
+              118,
+              157
+            ],
+            "key": "boss.warden.phase1.east.idle.02"
+          },
+          {
+            "bounds": [
+              45,
+              7,
+              115,
+              157
+            ],
+            "key": "boss.warden.phase1.east.idle.03"
+          },
+          {
+            "bounds": [
+              44,
+              8,
+              117,
+              157
+            ],
+            "key": "boss.warden.phase1.east.idle.04"
+          },
+          {
+            "bounds": [
+              31,
+              24,
+              130,
+              157
+            ],
+            "key": "boss.warden.phase1.east.move.01"
+          },
+          {
+            "bounds": [
+              28,
+              25,
+              132,
+              157
+            ],
+            "key": "boss.warden.phase1.east.move.02"
+          },
+          {
+            "bounds": [
+              31,
+              26,
+              130,
+              157
+            ],
+            "key": "boss.warden.phase1.east.move.03"
+          },
+          {
+            "bounds": [
+              27,
+              24,
+              134,
+              157
+            ],
+            "key": "boss.warden.phase1.east.move.04"
+          },
+          {
+            "bounds": [
+              15,
+              25,
+              146,
+              157
+            ],
+            "key": "boss.warden.phase1.east.cast.01"
+          },
+          {
+            "bounds": [
+              17,
+              27,
+              143,
+              157
+            ],
+            "key": "boss.warden.phase1.east.cast.02"
+          },
+          {
+            "bounds": [
+              21,
+              25,
+              139,
+              157
+            ],
+            "key": "boss.warden.phase1.east.cast.03"
+          },
+          {
+            "bounds": [
+              23,
+              26,
+              137,
+              157
+            ],
+            "key": "boss.warden.phase1.east.cast.04"
+          },
+          {
+            "bounds": [
+              33,
+              45,
+              128,
+              157
+            ],
+            "key": "boss.warden.phase1.east.hit.01"
+          },
+          {
+            "bounds": [
+              28,
+              46,
+              133,
+              157
+            ],
+            "key": "boss.warden.phase1.east.hit.02"
+          },
+          {
+            "bounds": [
+              15,
+              94,
+              146,
+              157
+            ],
+            "key": "boss.warden.phase1.east.death.01"
+          },
+          {
+            "bounds": [
+              12,
+              106,
+              149,
+              157
+            ],
+            "key": "boss.warden.phase1.east.death.02"
+          },
+          {
+            "bounds": [
+              49,
+              14,
+              112,
+              157
+            ],
+            "key": "boss.warden.phase1.west.idle.01"
+          },
+          {
+            "bounds": [
+              46,
+              15,
+              114,
+              157
+            ],
+            "key": "boss.warden.phase1.west.idle.02"
+          },
+          {
+            "bounds": [
+              44,
+              14,
+              117,
+              157
+            ],
+            "key": "boss.warden.phase1.west.idle.03"
+          },
+          {
+            "bounds": [
+              45,
+              14,
+              115,
+              157
+            ],
+            "key": "boss.warden.phase1.west.idle.04"
+          },
+          {
+            "bounds": [
+              31,
+              31,
+              130,
+              157
+            ],
+            "key": "boss.warden.phase1.west.move.01"
+          },
+          {
+            "bounds": [
+              34,
+              32,
+              127,
+              157
+            ],
+            "key": "boss.warden.phase1.west.move.02"
+          },
+          {
+            "bounds": [
+              35,
+              30,
+              126,
+              157
+            ],
+            "key": "boss.warden.phase1.west.move.03"
+          },
+          {
+            "bounds": [
+              38,
+              34,
+              122,
+              157
+            ],
+            "key": "boss.warden.phase1.west.move.04"
+          },
+          {
+            "bounds": [
+              20,
+              27,
+              140,
+              157
+            ],
+            "key": "boss.warden.phase1.west.cast.01"
+          },
+          {
+            "bounds": [
+              17,
+              26,
+              143,
+              157
+            ],
+            "key": "boss.warden.phase1.west.cast.02"
+          },
+          {
+            "bounds": [
+              26,
+              24,
+              134,
+              157
+            ],
+            "key": "boss.warden.phase1.west.cast.03"
+          },
+          {
+            "bounds": [
+              24,
+              23,
+              136,
+              157
+            ],
+            "key": "boss.warden.phase1.west.cast.04"
+          },
+          {
+            "bounds": [
+              28,
+              26,
+              133,
+              157
+            ],
+            "key": "boss.warden.phase1.west.hit.01"
+          },
+          {
+            "bounds": [
+              25,
+              27,
+              135,
+              157
+            ],
+            "key": "boss.warden.phase1.west.hit.02"
+          },
+          {
+            "bounds": [
+              9,
+              88,
+              151,
+              157
+            ],
+            "key": "boss.warden.phase1.west.death.01"
+          },
+          {
+            "bounds": [
+              11,
+              91,
+              150,
+              157
+            ],
+            "key": "boss.warden.phase1.west.death.02"
+          }
+        ],
+        "sharedScale": 0.4966887417218543,
+        "sourceMaxBounds": [
+          286,
+          302
+        ]
+      }
+    },
+    "warden/phase-2": {
+      "actionClip": "cast",
+      "anchor": [
+        0.5,
+        1
+      ],
+      "frameSize": [
+        192,
+        192
+      ],
+      "metrics": {
+        "bottomCenterRoot": [
+          96,
+          188
+        ],
+        "frames": [
+          {
+            "bounds": [
+              35,
+              11,
+              158,
+              189
+            ],
+            "key": "boss.warden.phase2.south.idle.01"
+          },
+          {
+            "bounds": [
+              31,
+              11,
+              161,
+              189
+            ],
+            "key": "boss.warden.phase2.south.idle.02"
+          },
+          {
+            "bounds": [
+              33,
+              10,
+              159,
+              189
+            ],
+            "key": "boss.warden.phase2.south.idle.03"
+          },
+          {
+            "bounds": [
+              35,
+              10,
+              158,
+              189
+            ],
+            "key": "boss.warden.phase2.south.idle.04"
+          },
+          {
+            "bounds": [
+              20,
+              19,
+              172,
+              189
+            ],
+            "key": "boss.warden.phase2.south.move.01"
+          },
+          {
+            "bounds": [
+              25,
+              22,
+              167,
+              189
+            ],
+            "key": "boss.warden.phase2.south.move.02"
+          },
+          {
+            "bounds": [
+              31,
+              19,
+              162,
+              189
+            ],
+            "key": "boss.warden.phase2.south.move.03"
+          },
+          {
+            "bounds": [
+              17,
+              19,
+              176,
+              189
+            ],
+            "key": "boss.warden.phase2.south.move.04"
+          },
+          {
+            "bounds": [
+              32,
+              13,
+              160,
+              189
+            ],
+            "key": "boss.warden.phase2.south.cast.01"
+          },
+          {
+            "bounds": [
+              6,
+              11,
+              186,
+              189
+            ],
+            "key": "boss.warden.phase2.south.cast.02"
+          },
+          {
+            "bounds": [
+              46,
+              13,
+              147,
+              189
+            ],
+            "key": "boss.warden.phase2.south.cast.03"
+          },
+          {
+            "bounds": [
+              9,
+              11,
+              184,
+              189
+            ],
+            "key": "boss.warden.phase2.south.cast.04"
+          },
+          {
+            "bounds": [
+              29,
+              33,
+              163,
+              189
+            ],
+            "key": "boss.warden.phase2.south.hit.01"
+          },
+          {
+            "bounds": [
+              22,
+              40,
+              170,
+              189
+            ],
+            "key": "boss.warden.phase2.south.hit.02"
+          },
+          {
+            "bounds": [
+              17,
+              76,
+              175,
+              189
+            ],
+            "key": "boss.warden.phase2.south.death.01"
+          },
+          {
+            "bounds": [
+              8,
+              103,
+              184,
+              189
+            ],
+            "key": "boss.warden.phase2.south.death.02"
+          },
+          {
+            "bounds": [
+              38,
+              15,
+              155,
+              189
+            ],
+            "key": "boss.warden.phase2.north.idle.01"
+          },
+          {
+            "bounds": [
+              37,
+              16,
+              155,
+              189
+            ],
+            "key": "boss.warden.phase2.north.idle.02"
+          },
+          {
+            "bounds": [
+              37,
+              17,
+              155,
+              189
+            ],
+            "key": "boss.warden.phase2.north.idle.03"
+          },
+          {
+            "bounds": [
+              37,
+              16,
+              156,
+              189
+            ],
+            "key": "boss.warden.phase2.north.idle.04"
+          },
+          {
+            "bounds": [
+              35,
+              18,
+              157,
+              189
+            ],
+            "key": "boss.warden.phase2.north.move.01"
+          },
+          {
+            "bounds": [
+              38,
+              19,
+              155,
+              189
+            ],
+            "key": "boss.warden.phase2.north.move.02"
+          },
+          {
+            "bounds": [
+              36,
+              18,
+              156,
+              189
+            ],
+            "key": "boss.warden.phase2.north.move.03"
+          },
+          {
+            "bounds": [
+              41,
+              17,
+              151,
+              189
+            ],
+            "key": "boss.warden.phase2.north.move.04"
+          },
+          {
+            "bounds": [
+              28,
+              16,
+              165,
+              189
+            ],
+            "key": "boss.warden.phase2.north.cast.01"
+          },
+          {
+            "bounds": [
+              19,
+              19,
+              173,
+              189
+            ],
+            "key": "boss.warden.phase2.north.cast.02"
+          },
+          {
+            "bounds": [
+              13,
+              20,
+              180,
+              189
+            ],
+            "key": "boss.warden.phase2.north.cast.03"
+          },
+          {
+            "bounds": [
+              34,
+              19,
+              158,
+              189
+            ],
+            "key": "boss.warden.phase2.north.cast.04"
+          },
+          {
+            "bounds": [
+              27,
+              24,
+              165,
+              189
+            ],
+            "key": "boss.warden.phase2.north.hit.01"
+          },
+          {
+            "bounds": [
+              40,
+              29,
+              152,
+              189
+            ],
+            "key": "boss.warden.phase2.north.hit.02"
+          },
+          {
+            "bounds": [
+              20,
+              70,
+              172,
+              189
+            ],
+            "key": "boss.warden.phase2.north.death.01"
+          },
+          {
+            "bounds": [
+              9,
+              85,
+              184,
+              189
+            ],
+            "key": "boss.warden.phase2.north.death.02"
+          },
+          {
+            "bounds": [
+              48,
+              18,
+              144,
+              189
+            ],
+            "key": "boss.warden.phase2.east.idle.01"
+          },
+          {
+            "bounds": [
+              46,
+              20,
+              147,
+              189
+            ],
+            "key": "boss.warden.phase2.east.idle.02"
+          },
+          {
+            "bounds": [
+              52,
+              22,
+              141,
+              189
+            ],
+            "key": "boss.warden.phase2.east.idle.03"
+          },
+          {
+            "bounds": [
+              46,
+              16,
+              147,
+              189
+            ],
+            "key": "boss.warden.phase2.east.idle.04"
+          },
+          {
+            "bounds": [
+              33,
+              34,
+              159,
+              189
+            ],
+            "key": "boss.warden.phase2.east.move.01"
+          },
+          {
+            "bounds": [
+              29,
+              24,
+              163,
+              189
+            ],
+            "key": "boss.warden.phase2.east.move.02"
+          },
+          {
+            "bounds": [
+              44,
+              18,
+              148,
+              189
+            ],
+            "key": "boss.warden.phase2.east.move.03"
+          },
+          {
+            "bounds": [
+              30,
+              28,
+              163,
+              189
+            ],
+            "key": "boss.warden.phase2.east.move.04"
+          },
+          {
+            "bounds": [
+              19,
+              32,
+              173,
+              189
+            ],
+            "key": "boss.warden.phase2.east.cast.01"
+          },
+          {
+            "bounds": [
+              37,
+              19,
+              156,
+              189
+            ],
+            "key": "boss.warden.phase2.east.cast.02"
+          },
+          {
+            "bounds": [
+              30,
+              22,
+              163,
+              189
+            ],
+            "key": "boss.warden.phase2.east.cast.03"
+          },
+          {
+            "bounds": [
+              32,
+              25,
+              160,
+              189
+            ],
+            "key": "boss.warden.phase2.east.cast.04"
+          },
+          {
+            "bounds": [
+              34,
+              32,
+              159,
+              189
+            ],
+            "key": "boss.warden.phase2.east.hit.01"
+          },
+          {
+            "bounds": [
+              23,
+              56,
+              169,
+              189
+            ],
+            "key": "boss.warden.phase2.east.hit.02"
+          },
+          {
+            "bounds": [
+              21,
+              114,
+              172,
+              189
+            ],
+            "key": "boss.warden.phase2.east.death.01"
+          },
+          {
+            "bounds": [
+              12,
+              138,
+              181,
+              189
+            ],
+            "key": "boss.warden.phase2.east.death.02"
+          },
+          {
+            "bounds": [
+              45,
+              19,
+              147,
+              189
+            ],
+            "key": "boss.warden.phase2.west.idle.01"
+          },
+          {
+            "bounds": [
+              52,
+              18,
+              140,
+              189
+            ],
+            "key": "boss.warden.phase2.west.idle.02"
+          },
+          {
+            "bounds": [
+              45,
+              21,
+              147,
+              189
+            ],
+            "key": "boss.warden.phase2.west.idle.03"
+          },
+          {
+            "bounds": [
+              46,
+              21,
+              147,
+              189
+            ],
+            "key": "boss.warden.phase2.west.idle.04"
+          },
+          {
+            "bounds": [
+              49,
+              29,
+              143,
+              189
+            ],
+            "key": "boss.warden.phase2.west.move.01"
+          },
+          {
+            "bounds": [
+              41,
+              30,
+              151,
+              189
+            ],
+            "key": "boss.warden.phase2.west.move.02"
+          },
+          {
+            "bounds": [
+              39,
+              27,
+              154,
+              189
+            ],
+            "key": "boss.warden.phase2.west.move.03"
+          },
+          {
+            "bounds": [
+              42,
+              24,
+              150,
+              189
+            ],
+            "key": "boss.warden.phase2.west.move.04"
+          },
+          {
+            "bounds": [
+              32,
+              32,
+              160,
+              189
+            ],
+            "key": "boss.warden.phase2.west.cast.01"
+          },
+          {
+            "bounds": [
+              13,
+              38,
+              180,
+              189
+            ],
+            "key": "boss.warden.phase2.west.cast.02"
+          },
+          {
+            "bounds": [
+              27,
+              42,
+              166,
+              189
+            ],
+            "key": "boss.warden.phase2.west.cast.03"
+          },
+          {
+            "bounds": [
+              33,
+              21,
+              159,
+              189
+            ],
+            "key": "boss.warden.phase2.west.cast.04"
+          },
+          {
+            "bounds": [
+              35,
+              38,
+              157,
+              189
+            ],
+            "key": "boss.warden.phase2.west.hit.01"
+          },
+          {
+            "bounds": [
+              44,
+              40,
+              149,
+              189
+            ],
+            "key": "boss.warden.phase2.west.hit.02"
+          },
+          {
+            "bounds": [
+              11,
+              106,
+              182,
+              189
+            ],
+            "key": "boss.warden.phase2.west.death.01"
+          },
+          {
+            "bounds": [
+              5,
+              119,
+              187,
+              189
+            ],
+            "key": "boss.warden.phase2.west.death.02"
+          }
+        ],
+        "sharedScale": 0.6169491525423729,
+        "sourceMaxBounds": [
+          295,
+          290
+        ]
+      }
+    }
+  },
+  "schemaVersion": 1,
+  "sourceSheets": {
+    "art/source/boss-hd/blacksmith-guardian/blacksmith-guardian-animation-east-source-1024.png": "e082d8e3baa6c71bd819fa3e3005de2391c65e6e7f2b607d2d9e5136e028537c",
+    "art/source/boss-hd/blacksmith-guardian/blacksmith-guardian-animation-north-source-1024.png": "82bf68279517db8a88283828463b7a9264227997c0e4a14f4c821b93ce0dc3e4",
+    "art/source/boss-hd/blacksmith-guardian/blacksmith-guardian-animation-south-source-1024.png": "6a29ab6ac1767df7ea5f0d40314cc53f8d94782a1840c654d12ac70b52f1217d",
+    "art/source/boss-hd/blacksmith-guardian/blacksmith-guardian-animation-west-source-1024.png": "a7d02976af8c3b286ffe98d84b17b8528ae19e01e41a491f05fe3553d6ffd101",
+    "art/source/boss-hd/vault-guardian/vault-guardian-animation-east-source-1024.png": "751c00634025f805ba2c3cb7b1d6b762fbba41c455775d430ae1f15c232d137c",
+    "art/source/boss-hd/vault-guardian/vault-guardian-animation-north-source-1024.png": "4dd3b8e862fa4b18c60da9c495d004040d1d84f34e8d0dea352a4fc4ede57f4f",
+    "art/source/boss-hd/vault-guardian/vault-guardian-animation-south-source-1024.png": "cdc2ba89888c41bc086e83648ef98667d7c03410261de759bc1392c185a0cef5",
+    "art/source/boss-hd/vault-guardian/vault-guardian-animation-west-source-1024.png": "f5bec8a0ae8bd1b500960d78b97d064cf21987fdfe26df5698bfa0adb46f2bed",
+    "art/source/boss-hd/warden-biome-abyss/warden-biome-abyss-animation-east-source-1024.png": "6f9f5a4d8a47e8c5f3ae401d961b20b0839214a782eb6733b3a15726ab2b9d9d",
+    "art/source/boss-hd/warden-biome-abyss/warden-biome-abyss-animation-north-source-1024.png": "5209b99d3ed834780837a443e2c6b5b72dfc776b8f4cc579cedb8d3784b8361b",
+    "art/source/boss-hd/warden-biome-abyss/warden-biome-abyss-animation-south-source-1024.png": "1c0dae92982d9f3fa32938ec1b377b1930cafb7f97b6b6623e2f62ef41d1c135",
+    "art/source/boss-hd/warden-biome-abyss/warden-biome-abyss-animation-west-source-1024.png": "ac700c99489b1c7f7b893848839ca85e923e1afebebe622fcea3b20d2fb39e70",
+    "art/source/boss-hd/warden-biome-corruption/warden-biome-corruption-animation-east-source-1024.png": "8c779e2a482bc424829aba7d07a83051cb22167f2bd08216fddbcfa843146258",
+    "art/source/boss-hd/warden-biome-corruption/warden-biome-corruption-animation-north-source-1024.png": "371ecd149ea6677760133ba34b5e7efb1f630c0b04d85e7ead368698999c342b",
+    "art/source/boss-hd/warden-biome-corruption/warden-biome-corruption-animation-south-source-1024.png": "68eb79d492fa69fc960bd7ea7ba01d9b62bfbeda121f52bb829387b26584c336",
+    "art/source/boss-hd/warden-biome-corruption/warden-biome-corruption-animation-west-source-1024.png": "481036d326d3ec57c8ca5c0e6039accbd788e85c47e8bd7a86eb9ba1d9914e5a",
+    "art/source/boss-hd/warden-biome-descent/warden-biome-descent-animation-east-source-1024.png": "fde736732d203ba8d7508cebb665625f2db217af4d7a2810259b378d84f3b307",
+    "art/source/boss-hd/warden-biome-descent/warden-biome-descent-animation-north-source-1024.png": "60d3517250a011e32e050176c484fc574850a479de2544b36ba194cf0a8bb7e0",
+    "art/source/boss-hd/warden-biome-descent/warden-biome-descent-animation-south-source-1024.png": "5db5f32d539d87d2320c8bd6cce747eb49db0f1d3ed6154229ba44ebf18b27b6",
+    "art/source/boss-hd/warden-biome-descent/warden-biome-descent-animation-west-source-1024.png": "87879cae56249dfac8bec4bb2900408b72a1753b80fc40fc269d5744d83acd2f",
+    "art/source/boss-hd/warden-phase-1/warden-phase-1-animation-east-source-1024.png": "4dffb556b739814fd0dc35d8c470bd0b32b6afd7737fa16f6a442b3890068d55",
+    "art/source/boss-hd/warden-phase-1/warden-phase-1-animation-north-source-1024.png": "88889ab7fbf8bf585a01306bc2150c9afbb17db5367c1335e6c1229c3ada3556",
+    "art/source/boss-hd/warden-phase-1/warden-phase-1-animation-south-source-1024.png": "d92a4d197adba31b091df550efbaff0899b1686107452e68e20272b70385adf0",
+    "art/source/boss-hd/warden-phase-1/warden-phase-1-animation-west-source-1024.png": "43a484fa6e85e576675ddb4d2da46e75a80b1e834d1172135ae3a4daaff38525",
+    "art/source/boss-hd/warden-phase-2/warden-phase-2-animation-east-source-1024.png": "14f61f680677b85ecc923146dd1464989b32272c48b56e904e931651f26d3f65",
+    "art/source/boss-hd/warden-phase-2/warden-phase-2-animation-north-source-1024.png": "f895995634db695cfb4c0412b8a2190f1834a52ba7e9cdbfdfe2a26fef75feed",
+    "art/source/boss-hd/warden-phase-2/warden-phase-2-animation-south-source-1024.png": "facf8faa0f64786d9de1d5425b0df0fd82230075e66e78d858b43142f71da495",
+    "art/source/boss-hd/warden-phase-2/warden-phase-2-animation-west-source-1024.png": "2d3d42e5f38ed8b92b7094dd41805ae78cf4693db76c20f5a1b585f1f4af82fa"
+  },
+  "toolchain": {
+    "chromaHelperSha256": "7e51236919203b61d07ddffdc6e0b5f501a28661003f5851f26ffbb64bdec1ea",
+    "playerBuilderSha256": "3ada7d7ea2fd12ecbce752a7cdab0c0acb168eb0537bbe725f0dc2cd7e22bf70"
+  }
+}

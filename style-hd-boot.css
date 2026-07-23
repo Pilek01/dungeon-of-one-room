@@ -1,0 +1,191 @@
+/* HD welcome screen. Classic keeps the original logo composition from style.css. */
+.boot-hd-brand { display: none; }
+
+body.graphics-hd-ui .boot-screen {
+  isolation: isolate;
+  overflow: hidden;
+  background: radial-gradient(ellipse at 50% 47%, #24140e4d 0%, #060607c2 55%, #010203 84%), #010203;
+}
+
+body.graphics-hd-ui .boot-screen::before {
+  content: "";
+  position: absolute;
+  z-index: -2;
+  inset: 0;
+  background: url("assets/hd/ui/boot/abyssal-gate.png") 50% 48% / auto min(96vh, 1024px) no-repeat;
+  filter: saturate(0.7) contrast(1.08) brightness(0.76);
+  opacity: 0.92;
+  transform: scale(1.015);
+  animation: hdBootGateReveal 1.8s cubic-bezier(0.2, 0.72, 0.22, 1) both;
+}
+
+body.graphics-hd-ui .boot-screen::after {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(90deg, #000 0%, transparent 24%, transparent 76%, #000 100%),
+    linear-gradient(180deg, #000b 0%, transparent 22%, transparent 73%, #000d 100%),
+    radial-gradient(ellipse at 50% 47%, transparent 22%, #00000036 64%, #000c 100%);
+  box-shadow: inset 0 0 130px 34px #000;
+}
+
+body.graphics-hd-ui .boot-content {
+  position: relative;
+  width: min(1120px, calc(100vw - 32px));
+  height: min(920px, calc(100vh - 24px));
+  box-sizing: border-box;
+  display: block;
+  padding: 0;
+  border: 0;
+  background: none;
+  box-shadow: none;
+  opacity: 0;
+  animation: hdBootContentReveal 1.35s ease-out 0.35s forwards;
+}
+
+body.graphics-hd-ui .boot-logo { display: none; }
+
+body.graphics-hd-ui .boot-hd-brand {
+  position: absolute;
+  top: clamp(102px, 13vh, 132px);
+  left: 50%;
+  width: min(680px, 82vw);
+  margin: 0;
+  display: grid;
+  justify-items: center;
+  color: #ded4c7;
+  font-family: Georgia, "Times New Roman", serif;
+  line-height: 0.88;
+  text-align: center;
+  text-transform: uppercase;
+  transform: translateX(-50%);
+  filter: drop-shadow(0 4px 3px #000) drop-shadow(0 0 18px #000);
+}
+
+body.graphics-hd-ui .boot-hd-brand::before,
+body.graphics-hd-ui .boot-hd-brand::after {
+  content: "";
+  position: absolute;
+  top: 49%;
+  width: clamp(70px, 10vw, 136px);
+  height: 1px;
+  background: linear-gradient(90deg, transparent, #8d7963 48%, #c2ad90);
+  box-shadow: 0 1px #000;
+}
+body.graphics-hd-ui .boot-hd-brand::before { right: calc(100% + 18px); }
+body.graphics-hd-ui .boot-hd-brand::after { left: calc(100% + 18px); transform: scaleX(-1); }
+
+body.graphics-hd-ui .boot-hd-brand-dungeon {
+  font-size: clamp(2.7rem, 5vw, 4.5rem);
+  font-weight: 600;
+  letter-spacing: clamp(4px, 0.75vw, 11px);
+  text-shadow: 0 2px #2b211a, 0 4px #000, 0 0 22px #bb704122;
+}
+
+body.graphics-hd-ui .boot-hd-brand-room {
+  margin-top: 7px;
+  color: #a88f76;
+  font-size: clamp(1.25rem, 2.35vw, 2.05rem);
+  font-weight: 600;
+  letter-spacing: clamp(3px, 0.56vw, 8px);
+  text-shadow: 0 2px #000, 0 0 14px #8c41231c;
+}
+
+body.graphics-hd-ui .boot-hd-brand-room small {
+  color: #71665b;
+  font-size: 0.48em;
+  font-weight: 400;
+  letter-spacing: 2px;
+  vertical-align: 0.25em;
+}
+
+body.graphics-hd-ui .boot-hd-brand-oath {
+  margin-top: 19px;
+  padding: 8px 28px 0;
+  border-top: 1px solid #8f7a604d;
+  color: #7e756b;
+  font: 400 clamp(0.54rem, 0.8vw, 0.68rem)/1.2 "Courier Prime", "Cascadia Mono", monospace;
+  letter-spacing: clamp(1.5px, 0.25vw, 3.2px);
+  white-space: nowrap;
+}
+
+body.graphics-hd-ui .boot-press {
+  position: absolute;
+  bottom: clamp(78px, 8.7vh, 94px);
+  left: 50%;
+  min-width: min(430px, 76vw);
+  box-sizing: border-box;
+  margin: 0;
+  padding: 15px 44px 14px;
+  border: 0;
+  border-radius: 0;
+  color: #d7c9b8;
+  background:
+    linear-gradient(90deg, transparent 0 4%, #090909e8 12% 88%, transparent 96%),
+    url("assets/hd/ui/abyssal-gothic/section-plaque.png") center / 100% 100% no-repeat;
+  box-shadow: none;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(0.84rem, 1.35vw, 1.05rem);
+  letter-spacing: clamp(2px, 0.38vw, 4px);
+  text-shadow: 0 2px #000, 0 0 9px #c5763b30;
+  transform: translateX(-50%);
+  animation: hdBootPromptPulse 2.2s ease-in-out infinite;
+}
+
+body.graphics-hd-ui .boot-press::before,
+body.graphics-hd-ui .boot-press::after {
+  content: "?";
+  position: absolute;
+  top: 50%;
+  color: #8c6948;
+  font-size: 0.46rem;
+  transform: translateY(-50%) rotate(45deg);
+}
+body.graphics-hd-ui .boot-press::before { left: 26px; }
+body.graphics-hd-ui .boot-press::after { right: 26px; }
+
+body.graphics-hd-ui .boot-credits {
+  position: absolute;
+  bottom: clamp(34px, 3.5vh, 42px);
+  left: 50%;
+  margin: 0;
+  color: #5e5a55;
+  font-family: "Courier Prime", "Cascadia Mono", monospace;
+  font-size: clamp(0.58rem, 0.78vw, 0.7rem);
+  letter-spacing: 1.2px;
+  text-shadow: 0 1px #000;
+  transform: translateX(-50%);
+  white-space: nowrap;
+}
+
+@keyframes hdBootGateReveal {
+  from { opacity: 0; filter: saturate(0.4) contrast(1.15) brightness(0.34); transform: scale(1.06); }
+  to { opacity: 0.92; filter: saturate(0.7) contrast(1.08) brightness(0.76); transform: scale(1.015); }
+}
+@keyframes hdBootContentReveal {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes hdBootPromptPulse {
+  0%, 100% { color: #a99d8e; filter: brightness(0.78); }
+  50% { color: #eee1d0; filter: brightness(1.08); }
+}
+
+@media (max-width: 700px) {
+  body.graphics-hd-ui .boot-screen::before { background-size: auto min(88vh, 860px); }
+  body.graphics-hd-ui .boot-hd-brand { top: clamp(84px, 12vh, 112px); }
+  body.graphics-hd-ui .boot-hd-brand::before,
+  body.graphics-hd-ui .boot-hd-brand::after { display: none; }
+  body.graphics-hd-ui .boot-hd-brand-oath { max-width: 86vw; padding-inline: 8px; white-space: normal; }
+  body.graphics-hd-ui .boot-press { bottom: 72px; padding-inline: 34px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body.graphics-hd-ui .boot-screen::before,
+  body.graphics-hd-ui .boot-content,
+  body.graphics-hd-ui .boot-press { animation: none; }
+  body.graphics-hd-ui .boot-content { opacity: 1; }
+}

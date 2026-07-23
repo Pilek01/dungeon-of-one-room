@@ -1,0 +1,779 @@
+{
+  "schemaVersion": 1,
+  "profile": "warden/phase-2",
+  "type": "warden",
+  "frameSize": [
+    192,
+    192
+  ],
+  "renderSize": [
+    192,
+    192
+  ],
+  "renderSizeRationale": "A three-tile 192 px frame communicates the transformed final phase and Void Aegis scale while preserving the original logical position.",
+  "anchor": [
+    0.5,
+    1
+  ],
+  "group": "bosses",
+  "clips": [
+    {
+      "name": "idle",
+      "frameCount": 4,
+      "fps": 4,
+      "loop": true
+    },
+    {
+      "name": "move",
+      "frameCount": 4,
+      "fps": 8,
+      "loop": true
+    },
+    {
+      "name": "cast",
+      "frameCount": 4,
+      "fps": 10,
+      "loop": false
+    },
+    {
+      "name": "hit",
+      "frameCount": 2,
+      "fps": 10,
+      "loop": false
+    },
+    {
+      "name": "death",
+      "frameCount": 2,
+      "fps": 6,
+      "loop": false
+    }
+  ],
+  "source": {
+    "sha256": "c087c5c0635a79ddd9bb42a931d6cbe053515676f3a09056a9c35f0e12faef73",
+    "sheets": {
+      "south": {
+        "path": "art/source/boss-hd/warden-phase-2/warden-phase-2-animation-south-source-1024.png",
+        "sha256": "facf8faa0f64786d9de1d5425b0df0fd82230075e66e78d858b43142f71da495"
+      },
+      "north": {
+        "path": "art/source/boss-hd/warden-phase-2/warden-phase-2-animation-north-source-1024.png",
+        "sha256": "f895995634db695cfb4c0412b8a2190f1834a52ba7e9cdbfdfe2a26fef75feed"
+      },
+      "east": {
+        "path": "art/source/boss-hd/warden-phase-2/warden-phase-2-animation-east-source-1024.png",
+        "sha256": "14f61f680677b85ecc923146dd1464989b32272c48b56e904e931651f26d3f65"
+      },
+      "west": {
+        "path": "art/source/boss-hd/warden-phase-2/warden-phase-2-animation-west-source-1024.png",
+        "sha256": "2d3d42e5f38ed8b92b7094dd41805ae78cf4693db76c20f5a1b585f1f4af82fa"
+      }
+    }
+  },
+  "frames": [
+    {
+      "type": "warden",
+      "direction": "south",
+      "clip": "idle",
+      "frame": 1,
+      "key": "boss.warden.phase2.south.idle.01",
+      "src": "assets/hd/bosses/warden/phase-2/frames/south-idle-01.png",
+      "phase": 2,
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden",
+      "direction": "south",
+      "clip": "idle",
+      "frame": 2,
+      "key": "boss.warden.phase2.south.idle.02",
+      "src": "assets/hd/bosses/warden/phase-2/frames/south-idle-02.png",
+      "phase": 2,
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden",
+      "direction": "south",
+      "clip": "idle",
+      "frame": 3,
+      "key": "boss.warden.phase2.south.idle.03",
+      "src": "assets/hd/bosses/warden/phase-2/frames/south-idle-03.png",
+      "phase": 2,
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden",
+      "direction": "south",
+      "clip": "idle",
+      "frame": 4,
+      "key": "boss.warden.phase2.south.idle.04",
+      "src": "assets/hd/bosses/warden/phase-2/frames/south-idle-04.png",
+      "phase": 2,
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden",
+      "direction": "south",
+      "clip": "move",
+      "frame": 1,
+      "key": "boss.warden.phase2.south.move.01",
+      "src": "assets/hd/bosses/warden/phase-2/frames/south-move-01.png",
+      "phase": 2,
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden",
+      "direction": "south",
+      "clip": "move",
+      "frame": 2,
+      "key": "boss.warden.phase2.south.move.02",
+      "src": "assets/hd/bosses/warden/phase-2/frames/south-move-02.png",
+      "phase": 2,
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden",
+      "direction": "south",
+      "clip": "move",
+      "frame": 3,
+      "key": "boss.warden.phase2.south.move.03",
+      "src": "assets/hd/bosses/warden/phase-2/frames/south-move-03.png",
+      "phase": 2,
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden",
+      "direction": "south",
+      "clip": "move",
+      "frame": 4,
+      "key": "boss.warden.phase2.south.move.04",
+      "src": "assets/hd/bosses/warden/phase-2/frames/south-move-04.png",
+      "phase": 2,
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden",
+      "direction": "south",
+      "clip": "cast",
+      "frame": 1,
+      "key": "boss.warden.phase2.south.cast.01",
+      "src": "assets/hd/bosses/warden/phase-2/frames/south-cast-01.png",
+      "phase": 2,
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden",
+      "direction": "south",
+      "clip": "cast",
+      "frame": 2,
+      "key": "boss.warden.phase2.south.cast.02",
+      "src": "assets/hd/bosses/warden/phase-2/frames/south-cast-02.png",
+      "phase": 2,
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden",
+      "direction": "south",
+      "clip": "cast",
+      "frame": 3,
+      "key": "boss.warden.phase2.south.cast.03",
+      "src": "assets/hd/bosses/warden/phase-2/frames/south-cast-03.png",
+      "phase": 2,
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden",
+      "direction": "south",
+      "clip": "cast",
+      "frame": 4,
+      "key": "boss.warden.phase2.south.cast.04",
+      "src": "assets/hd/bosses/warden/phase-2/frames/south-cast-04.png",
+      "phase": 2,
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden",
+      "direction": "south",
+      "clip": "hit",
+      "frame": 1,
+      "key": "boss.warden.phase2.south.hit.01",
+      "src": "assets/hd/bosses/warden/phase-2/frames/south-hit-01.png",
+      "phase": 2,
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden",
+      "direction": "south",
+      "clip": "hit",
+      "frame": 2,
+      "key": "boss.warden.phase2.south.hit.02",
+      "src": "assets/hd/bosses/warden/phase-2/frames/south-hit-02.png",
+      "phase": 2,
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden",
+      "direction": "south",
+      "clip": "death",
+      "frame": 1,
+      "key": "boss.warden.phase2.south.death.01",
+      "src": "assets/hd/bosses/warden/phase-2/frames/south-death-01.png",
+      "phase": 2,
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden",
+      "direction": "south",
+      "clip": "death",
+      "frame": 2,
+      "key": "boss.warden.phase2.south.death.02",
+      "src": "assets/hd/bosses/warden/phase-2/frames/south-death-02.png",
+      "phase": 2,
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden",
+      "direction": "north",
+      "clip": "idle",
+      "frame": 1,
+      "key": "boss.warden.phase2.north.idle.01",
+      "src": "assets/hd/bosses/warden/phase-2/frames/north-idle-01.png",
+      "phase": 2,
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden",
+      "direction": "north",
+      "clip": "idle",
+      "frame": 2,
+      "key": "boss.warden.phase2.north.idle.02",
+      "src": "assets/hd/bosses/warden/phase-2/frames/north-idle-02.png",
+      "phase": 2,
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden",
+      "direction": "north",
+      "clip": "idle",
+      "frame": 3,
+      "key": "boss.warden.phase2.north.idle.03",
+      "src": "assets/hd/bosses/warden/phase-2/frames/north-idle-03.png",
+      "phase": 2,
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden",
+      "direction": "north",
+      "clip": "idle",
+      "frame": 4,
+      "key": "boss.warden.phase2.north.idle.04",
+      "src": "assets/hd/bosses/warden/phase-2/frames/north-idle-04.png",
+      "phase": 2,
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden",
+      "direction": "north",
+      "clip": "move",
+      "frame": 1,
+      "key": "boss.warden.phase2.north.move.01",
+      "src": "assets/hd/bosses/warden/phase-2/frames/north-move-01.png",
+      "phase": 2,
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden",
+      "direction": "north",
+      "clip": "move",
+      "frame": 2,
+      "key": "boss.warden.phase2.north.move.02",
+      "src": "assets/hd/bosses/warden/phase-2/frames/north-move-02.png",
+      "phase": 2,
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden",
+      "direction": "north",
+      "clip": "move",
+      "frame": 3,
+      "key": "boss.warden.phase2.north.move.03",
+      "src": "assets/hd/bosses/warden/phase-2/frames/north-move-03.png",
+      "phase": 2,
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden",
+      "direction": "north",
+      "clip": "move",
+      "frame": 4,
+      "key": "boss.warden.phase2.north.move.04",
+      "src": "assets/hd/bosses/warden/phase-2/frames/north-move-04.png",
+      "phase": 2,
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden",
+      "direction": "north",
+      "clip": "cast",
+      "frame": 1,
+      "key": "boss.warden.phase2.north.cast.01",
+      "src": "assets/hd/bosses/warden/phase-2/frames/north-cast-01.png",
+      "phase": 2,
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden",
+      "direction": "north",
+      "clip": "cast",
+      "frame": 2,
+      "key": "boss.warden.phase2.north.cast.02",
+      "src": "assets/hd/bosses/warden/phase-2/frames/north-cast-02.png",
+      "phase": 2,
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden",
+      "direction": "north",
+      "clip": "cast",
+      "frame": 3,
+      "key": "boss.warden.phase2.north.cast.03",
+      "src": "assets/hd/bosses/warden/phase-2/frames/north-cast-03.png",
+      "phase": 2,
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden",
+      "direction": "north",
+      "clip": "cast",
+      "frame": 4,
+      "key": "boss.warden.phase2.north.cast.04",
+      "src": "assets/hd/bosses/warden/phase-2/frames/north-cast-04.png",
+      "phase": 2,
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden",
+      "direction": "north",
+      "clip": "hit",
+      "frame": 1,
+      "key": "boss.warden.phase2.north.hit.01",
+      "src": "assets/hd/bosses/warden/phase-2/frames/north-hit-01.png",
+      "phase": 2,
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden",
+      "direction": "north",
+      "clip": "hit",
+      "frame": 2,
+      "key": "boss.warden.phase2.north.hit.02",
+      "src": "assets/hd/bosses/warden/phase-2/frames/north-hit-02.png",
+      "phase": 2,
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden",
+      "direction": "north",
+      "clip": "death",
+      "frame": 1,
+      "key": "boss.warden.phase2.north.death.01",
+      "src": "assets/hd/bosses/warden/phase-2/frames/north-death-01.png",
+      "phase": 2,
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden",
+      "direction": "north",
+      "clip": "death",
+      "frame": 2,
+      "key": "boss.warden.phase2.north.death.02",
+      "src": "assets/hd/bosses/warden/phase-2/frames/north-death-02.png",
+      "phase": 2,
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden",
+      "direction": "east",
+      "clip": "idle",
+      "frame": 1,
+      "key": "boss.warden.phase2.east.idle.01",
+      "src": "assets/hd/bosses/warden/phase-2/frames/east-idle-01.png",
+      "phase": 2,
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden",
+      "direction": "east",
+      "clip": "idle",
+      "frame": 2,
+      "key": "boss.warden.phase2.east.idle.02",
+      "src": "assets/hd/bosses/warden/phase-2/frames/east-idle-02.png",
+      "phase": 2,
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden",
+      "direction": "east",
+      "clip": "idle",
+      "frame": 3,
+      "key": "boss.warden.phase2.east.idle.03",
+      "src": "assets/hd/bosses/warden/phase-2/frames/east-idle-03.png",
+      "phase": 2,
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden",
+      "direction": "east",
+      "clip": "idle",
+      "frame": 4,
+      "key": "boss.warden.phase2.east.idle.04",
+      "src": "assets/hd/bosses/warden/phase-2/frames/east-idle-04.png",
+      "phase": 2,
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden",
+      "direction": "east",
+      "clip": "move",
+      "frame": 1,
+      "key": "boss.warden.phase2.east.move.01",
+      "src": "assets/hd/bosses/warden/phase-2/frames/east-move-01.png",
+      "phase": 2,
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden",
+      "direction": "east",
+      "clip": "move",
+      "frame": 2,
+      "key": "boss.warden.phase2.east.move.02",
+      "src": "assets/hd/bosses/warden/phase-2/frames/east-move-02.png",
+      "phase": 2,
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden",
+      "direction": "east",
+      "clip": "move",
+      "frame": 3,
+      "key": "boss.warden.phase2.east.move.03",
+      "src": "assets/hd/bosses/warden/phase-2/frames/east-move-03.png",
+      "phase": 2,
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden",
+      "direction": "east",
+      "clip": "move",
+      "frame": 4,
+      "key": "boss.warden.phase2.east.move.04",
+      "src": "assets/hd/bosses/warden/phase-2/frames/east-move-04.png",
+      "phase": 2,
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden",
+      "direction": "east",
+      "clip": "cast",
+      "frame": 1,
+      "key": "boss.warden.phase2.east.cast.01",
+      "src": "assets/hd/bosses/warden/phase-2/frames/east-cast-01.png",
+      "phase": 2,
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden",
+      "direction": "east",
+      "clip": "cast",
+      "frame": 2,
+      "key": "boss.warden.phase2.east.cast.02",
+      "src": "assets/hd/bosses/warden/phase-2/frames/east-cast-02.png",
+      "phase": 2,
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden",
+      "direction": "east",
+      "clip": "cast",
+      "frame": 3,
+      "key": "boss.warden.phase2.east.cast.03",
+      "src": "assets/hd/bosses/warden/phase-2/frames/east-cast-03.png",
+      "phase": 2,
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden",
+      "direction": "east",
+      "clip": "cast",
+      "frame": 4,
+      "key": "boss.warden.phase2.east.cast.04",
+      "src": "assets/hd/bosses/warden/phase-2/frames/east-cast-04.png",
+      "phase": 2,
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden",
+      "direction": "east",
+      "clip": "hit",
+      "frame": 1,
+      "key": "boss.warden.phase2.east.hit.01",
+      "src": "assets/hd/bosses/warden/phase-2/frames/east-hit-01.png",
+      "phase": 2,
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden",
+      "direction": "east",
+      "clip": "hit",
+      "frame": 2,
+      "key": "boss.warden.phase2.east.hit.02",
+      "src": "assets/hd/bosses/warden/phase-2/frames/east-hit-02.png",
+      "phase": 2,
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden",
+      "direction": "east",
+      "clip": "death",
+      "frame": 1,
+      "key": "boss.warden.phase2.east.death.01",
+      "src": "assets/hd/bosses/warden/phase-2/frames/east-death-01.png",
+      "phase": 2,
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden",
+      "direction": "east",
+      "clip": "death",
+      "frame": 2,
+      "key": "boss.warden.phase2.east.death.02",
+      "src": "assets/hd/bosses/warden/phase-2/frames/east-death-02.png",
+      "phase": 2,
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden",
+      "direction": "west",
+      "clip": "idle",
+      "frame": 1,
+      "key": "boss.warden.phase2.west.idle.01",
+      "src": "assets/hd/bosses/warden/phase-2/frames/west-idle-01.png",
+      "phase": 2,
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden",
+      "direction": "west",
+      "clip": "idle",
+      "frame": 2,
+      "key": "boss.warden.phase2.west.idle.02",
+      "src": "assets/hd/bosses/warden/phase-2/frames/west-idle-02.png",
+      "phase": 2,
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden",
+      "direction": "west",
+      "clip": "idle",
+      "frame": 3,
+      "key": "boss.warden.phase2.west.idle.03",
+      "src": "assets/hd/bosses/warden/phase-2/frames/west-idle-03.png",
+      "phase": 2,
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden",
+      "direction": "west",
+      "clip": "idle",
+      "frame": 4,
+      "key": "boss.warden.phase2.west.idle.04",
+      "src": "assets/hd/bosses/warden/phase-2/frames/west-idle-04.png",
+      "phase": 2,
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden",
+      "direction": "west",
+      "clip": "move",
+      "frame": 1,
+      "key": "boss.warden.phase2.west.move.01",
+      "src": "assets/hd/bosses/warden/phase-2/frames/west-move-01.png",
+      "phase": 2,
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden",
+      "direction": "west",
+      "clip": "move",
+      "frame": 2,
+      "key": "boss.warden.phase2.west.move.02",
+      "src": "assets/hd/bosses/warden/phase-2/frames/west-move-02.png",
+      "phase": 2,
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden",
+      "direction": "west",
+      "clip": "move",
+      "frame": 3,
+      "key": "boss.warden.phase2.west.move.03",
+      "src": "assets/hd/bosses/warden/phase-2/frames/west-move-03.png",
+      "phase": 2,
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden",
+      "direction": "west",
+      "clip": "move",
+      "frame": 4,
+      "key": "boss.warden.phase2.west.move.04",
+      "src": "assets/hd/bosses/warden/phase-2/frames/west-move-04.png",
+      "phase": 2,
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden",
+      "direction": "west",
+      "clip": "cast",
+      "frame": 1,
+      "key": "boss.warden.phase2.west.cast.01",
+      "src": "assets/hd/bosses/warden/phase-2/frames/west-cast-01.png",
+      "phase": 2,
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden",
+      "direction": "west",
+      "clip": "cast",
+      "frame": 2,
+      "key": "boss.warden.phase2.west.cast.02",
+      "src": "assets/hd/bosses/warden/phase-2/frames/west-cast-02.png",
+      "phase": 2,
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden",
+      "direction": "west",
+      "clip": "cast",
+      "frame": 3,
+      "key": "boss.warden.phase2.west.cast.03",
+      "src": "assets/hd/bosses/warden/phase-2/frames/west-cast-03.png",
+      "phase": 2,
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden",
+      "direction": "west",
+      "clip": "cast",
+      "frame": 4,
+      "key": "boss.warden.phase2.west.cast.04",
+      "src": "assets/hd/bosses/warden/phase-2/frames/west-cast-04.png",
+      "phase": 2,
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden",
+      "direction": "west",
+      "clip": "hit",
+      "frame": 1,
+      "key": "boss.warden.phase2.west.hit.01",
+      "src": "assets/hd/bosses/warden/phase-2/frames/west-hit-01.png",
+      "phase": 2,
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden",
+      "direction": "west",
+      "clip": "hit",
+      "frame": 2,
+      "key": "boss.warden.phase2.west.hit.02",
+      "src": "assets/hd/bosses/warden/phase-2/frames/west-hit-02.png",
+      "phase": 2,
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden",
+      "direction": "west",
+      "clip": "death",
+      "frame": 1,
+      "key": "boss.warden.phase2.west.death.01",
+      "src": "assets/hd/bosses/warden/phase-2/frames/west-death-01.png",
+      "phase": 2,
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden",
+      "direction": "west",
+      "clip": "death",
+      "frame": 2,
+      "key": "boss.warden.phase2.west.death.02",
+      "src": "assets/hd/bosses/warden/phase-2/frames/west-death-02.png",
+      "phase": 2,
+      "group": "bosses",
+      "critical": true
+    }
+  ],
+  "phase": 2
+}

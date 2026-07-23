@@ -1,0 +1,1483 @@
+diff --git a/game.js b/game.js
+index cb23522..447c8a4 100644
+--- a/game.js
++++ b/game.js
+@@ -848,6 +848,12 @@
+   const BLACKSMITH_GUARDIAN_CHAIN_DAMAGE_MULT = 0.65;
+   const BLACKSMITH_GUARDIAN_OVERHEAT_HP_RATIO = 0.35;
+   const BLACKSMITH_GUARDIAN_OVERHEAT_ATTACK_MULT = 1.20;
++  const VAULT_GUARDIAN_SLAM_COOLDOWN = Math.max(1, Number(vaultRoomApi?.VAULT_GUARDIAN_SLAM_COOLDOWN_TURNS) || 5);
++  const VAULT_SENTENCE_COOLDOWN = Math.max(1, Number(vaultRoomApi?.VAULT_SENTENCE_COOLDOWN_TURNS) || 10);
++  const VAULT_SENTENCE_FUSE_TURNS = Math.max(1, Number(vaultRoomApi?.VAULT_SENTENCE_FUSE_TURNS) || 5);
++  const VAULT_LOCKDOWN_COOLDOWN = Math.max(1, Number(vaultRoomApi?.VAULT_LOCKDOWN_COOLDOWN_TURNS) || 10);
++  const VAULT_LOCKDOWN_DAMAGE_MULTIPLIER = Math.max(0.1, Number(vaultRoomApi?.VAULT_LOCKDOWN_DAMAGE_MULTIPLIER) || 0.65);
++  const VAULT_LOCKDOWN_PUSH_TILES = Math.max(1, Number(vaultRoomApi?.VAULT_LOCKDOWN_PUSH_TILES) || 1);
+ 
+   const CAMPAIGN_REGIONS = Object.freeze([
+     { id: "descent", label: "Descent", minDepth: 0, maxDepth: 19 },
+@@ -5113,6 +5119,9 @@
+         : [];
+       enemy.blacksmithChainCooldown = Math.max(0, Number(enemy.blacksmithChainCooldown) || 0);
+       enemy.blacksmithOverheated = Boolean(enemy.blacksmithOverheated);
++      if (enemy.type === "guardian" && vaultRoomApi && typeof vaultRoomApi.initializeVaultGuardianState === "function") {
++        vaultRoomApi.initializeVaultGuardianState(enemy);
++      }
+       if (enemy.type === "riftweaver" && !enemy.renderType) enemy.renderType = "acolyte";
+       if (enemy.type === "bulwark" && !enemy.renderType) enemy.renderType = "brute";
+       enemy.maxHp = Number(enemy.maxHp) || Number(enemy.hp) || 1;
+@@ -5122,21 +5131,31 @@
+     state.chests = Array.isArray(snapshot.chests)
+       ? snapshot.chests
+         .filter((chest) => chest && Number.isFinite(Number(chest.x)) && Number.isFinite(Number(chest.y)))
+-        .map((chest) => ({
+-          x: Math.round(Number(chest.x)),
+-          y: Math.round(Number(chest.y)),
+-          opened: Boolean(chest.opened),
+-          type: ["otter_red", "arena_reward", "crossroads_power", "crossroads_mercy"].includes(String(chest.type || ""))
+-            ? String(chest.type)
+-            : "",
+-          relicOfferIds: Array.isArray(chest.relicOfferIds)
+-            ? chest.relicOfferIds
+-              .filter((id) => typeof id === "string")
+-              .map((id) => id.trim())
+-              .filter((id) => id.length > 0)
+-              .slice(0, OTTER_ROOM_RELIC_CHOICES)
+-            : []
+-        }))
++        .map((chest) => {
++          const restoredChest = {
++            x: Math.round(Number(chest.x)),
++            y: Math.round(Number(chest.y)),
++            opened: Boolean(chest.opened),
++            destroyed: Boolean(chest.destroyed),
++            vaultCondemned: Boolean(chest.vaultCondemned),
++            vaultCondemnTurns: Math.max(0, Math.round(Number(chest.vaultCondemnTurns) || 0)),
++            vaultCondemnMaxTurns: Math.max(0, Math.round(Number(chest.vaultCondemnMaxTurns) || 0)),
++            type: ["otter_red", "arena_reward", "crossroads_power", "crossroads_mercy"].includes(String(chest.type || ""))
++              ? String(chest.type)
++              : "",
++            relicOfferIds: Array.isArray(chest.relicOfferIds)
++              ? chest.relicOfferIds
++                .filter((id) => typeof id === "string")
++                .map((id) => id.trim())
++                .filter((id) => id.length > 0)
++                .slice(0, OTTER_ROOM_RELIC_CHOICES)
++              : []
++          };
++          if (vaultRoomApi && typeof vaultRoomApi.sanitizeVaultChestState === "function") {
++            vaultRoomApi.sanitizeVaultChestState(restoredChest);
++          }
++          return restoredChest;
++        })
+       : [];
+     state.pits = pitHazardApi.isPitRoomEligible({
+       depth: state.depth,
+@@ -12156,6 +12175,9 @@
+     enemy.blacksmithChainTiles = Array.isArray(enemy.blacksmithChainTiles) ? enemy.blacksmithChainTiles : [];
+     enemy.blacksmithChainCooldown = Math.max(0, Number(enemy.blacksmithChainCooldown) || 0);
+     enemy.blacksmithOverheated = Boolean(enemy.blacksmithOverheated);
++    if (enemy.type === "guardian" && vaultRoomApi && typeof vaultRoomApi.initializeVaultGuardianState === "function") {
++      vaultRoomApi.initializeVaultGuardianState(enemy);
++    }
+     enemy.exposedTurns = Math.max(0, Number(enemy.exposedTurns) || 0);
+     enemy.acolyteCastType = "";
+     enemy.acolyteBuffTurns = Math.max(0, Number(enemy.acolyteBuffTurns) || 0);
+@@ -12665,6 +12687,12 @@
+     pushLog(
+       `${ROOM_TYPE_LABELS[state.roomType]} room ${state.depth + 1}: ${enemyCount} enemies, ${chestCount} chests, ${hazardLabel}.`
+     );
++    if (state.roomType === "vault") {
++      pushLog(
++        `The hoard is sealed until the Vault Guardian dies. Hoard Sentence begins after 10 combat turns.`,
++        "warn"
++      );
++    }
+   }
+ 
+   function buildBossRoom(occupied) {
+@@ -12865,6 +12893,29 @@
+           { x: 6, y: 5, damage: Math.max(1, Math.round(warden.attack * 1.15)), fuseTurns: 2 },
+           { x: 2, y: 7, damage: Math.max(1, Math.round(warden.attack * 1.15)), fuseTurns: 2 }
+         ];
++      } else if (profile === "vault-guardian-abilities") {
++        state.roomType = "vault";
++        state.player.x = 4;
++        state.player.y = 7;
++        state.chests = [
++          { id: "qa-vault-condemned", x: 2, y: 3, opened: false, destroyed: false, vaultCondemned: true, vaultCondemnTurns: 3, vaultCondemnMaxTurns: 5 },
++          { id: "qa-vault-node-a", x: 4, y: 4, opened: false, destroyed: false },
++          { id: "qa-vault-node-b", x: 6, y: 4, opened: false, destroyed: false },
++          { id: "qa-vault-safe", x: 6, y: 6, opened: false, destroyed: false }
++        ];
++        state.spikes = [{ x: 1, y: 5, active: true }, { x: 7, y: 5, active: true }];
++        state.mines = [{ x: 3, y: 6, armed: false, fuseTurns: 0 }];
++        const guardian = createEnemy("guardian", 4, 2);
++        guardian.name = "Vault Guardian";
++        guardian.vaultLockdownAiming = true;
++        guardian.vaultLockdownTargets = [{ x: 4, y: 4 }, { x: 6, y: 4 }];
++        guardian.vaultSentenceCooldown = 5;
++        guardian.vaultLockdownCooldown = 0;
++        guardian.telegraphAge = 1;
++        guardian.castFlash = 130;
++        guardian.facing = "south";
++        guardian.rests = true;
++        state.enemies = [guardian];
+       } else if (profile === "forge-boss") {
+         state.roomType = "forge";
+         state.player.x = 4;
+@@ -14945,6 +14996,9 @@
+       queueTotemDeathBurstFromEnemy(enemy);
+     }
+     removeEnemy(enemy);
++    if (enemy.type === "guardian" && state.roomType === "vault") {
++      releaseVaultChestsAfterGuardianDeath();
++    }
+     const reward = grantGold(rewardForEnemy(enemy));
+     state.player.adrenaline = clamp(state.player.adrenaline + 1, 0, state.player.maxAdrenaline);
+     state.totalKills += 1;
+@@ -16073,8 +16127,19 @@
+     return false;
+   }
+ 
+-  function openChest(chest) {
++  function openChest(chest, options = {}) {
++    if (!chest || chest.opened || chest.destroyed) return false;
++    if (isVaultChestLockedForInteraction(chest)) {
++      if (!options.silent) {
++        spawnParticles(chest.x, chest.y, "#d9c06c", 7, 0.75);
++        spawnFloatingText(chest.x, chest.y, "SEALED", "#ffe9a3", { size: 8, life: 620 });
++        pushLog("The Vault Guardian seals every chest. Defeat it first.", "bad");
++        markUiDirty();
++      }
++      return false;
++    }
+     chest.opened = true;
++    clearVaultChestThreatState(chest);
+     playSfx("chest");
+     if (hasRelic("cachekey") && Number(state.player.cacheKeyDepth) !== Number(state.depth)) {
+       state.player.cacheKeyDepth = Number(state.depth);
+@@ -16205,6 +16270,7 @@
+     spawnParticles(chest.x, chest.y, "#f2c57c", 10, 1.2);
+     setShake(1.3);
+     markUiDirty();
++    return true;
+   }
+ 
+   function isFreeTileForKnockback(x, y, targetEnemy) {
+@@ -16563,6 +16629,291 @@
+     });
+   }
+ 
++  function getVaultGuardian() {
++    if (state.roomType !== "vault") return null;
++    return state.enemies.find((enemy) =>
++      enemy && enemy.type === "guardian" && (Number(enemy.hp) || 0) > 0
++    ) || null;
++  }
++
++  function isVaultGuardianAlive() {
++    return Boolean(getVaultGuardian());
++  }
++
++  function isVaultChestAvailable(chest) {
++    if (vaultRoomApi && typeof vaultRoomApi.isVaultChestAvailable === "function") {
++      return vaultRoomApi.isVaultChestAvailable(chest);
++    }
++    return Boolean(chest && !chest.opened && !chest.destroyed);
++  }
++
++  function isVaultChestLockedForInteraction(chest) {
++    if (vaultRoomApi && typeof vaultRoomApi.isVaultChestLocked === "function") {
++      return vaultRoomApi.isVaultChestLocked({
++        roomType: state.roomType,
++        guardianAlive: isVaultGuardianAlive(),
++        chest
++      });
++    }
++    return state.roomType === "vault" && isVaultGuardianAlive() && isVaultChestAvailable(chest);
++  }
++
++  function clearVaultChestThreatState(chest) {
++    if (!chest) return;
++    chest.vaultCondemned = false;
++    chest.vaultCondemnTurns = 0;
++    chest.vaultCondemnMaxTurns = 0;
++  }
++
++  function cancelVaultGuardianSlamWindup(enemy) {
++    if (!enemy || !enemy.slamAiming) return;
++    enemy.slamAiming = false;
++    enemy.rests = false;
++    enemy.telegraphAge = 0;
++  }
++
++  function releaseVaultChestsAfterGuardianDeath() {
++    if (state.roomType !== "vault" || isVaultGuardianAlive()) return;
++    for (const chest of state.chests) {
++      clearVaultChestThreatState(chest);
++    }
++    const remaining = state.chests.filter(isVaultChestAvailable).length;
++    spawnShockwaveRing(4, 4, {
++      color: "#e9c86b",
++      core: "#fff4bc",
++      maxRadius: TILE * 3.2,
++      life: 360
++    });
++    spawnParticles(4, 4, "#ffd976", 20, 2.2);
++    pushLog(
++      remaining > 0
++        ? `Vault seals broken. ${remaining} chest${remaining === 1 ? "" : "s"} unlocked.`
++        : "Vault Guardian falls, but the hoard has already been destroyed.",
++      remaining > 0 ? "good" : "warn"
++    );
++    markUiDirty();
++  }
++
++  function castVaultHoardSentence(enemy) {
++    if (!enemy || enemy.type !== "guardian" || state.roomType !== "vault") return false;
++    const target = vaultRoomApi && typeof vaultRoomApi.chooseVaultSentenceChest === "function"
++      ? vaultRoomApi.chooseVaultSentenceChest({
++          chests: state.chests,
++          lockdownTargets: enemy.vaultLockdownTargets,
++          random: Math.random
++        })
++      : state.chests.find((chest) => isVaultChestAvailable(chest) && !chest.vaultCondemned);
++    enemy.vaultSentenceCooldown = VAULT_SENTENCE_COOLDOWN;
++    if (!target) return false;
++
++    cancelVaultGuardianSlamWindup(enemy);
++    target.vaultCondemned = true;
++    target.vaultCondemnTurns = VAULT_SENTENCE_FUSE_TURNS;
++    target.vaultCondemnMaxTurns = VAULT_SENTENCE_FUSE_TURNS;
++    enemy.castFlash = Math.max(Number(enemy.castFlash) || 0, 120);
++    enemy.telegraphAge = 0;
++    enemy.facing = getFacingFromDelta(target.x - enemy.x, target.y - enemy.y, enemy.facing);
++    spawnShockwaveRing(target.x, target.y, {
++      color: "#dc524c",
++      core: "#ffd66d",
++      maxRadius: TILE * 1.05,
++      life: 280
++    });
++    spawnParticles(target.x, target.y, "#f3b84f", 12, 1.1);
++    spawnFloatingText(target.x, target.y, `${VAULT_SENTENCE_FUSE_TURNS}`, "#ffe6a1", { size: 10, life: 760 });
++    pushLog(
++      `Hoard Sentence marks a chest. Kill the Guardian within ${VAULT_SENTENCE_FUSE_TURNS} turns or lose it.`,
++      "bad"
++    );
++    return true;
++  }
++
++  function tickVaultHoardSentences() {
++    if (state.roomType !== "vault") return;
++    const guardian = getVaultGuardian();
++    if (!guardian) {
++      for (const chest of state.chests) clearVaultChestThreatState(chest);
++      return;
++    }
++
++    for (const chest of state.chests) {
++      if (!chest?.vaultCondemned || !isVaultChestAvailable(chest)) continue;
++      chest.vaultCondemnTurns = Math.max(0, (Number(chest.vaultCondemnTurns) || 0) - 1);
++      if (chest.vaultCondemnTurns > 0) {
++        spawnFloatingText(chest.x, chest.y, `${chest.vaultCondemnTurns}`, "#ffd47c", { size: 8, life: 420 });
++        continue;
++      }
++
++      chest.destroyed = true;
++      chest.opened = true;
++      clearVaultChestThreatState(chest);
++      guardian.vaultChestDestroyedTurn = state.turn;
++      spawnShockwaveRing(chest.x, chest.y, {
++        color: "#aa2d38",
++        core: "#ffca65",
++        maxRadius: TILE * 1.45,
++        life: 320
++      });
++      spawnParticles(chest.x, chest.y, "#d98b42", 18, 1.55);
++      spawnFloatingText(chest.x, chest.y, "DESTROYED", "#ff7878", { size: 8, life: 900 });
++      setShake(2.4);
++      const remaining = state.chests.filter(isVaultChestAvailable).length;
++      pushLog(
++        remaining > 0
++          ? `Hoard Sentence destroys a vault chest. ${remaining} remain.`
++          : "Hoard Sentence destroys the final vault chest.",
++        "bad"
++      );
++    }
++  }
++
++  function getVaultLockdownBlastTiles(targets) {
++    if (vaultRoomApi && typeof vaultRoomApi.getVaultLockdownBlastTiles === "function") {
++      return vaultRoomApi.getVaultLockdownBlastTiles(targets, GRID_SIZE);
++    }
++    const tiles = [];
++    const seen = new Set();
++    for (const target of Array.isArray(targets) ? targets : []) {
++      for (const tile of [
++        { x: target.x, y: target.y },
++        { x: target.x + 1, y: target.y }, { x: target.x - 1, y: target.y },
++        { x: target.x, y: target.y + 1 }, { x: target.x, y: target.y - 1 }
++      ]) {
++        if (!inBounds(tile.x, tile.y)) continue;
++        const key = tileKey(tile.x, tile.y);
++        if (seen.has(key)) continue;
++        seen.add(key);
++        tiles.push(tile);
++      }
++    }
++    return tiles;
++  }
++
++  function startVaultLockdownPulse(enemy) {
++    if (!enemy || enemy.type !== "guardian" || state.roomType !== "vault") return false;
++    const targets = vaultRoomApi && typeof vaultRoomApi.chooseVaultLockdownTargets === "function"
++      ? vaultRoomApi.chooseVaultLockdownTargets({
++          chests: state.chests,
++          playerX: state.player.x,
++          playerY: state.player.y
++        })
++      : state.chests.filter((chest) => isVaultChestAvailable(chest) && !chest.vaultCondemned).slice(0, 2);
++    if (!Array.isArray(targets) || targets.length <= 0) {
++      enemy.vaultLockdownCooldown = VAULT_LOCKDOWN_COOLDOWN;
++      return false;
++    }
++
++    cancelVaultGuardianSlamWindup(enemy);
++    enemy.vaultLockdownAiming = true;
++    enemy.vaultLockdownTargets = targets.map((target) => ({ x: target.x, y: target.y }));
++    enemy.telegraphAge = 0;
++    enemy.rests = true;
++    enemy.castFlash = Math.max(Number(enemy.castFlash) || 0, 110);
++    const nearest = enemy.vaultLockdownTargets[0];
++    enemy.facing = getFacingFromDelta(nearest.x - enemy.x, nearest.y - enemy.y, enemy.facing);
++    for (const target of enemy.vaultLockdownTargets) {
++      spawnShockwaveRing(target.x, target.y, {
++        color: "#55d6ef",
++        core: "#fff0a3",
++        maxRadius: TILE * 0.9,
++        life: 300
++      });
++      spawnParticles(target.x, target.y, "#7ee9ff", 7, 0.8);
++    }
++    pushLog("Lockdown Pulse links two chests. Their cross-shaped wards detonate next turn!", "bad");
++    return true;
++  }
++
++  function executeVaultLockdownPulse(enemy) {
++    if (!enemy || !enemy.vaultLockdownAiming) return false;
++    const targets = Array.isArray(enemy.vaultLockdownTargets) ? enemy.vaultLockdownTargets : [];
++    const blastTiles = getVaultLockdownBlastTiles(targets);
++    enemy.vaultLockdownAiming = false;
++    enemy.vaultLockdownTargets = [];
++    enemy.vaultLockdownCooldown = VAULT_LOCKDOWN_COOLDOWN;
++    enemy.telegraphAge = 0;
++    enemy.rests = false;
++    enemy.castFlash = Math.max(Number(enemy.castFlash) || 0, 140);
++
++    for (const target of targets) {
++      spawnShockwaveRing(target.x, target.y, {
++        color: "#45c9f2",
++        core: "#fff0a6",
++        maxRadius: TILE * 1.35,
++        life: 300
++      });
++      spawnParticles(target.x, target.y, "#7ee9ff", 14, 1.35);
++    }
++    const hit = blastTiles.some((tile) => tile.x === state.player.x && tile.y === state.player.y);
++    if (!hit) {
++      pushLog("You evade the Lockdown Pulse.", "good");
++      return true;
++    }
++
++    const nearest = targets.slice().sort((a, b) =>
++      manhattan(a.x, a.y, state.player.x, state.player.y) - manhattan(b.x, b.y, state.player.x, state.player.y)
++    )[0] || { x: enemy.x, y: enemy.y };
++    let dx = sign(state.player.x - nearest.x);
++    let dy = sign(state.player.y - nearest.y);
++    if (dx === 0 && dy === 0) {
++      dx = sign(state.player.x - enemy.x);
++      dy = sign(state.player.y - enemy.y);
++    }
++    if (dx === 0 && dy === 0) dx = 1;
++
++    const previous = { x: state.player.x, y: state.player.y };
++    const pushed = forceMovePlayer(dx, dy, VAULT_LOCKDOWN_PUSH_TILES);
++    if (state.phase !== "playing") return true;
++    if (pushed > 0 && resolvePlayerPitFall(previous)) {
++      return true;
++    }
++    if (pushed <= 0 && hasPact("chains")) {
++      spawnParticles(state.player.x, state.player.y, "#b9c7de", 7, 0.85);
++      pushLog("Pact of Chains anchors you against Lockdown Pulse.", "good");
++    }
++    tryArmMineAtPlayerPosition();
++    if (state.phase !== "playing") return true;
++
++    const damage = Math.max(
++      MIN_EFFECTIVE_DAMAGE,
++      Math.round(getEnemyEffectiveAttack(enemy) * VAULT_LOCKDOWN_DAMAGE_MULTIPLIER)
++    );
++    applyDamageToPlayer(damage, `${enemy.name} Lockdown Pulse`, enemy);
++    if (state.phase !== "playing") return true;
++    spawnParticles(state.player.x, state.player.y, "#9feeff", 12, 1.1);
++    setShake(2.5);
++    pushLog(
++      pushed > 0
++        ? `Lockdown Pulse hits and ejects you ${pushed} tile${pushed === 1 ? "" : "s"}.`
++        : "Lockdown Pulse hits, but cannot move you.",
++      "bad"
++    );
++    return true;
++  }
++
++  function handleVaultGuardianAbilityKit(enemy) {
++    if (!enemy || enemy.type !== "guardian" || state.roomType !== "vault") return false;
++    if (vaultRoomApi && typeof vaultRoomApi.initializeVaultGuardianState === "function") {
++      vaultRoomApi.initializeVaultGuardianState(enemy);
++    }
++    if (enemy.vaultLockdownAiming) {
++      return executeVaultLockdownPulse(enemy);
++    }
++
++    const chestDestroyedThisTurn = Number(enemy.vaultChestDestroyedTurn) === Number(state.turn);
++    if (!chestDestroyedThisTurn && (Number(enemy.vaultSentenceCooldown) || 0) <= 0) {
++      if (castVaultHoardSentence(enemy)) return true;
++    }
++    if (
++      !chestDestroyedThisTurn &&
++      (Number(enemy.vaultLockdownCooldown) || 0) <= 0 &&
++      canStartEnemyTelegraph()
++    ) {
++      if (startVaultLockdownPulse(enemy)) return true;
++    }
++    return false;
++  }
++
+   function tickBlacksmithForgeTemper(enemy) {
+     if (!enemy || enemy.type !== "blacksmith_guardian") return;
+     if ((Number(enemy.blacksmithBarrier) || 0) <= 0) return;
+@@ -16872,7 +17223,9 @@
+       "voidStepCooldown",
+       "doomSigilCooldown",
+       "soulChainCooldown",
+-      "blacksmithChainCooldown"
++      "blacksmithChainCooldown",
++      "vaultSentenceCooldown",
++      "vaultLockdownCooldown"
+     ];
+     for (const key of keys) {
+       if ((Number(enemy[key]) || 0) > 0) enemy[key] = Math.max(0, Number(enemy[key]) - 1);
+@@ -16883,7 +17236,8 @@
+       enemy.latticeAiming ||
+       enemy.voidStepAiming ||
+       enemy.soulChainAiming ||
+-      enemy.blacksmithChainAiming
++      enemy.blacksmithChainAiming ||
++      enemy.vaultLockdownAiming
+     ) {
+       enemy.telegraphAge = Math.min(99, Math.max(0, Number(enemy.telegraphAge) || 0) + 1);
+     }
+@@ -18668,11 +19022,21 @@
+       }
+     }
+ 
++    if (enemy.type === "guardian" && state.roomType === "vault") {
++      if (handleVaultGuardianAbilityKit(enemy)) {
++        return;
++      }
++    }
++
+     if (enemy.type === "brute" || enemy.type === "guardian") {
++      const reserveVaultMajor = enemy.type === "guardian" && state.roomType === "vault" &&
++        vaultRoomApi && typeof vaultRoomApi.shouldReserveGuardianMajorAbility === "function"
++          ? vaultRoomApi.shouldReserveGuardianMajorAbility(enemy, state.turn)
++          : false;
+       const bruteTactical = enemyTactics && typeof enemyTactics.handleBrute === "function"
+         ? enemyTactics.handleBrute(enemy, {
+           distance: currentDistance,
+-          canStartTelegraph: canStartEnemyTelegraph()
++          canStartTelegraph: canStartEnemyTelegraph() && !reserveVaultMajor
+         })
+         : { type: "none" };
+       if (bruteTactical.type === "cancel_slam") {
+@@ -18702,7 +19066,7 @@
+             pushLog(`${enemy.name} slam was blocked, but the hit still lands.`, "bad");
+           }
+         }
+-        enemy.cooldown = 3;
++        enemy.cooldown = enemy.type === "guardian" ? VAULT_GUARDIAN_SLAM_COOLDOWN : 3;
+         if (state.phase === "playing") registerEnemyMeleeCommit();
+         return;
+       }
+@@ -19161,13 +19525,14 @@
+   function tickMagneticShard() {
+     if (!hasRelic("magnet")) return;
+     const adjacent = state.chests.filter((chest) =>
+-      !chest.opened &&
++      isVaultChestAvailable(chest) &&
++      !isVaultChestLockedForInteraction(chest) &&
+       Math.abs(chest.x - state.player.x) <= 2 &&
+       Math.abs(chest.y - state.player.y) <= 2 &&
+       !(chest.x === state.player.x && chest.y === state.player.y)
+     );
+     for (const chest of adjacent) {
+-      openChest(chest);
++      openChest(chest, { silent: true });
+       if (state.phase !== "playing") return;
+     }
+   }
+@@ -19239,6 +19604,7 @@
+     recordPlayerCombatPosition();
+     state.turn += 1;
+ 
++    tickVaultHoardSentences();
+     tickVolatileBursts();
+     if (state.phase !== "playing") {
+       state.playerSteppedOnSpikeThisTurn = false;
+@@ -19306,6 +19672,15 @@
+     if (!inBounds(nx, ny)) return;
+     if (isForgeBlockedTile(nx, ny)) return;
+ 
++    const destinationChest = getChestAt(nx, ny);
++    if (destinationChest && isVaultChestLockedForInteraction(destinationChest)) {
++      spawnParticles(destinationChest.x, destinationChest.y, "#d9c06c", 7, 0.75);
++      spawnFloatingText(destinationChest.x, destinationChest.y, "SEALED", "#ffe9a3", { size: 8, life: 620 });
++      pushLog("The Vault Guardian seals every chest. Defeat it first.", "bad");
++      markUiDirty();
++      return;
++    }
++
+     const enemy = getEnemyAt(nx, ny);
+     if (enemy) {
+       state.player.lastMoveX = dx;
+@@ -19335,7 +19710,7 @@
+       return;
+     }
+ 
+-    const chest = getChestAt(nx, ny);
++    const chest = destinationChest || getChestAt(nx, ny);
+     if (chest) {
+       openChest(chest);
+       if (state.phase !== "playing") {
+@@ -23667,31 +24042,89 @@
+     ctx.restore();
+   }
+ 
++  function drawVaultChestStateClassic(chest, px, py) {
++    if (!chest || state.roomType !== "vault") return;
++    const pulse = (Math.sin(state.playerAnimTimer * 0.028 + chest.x * 0.8 + chest.y * 0.55) + 1) * 0.5;
++    const locked = isVaultChestLockedForInteraction(chest);
++    ctx.save();
++    if (locked) {
++      ctx.globalAlpha = 0.45 + pulse * 0.28;
++      ctx.strokeStyle = "#e2c15e";
++      ctx.strokeRect(px + 1.5, py + 1.5, TILE - 3, TILE - 3);
++      ctx.fillStyle = "#ffeaa0";
++      ctx.fillRect(px + 6, py + 3, 4, 2);
++      ctx.fillRect(px + 5, py + 5, 6, 5);
++      ctx.fillStyle = "#8b6522";
++      ctx.fillRect(px + 7, py + 7, 2, 3);
++      ctx.globalAlpha = 0.5;
++      ctx.fillStyle = "#d5b852";
++      ctx.fillRect(px + 2, py + 6, 12, 1);
++      ctx.fillRect(px + 7, py + 2, 1, 12);
++    }
++    if (chest.vaultCondemned) {
++      const turns = Math.max(0, Number(chest.vaultCondemnTurns) || 0);
++      ctx.globalAlpha = 0.48 + pulse * 0.38;
++      ctx.strokeStyle = turns <= 1 ? "#ff4d57" : "#ff9b55";
++      ctx.lineWidth = turns <= 1 ? 2 : 1;
++      ctx.strokeRect(px + 0.5, py + 0.5, TILE - 1, TILE - 1);
++      ctx.fillStyle = "#6a1323";
++      ctx.fillRect(px + 10, py + 1, 5, 6);
++      ctx.globalAlpha = 1;
++      ctx.fillStyle = "#fff0b5";
++      ctx.font = "bold 6px monospace";
++      ctx.textAlign = "center";
++      ctx.textBaseline = "middle";
++      ctx.fillText(String(turns), px + 12.5, py + 4.5);
++    }
++    ctx.restore();
++  }
++
++  function drawDestroyedVaultChestClassic(chest, px, py) {
++    if (!chest || state.roomType !== "vault") return;
++    ctx.save();
++    ctx.globalAlpha = 0.92;
++    ctx.fillStyle = "#241817";
++    ctx.fillRect(px + 3, py + 10, 10, 3);
++    ctx.fillStyle = "#6e3a25";
++    ctx.fillRect(px + 2, py + 11, 3, 2);
++    ctx.fillRect(px + 11, py + 9, 3, 3);
++    ctx.fillStyle = "#b57b36";
++    ctx.fillRect(px + 5, py + 8, 2, 2);
++    ctx.fillRect(px + 9, py + 11, 2, 1);
++    ctx.globalAlpha = 0.28;
++    ctx.fillStyle = "#8f2732";
++    ctx.fillRect(px + 2, py + 4, 12, 9);
++    ctx.restore();
++  }
++
+   function drawChest(chest) {
+     const px = chest.x * TILE;
+     const py = chest.y * TILE;
+-    if (chest.opened) {
++    if (chest.destroyed) {
++      drawDestroyedVaultChestClassic(chest, px, py);
+       return;
+     }
++    if (chest.opened) return;
++
+     drawSpecialChestAuraClassic(chest, px, py);
+     const isRedChest = chest.type === "otter_red";
++    let drawn = false;
+     if (isRedChest && redChestSprite.ready && redChestSprite.img) {
+       const drawW = 14;
+       const drawH = 14;
+       const drawX = Math.round(px + (TILE - drawW) / 2);
+       const drawY = Math.round(py + TILE - drawH);
+       ctx.drawImage(redChestSprite.img, 0, 0, 32, 32, drawX, drawY, drawW, drawH);
+-      return;
+-    }
+-    if (chestSprite.ready && chestSprite.img) {
++      drawn = true;
++    } else if (chestSprite.ready && chestSprite.img) {
+       const drawW = 14;
+       const drawH = 14;
+       const drawX = Math.round(px + (TILE - drawW) / 2);
+       const drawY = Math.round(py + TILE - drawH);
+       ctx.drawImage(chestSprite.img, 0, 0, 32, 32, drawX, drawY, drawW, drawH);
+-      return;
++      drawn = true;
+     }
+-    if (isRedChest) {
++    if (!drawn && isRedChest) {
+       const pulse = (Math.sin(state.portalPulse * 3.2) + 1) * 0.5;
+       ctx.fillStyle = "#a53d3d";
+       ctx.fillRect(px + 3, py + 6, 10, 7);
+@@ -23699,14 +24132,15 @@
+       ctx.fillRect(px + 3, py + 5, 10, 2);
+       ctx.fillStyle = pulse > 0.45 ? "#ffd7d7" : "#ffb2b2";
+       ctx.fillRect(px + 7, py + 8, 2, 2);
+-      return;
++    } else if (!drawn) {
++      ctx.fillStyle = COLORS.chest;
++      ctx.fillRect(px + 3, py + 6, 10, 7);
++      ctx.fillStyle = COLORS.chestTrim;
++      ctx.fillRect(px + 3, py + 5, 10, 2);
++      ctx.fillStyle = "#f0d485";
++      ctx.fillRect(px + 7, py + 8, 2, 2);
+     }
+-    ctx.fillStyle = COLORS.chest;
+-    ctx.fillRect(px + 3, py + 6, 10, 7);
+-    ctx.fillStyle = COLORS.chestTrim;
+-    ctx.fillRect(px + 3, py + 5, 10, 2);
+-    ctx.fillStyle = "#f0d485";
+-    ctx.fillRect(px + 7, py + 8, 2, 2);
++    drawVaultChestStateClassic(chest, px, py);
+   }
+ 
+   function drawSpikes(spike) {
+@@ -23896,6 +24330,21 @@
+ 
+   function drawExpansionEnemyTelegraph(enemy) {
+     if (!enemy) return false;
++    if (enemy.vaultLockdownAiming) {
++      const targets = Array.isArray(enemy.vaultLockdownTargets) ? enemy.vaultLockdownTargets : [];
++      drawClassicTelegraphTiles(getVaultLockdownBlastTiles(targets), "#62d8ff", 1);
++      const pulse = (Math.sin(state.playerAnimTimer * 0.035) + 1) * 0.5;
++      ctx.save();
++      ctx.globalAlpha = 0.55 + pulse * 0.35;
++      ctx.strokeStyle = "#ffe48a";
++      ctx.lineWidth = 1.5;
++      for (const target of targets) {
++        if (!target || !inBounds(target.x, target.y)) continue;
++        ctx.strokeRect(target.x * TILE + 2.5, target.y * TILE + 2.5, TILE - 5, TILE - 5);
++      }
++      ctx.restore();
++      return true;
++    }
+     if (enemy.riftAiming) {
+       const tiles = [];
+       for (let oy = -1; oy <= 1; oy += 1) for (let ox = -1; ox <= 1; ox += 1) tiles.push({ x: enemy.riftTargetX + ox, y: enemy.riftTargetY + oy });
+diff --git a/render/hd-renderer-layers.js b/render/hd-renderer-layers.js
+index 797909b..41e61b2 100644
+--- a/render/hd-renderer-layers.js
++++ b/render/hd-renderer-layers.js
+@@ -467,19 +467,67 @@
+       context.fillRect(chest.x * TILE_SIZE + 8, chest.y * TILE_SIZE + 8, TILE_SIZE - 16, TILE_SIZE - 16);
+       context.restore();
+     };
++    const vaultGuardianAlive = visual.roomType === "vault" &&
++      (Array.isArray(visual.enemies) ? visual.enemies : []).some((enemy) =>
++        enemy && enemy.type === "guardian" && (Number(enemy.hp) || 0) > 0
++      );
++    const drawVaultChestLock = (chest) => {
++      if (!vaultGuardianAlive || !chest || chest.opened || chest.destroyed) return;
++      const px = chest.x * TILE_SIZE;
++      const py = chest.y * TILE_SIZE;
++      const pulse = 0.5 + Math.sin((Math.max(0, Number(visual.nowMs) || 0) + chest.x * 73 + chest.y * 37) / 135) * 0.5;
++      context.save();
++      context.globalAlpha = 0.38 + pulse * 0.28;
++      context.strokeStyle = "#e2c15e";
++      context.lineWidth = 3;
++      context.strokeRect(px + 8, py + 8, 48, 48);
++      context.fillStyle = "#ffeaa0";
++      context.fillRect(px + 25, py + 13, 14, 8);
++      context.fillRect(px + 21, py + 20, 22, 19);
++      context.fillStyle = "#8b6522";
++      context.fillRect(px + 30, py + 27, 4, 9);
++      context.globalAlpha = 0.42;
++      context.fillStyle = "#d5b852";
++      context.fillRect(px + 9, py + 29, 46, 4);
++      context.restore();
++    };
++    const drawDestroyedVaultChest = (chest) => {
++      if (!chest || visual.roomType !== "vault") return;
++      const px = chest.x * TILE_SIZE;
++      const py = chest.y * TILE_SIZE;
++      context.save();
++      context.globalAlpha = 0.94;
++      context.fillStyle = "#241817";
++      context.fillRect(px + 13, py + 45, 38, 10);
++      context.fillStyle = "#6e3a25";
++      context.fillRect(px + 9, py + 48, 13, 8);
++      context.fillRect(px + 43, py + 42, 12, 13);
++      context.fillStyle = "#b57b36";
++      context.fillRect(px + 25, py + 39, 7, 7);
++      context.fillRect(px + 37, py + 49, 8, 4);
++      context.globalAlpha = 0.2;
++      context.fillStyle = "#8f2732";
++      context.fillRect(px + 8, py + 25, 48, 30);
++      context.restore();
++    };
+     for (const chest of chests) {
+-      if (chest && chest.type !== "otter_red" && !chest.opened) {
+-        drawSpecialChestAura(chest);
+-        if (!drawBottomCentered(
+-          context, assets, chestKey, chest.x, chest.y,
++      if (!chest || chest.type === "otter_red") continue;
++      if (chest.destroyed) {
++        drawDestroyedVaultChest(chest);
++        continue;
++      }
++      if (chest.opened) continue;
++      drawSpecialChestAura(chest);
++      if (!drawBottomCentered(
++        context, assets, chestKey, chest.x, chest.y,
++        STANDARD_CHEST_RENDER_SIZE, STANDARD_CHEST_RENDER_SIZE
++      )) {
++        drawBottomCentered(
++          context, assets, "object.common.chest.normal", chest.x, chest.y,
+           STANDARD_CHEST_RENDER_SIZE, STANDARD_CHEST_RENDER_SIZE
+-        )) {
+-          drawBottomCentered(
+-            context, assets, "object.common.chest.normal", chest.x, chest.y,
+-            STANDARD_CHEST_RENDER_SIZE, STANDARD_CHEST_RENDER_SIZE
+-          );
+-        }
++        );
+       }
++      drawVaultChestLock(chest);
+     }
+ 
+     if (visual.otterChest) {
+diff --git a/render/hd-vfx.js b/render/hd-vfx.js
+index 58cd3b9..2bdd9e6 100644
+--- a/render/hd-vfx.js
++++ b/render/hd-vfx.js
+@@ -129,12 +129,53 @@
+         commands.push({ kind: "doom-sigil-area", x: tile.x, y: tile.y, color: "#e24dff", alpha: (0.1 + pulse * 0.18) * urgency * profile.motionScale });
+       }
+     }
++    for (const chest of Array.isArray(visual.chests) ? visual.chests : []) {
++      if (!chest || chest.opened === true || chest.destroyed === true || chest.vaultCondemned !== true) continue;
++      commands.push({
++        kind: "vault-sentence-mark",
++        x: clamp(chest.x, 0, 8),
++        y: clamp(chest.y, 0, 8),
++        turns: Math.max(0, Math.round(Number(chest.vaultCondemnTurns) || 0)),
++        alpha: (0.48 + pulse * 0.36) * profile.motionScale
++      });
++    }
+     const player = visual.player && typeof visual.player === "object" ? visual.player : {};
+     if (visual.phase === "playing" && visual.dashAimActive === true) {
+       commands.push({ kind: "dash-aim", x: clamp(player.x, 0, 8), y: clamp(player.y, 0, 8), alpha: 0.45 + pulse * 0.35 });
+     }
+     for (const enemy of Array.isArray(visual.enemies) ? visual.enemies : []) {
+       if (!enemy) continue;
++      if (enemy.vaultLockdownAiming === true) {
++        const seen = new Set();
++        for (const target of Array.isArray(enemy.vaultLockdownTargets) ? enemy.vaultLockdownTargets : []) {
++          if (!target) continue;
++          commands.push({
++            kind: "vault-lockdown-anchor",
++            x: clamp(target.x, 0, 8),
++            y: clamp(target.y, 0, 8),
++            color: "#ffe48a",
++            alpha: (0.55 + pulse * 0.34) * profile.motionScale
++          });
++          for (const tile of [
++            { x: target.x, y: target.y },
++            { x: target.x + 1, y: target.y }, { x: target.x - 1, y: target.y },
++            { x: target.x, y: target.y + 1 }, { x: target.x, y: target.y - 1 }
++          ]) {
++            if (tile.x < 0 || tile.x >= GRID_SIZE || tile.y < 0 || tile.y >= GRID_SIZE) continue;
++            const key = `${tile.x},${tile.y}`;
++            if (seen.has(key)) continue;
++            seen.add(key);
++            commands.push({
++              kind: "vault-lockdown-area",
++              x: tile.x,
++              y: tile.y,
++              color: "#62d8ff",
++              alpha: (0.13 + pulse * 0.20) * profile.motionScale
++            });
++          }
++        }
++        continue;
++      }
+       if (enemy.riftAiming === true) {
+         for (const tile of areaTiles(enemy.riftTargetX, enemy.riftTargetY, 1)) {
+           commands.push({ kind: "rift-area", x: tile.x, y: tile.y, color: "#9d4dff", alpha: (0.12 + pulse * 0.2) * profile.motionScale });
+@@ -508,6 +549,38 @@
+           context.strokeRect(command.x * TILE_SIZE + 6, command.y * TILE_SIZE + 6, 52, 52);
+           continue;
+         }
++        if (command.kind === "vault-sentence-mark") {
++          const centerX = command.x * TILE_SIZE + TILE_SIZE / 2;
++          const centerY = command.y * TILE_SIZE + TILE_SIZE / 2;
++          context.strokeStyle = command.turns <= 1 ? "#ff4d57" : "#ff9b55";
++          context.lineWidth = command.turns <= 1 ? 5 : 3;
++          context.beginPath();
++          context.arc(centerX, centerY, 27, 0, Math.PI * 2);
++          context.stroke();
++          context.strokeStyle = "#ffe48a";
++          context.lineWidth = 2;
++          context.strokeRect(centerX - 19, centerY - 19, 38, 38);
++          if (typeof context.fillText === "function") {
++            context.globalAlpha = Math.min(1, command.alpha + 0.25);
++            context.fillStyle = "#fff0b5";
++            context.font = "900 18px monospace";
++            context.textAlign = "center";
++            context.textBaseline = "middle";
++            context.fillText(String(command.turns), centerX, centerY - 18);
++          }
++          continue;
++        }
++        if (command.kind === "vault-lockdown-anchor") {
++          const px = command.x * TILE_SIZE;
++          const py = command.y * TILE_SIZE;
++          context.strokeStyle = command.color;
++          context.lineWidth = 4;
++          context.strokeRect(px + 8, py + 8, 48, 48);
++          context.beginPath();
++          context.arc(px + 32, py + 32, 18, 0, Math.PI * 2);
++          context.stroke();
++          continue;
++        }
+         context.fillStyle = command.color || (command.kind === "mine-area" ? "#ff685f" : "#a56cff");
+         context.fillRect(command.x * TILE_SIZE + 3, command.y * TILE_SIZE + 3, 58, 58);
+         context.strokeStyle = command.color || "#ffd0a8"; context.lineWidth = 2;
+diff --git a/render/visual-snapshot.js b/render/visual-snapshot.js
+index b3ff855..a02701f 100644
+--- a/render/visual-snapshot.js
++++ b/render/visual-snapshot.js
+@@ -97,6 +97,10 @@
+     "blacksmithChainAiming",
+     "blacksmithChainCooldown",
+     "blacksmithOverheated",
++    "vaultSentenceCooldown",
++    "vaultLockdownCooldown",
++    "vaultLockdownAiming",
++    "vaultChestDestroyedTurn",
+     "wardenAbilityCycle",
+     "telegraphAge",
+     "rests",
+@@ -114,7 +118,10 @@
+   const FLAME_VENT_FIELDS = ["x", "y", "fuseTurns", "activeFlash"];
+   const FROST_RUNE_FIELDS = ["x", "y", "spent", "activeFlash"];
+   const DOOM_SIGIL_FIELDS = ["x", "y", "damage", "fuseTurns"];
+-  const CHEST_FIELDS = ["id", "type", "x", "y", "opened"];
++  const CHEST_FIELDS = [
++    "id", "type", "x", "y", "opened", "destroyed",
++    "vaultCondemned", "vaultCondemnTurns", "vaultCondemnMaxTurns"
++  ];
+   const OTTER_CHEST_FIELDS = ["x", "y", "opened"];
+   const SHRINE_FIELDS = ["x", "y", "used"];
+   const FORGE_FIELDS = [
+@@ -244,6 +251,9 @@
+       if (Array.isArray(enemy.blacksmithChainTiles)) {
+         copy.blacksmithChainTiles = copyRecordArray(enemy.blacksmithChainTiles, TILE_FIELDS);
+       }
++      if (Array.isArray(enemy.vaultLockdownTargets)) {
++        copy.vaultLockdownTargets = copyRecordArray(enemy.vaultLockdownTargets, TILE_FIELDS);
++      }
+       return copy;
+     });
+   }
+diff --git a/scenario-overrides.js b/scenario-overrides.js
+index bea1794..066b8a9 100644
+--- a/scenario-overrides.js
++++ b/scenario-overrides.js
+@@ -291,6 +291,15 @@
+       forceExpansionHDShowcaseSetup: "forge-boss",
+       floorPattern: DESCENT_HD_FLOOR_PATTERN
+     }),
++    expansion_vault_guardian_hd: Object.freeze({
++      id: "expansion_vault_guardian_hd",
++      label: "Expanded Vault Guardian HD Showcase",
++      autoStart: true,
++      depth: 55,
++      forcedNextRoomType: "vault",
++      forceExpansionHDShowcaseSetup: "vault-guardian-abilities",
++      floorPattern: DESCENT_HD_FLOOR_PATTERN
++    }),
+     blacksmith_guardian_hd: Object.freeze({
+       id: "blacksmith_guardian_hd",
+       label: "Blacksmith Guardian HD Showcase",
+diff --git a/tests/hd-vfx.test.js b/tests/hd-vfx.test.js
+index 8b8c9d5..455e89b 100644
+--- a/tests/hd-vfx.test.js
++++ b/tests/hd-vfx.test.js
+@@ -212,3 +212,36 @@ test("debug-only VFX showcase exposes every production adapter without balance c
+     assert.match(game, new RegExp(`state\\.${field}\\s*=`), `${field} needs deterministic scenario state`);
+   }
+ });
++
++test("Vault Guardian telegraphs expose Hoard Sentence countdown and deduplicated Lockdown crosses", () => {
++  const commands = vfx.collectTelegraphCommands({
++    phase: "playing",
++    roomType: "vault",
++    nowMs: 600,
++    player: { x: 4, y: 4 },
++    chests: [{ x: 2, y: 2, opened: false, vaultCondemned: true, vaultCondemnTurns: 3 }],
++    enemies: [{
++      type: "guardian",
++      x: 4,
++      y: 1,
++      vaultLockdownAiming: true,
++      vaultLockdownTargets: [{ x: 4, y: 4 }, { x: 5, y: 4 }]
++    }]
++  }, { quality: "high" });
++
++  const sentence = commands.find((command) => command.kind === "vault-sentence-mark");
++  assert.ok(sentence);
++  assert.equal(sentence.turns, 3);
++  assert.deepEqual([sentence.x, sentence.y], [2, 2]);
++
++  const anchors = commands.filter((command) => command.kind === "vault-lockdown-anchor");
++  assert.equal(anchors.length, 2);
++  const areas = commands.filter((command) => command.kind === "vault-lockdown-area");
++  const areaKeys = areas.map((command) => `${command.x},${command.y}`);
++  assert.equal(new Set(areaKeys).size, areaKeys.length);
++  assert.ok(areaKeys.includes("4,4"));
++  assert.ok(areaKeys.includes("3,4"));
++  assert.ok(areaKeys.includes("6,4"));
++  assert.ok(areaKeys.includes("4,3"));
++  assert.ok(areaKeys.includes("5,5"));
++});
+diff --git a/tests/vault-guardian-integration.test.js b/tests/vault-guardian-integration.test.js
+new file mode 100644
+index 0000000..ba78e38
+--- /dev/null
++++ b/tests/vault-guardian-integration.test.js
+@@ -0,0 +1,74 @@
++const assert = require("node:assert/strict");
++const fs = require("node:fs");
++const path = require("node:path");
++
++const root = path.resolve(__dirname, "..");
++const game = fs.readFileSync(path.join(root, "game.js"), "utf8");
++const vaultRoom = fs.readFileSync(path.join(root, "vault-room.js"), "utf8");
++const snapshot = fs.readFileSync(path.join(root, "render", "visual-snapshot.js"), "utf8");
++const hdVfx = fs.readFileSync(path.join(root, "render", "hd-vfx.js"), "utf8");
++const hdLayers = fs.readFileSync(path.join(root, "render", "hd-renderer-layers.js"), "utf8");
++const scenarios = fs.readFileSync(path.join(root, "scenario-overrides.js"), "utf8");
++
++for (const hook of [
++  "function isVaultChestLockedForInteraction",
++  "function castVaultHoardSentence",
++  "function tickVaultHoardSentences",
++  "function startVaultLockdownPulse",
++  "function executeVaultLockdownPulse",
++  "function handleVaultGuardianAbilityKit",
++  "function releaseVaultChestsAfterGuardianDeath"
++]) {
++  assert.ok(game.includes(hook), `missing Vault Guardian integration hook: ${hook}`);
++}
++
++assert.match(game, /state\.turn \+= 1;\s*\n\s*tickVaultHoardSentences\(\);/);
++assert.match(game, /if \(enemy\.type === "guardian" && state\.roomType === "vault"\) \{\s*\n\s*if \(handleVaultGuardianAbilityKit\(enemy\)\)/);
++assert.match(game, /enemy\.cooldown = enemy\.type === "guardian" \? VAULT_GUARDIAN_SLAM_COOLDOWN : 3;/);
++assert.match(game, /if \(enemy\.type === "guardian" && state\.roomType === "vault"\) \{\s*\n\s*releaseVaultChestsAfterGuardianDeath\(\);/);
++assert.match(game, /if \(isVaultChestLockedForInteraction\(chest\)\)/);
++assert.match(game, /openChest\(chest, \{ silent: true \}\)/);
++assert.match(game, /vaultCondemnTurns: Math\.max\(0, Math\.round\(Number\(chest\.vaultCondemnTurns\)/);
++assert.match(game, /vaultLockdownTargets = targets\.map/);
++assert.match(game, /VAULT_LOCKDOWN_DAMAGE_MULTIPLIER/);
++assert.match(game, /hasPact\("chains"\)/);
++
++for (const field of [
++  "vaultSentenceCooldown",
++  "vaultLockdownCooldown",
++  "vaultLockdownAiming",
++  "vaultLockdownTargets",
++  "vaultChestDestroyedTurn",
++  "vaultCondemned",
++  "vaultCondemnTurns",
++  "vaultCondemnMaxTurns",
++  "destroyed"
++]) {
++  assert.ok(game.includes(field), `game state missing ${field}`);
++}
++
++for (const exported of [
++  "VAULT_GUARDIAN_SLAM_COOLDOWN_TURNS",
++  "VAULT_SENTENCE_FIRST_DELAY_TURNS",
++  "VAULT_SENTENCE_COOLDOWN_TURNS",
++  "VAULT_SENTENCE_FUSE_TURNS",
++  "VAULT_LOCKDOWN_FIRST_DELAY_TURNS",
++  "VAULT_LOCKDOWN_COOLDOWN_TURNS",
++  "chooseVaultSentenceChest",
++  "chooseVaultLockdownTargets",
++  "getVaultLockdownBlastTiles",
++  "shouldReserveGuardianMajorAbility"
++]) {
++  assert.ok(vaultRoom.includes(exported), `vault-room.js missing ${exported}`);
++}
++
++assert.ok(snapshot.includes('"vaultLockdownTargets"') || snapshot.includes("vaultLockdownTargets"));
++assert.ok(snapshot.includes('"vaultCondemnTurns"'));
++assert.ok(hdVfx.includes('kind: "vault-sentence-mark"'));
++assert.ok(hdVfx.includes('kind: "vault-lockdown-area"'));
++assert.ok(hdLayers.includes("drawVaultChestLock"));
++assert.ok(hdLayers.includes("drawDestroyedVaultChest"));
++assert.ok(scenarios.includes("expansion_vault_guardian_hd"));
++assert.ok(scenarios.includes('forceExpansionHDShowcaseSetup: "vault-guardian-abilities"'));
++
++console.log("vault-guardian integration tests: OK");
+diff --git a/tests/vault-room.test.js b/tests/vault-room.test.js
+index 7a45f3a..449ff2c 100644
+--- a/tests/vault-room.test.js
++++ b/tests/vault-room.test.js
+@@ -2,13 +2,39 @@ const assert = require("node:assert/strict");
+ 
+ const {
+   VAULT_GUARDIAN_HP_MULTIPLIER,
++  VAULT_GUARDIAN_SLAM_COOLDOWN_TURNS,
++  VAULT_SENTENCE_FIRST_DELAY_TURNS,
++  VAULT_SENTENCE_COOLDOWN_TURNS,
++  VAULT_SENTENCE_FUSE_TURNS,
++  VAULT_LOCKDOWN_FIRST_DELAY_TURNS,
++  VAULT_LOCKDOWN_COOLDOWN_TURNS,
++  VAULT_LOCKDOWN_TARGET_COUNT,
++  VAULT_LOCKDOWN_DAMAGE_MULTIPLIER,
++  VAULT_LOCKDOWN_PUSH_TILES,
+   getVaultEncounterProfile,
++  isVaultChestAvailable,
++  isVaultChestLocked,
++  initializeVaultGuardianState,
++  sanitizeVaultChestState,
++  chooseVaultSentenceChest,
++  chooseVaultLockdownTargets,
++  getVaultLockdownBlastTiles,
++  shouldReserveGuardianMajorAbility,
+   chooseGuardianSlamPlan
+ } = require("../vault-room.js");
+ 
+ function run() {
+   {
+     assert.equal(VAULT_GUARDIAN_HP_MULTIPLIER, 3);
++    assert.equal(VAULT_GUARDIAN_SLAM_COOLDOWN_TURNS, 5);
++    assert.equal(VAULT_SENTENCE_FIRST_DELAY_TURNS, 10);
++    assert.equal(VAULT_SENTENCE_COOLDOWN_TURNS, 10);
++    assert.equal(VAULT_SENTENCE_FUSE_TURNS, 5);
++    assert.equal(VAULT_LOCKDOWN_FIRST_DELAY_TURNS, 4);
++    assert.equal(VAULT_LOCKDOWN_COOLDOWN_TURNS, 10);
++    assert.equal(VAULT_LOCKDOWN_TARGET_COUNT, 2);
++    assert.equal(VAULT_LOCKDOWN_DAMAGE_MULTIPLIER, 0.65);
++    assert.equal(VAULT_LOCKDOWN_PUSH_TILES, 1);
+     assert.deepEqual(getVaultEncounterProfile(), {
+       minMines: 4,
+       maxMines: 7,
+@@ -18,6 +44,113 @@ function run() {
+     });
+   }
+ 
++  {
++    const guardian = initializeVaultGuardianState({ type: "guardian" });
++    assert.equal(guardian.vaultSentenceCooldown, 10);
++    assert.equal(guardian.vaultLockdownCooldown, 4);
++    assert.equal(guardian.vaultLockdownAiming, false);
++    assert.deepEqual(guardian.vaultLockdownTargets, []);
++    assert.equal(guardian.vaultChestDestroyedTurn, -1);
++
++    const restored = initializeVaultGuardianState({
++      type: "guardian",
++      vaultSentenceCooldown: 3,
++      vaultLockdownCooldown: 2,
++      vaultLockdownAiming: true,
++      vaultLockdownTargets: [{ x: 2.4, y: 5.6 }, null, { x: "bad", y: 3 }],
++      vaultChestDestroyedTurn: 42
++    });
++    assert.equal(restored.vaultSentenceCooldown, 3);
++    assert.equal(restored.vaultLockdownCooldown, 2);
++    assert.equal(restored.vaultLockdownAiming, true);
++    assert.deepEqual(restored.vaultLockdownTargets, [{ x: 2, y: 6 }]);
++    assert.equal(restored.vaultChestDestroyedTurn, 42);
++  }
++
++  {
++    const chest = sanitizeVaultChestState({
++      x: 2,
++      y: 3,
++      opened: false,
++      destroyed: false,
++      vaultCondemned: true,
++      vaultCondemnTurns: 99,
++      vaultCondemnMaxTurns: 99
++    });
++    assert.equal(isVaultChestAvailable(chest), true);
++    assert.equal(chest.vaultCondemnTurns, 5);
++    assert.equal(chest.vaultCondemnMaxTurns, 5);
++    assert.equal(isVaultChestLocked({ roomType: "vault", guardianAlive: true, chest }), true);
++    assert.equal(isVaultChestLocked({ roomType: "vault", guardianAlive: false, chest }), false);
++
++    const destroyed = sanitizeVaultChestState({ opened: false, destroyed: true, vaultCondemned: true });
++    assert.equal(destroyed.opened, true);
++    assert.equal(destroyed.vaultCondemned, false);
++    assert.equal(isVaultChestAvailable(destroyed), false);
++  }
++
++  {
++    const chests = [
++      { x: 1, y: 1, opened: false },
++      { x: 2, y: 2, opened: false, vaultCondemned: true },
++      { x: 3, y: 3, opened: true },
++      { x: 4, y: 4, opened: false },
++      { x: 5, y: 5, opened: false, destroyed: true }
++    ];
++    const target = chooseVaultSentenceChest({
++      chests,
++      lockdownTargets: [{ x: 1, y: 1 }],
++      random: () => 0
++    });
++    assert.deepEqual(target, chests[3]);
++    assert.equal(chooseVaultSentenceChest({ chests: [], random: () => 0 }), null);
++  }
++
++  {
++    const targets = chooseVaultLockdownTargets({
++      chests: [
++        { x: 4, y: 5, opened: false },
++        { x: 4, y: 6, opened: false },
++        { x: 1, y: 1, opened: false },
++        { x: 7, y: 7, opened: false },
++        { x: 2, y: 2, opened: false, vaultCondemned: true }
++      ],
++      playerX: 4,
++      playerY: 4,
++      count: 2
++    });
++    assert.deepEqual(targets[0], { x: 4, y: 5 });
++    assert.equal(targets.length, 2);
++    assert.deepEqual(targets[1], { x: 1, y: 1 });
++  }
++
++  {
++    const tiles = getVaultLockdownBlastTiles([{ x: 1, y: 1 }, { x: 2, y: 1 }], 9);
++    const keys = new Set(tiles.map((tile) => `${tile.x},${tile.y}`));
++    assert.equal(keys.size, tiles.length);
++    assert.ok(keys.has("1,1"));
++    assert.ok(keys.has("0,1"));
++    assert.ok(keys.has("2,1"));
++    assert.ok(keys.has("3,1"));
++    assert.ok(keys.has("1,0"));
++    assert.ok(keys.has("2,2"));
++  }
++
++  {
++    const guardian = initializeVaultGuardianState({ type: "guardian" });
++    guardian.vaultSentenceCooldown = 2;
++    guardian.vaultLockdownCooldown = 3;
++    assert.equal(shouldReserveGuardianMajorAbility(guardian, 20), false);
++    guardian.vaultSentenceCooldown = 1;
++    assert.equal(shouldReserveGuardianMajorAbility(guardian, 20), true);
++    guardian.vaultSentenceCooldown = 5;
++    guardian.vaultChestDestroyedTurn = 20;
++    assert.equal(shouldReserveGuardianMajorAbility(guardian, 20), true);
++    guardian.vaultChestDestroyedTurn = 19;
++    guardian.vaultLockdownAiming = true;
++    assert.equal(shouldReserveGuardianMajorAbility(guardian, 20), true);
++  }
++
+   {
+     const blocked = new Set();
+     const spikes = new Set(["6,5"]);
+diff --git a/tests/visual-snapshot.test.js b/tests/visual-snapshot.test.js
+index 076aac0..bbec854 100644
+--- a/tests/visual-snapshot.test.js
++++ b/tests/visual-snapshot.test.js
+@@ -445,3 +445,53 @@ test("loads the snapshot module before game.js and wires the tested frame bounda
+   );
+   assert.strictEqual((gameSource.match(/renderVisualFrame\s*\(/g) || []).length, 3);
+ });
++
++test("copies Vault Guardian ability state and chest countdown fields without reference leaks", () => {
++  const source = {
++    roomType: "vault",
++    enemies: [{
++      type: "guardian",
++      x: 4,
++      y: 4,
++      hp: 100,
++      maxHp: 100,
++      vaultSentenceCooldown: 6,
++      vaultLockdownCooldown: 0,
++      vaultLockdownAiming: true,
++      vaultLockdownTargets: [{ x: 2, y: 3 }, { x: 6, y: 5 }],
++      vaultChestDestroyedTurn: 18
++    }],
++    chests: [{
++      id: "vault-a",
++      x: 2,
++      y: 3,
++      opened: false,
++      destroyed: false,
++      vaultCondemned: true,
++      vaultCondemnTurns: 3,
++      vaultCondemnMaxTurns: 5
++    }]
++  };
++
++  const snapshot = api.createVisualSnapshot(source, 250);
++  assert.deepStrictEqual(snapshot.enemies[0].vaultLockdownTargets, [{ x: 2, y: 3 }, { x: 6, y: 5 }]);
++  assert.strictEqual(snapshot.enemies[0].vaultSentenceCooldown, 6);
++  assert.strictEqual(snapshot.enemies[0].vaultLockdownCooldown, 0);
++  assert.strictEqual(snapshot.enemies[0].vaultLockdownAiming, true);
++  assert.strictEqual(snapshot.enemies[0].vaultChestDestroyedTurn, 18);
++  assert.deepStrictEqual(snapshot.chests[0], {
++    id: "vault-a",
++    x: 2,
++    y: 3,
++    opened: false,
++    destroyed: false,
++    vaultCondemned: true,
++    vaultCondemnTurns: 3,
++    vaultCondemnMaxTurns: 5
++  });
++
++  source.enemies[0].vaultLockdownTargets[0].x = 8;
++  source.chests[0].vaultCondemnTurns = 1;
++  assert.strictEqual(snapshot.enemies[0].vaultLockdownTargets[0].x, 2);
++  assert.strictEqual(snapshot.chests[0].vaultCondemnTurns, 3);
++});
+diff --git a/vault-room.js b/vault-room.js
+index c07eca3..b25fadc 100644
+--- a/vault-room.js
++++ b/vault-room.js
+@@ -1,5 +1,15 @@
+ (function () {
+   const VAULT_GUARDIAN_HP_MULTIPLIER = 3;
++  const VAULT_GUARDIAN_SLAM_COOLDOWN_TURNS = 5;
++  const VAULT_SENTENCE_FIRST_DELAY_TURNS = 10;
++  const VAULT_SENTENCE_COOLDOWN_TURNS = 10;
++  const VAULT_SENTENCE_FUSE_TURNS = 5;
++  const VAULT_LOCKDOWN_FIRST_DELAY_TURNS = 4;
++  const VAULT_LOCKDOWN_COOLDOWN_TURNS = 10;
++  const VAULT_LOCKDOWN_TARGET_COUNT = 2;
++  const VAULT_LOCKDOWN_DAMAGE_MULTIPLIER = 0.65;
++  const VAULT_LOCKDOWN_PUSH_TILES = 1;
++
+   const VAULT_ENCOUNTER_PROFILE = Object.freeze({
+     minMines: 4,
+     maxMines: 7,
+@@ -14,10 +24,162 @@
+     return 0;
+   }
+ 
++  function clampInt(value, minimum, maximum) {
++    const numeric = Math.round(Number(value) || 0);
++    return Math.max(minimum, Math.min(maximum, numeric));
++  }
++
++  function chestKey(chest) {
++    return `${Math.round(Number(chest?.x) || 0)},${Math.round(Number(chest?.y) || 0)}`;
++  }
++
+   function getVaultEncounterProfile() {
+     return VAULT_ENCOUNTER_PROFILE;
+   }
+ 
++  function isVaultChestAvailable(chest) {
++    return Boolean(chest && !chest.opened && !chest.destroyed);
++  }
++
++  function isVaultChestLocked(options = {}) {
++    return Boolean(
++      options.roomType === "vault" &&
++      options.guardianAlive &&
++      isVaultChestAvailable(options.chest)
++    );
++  }
++
++  function initializeVaultGuardianState(enemy) {
++    if (!enemy || enemy.type !== "guardian") return enemy;
++    enemy.vaultSentenceCooldown = Math.max(
++      0,
++      Number.isFinite(Number(enemy.vaultSentenceCooldown))
++        ? Math.round(Number(enemy.vaultSentenceCooldown))
++        : VAULT_SENTENCE_FIRST_DELAY_TURNS
++    );
++    enemy.vaultLockdownCooldown = Math.max(
++      0,
++      Number.isFinite(Number(enemy.vaultLockdownCooldown))
++        ? Math.round(Number(enemy.vaultLockdownCooldown))
++        : VAULT_LOCKDOWN_FIRST_DELAY_TURNS
++    );
++    enemy.vaultLockdownAiming = Boolean(enemy.vaultLockdownAiming);
++    enemy.vaultLockdownTargets = Array.isArray(enemy.vaultLockdownTargets)
++      ? enemy.vaultLockdownTargets
++        .filter((tile) => tile && Number.isFinite(Number(tile.x)) && Number.isFinite(Number(tile.y)))
++        .map((tile) => ({ x: Math.round(Number(tile.x)), y: Math.round(Number(tile.y)) }))
++        .slice(0, VAULT_LOCKDOWN_TARGET_COUNT)
++      : [];
++    enemy.vaultChestDestroyedTurn = Number.isFinite(Number(enemy.vaultChestDestroyedTurn))
++      ? Math.round(Number(enemy.vaultChestDestroyedTurn))
++      : -1;
++    return enemy;
++  }
++
++  function sanitizeVaultChestState(chest) {
++    if (!chest || typeof chest !== "object") return chest;
++    chest.destroyed = Boolean(chest.destroyed);
++    chest.vaultCondemned = Boolean(chest.vaultCondemned) && !chest.destroyed && !chest.opened;
++    chest.vaultCondemnTurns = chest.vaultCondemned
++      ? clampInt(chest.vaultCondemnTurns, 0, VAULT_SENTENCE_FUSE_TURNS)
++      : 0;
++    chest.vaultCondemnMaxTurns = chest.vaultCondemned
++      ? Math.max(1, clampInt(chest.vaultCondemnMaxTurns || VAULT_SENTENCE_FUSE_TURNS, 1, VAULT_SENTENCE_FUSE_TURNS))
++      : 0;
++    if (chest.destroyed) chest.opened = true;
++    return chest;
++  }
++
++  function chooseVaultSentenceChest(options = {}) {
++    const chests = Array.isArray(options.chests) ? options.chests : [];
++    const targetKeys = new Set(
++      (Array.isArray(options.lockdownTargets) ? options.lockdownTargets : []).map(chestKey)
++    );
++    const candidates = chests
++      .filter((chest) =>
++        isVaultChestAvailable(chest) &&
++        !chest.vaultCondemned &&
++        !targetKeys.has(chestKey(chest))
++      )
++      .slice()
++      .sort((a, b) => (Number(a.y) - Number(b.y)) || (Number(a.x) - Number(b.x)));
++    if (candidates.length <= 0) return null;
++    const random = typeof options.random === "function" ? options.random : Math.random;
++    const roll = Math.max(0, Math.min(0.999999, Number(random()) || 0));
++    return candidates[Math.floor(roll * candidates.length)] || candidates[0];
++  }
++
++  function chooseVaultLockdownTargets(options = {}) {
++    const chests = Array.isArray(options.chests) ? options.chests : [];
++    const playerX = Number(options.playerX) || 0;
++    const playerY = Number(options.playerY) || 0;
++    const count = Math.max(1, Math.floor(Number(options.count) || VAULT_LOCKDOWN_TARGET_COUNT));
++    const candidates = chests
++      .filter((chest) => isVaultChestAvailable(chest) && !chest.vaultCondemned)
++      .map((chest) => ({
++        x: Math.round(Number(chest.x) || 0),
++        y: Math.round(Number(chest.y) || 0),
++        playerDistance: Math.abs((Number(chest.x) || 0) - playerX) + Math.abs((Number(chest.y) || 0) - playerY)
++      }))
++      .sort((a, b) => a.playerDistance - b.playerDistance || a.y - b.y || a.x - b.x);
++    if (candidates.length <= 0) return [];
++
++    const selected = [candidates.shift()];
++    while (selected.length < count && candidates.length > 0) {
++      let bestIndex = 0;
++      let bestScore = -Infinity;
++      for (let index = 0; index < candidates.length; index += 1) {
++        const candidate = candidates[index];
++        const separation = Math.min(...selected.map((picked) =>
++          Math.abs(candidate.x - picked.x) + Math.abs(candidate.y - picked.y)
++        ));
++        // Prefer readable, separated telegraphs while still keeping pressure near the player.
++        const score = separation * 20 - candidate.playerDistance * 2 - candidate.y * 0.01 - candidate.x * 0.001;
++        if (score > bestScore) {
++          bestScore = score;
++          bestIndex = index;
++        }
++      }
++      selected.push(candidates.splice(bestIndex, 1)[0]);
++    }
++    return selected.map(({ x, y }) => ({ x, y }));
++  }
++
++  function getVaultLockdownBlastTiles(targets, gridSize = 9) {
++    const size = Math.max(1, Math.floor(Number(gridSize) || 9));
++    const seen = new Set();
++    const tiles = [];
++    for (const target of Array.isArray(targets) ? targets : []) {
++      if (!target) continue;
++      const x = Math.round(Number(target.x) || 0);
++      const y = Math.round(Number(target.y) || 0);
++      const cross = [
++        { x, y },
++        { x: x + 1, y },
++        { x: x - 1, y },
++        { x, y: y + 1 },
++        { x, y: y - 1 }
++      ];
++      for (const tile of cross) {
++        if (tile.x < 0 || tile.x >= size || tile.y < 0 || tile.y >= size) continue;
++        const key = chestKey(tile);
++        if (seen.has(key)) continue;
++        seen.add(key);
++        tiles.push(tile);
++      }
++    }
++    return tiles;
++  }
++
++  function shouldReserveGuardianMajorAbility(enemy, currentTurn) {
++    if (!enemy || enemy.type !== "guardian") return false;
++    initializeVaultGuardianState(enemy);
++    if (enemy.vaultLockdownAiming) return true;
++    if (enemy.vaultSentenceCooldown <= 1) return true;
++    if (enemy.vaultLockdownCooldown <= 1) return true;
++    return Number(enemy.vaultChestDestroyedTurn) === Number(currentTurn);
++  }
++
+   function scoreGuardianSlamDirection(candidate, defaultDx, defaultDy) {
+     if (!candidate || candidate.pushedTiles <= 0) return -Infinity;
+     const mineBonus = candidate.mineHits * 120;
+@@ -108,7 +270,24 @@
+ 
+   const api = {
+     VAULT_GUARDIAN_HP_MULTIPLIER,
++    VAULT_GUARDIAN_SLAM_COOLDOWN_TURNS,
++    VAULT_SENTENCE_FIRST_DELAY_TURNS,
++    VAULT_SENTENCE_COOLDOWN_TURNS,
++    VAULT_SENTENCE_FUSE_TURNS,
++    VAULT_LOCKDOWN_FIRST_DELAY_TURNS,
++    VAULT_LOCKDOWN_COOLDOWN_TURNS,
++    VAULT_LOCKDOWN_TARGET_COUNT,
++    VAULT_LOCKDOWN_DAMAGE_MULTIPLIER,
++    VAULT_LOCKDOWN_PUSH_TILES,
+     getVaultEncounterProfile,
++    isVaultChestAvailable,
++    isVaultChestLocked,
++    initializeVaultGuardianState,
++    sanitizeVaultChestState,
++    chooseVaultSentenceChest,
++    chooseVaultLockdownTargets,
++    getVaultLockdownBlastTiles,
++    shouldReserveGuardianMajorAbility,
+     chooseGuardianSlamPlan
+   };
+ 

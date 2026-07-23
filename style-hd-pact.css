@@ -1,0 +1,591 @@
+/* HD Pact Chamber. Isolated from combat, Forge, Merchant, and relic overlays. */
+@media (min-width: 1201px) {
+  body.graphics-hd-ui:has(#game.graphics-hd) .screen-overlay.visible:has(.overlay-card-pact-sanctum) {
+    --pact-ivory: #eadfd5;
+    --pact-parchment: #c7b3aa;
+    --pact-muted: #8e7f7d;
+    --pact-red: #b6545f;
+    --pact-red-bright: #e08389;
+    position: fixed;
+    inset: 0;
+    z-index: 1080;
+    width: 100vw;
+    height: 100vh;
+    box-sizing: border-box;
+    display: grid;
+    place-items: center;
+    padding: clamp(22px, 3.6vh, 40px);
+    overflow: hidden;
+    background:
+      radial-gradient(circle at 50% 41%, #612d4540 0 20%, transparent 56%),
+      radial-gradient(circle at 50% 50%, transparent 0 29%, #020203df 80%),
+      linear-gradient(135deg, #14070de8, #020203ed 57%, #0a0710eb);
+    backdrop-filter: blur(7px) saturate(0.56) brightness(0.38);
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-pact-sanctum {
+    position: relative;
+    isolation: isolate;
+    width: min(1180px, calc(100vw - 68px));
+    height: min(720px, calc(100vh - 52px));
+    min-height: 630px;
+    max-width: none;
+    max-height: none;
+    flex: none;
+    box-sizing: border-box;
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr) auto auto;
+    align-items: stretch;
+    gap: clamp(12px, 1.7vh, 18px);
+    padding: clamp(49px, 5.9vh, 64px) clamp(62px, 5vw, 84px) clamp(31px, 4vh, 44px);
+    overflow: hidden;
+    border: 26px solid transparent;
+    border-image: url("assets/hd/ui/abyssal-gothic/board-frame.png") 112 / 26px stretch;
+    border-radius: 0;
+    background:
+      radial-gradient(ellipse at 50% 0%, #74314831, transparent 42%),
+      linear-gradient(180deg, #160f13fb, #080709fc),
+      url("assets/hd/ui/abyssal-gothic/panel-texture.png") center / 280px 280px;
+    box-shadow: 0 38px 100px #000, 0 0 72px #69223c2b;
+    color: var(--pact-parchment);
+    text-align: center;
+    text-shadow: 0 2px 3px #000;
+    animation: hdPactSanctumEnter 320ms cubic-bezier(0.2, 0.82, 0.3, 1) both;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-pact-sanctum::before {
+    content: "";
+    position: absolute;
+    z-index: -1;
+    inset: 17px;
+    pointer-events: none;
+    border: 1px solid #73566155;
+    background:
+      linear-gradient(90deg, transparent 49.9%, #81354d26 50%, transparent 50.1%),
+      linear-gradient(#0000, #3e19273a 50%, #0000);
+    box-shadow: inset 0 0 58px #000e;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-pact-sanctum::after {
+    content: "";
+    position: absolute;
+    z-index: -1;
+    top: 24px;
+    left: 50%;
+    width: min(670px, 65%);
+    height: 36px;
+    transform: translateX(-50%);
+    background: url("assets/hd/ui/abyssal-gothic/section-plaque.png") center / 100% 100% no-repeat;
+    opacity: 0.48;
+    filter: sepia(0.18) hue-rotate(295deg) brightness(0.68);
+    pointer-events: none;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .pact-sanctum-header {
+    position: relative;
+    min-height: 122px;
+    display: grid;
+    align-content: start;
+    justify-items: center;
+    padding: 0 245px 7px;
+    border-bottom: 1px solid #75445145;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .pact-sanctum-kicker {
+    margin: 0 0 6px;
+    color: #ad7481;
+    font: 700 clamp(0.59rem, 0.67vw, 0.71rem)/1.2 "Courier New", monospace;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .pact-sanctum-header > .overlay-title {
+    margin: 0;
+    color: var(--pact-ivory);
+    font: 600 clamp(2.5rem, 3.25vw, 3.45rem)/0.94 Georgia, "Times New Roman", serif;
+    letter-spacing: clamp(3px, 0.42vw, 6px);
+    text-transform: uppercase;
+    text-shadow: 0 5px 5px #000, 0 0 27px #a8476540;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .pact-sanctum-header > .overlay-sub {
+    margin: 8px 0 0;
+    color: #ad9c99;
+    font: italic clamp(0.75rem, 0.84vw, 0.88rem)/1.3 Georgia, "Times New Roman", serif;
+    white-space: nowrap;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .pact-sanctum-emblem {
+    position: absolute;
+    top: 1px;
+    left: 25px;
+    width: 86px;
+    height: 86px;
+    display: grid;
+    place-items: center;
+    border: 1px solid #784151;
+    background: radial-gradient(circle, #3a1722, #09070a 67%);
+    box-shadow: 0 0 0 8px #100b0e, 0 0 0 9px #4f323b, 0 0 28px #8c2d4d52, inset 0 0 22px #000;
+    transform: rotate(45deg);
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .pact-sanctum-emblem img {
+    width: 58px;
+    height: 58px;
+    object-fit: contain;
+    filter: saturate(1.2) brightness(1.08) drop-shadow(0 0 9px #c44c7180);
+    transform: rotate(-45deg);
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .pact-sanctum-current {
+    position: absolute;
+    top: 2px;
+    right: 0;
+    width: 218px;
+    min-height: 76px;
+    box-sizing: border-box;
+    display: grid;
+    align-content: center;
+    gap: 3px;
+    padding: 10px 13px;
+    border: 1px solid #70404d;
+    background: linear-gradient(135deg, #2b1119df, #0b090bed);
+    text-align: left;
+    box-shadow: inset 3px 0 0 #9d485c, inset 0 0 18px #0009;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .pact-sanctum-current-empty {
+    border-color: #514a4d;
+    background: linear-gradient(135deg, #171416df, #090909ed);
+    box-shadow: inset 3px 0 0 #71636a, inset 0 0 18px #0009;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .pact-sanctum-current span {
+    color: #ad6e7d;
+    font: 700 0.54rem/1 "Courier New", monospace;
+    letter-spacing: 1.3px;
+    text-transform: uppercase;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .pact-sanctum-current strong {
+    overflow: hidden;
+    color: #e0d2ce;
+    font: 600 0.86rem/1.1 Georgia, "Times New Roman", serif;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .pact-sanctum-current small {
+    color: #8c7e7e;
+    font: 400 0.58rem/1.2 "Courier New", monospace;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .pact-sanctum-grid {
+    min-height: 0;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: clamp(17px, 1.8vw, 25px);
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .pact-sanctum-choice {
+    --pact-tone: #9e566b;
+    position: relative;
+    min-width: 0;
+    min-height: 0;
+    display: grid;
+    grid-template: minmax(0, 1fr) auto / clamp(112px, 9vw, 142px) minmax(0, 1fr);
+    gap: 0 clamp(16px, 1.6vw, 23px);
+    padding: 22px 23px 0;
+    overflow: hidden;
+    border: 1px solid color-mix(in srgb, var(--pact-tone) 62%, #41383c);
+    background:
+      radial-gradient(circle at 20% 46%, color-mix(in srgb, var(--pact-tone) 20%, transparent), transparent 31%),
+      linear-gradient(145deg, #1d1418ef, #0a090bed 67%),
+      url("assets/hd/ui/abyssal-gothic/panel-texture.png") center / 240px 240px;
+    box-shadow: inset 0 0 0 1px #030203, inset 0 0 36px #000c;
+    cursor: pointer;
+    transform: translateY(0);
+    transition: transform 150ms ease, filter 150ms ease, border-color 150ms ease, box-shadow 150ms ease;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .pact-sanctum-choice-hunger { --pact-tone: #b85a4e; }
+  body.graphics-hd-ui:has(#game.graphics-hd) .pact-sanctum-choice-precision { --pact-tone: #a877bd; }
+  body.graphics-hd-ui:has(#game.graphics-hd) .pact-sanctum-choice-velocity { --pact-tone: #6686c3; }
+  body.graphics-hd-ui:has(#game.graphics-hd) .pact-sanctum-choice-avarice { --pact-tone: #b99046; }
+  body.graphics-hd-ui:has(#game.graphics-hd) .pact-sanctum-choice-iron { --pact-tone: #81959a; }
+  body.graphics-hd-ui:has(#game.graphics-hd) .pact-sanctum-choice-blood { --pact-tone: #b64961; }
+  body.graphics-hd-ui:has(#game.graphics-hd) .pact-sanctum-choice-ruin { --pact-tone: #765aa1; }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .pact-sanctum-choice::after {
+    content: "";
+    position: absolute;
+    inset: 7px;
+    border: 1px solid color-mix(in srgb, var(--pact-tone) 24%, transparent);
+    clip-path: polygon(0 0, 38px 0, 38px 1px, 100% 1px, 100% 100%, calc(100% - 38px) 100%, calc(100% - 38px) calc(100% - 1px), 0 calc(100% - 1px));
+    pointer-events: none;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .pact-sanctum-key {
+    position: absolute;
+    z-index: 3;
+    top: 13px;
+    left: 14px;
+    width: 36px;
+    height: 29px;
+    display: grid;
+    place-items: center;
+    border: 1px solid color-mix(in srgb, var(--pact-tone) 64%, #4d4547);
+    background: #080609ed;
+    color: #ba9ca5;
+    font: 700 0.64rem/1 "Courier New", monospace;
+    box-shadow: inset 0 0 10px #000;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .pact-sanctum-seal {
+    grid-row: 1;
+    grid-column: 1;
+    align-self: center;
+    justify-self: center;
+    width: clamp(92px, 7.6vw, 118px);
+    height: clamp(92px, 7.6vw, 118px);
+    display: grid;
+    place-items: center;
+    border: 1px solid color-mix(in srgb, var(--pact-tone) 65%, #4c4546);
+    border-radius: 50%;
+    background:
+      repeating-radial-gradient(circle, transparent 0 13px, color-mix(in srgb, var(--pact-tone) 28%, transparent) 14px 15px),
+      radial-gradient(circle, color-mix(in srgb, var(--pact-tone) 24%, #171014), #090709 68%);
+    box-shadow: 0 0 0 7px #0d090b, 0 0 0 8px color-mix(in srgb, var(--pact-tone) 38%, #2e282a), 0 0 26px color-mix(in srgb, var(--pact-tone) 35%, transparent), inset 0 0 27px #000;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .pact-sanctum-seal img {
+    width: 64px;
+    height: 64px;
+    object-fit: contain;
+    filter: saturate(1.25) brightness(1.08) drop-shadow(0 0 12px color-mix(in srgb, var(--pact-tone) 72%, transparent));
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .pact-sanctum-copy {
+    z-index: 2;
+    grid-row: 1;
+    grid-column: 2;
+    min-width: 0;
+    display: grid;
+    align-content: center;
+    gap: 5px;
+    padding: 5px 0 13px;
+    text-align: left;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .pact-sanctum-copy > p {
+    margin: 0;
+    color: color-mix(in srgb, var(--pact-tone) 78%, #c6aeb5);
+    font: 700 0.56rem/1 "Courier New", monospace;
+    letter-spacing: 1.6px;
+    text-transform: uppercase;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .pact-sanctum-copy h3 {
+    margin: 0;
+    color: var(--pact-ivory);
+    font: 600 clamp(1.25rem, 1.55vw, 1.55rem)/1.04 Georgia, "Times New Roman", serif;
+    letter-spacing: 0.45px;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .pact-sanctum-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    margin: 1px 0 3px;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .pact-sanctum-tags span {
+    padding: 3px 6px;
+    border: 1px solid color-mix(in srgb, var(--pact-tone) 42%, #454043);
+    color: #9b8d90;
+    background: #0b090abf;
+    font: 700 0.49rem/1 "Courier New", monospace;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .pact-sanctum-terms {
+    display: grid;
+    gap: 6px;
+    margin-top: 2px;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .pact-sanctum-term {
+    display: grid;
+    gap: 3px;
+    padding: 8px 10px;
+    border-left: 3px solid #767676;
+    background: #08080999;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .pact-sanctum-term span {
+    font: 700 0.52rem/1 "Courier New", monospace;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .pact-sanctum-term strong {
+    color: #cfc6c0;
+    font: 600 clamp(0.66rem, 0.73vw, 0.76rem)/1.25 "Courier New", monospace;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .pact-sanctum-boon {
+    border-color: #6e9e84;
+    background: linear-gradient(90deg, #17312575, #08080982);
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .pact-sanctum-boon span { color: #83b99a; }
+  body.graphics-hd-ui:has(#game.graphics-hd) .pact-sanctum-price {
+    border-color: #a34c59;
+    background: linear-gradient(90deg, #3a151d75, #08080982);
+  }
+  body.graphics-hd-ui:has(#game.graphics-hd) .pact-sanctum-price span { color: #cb6e79; }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .pact-sanctum-bind {
+    z-index: 2;
+    grid-row: 2;
+    grid-column: 1 / -1;
+    min-height: 42px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin: 0 -23px;
+    padding: 0 17px;
+    border-top: 1px solid color-mix(in srgb, var(--pact-tone) 48%, #443a3e);
+    background: linear-gradient(90deg, color-mix(in srgb, var(--pact-tone) 17%, #0a090a), #080708);
+    color: #9c898e;
+    font: 700 0.57rem/1 "Courier New", monospace;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .pact-sanctum-bind strong {
+    color: color-mix(in srgb, var(--pact-tone) 62%, #d6c1c6);
+    font-size: 0.56rem;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .pact-sanctum-choice:hover,
+  body.graphics-hd-ui:has(#game.graphics-hd) .pact-sanctum-choice:focus-visible {
+    outline: 1px solid color-mix(in srgb, var(--pact-tone) 70%, #d3b6bd);
+    outline-offset: 3px;
+    filter: brightness(1.1);
+    transform: translateY(-3px);
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .pact-sanctum-choice.hd-nav-selected {
+    outline: 2px solid color-mix(in srgb, var(--pact-tone) 68%, #e5c77d);
+    outline-offset: 3px;
+    border-color: color-mix(in srgb, var(--pact-tone) 72%, #d5b46a);
+    background:
+      radial-gradient(circle at 20% 46%, color-mix(in srgb, var(--pact-tone) 31%, transparent), transparent 34%),
+      linear-gradient(145deg, #2c181fef, #0d090bed 67%),
+      url("assets/hd/ui/abyssal-gothic/panel-texture.png") center / 240px 240px;
+    box-shadow: 0 0 0 1px #17090e, 0 0 28px color-mix(in srgb, var(--pact-tone) 42%, transparent), inset 4px 0 0 color-mix(in srgb, var(--pact-tone) 72%, #d9b967), inset 0 0 38px #70223b70;
+    filter: brightness(1.13);
+    transform: translateY(-5px);
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .pact-sanctum-choice.hd-nav-selected .pact-sanctum-seal {
+    box-shadow: 0 0 0 7px #0d090b, 0 0 0 8px color-mix(in srgb, var(--pact-tone) 65%, #9d7954), 0 0 32px color-mix(in srgb, var(--pact-tone) 65%, transparent), inset 0 0 27px #000;
+    transform: scale(1.045);
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .pact-sanctum-leave {
+    min-height: 54px;
+    display: grid;
+    grid-template-columns: 38px minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 13px;
+    padding: 8px 16px;
+    border: 1px solid #51484b;
+    background: linear-gradient(90deg, #151114ed, #090809ed 74%);
+    text-align: left;
+    cursor: pointer;
+    transition: border-color 150ms ease, filter 150ms ease, background 150ms ease;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .pact-sanctum-leave-key {
+    width: 36px;
+    height: 30px;
+    display: grid;
+    place-items: center;
+    border: 1px solid #66595e;
+    background: #070607;
+    color: #a08e94;
+    font: 700 0.64rem/1 "Courier New", monospace;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .pact-sanctum-leave > div {
+    min-width: 0;
+    display: grid;
+    gap: 3px;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .pact-sanctum-leave strong {
+    color: #c9bfc0;
+    font: 600 0.84rem/1 Georgia, "Times New Roman", serif;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .pact-sanctum-leave small {
+    color: #83787b;
+    font: 400 0.61rem/1.2 "Courier New", monospace;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .pact-sanctum-leave-action {
+    color: #756a6d;
+    font: 700 0.55rem/1 "Courier New", monospace;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .pact-sanctum-leave:hover,
+  body.graphics-hd-ui:has(#game.graphics-hd) .pact-sanctum-leave:focus-visible,
+  body.graphics-hd-ui:has(#game.graphics-hd) .pact-sanctum-leave.hd-nav-selected {
+    outline: 1px solid #92717a;
+    outline-offset: 2px;
+    border-color: #8a6570;
+    background: linear-gradient(90deg, #27161ced, #0d0a0bed 74%);
+    filter: brightness(1.08);
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .pact-sanctum-controls {
+    margin: -5px 0 0;
+    color: #72686b;
+    font: 700 0.54rem/1.2 "Courier New", monospace;
+    letter-spacing: 0.45px;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .pact-sanctum-controls span { color: #a98c94; }
+  body.graphics-hd-ui:has(#game.graphics-hd) .pact-sanctum-controls i {
+    display: inline-block;
+    width: 3px;
+    height: 3px;
+    margin: 0 8px 2px;
+    border-radius: 50%;
+    background: #744151;
+  }
+
+  @media (max-height: 790px) {
+    body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-pact-sanctum {
+      height: calc(100vh - 34px);
+      min-height: 0;
+      gap: 9px;
+      padding-block: 43px 25px;
+    }
+
+    body.graphics-hd-ui:has(#game.graphics-hd) .pact-sanctum-header {
+      min-height: 105px;
+    }
+
+    body.graphics-hd-ui:has(#game.graphics-hd) .pact-sanctum-header > .overlay-title {
+      font-size: clamp(2.15rem, 2.85vw, 2.85rem);
+    }
+
+    body.graphics-hd-ui:has(#game.graphics-hd) .pact-sanctum-emblem {
+      width: 70px;
+      height: 70px;
+    }
+
+    body.graphics-hd-ui:has(#game.graphics-hd) .pact-sanctum-emblem img {
+      width: 48px;
+      height: 48px;
+    }
+
+    body.graphics-hd-ui:has(#game.graphics-hd) .pact-sanctum-choice {
+      padding-top: 17px;
+    }
+
+    body.graphics-hd-ui:has(#game.graphics-hd) .pact-sanctum-seal {
+      width: 82px;
+      height: 82px;
+    }
+
+    body.graphics-hd-ui:has(#game.graphics-hd) .pact-sanctum-seal img {
+      width: 53px;
+      height: 53px;
+    }
+
+    body.graphics-hd-ui:has(#game.graphics-hd) .pact-sanctum-term {
+      padding-block: 6px;
+    }
+
+    body.graphics-hd-ui:has(#game.graphics-hd) .pact-sanctum-leave {
+      min-height: 47px;
+      padding-block: 5px;
+    }
+  }
+
+  @media (max-width: 1380px) {
+    body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-pact-sanctum {
+      width: calc(100vw - 48px);
+      padding-inline: 54px;
+    }
+
+    body.graphics-hd-ui:has(#game.graphics-hd) .pact-sanctum-header {
+      padding-inline: 220px;
+    }
+
+    body.graphics-hd-ui:has(#game.graphics-hd) .pact-sanctum-current {
+      width: 205px;
+    }
+
+    body.graphics-hd-ui:has(#game.graphics-hd) .pact-sanctum-choice {
+      grid-template-columns: 102px minmax(0, 1fr);
+      gap: 0 14px;
+      padding-inline: 17px;
+    }
+
+    body.graphics-hd-ui:has(#game.graphics-hd) .pact-sanctum-bind {
+      margin-inline: -17px;
+    }
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .pact-sanctum-seal-animated {
+    position: relative;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .pact-sanctum-seal-animated .pact-sigil-frame {
+    position: absolute;
+    inset: 50% auto auto 50%;
+    opacity: 0;
+    transform: translate(-50%, -50%);
+    animation: hdPactSigilPulse 0.72s steps(1, end) infinite;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .pact-sanctum-seal-animated .pact-sigil-frame-2 { animation-delay: 0.18s; }
+  body.graphics-hd-ui:has(#game.graphics-hd) .pact-sanctum-seal-animated .pact-sigil-frame-3 { animation-delay: 0.36s; }
+  body.graphics-hd-ui:has(#game.graphics-hd) .pact-sanctum-seal-animated .pact-sigil-frame-4 { animation-delay: 0.54s; }
+
+  @keyframes hdPactSigilPulse {
+    0%, 24.99% { opacity: 1; }
+    25%, 100% { opacity: 0; }
+  }
+  @keyframes hdPactSanctumEnter {
+    from { opacity: 0; transform: scale(0.975) translateY(9px); }
+    to { opacity: 1; transform: scale(1) translateY(0); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-pact-sanctum,
+    body.graphics-hd-ui:has(#game.graphics-hd) .pact-sanctum-choice,
+    body.graphics-hd-ui:has(#game.graphics-hd) .pact-sanctum-seal {
+      animation: none;
+      transition: none;
+    }
+
+    body.graphics-hd-ui:has(#game.graphics-hd) .pact-sanctum-seal-animated .pact-sigil-frame {
+      display: none;
+      animation: none;
+    }
+
+    body.graphics-hd-ui:has(#game.graphics-hd) .pact-sanctum-seal-animated .pact-sigil-frame-1 {
+      display: block;
+      opacity: 1;
+    }
+  }
+}

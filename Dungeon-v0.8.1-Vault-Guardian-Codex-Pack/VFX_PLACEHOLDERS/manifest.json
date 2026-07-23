@@ -1,0 +1,108 @@
+{
+  "pack": "Dungeon v0.8.1 Vault Guardian placeholder VFX",
+  "version": 1,
+  "pixelArt": true,
+  "transparent": true,
+  "sets": [
+    {
+      "id": "vault-chest-lock",
+      "description": "Looping lock/chain overlay while the Vault Guardian is alive.",
+      "frames": 4,
+      "frameDurationMs": 140,
+      "loop": true,
+      "classicFrameSize": [
+        16,
+        16
+      ],
+      "hdFrameSize": [
+        64,
+        64
+      ],
+      "classicPath": "classic/vault-chest-lock/frame-{frame:02d}.png",
+      "hdPath": "hd/vault-chest-lock/frame-{frame:02d}.png",
+      "classicStrip": "classic/vault-chest-lock/strip.png",
+      "hdStrip": "hd/vault-chest-lock/strip.png",
+      "anchor": "tile-center"
+    },
+    {
+      "id": "hoard-sentence-mark",
+      "description": "Looping condemned-chest mark; countdown number remains procedural.",
+      "frames": 6,
+      "frameDurationMs": 120,
+      "loop": true,
+      "classicFrameSize": [
+        16,
+        16
+      ],
+      "hdFrameSize": [
+        64,
+        64
+      ],
+      "classicPath": "classic/hoard-sentence-mark/frame-{frame:02d}.png",
+      "hdPath": "hd/hoard-sentence-mark/frame-{frame:02d}.png",
+      "classicStrip": "classic/hoard-sentence-mark/strip.png",
+      "hdStrip": "hd/hoard-sentence-mark/strip.png",
+      "anchor": "tile-center"
+    },
+    {
+      "id": "hoard-sentence-destroy",
+      "description": "One-shot destruction burst when a condemned chest expires.",
+      "frames": 8,
+      "frameDurationMs": 75,
+      "loop": false,
+      "classicFrameSize": [
+        16,
+        16
+      ],
+      "hdFrameSize": [
+        64,
+        64
+      ],
+      "classicPath": "classic/hoard-sentence-destroy/frame-{frame:02d}.png",
+      "hdPath": "hd/hoard-sentence-destroy/frame-{frame:02d}.png",
+      "classicStrip": "classic/hoard-sentence-destroy/strip.png",
+      "hdStrip": "hd/hoard-sentence-destroy/strip.png",
+      "anchor": "tile-center"
+    },
+    {
+      "id": "lockdown-pulse-node",
+      "description": "Looping anchor rune drawn over each selected chest.",
+      "frames": 6,
+      "frameDurationMs": 105,
+      "loop": true,
+      "classicFrameSize": [
+        16,
+        16
+      ],
+      "hdFrameSize": [
+        64,
+        64
+      ],
+      "classicPath": "classic/lockdown-pulse-node/frame-{frame:02d}.png",
+      "hdPath": "hd/lockdown-pulse-node/frame-{frame:02d}.png",
+      "classicStrip": "classic/lockdown-pulse-node/strip.png",
+      "hdStrip": "hd/lockdown-pulse-node/strip.png",
+      "anchor": "tile-center"
+    },
+    {
+      "id": "lockdown-pulse-blast",
+      "description": "One-shot cyan/gold cross detonation.",
+      "frames": 8,
+      "frameDurationMs": 70,
+      "loop": false,
+      "classicFrameSize": [
+        16,
+        16
+      ],
+      "hdFrameSize": [
+        64,
+        64
+      ],
+      "classicPath": "classic/lockdown-pulse-blast/frame-{frame:02d}.png",
+      "hdPath": "hd/lockdown-pulse-blast/frame-{frame:02d}.png",
+      "classicStrip": "classic/lockdown-pulse-blast/strip.png",
+      "hdStrip": "hd/lockdown-pulse-blast/strip.png",
+      "anchor": "tile-center"
+    }
+  ]
+}

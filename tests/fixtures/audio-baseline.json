@@ -1,0 +1,91 @@
+{
+  "audioContract": {
+    "sections": [
+      "MUSIC_TRACKS",
+      "SPLASH_TRACK",
+      "DEATH_TRACK",
+      "VICTORY_TRACK",
+      "FINAL_GAME_OVER_TRACK",
+      "DEEP_THEME_START_DEPTH",
+      "ULTRA_THEME_START_DEPTH",
+      "ensureSplashTrack",
+      "ensureDeathTrack",
+      "ensureVictoryTrack",
+      "ensureFinalGameOverTrack",
+      "createBgmTrack",
+      "ensureBgmTracks",
+      "playBgmTrack",
+      "syncBgmWithState",
+      "toggleAudio"
+    ],
+    "sha256": "7cd3ad675cbd33307e6a1cd1515850c15a2952cdd8546f6639d6f9b862a5fa66"
+  },
+  "files": [
+    {
+      "path": "assets/Blue glow on my face.mp3",
+      "sha256": "0c4f8d6e41e818bd9d308f707f19145c1c362c9fc4a5ecf3d4d989cf66fc7ba0",
+      "size": 5341557
+    },
+    {
+      "path": "assets/DEPTH 100.mp3",
+      "sha256": "bfa699f00b6e52b6bb07e0c6d866094f8051e2a893c8e4d983cfd73b48522449",
+      "size": 6505023
+    },
+    {
+      "path": "assets/Dungeon Descent.mp3",
+      "sha256": "3da45cec49a782809a7323abbe85a8153a1616c05dcead5b39b19d0a40460a66",
+      "size": 2929939
+    },
+    {
+      "path": "assets/Dungeon Descent2.mp3",
+      "sha256": "f229d9a815f0458cbdd8a3326f8a83d7e33ff16145941516cfce1a868a56815a",
+      "size": 3754796
+    },
+    {
+      "path": "assets/Haunted High Score.mp3",
+      "sha256": "63d87e4f02a720eb17c63ed2dc660b7e315217df59a59b7a05028af173bf2b44",
+      "size": 9078392
+    },
+    {
+      "path": "assets/One light left on the wall,.mp3",
+      "sha256": "d8a634b39bf2f4fcfa17e47111cf1a0e44466084dbcd51f45e71f7abf7e77889",
+      "size": 4771095
+    },
+    {
+      "path": "assets/TRY AGAIN.mp3",
+      "sha256": "6019ee4e812fb7d3c4512e5aaf944b213bd785f4c8ac269c97e0660f19097289",
+      "size": 5347878
+    },
+    {
+      "path": "assets/boss over 20.mp3",
+      "sha256": "dc5caa53a23cae37b72440533c9a74c8f92acefa59d0cb07d2744a889e247652",
+      "size": 5031602
+    },
+    {
+      "path": "assets/camp.mp3",
+      "sha256": "5b0b20551c6b2bdcd8f226eeed71b85958c17575ff5aa4a562260997bbf3733f",
+      "size": 5816459
+    },
+    {
+      "path": "assets/d40.mp3",
+      "sha256": "5855681c1f785cc70d2a743f9c458515722e288a5a0a676d2745d854a0a03bf4",
+      "size": 5658329
+    },
+    {
+      "path": "assets/d40boss.mp3",
+      "sha256": "762f402668d92eaa45b55cca3c0c82f42049ec3f7c5b8ba390abe7acbd0470be",
+      "size": 7599605
+    },
+    {
+      "path": "assets/death.mp3",
+      "sha256": "219b61e40e0e08f30b4b71a3b6a534759576e4e80a2637f1fb6458c737206503",
+      "size": 53249
+    },
+    {
+      "path": "assets/the otter room doesnt exist.mp3",
+      "sha256": "a571976737b30eeed3c05cd4cb550fe7cb5374231e1a354c87f5b5fffc93bd46",
+      "size": 4392312
+    }
+  ],
+  "schemaVersion": 1
+}

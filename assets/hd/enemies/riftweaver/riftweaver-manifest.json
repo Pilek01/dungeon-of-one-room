@@ -1,0 +1,691 @@
+{
+  "schemaVersion": 1,
+  "type": "riftweaver",
+  "frameSize": [
+    64,
+    64
+  ],
+  "renderSize": [
+    72,
+    72
+  ],
+  "anchor": [
+    0.5,
+    1
+  ],
+  "group": "enemies",
+  "clips": [
+    {
+      "name": "idle",
+      "frameCount": 4,
+      "fps": 4,
+      "loop": true
+    },
+    {
+      "name": "move",
+      "frameCount": 4,
+      "fps": 8,
+      "loop": true
+    },
+    {
+      "name": "attack",
+      "frameCount": 4,
+      "fps": 12,
+      "loop": false
+    },
+    {
+      "name": "hit",
+      "frameCount": 2,
+      "fps": 10,
+      "loop": false
+    },
+    {
+      "name": "death",
+      "frameCount": 2,
+      "fps": 6,
+      "loop": false
+    }
+  ],
+  "frames": [
+    {
+      "type": "riftweaver",
+      "direction": "south",
+      "clip": "idle",
+      "frame": 1,
+      "key": "enemy.riftweaver.south.idle.01",
+      "src": "assets/hd/enemies/riftweaver/frames/south-idle-01.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "riftweaver",
+      "direction": "south",
+      "clip": "idle",
+      "frame": 2,
+      "key": "enemy.riftweaver.south.idle.02",
+      "src": "assets/hd/enemies/riftweaver/frames/south-idle-02.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "riftweaver",
+      "direction": "south",
+      "clip": "idle",
+      "frame": 3,
+      "key": "enemy.riftweaver.south.idle.03",
+      "src": "assets/hd/enemies/riftweaver/frames/south-idle-03.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "riftweaver",
+      "direction": "south",
+      "clip": "idle",
+      "frame": 4,
+      "key": "enemy.riftweaver.south.idle.04",
+      "src": "assets/hd/enemies/riftweaver/frames/south-idle-04.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "riftweaver",
+      "direction": "south",
+      "clip": "move",
+      "frame": 1,
+      "key": "enemy.riftweaver.south.move.01",
+      "src": "assets/hd/enemies/riftweaver/frames/south-move-01.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "riftweaver",
+      "direction": "south",
+      "clip": "move",
+      "frame": 2,
+      "key": "enemy.riftweaver.south.move.02",
+      "src": "assets/hd/enemies/riftweaver/frames/south-move-02.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "riftweaver",
+      "direction": "south",
+      "clip": "move",
+      "frame": 3,
+      "key": "enemy.riftweaver.south.move.03",
+      "src": "assets/hd/enemies/riftweaver/frames/south-move-03.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "riftweaver",
+      "direction": "south",
+      "clip": "move",
+      "frame": 4,
+      "key": "enemy.riftweaver.south.move.04",
+      "src": "assets/hd/enemies/riftweaver/frames/south-move-04.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "riftweaver",
+      "direction": "south",
+      "clip": "attack",
+      "frame": 1,
+      "key": "enemy.riftweaver.south.attack.01",
+      "src": "assets/hd/enemies/riftweaver/frames/south-attack-01.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "riftweaver",
+      "direction": "south",
+      "clip": "attack",
+      "frame": 2,
+      "key": "enemy.riftweaver.south.attack.02",
+      "src": "assets/hd/enemies/riftweaver/frames/south-attack-02.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "riftweaver",
+      "direction": "south",
+      "clip": "attack",
+      "frame": 3,
+      "key": "enemy.riftweaver.south.attack.03",
+      "src": "assets/hd/enemies/riftweaver/frames/south-attack-03.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "riftweaver",
+      "direction": "south",
+      "clip": "attack",
+      "frame": 4,
+      "key": "enemy.riftweaver.south.attack.04",
+      "src": "assets/hd/enemies/riftweaver/frames/south-attack-04.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "riftweaver",
+      "direction": "south",
+      "clip": "hit",
+      "frame": 1,
+      "key": "enemy.riftweaver.south.hit.01",
+      "src": "assets/hd/enemies/riftweaver/frames/south-hit-01.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "riftweaver",
+      "direction": "south",
+      "clip": "hit",
+      "frame": 2,
+      "key": "enemy.riftweaver.south.hit.02",
+      "src": "assets/hd/enemies/riftweaver/frames/south-hit-02.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "riftweaver",
+      "direction": "south",
+      "clip": "death",
+      "frame": 1,
+      "key": "enemy.riftweaver.south.death.01",
+      "src": "assets/hd/enemies/riftweaver/frames/south-death-01.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "riftweaver",
+      "direction": "south",
+      "clip": "death",
+      "frame": 2,
+      "key": "enemy.riftweaver.south.death.02",
+      "src": "assets/hd/enemies/riftweaver/frames/south-death-02.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "riftweaver",
+      "direction": "north",
+      "clip": "idle",
+      "frame": 1,
+      "key": "enemy.riftweaver.north.idle.01",
+      "src": "assets/hd/enemies/riftweaver/frames/north-idle-01.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "riftweaver",
+      "direction": "north",
+      "clip": "idle",
+      "frame": 2,
+      "key": "enemy.riftweaver.north.idle.02",
+      "src": "assets/hd/enemies/riftweaver/frames/north-idle-02.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "riftweaver",
+      "direction": "north",
+      "clip": "idle",
+      "frame": 3,
+      "key": "enemy.riftweaver.north.idle.03",
+      "src": "assets/hd/enemies/riftweaver/frames/north-idle-03.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "riftweaver",
+      "direction": "north",
+      "clip": "idle",
+      "frame": 4,
+      "key": "enemy.riftweaver.north.idle.04",
+      "src": "assets/hd/enemies/riftweaver/frames/north-idle-04.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "riftweaver",
+      "direction": "north",
+      "clip": "move",
+      "frame": 1,
+      "key": "enemy.riftweaver.north.move.01",
+      "src": "assets/hd/enemies/riftweaver/frames/north-move-01.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "riftweaver",
+      "direction": "north",
+      "clip": "move",
+      "frame": 2,
+      "key": "enemy.riftweaver.north.move.02",
+      "src": "assets/hd/enemies/riftweaver/frames/north-move-02.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "riftweaver",
+      "direction": "north",
+      "clip": "move",
+      "frame": 3,
+      "key": "enemy.riftweaver.north.move.03",
+      "src": "assets/hd/enemies/riftweaver/frames/north-move-03.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "riftweaver",
+      "direction": "north",
+      "clip": "move",
+      "frame": 4,
+      "key": "enemy.riftweaver.north.move.04",
+      "src": "assets/hd/enemies/riftweaver/frames/north-move-04.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "riftweaver",
+      "direction": "north",
+      "clip": "attack",
+      "frame": 1,
+      "key": "enemy.riftweaver.north.attack.01",
+      "src": "assets/hd/enemies/riftweaver/frames/north-attack-01.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "riftweaver",
+      "direction": "north",
+      "clip": "attack",
+      "frame": 2,
+      "key": "enemy.riftweaver.north.attack.02",
+      "src": "assets/hd/enemies/riftweaver/frames/north-attack-02.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "riftweaver",
+      "direction": "north",
+      "clip": "attack",
+      "frame": 3,
+      "key": "enemy.riftweaver.north.attack.03",
+      "src": "assets/hd/enemies/riftweaver/frames/north-attack-03.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "riftweaver",
+      "direction": "north",
+      "clip": "attack",
+      "frame": 4,
+      "key": "enemy.riftweaver.north.attack.04",
+      "src": "assets/hd/enemies/riftweaver/frames/north-attack-04.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "riftweaver",
+      "direction": "north",
+      "clip": "hit",
+      "frame": 1,
+      "key": "enemy.riftweaver.north.hit.01",
+      "src": "assets/hd/enemies/riftweaver/frames/north-hit-01.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "riftweaver",
+      "direction": "north",
+      "clip": "hit",
+      "frame": 2,
+      "key": "enemy.riftweaver.north.hit.02",
+      "src": "assets/hd/enemies/riftweaver/frames/north-hit-02.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "riftweaver",
+      "direction": "north",
+      "clip": "death",
+      "frame": 1,
+      "key": "enemy.riftweaver.north.death.01",
+      "src": "assets/hd/enemies/riftweaver/frames/north-death-01.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "riftweaver",
+      "direction": "north",
+      "clip": "death",
+      "frame": 2,
+      "key": "enemy.riftweaver.north.death.02",
+      "src": "assets/hd/enemies/riftweaver/frames/north-death-02.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "riftweaver",
+      "direction": "east",
+      "clip": "idle",
+      "frame": 1,
+      "key": "enemy.riftweaver.east.idle.01",
+      "src": "assets/hd/enemies/riftweaver/frames/east-idle-01.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "riftweaver",
+      "direction": "east",
+      "clip": "idle",
+      "frame": 2,
+      "key": "enemy.riftweaver.east.idle.02",
+      "src": "assets/hd/enemies/riftweaver/frames/east-idle-02.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "riftweaver",
+      "direction": "east",
+      "clip": "idle",
+      "frame": 3,
+      "key": "enemy.riftweaver.east.idle.03",
+      "src": "assets/hd/enemies/riftweaver/frames/east-idle-03.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "riftweaver",
+      "direction": "east",
+      "clip": "idle",
+      "frame": 4,
+      "key": "enemy.riftweaver.east.idle.04",
+      "src": "assets/hd/enemies/riftweaver/frames/east-idle-04.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "riftweaver",
+      "direction": "east",
+      "clip": "move",
+      "frame": 1,
+      "key": "enemy.riftweaver.east.move.01",
+      "src": "assets/hd/enemies/riftweaver/frames/east-move-01.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "riftweaver",
+      "direction": "east",
+      "clip": "move",
+      "frame": 2,
+      "key": "enemy.riftweaver.east.move.02",
+      "src": "assets/hd/enemies/riftweaver/frames/east-move-02.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "riftweaver",
+      "direction": "east",
+      "clip": "move",
+      "frame": 3,
+      "key": "enemy.riftweaver.east.move.03",
+      "src": "assets/hd/enemies/riftweaver/frames/east-move-03.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "riftweaver",
+      "direction": "east",
+      "clip": "move",
+      "frame": 4,
+      "key": "enemy.riftweaver.east.move.04",
+      "src": "assets/hd/enemies/riftweaver/frames/east-move-04.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "riftweaver",
+      "direction": "east",
+      "clip": "attack",
+      "frame": 1,
+      "key": "enemy.riftweaver.east.attack.01",
+      "src": "assets/hd/enemies/riftweaver/frames/east-attack-01.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "riftweaver",
+      "direction": "east",
+      "clip": "attack",
+      "frame": 2,
+      "key": "enemy.riftweaver.east.attack.02",
+      "src": "assets/hd/enemies/riftweaver/frames/east-attack-02.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "riftweaver",
+      "direction": "east",
+      "clip": "attack",
+      "frame": 3,
+      "key": "enemy.riftweaver.east.attack.03",
+      "src": "assets/hd/enemies/riftweaver/frames/east-attack-03.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "riftweaver",
+      "direction": "east",
+      "clip": "attack",
+      "frame": 4,
+      "key": "enemy.riftweaver.east.attack.04",
+      "src": "assets/hd/enemies/riftweaver/frames/east-attack-04.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "riftweaver",
+      "direction": "east",
+      "clip": "hit",
+      "frame": 1,
+      "key": "enemy.riftweaver.east.hit.01",
+      "src": "assets/hd/enemies/riftweaver/frames/east-hit-01.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "riftweaver",
+      "direction": "east",
+      "clip": "hit",
+      "frame": 2,
+      "key": "enemy.riftweaver.east.hit.02",
+      "src": "assets/hd/enemies/riftweaver/frames/east-hit-02.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "riftweaver",
+      "direction": "east",
+      "clip": "death",
+      "frame": 1,
+      "key": "enemy.riftweaver.east.death.01",
+      "src": "assets/hd/enemies/riftweaver/frames/east-death-01.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "riftweaver",
+      "direction": "east",
+      "clip": "death",
+      "frame": 2,
+      "key": "enemy.riftweaver.east.death.02",
+      "src": "assets/hd/enemies/riftweaver/frames/east-death-02.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "riftweaver",
+      "direction": "west",
+      "clip": "idle",
+      "frame": 1,
+      "key": "enemy.riftweaver.west.idle.01",
+      "src": "assets/hd/enemies/riftweaver/frames/west-idle-01.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "riftweaver",
+      "direction": "west",
+      "clip": "idle",
+      "frame": 2,
+      "key": "enemy.riftweaver.west.idle.02",
+      "src": "assets/hd/enemies/riftweaver/frames/west-idle-02.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "riftweaver",
+      "direction": "west",
+      "clip": "idle",
+      "frame": 3,
+      "key": "enemy.riftweaver.west.idle.03",
+      "src": "assets/hd/enemies/riftweaver/frames/west-idle-03.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "riftweaver",
+      "direction": "west",
+      "clip": "idle",
+      "frame": 4,
+      "key": "enemy.riftweaver.west.idle.04",
+      "src": "assets/hd/enemies/riftweaver/frames/west-idle-04.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "riftweaver",
+      "direction": "west",
+      "clip": "move",
+      "frame": 1,
+      "key": "enemy.riftweaver.west.move.01",
+      "src": "assets/hd/enemies/riftweaver/frames/west-move-01.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "riftweaver",
+      "direction": "west",
+      "clip": "move",
+      "frame": 2,
+      "key": "enemy.riftweaver.west.move.02",
+      "src": "assets/hd/enemies/riftweaver/frames/west-move-02.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "riftweaver",
+      "direction": "west",
+      "clip": "move",
+      "frame": 3,
+      "key": "enemy.riftweaver.west.move.03",
+      "src": "assets/hd/enemies/riftweaver/frames/west-move-03.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "riftweaver",
+      "direction": "west",
+      "clip": "move",
+      "frame": 4,
+      "key": "enemy.riftweaver.west.move.04",
+      "src": "assets/hd/enemies/riftweaver/frames/west-move-04.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "riftweaver",
+      "direction": "west",
+      "clip": "attack",
+      "frame": 1,
+      "key": "enemy.riftweaver.west.attack.01",
+      "src": "assets/hd/enemies/riftweaver/frames/west-attack-01.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "riftweaver",
+      "direction": "west",
+      "clip": "attack",
+      "frame": 2,
+      "key": "enemy.riftweaver.west.attack.02",
+      "src": "assets/hd/enemies/riftweaver/frames/west-attack-02.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "riftweaver",
+      "direction": "west",
+      "clip": "attack",
+      "frame": 3,
+      "key": "enemy.riftweaver.west.attack.03",
+      "src": "assets/hd/enemies/riftweaver/frames/west-attack-03.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "riftweaver",
+      "direction": "west",
+      "clip": "attack",
+      "frame": 4,
+      "key": "enemy.riftweaver.west.attack.04",
+      "src": "assets/hd/enemies/riftweaver/frames/west-attack-04.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "riftweaver",
+      "direction": "west",
+      "clip": "hit",
+      "frame": 1,
+      "key": "enemy.riftweaver.west.hit.01",
+      "src": "assets/hd/enemies/riftweaver/frames/west-hit-01.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "riftweaver",
+      "direction": "west",
+      "clip": "hit",
+      "frame": 2,
+      "key": "enemy.riftweaver.west.hit.02",
+      "src": "assets/hd/enemies/riftweaver/frames/west-hit-02.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "riftweaver",
+      "direction": "west",
+      "clip": "death",
+      "frame": 1,
+      "key": "enemy.riftweaver.west.death.01",
+      "src": "assets/hd/enemies/riftweaver/frames/west-death-01.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "riftweaver",
+      "direction": "west",
+      "clip": "death",
+      "frame": 2,
+      "key": "enemy.riftweaver.west.death.02",
+      "src": "assets/hd/enemies/riftweaver/frames/west-death-02.png",
+      "group": "enemies",
+      "critical": true
+    }
+  ]
+}

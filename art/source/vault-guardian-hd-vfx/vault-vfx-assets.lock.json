@@ -1,0 +1,45 @@
+{
+  "canvas": [
+    128,
+    128
+  ],
+  "outputs": {
+    "assets/hd/objects/vault/chest-destroyed/debris-01.png": "dc3ec0a3c3039c32a0a591390300b41b9e63877b732f70f91f9ea4fa4f247cef",
+    "assets/hd/objects/vault/chest-destroyed/debris-02.png": "2d8a760e297c4624c7446b46258056dd784dab0634bf2432ca31899884571e28",
+    "assets/hd/objects/vault/chest-destroyed/debris-03.png": "acb620103f3e4f3d10bad0919fee3751e19675a561afde296923f1c1a5553ba3",
+    "assets/hd/objects/vault/chest-destroyed/debris-04.png": "d15bb96221216d7c7da0d2f00ab80b82f07f7c1940fbb55ef4fa87c0df53c81f",
+    "assets/hd/objects/vault/chest-lock/lock-01.png": "5fd490e27782b170aa92d56b5d298835e141da444097c3fe9ae8b78f5d51b208",
+    "assets/hd/objects/vault/chest-lock/lock-02.png": "7dbc9f8127b2a756f926c269a03933fec6de34b17adddde23729e95ae4ce78a3",
+    "assets/hd/objects/vault/chest-lock/lock-03.png": "124550d9d2ad5b5515f7b252e81abbea4362108d22bf580f298e94de6b44fc11",
+    "assets/hd/objects/vault/chest-lock/lock-04.png": "d663a03373597a994fd20f7e4f8c98846383cd002723cf2be0460c06bd9d09ff",
+    "assets/hd/vfx/vault/hoard-sentence/cast/cast-01.png": "18865b1f1f89ad30c3d20cda19031e13f7e7ec0adc9e7e7ef3c08469aacf93c0",
+    "assets/hd/vfx/vault/hoard-sentence/cast/cast-02.png": "cc596528729c937788f09f099046bfff3a2a8b6dec4bc99e8138be99a56635e0",
+    "assets/hd/vfx/vault/hoard-sentence/cast/cast-03.png": "899c34d222773be6d9cf6add723a13ee0f15a079d67743996f30385a4ee0ec60",
+    "assets/hd/vfx/vault/hoard-sentence/cast/cast-04.png": "96fa05b1c4d110d8088133c77e6c145a57082c8cc6091a1fa294370345d3c94b",
+    "assets/hd/vfx/vault/hoard-sentence/mark/mark-01.png": "7f8e0fab38052c5b0598a2a0f02e22dc62447504638afa55c2b5b3ee6bf1bc1c",
+    "assets/hd/vfx/vault/hoard-sentence/mark/mark-02.png": "319754866f27b2b7af13f863cf3529e7e02ce7d0cfa208a0d86e7c1044f22523",
+    "assets/hd/vfx/vault/hoard-sentence/mark/mark-03.png": "c272311af84f7ec8d24774198a406ecb871f12e3a2372578391ae50513f49c97",
+    "assets/hd/vfx/vault/hoard-sentence/mark/mark-04.png": "fea4951c51140ebd67fec9e93f58f1bbd6095de35a381b8276a93adc138104f7",
+    "assets/hd/vfx/vault/lockdown/anchor/anchor-01.png": "a28e768c287e905fe69a7c55acdc635b3c54d285b16ebc978a9572078688e14f",
+    "assets/hd/vfx/vault/lockdown/anchor/anchor-02.png": "61ba6f32ca56868a0d895cea6f8423cc9c94b6e10ebdc435e5e41ab78a5547dc",
+    "assets/hd/vfx/vault/lockdown/anchor/anchor-03.png": "8840c0537051c73a7e3350adac01237c810df752a5124b23a0c01ccef3ca058a",
+    "assets/hd/vfx/vault/lockdown/anchor/anchor-04.png": "ea02bf5b44f64b2b369e389b38b310e924aca880cef20da476811716a9b9da0d",
+    "assets/hd/vfx/vault/lockdown/detonation/detonation-01.png": "f8155e0f66e0d5b384b26f0ecb294ef0753c1130be0b194f09e6e5f4d8ed1610",
+    "assets/hd/vfx/vault/lockdown/detonation/detonation-02.png": "8e4617265130f74e1d2085b647ea23199d8462e20d38010b493b618ac41a8f47",
+    "assets/hd/vfx/vault/lockdown/detonation/detonation-03.png": "624f807dcfdf0e6404aed15f12f5aa94319fb600a6ab3356c7b643f85a27604b",
+    "assets/hd/vfx/vault/lockdown/detonation/detonation-04.png": "d3923f29bf7d6cc0a2eec1538fcaff97f28db39d16e1f128f00cae09e81f9398",
+    "assets/hd/vfx/vault/lockdown/tile/tile-01.png": "7e9feec88bb033381be07428daf29e5b9b7aac732c1dbfbf9105de1fc65c65a8",
+    "assets/hd/vfx/vault/lockdown/tile/tile-02.png": "49385501856e9c201cace99f538cdecca352f3a9bed318426211b45b0f7c2650",
+    "assets/hd/vfx/vault/lockdown/tile/tile-03.png": "37e048a6feca95e333d5ef9b1ce327d8d64cf61201c682baf05ca76a1f0d669b",
+    "assets/hd/vfx/vault/lockdown/tile/tile-04.png": "5f2dc712615f5a158556aefb81b2b286be381515bac51af70b52e0a41d3cdb69",
+    "assets/hd/vfx/vault/seal-break/break-01.png": "9fee3a0bdf33adb4cbfb16ce3e2040518c6178a8c91af18bb83764c08d5d8989",
+    "assets/hd/vfx/vault/seal-break/break-02.png": "dd4f0a4a7350f56b2c536b414d9e62d62bc62a8f44fb7e4c1fbe804d097f0031",
+    "assets/hd/vfx/vault/seal-break/break-03.png": "6824cbf4b48095d673bb6085d4979286c77fdd587cb58106d729f5592f162deb",
+    "assets/hd/vfx/vault/seal-break/break-04.png": "f6924bfa302f4fe18723963f6d458f3ae51b9f06545f8e4f56e1529ba77e8cc3"
+  },
+  "sources": {
+    "art/source/vault-guardian-hd-vfx/vault-chest-states-atlas-alpha.png": "e5c6f8ebcc021bc8561d3396f0e350fe2e74bebe39d02cc54781bb111cc9be16",
+    "art/source/vault-guardian-hd-vfx/vault-spell-vfx-atlas-alpha.png": "8003e8247ae9ae4ef7efa6d626efb7fc4a7f4a9b3bee1bc069e49199292cccfe"
+  },
+  "version": 1
+}

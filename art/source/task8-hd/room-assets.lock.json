@@ -1,0 +1,362 @@
+{
+  "assets": {
+    "assets/hd/environment/abyss/boss-room.png": "261b40d308d2fc3ba0d94ce872a386d6704eaac41ec7034fecea210803fc3c1c",
+    "assets/hd/environment/abyss/decal-crack.png": "961ce97925de3aba6cd18b4e4c6512c6ac2ae7bb153d7c12afb5cb8b4505c1ed",
+    "assets/hd/environment/abyss/decal-dust.png": "127723cf162051c2eef8ea7c765bc6cfd828445b52a33e0e1aa8932db9dd23f8",
+    "assets/hd/environment/abyss/decal-residue.png": "363b2bd5ade4ebbe17e3a771e8366be42cb097e0cba208d3c77664ce75286235",
+    "assets/hd/environment/abyss/decal-scar.png": "a4be98b5295d9d1f0fc0e53b80f44da91d55b528ced413989b8fcd677f5f827a",
+    "assets/hd/environment/abyss/decal-sigil.png": "993b05279f855a543a21f76889b9c017d0a5ee2ebaeb0c1bc7a2b84a022fdf0f",
+    "assets/hd/environment/abyss/decal-stain-01.png": "5663a1ba997e0553396e53bd66ff8d93b19fdce4219801d286191b1bb0bfa26e",
+    "assets/hd/environment/abyss/decal-stain-02.png": "cd2a6899ebccb051b4c9f8f31640706c03cd94e83db22515629ee0313e55d701",
+    "assets/hd/environment/abyss/decal-stain-03.png": "81dcb9f668306baaaf32dc9557f3aabc86ff91729f10b1f09f1b472b6aa9ca93",
+    "assets/hd/environment/abyss/decal-vein.png": "c39223b80ef34821abf8810f90d9d4cc6ab494d6b6ce2d9c64ef554290aa3fcd",
+    "assets/hd/environment/abyss/floor-b.png": "06dcaf63945dd3ea47976ab56ab8cbfb0ce2a4278d16bb855c8fd3b61ca09bc6",
+    "assets/hd/environment/abyss/floor-base.png": "a1fa9b5972bf0a891cf6c045becfb115af04b02ef5d6380afe6306145dfd3881",
+    "assets/hd/environment/abyss/floor-c.png": "630d3a9d19d0ba30ea4cb9c043c788488ab325b32fb349436f905d16a30fec0f",
+    "assets/hd/environment/abyss/floor-crack-cross.png": "50d925d404f6f66852996901caabbaad5bcd410f6d11459bc38c288d3605f511",
+    "assets/hd/environment/abyss/floor-skull.png": "96c08fcdbe295a75272baf2278efe35299f903b93c52818f1c91e98efc3d6f95",
+    "assets/hd/environment/abyss/floor-var3.png": "cc1b13ff83f01d861c938deddd4949e1d4de92a1923c2579060114a77e9ab537",
+    "assets/hd/environment/abyss/floor-var4.png": "b74b65b3d447daef8a7abf73389d7f6b06fdd8ff269fc2654deb2ace5ed9825a",
+    "assets/hd/environment/abyss/grate.png": "fd9ebe68aae5f72a1b5d8c7d9704a7007d06c3597c6bce4d26d753c73c0999f1",
+    "assets/hd/environment/abyss/room-01.png": "60ea48039c0c680862403bf3ecce7ebb25717ac83d014c9e9ba49095c76a283e",
+    "assets/hd/environment/abyss/room-02.png": "be6fe3080e0b78fb7724cf370e96cc6c161be3be20973f854c11569a1d1d4ed9",
+    "assets/hd/environment/abyss/room-03.png": "fde72be510735a3e87aea6cf866b6bdbf25155b41e535358bd006cd0b26ab4cd",
+    "assets/hd/environment/abyss/rubble.png": "fa3e34e6311a7dad70a1f020a9530bd5a4635682087606320972b2e703b4c3ae",
+    "assets/hd/environment/abyss/torch-lit-01.png": "40ed3cc24bba055b397d588c35767b892a581e4415f20d7955c5d0dddb2219ff",
+    "assets/hd/environment/abyss/torch-lit-02.png": "0bbc7ac41de4b105896f7ca20be646a0a423ebed3a77dcb0cfbb5243cde34187",
+    "assets/hd/environment/abyss/torch-lit-03.png": "42eb6199aae7a78fbea18ee4b67c9faf9438ec39bed04b7c5f19bfd6ee2f7d42",
+    "assets/hd/environment/abyss/torch-unlit.png": "415138799dbfd4d73c38c7ce069121bf20667d50781f18fadb5b13fed3c42e3b",
+    "assets/hd/environment/abyss/wall-corner-northeast.png": "935d86745b1f4d8e583faa5aea418bf5e28aee7d0efae02814caeb96d0facf4d",
+    "assets/hd/environment/abyss/wall-corner-northwest.png": "1b3cab8e706e6ffa86ca9205c1a097c94a6237dccf7a70727352cd490493a808",
+    "assets/hd/environment/abyss/wall-corner-southeast.png": "230143ffd02345c6ee06738d2e622eca74d0301c888651e474fb57583042ec06",
+    "assets/hd/environment/abyss/wall-corner-southwest.png": "4c5d84ecefe6c0beb4eea9a78cf27653a4d96e68993770df092f849d9544b719",
+    "assets/hd/environment/abyss/wall-east.png": "8aff822abde43e0e2247babbc60f3f0a51cf1c0f7408f78c8a83c2365c96e4cf",
+    "assets/hd/environment/abyss/wall-north.png": "c6e9098066d6166f56237a286a327da5cb7a9a33f21cdf60fd7c7a5162913ded",
+    "assets/hd/environment/abyss/wall-south.png": "2e37805c92957087de6818fd9eb2b7824a993129807376347f068fda2347a2cc",
+    "assets/hd/environment/abyss/wall-west.png": "28236c10ca746c2793fcf95314fda5b5d7239be98d6f705e9743303208bc24f7",
+    "assets/hd/environment/corruption/boss-room.png": "c54f031dcc3be4efe5885282954c93ca1b0d36fe3d6b42794f04b87892399ab6",
+    "assets/hd/environment/corruption/decal-crack.png": "174115a286abe25f980cc8e8a9d04fe821bae16b0c665be95b38129a30c251e3",
+    "assets/hd/environment/corruption/decal-dust.png": "a7ae35466cd2cc550831a518fac0fd3224c77bfaa5c4b0d755da860c734216a9",
+    "assets/hd/environment/corruption/decal-residue.png": "fba6b29bdac770f72cc588e648043b13f93e59934f0a679dc1deab49463e4202",
+    "assets/hd/environment/corruption/decal-scar.png": "82b3d09fa4c5366a0929906fcc17970523c5ed29ca47dd34a81d78c2924acc78",
+    "assets/hd/environment/corruption/decal-sigil.png": "0a86a62a49305ea107b7346d029c6f922ff239763361a9f424731c18c7f12fd6",
+    "assets/hd/environment/corruption/decal-stain-01.png": "5d72719ed216e8f01146bab9886e45c46b34d86be45ecc05d7a0fe643280b455",
+    "assets/hd/environment/corruption/decal-stain-02.png": "780099143d7cba9dfba9a07af09420e00969a0a736cf96638b2b10bf0052dfa1",
+    "assets/hd/environment/corruption/decal-stain-03.png": "8f63666f761efd84cca30b96c00ef45b3aa8f9c2fc914a5427d93f5f1ebbd700",
+    "assets/hd/environment/corruption/decal-vein.png": "be35d3163f68bc7d61d6c7bfb02dd0263a7aef3d8c897bbd500517be5b553c66",
+    "assets/hd/environment/corruption/floor-b.png": "d42e6a200b951f3a69b9c44c46dc6aa5de1cac3d3306bef62f85b9c2326fd0cb",
+    "assets/hd/environment/corruption/floor-base.png": "963566c6f279a105a52cbad00137ce367c94db4d2a479744eddad8671e9aba89",
+    "assets/hd/environment/corruption/floor-c.png": "ac08fd179f3b6bb126d18bc4413f1e4c4270f243051c8f4ee1bdcefc5c162fae",
+    "assets/hd/environment/corruption/floor-crack-cross.png": "547baeb9c03f4464a59ceaad7df0a8cef5a42c14c559e4ce413dead87e1472e0",
+    "assets/hd/environment/corruption/floor-skull.png": "972db6b6c386860f51a18c4e5ef07dbc5720d169d845430ffa8075c48e4e2d70",
+    "assets/hd/environment/corruption/floor-var3.png": "fae1153f61ff1a52616d20b9f67f46085a71bb0468a0495b9615ad87d2d1663b",
+    "assets/hd/environment/corruption/floor-var4.png": "270578dab7c54b4c9a531742123cfbeedd3233832586cf6266db571a24ec7e55",
+    "assets/hd/environment/corruption/grate.png": "6bbf1c47530929235df9dbfd1c6b6930f0d1172a8ba0c71ad3b594dacbbd1210",
+    "assets/hd/environment/corruption/room-01.png": "374009c89fbaa17b28dd5fc68af03791e458e0176f285573b94e44b55087281d",
+    "assets/hd/environment/corruption/room-02.png": "e68283839b9cd1622e67e446d6773ad70bb4e978a4f7787b4582aca08f25dad3",
+    "assets/hd/environment/corruption/room-03.png": "6500cf9233c0cd6cd73f6cfbbe7e1f95b481b791e3774e8e12bcf9ab60ec1c58",
+    "assets/hd/environment/corruption/rubble.png": "2ccf4aa62942203dff6a47e40650b7de2c49b499cd336ed3c7730f84f29c5f12",
+    "assets/hd/environment/corruption/torch-lit-01.png": "c86ed872a6913c152d5d703f33b55f29b5154bdb015abad0f88a75f6a23207ee",
+    "assets/hd/environment/corruption/torch-lit-02.png": "24c1742e500b16dc6aa302714e55c301b32b9b5426486e56b8db51dfd9d3680a",
+    "assets/hd/environment/corruption/torch-lit-03.png": "8ac4f022e500f35684696fc6d806c38503ff78f13d4888754e3e3ce11e4e02f3",
+    "assets/hd/environment/corruption/torch-unlit.png": "5abb8644e7edb14e0a881036731a27a172b823b82b974a234b8bf86e1bc7a977",
+    "assets/hd/environment/corruption/wall-corner-northeast.png": "1e796b8998c2b92d214a7600d72a968fb0e3eaa7bd2c710ef68439a7045a8413",
+    "assets/hd/environment/corruption/wall-corner-northwest.png": "3fab6e359b610f8c8f2ab48978dd7aaef6045577b471c7ff2e1360f4295f8dfb",
+    "assets/hd/environment/corruption/wall-corner-southeast.png": "d8bebdacd11733876a10f72f458a05d94441fcc5c373eb5b43a18c131a09475d",
+    "assets/hd/environment/corruption/wall-corner-southwest.png": "c0ad7e21d00cd5e1da58e2b192807d5b1612bd7ed5cefa9dfc28e1ea6152eed2",
+    "assets/hd/environment/corruption/wall-east.png": "718d9601a2f4858f8ad09c64adf3ab7502306fd821eb0fab09aef2fa49b0cedb",
+    "assets/hd/environment/corruption/wall-north.png": "38ee05c1b1b81f3d30904c55d557cceac35a49594e21d7376d91e45ca40e861d",
+    "assets/hd/environment/corruption/wall-south.png": "a231f802b48a44ea77ffba3cfa19a22c745a8bfa8d281f64575b0d3e29e13a44",
+    "assets/hd/environment/corruption/wall-west.png": "6a0ae6b5b56ebea5eb41007ce515550a519a0fac22794f6f46dd61792286c204",
+    "assets/hd/environment/descent/boss-room.png": "1add467ad60d2839377a6624e3eac510dab36218d5bfe59edf695565179689c8",
+    "assets/hd/environment/descent/room-01.png": "c462a13c2c3da326785d41115f7577b6ca1a714b9a26530e1c3620ff4860a31a",
+    "assets/hd/environment/descent/room-02.png": "6e37f6054bf93c2aca829bc4c64da79730c295784050102ebb5ad2656342e540",
+    "assets/hd/environment/descent/room-03.png": "6afd3ce77a955f7db08c9ba51957aee29ebf4002845635ac6faf46738ae8a3e4",
+    "assets/hd/environment/forge/room.png": "d42a33039cd1b3a2854b13face9a12456bdc007ff7f605e0067084efa56a957b",
+    "assets/hd/environment/otter/room.png": "9e3e30e9ade6c59a371d288e70aaead3af45c1b459f31323a41a3cc7b1880b49",
+    "assets/hd/environment/vault/room.png": "8c7d74b2b5ddeb22df30c9ec38cfb0939212ad7727ca4f8bb208f7be1536d6c4",
+    "assets/hd/hazards/abyss/mine-armed.png": "04e0ebe0f5fe07e12e8b9cef3b4e60911e01e774636022344e91f2390e1cdb9f",
+    "assets/hd/hazards/abyss/mine-unarmed.png": "94575354531633baa2b260491459e1618944b68bf89ff9d4f620eb7ee404e324",
+    "assets/hd/hazards/abyss/spikes-armed.png": "e10d3572a29ad418cb32b4aa696900dd41b056a9499283ac4079791f4708090e",
+    "assets/hd/hazards/corruption/mine-armed.png": "32f5545ea6fe38e0ed29b12398ff2edca263eea9363bd840f466464ed599b871",
+    "assets/hd/hazards/corruption/mine-unarmed.png": "073fe91aca2d470e01a554fc22307059f5d053a1b4054c66b0f4bd3494ea9816",
+    "assets/hd/hazards/corruption/spikes-armed.png": "38cdfca3c2fb85ed8b98daff1c4aa3e059afa98b3abdd559b3cd79b8f16c3059",
+    "assets/hd/objects/boss/floorseal-phase01.png": "14a81227e779af8e790d4f2a99ca22dd8d5d99060b5c771a1676f6fff2385c94",
+    "assets/hd/objects/boss/floorseal-phase02.png": "eb9067fb93803822b088af1b6efad2f20dffdae3341ac30438dcfb58e7483ade",
+    "assets/hd/objects/boss/relief-north.png": "2a622c7a5c0b7836254e48728bc5a0c3e1f18412f318088215822846c64e6b5f",
+    "assets/hd/objects/boss/relief-south.png": "f1407cee2c110a7b839da2766af7f7f6223a7aa5c84bd6fe78f2d551203135a8",
+    "assets/hd/objects/forge/dormant.png": "c6a2520b028eeb59b469f1d323c5c027040fa5e5db1915720514809711460ba8",
+    "assets/hd/objects/forge/portal-active01.png": "9d1cfce04f126d8a662aa612cff05d4c0c015da1e8bf1c762e51b536a553533e",
+    "assets/hd/objects/forge/portal-active02.png": "9cfe26566d6947596a6e2ed9341abf918060989ac86b39bf315d42aee07428ae",
+    "assets/hd/objects/forge/portal-active03.png": "9139dc3df1b1d7961c440760d881e2d11b4c51ae17eff706c9031ccb33d58d8c",
+    "assets/hd/objects/forge/portal-frame.png": "7fe7e626f1367e5fe693fb83c6a5cd2d6d2224a874ebf4294ddaf7e7e585cab7",
+    "assets/hd/objects/forge/portal-inactive.png": "7fe7e626f1367e5fe693fb83c6a5cd2d6d2224a874ebf4294ddaf7e7e585cab7",
+    "assets/hd/objects/forge/portal-swirl01.png": "04cc0e4299687e68de2c9752e24be414e467038108998377be163e7fc1a389cb",
+    "assets/hd/objects/forge/portal-swirl02.png": "cffeceef553f6e2ca7be21e361abc5adf920e250af88a5e11609d261f9a42d2d",
+    "assets/hd/objects/forge/portal-swirl03.png": "cf116f757b3913150633a03fde985f322bc392dcd91dca1fa35682b9ccd7410f",
+    "assets/hd/objects/forge/portal-swirl04.png": "bab2379bc4e444bf88d60d3540bf79a1cf339176671ce0db0f5905e574e41924",
+    "assets/hd/objects/forge/portal-swirl05.png": "47b705ad789810e10a690101930315c41d1e56fbd2cf8702dc1ee87647afbf90",
+    "assets/hd/objects/forge/portal-swirl06.png": "960911b2a46c8bd9888c6206c5248db21fdb72d1c5e509031d3d20096d211870",
+    "assets/hd/objects/forge/portal-swirl07.png": "4e5e59397f0772d98ac1a42cf2e59a6cce79ff575373e1b536562fe56638d8b3",
+    "assets/hd/objects/forge/portal-swirl08.png": "cf7f638bb75866813dbc2dc17478141e2019793e37276ed8cc3b7503209ca522",
+    "assets/hd/objects/forge/ready01.png": "3cc5b2d0fd0f4cdd1b0ebff2f242b73f5237c10904b43cefaf5e34375a234b6b",
+    "assets/hd/objects/forge/ready02.png": "96e0b38bc83c064bba04c7b8e5da8e147950dbf9743baf6c1a17ab2424deab6a",
+    "assets/hd/objects/forge/used.png": "265d9c1f2ddf46feb7c202d8ab0ddf788c6a72d31d6ef0e69f5456f548abf965",
+    "assets/hd/objects/merchant/idle-01.png": "0a26ec91d17672566718a4486da67b7d7eb7a093b6f16ab4c51d99d0f34b900e",
+    "assets/hd/objects/merchant/idle-02.png": "4e5161ad00e634a0e250a08c27ff4ec57c9e4e1d0fb104f15bfcec7fecbda5a3",
+    "assets/hd/objects/merchant/idle-03.png": "a1a97319151a4d751feed07ca3ecf08a1bec8fe02ecfe8e0ead4c723c4bc4b27",
+    "assets/hd/objects/merchant/idle-04.png": "7d098215bb5460ef4c1abc46461f73fe61bced643f66ad02f66e0231cd535e11",
+    "assets/hd/objects/otter/chest-opened.png": "359cb5befccffc5f7b513af73d9207f30ff1a42d201b0eeb3db7f42f4684d3ff",
+    "assets/hd/objects/otter/chest-ready.png": "41ed76f723299134ab5b85233f8b2e23fb30dd71de5ddf0216caf6ddaa8d63a6",
+    "assets/hd/objects/otter/portal-active01.png": "ff37d62f865d736f124aa3979b36ec8a013d1b49096c047e9707c505bbf4e120",
+    "assets/hd/objects/otter/portal-active02.png": "22171dc54f40eb9f8ad2532a16921b5eb1540f72298362fdf799ee4ea909ac8e",
+    "assets/hd/objects/otter/portal-active03.png": "f3908d89380c3ad1b99d048f80a260b50ba487e4f0b47b8c312fa85ff12ffe08",
+    "assets/hd/objects/otter/portal-frame.png": "9884361d51ba790f520cb75241017a5ed34cdc31554733b56ef220460264150c",
+    "assets/hd/objects/otter/portal-inactive.png": "9884361d51ba790f520cb75241017a5ed34cdc31554733b56ef220460264150c",
+    "assets/hd/objects/otter/portal-swirl01.png": "1db660702c2f786022fc36fba0055fc1568d2a46cbf3d25b34d0de87add0ca80",
+    "assets/hd/objects/otter/portal-swirl02.png": "1d28a2a97d67a70a622138fcbfcbfc01a9feb057c9a99c5aa9a35bace0e1cb8c",
+    "assets/hd/objects/otter/portal-swirl03.png": "85901568be3f7fd340b691236ccc1bf9c3954e324e85107080d00449916aeaa1",
+    "assets/hd/objects/otter/portal-swirl04.png": "e26519060bda76bb781ed468a5d31ee648d0d374a76006365d0cb2ca8fe4f214",
+    "assets/hd/objects/otter/portal-swirl05.png": "3170028d6265e74cd022fd8236d0e7a561508633608dac7fca16a31d933c430f",
+    "assets/hd/objects/otter/portal-swirl06.png": "1c078993daf863d19a839bbc5fbe2d18d7455e2f7738e9e622c74f472398d7ba",
+    "assets/hd/objects/otter/portal-swirl07.png": "e8eb8044ba931602de6e93648766e049188e938f9d9edf194013aa6d09c85612",
+    "assets/hd/objects/otter/portal-swirl08.png": "a2a489cd5f5a5a4378d0e6038628492ec2966afa96621d90b5dfaaca57460e40",
+    "assets/hd/objects/otter/seal-blocked.png": "3ea73329b51180577c089d04d82dc17d728f3f1aef3f6b2bc9597b49f7d80c8b",
+    "assets/hd/objects/otter/seal-cleared.png": "08487c5843b8665d445b113ef9e99f2f8a818418bedd96984340447a1736cec4",
+    "assets/hd/objects/pact/dormant.png": "71a079bf0b8bf0a1c1f4e8c748cf77598e9fa24dd30d557cac9296701edbb806",
+    "assets/hd/objects/pact/ready01.png": "0688f60db49ce6749e62b2a8d47630533845300963d8a9bcf489d05bdd724755",
+    "assets/hd/objects/pact/ready02.png": "bf11a589934686d6acf00618c424b18a8b992476a065b5d28064e8dd74efdbe1",
+    "assets/hd/objects/pact/used.png": "a7158f1beaff531fe7adc15cf7ba0235ddb4e2d5199cf36246097cec0e1fb722",
+    "assets/hd/objects/vault/portal-active01.png": "d11ac28838c1b49d5c166224b74cfa771d5284361add8c85e8b4728b4f3ab4f4",
+    "assets/hd/objects/vault/portal-active02.png": "86ad24466e2f776c4fccdc9a4b6864a4fd84914c2f6303f73aa158b977b1f363",
+    "assets/hd/objects/vault/portal-active03.png": "e29ef5b8f3b5c6ed8d497ad51b19b76261d3683cefc7b01be893b387a76dc8cb",
+    "assets/hd/objects/vault/portal-frame.png": "13d5e2a63f5f8016dcd96f1e5a7d3218504396d3c5e764876df0b460336a69aa",
+    "assets/hd/objects/vault/portal-inactive.png": "4dd46db7e110a4b9b13249f37432f1a33aa86a30a6ceaf018b1e5c57fc05d888",
+    "assets/hd/objects/vault/portal-swirl01.png": "289ab1b58d289a1cdfd6e09b2f3da525574ffae52ef77bf8bafb6d935de9a393",
+    "assets/hd/objects/vault/portal-swirl02.png": "cc1e9a156e64f56b412d58e1dd64ef15d975a4bbbe3bb9eb23cafef54e1f566c",
+    "assets/hd/objects/vault/portal-swirl03.png": "439bd018d822e5c07ec3b1b5a529a3b6afb1ffc65af0f796306a7af09badf930",
+    "assets/hd/objects/vault/portal-swirl04.png": "eb3c019af023273848e36d78459738d9d4a9419190fe5e6b11537f887322c168",
+    "assets/hd/objects/vault/portal-swirl05.png": "dc7ee81b765129b1aecd69f4a270246113563233caa4582a8454432c27517204",
+    "assets/hd/objects/vault/portal-swirl06.png": "5c50c908aa755f6bd3d978bc94277a73fe1e8fed7d00abbcc9caa2c207ef262a",
+    "assets/hd/objects/vault/portal-swirl07.png": "ee112e0dd612106bab5c3c180840174f0aa6d6a20de2cf6436d21414cc7c82ac",
+    "assets/hd/objects/vault/portal-swirl08.png": "ac23622e641c559cb8aff0fd6e363291c0a751df3ab6561858350e39ae303602",
+    "assets/hd/objects/vault/seal-blocked.png": "14a039b8e78bb62409fa421e8435f5cd36d6166b32ac5e80a29de8668dd90246",
+    "assets/hd/objects/vault/seal-cleared.png": "1467e5aa3ce562765aa96f172ba91a459755137f6c0d17fd7bd82cdaf62219b6"
+  },
+  "helper": {
+    "sha256": "7e51236919203b61d07ddffdc6e0b5f501a28661003f5851f26ffbb64bdec1ea"
+  },
+  "metadata": {
+    "assets/hd/objects/room-profiles.json": "b41ffb734b1c2dc8dc68e30ead3bb4b642f494f4eb05634a64ea94a86aef7e45"
+  },
+  "normalizedAtlases": {
+    "art/source/abyssal-gothic-hd/hazard-mine-source-1024.png": "da0609ff732760eba29f280ce5ab9d61f8b8999edf33442f2e2e33d681fce218",
+    "art/source/abyssal-gothic-hd/hazard-spikes-source-1024.png": "598ecb25262afa07066a871e578579d43a8f29a9e45b1d46032a040864576730",
+    "art/source/task8-hd/abyss-boss-room-source-1024.png": "3d3ef668db1c85aa895f84d4b2549720ab6c3bec22a435ef26dc7c5b1c25e2a9",
+    "art/source/task8-hd/abyss-env-source-1024.png": "1eeb0c733b67a80414c780dbaf32322092d13f0ee9054bac127c480eaab8efb9",
+    "art/source/task8-hd/abyss-room-01-source-1024.png": "ce75a165afa09bbbda0cdc38df406b0297e3a7879bb76abb7c4b05c020d6f09e",
+    "art/source/task8-hd/abyss-room-02-source-1024.png": "e55dc0ea01d7807cd5b3301b0de9c0e8aa1e0e3cdd3ea90ecd1fee0ab4505e89",
+    "art/source/task8-hd/abyss-room-03-source-1024.png": "191e7ad4247538949867148458512e839bb787cc541f5088eb1375a5a4d3a1d1",
+    "art/source/task8-hd/core-props-source-1024.png": "87cadd11f7f8beda5ad50065b61750d9f9588fd8d40e563d4cbfb42af20ed2fd",
+    "art/source/task8-hd/corruption-boss-room-source-1024.png": "2b6f5346d94a7c84918b6604ae00646c0a3da93973a19a87f1f15eae79abc604",
+    "art/source/task8-hd/corruption-env-source-1024.png": "38bfc2c2c7608a7bc9f63ff0b38055c28f79da258f7b8ef1d9ea84e257590b2f",
+    "art/source/task8-hd/corruption-room-01-source-1024.png": "56aebc4580a89ecb5c929adb9de724d7027efc3ef60a7757c19c8505f50ad501",
+    "art/source/task8-hd/corruption-room-02-source-1024.png": "161b153a0845b26a3ad049ae7e796c859539127512406232724d4635bc8594ab",
+    "art/source/task8-hd/corruption-room-03-source-1024.png": "a99e9c8e6fb622b9104a31ef88099fcfb91bb982370e4b3dd7db03e70e95fa98",
+    "art/source/task8-hd/descent-boss-room-source-1024.png": "1b3635808ca6d3422a9ae769c6ff26217fa8d10bf2199079e27dd26304035cae",
+    "art/source/task8-hd/descent-room-01-source-1024.png": "39f5f5dc59fc047b78f35e23e08ad3beedbbd9f661ac404acb61fd8d808981fd",
+    "art/source/task8-hd/descent-room-02-source-1024.png": "e3d365c9e02c726799fbf364f9f633631331763f58d14e1444ebec802dfa2825",
+    "art/source/task8-hd/descent-room-03-source-1024.png": "a25a6125cd4125329c3683a840872e8ba41f7d0ed67566f0f3046f5838a68b47",
+    "art/source/task8-hd/forge-portal-source-1024.png": "5d6775a046db4218f7983e1723f4ed62298465b3a2f05b50f5989d2982dbf869",
+    "art/source/task8-hd/forge-room-source-1024.png": "76ba629a6ede91f2ae8a0a35438562173f9bf98841aa66ef8de4c45b31ac6e09",
+    "art/source/task8-hd/forge-setpiece-source-1024.png": "1e33161308dd3a7642b0117661d700cf9378b319c285c1eeb1f5a0db3f59551a",
+    "art/source/task8-hd/merchant-seed-source-1024.png": "c037e36ef21cb9021f22be85455127798e86630b2f1bf005c3b61c63b60bd994",
+    "art/source/task8-hd/otter-portal-source-1024.png": "8ae4dedd6299946a6aae142dc653889afff16dcf15c77a4c00dfeed27505999b",
+    "art/source/task8-hd/otter-room-source-1024.png": "6d2c1a6d0e83a81fe3446447750d0dcf2924b7ec016fc27074d90d6b97843538",
+    "art/source/task8-hd/portals-boss-source-1024.png": "c18d00c52b6669617ab0db92d86a7d06a4c007a9f94021f80a721c4f864b4b12",
+    "art/source/task8-hd/vault-room-source-1024.png": "d4a55b027318ab05439ee0e017e2db49ac329dc16781af2f0386ce8d6f5ed2cd",
+    "art/source/task8-hd/vault-seal-blocked-source-1024.png": "48b9d0c24ab8c3d3fb54602ba617a38061bbac6c87e7379775794e0522d6f835",
+    "art/source/task8-hd/vault-seal-cleared-source-1024.png": "37917eb6d2a04c8c26939011c293f5edf4f58fc92896817c938055951e43e7c3"
+  },
+  "pillowVersion": "12.1.1",
+  "pipelineSchema": 1,
+  "sources": {
+    "art/source/abyssal-gothic-hd/hazard-mine-source-original.png": {
+      "height": 1254,
+      "mode": "RGB",
+      "sha256": "064236cc6c46eef1b4c008e01dcbc33543c68b7a4cdecd905c20b800606fcaaa",
+      "width": 1254
+    },
+    "art/source/abyssal-gothic-hd/hazard-spikes-source-original.png": {
+      "height": 1254,
+      "mode": "RGB",
+      "sha256": "792cd2cbdc4a705d36c433f091e274663d4b103576d1ca3078a086b48635c29b",
+      "width": 1254
+    },
+    "art/source/portal-brazier-hd/brazier-atlas-source-original.png": {
+      "height": 1086,
+      "mode": "RGB",
+      "sha256": "8fc0f572ac5155ee0832eeaf65a48017694b23c5c89b493a42279f7835950cd4",
+      "width": 1448
+    },
+    "art/source/task8-hd/abyss-boss-room-source-original.png": {
+      "height": 1254,
+      "mode": "RGB",
+      "sha256": "93b279807e3d307be01b1af3139074291eaa4a0b2a890ac80018dd0b13ca351b",
+      "width": 1254
+    },
+    "art/source/task8-hd/abyss-env-source-original.png": {
+      "height": 1254,
+      "mode": "RGB",
+      "sha256": "671d384d86322e33345ad778bbfedf9482afad04162c3fd3ba2da3fd0792260f",
+      "width": 1254
+    },
+    "art/source/task8-hd/abyss-room-01-source-original.png": {
+      "height": 1254,
+      "mode": "RGB",
+      "sha256": "85e3d06578f8551e62419450675a19525aa1b53354fa62b73847587ac6b69d90",
+      "width": 1254
+    },
+    "art/source/task8-hd/abyss-room-02-source-original.png": {
+      "height": 1254,
+      "mode": "RGB",
+      "sha256": "5ade730930abdedd24fe36d0468f24cea7d299799f62362e9a6e9883e08a6556",
+      "width": 1254
+    },
+    "art/source/task8-hd/abyss-room-03-source-original.png": {
+      "height": 1254,
+      "mode": "RGB",
+      "sha256": "e8edd2d48efcfbad6fead7e70fdffb4580563eccca544496d56d63c0fd506c59",
+      "width": 1254
+    },
+    "art/source/task8-hd/core-props-source-original.png": {
+      "height": 1254,
+      "mode": "RGB",
+      "sha256": "7fffd23347dd0bc596040b783e6b5596ce36a0a65cac212475a67e806d356846",
+      "width": 1254
+    },
+    "art/source/task8-hd/corruption-boss-room-source-original.png": {
+      "height": 1254,
+      "mode": "RGB",
+      "sha256": "86c7241b627a2d9a35c23b48402a151b8f9ad0dff40c5226cb159e8e1143eb0c",
+      "width": 1254
+    },
+    "art/source/task8-hd/corruption-env-source-original.png": {
+      "height": 1254,
+      "mode": "RGB",
+      "sha256": "5ca073fe55065c17989daf947621f42cc309950c50305f6dc11da8a4091cba65",
+      "width": 1254
+    },
+    "art/source/task8-hd/corruption-room-01-source-original.png": {
+      "height": 1254,
+      "mode": "RGB",
+      "sha256": "828bf11ca34528ce9eb56f4b97dcc57717e28b0e77ac17eea50fad5252d1cd98",
+      "width": 1254
+    },
+    "art/source/task8-hd/corruption-room-02-source-original.png": {
+      "height": 1254,
+      "mode": "RGB",
+      "sha256": "f516c8cf0aa89eb0f6bbec8a9417b944114d52c628760551dab437ae5f591487",
+      "width": 1254
+    },
+    "art/source/task8-hd/corruption-room-03-source-original.png": {
+      "height": 1254,
+      "mode": "RGB",
+      "sha256": "d25eaf4dd79adc48897ae695efb1e9a65e7c5561bd42ebc4631964c6d864e600",
+      "width": 1254
+    },
+    "art/source/task8-hd/descent-boss-room-source-original.png": {
+      "height": 1254,
+      "mode": "RGB",
+      "sha256": "9802e495136f33d68f6282badd2d53babbbb8fce9d8620f6eb7a8f7324b2c5cf",
+      "width": 1254
+    },
+    "art/source/task8-hd/descent-room-01-source-original.png": {
+      "height": 1254,
+      "mode": "RGB",
+      "sha256": "d7d114e95aaf10ae318c21cde121d432776363ef3fadf19c6806a193a78fc8f2",
+      "width": 1254
+    },
+    "art/source/task8-hd/descent-room-02-source-original.png": {
+      "height": 1254,
+      "mode": "RGB",
+      "sha256": "d018184011934ba5900ed56313fdedae6b94b7efcf142c46f2c04796254237dc",
+      "width": 1254
+    },
+    "art/source/task8-hd/descent-room-03-source-original.png": {
+      "height": 1254,
+      "mode": "RGB",
+      "sha256": "7ef866e15e7794bcb5493ef3b043872f017ab109c52326f2da99cbc558aee417",
+      "width": 1254
+    },
+    "art/source/task8-hd/forge-portal-source-original.png": {
+      "height": 1254,
+      "mode": "RGB",
+      "sha256": "320aa4b047b41518d5650e67b0d5c9022a66e64ff7e2a8940eddb3ac1e62ac82",
+      "width": 1254
+    },
+    "art/source/task8-hd/forge-room-source-original.png": {
+      "height": 1254,
+      "mode": "RGB",
+      "sha256": "d1a62569259aef9ca074862ac0c6606c56c26c794c489a9c7dc5dfdb84077948",
+      "width": 1254
+    },
+    "art/source/task8-hd/forge-setpiece-source-original.png": {
+      "height": 1254,
+      "mode": "RGB",
+      "sha256": "0c78be6f7d62c840a3ade49460c3f0253bc9bc5bf8d415bed4562c9ee69cc201",
+      "width": 1254
+    },
+    "art/source/task8-hd/merchant-seed-source-original.png": {
+      "height": 1254,
+      "mode": "RGB",
+      "sha256": "a1b16d560ef89f9fcbc4bd8151f184a04d937fe50b2d1fc30c56f5762c3396b6",
+      "width": 1254
+    },
+    "art/source/task8-hd/otter-portal-source-original.png": {
+      "height": 1254,
+      "mode": "RGB",
+      "sha256": "5ec3c083ee09c85f7de86fd6124d9dbb7e64c7fa685d9e22a65a3c267d59efbf",
+      "width": 1254
+    },
+    "art/source/task8-hd/otter-room-source-original.png": {
+      "height": 1254,
+      "mode": "RGB",
+      "sha256": "f2c84948439b3e3c3f4400e8ef6740f4db6df814f68f3a6f0c8930642031ae32",
+      "width": 1254
+    },
+    "art/source/task8-hd/portals-boss-source-original.png": {
+      "height": 1254,
+      "mode": "RGB",
+      "sha256": "318e62b9b11ea586723d170bccfa6989a8ec2c671662669f09cb43fdfb9d36e3",
+      "width": 1254
+    },
+    "art/source/task8-hd/preserved-special-portals.json": {
+      "sha256": "1c52af2496ffb5d72e45333f2b0af7cdb507c2c52c0b124969bd86e61d202131"
+    },
+    "art/source/task8-hd/vault-room-source-original.png": {
+      "height": 1254,
+      "mode": "RGB",
+      "sha256": "739257055bb25455cc16dbeee3bc106931807c31e4f97aa4ebe03d2f1343d4e6",
+      "width": 1254
+    },
+    "art/source/task8-hd/vault-seal-blocked-source-original.png": {
+      "height": 1254,
+      "mode": "RGB",
+      "sha256": "27191f085144deded50936d01dfdf689dbd3645794a300c2e5a012c67788fefb",
+      "width": 1254
+    },
+    "art/source/task8-hd/vault-seal-cleared-source-original.png": {
+      "height": 1254,
+      "mode": "RGB",
+      "sha256": "1b31817cdb662d88dc8bfb84c239a9d0c1b7407627868560d4d324d4350396ce",
+      "width": 1254
+    },
+    "assets/sprite/tileset.png": {
+      "height": 64,
+      "mode": "RGBA",
+      "sha256": "2d768e27bcbd08a5402a79551af67b2e18c523ece31b2e1245d8942c38413b79",
+      "width": 64
+    }
+  }
+}

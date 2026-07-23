@@ -1,0 +1,381 @@
+{
+  "schemaVersion": 1,
+  "chromaKey": "#ff00ff",
+  "pillowVersion": "12.1.1",
+  "helper": {
+    "path": "remove_chroma_key.py",
+    "sha256": "7e51236919203b61d07ddffdc6e0b5f501a28661003f5851f26ffbb64bdec1ea"
+  },
+  "seeds": {
+    "vault-guardian": {
+      "path": "art/source/boss-hd/vault-guardian-south-idle-seed.png",
+      "sha256": "03f1658588e8e3f99308b3036b96cbbb0909cb28a63770cb88362f087ea52bbb",
+      "width": 1254,
+      "height": 1254,
+      "mode": "RGB",
+      "finalSize": 128
+    },
+    "blacksmith-guardian": {
+      "path": "art/source/boss-hd/blacksmith-guardian-south-idle-seed.png",
+      "sha256": "72c5ca6f3ebdbf51ce458fe32ab4e532f990dd680401b954a2b401b0ee5a4521",
+      "width": 1061,
+      "height": 1483,
+      "mode": "RGB",
+      "finalSize": 128
+    },
+    "warden/phase-1": {
+      "path": "art/source/boss-hd/warden-phase-1-south-idle-seed.png",
+      "sha256": "f7e3bedffc8e117efe8ebba1ba31aa86028065cf28c12cc94b04ce2e3f7e24f5",
+      "width": 1024,
+      "height": 1536,
+      "mode": "RGB",
+      "finalSize": 160
+    },
+    "warden/phase-2": {
+      "path": "art/source/boss-hd/warden-phase-2-south-idle-seed.png",
+      "sha256": "e189ebe0f2b5d3bcb02e451e83a9dbc1b62ecd5a590ea0549878d1c3a8193224",
+      "width": 1254,
+      "height": 1254,
+      "mode": "RGB",
+      "finalSize": 192
+    }
+  },
+  "helperDetectedKeys": {
+    "vault-guardian": "#fa02fa",
+    "blacksmith-guardian": "#fb02fa",
+    "warden/phase-1": "#fb02fa",
+    "warden/phase-2": "#fa02fa"
+  },
+  "directionAnchors": {
+    "art/source/boss-hd/vault-guardian/vault-guardian-animation-south-anchor-256.png": {
+      "width": 256,
+      "height": 256,
+      "mode": "RGBA",
+      "root": [
+        128,
+        244
+      ],
+      "policy": "approved front-facing identity reference",
+      "sha256": "1fb1b84ec5537bdf70d621a1612dc2f0a6fbc321a85d74be946004af6e552223"
+    },
+    "art/source/boss-hd/vault-guardian/vault-guardian-animation-north-anchor-256.png": {
+      "width": 256,
+      "height": 256,
+      "mode": "RGBA",
+      "root": [
+        128,
+        244
+      ],
+      "policy": "deterministic posterior silhouette guide; prompt requires a true readable back view",
+      "sha256": "2e3d9092becc5079a9e4bbb3d1dfdc23e3ec5ac019bb4b69a694b0f5da6301ae"
+    },
+    "art/source/boss-hd/vault-guardian/vault-guardian-animation-east-anchor-256.png": {
+      "width": 256,
+      "height": 256,
+      "mode": "RGBA",
+      "root": [
+        128,
+        244
+      ],
+      "policy": "deterministic side silhouette guide; west mirrors east; prompt owns true facing semantics",
+      "sha256": "5f2eab8c4337114d2e0a4204194ac70b83c3be1950219d46e9a43728819f1b41"
+    },
+    "art/source/boss-hd/vault-guardian/vault-guardian-animation-west-anchor-256.png": {
+      "width": 256,
+      "height": 256,
+      "mode": "RGBA",
+      "root": [
+        128,
+        244
+      ],
+      "policy": "deterministic side silhouette guide; west mirrors east; prompt owns true facing semantics",
+      "sha256": "bbc3bb8eae319b98b1ec00f27941237ad2dcc9a59aefe3ab98dd8707e876178b"
+    },
+    "art/source/boss-hd/blacksmith-guardian/blacksmith-guardian-animation-south-anchor-256.png": {
+      "width": 256,
+      "height": 256,
+      "mode": "RGBA",
+      "root": [
+        128,
+        244
+      ],
+      "policy": "approved front-facing identity reference",
+      "sha256": "8e5055ab9621eed32c043f787a07d02d528f4833a62c4efe749fb89124320f42"
+    },
+    "art/source/boss-hd/blacksmith-guardian/blacksmith-guardian-animation-north-anchor-256.png": {
+      "width": 256,
+      "height": 256,
+      "mode": "RGBA",
+      "root": [
+        128,
+        244
+      ],
+      "policy": "deterministic posterior silhouette guide; prompt requires a true readable back view",
+      "sha256": "057b6855f43c5689d72023126777683db31d3795f5442e1c50cf34e62c1c82e7"
+    },
+    "art/source/boss-hd/blacksmith-guardian/blacksmith-guardian-animation-east-anchor-256.png": {
+      "width": 256,
+      "height": 256,
+      "mode": "RGBA",
+      "root": [
+        128,
+        244
+      ],
+      "policy": "deterministic side silhouette guide; west mirrors east; prompt owns true facing semantics",
+      "sha256": "d60efba6d56e55ca71b32aa3c6ad6a220d6cc01433c1632eb0a890ecbe7692dc"
+    },
+    "art/source/boss-hd/blacksmith-guardian/blacksmith-guardian-animation-west-anchor-256.png": {
+      "width": 256,
+      "height": 256,
+      "mode": "RGBA",
+      "root": [
+        128,
+        244
+      ],
+      "policy": "deterministic side silhouette guide; west mirrors east; prompt owns true facing semantics",
+      "sha256": "341fb2d07eaa560a822a0af22730871defd153b17666c93efd622c3393bbcbdd"
+    },
+    "art/source/boss-hd/warden-phase-1/warden-phase-1-animation-south-anchor-256.png": {
+      "width": 256,
+      "height": 256,
+      "mode": "RGBA",
+      "root": [
+        128,
+        244
+      ],
+      "policy": "approved front-facing identity reference",
+      "sha256": "bcab9216b7df738a228b23c3c1e3b16fd8121c0728365cd4f978085335704dea"
+    },
+    "art/source/boss-hd/warden-phase-1/warden-phase-1-animation-north-anchor-256.png": {
+      "width": 256,
+      "height": 256,
+      "mode": "RGBA",
+      "root": [
+        128,
+        244
+      ],
+      "policy": "deterministic posterior silhouette guide; prompt requires a true readable back view",
+      "sha256": "e1d262cc26282c1f3c062636e1c2f6a602dbbdcd55b5a8aee26616559a99037a"
+    },
+    "art/source/boss-hd/warden-phase-1/warden-phase-1-animation-east-anchor-256.png": {
+      "width": 256,
+      "height": 256,
+      "mode": "RGBA",
+      "root": [
+        128,
+        244
+      ],
+      "policy": "deterministic side silhouette guide; west mirrors east; prompt owns true facing semantics",
+      "sha256": "b68f1c99365755d09672bb949f4f68203d9bb39c611f2e8f368767c4868d379b"
+    },
+    "art/source/boss-hd/warden-phase-1/warden-phase-1-animation-west-anchor-256.png": {
+      "width": 256,
+      "height": 256,
+      "mode": "RGBA",
+      "root": [
+        128,
+        244
+      ],
+      "policy": "deterministic side silhouette guide; west mirrors east; prompt owns true facing semantics",
+      "sha256": "571dcffa068a61413d1d1319897c07d896064cddafeedf2317fbb46de5f7a743"
+    },
+    "art/source/boss-hd/warden-phase-2/warden-phase-2-animation-south-anchor-256.png": {
+      "width": 256,
+      "height": 256,
+      "mode": "RGBA",
+      "root": [
+        128,
+        244
+      ],
+      "policy": "approved front-facing identity reference",
+      "sha256": "338be5c6db81397b99bf3193498fb92ba43af3b5cc6708e588cf5f4aeff29178"
+    },
+    "art/source/boss-hd/warden-phase-2/warden-phase-2-animation-north-anchor-256.png": {
+      "width": 256,
+      "height": 256,
+      "mode": "RGBA",
+      "root": [
+        128,
+        244
+      ],
+      "policy": "deterministic posterior silhouette guide; prompt requires a true readable back view",
+      "sha256": "bb8a67f605520c401af529e307ab715bf3eec27c00b7c5dc458c1768db87cd2f"
+    },
+    "art/source/boss-hd/warden-phase-2/warden-phase-2-animation-east-anchor-256.png": {
+      "width": 256,
+      "height": 256,
+      "mode": "RGBA",
+      "root": [
+        128,
+        244
+      ],
+      "policy": "deterministic side silhouette guide; west mirrors east; prompt owns true facing semantics",
+      "sha256": "087e8b4af507232c2c90a7e8aafc23dc00e1f2b59ed75a2e1c52baec3b929955"
+    },
+    "art/source/boss-hd/warden-phase-2/warden-phase-2-animation-west-anchor-256.png": {
+      "width": 256,
+      "height": 256,
+      "mode": "RGBA",
+      "root": [
+        128,
+        244
+      ],
+      "policy": "deterministic side silhouette guide; west mirrors east; prompt owns true facing semantics",
+      "sha256": "82d9dc5e50cc2a9065b0fd5e629b1c3b0c6c96944cacc4b27c61dc2648d1db20"
+    }
+  },
+  "editCanvases": {
+    "art/source/boss-hd/vault-guardian/vault-guardian-animation-south-edit-canvas-1024.png": {
+      "width": 1024,
+      "height": 1024,
+      "mode": "RGB",
+      "r1c1Only": true,
+      "sha256": "4f3a1f97779228b13a1897662e8465b4849289cfa2bfec1cca074d870db17a2b"
+    },
+    "art/source/boss-hd/vault-guardian/vault-guardian-animation-north-edit-canvas-1024.png": {
+      "width": 1024,
+      "height": 1024,
+      "mode": "RGB",
+      "r1c1Only": true,
+      "sha256": "bdb17b2fd88baffb798e753155a915bd97e77299d2c6a653c1c1ced91703b9e7"
+    },
+    "art/source/boss-hd/vault-guardian/vault-guardian-animation-east-edit-canvas-1024.png": {
+      "width": 1024,
+      "height": 1024,
+      "mode": "RGB",
+      "r1c1Only": true,
+      "sha256": "b3fed5887a4474260a1ceda824cb8d796fb29838d3d69e7b952ad943809b0397"
+    },
+    "art/source/boss-hd/vault-guardian/vault-guardian-animation-west-edit-canvas-1024.png": {
+      "width": 1024,
+      "height": 1024,
+      "mode": "RGB",
+      "r1c1Only": true,
+      "sha256": "bca04579abb97eb3fdee8e0a76010d88ec09ae93a50aa50630fa585c443326a6"
+    },
+    "art/source/boss-hd/blacksmith-guardian/blacksmith-guardian-animation-south-edit-canvas-1024.png": {
+      "width": 1024,
+      "height": 1024,
+      "mode": "RGB",
+      "r1c1Only": true,
+      "sha256": "79f177fe726ebb6d3d0fc8d78a9364ad5b74a776d01d2e6ee8df1fc92a398548"
+    },
+    "art/source/boss-hd/blacksmith-guardian/blacksmith-guardian-animation-north-edit-canvas-1024.png": {
+      "width": 1024,
+      "height": 1024,
+      "mode": "RGB",
+      "r1c1Only": true,
+      "sha256": "67c8af936d3c09aeb32ad9443bd1c7fb8ac2b92043351b890588679b44bda55d"
+    },
+    "art/source/boss-hd/blacksmith-guardian/blacksmith-guardian-animation-east-edit-canvas-1024.png": {
+      "width": 1024,
+      "height": 1024,
+      "mode": "RGB",
+      "r1c1Only": true,
+      "sha256": "6c113ee30026122286fb56d79473a03ad062741b3db57d6f91bbc78aaea6bb78"
+    },
+    "art/source/boss-hd/blacksmith-guardian/blacksmith-guardian-animation-west-edit-canvas-1024.png": {
+      "width": 1024,
+      "height": 1024,
+      "mode": "RGB",
+      "r1c1Only": true,
+      "sha256": "55e51fe1303ed9d371fba3c5641aabc1180f5060398bbcd21be43a167c7f98ef"
+    },
+    "art/source/boss-hd/warden-phase-1/warden-phase-1-animation-south-edit-canvas-1024.png": {
+      "width": 1024,
+      "height": 1024,
+      "mode": "RGB",
+      "r1c1Only": true,
+      "sha256": "aad716cf1f84dbc807d138bb5c928d83efa4a94b5a869da3903b3c34d4f5376a"
+    },
+    "art/source/boss-hd/warden-phase-1/warden-phase-1-animation-north-edit-canvas-1024.png": {
+      "width": 1024,
+      "height": 1024,
+      "mode": "RGB",
+      "r1c1Only": true,
+      "sha256": "1dc6fb88cffa0f1e7365272c8efa7e642cc45c2818d20fd8401f91b054de7cfc"
+    },
+    "art/source/boss-hd/warden-phase-1/warden-phase-1-animation-east-edit-canvas-1024.png": {
+      "width": 1024,
+      "height": 1024,
+      "mode": "RGB",
+      "r1c1Only": true,
+      "sha256": "782655622bbaa2899fadc0bd427f4a97a0cd37cf9b99b45cb93b0df685101a27"
+    },
+    "art/source/boss-hd/warden-phase-1/warden-phase-1-animation-west-edit-canvas-1024.png": {
+      "width": 1024,
+      "height": 1024,
+      "mode": "RGB",
+      "r1c1Only": true,
+      "sha256": "e7c6acdbbc320f1087aa53bb6be3b8ef496a2befc1cb1197316c6de11d7e0c5a"
+    },
+    "art/source/boss-hd/warden-phase-2/warden-phase-2-animation-south-edit-canvas-1024.png": {
+      "width": 1024,
+      "height": 1024,
+      "mode": "RGB",
+      "r1c1Only": true,
+      "sha256": "4a34889c3005931d67e9d7b2385bea9763bb9b21ce62b60edc570301ff22b651"
+    },
+    "art/source/boss-hd/warden-phase-2/warden-phase-2-animation-north-edit-canvas-1024.png": {
+      "width": 1024,
+      "height": 1024,
+      "mode": "RGB",
+      "r1c1Only": true,
+      "sha256": "d91947d093229bebd56cc06fd06332eba90fafcd582f8483b862102a5543c010"
+    },
+    "art/source/boss-hd/warden-phase-2/warden-phase-2-animation-east-edit-canvas-1024.png": {
+      "width": 1024,
+      "height": 1024,
+      "mode": "RGB",
+      "r1c1Only": true,
+      "sha256": "91ef5b5f9d0536788914604430e0fd62514edd1fb0dcca1be2282b6841a2d9a1"
+    },
+    "art/source/boss-hd/warden-phase-2/warden-phase-2-animation-west-edit-canvas-1024.png": {
+      "width": 1024,
+      "height": 1024,
+      "mode": "RGB",
+      "r1c1Only": true,
+      "sha256": "a651690d186ee3581e38f2f053f5a761cce4539e33f14b8783c254ffb28bb985"
+    }
+  },
+  "outputs": {
+    "art/briefs/boss-hd-prompts.json": "ae0402f247249993d4bbdddf341eee1863ccf0a537ae6c7b7e9abd2e85162a98",
+    "art/source/boss-hd/boss-seed-contact-sheet-256.png": "39f4283ce98edab582d213c6478bbe8ab2a71a257ec9783fc43651ea0c22ee54",
+    "art/source/boss-hd/vault-guardian/vault-guardian-south-idle-keyed.png": "aa9797583e75e7824beed59e0f6a3585eadf81b05e472495c3592e2e7112ee57",
+    "art/source/boss-hd/vault-guardian/vault-guardian-animation-south-anchor-256.png": "1fb1b84ec5537bdf70d621a1612dc2f0a6fbc321a85d74be946004af6e552223",
+    "art/source/boss-hd/vault-guardian/vault-guardian-animation-south-edit-canvas-1024.png": "4f3a1f97779228b13a1897662e8465b4849289cfa2bfec1cca074d870db17a2b",
+    "art/source/boss-hd/vault-guardian/vault-guardian-animation-north-anchor-256.png": "2e3d9092becc5079a9e4bbb3d1dfdc23e3ec5ac019bb4b69a694b0f5da6301ae",
+    "art/source/boss-hd/vault-guardian/vault-guardian-animation-north-edit-canvas-1024.png": "bdb17b2fd88baffb798e753155a915bd97e77299d2c6a653c1c1ced91703b9e7",
+    "art/source/boss-hd/vault-guardian/vault-guardian-animation-east-anchor-256.png": "5f2eab8c4337114d2e0a4204194ac70b83c3be1950219d46e9a43728819f1b41",
+    "art/source/boss-hd/vault-guardian/vault-guardian-animation-east-edit-canvas-1024.png": "b3fed5887a4474260a1ceda824cb8d796fb29838d3d69e7b952ad943809b0397",
+    "art/source/boss-hd/vault-guardian/vault-guardian-animation-west-anchor-256.png": "bbc3bb8eae319b98b1ec00f27941237ad2dcc9a59aefe3ab98dd8707e876178b",
+    "art/source/boss-hd/vault-guardian/vault-guardian-animation-west-edit-canvas-1024.png": "bca04579abb97eb3fdee8e0a76010d88ec09ae93a50aa50630fa585c443326a6",
+    "art/source/boss-hd/blacksmith-guardian/blacksmith-guardian-south-idle-keyed.png": "266f4202d286d44e515782268db48b490acb31aad2ede24c452c09239351c2e6",
+    "art/source/boss-hd/blacksmith-guardian/blacksmith-guardian-animation-south-anchor-256.png": "8e5055ab9621eed32c043f787a07d02d528f4833a62c4efe749fb89124320f42",
+    "art/source/boss-hd/blacksmith-guardian/blacksmith-guardian-animation-south-edit-canvas-1024.png": "79f177fe726ebb6d3d0fc8d78a9364ad5b74a776d01d2e6ee8df1fc92a398548",
+    "art/source/boss-hd/blacksmith-guardian/blacksmith-guardian-animation-north-anchor-256.png": "057b6855f43c5689d72023126777683db31d3795f5442e1c50cf34e62c1c82e7",
+    "art/source/boss-hd/blacksmith-guardian/blacksmith-guardian-animation-north-edit-canvas-1024.png": "67c8af936d3c09aeb32ad9443bd1c7fb8ac2b92043351b890588679b44bda55d",
+    "art/source/boss-hd/blacksmith-guardian/blacksmith-guardian-animation-east-anchor-256.png": "d60efba6d56e55ca71b32aa3c6ad6a220d6cc01433c1632eb0a890ecbe7692dc",
+    "art/source/boss-hd/blacksmith-guardian/blacksmith-guardian-animation-east-edit-canvas-1024.png": "6c113ee30026122286fb56d79473a03ad062741b3db57d6f91bbc78aaea6bb78",
+    "art/source/boss-hd/blacksmith-guardian/blacksmith-guardian-animation-west-anchor-256.png": "341fb2d07eaa560a822a0af22730871defd153b17666c93efd622c3393bbcbdd",
+    "art/source/boss-hd/blacksmith-guardian/blacksmith-guardian-animation-west-edit-canvas-1024.png": "55e51fe1303ed9d371fba3c5641aabc1180f5060398bbcd21be43a167c7f98ef",
+    "art/source/boss-hd/warden-phase-1/warden-phase-1-south-idle-keyed.png": "544537c9c0c0137961532b5c5c074db114dc88a2aef340454e75937b1c9910ce",
+    "art/source/boss-hd/warden-phase-1/warden-phase-1-animation-south-anchor-256.png": "bcab9216b7df738a228b23c3c1e3b16fd8121c0728365cd4f978085335704dea",
+    "art/source/boss-hd/warden-phase-1/warden-phase-1-animation-south-edit-canvas-1024.png": "aad716cf1f84dbc807d138bb5c928d83efa4a94b5a869da3903b3c34d4f5376a",
+    "art/source/boss-hd/warden-phase-1/warden-phase-1-animation-north-anchor-256.png": "e1d262cc26282c1f3c062636e1c2f6a602dbbdcd55b5a8aee26616559a99037a",
+    "art/source/boss-hd/warden-phase-1/warden-phase-1-animation-north-edit-canvas-1024.png": "1dc6fb88cffa0f1e7365272c8efa7e642cc45c2818d20fd8401f91b054de7cfc",
+    "art/source/boss-hd/warden-phase-1/warden-phase-1-animation-east-anchor-256.png": "b68f1c99365755d09672bb949f4f68203d9bb39c611f2e8f368767c4868d379b",
+    "art/source/boss-hd/warden-phase-1/warden-phase-1-animation-east-edit-canvas-1024.png": "782655622bbaa2899fadc0bd427f4a97a0cd37cf9b99b45cb93b0df685101a27",
+    "art/source/boss-hd/warden-phase-1/warden-phase-1-animation-west-anchor-256.png": "571dcffa068a61413d1d1319897c07d896064cddafeedf2317fbb46de5f7a743",
+    "art/source/boss-hd/warden-phase-1/warden-phase-1-animation-west-edit-canvas-1024.png": "e7c6acdbbc320f1087aa53bb6be3b8ef496a2befc1cb1197316c6de11d7e0c5a",
+    "art/source/boss-hd/warden-phase-2/warden-phase-2-south-idle-keyed.png": "c8cd91fd3fa37e06592cc94f982ed0d38191d835de15c30b2b2188e35875ef3d",
+    "art/source/boss-hd/warden-phase-2/warden-phase-2-animation-south-anchor-256.png": "338be5c6db81397b99bf3193498fb92ba43af3b5cc6708e588cf5f4aeff29178",
+    "art/source/boss-hd/warden-phase-2/warden-phase-2-animation-south-edit-canvas-1024.png": "4a34889c3005931d67e9d7b2385bea9763bb9b21ce62b60edc570301ff22b651",
+    "art/source/boss-hd/warden-phase-2/warden-phase-2-animation-north-anchor-256.png": "bb8a67f605520c401af529e307ab715bf3eec27c00b7c5dc458c1768db87cd2f",
+    "art/source/boss-hd/warden-phase-2/warden-phase-2-animation-north-edit-canvas-1024.png": "d91947d093229bebd56cc06fd06332eba90fafcd582f8483b862102a5543c010",
+    "art/source/boss-hd/warden-phase-2/warden-phase-2-animation-east-anchor-256.png": "087e8b4af507232c2c90a7e8aafc23dc00e1f2b59ed75a2e1c52baec3b929955",
+    "art/source/boss-hd/warden-phase-2/warden-phase-2-animation-east-edit-canvas-1024.png": "91ef5b5f9d0536788914604430e0fd62514edd1fb0dcca1be2282b6841a2d9a1",
+    "art/source/boss-hd/warden-phase-2/warden-phase-2-animation-west-anchor-256.png": "82d9dc5e50cc2a9065b0fd5e629b1c3b0c6c96944cacc4b27c61dc2648d1db20",
+    "art/source/boss-hd/warden-phase-2/warden-phase-2-animation-west-edit-canvas-1024.png": "a651690d186ee3581e38f2f053f5a761cce4539e33f14b8783c254ffb28bb985"
+  }
+}

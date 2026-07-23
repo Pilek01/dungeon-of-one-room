@@ -1,0 +1,693 @@
+{
+  "schemaVersion": 1,
+  "type": "warden.phase2reborn",
+  "frameSize": [
+    192,
+    192
+  ],
+  "renderSize": [
+    192,
+    192
+  ],
+  "anchor": [
+    0.5,
+    1
+  ],
+  "group": "bosses",
+  "clips": [
+    {
+      "name": "idle",
+      "frameCount": 4,
+      "fps": 4,
+      "loop": true
+    },
+    {
+      "name": "move",
+      "frameCount": 4,
+      "fps": 8,
+      "loop": true
+    },
+    {
+      "name": "cast",
+      "frameCount": 4,
+      "fps": 12,
+      "loop": false
+    },
+    {
+      "name": "hit",
+      "frameCount": 2,
+      "fps": 10,
+      "loop": false
+    },
+    {
+      "name": "death",
+      "frameCount": 2,
+      "fps": 6,
+      "loop": false
+    }
+  ],
+  "frames": [
+    {
+      "type": "warden.phase2reborn",
+      "direction": "south",
+      "clip": "idle",
+      "frame": 1,
+      "key": "boss.warden.phase2reborn.south.idle.01",
+      "src": "assets/hd/bosses/warden/phase-2-reborn/frames/south-idle-01.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden.phase2reborn",
+      "direction": "south",
+      "clip": "idle",
+      "frame": 2,
+      "key": "boss.warden.phase2reborn.south.idle.02",
+      "src": "assets/hd/bosses/warden/phase-2-reborn/frames/south-idle-02.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden.phase2reborn",
+      "direction": "south",
+      "clip": "idle",
+      "frame": 3,
+      "key": "boss.warden.phase2reborn.south.idle.03",
+      "src": "assets/hd/bosses/warden/phase-2-reborn/frames/south-idle-03.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden.phase2reborn",
+      "direction": "south",
+      "clip": "idle",
+      "frame": 4,
+      "key": "boss.warden.phase2reborn.south.idle.04",
+      "src": "assets/hd/bosses/warden/phase-2-reborn/frames/south-idle-04.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden.phase2reborn",
+      "direction": "south",
+      "clip": "move",
+      "frame": 1,
+      "key": "boss.warden.phase2reborn.south.move.01",
+      "src": "assets/hd/bosses/warden/phase-2-reborn/frames/south-move-01.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden.phase2reborn",
+      "direction": "south",
+      "clip": "move",
+      "frame": 2,
+      "key": "boss.warden.phase2reborn.south.move.02",
+      "src": "assets/hd/bosses/warden/phase-2-reborn/frames/south-move-02.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden.phase2reborn",
+      "direction": "south",
+      "clip": "move",
+      "frame": 3,
+      "key": "boss.warden.phase2reborn.south.move.03",
+      "src": "assets/hd/bosses/warden/phase-2-reborn/frames/south-move-03.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden.phase2reborn",
+      "direction": "south",
+      "clip": "move",
+      "frame": 4,
+      "key": "boss.warden.phase2reborn.south.move.04",
+      "src": "assets/hd/bosses/warden/phase-2-reborn/frames/south-move-04.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden.phase2reborn",
+      "direction": "south",
+      "clip": "cast",
+      "frame": 1,
+      "key": "boss.warden.phase2reborn.south.cast.01",
+      "src": "assets/hd/bosses/warden/phase-2-reborn/frames/south-cast-01.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden.phase2reborn",
+      "direction": "south",
+      "clip": "cast",
+      "frame": 2,
+      "key": "boss.warden.phase2reborn.south.cast.02",
+      "src": "assets/hd/bosses/warden/phase-2-reborn/frames/south-cast-02.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden.phase2reborn",
+      "direction": "south",
+      "clip": "cast",
+      "frame": 3,
+      "key": "boss.warden.phase2reborn.south.cast.03",
+      "src": "assets/hd/bosses/warden/phase-2-reborn/frames/south-cast-03.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden.phase2reborn",
+      "direction": "south",
+      "clip": "cast",
+      "frame": 4,
+      "key": "boss.warden.phase2reborn.south.cast.04",
+      "src": "assets/hd/bosses/warden/phase-2-reborn/frames/south-cast-04.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden.phase2reborn",
+      "direction": "south",
+      "clip": "hit",
+      "frame": 1,
+      "key": "boss.warden.phase2reborn.south.hit.01",
+      "src": "assets/hd/bosses/warden/phase-2-reborn/frames/south-hit-01.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden.phase2reborn",
+      "direction": "south",
+      "clip": "hit",
+      "frame": 2,
+      "key": "boss.warden.phase2reborn.south.hit.02",
+      "src": "assets/hd/bosses/warden/phase-2-reborn/frames/south-hit-02.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden.phase2reborn",
+      "direction": "south",
+      "clip": "death",
+      "frame": 1,
+      "key": "boss.warden.phase2reborn.south.death.01",
+      "src": "assets/hd/bosses/warden/phase-2-reborn/frames/south-death-01.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden.phase2reborn",
+      "direction": "south",
+      "clip": "death",
+      "frame": 2,
+      "key": "boss.warden.phase2reborn.south.death.02",
+      "src": "assets/hd/bosses/warden/phase-2-reborn/frames/south-death-02.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden.phase2reborn",
+      "direction": "north",
+      "clip": "idle",
+      "frame": 1,
+      "key": "boss.warden.phase2reborn.north.idle.01",
+      "src": "assets/hd/bosses/warden/phase-2-reborn/frames/north-idle-01.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden.phase2reborn",
+      "direction": "north",
+      "clip": "idle",
+      "frame": 2,
+      "key": "boss.warden.phase2reborn.north.idle.02",
+      "src": "assets/hd/bosses/warden/phase-2-reborn/frames/north-idle-02.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden.phase2reborn",
+      "direction": "north",
+      "clip": "idle",
+      "frame": 3,
+      "key": "boss.warden.phase2reborn.north.idle.03",
+      "src": "assets/hd/bosses/warden/phase-2-reborn/frames/north-idle-03.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden.phase2reborn",
+      "direction": "north",
+      "clip": "idle",
+      "frame": 4,
+      "key": "boss.warden.phase2reborn.north.idle.04",
+      "src": "assets/hd/bosses/warden/phase-2-reborn/frames/north-idle-04.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden.phase2reborn",
+      "direction": "north",
+      "clip": "move",
+      "frame": 1,
+      "key": "boss.warden.phase2reborn.north.move.01",
+      "src": "assets/hd/bosses/warden/phase-2-reborn/frames/north-move-01.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden.phase2reborn",
+      "direction": "north",
+      "clip": "move",
+      "frame": 2,
+      "key": "boss.warden.phase2reborn.north.move.02",
+      "src": "assets/hd/bosses/warden/phase-2-reborn/frames/north-move-02.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden.phase2reborn",
+      "direction": "north",
+      "clip": "move",
+      "frame": 3,
+      "key": "boss.warden.phase2reborn.north.move.03",
+      "src": "assets/hd/bosses/warden/phase-2-reborn/frames/north-move-03.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden.phase2reborn",
+      "direction": "north",
+      "clip": "move",
+      "frame": 4,
+      "key": "boss.warden.phase2reborn.north.move.04",
+      "src": "assets/hd/bosses/warden/phase-2-reborn/frames/north-move-04.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden.phase2reborn",
+      "direction": "north",
+      "clip": "cast",
+      "frame": 1,
+      "key": "boss.warden.phase2reborn.north.cast.01",
+      "src": "assets/hd/bosses/warden/phase-2-reborn/frames/north-cast-01.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden.phase2reborn",
+      "direction": "north",
+      "clip": "cast",
+      "frame": 2,
+      "key": "boss.warden.phase2reborn.north.cast.02",
+      "src": "assets/hd/bosses/warden/phase-2-reborn/frames/north-cast-02.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden.phase2reborn",
+      "direction": "north",
+      "clip": "cast",
+      "frame": 3,
+      "key": "boss.warden.phase2reborn.north.cast.03",
+      "src": "assets/hd/bosses/warden/phase-2-reborn/frames/north-cast-03.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden.phase2reborn",
+      "direction": "north",
+      "clip": "cast",
+      "frame": 4,
+      "key": "boss.warden.phase2reborn.north.cast.04",
+      "src": "assets/hd/bosses/warden/phase-2-reborn/frames/north-cast-04.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden.phase2reborn",
+      "direction": "north",
+      "clip": "hit",
+      "frame": 1,
+      "key": "boss.warden.phase2reborn.north.hit.01",
+      "src": "assets/hd/bosses/warden/phase-2-reborn/frames/north-hit-01.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden.phase2reborn",
+      "direction": "north",
+      "clip": "hit",
+      "frame": 2,
+      "key": "boss.warden.phase2reborn.north.hit.02",
+      "src": "assets/hd/bosses/warden/phase-2-reborn/frames/north-hit-02.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden.phase2reborn",
+      "direction": "north",
+      "clip": "death",
+      "frame": 1,
+      "key": "boss.warden.phase2reborn.north.death.01",
+      "src": "assets/hd/bosses/warden/phase-2-reborn/frames/north-death-01.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden.phase2reborn",
+      "direction": "north",
+      "clip": "death",
+      "frame": 2,
+      "key": "boss.warden.phase2reborn.north.death.02",
+      "src": "assets/hd/bosses/warden/phase-2-reborn/frames/north-death-02.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden.phase2reborn",
+      "direction": "east",
+      "clip": "idle",
+      "frame": 1,
+      "key": "boss.warden.phase2reborn.east.idle.01",
+      "src": "assets/hd/bosses/warden/phase-2-reborn/frames/east-idle-01.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden.phase2reborn",
+      "direction": "east",
+      "clip": "idle",
+      "frame": 2,
+      "key": "boss.warden.phase2reborn.east.idle.02",
+      "src": "assets/hd/bosses/warden/phase-2-reborn/frames/east-idle-02.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden.phase2reborn",
+      "direction": "east",
+      "clip": "idle",
+      "frame": 3,
+      "key": "boss.warden.phase2reborn.east.idle.03",
+      "src": "assets/hd/bosses/warden/phase-2-reborn/frames/east-idle-03.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden.phase2reborn",
+      "direction": "east",
+      "clip": "idle",
+      "frame": 4,
+      "key": "boss.warden.phase2reborn.east.idle.04",
+      "src": "assets/hd/bosses/warden/phase-2-reborn/frames/east-idle-04.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden.phase2reborn",
+      "direction": "east",
+      "clip": "move",
+      "frame": 1,
+      "key": "boss.warden.phase2reborn.east.move.01",
+      "src": "assets/hd/bosses/warden/phase-2-reborn/frames/east-move-01.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden.phase2reborn",
+      "direction": "east",
+      "clip": "move",
+      "frame": 2,
+      "key": "boss.warden.phase2reborn.east.move.02",
+      "src": "assets/hd/bosses/warden/phase-2-reborn/frames/east-move-02.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden.phase2reborn",
+      "direction": "east",
+      "clip": "move",
+      "frame": 3,
+      "key": "boss.warden.phase2reborn.east.move.03",
+      "src": "assets/hd/bosses/warden/phase-2-reborn/frames/east-move-03.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden.phase2reborn",
+      "direction": "east",
+      "clip": "move",
+      "frame": 4,
+      "key": "boss.warden.phase2reborn.east.move.04",
+      "src": "assets/hd/bosses/warden/phase-2-reborn/frames/east-move-04.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden.phase2reborn",
+      "direction": "east",
+      "clip": "cast",
+      "frame": 1,
+      "key": "boss.warden.phase2reborn.east.cast.01",
+      "src": "assets/hd/bosses/warden/phase-2-reborn/frames/east-cast-01.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden.phase2reborn",
+      "direction": "east",
+      "clip": "cast",
+      "frame": 2,
+      "key": "boss.warden.phase2reborn.east.cast.02",
+      "src": "assets/hd/bosses/warden/phase-2-reborn/frames/east-cast-02.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden.phase2reborn",
+      "direction": "east",
+      "clip": "cast",
+      "frame": 3,
+      "key": "boss.warden.phase2reborn.east.cast.03",
+      "src": "assets/hd/bosses/warden/phase-2-reborn/frames/east-cast-03.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden.phase2reborn",
+      "direction": "east",
+      "clip": "cast",
+      "frame": 4,
+      "key": "boss.warden.phase2reborn.east.cast.04",
+      "src": "assets/hd/bosses/warden/phase-2-reborn/frames/east-cast-04.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden.phase2reborn",
+      "direction": "east",
+      "clip": "hit",
+      "frame": 1,
+      "key": "boss.warden.phase2reborn.east.hit.01",
+      "src": "assets/hd/bosses/warden/phase-2-reborn/frames/east-hit-01.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden.phase2reborn",
+      "direction": "east",
+      "clip": "hit",
+      "frame": 2,
+      "key": "boss.warden.phase2reborn.east.hit.02",
+      "src": "assets/hd/bosses/warden/phase-2-reborn/frames/east-hit-02.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden.phase2reborn",
+      "direction": "east",
+      "clip": "death",
+      "frame": 1,
+      "key": "boss.warden.phase2reborn.east.death.01",
+      "src": "assets/hd/bosses/warden/phase-2-reborn/frames/east-death-01.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden.phase2reborn",
+      "direction": "east",
+      "clip": "death",
+      "frame": 2,
+      "key": "boss.warden.phase2reborn.east.death.02",
+      "src": "assets/hd/bosses/warden/phase-2-reborn/frames/east-death-02.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden.phase2reborn",
+      "direction": "west",
+      "clip": "idle",
+      "frame": 1,
+      "key": "boss.warden.phase2reborn.west.idle.01",
+      "src": "assets/hd/bosses/warden/phase-2-reborn/frames/west-idle-01.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden.phase2reborn",
+      "direction": "west",
+      "clip": "idle",
+      "frame": 2,
+      "key": "boss.warden.phase2reborn.west.idle.02",
+      "src": "assets/hd/bosses/warden/phase-2-reborn/frames/west-idle-02.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden.phase2reborn",
+      "direction": "west",
+      "clip": "idle",
+      "frame": 3,
+      "key": "boss.warden.phase2reborn.west.idle.03",
+      "src": "assets/hd/bosses/warden/phase-2-reborn/frames/west-idle-03.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden.phase2reborn",
+      "direction": "west",
+      "clip": "idle",
+      "frame": 4,
+      "key": "boss.warden.phase2reborn.west.idle.04",
+      "src": "assets/hd/bosses/warden/phase-2-reborn/frames/west-idle-04.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden.phase2reborn",
+      "direction": "west",
+      "clip": "move",
+      "frame": 1,
+      "key": "boss.warden.phase2reborn.west.move.01",
+      "src": "assets/hd/bosses/warden/phase-2-reborn/frames/west-move-01.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden.phase2reborn",
+      "direction": "west",
+      "clip": "move",
+      "frame": 2,
+      "key": "boss.warden.phase2reborn.west.move.02",
+      "src": "assets/hd/bosses/warden/phase-2-reborn/frames/west-move-02.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden.phase2reborn",
+      "direction": "west",
+      "clip": "move",
+      "frame": 3,
+      "key": "boss.warden.phase2reborn.west.move.03",
+      "src": "assets/hd/bosses/warden/phase-2-reborn/frames/west-move-03.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden.phase2reborn",
+      "direction": "west",
+      "clip": "move",
+      "frame": 4,
+      "key": "boss.warden.phase2reborn.west.move.04",
+      "src": "assets/hd/bosses/warden/phase-2-reborn/frames/west-move-04.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden.phase2reborn",
+      "direction": "west",
+      "clip": "cast",
+      "frame": 1,
+      "key": "boss.warden.phase2reborn.west.cast.01",
+      "src": "assets/hd/bosses/warden/phase-2-reborn/frames/west-cast-01.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden.phase2reborn",
+      "direction": "west",
+      "clip": "cast",
+      "frame": 2,
+      "key": "boss.warden.phase2reborn.west.cast.02",
+      "src": "assets/hd/bosses/warden/phase-2-reborn/frames/west-cast-02.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden.phase2reborn",
+      "direction": "west",
+      "clip": "cast",
+      "frame": 3,
+      "key": "boss.warden.phase2reborn.west.cast.03",
+      "src": "assets/hd/bosses/warden/phase-2-reborn/frames/west-cast-03.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden.phase2reborn",
+      "direction": "west",
+      "clip": "cast",
+      "frame": 4,
+      "key": "boss.warden.phase2reborn.west.cast.04",
+      "src": "assets/hd/bosses/warden/phase-2-reborn/frames/west-cast-04.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden.phase2reborn",
+      "direction": "west",
+      "clip": "hit",
+      "frame": 1,
+      "key": "boss.warden.phase2reborn.west.hit.01",
+      "src": "assets/hd/bosses/warden/phase-2-reborn/frames/west-hit-01.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden.phase2reborn",
+      "direction": "west",
+      "clip": "hit",
+      "frame": 2,
+      "key": "boss.warden.phase2reborn.west.hit.02",
+      "src": "assets/hd/bosses/warden/phase-2-reborn/frames/west-hit-02.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden.phase2reborn",
+      "direction": "west",
+      "clip": "death",
+      "frame": 1,
+      "key": "boss.warden.phase2reborn.west.death.01",
+      "src": "assets/hd/bosses/warden/phase-2-reborn/frames/west-death-01.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden.phase2reborn",
+      "direction": "west",
+      "clip": "death",
+      "frame": 2,
+      "key": "boss.warden.phase2reborn.west.death.02",
+      "src": "assets/hd/bosses/warden/phase-2-reborn/frames/west-death-02.png",
+      "group": "bosses",
+      "critical": true
+    }
+  ],
+  "profile": "warden-phase-2-reborn",
+  "phase": 2
+}

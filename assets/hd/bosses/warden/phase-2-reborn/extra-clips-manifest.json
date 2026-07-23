@@ -1,0 +1,389 @@
+{
+  "schemaVersion": 1,
+  "entries": [
+    {
+      "key": "vfx.warden.transform.south.01",
+      "src": "assets/hd/bosses/warden/phase-2-reborn/transformation/south-transform-01.png",
+      "group": "vfx",
+      "critical": false
+    },
+    {
+      "key": "vfx.warden.transform.south.02",
+      "src": "assets/hd/bosses/warden/phase-2-reborn/transformation/south-transform-02.png",
+      "group": "vfx",
+      "critical": false
+    },
+    {
+      "key": "vfx.warden.transform.south.03",
+      "src": "assets/hd/bosses/warden/phase-2-reborn/transformation/south-transform-03.png",
+      "group": "vfx",
+      "critical": false
+    },
+    {
+      "key": "vfx.warden.transform.south.04",
+      "src": "assets/hd/bosses/warden/phase-2-reborn/transformation/south-transform-04.png",
+      "group": "vfx",
+      "critical": false
+    },
+    {
+      "key": "vfx.warden.transform.south.05",
+      "src": "assets/hd/bosses/warden/phase-2-reborn/transformation/south-transform-05.png",
+      "group": "vfx",
+      "critical": false
+    },
+    {
+      "key": "vfx.warden.transform.south.06",
+      "src": "assets/hd/bosses/warden/phase-2-reborn/transformation/south-transform-06.png",
+      "group": "vfx",
+      "critical": false
+    },
+    {
+      "key": "vfx.warden.transform.south.07",
+      "src": "assets/hd/bosses/warden/phase-2-reborn/transformation/south-transform-07.png",
+      "group": "vfx",
+      "critical": false
+    },
+    {
+      "key": "vfx.warden.transform.south.08",
+      "src": "assets/hd/bosses/warden/phase-2-reborn/transformation/south-transform-08.png",
+      "group": "vfx",
+      "critical": false
+    },
+    {
+      "key": "vfx.warden.finaldeath.south.01",
+      "src": "assets/hd/bosses/warden/phase-2-reborn/final-death/south-final-death-01.png",
+      "group": "vfx",
+      "critical": false
+    },
+    {
+      "key": "vfx.warden.finaldeath.south.02",
+      "src": "assets/hd/bosses/warden/phase-2-reborn/final-death/south-final-death-02.png",
+      "group": "vfx",
+      "critical": false
+    },
+    {
+      "key": "vfx.warden.finaldeath.south.03",
+      "src": "assets/hd/bosses/warden/phase-2-reborn/final-death/south-final-death-03.png",
+      "group": "vfx",
+      "critical": false
+    },
+    {
+      "key": "vfx.warden.finaldeath.south.04",
+      "src": "assets/hd/bosses/warden/phase-2-reborn/final-death/south-final-death-04.png",
+      "group": "vfx",
+      "critical": false
+    },
+    {
+      "key": "vfx.warden.finaldeath.south.05",
+      "src": "assets/hd/bosses/warden/phase-2-reborn/final-death/south-final-death-05.png",
+      "group": "vfx",
+      "critical": false
+    },
+    {
+      "key": "vfx.warden.finaldeath.south.06",
+      "src": "assets/hd/bosses/warden/phase-2-reborn/final-death/south-final-death-06.png",
+      "group": "vfx",
+      "critical": false
+    },
+    {
+      "key": "vfx.warden.finaldeath.south.07",
+      "src": "assets/hd/bosses/warden/phase-2-reborn/final-death/south-final-death-07.png",
+      "group": "vfx",
+      "critical": false
+    },
+    {
+      "key": "vfx.warden.finaldeath.south.08",
+      "src": "assets/hd/bosses/warden/phase-2-reborn/final-death/south-final-death-08.png",
+      "group": "vfx",
+      "critical": false
+    },
+    {
+      "key": "vfx.warden.transform.north.01",
+      "src": "assets/hd/bosses/warden/phase-2-reborn/transformation/north-transform-01.png",
+      "group": "vfx",
+      "critical": false
+    },
+    {
+      "key": "vfx.warden.transform.north.02",
+      "src": "assets/hd/bosses/warden/phase-2-reborn/transformation/north-transform-02.png",
+      "group": "vfx",
+      "critical": false
+    },
+    {
+      "key": "vfx.warden.transform.north.03",
+      "src": "assets/hd/bosses/warden/phase-2-reborn/transformation/north-transform-03.png",
+      "group": "vfx",
+      "critical": false
+    },
+    {
+      "key": "vfx.warden.transform.north.04",
+      "src": "assets/hd/bosses/warden/phase-2-reborn/transformation/north-transform-04.png",
+      "group": "vfx",
+      "critical": false
+    },
+    {
+      "key": "vfx.warden.transform.north.05",
+      "src": "assets/hd/bosses/warden/phase-2-reborn/transformation/north-transform-05.png",
+      "group": "vfx",
+      "critical": false
+    },
+    {
+      "key": "vfx.warden.transform.north.06",
+      "src": "assets/hd/bosses/warden/phase-2-reborn/transformation/north-transform-06.png",
+      "group": "vfx",
+      "critical": false
+    },
+    {
+      "key": "vfx.warden.transform.north.07",
+      "src": "assets/hd/bosses/warden/phase-2-reborn/transformation/north-transform-07.png",
+      "group": "vfx",
+      "critical": false
+    },
+    {
+      "key": "vfx.warden.transform.north.08",
+      "src": "assets/hd/bosses/warden/phase-2-reborn/transformation/north-transform-08.png",
+      "group": "vfx",
+      "critical": false
+    },
+    {
+      "key": "vfx.warden.finaldeath.north.01",
+      "src": "assets/hd/bosses/warden/phase-2-reborn/final-death/north-final-death-01.png",
+      "group": "vfx",
+      "critical": false
+    },
+    {
+      "key": "vfx.warden.finaldeath.north.02",
+      "src": "assets/hd/bosses/warden/phase-2-reborn/final-death/north-final-death-02.png",
+      "group": "vfx",
+      "critical": false
+    },
+    {
+      "key": "vfx.warden.finaldeath.north.03",
+      "src": "assets/hd/bosses/warden/phase-2-reborn/final-death/north-final-death-03.png",
+      "group": "vfx",
+      "critical": false
+    },
+    {
+      "key": "vfx.warden.finaldeath.north.04",
+      "src": "assets/hd/bosses/warden/phase-2-reborn/final-death/north-final-death-04.png",
+      "group": "vfx",
+      "critical": false
+    },
+    {
+      "key": "vfx.warden.finaldeath.north.05",
+      "src": "assets/hd/bosses/warden/phase-2-reborn/final-death/north-final-death-05.png",
+      "group": "vfx",
+      "critical": false
+    },
+    {
+      "key": "vfx.warden.finaldeath.north.06",
+      "src": "assets/hd/bosses/warden/phase-2-reborn/final-death/north-final-death-06.png",
+      "group": "vfx",
+      "critical": false
+    },
+    {
+      "key": "vfx.warden.finaldeath.north.07",
+      "src": "assets/hd/bosses/warden/phase-2-reborn/final-death/north-final-death-07.png",
+      "group": "vfx",
+      "critical": false
+    },
+    {
+      "key": "vfx.warden.finaldeath.north.08",
+      "src": "assets/hd/bosses/warden/phase-2-reborn/final-death/north-final-death-08.png",
+      "group": "vfx",
+      "critical": false
+    },
+    {
+      "key": "vfx.warden.transform.east.01",
+      "src": "assets/hd/bosses/warden/phase-2-reborn/transformation/east-transform-01.png",
+      "group": "vfx",
+      "critical": false
+    },
+    {
+      "key": "vfx.warden.transform.east.02",
+      "src": "assets/hd/bosses/warden/phase-2-reborn/transformation/east-transform-02.png",
+      "group": "vfx",
+      "critical": false
+    },
+    {
+      "key": "vfx.warden.transform.east.03",
+      "src": "assets/hd/bosses/warden/phase-2-reborn/transformation/east-transform-03.png",
+      "group": "vfx",
+      "critical": false
+    },
+    {
+      "key": "vfx.warden.transform.east.04",
+      "src": "assets/hd/bosses/warden/phase-2-reborn/transformation/east-transform-04.png",
+      "group": "vfx",
+      "critical": false
+    },
+    {
+      "key": "vfx.warden.transform.east.05",
+      "src": "assets/hd/bosses/warden/phase-2-reborn/transformation/east-transform-05.png",
+      "group": "vfx",
+      "critical": false
+    },
+    {
+      "key": "vfx.warden.transform.east.06",
+      "src": "assets/hd/bosses/warden/phase-2-reborn/transformation/east-transform-06.png",
+      "group": "vfx",
+      "critical": false
+    },
+    {
+      "key": "vfx.warden.transform.east.07",
+      "src": "assets/hd/bosses/warden/phase-2-reborn/transformation/east-transform-07.png",
+      "group": "vfx",
+      "critical": false
+    },
+    {
+      "key": "vfx.warden.transform.east.08",
+      "src": "assets/hd/bosses/warden/phase-2-reborn/transformation/east-transform-08.png",
+      "group": "vfx",
+      "critical": false
+    },
+    {
+      "key": "vfx.warden.finaldeath.east.01",
+      "src": "assets/hd/bosses/warden/phase-2-reborn/final-death/east-final-death-01.png",
+      "group": "vfx",
+      "critical": false
+    },
+    {
+      "key": "vfx.warden.finaldeath.east.02",
+      "src": "assets/hd/bosses/warden/phase-2-reborn/final-death/east-final-death-02.png",
+      "group": "vfx",
+      "critical": false
+    },
+    {
+      "key": "vfx.warden.finaldeath.east.03",
+      "src": "assets/hd/bosses/warden/phase-2-reborn/final-death/east-final-death-03.png",
+      "group": "vfx",
+      "critical": false
+    },
+    {
+      "key": "vfx.warden.finaldeath.east.04",
+      "src": "assets/hd/bosses/warden/phase-2-reborn/final-death/east-final-death-04.png",
+      "group": "vfx",
+      "critical": false
+    },
+    {
+      "key": "vfx.warden.finaldeath.east.05",
+      "src": "assets/hd/bosses/warden/phase-2-reborn/final-death/east-final-death-05.png",
+      "group": "vfx",
+      "critical": false
+    },
+    {
+      "key": "vfx.warden.finaldeath.east.06",
+      "src": "assets/hd/bosses/warden/phase-2-reborn/final-death/east-final-death-06.png",
+      "group": "vfx",
+      "critical": false
+    },
+    {
+      "key": "vfx.warden.finaldeath.east.07",
+      "src": "assets/hd/bosses/warden/phase-2-reborn/final-death/east-final-death-07.png",
+      "group": "vfx",
+      "critical": false
+    },
+    {
+      "key": "vfx.warden.finaldeath.east.08",
+      "src": "assets/hd/bosses/warden/phase-2-reborn/final-death/east-final-death-08.png",
+      "group": "vfx",
+      "critical": false
+    },
+    {
+      "key": "vfx.warden.transform.west.01",
+      "src": "assets/hd/bosses/warden/phase-2-reborn/transformation/west-transform-01.png",
+      "group": "vfx",
+      "critical": false
+    },
+    {
+      "key": "vfx.warden.transform.west.02",
+      "src": "assets/hd/bosses/warden/phase-2-reborn/transformation/west-transform-02.png",
+      "group": "vfx",
+      "critical": false
+    },
+    {
+      "key": "vfx.warden.transform.west.03",
+      "src": "assets/hd/bosses/warden/phase-2-reborn/transformation/west-transform-03.png",
+      "group": "vfx",
+      "critical": false
+    },
+    {
+      "key": "vfx.warden.transform.west.04",
+      "src": "assets/hd/bosses/warden/phase-2-reborn/transformation/west-transform-04.png",
+      "group": "vfx",
+      "critical": false
+    },
+    {
+      "key": "vfx.warden.transform.west.05",
+      "src": "assets/hd/bosses/warden/phase-2-reborn/transformation/west-transform-05.png",
+      "group": "vfx",
+      "critical": false
+    },
+    {
+      "key": "vfx.warden.transform.west.06",
+      "src": "assets/hd/bosses/warden/phase-2-reborn/transformation/west-transform-06.png",
+      "group": "vfx",
+      "critical": false
+    },
+    {
+      "key": "vfx.warden.transform.west.07",
+      "src": "assets/hd/bosses/warden/phase-2-reborn/transformation/west-transform-07.png",
+      "group": "vfx",
+      "critical": false
+    },
+    {
+      "key": "vfx.warden.transform.west.08",
+      "src": "assets/hd/bosses/warden/phase-2-reborn/transformation/west-transform-08.png",
+      "group": "vfx",
+      "critical": false
+    },
+    {
+      "key": "vfx.warden.finaldeath.west.01",
+      "src": "assets/hd/bosses/warden/phase-2-reborn/final-death/west-final-death-01.png",
+      "group": "vfx",
+      "critical": false
+    },
+    {
+      "key": "vfx.warden.finaldeath.west.02",
+      "src": "assets/hd/bosses/warden/phase-2-reborn/final-death/west-final-death-02.png",
+      "group": "vfx",
+      "critical": false
+    },
+    {
+      "key": "vfx.warden.finaldeath.west.03",
+      "src": "assets/hd/bosses/warden/phase-2-reborn/final-death/west-final-death-03.png",
+      "group": "vfx",
+      "critical": false
+    },
+    {
+      "key": "vfx.warden.finaldeath.west.04",
+      "src": "assets/hd/bosses/warden/phase-2-reborn/final-death/west-final-death-04.png",
+      "group": "vfx",
+      "critical": false
+    },
+    {
+      "key": "vfx.warden.finaldeath.west.05",
+      "src": "assets/hd/bosses/warden/phase-2-reborn/final-death/west-final-death-05.png",
+      "group": "vfx",
+      "critical": false
+    },
+    {
+      "key": "vfx.warden.finaldeath.west.06",
+      "src": "assets/hd/bosses/warden/phase-2-reborn/final-death/west-final-death-06.png",
+      "group": "vfx",
+      "critical": false
+    },
+    {
+      "key": "vfx.warden.finaldeath.west.07",
+      "src": "assets/hd/bosses/warden/phase-2-reborn/final-death/west-final-death-07.png",
+      "group": "vfx",
+      "critical": false
+    },
+    {
+      "key": "vfx.warden.finaldeath.west.08",
+      "src": "assets/hd/bosses/warden/phase-2-reborn/final-death/west-final-death-08.png",
+      "group": "vfx",
+      "critical": false
+    }
+  ]
+}

@@ -1,0 +1,4362 @@
+/* Final HD composition layer. Loaded after style.css on purpose. */
+.relic-slot-grid { display: none; }
+.room-stage { display: contents; }
+.room-vital-rail,
+.room-resource-rail { display: none; }
+
+@media (min-width: 1201px) {
+  body.graphics-hd-ui {
+    height: 100vh;
+    min-height: 100vh;
+    padding: 0;
+    overflow: hidden;
+    background: #030405;
+  }
+
+  body.graphics-hd-ui .app {
+    width: 100vw;
+    height: 100vh;
+    box-sizing: border-box;
+    grid-template-rows: minmax(0, 1fr) auto;
+    gap: 0;
+    padding: 34px 48px 25px;
+    background: #050608 url("assets/hd/ui/abyssal-gothic/screen-chrome.png") center / 100% 100% no-repeat;
+  }
+
+  body.graphics-hd-ui .layout,
+  body.graphics-hd-ui .layout-track {
+    min-height: 0;
+    height: 100%;
+  }
+
+  body.graphics-hd-ui .layout-track {
+    grid-template-columns: minmax(285px, 23.5%) minmax(650px, 53%) minmax(285px, 23.5%);
+    gap: 0;
+    align-items: stretch;
+  }
+
+  body.graphics-hd-ui .panel {
+    height: 100%;
+    min-height: 0;
+    box-sizing: border-box;
+    padding: 28px 30px 34px;
+    overflow: hidden;
+    border: 0;
+    border-radius: 0;
+    background-color: #090c0f;
+    background-image: url("assets/hd/ui/abyssal-gothic/menu-frame.png"), url("assets/hd/ui/abyssal-gothic/panel-texture.png");
+    background-position: center, center;
+    background-repeat: no-repeat, repeat;
+    background-size: 100% 100%, 320px 320px;
+    box-shadow: none;
+  }
+
+  body.graphics-hd-ui .panel-left { padding-right: 34px; }
+  body.graphics-hd-ui .panel-right { padding-left: 34px; }
+
+  body.graphics-hd-ui .panel-left > .hud,
+  body.graphics-hd-ui .panel-right > .actions,
+  body.graphics-hd-ui .panel-right > .active-effects,
+  body.graphics-hd-ui .panel-right > .mutators,
+  body.graphics-hd-ui .panel-right > .log {
+    width: calc(100% - 14px);
+    margin-inline: auto;
+    box-sizing: border-box;
+  }
+
+  body.graphics-hd-ui .panel-title,
+  body.graphics-hd-ui .side-section-title,
+  body.graphics-hd-ui .mutators h3 {
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 44px;
+    margin: 0;
+    padding: 9px 30px 8px;
+    background: transparent url("assets/hd/ui/abyssal-gothic/section-plaque.png") center / 100% 100% no-repeat;
+    color: #cdd1d3;
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 0.92rem;
+    font-weight: 600;
+    letter-spacing: 1.8px;
+    line-height: 1;
+    text-align: center;
+    text-transform: uppercase;
+    text-shadow: 0 2px 2px #000;
+  }
+
+  body.graphics-hd-ui .panel-title {
+    min-height: 58px;
+    margin: -5px -4px 4px;
+    font-size: 1.23rem;
+    letter-spacing: 2.6px;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .panel-right > .panel-title {
+    width: calc(100% - 24px);
+    margin: -5px auto 4px;
+  }
+
+  body.graphics-hd-ui .side-section-title {
+    justify-content: space-between;
+    margin: 0 -7px 5px;
+  }
+
+  body.graphics-hd-ui .side-section-title span {
+    color: #b8a886;
+    font: 0.72rem "Courier Prime", "Cascadia Mono", monospace;
+    letter-spacing: 0;
+  }
+
+  body.graphics-hd-ui .hud {
+    min-height: 0;
+    gap: 3px;
+    overflow: hidden;
+  }
+
+  body.graphics-hd-ui .hud-section,
+  body.graphics-hd-ui .actions,
+  body.graphics-hd-ui .active-effects,
+  body.graphics-hd-ui .mutators,
+  body.graphics-hd-ui .log {
+    border: 0;
+    padding: 4px 8px 7px;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  body.graphics-hd-ui .statline,
+  body.graphics-hd-ui .hud-relic-item {
+    min-height: 20px;
+    padding: 2px 3px 3px;
+    border-bottom: 1px solid #68717a36;
+    color: #b8bdc1;
+    font-size: clamp(0.7rem, 0.78vw, 0.84rem);
+    line-height: 1.18;
+  }
+
+  body.graphics-hd-ui .statline strong { color: #d3c7b0; }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .hud-section-player {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 4px;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .hud-section-player .statline-player,
+  body.graphics-hd-ui:has(#game.graphics-hd) .hud-section-player .statline-lives,
+  body.graphics-hd-ui:has(#game.graphics-hd) .hud-section-player .statline-hp {
+    grid-column: 1 / -1;
+    min-height: 24px;
+    align-items: center;
+    padding: 3px 6px;
+    border: 1px solid #3c4449;
+    background:
+      linear-gradient(90deg, #11171bd9, #090c0fd9),
+      url("assets/hd/ui/abyssal-gothic/panel-texture.png") center / 220px 220px;
+    box-shadow: inset 0 0 0 1px #020304;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .hud-section-player .statline-player span,
+  body.graphics-hd-ui:has(#game.graphics-hd) .hud-section-player .statline-lives span,
+  body.graphics-hd-ui:has(#game.graphics-hd) .hud-section-player .statline-hp span {
+    color: #8e979c;
+    font-size: 0.64rem;
+    letter-spacing: 0.9px;
+    text-transform: uppercase;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .hud-section-player .statline-player strong {
+    color: #e0d5c0;
+    font-family: Georgia, "Times New Roman", serif;
+    letter-spacing: 0.5px;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .hud-section-player .statline-hp {
+    border-color: #5d3733;
+    background:
+      linear-gradient(90deg, #29100fd9, #0c0b0bd9 72%),
+      url("assets/hd/ui/abyssal-gothic/panel-texture.png") center / 220px 220px;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .hud-section-player .statline-hp strong { color: #e16a5f; }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .hud-section-player .statline-atk,
+  body.graphics-hd-ui:has(#game.graphics-hd) .hud-section-player .statline-arm,
+  body.graphics-hd-ui:has(#game.graphics-hd) .hud-section-player .statline-crit {
+    display: flex;
+    flex-direction: column;
+    min-height: 42px;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    padding: 4px 2px;
+    border: 1px solid #40484d;
+    background:
+      linear-gradient(180deg, #151a1edb, #080b0ddd),
+      url("assets/hd/ui/abyssal-gothic/panel-texture.png") center / 180px 180px;
+    box-shadow: inset 0 0 0 1px #020304, inset 0 1px 0 #a9b0b516;
+    text-align: center;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .hud-section-player .statline-atk span,
+  body.graphics-hd-ui:has(#game.graphics-hd) .hud-section-player .statline-arm span,
+  body.graphics-hd-ui:has(#game.graphics-hd) .hud-section-player .statline-crit span {
+    width: auto;
+    color: #8f989d;
+    font-size: 0.6rem;
+    letter-spacing: 1px;
+    text-align: center;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .hud-section-player .statline-atk strong,
+  body.graphics-hd-ui:has(#game.graphics-hd) .hud-section-player .statline-arm strong,
+  body.graphics-hd-ui:has(#game.graphics-hd) .hud-section-player .statline-crit strong {
+    width: auto;
+    color: #d8ccb5;
+    font: 700 0.84rem/1 "Courier Prime", "Cascadia Mono", monospace;
+    text-align: center;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .statline[data-ui-tooltip],
+  body.graphics-hd-ui:has(#game.graphics-hd) .relic-slot[data-ui-tooltip],
+  body.graphics-hd-ui:has(#game.graphics-hd) .mut-row[data-ui-tooltip],
+  body.graphics-hd-ui:has(#game.graphics-hd) .skill-card[data-ui-tooltip] {
+    cursor: help;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .statline[data-ui-tooltip]:focus-visible,
+  body.graphics-hd-ui:has(#game.graphics-hd) .relic-slot[data-ui-tooltip]:focus-visible,
+  body.graphics-hd-ui:has(#game.graphics-hd) .mut-row[data-ui-tooltip]:focus-visible,
+  body.graphics-hd-ui:has(#game.graphics-hd) .skill-card[data-ui-tooltip]:focus-visible {
+    outline: 1px solid #a9936c;
+    outline-offset: 2px;
+  }
+
+  body.graphics-hd-ui .hd-ui-tooltip {
+    position: fixed;
+    z-index: 10000;
+    box-sizing: border-box;
+    width: min(330px, calc(100vw - 24px));
+    min-height: 116px;
+    padding: 30px 34px 28px;
+    pointer-events: none;
+    background-color: #07090b;
+    background-image:
+      url("assets/hd/ui/abyssal-gothic/menu-frame.png"),
+      url("assets/hd/ui/abyssal-gothic/panel-texture.png");
+    background-position: center, center;
+    background-repeat: no-repeat, repeat;
+    background-size: 100% 100%, 220px 220px;
+    color: #b7b0a4;
+    filter: drop-shadow(0 10px 14px #000c);
+    text-align: left;
+    text-shadow: 0 1px 2px #000;
+    animation: hd-tooltip-enter 110ms ease-out;
+  }
+
+  body.graphics-hd-ui .hd-ui-tooltip-title {
+    display: block;
+    margin-bottom: 7px;
+    color: #dfd2ba;
+    font: 600 0.88rem/1.1 Georgia, "Times New Roman", serif;
+    letter-spacing: 1.3px;
+    text-transform: uppercase;
+  }
+
+  body.graphics-hd-ui .hd-ui-tooltip-body {
+    display: block;
+    color: #aeb3b5;
+    font: 0.76rem/1.42 "Courier Prime", "Cascadia Mono", monospace;
+    white-space: pre-line;
+  }
+
+  body.graphics-hd-ui .hd-enemy-tooltip {
+    position: fixed;
+    z-index: 1200;
+    width: min(360px, calc(100vw - 24px));
+    max-height: calc(100vh - 24px);
+    box-sizing: border-box;
+    padding: 19px 19px 17px;
+    pointer-events: none;
+    border: 0;
+    background:
+      linear-gradient(180deg, #15191df5, #080a0cf8),
+      url("assets/hd/ui/abyssal-gothic/panel-texture.png") center / 320px 320px;
+    color: #d7d9d8;
+    filter: drop-shadow(0 12px 22px #000d);
+  }
+
+  body.graphics-hd-ui .hd-enemy-tooltip::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    border: 1px solid #70787c;
+    box-shadow: inset 0 0 0 3px #07090b, inset 0 0 0 4px #343b3f;
+    clip-path: polygon(0 10px, 10px 0, calc(100% - 10px) 0, 100% 10px, 100% calc(100% - 10px), calc(100% - 10px) 100%, 10px 100%, 0 calc(100% - 10px));
+  }
+
+  body.graphics-hd-ui .hd-enemy-tooltip[hidden] { display: none; }
+
+  body.graphics-hd-ui .hd-enemy-tooltip-header {
+    display: grid;
+    gap: 2px;
+    padding-bottom: 9px;
+    border-bottom: 1px solid #51595e;
+  }
+
+  body.graphics-hd-ui .hd-enemy-tooltip-header > span {
+    color: #9da5a9;
+    font-size: 0.64rem;
+    letter-spacing: 1.4px;
+    text-transform: uppercase;
+  }
+
+  body.graphics-hd-ui .hd-enemy-tooltip-header > strong {
+    color: #e4ddd0;
+    font: 600 1.08rem/1.15 Georgia, "Times New Roman", serif;
+    letter-spacing: 0.45px;
+  }
+
+  body.graphics-hd-ui .hd-enemy-tooltip-health {
+    height: 8px;
+    margin-top: 11px;
+    padding: 2px;
+    background: #030405;
+    border: 1px solid #565c5f;
+  }
+
+  body.graphics-hd-ui .hd-enemy-tooltip-health > span {
+    display: block;
+    width: var(--enemy-hp);
+    height: 100%;
+    background: linear-gradient(90deg, #7c1718, #db4b3d);
+    box-shadow: 0 0 7px #c33127a8;
+  }
+
+  body.graphics-hd-ui .hd-enemy-tooltip-health-label {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 4px;
+    color: #adb3b5;
+    font-size: 0.68rem;
+  }
+
+  body.graphics-hd-ui .hd-enemy-tooltip-stats {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 7px;
+    margin-top: 10px;
+  }
+
+  body.graphics-hd-ui .hd-enemy-tooltip-stats > span {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    padding: 7px 8px;
+    border: 1px solid #41494d;
+    background: #0b0e11d9;
+  }
+
+  body.graphics-hd-ui .hd-enemy-tooltip-stats small { color: #8f989d; font-size: 0.61rem; letter-spacing: 0.9px; }
+  body.graphics-hd-ui .hd-enemy-tooltip-stats strong { color: #eee4d3; font-size: 0.82rem; }
+
+  body.graphics-hd-ui .hd-enemy-tooltip-affix,
+  body.graphics-hd-ui .hd-enemy-tooltip-status {
+    display: grid;
+    gap: 3px;
+    margin-top: 9px;
+    padding: 7px 8px;
+    border-left: 2px solid #70787c;
+    background: #0a0d10b8;
+  }
+
+  body.graphics-hd-ui .hd-enemy-tooltip-affix { border-left-color: #d19a42; }
+  body.graphics-hd-ui .hd-enemy-tooltip-affix > strong { color: #e1b568; }
+  body.graphics-hd-ui .hd-enemy-tooltip-affix > span { color: #aeb3b4; font-size: 0.68rem; line-height: 1.3; }
+  body.graphics-hd-ui .hd-enemy-tooltip-abilities {
+    display: grid;
+    gap: 5px;
+    margin-top: 9px;
+    padding: 8px;
+    border-left: 2px solid #7b668f;
+    background: linear-gradient(90deg, #211a2ab8, #0a0d10b8);
+  }
+  body.graphics-hd-ui .hd-enemy-tooltip-abilities > h4 {
+    margin: 0 0 2px;
+    color: #c7afd8;
+    font: 600 0.62rem/1 Georgia, "Times New Roman", serif;
+    letter-spacing: 1.1px;
+    text-transform: uppercase;
+  }
+  body.graphics-hd-ui .hd-enemy-tooltip-abilities > div {
+    display: grid;
+    grid-template-columns: minmax(84px, 0.42fr) minmax(0, 1fr);
+    gap: 7px;
+    padding-top: 4px;
+    border-top: 1px solid #77648538;
+  }
+  body.graphics-hd-ui .hd-enemy-tooltip-abilities > div > strong {
+    color: #dbcce4;
+    font: 600 0.68rem/1.2 Georgia, "Times New Roman", serif;
+  }
+  body.graphics-hd-ui .hd-enemy-tooltip-abilities > div > span {
+    color: #adb0b5;
+    font-size: 0.66rem;
+    line-height: 1.28;
+  }
+  body.graphics-hd-ui .hd-enemy-tooltip-status > strong { color: #aeb5b8; font-size: 0.61rem; letter-spacing: 1px; text-transform: uppercase; }
+  body.graphics-hd-ui .hd-enemy-tooltip-status > div { display: grid; gap: 2px; }
+  body.graphics-hd-ui .hd-enemy-tooltip-status > div > span { font-size: 0.7rem; line-height: 1.25; }
+  body.graphics-hd-ui .hd-enemy-tooltip-status.tone-intent { border-left-color: #d59b42; }
+  body.graphics-hd-ui .hd-enemy-tooltip-status.tone-intent > div { color: #e0bd76; }
+  body.graphics-hd-ui .hd-enemy-tooltip-status.tone-buff { border-left-color: #4da87b; }
+  body.graphics-hd-ui .hd-enemy-tooltip-status.tone-buff > div { color: #77d1a2; }
+  body.graphics-hd-ui .hd-enemy-tooltip-status.tone-debuff { border-left-color: #b94a4d; }
+  body.graphics-hd-ui .hd-enemy-tooltip-status.tone-debuff > div { color: #e47e77; }
+  body.graphics-hd-ui .hd-enemy-tooltip-status.tone-neutral > div { color: #aab1b5; }
+
+  @keyframes hd-tooltip-enter {
+    from { opacity: 0; transform: translateY(3px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .hud-section-dungeon {
+    gap: 0;
+    padding-top: 2px;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .hud-section-dungeon .statline {
+    padding-inline: 6px;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .hud-section-dungeon .statline-depth,
+  body.graphics-hd-ui:has(#game.graphics-hd) .hud-section-dungeon .statline-room,
+  body.graphics-hd-ui:has(#game.graphics-hd) .hud-section-dungeon .statline-map-fragments {
+    color: #c4b99f;
+    background: linear-gradient(90deg, #8b744a16, transparent 78%);
+  }
+
+  body.graphics-hd-ui .hud-section-relics .hud-relic-list { display: none; }
+
+  body.graphics-hd-ui .relic-slot-grid {
+    --relic-slot-size: clamp(40px, 5.4vh, 62px);
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, var(--relic-slot-size)));
+    gap: 5px;
+    justify-content: center;
+    padding: 4px 1px 1px;
+  }
+
+  body.graphics-hd-ui .relic-slot-grid-5 {
+    --relic-slot-size: clamp(36px, 4.8vh, 54px);
+    grid-template-columns: repeat(5, minmax(0, var(--relic-slot-size)));
+  }
+
+  body.graphics-hd-ui .relic-slot {
+    position: relative;
+    aspect-ratio: 1;
+    min-width: 0;
+    overflow: hidden;
+    border: 1px solid #42484d;
+    border-radius: 3px;
+    background: radial-gradient(circle at 50% 45%, #1b2228 0, #0a0d10 64%, #030405 100%);
+    box-shadow: inset 0 0 0 2px #050608, inset 0 0 12px #000, 0 1px 2px #000;
+  }
+
+  body.graphics-hd-ui .relic-slot::after {
+    content: "";
+    position: absolute;
+    z-index: 2;
+    inset: 0;
+    pointer-events: none;
+    background: url("assets/hd/ui/abyssal-gothic/menu-frame.png") center / 100% 100% no-repeat;
+    opacity: 0.58;
+  }
+
+  body.graphics-hd-ui .relic-slot.filled { border-color: #7a6b52; }
+  body.graphics-hd-ui .relic-slot.rarity-rare { border-color: #397fcc; box-shadow: inset 0 0 0 2px #06101d, inset 0 0 12px #06162b, 0 0 6px #328dff55; }
+  body.graphics-hd-ui .relic-slot.rarity-epic { border-color: #9a55c3; box-shadow: inset 0 0 0 2px #16091d, inset 0 0 12px #1c0a29, 0 0 6px #b44cff55; }
+  body.graphics-hd-ui .relic-slot.rarity-legendary { border-color: #bd6834; box-shadow: inset 0 0 0 2px #1c0b05, inset 0 0 12px #251006, 0 0 6px #ff6b2855; }
+  body.graphics-hd-ui .relic-slot.rarity-mythic { border-color: #66e4f2; background: radial-gradient(circle at 50% 42%, #15343d 0, #07151a 62%, #020608 100%); box-shadow: inset 0 0 0 2px #06252c, inset 0 0 14px #0c4250, 0 0 9px #7df0ff99; }
+  body.graphics-hd-ui .relic-slot.inactive { filter: grayscale(0.85); opacity: 0.55; }
+  body.graphics-hd-ui .relic-slot.empty { opacity: 0.72; }
+  body.graphics-hd-ui .relic-slot.locked { opacity: 0.3; }
+
+  body.graphics-hd-ui .relic-slot img {
+    position: relative;
+    z-index: 3;
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    padding: 7px;
+    box-sizing: border-box;
+    filter: saturate(1.16) brightness(1.06) contrast(1.04) drop-shadow(0 2px 3px #000);
+  }
+
+  body.graphics-hd-ui .relic-slot-count {
+    position: absolute;
+    z-index: 4;
+    right: 4px;
+    bottom: 4px;
+    min-width: 16px;
+    padding: 1px 3px;
+    border: 1px solid #786a50;
+    border-radius: 7px;
+    background: #050608e8;
+    color: #e1d4bb;
+    font: 700 0.57rem/1.15 "Courier Prime", "Cascadia Mono", monospace;
+    text-align: center;
+  }
+
+  body.graphics-hd-ui .actions,
+  body.graphics-hd-ui .active-effects,
+  body.graphics-hd-ui .mutators,
+  body.graphics-hd-ui .log {
+    font-size: clamp(0.67rem, 0.72vw, 0.78rem);
+    line-height: 1.3;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .panel-right {
+    align-content: stretch;
+    grid-template-rows: 58px auto auto auto minmax(150px, 1fr);
+    gap: 6px;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .panel-right > .actions {
+    min-height: 62px;
+    padding: 10px 12px;
+    border: 1px solid #3c4449;
+    background:
+      linear-gradient(90deg, #11171bd9, #090c0fd9),
+      url("assets/hd/ui/abyssal-gothic/panel-texture.png") center / 220px 220px;
+    box-shadow: inset 0 0 0 1px #020304, inset 0 1px 0 #a9b0b516;
+    color: #aeb6bb;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .active-effects,
+  body.graphics-hd-ui:has(#game.graphics-hd) .mutators,
+  body.graphics-hd-ui:has(#game.graphics-hd) .log {
+    min-height: 0;
+    gap: 3px;
+    padding: 4px 8px 7px;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .active-effects {
+    align-content: start;
+    max-height: min(310px, 33vh);
+    overflow-x: hidden;
+    overflow-y: auto;
+    scrollbar-color: #655b49 #080a0c;
+    scrollbar-width: thin;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .active-effects::-webkit-scrollbar,
+  body.graphics-hd-ui:has(#game.graphics-hd) .log::-webkit-scrollbar,
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-menu::-webkit-scrollbar,
+  body.graphics-hd-ui:has(#game.graphics-hd) .tutorial-sections::-webkit-scrollbar {
+    width: 7px;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .active-effects::-webkit-scrollbar-track,
+  body.graphics-hd-ui:has(#game.graphics-hd) .log::-webkit-scrollbar-track,
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-menu::-webkit-scrollbar-track,
+  body.graphics-hd-ui:has(#game.graphics-hd) .tutorial-sections::-webkit-scrollbar-track {
+    background: #06080a;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .active-effects::-webkit-scrollbar-thumb,
+  body.graphics-hd-ui:has(#game.graphics-hd) .log::-webkit-scrollbar-thumb,
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-menu::-webkit-scrollbar-thumb,
+  body.graphics-hd-ui:has(#game.graphics-hd) .tutorial-sections::-webkit-scrollbar-thumb {
+    border: 1px solid #171b1d;
+    background: #625a4a;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .active-effects > .side-section-title,
+  body.graphics-hd-ui:has(#game.graphics-hd) .log > .side-section-title {
+    position: sticky;
+    z-index: 3;
+    top: -4px;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .active-effects .statline {
+    min-height: 36px;
+    align-items: center;
+    padding: 4px 7px;
+    border: 1px solid #3b4348;
+    background:
+      linear-gradient(90deg, #13191ddb, #090c0fdf),
+      url("assets/hd/ui/abyssal-gothic/panel-texture.png") center / 200px 200px;
+    box-shadow: inset 0 0 0 1px #020304, inset 2px 0 0 color-mix(in srgb, var(--status-tone, #8e9ba3) 62%, transparent);
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .active-effects .statline > span:first-child {
+    min-width: 0;
+    flex: 1 1 auto;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .active-effects .stat-value {
+    min-width: 0;
+    max-width: 55%;
+    flex: 0 1 auto;
+    overflow: hidden;
+    font-size: clamp(0.69rem, 0.76vw, 0.82rem);
+    letter-spacing: 0;
+    line-height: 1.05;
+    text-align: right;
+    text-overflow: clip;
+    white-space: nowrap;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .active-effects .stat-value-medium {
+    font-size: clamp(0.62rem, 0.68vw, 0.74rem);
+    letter-spacing: -0.1px;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .active-effects .stat-value-long {
+    max-width: 58%;
+    font-size: clamp(0.55rem, 0.6vw, 0.66rem);
+    letter-spacing: -0.2px;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .active-effects .stat-value-xlong {
+    max-width: 60%;
+    font-size: clamp(0.5rem, 0.54vw, 0.59rem);
+    letter-spacing: -0.3px;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .active-effects .status-emblem {
+    width: 28px;
+    height: 28px;
+    filter: saturate(1.08) brightness(1.04) drop-shadow(0 2px 2px #000);
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .active-effects .status-emblem-label {
+    gap: 8px;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .mutators .mut-row {
+    grid-template-columns: 30px minmax(0, 1fr);
+    min-height: 48px;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 7px;
+    border: 1px solid #3c4943;
+    border-radius: 0;
+    background:
+      linear-gradient(90deg, #142019d9, #090d0bdf),
+      url("assets/hd/ui/abyssal-gothic/panel-texture.png") center / 200px 200px;
+    box-shadow: inset 0 0 0 1px #020304, inset 2px 0 0 #71947b7a;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .mutators .mut-key {
+    display: grid;
+    width: 28px;
+    height: 28px;
+    place-items: center;
+    box-sizing: border-box;
+    border: 1px solid #786f55;
+    background: #080b0bdd;
+    color: #d1bd8c;
+    font: 700 0.7rem/1 "Courier Prime", "Cascadia Mono", monospace;
+    box-shadow: inset 0 0 0 1px #020304;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .mutators .mut-body strong {
+    color: #a9c5ad;
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 0.76rem;
+    letter-spacing: 0.35px;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .mutators .mut-body small {
+    color: #9ba6a1;
+    font-size: 0.66rem;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .log {
+    min-height: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+    background:
+      linear-gradient(180deg, #0d1215d4, #080b0dde),
+      url("assets/hd/ui/abyssal-gothic/panel-texture.png") center / 220px 220px;
+    box-shadow: inset 0 0 0 1px #30373b, inset 0 0 0 2px #020304;
+    scrollbar-color: #655b49 #080a0c;
+    scrollbar-width: thin;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .log > div {
+    min-height: 16px;
+    padding: 2px 6px;
+    border-bottom: 1px solid #68717a24;
+    line-height: 1.22;
+    text-shadow: 0 1px 2px #000;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .log div + div {
+    margin-top: 0;
+  }
+
+  body.graphics-hd-ui .log {
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .board {
+    min-width: 0;
+    min-height: 0;
+    height: 100%;
+    box-sizing: border-box;
+    grid-template-rows: 64px 54px minmax(0, 1fr) 148px;
+    gap: 3px;
+    align-content: stretch;
+    padding: 0 12px 3px;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .board > .titlebar { grid-row: 1; }
+  body.graphics-hd-ui:has(#game.graphics-hd) .board > .depth-badge { grid-row: 2; }
+  body.graphics-hd-ui:has(#game.graphics-hd) .board > .room-stage { grid-row: 3; }
+  body.graphics-hd-ui:has(#game.graphics-hd) .board > .skills-bar { grid-row: 4; }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .titlebar {
+    width: calc(100% - 8px);
+    height: 100%;
+    box-sizing: border-box;
+    gap: 2px;
+    padding: clamp(8px, 1.3vh, 13px) 78px clamp(7px, 1.2vh, 12px);
+    border: 0;
+    border-radius: 0;
+    background: transparent url("assets/hd/ui/abyssal-gothic/section-plaque.png") center / 100% 100% no-repeat;
+    box-shadow: none;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .titlebar h1 {
+    color: #e8e0d2;
+    font-size: clamp(1.3rem, 2vw, 1.72rem);
+    font-weight: 600;
+    letter-spacing: 2.7px;
+    line-height: 1;
+    text-shadow: 0 2px 0 #020304, 0 0 15px #c6a26a1f;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .titlebar p {
+    color: #a49b8d;
+    font: 0.62rem/1 Georgia, "Times New Roman", serif;
+    letter-spacing: 1.65px;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .depth-badge {
+    position: relative;
+    isolation: isolate;
+    width: calc(100% - 48px);
+    height: 100%;
+    box-sizing: border-box;
+    display: grid;
+    grid-template-rows: auto auto;
+    place-content: center;
+    gap: 1px;
+    padding: clamp(6px, 1vh, 10px) 150px clamp(5px, 0.9vh, 9px);
+    overflow: hidden;
+    border: 0;
+    border-radius: 0;
+    background: transparent url("assets/hd/ui/abyssal-gothic/section-plaque.png") center / 100% 100% no-repeat;
+    box-shadow: none;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .depth-badge strong {
+    position: relative;
+    z-index: 2;
+    color: #e7ded0;
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 1rem;
+    line-height: 1;
+    letter-spacing: 1.8px;
+    text-shadow: 0 2px 0 #020304, 0 0 10px #c6a26a24;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .depth-badge-meta {
+    position: absolute;
+    z-index: 2;
+    inset: clamp(8px, 1.25vh, 13px) 40px clamp(7px, 1.15vh, 12px);
+    min-height: 0;
+    pointer-events: none;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .depth-meta-column {
+    max-width: 31%;
+    align-content: center;
+    gap: 2px;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .depth-meta {
+    color: #aa9e8b;
+    font-size: 0.56rem;
+    line-height: 1;
+    letter-spacing: 0.65px;
+    white-space: nowrap;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .depth-badge .depth-subtitle {
+    position: relative;
+    z-index: 2;
+    color: #918879;
+    font-size: 0.57rem;
+    line-height: 1;
+    letter-spacing: 1px;
+    white-space: nowrap;
+  }
+
+  body.graphics-hd-ui .canvas-wrap {
+    width: min(100%, 610px);
+    height: min(100%, 610px);
+    aspect-ratio: 1;
+    box-sizing: border-box;
+    align-self: center;
+    padding: 29px;
+    background: #030405 url("assets/hd/ui/abyssal-gothic/board-frame.png") center / 100% 100% no-repeat;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .canvas-wrap canvas {
+    position: absolute;
+    top: 29px;
+    left: 29px;
+    width: calc(100% - 58px);
+    height: calc(100% - 58px);
+    max-width: calc(100% - 58px);
+    max-height: calc(100% - 58px);
+    box-sizing: border-box;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  body.graphics-hd-ui .canvas-wrap .room-intro-overlay,
+  body.graphics-hd-ui .canvas-wrap .screen-overlay { inset: 29px; }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .skills-bar {
+    width: 100%;
+    max-width: 100%;
+    height: 100%;
+    min-height: 0;
+    box-sizing: border-box;
+    grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.2fr) minmax(0, 0.9fr);
+    gap: clamp(8px, 0.85vw, 14px);
+    padding: 4px clamp(2px, 0.35vw, 5px) 0;
+    margin-inline: 0;
+    align-self: end;
+    justify-self: center;
+    background: transparent;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .skill-card,
+  body.graphics-hd-ui:has(#game.graphics-hd) .skill-card.ready,
+  body.graphics-hd-ui:has(#game.graphics-hd) .skill-card.armed,
+  body.graphics-hd-ui:has(#game.graphics-hd) .skill-card.cooling,
+  body.graphics-hd-ui:has(#game.graphics-hd) .skill-card.idle {
+    min-width: 0;
+    min-height: 0;
+    height: 100%;
+    box-sizing: border-box;
+    align-content: center;
+    gap: 2px;
+    padding: clamp(14px, 1.65vh, 18px) clamp(17px, 1.4vw, 22px) clamp(13px, 1.5vh, 17px);
+    overflow: visible;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .skill-card.tier-base,
+  body.graphics-hd-ui:has(#game.graphics-hd) .skill-card.tier-rare,
+  body.graphics-hd-ui:has(#game.graphics-hd) .skill-card.tier-epic,
+  body.graphics-hd-ui:has(#game.graphics-hd) .skill-card.tier-legendary {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .skill-rarity {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 27px;
+    padding: 0 10px 2px;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .skill-rarity strong {
+    color: var(--hd-skill-accent);
+    font: 600 clamp(0.84rem, 1.06vw, 1.08rem)/1 Georgia, "Times New Roman", serif;
+    letter-spacing: 1.7px;
+    text-transform: uppercase;
+    text-shadow: 0 1px 2px #000;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .skill-card-body {
+    display: grid;
+    grid-template-columns: clamp(58px, 4.7vw, 68px) minmax(0, 1fr);
+    gap: clamp(7px, 0.7vw, 10px);
+    align-items: center;
+    min-height: 0;
+    padding: 2px 5px 1px;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .skill-art {
+    display: block;
+    width: clamp(56px, 4.5vw, 66px);
+    height: clamp(56px, 4.5vw, 66px);
+    border-radius: 50%;
+    object-fit: cover;
+    filter: saturate(1.08) brightness(1.04);
+    box-shadow: 0 0 13px color-mix(in srgb, var(--hd-skill-accent) 31%, transparent);
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .skill-copy {
+    min-width: 0;
+    display: grid;
+    align-content: center;
+    gap: 0;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .skill-head {
+    min-width: 0;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 10px;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .skill-key {
+    display: inline-grid;
+    place-items: center;
+    min-width: 24px;
+    height: 24px;
+    border: 1px solid #62686c;
+    background: #090b0d;
+    color: #d1c5ae;
+    font-size: 0.72rem;
+    box-shadow: inset 0 0 0 1px #020304;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .skill-name {
+    min-width: 0;
+    overflow: hidden;
+    color: #d9d4ca;
+    font: 600 clamp(0.94rem, 1.18vw, 1.18rem)/1.05 Georgia, "Times New Roman", serif;
+    letter-spacing: 0.45px;
+    text-overflow: clip;
+    text-wrap: balance;
+    white-space: normal;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .skill-desc {
+    display: none;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .skill-card.armed .skill-copy {
+    gap: 5px;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .skill-card.armed .skill-desc {
+    display: -webkit-box;
+    overflow: hidden;
+    color: #a8a59e;
+    font-size: clamp(0.59rem, 0.68vw, 0.71rem);
+    line-height: 1.22;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .skill-cd {
+    color: var(--hd-skill-accent);
+    font-size: 0.64rem;
+    letter-spacing: 0.55px;
+    text-transform: uppercase;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .skill-card.tier-rare.ready {
+    filter: saturate(1.08) brightness(1.06) drop-shadow(0 3px 5px #0009);
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .skill-card.tier-base,
+  body.graphics-hd-ui:has(#game.graphics-hd) .skill-card.tier-rare {
+    clip-path: polygon(3% 0, 97% 0, 100% 11%, 100% 89%, 97% 100%, 3% 100%, 0 89%, 0 11%);
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .skill-card.tier-epic,
+  body.graphics-hd-ui:has(#game.graphics-hd) .skill-card.tier-legendary {
+    clip-path: polygon(
+      6% 9%, 40% 9%, 45% 0, 55% 0, 60% 9%, 94% 9%,
+      97% 16%, 97% 40%, 100% 50%, 97% 60%, 97% 84%, 94% 91%,
+      60% 91%, 55% 100%, 45% 100%, 40% 91%, 6% 91%,
+      3% 84%, 3% 60%, 0 50%, 3% 40%, 3% 16%
+    );
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .skill-card.tier-epic.ready {
+    filter: saturate(1.12) brightness(1.07) drop-shadow(0 3px 6px #000a);
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .skill-card.tier-legendary.ready {
+    filter: saturate(1.14) brightness(1.07) drop-shadow(0 4px 7px #000b);
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .skill-card.tier-rare.armed,
+  body.graphics-hd-ui:has(#game.graphics-hd) .skill-card.tier-epic.armed,
+  body.graphics-hd-ui:has(#game.graphics-hd) .skill-card.tier-legendary.armed {
+    filter: saturate(1.18) brightness(1.13) drop-shadow(0 0 9px color-mix(in srgb, var(--hd-skill-accent) 42%, transparent));
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .skill-card.cooling,
+  body.graphics-hd-ui:has(#game.graphics-hd) .skill-card.idle {
+    opacity: 0.78;
+    filter: saturate(0.82) brightness(0.78);
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .screen-overlay.visible:has(
+    :is(.overlay-card-options, .tutorial-overlay-card, .overlay-card-merchant, .overlay-card-confirm, .overlay-card-dialog)
+  ) {
+    box-sizing: border-box;
+    align-items: center;
+    justify-content: center;
+    padding: clamp(8px, 1.5vh, 14px);
+    overflow: hidden;
+    background:
+      radial-gradient(circle at 50% 44%, #25313a52 0%, transparent 58%),
+      #020304c9;
+    backdrop-filter: blur(1.5px) saturate(0.68) brightness(0.72);
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) :is(
+    .overlay-card-options,
+    .tutorial-overlay-card,
+    .overlay-card-merchant,
+    .overlay-card-confirm,
+    .overlay-card-dialog
+  ) {
+    position: relative;
+    width: min(430px, 100%);
+    min-height: 0;
+    max-height: calc(100% - 4px);
+    box-sizing: border-box;
+    overflow: hidden;
+    border: 0;
+    border-radius: 0;
+    padding: clamp(48px, 7.2vh, 62px) clamp(34px, 4.2vw, 50px) clamp(42px, 6vh, 54px);
+    background-color: #07090b;
+    background-image:
+      url("assets/hd/ui/abyssal-gothic/menu-frame.png"),
+      url("assets/hd/ui/abyssal-gothic/panel-texture.png");
+    background-position: center, center;
+    background-repeat: no-repeat, repeat;
+    background-size: 100% 100%, 240px 240px;
+    box-shadow: 0 18px 42px #000d;
+    filter: none;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-options { width: min(420px, 100%); }
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-confirm { width: min(460px, 100%); }
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-dialog { width: min(480px, 100%); }
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-merchant { width: min(590px, 100%); }
+  body.graphics-hd-ui:has(#game.graphics-hd) .tutorial-overlay-card {
+    width: min(720px, 100%);
+    height: min(680px, 100%);
+    display: grid;
+    grid-template-rows: auto auto minmax(0, 1fr) auto;
+    padding-inline: clamp(38px, 4vw, 52px);
+    overflow: hidden;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .tutorial-overlay-card > .tutorial-sections {
+    min-height: 0;
+    width: auto;
+    margin: 9px 0 0;
+    padding: 0 12px 10px 6px;
+    overflow-x: hidden;
+    overflow-y: auto;
+    scrollbar-color: #655b49 #080a0c;
+    scrollbar-width: thin;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .tutorial-overlay-card .tutorial-row {
+    grid-template-columns: minmax(92px, 128px) minmax(0, 1fr);
+    gap: 10px;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .tutorial-overlay-card .tutorial-keys,
+  body.graphics-hd-ui:has(#game.graphics-hd) .tutorial-overlay-card .tutorial-text {
+    min-width: 0;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .tutorial-overlay-card > .overlay-hint {
+    position: relative;
+    z-index: 2;
+    margin-top: 7px;
+    padding-top: 5px;
+    border-top: 1px solid #4b515448;
+    background: #090b0dcf;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) :is(
+    .overlay-card-options,
+    .tutorial-overlay-card,
+    .overlay-card-merchant,
+    .overlay-card-confirm,
+    .overlay-card-dialog
+  ) > .overlay-title {
+    margin: 0 0 5px;
+    color: #ddd2be;
+    font: 600 clamp(1rem, 1.35vw, 1.28rem)/1.1 Georgia, "Times New Roman", serif;
+    letter-spacing: 1.8px;
+    text-transform: uppercase;
+    text-shadow: 0 2px 2px #000, 0 0 12px #71889a35;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) :is(
+    .overlay-card-options,
+    .tutorial-overlay-card,
+    .overlay-card-merchant,
+    .overlay-card-confirm,
+    .overlay-card-dialog
+  ) > .overlay-sub {
+    margin: 3px 0;
+    color: #9ea5a7;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) :is(
+    .overlay-card-options,
+    .tutorial-overlay-card,
+    .overlay-card-merchant,
+    .overlay-card-confirm,
+    .overlay-card-dialog
+  ) > .overlay-hint {
+    margin: 7px 0 0;
+    color: #a99b83;
+    font-size: 0.68rem;
+    line-height: 1.25;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) :is(
+    .overlay-card-options,
+    .overlay-card-merchant,
+    .overlay-card-confirm
+  ) > .overlay-menu {
+    width: 100%;
+    max-height: min(46vh, 390px);
+    min-height: 0;
+    margin-top: 8px;
+    padding-right: 3px;
+    overflow-x: hidden;
+    overflow-y: auto;
+    scrollbar-color: #655b49 #080a0c;
+    scrollbar-width: thin;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-options > .overlay-menu {
+    gap: 4px;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-options-tutorial {
+    height: min(640px, 100%);
+    display: grid;
+    grid-template-rows: auto auto minmax(0, 1fr) auto;
+    overflow: hidden;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-options-tutorial > .overlay-menu {
+    max-height: none;
+    padding: 0 8px 8px 0;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-options-tutorial > .overlay-hint {
+    position: relative;
+    z-index: 2;
+    padding-top: 5px;
+    border-top: 1px solid #4b515448;
+    background: #090b0dcf;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-options .overlay-menu-row {
+    min-height: 38px;
+    align-items: center;
+    gap: 7px;
+    padding: 4px 6px;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-options .overlay-menu-row strong {
+    font-size: 0.72rem;
+    line-height: 1.12;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-options .overlay-menu-row span {
+    font-size: 0.59rem;
+    line-height: 1.12;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-options > .overlay-hint {
+    margin-top: 4px;
+    font-size: 0.61rem;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-confirm {
+    --hd-dialog-accent: #a65953;
+    width: min(560px, 100%);
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-confirm:has(> .overlay-menu) {
+    height: min(540px, 100%);
+    display: grid;
+    grid-template-rows: auto auto auto minmax(0, 1fr) auto;
+    padding: clamp(44px, 6.5vh, 52px) clamp(44px, 4.8vw, 58px) clamp(34px, 4.8vh, 42px);
+    overflow: hidden;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-confirm:has(> .overlay-menu) > .overlay-menu {
+    max-height: none;
+    align-content: start;
+    grid-auto-rows: minmax(66px, auto);
+    gap: 7px;
+    margin-top: 14px;
+    padding-bottom: 0;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-confirm .overlay-menu-row {
+    min-height: 66px;
+    grid-template-columns: 34px minmax(0, 1fr);
+    align-items: center;
+    gap: 11px;
+    padding: 9px 12px;
+    border: 1px solid #4e5559;
+    background: linear-gradient(180deg, #151a1edb, #090c0fdf);
+    box-shadow: inset 0 0 0 1px #020304;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-confirm .overlay-menu-row strong {
+    color: #e5ddd0;
+    font: 600 clamp(0.92rem, 1.1vw, 1.04rem)/1.12 Georgia, "Times New Roman", serif;
+    letter-spacing: 0.35px;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-confirm .overlay-menu-row span {
+    display: block;
+    margin-top: 4px;
+    color: #a9a49b;
+    font-size: clamp(0.68rem, 0.78vw, 0.76rem);
+    line-height: 1.28;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-confirm .overlay-menu-row > div:not(.overlay-menu-key) > br {
+    display: none;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-confirm .overlay-menu-key {
+    width: 32px;
+    min-width: 32px;
+    height: 32px;
+    font-size: 0.78rem;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-confirm > .overlay-title {
+    color: #e1c2b7;
+    font-size: clamp(1.35rem, 1.7vw, 1.6rem);
+    line-height: 1.05;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-confirm > .overlay-sub {
+    font-size: clamp(0.72rem, 0.86vw, 0.82rem);
+    line-height: 1.3;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-confirm > .overlay-hint {
+    margin-top: 10px;
+    padding-top: 7px;
+    border-top: 1px solid #514a414d;
+    font-size: 0.62rem;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-confirm .overlay-menu-row.selected {
+    border-color: #8e625c;
+    background:
+      linear-gradient(90deg, #5c252541, transparent 74%),
+      linear-gradient(180deg, #20191bdd, #0d0b0ddd);
+    box-shadow: inset 5px 0 0 var(--hd-dialog-accent), inset 0 0 0 1px #050607, 0 0 12px #6d2c2530;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .screen-overlay.visible:has(.overlay-card-relic-draft) {
+    box-sizing: border-box;
+    align-items: center;
+    justify-content: center;
+    padding: 10px;
+    overflow: visible;
+    background:
+      radial-gradient(circle at 50% 46%, #20283366 0%, transparent 66%),
+      #020304c9;
+    backdrop-filter: blur(2px) saturate(0.62) brightness(0.58);
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-relic-draft {
+    position: relative;
+    width: min(760px, calc(100vw - 650px));
+    flex: 0 0 min(760px, calc(100vw - 650px));
+    max-width: none;
+    max-height: min(540px, calc(100vh - 140px));
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    padding: clamp(52px, 7vh, 60px) clamp(48px, 4.6vw, 62px) clamp(44px, 6vh, 52px);
+    overflow: hidden;
+    border: 0;
+    border-radius: 0;
+    background-color: #08090c;
+    background-image:
+      url("assets/hd/ui/abyssal-gothic/menu-frame.png"),
+      radial-gradient(circle at 50% 30%, #25314b52, transparent 56%),
+      url("assets/hd/ui/abyssal-gothic/panel-texture.png");
+    background-position: center, center, center;
+    background-repeat: no-repeat, no-repeat, repeat;
+    background-size: 100% 100%, 100% 100%, 240px 240px;
+    box-shadow: 0 20px 42px #000e;
+    filter: none;
+    animation: none;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-relic-draft.overlay-card-crimson {
+    background-image:
+      url("assets/hd/ui/abyssal-gothic/menu-frame.png"),
+      radial-gradient(circle at 50% 30%, #5b172b66, transparent 58%),
+      url("assets/hd/ui/abyssal-gothic/panel-texture.png");
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-relic-draft > .overlay-title {
+    margin: 0 0 3px;
+    color: #d7d4ca;
+    font: 600 clamp(1.28rem, 1.75vw, 1.58rem)/1 Georgia, "Times New Roman", serif;
+    letter-spacing: 2.2px;
+    text-transform: uppercase;
+    text-shadow: 0 2px 2px #000, 0 0 14px #7183a340;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-relic-draft > .overlay-sub {
+    margin: 0;
+    color: #9d9e9b;
+    font-size: clamp(0.66rem, 0.78vw, 0.75rem);
+    letter-spacing: 0.55px;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-relic-draft > .overlay-hint {
+    margin: 6px 0 0;
+    color: #b3a98f;
+    font-size: clamp(0.58rem, 0.7vw, 0.67rem);
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .relic-draft-panel {
+    min-height: 0;
+    display: grid;
+    gap: 9px;
+    margin-top: 10px;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .relic-draft-grid {
+    min-height: 0;
+    display: grid;
+    gap: 9px;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .relic-draft-grid-standard {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .relic-draft-grid-forge-temper {
+    grid-template-columns: minmax(0, 220px);
+    justify-content: center;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .relic-draft-grid-duel,
+  body.graphics-hd-ui:has(#game.graphics-hd) .relic-draft-grid-inventory {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .relic-draft-grid-wide,
+  body.graphics-hd-ui:has(#game.graphics-hd) .relic-draft-grid-dense {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .relic-draft-choice {
+    position: relative;
+    min-width: 0;
+    min-height: 132px;
+    display: grid;
+    grid-template-columns: 30px minmax(0, 1fr);
+    align-items: center;
+    gap: 9px;
+    padding: 11px 10px;
+    overflow: hidden;
+    border: 1px solid var(--relic-border, #62666c);
+    background:
+      linear-gradient(180deg, color-mix(in srgb, var(--relic-accent, #9ba0aa) 10%, transparent), transparent 60%),
+      var(--relic-bg, #0b0e12e8);
+    box-shadow: inset 0 0 0 1px #020304, inset 0 0 22px #0008;
+    cursor: pointer;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .relic-draft-choice::after {
+    content: "";
+    position: absolute;
+    inset: 4px;
+    border: 1px solid color-mix(in srgb, var(--relic-accent, #8d929b) 24%, transparent);
+    pointer-events: none;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .relic-draft-icon {
+    position: absolute;
+    right: -7px;
+    bottom: -8px;
+    width: 76px;
+    height: 76px;
+    object-fit: contain;
+    opacity: 0.24;
+    filter: saturate(1.3) drop-shadow(0 0 8px color-mix(in srgb, var(--relic-accent, #8f98aa) 52%, transparent));
+    pointer-events: none;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .relic-draft-choice:hover,
+  body.graphics-hd-ui:has(#game.graphics-hd) .relic-draft-choice:focus-visible {
+    outline: 1px solid var(--relic-accent, #aeb4bf);
+    outline-offset: 2px;
+    filter: saturate(1.18) brightness(1.1);
+    box-shadow: 0 0 15px color-mix(in srgb, var(--relic-accent, #8390aa) 24%, transparent), inset 0 0 0 1px #020304;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .relic-draft-choice.disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+    filter: saturate(0.5);
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .relic-draft-key {
+    position: relative;
+    z-index: 1;
+    width: 28px;
+    height: 28px;
+    display: grid;
+    place-items: center;
+    border: 1px solid color-mix(in srgb, var(--relic-accent, #a9a28d) 60%, #353535);
+    background: #07090b;
+    color: #ddd3b9;
+    font-size: 0.72rem;
+    box-shadow: inset 0 0 0 1px #000;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .relic-draft-choice-copy {
+    position: relative;
+    z-index: 1;
+    min-width: 0;
+    display: grid;
+    align-content: center;
+    gap: 5px;
+    padding-right: 22px;
+    text-align: left;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .relic-draft-rarity {
+    color: var(--relic-accent, #9ba1aa);
+    font: 600 0.55rem/1 Georgia, "Times New Roman", serif;
+    letter-spacing: 1.15px;
+    text-transform: uppercase;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .relic-draft-choice-copy strong {
+    min-width: 0;
+    overflow: hidden;
+    color: #e0ded7;
+    font: 600 clamp(0.8rem, 0.95vw, 0.92rem)/1.08 Georgia, "Times New Roman", serif;
+    text-overflow: ellipsis;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .relic-draft-choice-copy small {
+    display: -webkit-box;
+    overflow: hidden;
+    color: #9ea2a4;
+    font-size: clamp(0.58rem, 0.68vw, 0.66rem);
+    line-height: 1.24;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .relic-draft-grid-dense .relic-draft-choice {
+    min-height: 76px;
+    padding-block: 7px;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .relic-draft-grid-dense .relic-draft-choice-copy {
+    gap: 2px;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .relic-draft-grid-dense .relic-draft-icon {
+    width: 58px;
+    height: 58px;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .relic-draft-grid-dense .relic-draft-choice-copy small {
+    -webkit-line-clamp: 1;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .relic-draft-skip,
+  body.graphics-hd-ui:has(#game.graphics-hd) .relic-draft-footer {
+    min-height: 38px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    border: 1px solid #4a514d;
+    background: linear-gradient(180deg, #101512e8, #090c0ae8);
+    color: #a6aaa7;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .relic-draft-skip {
+    cursor: pointer;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .relic-draft-skip:hover,
+  body.graphics-hd-ui:has(#game.graphics-hd) .relic-draft-skip:focus-visible {
+    outline: 1px solid #8d9d93;
+    outline-offset: 1px;
+    background: linear-gradient(180deg, #172019ed, #0d120fed);
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .relic-draft-skip strong {
+    color: #c7cec9;
+    font: 600 0.7rem/1 Georgia, "Times New Roman", serif;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .relic-draft-skip small,
+  body.graphics-hd-ui:has(#game.graphics-hd) .relic-draft-footer {
+    font-size: 0.6rem;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .screen-overlay.visible:has(.overlay-card-camp) {
+    position: fixed;
+    inset: 0;
+    width: 100vw;
+    height: 100vh;
+    box-sizing: border-box;
+    align-items: center;
+    justify-content: center;
+    padding: 14px 18px;
+    overflow: hidden;
+    background:
+      radial-gradient(circle at 50% 44%, #26382d66 0%, transparent 64%),
+      #010203e8;
+    backdrop-filter: blur(3px) saturate(0.42) brightness(0.38);
+    z-index: 1000;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-camp {
+    position: relative;
+    width: min(1240px, calc(100vw - 36px));
+    flex: 0 0 min(1240px, calc(100vw - 36px));
+    max-width: none;
+    height: min(692px, calc(100vh - 28px));
+    max-height: none;
+    box-sizing: border-box;
+    display: grid;
+    grid-template-rows: auto auto minmax(0, 1fr);
+    padding: clamp(48px, 7.2vh, 56px) clamp(62px, 5.8vw, 76px) clamp(44px, 6.7vh, 52px);
+    overflow: hidden;
+    border: 0;
+    border-radius: 0;
+    background-color: #080b09;
+    background-image:
+      url("assets/hd/ui/abyssal-gothic/menu-frame.png"),
+      radial-gradient(circle at 50% 18%, #2444335c, transparent 48%),
+      url("assets/hd/ui/abyssal-gothic/panel-texture.png");
+    background-position: center, center, center;
+    background-repeat: no-repeat, no-repeat, repeat;
+    background-size: 100% 100%, 100% 100%, 240px 240px;
+    box-shadow: 0 18px 42px #000e;
+    filter: none;
+    animation: none;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-camp > .overlay-title {
+    margin: 0 0 3px;
+    color: #c8ddcf;
+    font: 600 clamp(1.45rem, 2.05vw, 1.82rem)/1 Georgia, "Times New Roman", serif;
+    letter-spacing: 2.8px;
+    text-transform: uppercase;
+    text-shadow: 0 2px 2px #000, 0 0 13px #6d9d7d30;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-camp > .overlay-sub {
+    margin: 0;
+    padding-bottom: 7px;
+    border-bottom: 1px solid #65766a45;
+    color: #8fa297;
+    font-size: clamp(0.68rem, 0.9vw, 0.8rem);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .camp-revamp {
+    min-height: 0;
+    display: grid;
+    grid-template-rows: 46px 36px 32px minmax(0, 1fr) 40px;
+    gap: 6px;
+    margin-top: 8px;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .camp-revamp-stats {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 9px;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .camp-revamp-stats > div {
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 9px;
+    padding: 5px 11px;
+    border: 1px solid #425047;
+    background: linear-gradient(180deg, #131a16eb, #090d0beb);
+    box-shadow: inset 0 0 0 1px #020403;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .camp-revamp-stats span {
+    min-width: 0;
+    overflow: hidden;
+    color: #7f9187;
+    font-size: clamp(0.59rem, 0.72vw, 0.7rem);
+    letter-spacing: 0.75px;
+    text-overflow: ellipsis;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .camp-revamp-stats strong {
+    color: #d5ddd7;
+    font-size: clamp(0.8rem, 1vw, 0.96rem);
+    white-space: nowrap;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .camp-revamp-stats > div:first-child {
+    border-color: #75633c;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .camp-revamp-stats > div:first-child strong {
+    color: #e1c66f;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .camp-revamp-tabs {
+    position: relative;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 7px;
+    padding-right: 48px;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .camp-revamp-tab {
+    display: grid;
+    place-items: center;
+    border: 1px solid #38433d;
+    background: #090d0bea;
+    color: #65736b;
+    font: 600 clamp(0.68rem, 0.86vw, 0.8rem)/1 Georgia, "Times New Roman", serif;
+    letter-spacing: 1.3px;
+    text-transform: uppercase;
+    cursor: pointer;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .camp-revamp-tab.active {
+    border-color: #718b79;
+    background: linear-gradient(180deg, #1b2920ef, #101811ef);
+    color: #b9d1c0;
+    box-shadow: inset 0 -2px 0 #709e7c;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .camp-revamp-tab-key {
+    position: absolute;
+    top: 1px;
+    right: 0;
+    width: 42px;
+    height: 32px;
+    display: grid;
+    place-items: center;
+    border: 1px solid #786d56;
+    background: #0b0d0c;
+    color: #d1bd8f;
+    font-size: 0.72rem;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .camp-revamp-panel-head {
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 3px 8px;
+    border-bottom: 1px solid #56665c62;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .camp-revamp-panel-head > strong {
+    min-width: 0;
+    overflow: hidden;
+    color: #aebfb4;
+    font: 600 clamp(0.7rem, 0.88vw, 0.82rem)/1 Georgia, "Times New Roman", serif;
+    letter-spacing: 1px;
+    text-overflow: ellipsis;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .camp-revamp-panel-head em {
+    margin-left: 5px;
+    color: #998d71;
+    font-size: 0.64rem;
+    font-style: normal;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .camp-revamp-panel-head small {
+    color: #746f64;
+    font-size: clamp(0.58rem, 0.72vw, 0.68rem);
+    white-space: nowrap;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .camp-revamp-grid {
+    min-height: 0;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-rows: repeat(5, minmax(0, 1fr));
+    grid-auto-flow: column;
+    gap: 7px 12px;
+    overflow: hidden;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .camp-revamp-row {
+    min-width: 0;
+    min-height: 0;
+    display: grid;
+    grid-template-columns: 32px minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 10px;
+    padding: 5px 10px;
+    border: 1px solid #39443e;
+    background: linear-gradient(180deg, #111713eb, #080c0aeb);
+    box-shadow: inset 0 0 0 1px #020403;
+    cursor: pointer;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .camp-revamp-row[aria-disabled="true"] {
+    cursor: not-allowed;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .camp-revamp-row:focus-visible {
+    outline: 1px solid #91ac99;
+    outline-offset: 1px;
+    box-shadow: inset 3px 0 0 #739a7e, inset 0 0 0 1px #020403;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .camp-revamp-key {
+    width: 29px;
+    height: 29px;
+    display: grid;
+    place-items: center;
+    border: 1px solid #666b62;
+    background: #080a09;
+    color: #d2c39e;
+    font-size: 0.72rem;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .camp-revamp-copy {
+    min-width: 0;
+    display: grid;
+    gap: 3px;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .camp-revamp-copy strong,
+  body.graphics-hd-ui:has(#game.graphics-hd) .camp-revamp-copy small {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .camp-revamp-copy strong {
+    color: #d0d5d1;
+    font-size: clamp(0.86rem, 1.08vw, 1rem);
+    line-height: 1.05;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .camp-revamp-copy strong em {
+    color: #7f9186;
+    font-size: 0.68rem;
+    font-style: normal;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .camp-revamp-copy small {
+    color: #7f8983;
+    font-size: clamp(0.68rem, 0.84vw, 0.78rem);
+    line-height: 1.05;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .camp-revamp-status {
+    color: #cbb477;
+    font-size: clamp(0.68rem, 0.84vw, 0.78rem);
+    font-style: normal;
+    white-space: nowrap;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .camp-revamp-row.active,
+  body.graphics-hd-ui:has(#game.graphics-hd) .camp-revamp-row.maxed {
+    border-color: #55755f;
+    background: linear-gradient(180deg, #17241beF, #0d150fef);
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .camp-revamp-row.active .camp-revamp-status,
+  body.graphics-hd-ui:has(#game.graphics-hd) .camp-revamp-row.maxed .camp-revamp-status {
+    color: #8fd09f;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .camp-revamp-row.locked,
+  body.graphics-hd-ui:has(#game.graphics-hd) .camp-revamp-row.unaffordable {
+    opacity: 0.62;
+    filter: saturate(0.7);
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .camp-revamp-row.unaffordable .camp-revamp-status {
+    color: #bd7770;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .camp-revamp-actions {
+    display: grid;
+    grid-template-columns: 1.35fr 1fr 1fr;
+    gap: 8px;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .camp-revamp-action {
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 9px;
+    border: 1px solid #444d47;
+    background: linear-gradient(180deg, #121814eb, #090d0beb);
+    color: #8f9c94;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .camp-revamp-action[data-camp-key] {
+    cursor: pointer;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .camp-revamp-action.guide {
+    opacity: 0.72;
+    cursor: default;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) :is(
+    .overlay-card-camp-start .overlay-menu-row[data-camp-key],
+    .overlay-card-camp-start .camp-start-action[data-camp-key]
+  ) {
+    cursor: pointer;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .camp-revamp-action.primary {
+    border-color: #627d69;
+    background: linear-gradient(180deg, #1a2b20ef, #101a13ef);
+    color: #c0d6c6;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .camp-revamp-action span {
+    min-width: 29px;
+    height: 27px;
+    display: grid;
+    place-items: center;
+    border: 1px solid #68675d;
+    background: #080a09;
+    color: #d0bd8d;
+    font-size: 0.68rem;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .camp-revamp-action strong {
+    min-width: 0;
+    overflow: hidden;
+    font: 600 clamp(0.64rem, 0.82vw, 0.76rem)/1 Georgia, "Times New Roman", serif;
+    letter-spacing: 0.8px;
+    text-overflow: ellipsis;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-merchant > .overlay-title {
+    color: #b8d5c6;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .screen-overlay.visible:has(.overlay-card-merchant) {
+    position: fixed;
+    inset: 0;
+    width: 100vw;
+    height: 100vh;
+    box-sizing: border-box;
+    align-items: center;
+    justify-content: center;
+    padding: 14px 18px;
+    overflow: hidden;
+    background:
+      radial-gradient(circle at 50% 44%, #27463866 0%, transparent 64%),
+      #010203e8;
+    backdrop-filter: blur(3px) saturate(0.46) brightness(0.4);
+    z-index: 1000;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-merchant {
+    width: min(1240px, calc(100vw - 36px));
+    flex: 0 0 min(1240px, calc(100vw - 36px));
+    max-width: none;
+    height: min(692px, calc(100vh - 28px));
+    max-height: none;
+    display: grid;
+    grid-template-rows: auto auto minmax(0, 1fr);
+    padding: clamp(48px, 7.2vh, 56px) clamp(62px, 5.8vw, 76px) clamp(44px, 6.7vh, 52px);
+    overflow: hidden;
+    filter: drop-shadow(0 18px 34px #000e);
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-merchant:has(> .overlay-hint) {
+    grid-template-rows: auto auto auto minmax(0, 1fr);
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-merchant > .overlay-title {
+    margin-bottom: 3px;
+    font-size: clamp(1.45rem, 2.05vw, 1.82rem);
+    letter-spacing: 2.8px;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-merchant > .overlay-sub {
+    margin: 0;
+    font-size: clamp(0.68rem, 0.9vw, 0.8rem);
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .merchant-wallet {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 36px;
+    min-height: 32px;
+    padding-bottom: 7px;
+    border-bottom: 1px solid #65736a48;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .merchant-wallet .merchant-summary-line {
+    gap: 6px;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .merchant-wallet .merchant-summary-label {
+    color: #87988e;
+    font-size: 0.68rem;
+    letter-spacing: 0.9px;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .merchant-wallet :is(.merchant-summary-gold, .merchant-summary-potions) {
+    font-size: 0.94rem;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-merchant > .overlay-menu {
+    width: 100%;
+    max-height: none;
+    min-height: 0;
+    margin-top: 9px;
+    padding: 0;
+    overflow: hidden;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .merchant-menu-dashboard {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-areas:
+      "skills relics"
+      "consumables utilities"
+      "buyback buyback";
+    grid-template-rows: minmax(0, 1fr) auto auto;
+    gap: 9px 12px;
+    align-content: stretch;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .merchant-section-skills { grid-area: skills; }
+  body.graphics-hd-ui:has(#game.graphics-hd) .merchant-section-relics { grid-area: relics; }
+  body.graphics-hd-ui:has(#game.graphics-hd) .merchant-section-consumables { grid-area: consumables; }
+  body.graphics-hd-ui:has(#game.graphics-hd) .merchant-section-utilities { grid-area: utilities; }
+  body.graphics-hd-ui:has(#game.graphics-hd) .merchant-section-buyback { grid-area: buyback; }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-merchant .overlay-menu-section {
+    min-width: 0;
+    padding: 6px 7px 7px;
+    border: 1px solid #39443f;
+    background: linear-gradient(180deg, #101714e8, #080c0ae8);
+    box-shadow: inset 0 0 0 1px #020403;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-merchant .overlay-menu-section-title {
+    min-height: 24px;
+    margin: 0 1px 5px;
+    padding: 5px 8px;
+    border-bottom: 1px solid #58675f52;
+    color: #9fb9aa;
+    font: 600 0.7rem/1 Georgia, "Times New Roman", serif;
+    letter-spacing: 1.35px;
+    text-transform: uppercase;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-merchant .overlay-menu-section-rows {
+    display: grid;
+    gap: 5px;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-merchant .merchant-row {
+    min-height: 46px;
+    grid-template-columns: 34px minmax(0, 1fr);
+    gap: 10px;
+    padding: 6px 9px;
+    cursor: pointer;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-merchant .merchant-row.disabled {
+    cursor: not-allowed;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-merchant .merchant-row .overlay-menu-key {
+    width: 30px;
+    min-width: 30px;
+    height: 30px;
+    font-size: 0.74rem;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-merchant .merchant-row strong {
+    display: block;
+    min-width: 0;
+    overflow: hidden;
+    color: #d5d8d3;
+    font-size: clamp(0.76rem, 0.9vw, 0.88rem);
+    line-height: 1.12;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-merchant .merchant-row br {
+    display: none;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-merchant .merchant-row > div:last-child > span {
+    display: block;
+    min-width: 0;
+    margin-top: 2px;
+    overflow: hidden;
+    color: #969f9a;
+    font-size: clamp(0.64rem, 0.72vw, 0.72rem);
+    line-height: 1.15;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-merchant .merchant-tier-badge {
+    padding: 1px 4px;
+    font-size: 0.58rem;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .merchant-menu-selection {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 4px 7px;
+    align-content: center;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-merchant:has(.merchant-menu-buyback) {
+    height: min(692px, calc(100vh - 28px));
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .merchant-menu-buyback {
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr);
+    gap: 8px;
+    align-content: start;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .merchant-buyback-summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    min-height: 35px;
+    padding: 5px 9px;
+    border: 1px solid #4b5d53;
+    background: linear-gradient(90deg, #14221ce8, #0b100de8);
+    box-shadow: inset 3px 0 0 #79ad90, inset 0 0 0 1px #020403;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .merchant-buyback-summary > div {
+    min-width: 0;
+    display: grid;
+    gap: 2px;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .merchant-buyback-summary strong {
+    color: #c9ded2;
+    font: 600 0.68rem/1 Georgia, "Times New Roman", serif;
+    letter-spacing: 1.1px;
+    text-transform: uppercase;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .merchant-buyback-summary span {
+    overflow: hidden;
+    color: #8f9d95;
+    font-size: 0.53rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .merchant-buyback-summary > em {
+    flex: 0 0 auto;
+    padding: 3px 6px;
+    border: 1px solid #577062;
+    color: #a9c8b7;
+    font: 600 0.5rem/1 "Courier Prime", "Cascadia Mono", monospace;
+    letter-spacing: 0.6px;
+    text-transform: uppercase;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .merchant-buyback-grid {
+    min-height: 0;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 5px 7px;
+    align-content: start;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-merchant .merchant-buyback-row {
+    min-height: 42px;
+    grid-template-columns: 24px minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 7px;
+    padding: 4px 6px;
+    cursor: pointer;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .merchant-buyback-row:is(:hover, :focus-visible) {
+    border-color: #759984;
+    background: linear-gradient(90deg, #1a2b23f0, #0e1511ee);
+    box-shadow: inset 3px 0 0 #8fc6a8, inset 0 0 0 1px #020403;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .merchant-buyback-copy {
+    min-width: 0;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .merchant-buyback-action {
+    display: grid;
+    gap: 2px;
+    padding-left: 8px;
+    border-left: 1px solid #52615866;
+    text-align: right;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .merchant-buyback-action span {
+    color: #829188;
+    font-size: 0.47rem;
+    letter-spacing: 0.7px;
+    text-transform: uppercase;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .merchant-buyback-action strong {
+    color: #d7b968;
+    font: 700 0.62rem/1 "Courier Prime", "Cascadia Mono", monospace;
+    white-space: nowrap;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-merchant .merchant-row:focus-visible {
+    outline: 1px solid #9fb9aa;
+    outline-offset: 1px;
+    box-shadow: inset 3px 0 0 #72a28a, inset 0 0 0 1px #020403;
+  }
+
+  body.graphics-hd-ui .overlay-card-main-menu {
+    width: min(330px, 86%);
+    min-height: 0;
+    padding: 51px 40px 44px;
+  }
+
+  body.graphics-hd-ui .overlay-card-main-menu .overlay-title { font-size: 1.28rem; }
+  body.graphics-hd-ui .overlay-card-main-menu .overlay-sub,
+  body.graphics-hd-ui .overlay-card-main-menu .overlay-hint { margin: 3px 0; font-size: 0.59rem; }
+  body.graphics-hd-ui .overlay-card-main-menu .overlay-menu-row { min-height: 28px; padding: 3px 6px; }
+  body.graphics-hd-ui .overlay-card-main-menu .overlay-menu-row strong {
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 0.73rem;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .screen-overlay.visible:has(.overlay-card-pause-menu) {
+    background:
+      radial-gradient(circle at 50% 46%, #0b1015a8 0%, #020304d0 76%),
+      #02030499;
+    backdrop-filter: blur(0.8px) saturate(0.72) brightness(0.7);
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .board:has(.screen-overlay.visible .overlay-card-pause-menu .overlay-menu) > .depth-badge {
+    display: grid;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-pause-menu {
+    width: min(350px, 84%);
+    padding: 54px 42px 46px;
+    filter: drop-shadow(0 15px 20px #000c);
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-pause-menu .overlay-title {
+    color: #d7c7aa;
+    letter-spacing: 2.2px;
+    text-shadow: 0 2px 2px #000, 0 0 12px #788b9d3d;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-pause-menu .overlay-sub {
+    color: #8e969b;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-pause-menu .overlay-hint {
+    color: #9e9483;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-pause-menu .overlay-menu-row {
+    border-color: #3f474d;
+    background: linear-gradient(90deg, #12171bd9, #090c0fd9);
+    box-shadow: inset 0 0 0 1px #020304;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-pause-menu .overlay-menu-row.selected {
+    border-color: #7f8b91;
+    background:
+      linear-gradient(90deg, #35414bba, #171d22e8 72%),
+      #11161a;
+    box-shadow: inset 4px 0 0 #a38a62, inset 0 0 0 1px #050607, 0 0 9px #7a8e9c26;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-pause-menu .overlay-menu-row.selected strong {
+    color: #eee4d2;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-pause-menu .overlay-menu-key,
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-pause-menu .overlay-menu-row.selected .overlay-menu-key {
+    border-color: #626a6e;
+    background: linear-gradient(180deg, #20262a, #0b0e10);
+    color: #d0c1a5;
+  }
+
+  body.graphics-hd-ui .app-footer {
+    width: auto;
+    height: 14px;
+    color: #777d80;
+    font-size: 0.62rem;
+    line-height: 14px;
+  }
+}
+
+/* Relic Exchange: compact camp decision surface for HD. */
+@media (min-width: 1201px) {
+  body.graphics-hd-ui:has(#game.graphics-hd) .screen-overlay.visible:has(.overlay-card-relic-exchange) {
+    position: fixed;
+    inset: 0;
+    width: 100vw;
+    height: 100vh;
+    box-sizing: border-box;
+    align-items: center;
+    justify-content: center;
+    padding: 14px 18px;
+    overflow: hidden;
+    background: radial-gradient(circle at 50% 43%, #2743325e 0%, transparent 64%), #010203e8;
+    backdrop-filter: blur(3px) saturate(0.48) brightness(0.4);
+    z-index: 1000;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-relic-exchange {
+    width: min(1220px, calc(100vw - 36px));
+    max-width: none;
+    height: min(806px, calc(100vh - 28px));
+    max-height: none;
+    box-sizing: border-box;
+    display: grid;
+    grid-template-rows: auto auto 66px 34px 275px 42px;
+    align-content: center;
+    gap: 7px;
+    padding: 0;
+    overflow: hidden;
+    border: 0;
+    border-radius: 0;
+    background-color: #070a08;
+    background-image: url("assets/hd/ui/abyssal-gothic/menu-frame.png"), radial-gradient(circle at 50% 18%, #27513a54, transparent 52%), url("assets/hd/ui/abyssal-gothic/panel-texture.png");
+    background-position: center, center, center;
+    background-repeat: no-repeat, no-repeat, repeat;
+    background-size: 100% 100%, 100% 100%, 300px 300px;
+    filter: drop-shadow(0 18px 36px #000e);
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-relic-exchange > :is(
+    .overlay-title,
+    .overlay-sub,
+    .relic-exchange-summary,
+    .relic-exchange-toolbar,
+    .relic-exchange-list,
+    .relic-exchange-actions
+  ) {
+    width: min(880px, calc(100% - 320px));
+    justify-self: center;
+    box-sizing: border-box;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-relic-exchange > .overlay-title {
+    margin: 0;
+    color: #d3e5d7;
+    font: 600 clamp(1.42rem, 2vw, 1.78rem)/1 Georgia, "Times New Roman", serif;
+    letter-spacing: 2.8px;
+    text-transform: uppercase;
+    text-shadow: 0 2px 2px #000, 0 0 14px #70a27e38;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-relic-exchange > .overlay-sub {
+    margin: 0;
+    color: #90a198;
+    font-size: clamp(0.66rem, 0.82vw, 0.76rem);
+    letter-spacing: 0.45px;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .relic-exchange-summary {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .relic-exchange-summary > div {
+    min-width: 0;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    gap: 2px 9px;
+    padding: 8px 11px;
+    border: 1px solid #46544b;
+    background: linear-gradient(180deg, #141c17ed, #090e0bed);
+    box-shadow: inset 0 0 0 1px #020403;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .relic-exchange-summary > div.selected {
+    border-color: #647b69;
+    background: linear-gradient(180deg, #1b2920ed, #0d160fed);
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .relic-exchange-summary small {
+    color: #7f9086;
+    font-size: 0.56rem;
+    letter-spacing: 0.7px;
+    text-transform: uppercase;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .relic-exchange-summary strong {
+    grid-row: span 2;
+    color: #d9c176;
+    font-size: 1rem;
+    white-space: nowrap;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .relic-exchange-summary span {
+    color: #9aa79f;
+    font-size: 0.64rem;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .relic-exchange-toolbar {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 10px;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .relic-exchange-breakdown,
+  body.graphics-hd-ui:has(#game.graphics-hd) .relic-exchange-bulk,
+  body.graphics-hd-ui:has(#game.graphics-hd) .relic-exchange-actions {
+    display: flex;
+    align-items: stretch;
+    gap: 6px;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .relic-exchange-breakdown > span {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 0 7px;
+    border: 1px solid #344039;
+    background: #090d0bea;
+    color: #c7d0ca;
+    font-size: 0.61rem;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .relic-exchange-breakdown b {
+    color: #718078;
+    font-size: 0.5rem;
+    font-weight: 600;
+    text-transform: uppercase;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .relic-exchange-bulk > div,
+  body.graphics-hd-ui:has(#game.graphics-hd) .relic-exchange-actions > div {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    border: 1px solid #424c46;
+    background: linear-gradient(180deg, #121814ed, #090d0bed);
+    color: #9da9a1;
+    cursor: pointer;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .relic-exchange-bulk > div {
+    padding: 0 9px;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .relic-exchange-bulk span,
+  body.graphics-hd-ui:has(#game.graphics-hd) .relic-exchange-actions span,
+  body.graphics-hd-ui:has(#game.graphics-hd) .relic-exchange-key {
+    min-width: 26px;
+    height: 24px;
+    display: grid;
+    place-items: center;
+    border: 1px solid #65675f;
+    background: #080a09;
+    color: #d4c497;
+    font-size: 0.61rem;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .relic-exchange-bulk strong,
+  body.graphics-hd-ui:has(#game.graphics-hd) .relic-exchange-actions strong {
+    font-size: 0.64rem;
+    white-space: nowrap;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-relic-exchange .relic-exchange-list {
+    width: min(880px, calc(100% - 320px));
+    max-height: none;
+    min-height: 0;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-rows: repeat(4, minmax(0, 1fr));
+    grid-auto-flow: column;
+    gap: 7px 10px;
+    overflow: hidden;
+    justify-self: center;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-relic-exchange .relic-exchange-row {
+    min-width: 0;
+    min-height: 0;
+    display: grid;
+    grid-template-columns: 28px minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 9px;
+    padding: 7px 9px;
+    border: 1px solid var(--exchange-border, #566159);
+    border-radius: 0;
+    background: linear-gradient(180deg, color-mix(in srgb, var(--exchange-accent, #8c9b91) 8%, transparent), transparent 58%), var(--exchange-bg, #0b100de8);
+    box-shadow: inset 0 0 0 1px #020403;
+    opacity: 0.76;
+    cursor: pointer;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-relic-exchange .relic-exchange-row.selected {
+    opacity: 1;
+    border-color: var(--exchange-accent, #91ad99);
+    box-shadow: inset 3px 0 0 var(--exchange-accent, #7f9d88), inset 0 0 0 1px #020403, 0 0 10px color-mix(in srgb, var(--exchange-accent, #7f9d88) 18%, transparent);
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) :is(.relic-exchange-row, .relic-exchange-bulk > div, .relic-exchange-actions > div):focus-visible {
+    outline: 1px solid #9ab4a1;
+    outline-offset: 1px;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-relic-exchange .relic-exchange-main {
+    min-width: 0;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-relic-exchange .relic-exchange-main strong,
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-relic-exchange .relic-exchange-main span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-relic-exchange .relic-exchange-main strong {
+    font-size: 0.75rem;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-relic-exchange .relic-exchange-main span {
+    display: flex;
+    gap: 7px;
+    color: #7f8d84;
+    font-size: 0.59rem;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-relic-exchange .relic-exchange-main em {
+    color: #b5a478;
+    font-style: normal;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-relic-exchange .relic-exchange-gold {
+    color: #8fc89d;
+    font-size: 0.62rem;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-relic-exchange .relic-exchange-row.selected .relic-exchange-gold {
+    color: #e0bd72;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .relic-exchange-actions {
+    display: grid;
+    grid-template-columns: 1fr 1.25fr;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .relic-exchange-actions > div.primary {
+    border-color: #7a6741;
+    background: linear-gradient(180deg, #2b2415ed, #171208ed);
+    color: #dfcf9f;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .relic-exchange-actions em {
+    color: #e3c36f;
+    font-size: 0.74rem;
+    font-style: normal;
+  }
+}
+
+/* Stage 1: capped game composition and room-side vital rails. */
+@media (min-width: 1201px) {
+  body.graphics-hd-ui:has(#game.graphics-hd) {
+    display: flex;
+    justify-content: center;
+    --hd-outer-void: #010202;
+    --hd-outer-metal: #080a0c;
+    background-color: var(--hd-outer-void);
+    background-image:
+      radial-gradient(ellipse at 50% 48%, #0c0e11c7 0%, #050607ed 62%, var(--hd-outer-void) 100%),
+      url("assets/hd/ui/abyssal-gothic/panel-texture.png");
+    background-position: center, center;
+    background-repeat: no-repeat, repeat;
+    background-size: 100% 100%, 512px 512px;
+  }
+
+  body.graphics-hd-ui .app {
+    width: min(100vw, calc(100vh * 16 / 9));
+    max-width: 1680px;
+    margin-inline: auto;
+    padding: clamp(24px, 3.6vh, 34px) clamp(30px, 2.85vw, 48px) clamp(18px, 2.65vh, 25px);
+    box-shadow:
+      0 0 0 1px var(--hd-outer-metal),
+      0 0 44px 18px #000d;
+  }
+
+  body.graphics-hd-ui .layout-track {
+    grid-template-columns: minmax(270px, 22%) minmax(640px, 56%) minmax(270px, 22%);
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .board {
+    grid-template-rows: clamp(54px, 7vh, 64px) clamp(44px, 5.8vh, 54px) minmax(0, 1fr) clamp(124px, 15.7vh, 148px);
+    padding-inline: clamp(7px, 0.75vw, 12px);
+  }
+
+  body.graphics-hd-ui .room-stage {
+    display: flex;
+    align-items: stretch;
+    justify-content: center;
+    width: max-content;
+    max-width: 100%;
+    height: min(100%, 610px);
+    min-height: 0;
+    margin-inline: auto;
+  }
+
+  body.graphics-hd-ui .room-stage .canvas-wrap {
+    flex: 0 1 auto;
+    width: auto;
+    max-width: calc(100% - 156px);
+    height: 100%;
+    aspect-ratio: 1;
+    align-self: stretch;
+  }
+
+  body.graphics-hd-ui .room-vital-rail {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    box-sizing: border-box;
+    flex: 0 0 auto;
+    align-items: center;
+    justify-content: center;
+    min-height: 0;
+    overflow: hidden;
+    background-color: #07090b;
+    background-image: url("assets/hd/ui/abyssal-gothic/menu-frame.png"), url("assets/hd/ui/abyssal-gothic/panel-texture.png");
+    background-position: center, center;
+    background-repeat: no-repeat, repeat;
+    background-size: 100% 100%, 260px 260px;
+    filter: drop-shadow(0 2px 4px #000);
+  }
+
+  body.graphics-hd-ui .room-vital-rail-hp {
+    width: 34px;
+    margin-right: 4px;
+    padding: 29px 8px 25px;
+    flex-direction: column;
+  }
+
+  body.graphics-hd-ui .room-vital-rail-protection {
+    width: 38px;
+    margin-left: 4px;
+    padding: 29px 6px 25px;
+    gap: 3px;
+  }
+
+  body.graphics-hd-ui .room-protection-meter {
+    display: flex;
+    min-width: 0;
+    height: 100%;
+    flex: 1 1 0;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  body.graphics-hd-ui .room-vital-track {
+    --meter-fill: 0%;
+    position: relative;
+    width: 100%;
+    min-height: 0;
+    flex: 1 1 auto;
+    overflow: hidden;
+    border: 1px solid #59544b;
+    background: #030405 url("assets/hd/ui/abyssal-gothic/panel-texture.png") center / 220px 220px;
+    box-shadow: inset 0 0 0 2px #050607, inset 0 0 8px #000, 0 0 0 1px #050607;
+  }
+
+  body.graphics-hd-ui .room-vital-track[data-ui-tooltip] {
+    cursor: help;
+  }
+
+  body.graphics-hd-ui .room-vital-track[data-ui-tooltip]:focus-visible {
+    outline: 1px solid #c7b18a;
+    outline-offset: 3px;
+    box-shadow: inset 0 0 0 2px #050607, inset 0 0 8px #000, 0 0 9px #b99a645c;
+  }
+
+  body.graphics-hd-ui .room-vital-fill {
+    position: absolute;
+    inset: auto 2px 2px;
+    height: max(0px, calc(var(--meter-fill) - 4px));
+    min-height: 0;
+    transition: height 180ms ease-out;
+    box-shadow: inset 0 0 5px #fff4, 0 0 8px currentColor;
+  }
+
+  body.graphics-hd-ui .room-vital-shine {
+    position: absolute;
+    inset: 3px 3px auto;
+    height: 22%;
+    pointer-events: none;
+    background: linear-gradient(180deg, #ffffff18, transparent);
+  }
+
+  body.graphics-hd-ui .room-vital-rail-hp .room-vital-fill {
+    color: #c94237;
+    background: linear-gradient(90deg, #4f0d0b, #be3229 48%, #e45a45 72%, #6f1410);
+  }
+
+  body.graphics-hd-ui .room-protection-meter-shield .room-vital-fill {
+    color: #d8aa49;
+    background: linear-gradient(90deg, #554113, #d3a63d 52%, #ffe08a 72%, #755416);
+  }
+
+  body.graphics-hd-ui .room-protection-meter-barrier .room-vital-fill {
+    color: #55bde8;
+    background: linear-gradient(90deg, #0b354d, #2389ba 48%, #79d9f4 72%, #104864);
+  }
+
+  body.graphics-hd-ui .room-vital-value,
+  body.graphics-hd-ui .room-vital-label {
+    display: block;
+    flex: 0 0 auto;
+    color: #c8bda8;
+    font: 700 0.52rem/1 "Courier Prime", "Cascadia Mono", monospace;
+    letter-spacing: 0;
+    text-align: center;
+    text-shadow: 0 1px 2px #000;
+  }
+
+  body.graphics-hd-ui .room-vital-value {
+    min-height: 10px;
+    margin-bottom: 3px;
+    writing-mode: vertical-rl;
+    transform: rotate(180deg);
+  }
+
+  body.graphics-hd-ui .room-vital-label { margin-top: 4px; }
+  body.graphics-hd-ui .room-vital-rail.is-inactive { opacity: 0.38; }
+  body.graphics-hd-ui .room-vital-rail-hp.is-low .room-vital-track { animation: hd-hp-danger 1.2s ease-in-out infinite; }
+
+  @keyframes hd-hp-danger {
+    0%, 100% { box-shadow: inset 0 0 0 2px #050607, inset 0 0 8px #000, 0 0 0 1px #050607; }
+    50% { box-shadow: inset 0 0 0 2px #170605, inset 0 0 9px #4f0b08, 0 0 7px #d6382b88; }
+  }
+
+  body.graphics-hd-ui .room-resource-rail {
+    position: relative;
+    z-index: 3;
+    display: flex;
+    box-sizing: border-box;
+    width: 36px;
+    min-height: 0;
+    flex: 0 0 36px;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 7px;
+    padding: 32px 0 16px;
+  }
+
+  body.graphics-hd-ui .room-resource-rail-left { margin-right: 2px; }
+  body.graphics-hd-ui .room-resource-rail-right { margin-left: 2px; }
+
+  body.graphics-hd-ui .room-resource-group {
+    display: flex;
+    width: 34px;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+  }
+
+  body.graphics-hd-ui .room-resource-elixir:not(:empty) {
+    padding-top: 6px;
+    border-top: 1px solid #665d4b66;
+  }
+
+  body.graphics-hd-ui .room-resource-icon {
+    position: relative;
+    display: grid;
+    width: 32px;
+    height: 32px;
+    flex: 0 0 32px;
+    place-items: center;
+    overflow: hidden;
+    border-radius: 50%;
+    background: #06080ae8;
+    filter: saturate(0.2) brightness(0.42);
+    opacity: 0.58;
+    transition: filter 140ms ease, opacity 140ms ease, transform 140ms ease;
+  }
+
+  body.graphics-hd-ui .room-resource-icon[data-ui-tooltip] {
+    cursor: help;
+  }
+
+  body.graphics-hd-ui .room-resource-icon[data-ui-tooltip]:focus-visible {
+    outline: 1px solid #c7b18a;
+    outline-offset: 2px;
+    filter: saturate(1.12) brightness(1.08) drop-shadow(0 0 7px #b99a646e);
+  }
+
+  body.graphics-hd-ui .room-resource-icon::after {
+    content: "";
+    position: absolute;
+    inset: 1px;
+    border: 1px solid #665d4b88;
+    border-radius: 50%;
+    pointer-events: none;
+  }
+
+  body.graphics-hd-ui .room-resource-icon img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+  }
+
+  body.graphics-hd-ui .room-resource-icon.is-active {
+    filter: saturate(1) brightness(1);
+    opacity: 1;
+  }
+
+  body.graphics-hd-ui .room-resource-icon.tone-fury.is-active { filter: saturate(1.08) brightness(1.08) drop-shadow(0 0 4px #dc713c); }
+  body.graphics-hd-ui .room-resource-icon.tone-elixir.is-active { filter: saturate(1.05) brightness(1.08) drop-shadow(0 0 4px #45cfc4); }
+  body.graphics-hd-ui .room-resource-icon.tone-potion.is-active { filter: saturate(1.05) brightness(1.08) drop-shadow(0 0 4px #d9483d); }
+  body.graphics-hd-ui .room-resource-rail.is-inactive { opacity: 0.3; }
+
+  body.graphics-hd-ui .depth-meta-left,
+  body.graphics-hd-ui .depth-meta-potions { visibility: hidden; }
+
+  body.graphics-hd-ui .hud-section-player .status-emblem-pill:has(img[data-status-id="shield"]),
+  body.graphics-hd-ui .hud-section-player .status-emblem-pill:has(img[data-status-id="barrier"]) { display: none; }
+}
+
+@media (min-width: 1201px) and (prefers-reduced-motion: reduce) {
+  body.graphics-hd-ui .room-vital-fill { transition: none; }
+  body.graphics-hd-ui .room-vital-rail-hp.is-low .room-vital-track { animation: none; }
+  body.graphics-hd-ui .room-resource-icon { transition: none; }
+  body.graphics-hd-ui .hd-ui-tooltip { animation: none; }
+}
+
+@media (min-width: 1201px) and (max-height: 800px) {
+  body.graphics-hd-ui .app { padding-top: 27px; padding-bottom: 20px; }
+  body.graphics-hd-ui .panel { padding-top: 22px; padding-bottom: 26px; }
+  body.graphics-hd-ui .panel-title { min-height: 49px; margin-bottom: 0; }
+  body.graphics-hd-ui .side-section-title,
+  body.graphics-hd-ui .mutators h3 { min-height: 37px; padding-top: 7px; padding-bottom: 6px; }
+  body.graphics-hd-ui .hud { gap: 0; }
+  body.graphics-hd-ui .hud-section { padding-top: 1px; padding-bottom: 2px; }
+  body.graphics-hd-ui .hud-section-dungeon .statline:nth-of-type(2),
+  body.graphics-hd-ui .hud-section-dungeon .statline:nth-of-type(8) { display: none; }
+  body.graphics-hd-ui .statline,
+  body.graphics-hd-ui .hud-relic-item {
+    min-height: 14px;
+    padding-top: 0;
+    padding-bottom: 0;
+    font-size: 0.65rem;
+    line-height: 1;
+  }
+  body.graphics-hd-ui .relic-slot-grid { --relic-slot-size: 40px; gap: 3px; }
+  body.graphics-hd-ui .relic-slot-grid-5 { --relic-slot-size: 36px; }
+  body.graphics-hd-ui .relic-slot { aspect-ratio: 1; height: auto; }
+  body.graphics-hd-ui:has(#game.graphics-hd) .skills-bar { gap: 8px; padding-top: 2px; }
+  body.graphics-hd-ui:has(#game.graphics-hd) .skill-card,
+  body.graphics-hd-ui:has(#game.graphics-hd) .skill-card.ready,
+  body.graphics-hd-ui:has(#game.graphics-hd) .skill-card.armed,
+  body.graphics-hd-ui:has(#game.graphics-hd) .skill-card.cooling,
+  body.graphics-hd-ui:has(#game.graphics-hd) .skill-card.idle { padding: 12px 15px 11px; }
+  body.graphics-hd-ui:has(#game.graphics-hd) .skill-rarity { min-height: 22px; padding-bottom: 0; }
+  body.graphics-hd-ui:has(#game.graphics-hd) .skill-card-body { grid-template-columns: 52px minmax(0, 1fr); gap: 6px; }
+  body.graphics-hd-ui:has(#game.graphics-hd) .skill-art { width: 50px; height: 50px; }
+  body.graphics-hd-ui:has(#game.graphics-hd) .skill-copy { gap: 3px; }
+}
+
+/* A fresh title menu is a standalone surface. In-run pause keeps the live HUD. */
+body.graphics-hd-ui.main-menu-only .layout-track {
+  display: block;
+  width: 100%;
+  max-width: none;
+  margin: 0;
+}
+
+body.graphics-hd-ui.main-menu-only .panel,
+body.graphics-hd-ui.main-menu-only .titlebar,
+body.graphics-hd-ui.main-menu-only .depth-badge,
+body.graphics-hd-ui.main-menu-only .room-vital-rail,
+body.graphics-hd-ui.main-menu-only .room-resource-rail,
+body.graphics-hd-ui.main-menu-only .skills-bar,
+body.graphics-hd-ui.main-menu-only .mobile-controls,
+body.graphics-hd-ui.main-menu-only .mobile-swipe-hint,
+body.graphics-hd-ui.main-menu-only .mobile-menu-button,
+body.graphics-hd-ui.main-menu-only .room-intro-overlay,
+body.graphics-hd-ui.main-menu-only #game,
+body.graphics-hd-ui.main-menu-only .app-footer {
+  display: none !important;
+}
+
+body.graphics-hd-ui.main-menu-only .board {
+  display: block;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  max-height: none;
+  min-height: 0;
+  margin: 0;
+  place-self: stretch;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+body.graphics-hd-ui.main-menu-only .room-stage,
+body.graphics-hd-ui.main-menu-only .canvas-wrap {
+  display: block;
+  position: relative;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  max-height: none;
+  margin: 0;
+  aspect-ratio: auto;
+}
+
+body.graphics-hd-ui.main-menu-only:has(#game.graphics-hd) .board,
+body.graphics-hd-ui.main-menu-only:has(#game.graphics-hd) .canvas-wrap {
+  width: 100% !important;
+  height: 100% !important;
+  max-width: none !important;
+  max-height: none !important;
+}
+
+body.graphics-hd-ui.main-menu-only .screen-overlay {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+/* Forge Chamber: large framed decision surface with a protected ornamental safe area. */
+@media (min-width: 1201px) {
+  body.graphics-hd-ui:has(#game.graphics-hd) .screen-overlay.visible:has(.overlay-card-forge) {
+    position: fixed;
+    inset: 0;
+    width: 100vw;
+    height: 100vh;
+    box-sizing: border-box;
+    align-items: center;
+    justify-content: center;
+    padding: 16px 20px;
+    overflow: hidden;
+    background:
+      radial-gradient(circle at 50% 43%, #6b351f52 0%, transparent 62%),
+      #010203e8;
+    backdrop-filter: blur(3px) saturate(0.52) brightness(0.42);
+    z-index: 1000;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-forge {
+    width: min(1040px, calc(100vw - 28px));
+    max-width: none;
+    height: min(600px, calc(100vh - 28px));
+    max-height: none;
+    box-sizing: border-box;
+    display: grid;
+    grid-template-rows: auto auto auto minmax(0, 1fr) auto;
+    gap: 7px;
+    padding: clamp(68px, 8.4vh, 76px) clamp(108px, 10.5vw, 122px) clamp(66px, 8vh, 74px);
+    border: 0;
+    border-radius: 0;
+    overflow: hidden;
+    background-color: #07090b;
+    background-image:
+      url("assets/hd/ui/abyssal-gothic/menu-frame.png"),
+      url("assets/hd/ui/abyssal-gothic/panel-texture.png");
+    background-position: center, center;
+    background-repeat: no-repeat, repeat;
+    background-size: 100% 100%, 360px 360px;
+    filter: drop-shadow(0 18px 34px #000e);
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-forge > .overlay-title {
+    margin: 0;
+    color: #ead7c1;
+    font-size: clamp(1.42rem, 2vw, 1.78rem);
+    letter-spacing: 2.8px;
+    text-shadow: 0 2px 2px #000, 0 0 14px #d87a3738;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-forge > .overlay-sub {
+    margin: 0 0 3px;
+    color: #a99a8d;
+    font-size: clamp(0.67rem, 0.86vw, 0.78rem);
+    letter-spacing: 0.45px;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .forge-context {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .forge-context > span {
+    min-width: 0;
+    display: flex;
+    align-items: baseline;
+    justify-content: center;
+    gap: 7px;
+    padding: 6px 10px;
+    border: 1px solid #55463b;
+    background: linear-gradient(180deg, #17120fdf, #0b0908df);
+    box-shadow: inset 0 0 0 1px #030201;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .forge-context small,
+  body.graphics-hd-ui:has(#game.graphics-hd) .forge-choice-facts small {
+    color: #81746a;
+    font-size: 0.58rem;
+    letter-spacing: 0.75px;
+    text-transform: uppercase;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .forge-context strong {
+    color: #d4c1a9;
+    font-size: 0.72rem;
+    white-space: nowrap;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .forge-choice-grid {
+    min-height: 0;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+    align-content: stretch;
+    padding-top: 4px;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .forge-choice {
+    min-width: 0;
+    display: grid;
+    grid-template-rows: auto auto minmax(0, 1fr);
+    gap: 10px;
+    padding: 13px 14px;
+    border: 1px solid #5a493b;
+    background:
+      linear-gradient(135deg, #7d3d1c12, transparent 55%),
+      linear-gradient(180deg, #15110eea, #090706ea);
+    box-shadow: inset 0 0 0 1px #030201;
+    text-align: left;
+    cursor: pointer;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .forge-choice:hover,
+  body.graphics-hd-ui:has(#game.graphics-hd) .forge-choice:focus-visible,
+  body.graphics-hd-ui:has(#game.graphics-hd) .forge-relic-choice:hover,
+  body.graphics-hd-ui:has(#game.graphics-hd) .forge-relic-choice:focus-visible,
+  body.graphics-hd-ui:has(#game.graphics-hd) .forge-footer:hover,
+  body.graphics-hd-ui:has(#game.graphics-hd) .forge-footer:focus-visible {
+    outline: 1px solid #c58955;
+    outline-offset: 1px;
+    border-color: #9f704b;
+    box-shadow: inset 3px 0 0 #b66c36, inset 0 0 0 1px #030201, 0 0 12px #b56b3028;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .forge-choice.disabled {
+    opacity: 0.48;
+    filter: saturate(0.55);
+    cursor: not-allowed;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .forge-choice.disabled:hover,
+  body.graphics-hd-ui:has(#game.graphics-hd) .forge-choice.disabled:focus-visible {
+    outline-color: #725b50;
+    border-color: #5a493b;
+    box-shadow: inset 0 0 0 1px #030201;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .forge-choice-head {
+    min-width: 0;
+    display: grid;
+    grid-template-columns: 30px minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 10px;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .forge-choice-key {
+    width: 28px;
+    height: 28px;
+    display: grid;
+    place-items: center;
+    border: 1px solid #75604e;
+    background: linear-gradient(180deg, #261c15, #0c0907);
+    color: #ecc18f;
+    font-size: 0.76rem;
+    box-shadow: inset 0 0 0 1px #030201;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .forge-choice-head > div {
+    min-width: 0;
+    display: grid;
+    gap: 2px;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .forge-choice-head small {
+    color: #9a724f;
+    font-size: 0.56rem;
+    letter-spacing: 1.1px;
+    text-transform: uppercase;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .forge-choice-head strong {
+    color: #eaded1;
+    font: 600 1.04rem/1 Georgia, "Times New Roman", serif;
+    letter-spacing: 0.55px;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .forge-choice-head em {
+    color: #9bc0a0;
+    font-size: 0.58rem;
+    font-style: normal;
+    letter-spacing: 0.65px;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .forge-choice.disabled .forge-choice-head em {
+    color: #d08b7f;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .forge-choice > p {
+    margin: 0;
+    color: #aca096;
+    font-size: 0.72rem;
+    line-height: 1.3;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .forge-choice-facts {
+    display: grid;
+    gap: 4px;
+    align-content: end;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .forge-choice-facts > span {
+    min-width: 0;
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 10px;
+    padding-top: 4px;
+    border-top: 1px solid #4a3e354f;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .forge-choice-facts strong {
+    min-width: 0;
+    overflow: hidden;
+    color: #d5c7b6;
+    font-size: 0.68rem;
+    text-align: right;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .forge-footer {
+    min-height: 31px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 9px;
+    border: 1px solid #433a33;
+    background: #090807d9;
+    color: #978b80;
+    cursor: pointer;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .forge-footer span {
+    min-width: 27px;
+    height: 23px;
+    display: grid;
+    place-items: center;
+    border: 1px solid #5e554e;
+    background: #0b0908;
+    color: #c4b29f;
+    font-size: 0.62rem;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .forge-footer strong {
+    font-size: 0.65rem;
+    font-weight: 600;
+    letter-spacing: 0.35px;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-forge-transmute {
+    grid-template-rows: auto auto auto minmax(0, 1fr) auto;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .forge-relic-grid {
+    min-height: 0;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-auto-rows: minmax(48px, 1fr);
+    gap: 7px 10px;
+    align-content: start;
+    overflow: hidden;
+    padding-top: 4px;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .forge-relic-grid-single {
+    grid-template-columns: minmax(0, 430px);
+    grid-auto-rows: minmax(64px, auto);
+    justify-content: center;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .forge-relic-choice {
+    min-width: 0;
+    display: grid;
+    grid-template-columns: 30px minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 10px;
+    padding: 7px 10px;
+    border: 1px solid #55483e;
+    background: linear-gradient(180deg, #15110ee8, #090706e8);
+    box-shadow: inset 0 0 0 1px #030201;
+    text-align: left;
+    cursor: pointer;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .forge-relic-copy {
+    min-width: 0;
+    display: grid;
+    gap: 3px;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .forge-relic-name {
+    min-width: 0;
+    display: flex;
+    align-items: baseline;
+    gap: 7px;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .forge-relic-name strong,
+  body.graphics-hd-ui:has(#game.graphics-hd) .forge-relic-copy > span {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .forge-relic-name strong {
+    color: #ded2c4;
+    font-size: 0.76rem;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .forge-relic-name em {
+    color: var(--forge-rarity, #aaa);
+    font-size: 0.52rem;
+    font-style: normal;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .forge-relic-copy > span {
+    color: #8f857d;
+    font-size: 0.64rem;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .forge-relic-action {
+    color: #c18a60;
+    font-size: 0.58rem;
+    letter-spacing: 0.6px;
+    text-transform: uppercase;
+  }
+  body.graphics-hd-ui:has(#game.graphics-hd) :is(
+    .camp-revamp-tab,
+    .camp-revamp-row,
+    .camp-revamp-action[data-camp-key],
+    .merchant-row[data-merchant-key],
+    .relic-draft-choice[data-relic-key],
+    .relic-draft-skip[data-relic-key],
+    .forge-choice[data-forge-key],
+    .forge-relic-choice[data-forge-key],
+    .forge-footer[data-forge-key],
+    .overlay-menu-row[data-hd-key]
+  ).hd-nav-selected {
+    outline: 2px solid #d7bf78;
+    outline-offset: 2px;
+    border-color: #9f854b;
+    box-shadow: 0 0 0 1px #171107, 0 0 18px #d2ad4145, inset 3px 0 0 #d7bf78;
+    filter: brightness(1.16);
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .camp-revamp-relic {
+    border-color: color-mix(in srgb, var(--relic-border, #665f50) 72%, #313730);
+    background:
+      linear-gradient(90deg, color-mix(in srgb, var(--relic-bg, #111713) 72%, transparent), transparent 55%),
+      linear-gradient(180deg, #111713eb, #080c0aeb);
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .camp-revamp-relic .camp-revamp-copy strong em {
+    color: var(--relic-accent, #c8b98f);
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .camp-revamp-relic.pending-sale {
+    border-color: #bc744e;
+    background: linear-gradient(180deg, #2c1712ed, #130b08ed);
+    box-shadow: inset 3px 0 0 #d08b5d, inset 0 0 0 1px #050201;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .camp-revamp-relic.pending-sale .camp-revamp-status {
+    color: #efaa78;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .camp-revamp-empty {
+    grid-column: 1 / -1;
+    grid-row: 1 / -1;
+    display: grid;
+    place-content: center;
+    gap: 7px;
+    border: 1px dashed #4c554f;
+    color: #8f9b93;
+    text-align: center;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .camp-revamp-empty small {
+    color: #6f756f;
+  }
+
+  /* Ember Sanctuary Camp composition: selected HD visual direction. */
+  body.graphics-hd-ui:has(#game.graphics-hd) .screen-overlay.visible:has(.overlay-card-camp) {
+    padding: 0;
+    background-color: #030403;
+    background-image: url("assets/hd/ui/camp/ember-sanctuary-background.png");
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: cover;
+    backdrop-filter: none;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-camp {
+    width: 100vw;
+    max-width: none;
+    height: 100vh;
+    max-height: none;
+    flex: 0 0 100vw;
+    grid-template-columns: minmax(300px, 28vw) minmax(0, 1fr);
+    grid-template-rows: auto auto minmax(0, 1fr);
+    column-gap: clamp(18px, 1.5vw, 30px);
+    padding: clamp(32px, 4.7vh, 54px) clamp(30px, 2.6vw, 54px) clamp(24px, 3.5vh, 40px);
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-camp > .overlay-title,
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-camp > .overlay-sub,
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-camp > .camp-revamp { grid-column: 2; }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-camp > .overlay-title {
+    align-self: end;
+    margin: 0 0 5px;
+    color: #e6e0cf;
+    font-size: clamp(1.85rem, 2.35vw, 2.8rem);
+    font-weight: 600;
+    letter-spacing: clamp(3px, 0.34vw, 7px);
+    text-align: center;
+    text-shadow: 0 3px 5px #000, 0 0 18px #d5a34b26;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-camp > .overlay-sub {
+    align-self: start;
+    margin: 0;
+    padding: 0 0 clamp(14px, 1.7vh, 20px);
+    border: 0;
+    color: #90a793;
+    font-size: clamp(0.68rem, 0.82vw, 0.92rem);
+    letter-spacing: clamp(1.2px, 0.16vw, 2.6px);
+    text-align: center;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .camp-revamp {
+    min-height: 0;
+    grid-template-rows: clamp(42px, 5.2vh, 56px) clamp(38px, 4.7vh, 50px) minmax(0, 1fr) clamp(78px, 9.2vh, 106px);
+    gap: clamp(7px, 0.9vh, 11px);
+    margin: 0;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .camp-revamp-stats { gap: clamp(6px, 0.55vw, 11px); }
+  body.graphics-hd-ui:has(#game.graphics-hd) .camp-revamp-stats > div {
+    position: relative;
+    justify-content: flex-start;
+    gap: 8px;
+    padding: 6px clamp(8px, 0.75vw, 14px);
+    border-color: #5d5b4b;
+    background: #080b09e8;
+    box-shadow: inset 0 0 18px #0008;
+  }
+  body.graphics-hd-ui:has(#game.graphics-hd) .camp-revamp-stats > div:first-child { border-color: #8b7041; }
+  body.graphics-hd-ui:has(#game.graphics-hd) .camp-revamp-stats img {
+    width: clamp(18px, 1.35vw, 25px);
+    height: clamp(18px, 1.35vw, 25px);
+    flex: 0 0 auto;
+    object-fit: contain;
+    filter: sepia(0.36) saturate(0.82) brightness(0.9);
+  }
+  body.graphics-hd-ui:has(#game.graphics-hd) .camp-revamp-stats span {
+    flex: 1 1 auto;
+    color: #aaa99c;
+    font-size: clamp(0.6rem, 0.69vw, 0.78rem);
+  }
+  body.graphics-hd-ui:has(#game.graphics-hd) .camp-revamp-stats strong {
+    color: #ded9ca;
+    font-size: clamp(0.78rem, 0.9vw, 1rem);
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .camp-revamp-tabs {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: clamp(5px, 0.5vw, 9px);
+    padding: 0;
+  }
+  body.graphics-hd-ui:has(#game.graphics-hd) .camp-revamp-tab {
+    border-color: #59574d;
+    background: #080a09e6;
+    color: #918e83;
+    font-size: clamp(0.68rem, 0.78vw, 0.88rem);
+    letter-spacing: clamp(1px, 0.12vw, 2px);
+    box-shadow: inset 0 0 14px #0008;
+  }
+  body.graphics-hd-ui:has(#game.graphics-hd) .camp-revamp-tab.active {
+    border-color: #71896f;
+    background: #17231aee;
+    color: #c6d2c5;
+    box-shadow: inset 0 -3px 0 #6e936f, inset 0 0 20px #213b27aa;
+  }
+  body.graphics-hd-ui:has(#game.graphics-hd) .camp-revamp-tab-key { display: none; }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .camp-revamp-content {
+    min-height: 0;
+    display: grid;
+    grid-template-rows: clamp(30px, 3.7vh, 40px) minmax(0, 1fr);
+    gap: 7px;
+    padding: clamp(8px, 0.8vw, 14px);
+    border: clamp(10px, 0.8vw, 14px) solid transparent;
+    border-image-source: url("assets/hd/ui/abyssal-gothic/board-frame.png");
+    border-image-slice: 112;
+    border-image-width: clamp(12px, 1vw, 18px);
+    background: #050706b8;
+    background-image: url("assets/hd/ui/abyssal-gothic/panel-texture.png");
+    background-size: 360px 360px;
+    background-blend-mode: multiply;
+    box-shadow: inset 0 0 34px #000b;
+  }
+  body.graphics-hd-ui:has(#game.graphics-hd) .camp-revamp-panel-head {
+    padding: 2px 4px 6px;
+    border: 6px solid transparent;
+    border-image-source: url("assets/hd/ui/abyssal-gothic/section-plaque.png");
+    border-image-slice: 70 118;
+    border-image-width: 7px 12px;
+  }
+  body.graphics-hd-ui:has(#game.graphics-hd) .camp-revamp-panel-head > strong {
+    color: #cbc8b9;
+    font-size: clamp(0.72rem, 0.86vw, 0.95rem);
+    letter-spacing: clamp(1px, 0.12vw, 2px);
+  }
+  body.graphics-hd-ui:has(#game.graphics-hd) .camp-revamp-panel-head em { color: #ad9361; }
+  body.graphics-hd-ui:has(#game.graphics-hd) .camp-revamp-panel-head small {
+    color: #9a917f;
+    font-size: clamp(0.58rem, 0.68vw, 0.76rem);
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .camp-revamp-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-rows: repeat(5, minmax(0, 1fr));
+    gap: clamp(6px, 0.7vh, 9px) clamp(8px, 0.75vw, 13px);
+    overflow: hidden;
+  }
+  body.graphics-hd-ui:has(#game.graphics-hd) .camp-revamp-row {
+    grid-template-columns: clamp(36px, 2.7vw, 48px) minmax(0, 1fr) auto;
+    gap: clamp(8px, 0.72vw, 13px);
+    padding: clamp(6px, 0.7vh, 10px) clamp(8px, 0.75vw, 14px);
+    border-color: #4a4c43;
+    background: #090c0aeb;
+    box-shadow: inset 0 0 20px #0008;
+    background-image: url("assets/hd/ui/abyssal-gothic/panel-texture.png");
+    background-size: 280px 280px;
+    background-blend-mode: multiply;
+  }
+  body.graphics-hd-ui:has(#game.graphics-hd) :is(.camp-revamp-tab, .camp-revamp-row, .camp-revamp-action):focus-visible { outline: 0; }
+  body.graphics-hd-ui:has(#game.graphics-hd) .camp-revamp-key {
+    width: clamp(34px, 2.55vw, 44px);
+    height: clamp(34px, 2.55vw, 44px);
+    border-color: #5c5b50;
+    background: #070907;
+  }
+  body.graphics-hd-ui:has(#game.graphics-hd) .camp-revamp-icon { padding: 4px; box-sizing: border-box; }
+  body.graphics-hd-ui:has(#game.graphics-hd) .camp-revamp-icon img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    filter: sepia(0.2) saturate(0.72) brightness(0.86);
+  }
+  body.graphics-hd-ui:has(#game.graphics-hd) .camp-revamp-copy { gap: clamp(3px, 0.35vh, 5px); }
+  body.graphics-hd-ui:has(#game.graphics-hd) .camp-revamp-copy strong {
+    color: #ddd9cc;
+    font-size: clamp(0.95rem, 1vw, 1.22rem);
+    letter-spacing: 0.15px;
+  }
+  body.graphics-hd-ui:has(#game.graphics-hd) .camp-revamp-copy strong em {
+    color: #96998d;
+    font-size: clamp(0.59rem, 0.64vw, 0.72rem);
+    letter-spacing: 0.6px;
+  }
+  body.graphics-hd-ui:has(#game.graphics-hd) .camp-revamp-copy small {
+    color: #a3a69e;
+    font-size: clamp(0.68rem, 0.75vw, 0.88rem);
+  }
+  body.graphics-hd-ui:has(#game.graphics-hd) .camp-revamp-status {
+    color: #dfbc6b;
+    font-size: clamp(0.7rem, 0.8vw, 0.92rem);
+  }
+  body.graphics-hd-ui:has(#game.graphics-hd) .camp-revamp-row.locked,
+  body.graphics-hd-ui:has(#game.graphics-hd) .camp-revamp-row.unaffordable {
+    opacity: 0.88;
+    filter: saturate(0.8);
+  }
+  body.graphics-hd-ui:has(#game.graphics-hd) .camp-revamp-row.unaffordable .camp-revamp-status,
+  body.graphics-hd-ui:has(#game.graphics-hd) .camp-revamp-row.locked .camp-revamp-status { color: #d66e5d; }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) :is(.camp-revamp-tab, .camp-revamp-row, .camp-revamp-action[data-camp-key]).hd-nav-selected {
+    outline: 2px solid #efc46e;
+    outline-offset: 2px;
+    border-color: #d2a957;
+    box-shadow: 0 0 0 1px #221607, 0 0 20px #e7a9404a, inset 3px 0 0 #efc46e;
+    filter: brightness(1.12);
+  }
+  body.graphics-hd-ui:has(#game.graphics-hd) .camp-revamp-row.hd-nav-selected .camp-revamp-icon img {
+    filter: sepia(0.12) saturate(0.95) brightness(1.08);
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .camp-revamp-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+    grid-template-rows: minmax(42px, 1fr) auto;
+    justify-items: center;
+    gap: clamp(5px, 0.6vh, 8px);
+  }
+  body.graphics-hd-ui:has(#game.graphics-hd) .camp-revamp-action.primary {
+    width: min(860px, 72%);
+    min-height: clamp(54px, 6vh, 70px);
+    display: grid;
+    grid-template-columns: clamp(30px, 2.2vw, 40px) minmax(0, 1fr) auto;
+    gap: clamp(10px, 1vw, 18px);
+    padding: 0 clamp(18px, 1.5vw, 28px);
+    border: clamp(8px, 0.7vw, 12px) solid transparent;
+    border-image-source: url("assets/hd/ui/abyssal-gothic/section-plaque.png");
+    border-image-slice: 70 118;
+    border-image-width: clamp(10px, 0.9vw, 16px) clamp(18px, 1.5vw, 28px);
+    background: #122018ef url("assets/hd/ui/abyssal-gothic/panel-texture.png") center / 300px 300px;
+    background-blend-mode: multiply;
+    color: #d8dfd1;
+    box-shadow: 0 5px 22px #000a, inset 0 0 26px #24402caa;
+  }
+  body.graphics-hd-ui:has(#game.graphics-hd) .camp-revamp-action.primary span {
+    border-color: #887955;
+    background: #090b09;
+    color: #e0c884;
+  }
+  body.graphics-hd-ui:has(#game.graphics-hd) .camp-revamp-action.primary strong {
+    font-size: clamp(0.9rem, 1.05vw, 1.2rem);
+    letter-spacing: clamp(1px, 0.15vw, 2.5px);
+  }
+  body.graphics-hd-ui:has(#game.graphics-hd) .camp-revamp-action-icon {
+    display: block;
+    width: clamp(34px, 2.4vw, 44px);
+    height: clamp(34px, 2.4vw, 44px);
+    object-fit: contain;
+    filter: sepia(0.3) saturate(0.8) brightness(0.95);
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .camp-revamp-guide {
+    color: #a99b7e;
+    font-size: clamp(0.56rem, 0.64vw, 0.72rem);
+    letter-spacing: 0.35px;
+    text-align: center;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .camp-revamp-relic {
+    border-color: color-mix(in srgb, var(--relic-border, #665f50) 74%, #383d36);
+    background: #090c0aeb;
+  }
+  body.graphics-hd-ui:has(#game.graphics-hd) .camp-revamp-relic.pending-sale {
+    border-color: #c27b50;
+    background: #25130fed;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd):has(.overlay-card-camp) .hd-ui-tooltip {
+    display: none !important;
+  }
+
+}
+
+
+/* Camp mutators: always expose both sides of the kiss/curse contract. */
+body.graphics-hd-ui:has(#game.graphics-hd) .camp-revamp-mutator-effects {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+body.graphics-hd-ui:has(#game.graphics-hd) .camp-revamp-mutator-effects small {
+  display: block;
+  font-size: clamp(0.58rem, 0.64vw, 0.72rem);
+}
+body.graphics-hd-ui:has(#game.graphics-hd) .camp-revamp-mutator-effects b {
+  display: inline-block;
+  min-width: 43px;
+  margin-right: 5px;
+  font-size: 0.55rem;
+  letter-spacing: 0.7px;
+}
+body.graphics-hd-ui:has(#game.graphics-hd) .camp-revamp-kiss { color: #9fc6a9; }
+body.graphics-hd-ui:has(#game.graphics-hd) .camp-revamp-kiss b { color: #78b98a; }
+body.graphics-hd-ui:has(#game.graphics-hd) .camp-revamp-curse { color: #c69a9a; }
+body.graphics-hd-ui:has(#game.graphics-hd) .camp-revamp-curse b { color: #c87474; }
+
+
+/* Four-choice Ascension draft: balanced 2 by 2 layout. */
+@media (min-width: 1201px) {
+  body.graphics-hd-ui:has(#game.graphics-hd) .relic-draft-grid-four {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-rows: minmax(0, 1fr);
+  }
+}
+
+
+/* HD tactical tips: gothic presentation shared with the current overlay language. */
+@media (min-width: 1201px) {
+  body.graphics-hd-ui:has(#game.graphics-hd) .screen-overlay.visible:has(.overlay-card-warden-tip) {
+    position: fixed;
+    inset: 0;
+    z-index: 6000;
+    width: 100vw;
+    height: 100vh;
+    box-sizing: border-box;
+    display: grid;
+    place-items: center;
+    padding: 20px 24px;
+    overflow: hidden;
+    background:
+      radial-gradient(circle at 50% 38%, #5617203f, transparent 58%),
+      linear-gradient(180deg, #080506d6, #020303f2);
+    backdrop-filter: blur(5px) grayscale(0.6) brightness(0.46);
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card.overlay-card-warden-tip {
+    --warden-tip-ivory: #e5d9cd;
+    --warden-tip-muted: #9a8e85;
+    --warden-tip-crimson: #a94b52;
+    position: relative;
+    width: min(1280px, calc(100vw - 48px));
+    height: min(720px, calc(100vh - 40px));
+    min-height: 0;
+    max-width: none;
+    max-height: none;
+    box-sizing: border-box;
+    display: grid;
+    grid-template-rows: auto auto minmax(0, 1fr) auto;
+    align-content: center;
+    gap: 8px;
+    padding: 16px 28px 10px;
+    overflow: hidden;
+    border: solid transparent;
+    border-width: 52px 46px 66px;
+    border-image: url("assets/hd/ui/abyssal-gothic/screen-chrome.png") 92 80 122 80 / 52px 46px 66px 46px stretch;
+    border-radius: 0;
+    background:
+      radial-gradient(circle at 50% 0%, #61182345, transparent 42%),
+      linear-gradient(180deg, #111011fa, #070808fc),
+      url("assets/hd/ui/abyssal-gothic/panel-texture.png") center / 280px 280px;
+    box-shadow: 0 28px 72px #000, 0 0 56px #67121d2e;
+    color: var(--warden-tip-muted);
+    text-align: left;
+    animation: hdWardenTipEnter 280ms cubic-bezier(0.2, 0.82, 0.3, 1) both;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-warden-tip > .overlay-title {
+    display: grid;
+    justify-items: center;
+    gap: 5px;
+    margin: 0;
+    color: var(--warden-tip-ivory);
+    font: 600 clamp(2.5rem, 3.35vw, 3.35rem)/1 Georgia, "Times New Roman", serif;
+    letter-spacing: clamp(2px, 0.3vw, 5px);
+    text-align: center;
+    text-transform: uppercase;
+    text-shadow: 0 4px 4px #000, 0 0 24px #71192338;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-warden-tip > .overlay-title::before {
+    content: "TACTICAL COUNSEL  \00B7  WARDEN";
+    color: var(--warden-tip-crimson);
+    font: 700 0.8rem/1 "Courier New", monospace;
+    letter-spacing: 3px;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-warden-tip > .overlay-sub {
+    max-width: 760px;
+    justify-self: center;
+    margin: 0;
+    color: #aa9d94;
+    font: italic clamp(0.98rem, 1.14vw, 1.14rem)/1.4 Georgia, "Times New Roman", serif;
+    text-align: center;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-warden-tip > .tutorial-sections {
+    width: 100%;
+    min-height: 0;
+    margin: 4px 0 0;
+    overflow: hidden;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-warden-tip .tutorial-section {
+    height: 100%;
+    box-sizing: border-box;
+    display: grid;
+    align-content: center;
+    gap: 0;
+    padding: 0 18px 8px;
+    overflow: hidden;
+    border: 1px solid #4e4541;
+    border-radius: 0;
+    background: linear-gradient(145deg, #141112e8, #080909f0);
+    box-shadow: inset 0 0 34px #000b;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-warden-tip .tutorial-section-title {
+    margin: 0 -8px 4px;
+    padding: 9px 12px 8px;
+    border-bottom: 1px solid #594a466b;
+    color: #c3a879;
+    font: 700 0.84rem/1 "Courier New", monospace;
+    letter-spacing: 2.4px;
+    text-align: center;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-warden-tip .tutorial-row {
+    grid-template-columns: minmax(130px, 180px) minmax(0, 1fr);
+    align-items: center;
+    gap: 18px;
+    min-height: 54px;
+    padding: 7px 8px;
+    border-bottom: 1px solid #493c3952;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-warden-tip .tutorial-row:last-child {
+    border-bottom: 0;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-warden-tip .tutorial-key {
+    min-width: 94px;
+    box-sizing: border-box;
+    border-radius: 0;
+    padding: 5px 10px;
+    background: linear-gradient(180deg, #29211d, #120f0e);
+    color: #ded2c6;
+    font: 700 0.86rem/1 "Courier New", monospace;
+    letter-spacing: 1px;
+    text-align: center;
+    text-transform: uppercase;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-warden-tip .tutorial-key-ability {
+    border-color: #9b7138;
+    color: #e2bd78;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-warden-tip .tutorial-key-core {
+    border-color: #62795e;
+    color: #b8d0b1;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-warden-tip .tutorial-text {
+    color: #c9bdb3;
+    font-size: clamp(0.96rem, 1.08vw, 1.08rem);
+    line-height: 1.35;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-warden-tip .tutorial-text strong {
+    color: #d9b36b;
+    font-family: Georgia, "Times New Roman", serif;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-warden-tip > .overlay-hint {
+    margin: 0;
+    padding-top: 8px;
+    border-top: 1px solid #57474463;
+    color: #80756d;
+    font: 400 0.78rem/1.25 "Courier New", monospace;
+    letter-spacing: 0.7px;
+    text-align: center;
+  }
+
+  @keyframes hdWardenTipEnter {
+    from { opacity: 0; transform: scale(0.975) translateY(8px); }
+    to { opacity: 1; transform: scale(1) translateY(0); }
+  }
+}
+
+@media (min-width: 1201px) and (prefers-reduced-motion: reduce) {
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card.overlay-card-warden-tip {
+    animation: none;
+  }
+}
+
+
+/* HD field manual: shared full-screen presentation for every in-game tutorial. */
+@media (min-width: 1201px) {
+  body.graphics-hd-ui:has(#game.graphics-hd) .screen-overlay.visible:has(.tutorial-overlay-card) {
+    position: fixed;
+    inset: 0;
+    z-index: 6000;
+    width: 100vw;
+    height: 100vh;
+    box-sizing: border-box;
+    display: grid;
+    place-items: center;
+    padding: 20px 24px;
+    overflow: hidden;
+    background:
+      radial-gradient(circle at 50% 36%, #4f182039, transparent 58%),
+      linear-gradient(180deg, #080506d6, #020303f2);
+    backdrop-filter: blur(5px) grayscale(0.58) brightness(0.46);
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card.tutorial-overlay-card {
+    --tutorial-tip-ivory: #e5d9cd;
+    --tutorial-tip-muted: #a99c92;
+    --tutorial-tip-accent: #a94b52;
+    position: relative;
+    width: min(1280px, calc(100vw - 48px));
+    height: min(720px, calc(100vh - 40px));
+    min-height: 0;
+    max-width: none;
+    max-height: none;
+    box-sizing: border-box;
+    display: grid;
+    grid-template-rows: auto auto minmax(0, 1fr) auto;
+    align-content: center;
+    gap: 8px;
+    padding: 16px 28px 10px;
+    overflow: hidden;
+    border: solid transparent;
+    border-width: 52px 46px 66px;
+    border-image: url("assets/hd/ui/abyssal-gothic/screen-chrome.png") 92 80 122 80 / 52px 46px 66px 46px stretch;
+    border-radius: 0;
+    background:
+      radial-gradient(circle at 50% 0%, #61182345, transparent 42%),
+      linear-gradient(180deg, #111011fa, #070808fc),
+      url("assets/hd/ui/abyssal-gothic/panel-texture.png") center / 280px 280px;
+    box-shadow: 0 28px 72px #000, 0 0 56px #67121d2e;
+    color: var(--tutorial-tip-muted);
+    text-align: left;
+    animation: hdWardenTipEnter 280ms cubic-bezier(0.2, 0.82, 0.3, 1) both;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .tutorial-overlay-card > .overlay-title {
+    display: grid;
+    justify-items: center;
+    gap: 5px;
+    margin: 0;
+    color: var(--tutorial-tip-ivory);
+    font: 600 clamp(2.25rem, 3vw, 3rem)/1 Georgia, "Times New Roman", serif;
+    letter-spacing: clamp(2px, 0.3vw, 5px);
+    text-align: center;
+    text-transform: uppercase;
+    text-shadow: 0 4px 4px #000, 0 0 24px #71192338;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .tutorial-overlay-card > .overlay-title::before {
+    content: "DUNGEON FIELD MANUAL";
+    color: var(--tutorial-tip-accent);
+    font: 700 0.76rem/1 "Courier New", monospace;
+    letter-spacing: 3px;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .tutorial-overlay-card-run > .overlay-title::before { content: "DUNGEON FIELD MANUAL  \00B7  CONTROLS"; }
+  body.graphics-hd-ui:has(#game.graphics-hd) .tutorial-overlay-card-camp > .overlay-title::before { content: "BETWEEN DESCENTS  \00B7  CAMP"; }
+  body.graphics-hd-ui:has(#game.graphics-hd) .tutorial-overlay-card-merchant > .overlay-title::before { content: "CURIO MARKET  \00B7  FIELD GUIDE"; }
+  body.graphics-hd-ui:has(#game.graphics-hd) .tutorial-overlay-card-combat_basics > .overlay-title::before { content: "TACTICAL CODEX  \00B7  COMBAT"; }
+  body.graphics-hd-ui:has(#game.graphics-hd) .tutorial-overlay-card-status_effects > .overlay-title::before { content: "TACTICAL CODEX  \00B7  CONDITIONS"; }
+  body.graphics-hd-ui:has(#game.graphics-hd) .tutorial-overlay-card-skills_deep_dive > .overlay-title::before { content: "TACTICAL CODEX  \00B7  ABILITIES"; }
+  body.graphics-hd-ui:has(#game.graphics-hd) .tutorial-overlay-card-economy_survival > .overlay-title::before { content: "EXPEDITION LEDGER  \00B7  SURVIVAL"; }
+  body.graphics-hd-ui:has(#game.graphics-hd) .tutorial-overlay-card-enemy_threats > .overlay-title::before { content: "BESTIARY  \00B7  THREAT INDEX"; }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .tutorial-overlay-card-portal {
+    --tutorial-tip-accent: #78aeb8;
+    background:
+      radial-gradient(circle at 50% 0%, #164c5b4f, transparent 42%),
+      linear-gradient(180deg, #0e1214fa, #06090afc),
+      url("assets/hd/ui/abyssal-gothic/panel-texture.png") center / 280px 280px;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .tutorial-overlay-card-portal > .overlay-title::before { content: "ROUTE DECISION  \00B7  FIRST PORTAL"; }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .tutorial-overlay-card > .overlay-sub {
+    max-width: 900px;
+    justify-self: center;
+    margin: 0;
+    color: var(--tutorial-tip-muted);
+    font: italic clamp(0.96rem, 1.1vw, 1.1rem)/1.4 Georgia, "Times New Roman", serif;
+    text-align: center;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .tutorial-overlay-card > .tutorial-sections {
+    width: 100%;
+    min-height: 0;
+    box-sizing: border-box;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-content: start;
+    gap: 10px;
+    margin: 4px 0 0;
+    padding: 0 8px 8px 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+    scrollbar-color: #745d4c #08090a;
+    scrollbar-width: thin;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .tutorial-overlay-card-skills_deep_dive > .tutorial-sections {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .tutorial-overlay-card .tutorial-section {
+    min-width: 0;
+    box-sizing: border-box;
+    display: grid;
+    align-content: start;
+    gap: 0;
+    padding: 0 12px 7px;
+    overflow: hidden;
+    border: 1px solid #4e4541;
+    border-radius: 0;
+    background: linear-gradient(145deg, #141112e8, #080909f0);
+    box-shadow: inset 0 0 34px #000b;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .tutorial-overlay-card .tutorial-section-title {
+    margin: 0 -4px 3px;
+    padding: 9px 10px 8px;
+    border-bottom: 1px solid #594a466b;
+    color: #c3a879;
+    font: 700 0.82rem/1 "Courier New", monospace;
+    letter-spacing: 2.2px;
+    text-align: center;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .tutorial-overlay-card .tutorial-row {
+    display: grid;
+    grid-template-columns: minmax(120px, 165px) minmax(0, 1fr);
+    align-items: center;
+    gap: 14px;
+    min-height: 50px;
+    padding: 7px 6px;
+    border-bottom: 1px solid #493c3952;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .tutorial-overlay-card-skills_deep_dive .tutorial-row {
+    grid-template-columns: minmax(74px, 92px) minmax(0, 1fr);
+    gap: 10px;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .tutorial-overlay-card .tutorial-row:last-child { border-bottom: 0; }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .tutorial-overlay-card .tutorial-keys {
+    min-width: 0;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 5px;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .tutorial-overlay-card .tutorial-key {
+    min-width: 78px;
+    box-sizing: border-box;
+    border-radius: 0;
+    padding: 5px 9px;
+    background: linear-gradient(180deg, #29211d, #120f0e);
+    color: #ded2c6;
+    font: 700 0.8rem/1 "Courier New", monospace;
+    letter-spacing: 0.7px;
+    text-align: center;
+    text-transform: uppercase;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .tutorial-overlay-card .tutorial-key-movement { border-color: #637e8f; color: #bed4dd; }
+  body.graphics-hd-ui:has(#game.graphics-hd) .tutorial-overlay-card .tutorial-key-core { border-color: #62795e; color: #b8d0b1; }
+  body.graphics-hd-ui:has(#game.graphics-hd) .tutorial-overlay-card .tutorial-key-ability { border-color: #9b7138; color: #e2bd78; }
+  body.graphics-hd-ui:has(#game.graphics-hd) .tutorial-overlay-card .tutorial-key-utility { border-color: #79677f; color: #cfbfd4; }
+  body.graphics-hd-ui:has(#game.graphics-hd) .tutorial-overlay-card .tutorial-key-bad { border-color: #8d4a50; color: #d8a4a8; }
+  body.graphics-hd-ui:has(#game.graphics-hd) .tutorial-overlay-card .tutorial-key-good { border-color: #62795e; color: #b8d0b1; }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .tutorial-overlay-card .tutorial-text {
+    min-width: 0;
+    color: #c9bdb3;
+    font-size: clamp(0.92rem, 1vw, 1.02rem);
+    line-height: 1.34;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .tutorial-overlay-card > .overlay-hint {
+    position: relative;
+    z-index: 2;
+    margin: 0;
+    padding: 8px 0 0;
+    border-top: 1px solid #57474463;
+    background: transparent;
+    color: #80756d;
+    font: 400 0.74rem/1.25 "Courier New", monospace;
+    letter-spacing: 0.6px;
+    text-align: center;
+  }
+}
+
+@media (min-width: 1201px) and (prefers-reduced-motion: reduce) {
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card.tutorial-overlay-card { animation: none; }
+}
+
+/* HD expedition staging: refreshed start-depth selection. */
+@media (min-width: 1201px) {
+  body.graphics-hd-ui .screen-overlay.visible:has(.camp-start-sanctum) {
+    box-sizing: border-box;
+    align-items: center;
+    position: fixed;
+    inset: 0;
+    z-index: 6000;
+    width: 100vw;
+    height: 100vh;
+    justify-content: center;
+    padding: 12px;
+    overflow: hidden;
+    background:
+      radial-gradient(circle at 50% 40%, #5b431a24 0%, transparent 50%),
+      linear-gradient(180deg, #050607d6, #010202ed);
+    backdrop-filter: blur(4px) saturate(0.65) brightness(0.55);
+  }
+
+  body.graphics-hd-ui .overlay-card.overlay-card-camp-start.camp-start-sanctum {
+    --camp-start-ivory: #e4d8ca;
+    --camp-start-muted: #9d948b;
+    --camp-start-gold: #c2a35d;
+    width: min(980px, calc(100% - 24px));
+    min-height: 0;
+    height: min(720px, calc(100vh - 32px));
+    max-width: none;
+    max-height: none;
+    box-sizing: border-box;
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    gap: 12px;
+    padding: 62px 70px 96px;
+    overflow: hidden;
+    border: 0;
+    border-radius: 0;
+    background-color: #080909;
+    background-image:
+      url("assets/hd/ui/abyssal-gothic/menu-frame.png"),
+      radial-gradient(circle at 50% 0%, #5e3c1530, transparent 42%),
+      url("assets/hd/ui/abyssal-gothic/panel-texture.png");
+    background-position: center, center, center;
+    background-repeat: no-repeat, no-repeat, repeat;
+    background-size: 100% 100%, 100% 100%, 280px 280px;
+    box-shadow: 0 26px 70px #000e, 0 0 42px #6e4d1828;
+    color: var(--camp-start-muted);
+  }
+
+  body.graphics-hd-ui .camp-start-header {
+    display: grid;
+    justify-items: center;
+    gap: 3px;
+    text-align: center;
+  }
+
+  body.graphics-hd-ui .camp-start-kicker {
+    margin: 0;
+    color: #a88950;
+    font: 700 0.68rem/1 "Courier New", monospace;
+    letter-spacing: 2.6px;
+    text-transform: uppercase;
+  }
+
+  body.graphics-hd-ui .camp-start-sanctum .overlay-title {
+    margin: 0;
+    color: var(--camp-start-ivory);
+    font: 600 clamp(2rem, 2.6vw, 2.65rem)/1 Georgia, "Times New Roman", serif;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    text-shadow: 0 3px 3px #000, 0 0 18px #6d4e1e36;
+  }
+
+  body.graphics-hd-ui .camp-start-sanctum .overlay-sub {
+    max-width: 680px;
+    margin: 2px 0 0;
+    color: #a89e94;
+    font: italic 0.9rem/1.35 Georgia, "Times New Roman", serif;
+    text-align: center;
+  }
+
+  body.graphics-hd-ui .camp-start-stats-hd {
+    width: 100%;
+    margin: 0;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0;
+    border-block: 1px solid #554a3b80;
+    background: #0809098f;
+  }
+
+  body.graphics-hd-ui .camp-start-stats-hd .camp-start-stat {
+    min-height: 49px;
+    box-sizing: border-box;
+    place-content: center;
+    gap: 3px;
+    padding: 7px 12px;
+    border: 0;
+    border-right: 1px solid #554a3b66;
+    border-radius: 0;
+    background: transparent;
+    text-align: center;
+  }
+
+  body.graphics-hd-ui .camp-start-stats-hd .camp-start-stat:last-child { border-right: 0; }
+  body.graphics-hd-ui .camp-start-stats-hd .camp-start-stat-selected {
+    background: linear-gradient(180deg, #392b1429, #1511091f);
+  }
+
+  body.graphics-hd-ui .camp-start-stats-hd .camp-start-stat span {
+    color: #817970;
+    font: 700 0.58rem/1 "Courier New", monospace;
+    letter-spacing: 1.3px;
+  }
+
+  body.graphics-hd-ui .camp-start-stats-hd .camp-start-stat strong {
+    color: #d9cfc3;
+    font: 600 0.92rem/1 Georgia, "Times New Roman", serif;
+    letter-spacing: 0.7px;
+  }
+
+  body.graphics-hd-ui .camp-start-stat-selected strong { color: #d8b968; }
+
+  body.graphics-hd-ui .camp-start-route-grid {
+    min-height: 0;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-content: start;
+    gap: 8px;
+    padding: 2px 7px 2px 2px;
+    overflow-x: hidden;
+    overflow-y: auto;
+    scrollbar-color: #725c39 #080909;
+    scrollbar-width: thin;
+  }
+
+  body.graphics-hd-ui .camp-start-route-grid:not(.camp-start-route-grid-1) > .camp-start-choice:last-child:nth-child(odd) {
+    width: 35%;
+    grid-column: 1 / -1;
+    justify-self: center;
+  }
+
+
+  body.graphics-hd-ui .camp-start-route-grid > .camp-start-choice:nth-child(odd):not(:last-child) {
+    transform: translateX(10.7%);
+  }
+
+  body.graphics-hd-ui .camp-start-route-grid > .camp-start-choice:nth-child(even) {
+    transform: translateX(-10.7%);
+  }
+  body.graphics-hd-ui :is(.camp-start-route-grid-1, .camp-start-route-grid-2, .camp-start-route-grid-3, .camp-start-route-grid-4) {
+    align-content: center;
+  }
+
+  body.graphics-hd-ui .camp-start-choice {
+    position: relative;
+    min-width: 0;
+    width: 70%;
+    min-height: 86px;
+    justify-self: center;
+    box-sizing: border-box;
+    display: grid;
+    grid-template-columns: 40px minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 9px;
+    padding: 3px 8px;
+    overflow: hidden;
+    border: 8px solid transparent;
+    border-image-source: url("assets/hd/ui/abyssal-gothic/section-plaque.png");
+    border-image-slice: 70 118;
+    border-image-width: 10px 16px;
+    background: #090c0aeb url("assets/hd/ui/abyssal-gothic/panel-texture.png") center / 280px 280px;
+    background-blend-mode: multiply;
+    box-shadow: 0 4px 14px #0008, inset 0 0 20px #0008;
+    cursor: pointer;
+    outline: none;
+    transition: filter 120ms ease, box-shadow 120ms ease, outline-color 120ms ease;
+  }
+
+  body.graphics-hd-ui :is(.camp-start-route-grid-1, .camp-start-route-grid-2, .camp-start-route-grid-3, .camp-start-route-grid-4) .camp-start-choice {
+    min-height: 86px;
+  }
+
+  body.graphics-hd-ui .camp-start-choice::before {
+    display: none;
+  }
+
+  body.graphics-hd-ui .camp-start-choice:hover,
+  body.graphics-hd-ui .camp-start-choice:focus-visible {
+    filter: brightness(1.08);
+  }
+
+  body.graphics-hd-ui .camp-start-choice.selected {
+    outline: 2px solid #d2a957;
+    outline-offset: -2px;
+    background: #211a0eef url("assets/hd/ui/abyssal-gothic/panel-texture.png") center / 280px 280px;
+    background-blend-mode: multiply;
+    box-shadow: 0 0 0 1px #221607, 0 0 18px #e7a9403d, inset 3px 0 0 #efc46e;
+    filter: brightness(1.1);
+  }
+
+  body.graphics-hd-ui .camp-start-choice.selected::before {
+    width: 4px;
+    background: #e0be63;
+    box-shadow: 0 0 10px #d3a84485;
+  }
+
+  body.graphics-hd-ui .camp-start-choice > img {
+    width: 36px;
+    height: 36px;
+    object-fit: contain;
+    filter: saturate(0.72) brightness(0.88) drop-shadow(0 3px 4px #000);
+  }
+
+  body.graphics-hd-ui .camp-start-choice.selected > img {
+    filter: saturate(1) brightness(1.08) drop-shadow(0 0 7px #bb8b3d55);
+  }
+
+  body.graphics-hd-ui .camp-start-choice-copy {
+    min-width: 0;
+    display: grid;
+    gap: 2px;
+  }
+
+  body.graphics-hd-ui .camp-start-choice-copy > span {
+    color: #807970;
+    font: 700 0.56rem/1 "Courier New", monospace;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+  }
+
+  body.graphics-hd-ui .camp-start-choice-copy > strong {
+    color: #d8cec2;
+    font: 600 clamp(0.9rem, 1.05vw, 1.05rem)/1.05 Georgia, "Times New Roman", serif;
+    letter-spacing: 0.6px;
+  }
+
+  body.graphics-hd-ui .camp-start-choice-copy > small {
+    overflow: hidden;
+    color: #8e877f;
+    font: 0.66rem/1.25 "Courier New", monospace;
+  }
+
+  body.graphics-hd-ui .camp-start-choice > em {
+    color: #777168;
+    font: 700 0.54rem/1 "Courier New", monospace;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+
+  body.graphics-hd-ui .camp-start-choice.selected > em { color: #d5b45d; }
+
+  body.graphics-hd-ui .camp-start-footer {
+    min-width: 0;
+    display: grid;
+    grid-template-columns: minmax(150px, 0.55fr) minmax(0, 1.45fr);
+    gap: 8px;
+  }
+
+  body.graphics-hd-ui .camp-start-selection {
+    min-width: 0;
+    display: grid;
+    align-content: center;
+    grid-template-columns: auto auto;
+    justify-content: center;
+    gap: 8px;
+    padding: 8px 12px;
+    border: 1px solid #4a4438;
+    background: #0a0a09d9;
+  }
+
+  body.graphics-hd-ui .camp-start-selection > span {
+    color: #82786b;
+    font: 700 0.56rem/1 "Courier New", monospace;
+    letter-spacing: 1.3px;
+    text-transform: uppercase;
+  }
+
+  body.graphics-hd-ui .camp-start-selection > strong {
+    color: #d9b960;
+    font: 600 0.95rem/1.1 Georgia, "Times New Roman", serif;
+  }
+
+  body.graphics-hd-ui .camp-start-selection > small {
+    color: #7f786f;
+    font: 0.6rem/1.2 "Courier New", monospace;
+  }
+
+  body.graphics-hd-ui .camp-start-sanctum .camp-start-actions {
+    width: 100%;
+    margin: 0;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  body.graphics-hd-ui .camp-start-sanctum .camp-start-action {
+    min-height: 52px;
+    box-sizing: border-box;
+    border: 8px solid transparent;
+    border-image-source: url("assets/hd/ui/abyssal-gothic/section-plaque.png");
+    border-image-slice: 70 118;
+    border-image-width: 10px 16px;
+    border-radius: 0;
+    background: #090c0aeb url("assets/hd/ui/abyssal-gothic/panel-texture.png") center / 280px 280px;
+    background-blend-mode: multiply;
+    color: #bdb3a6;
+    cursor: pointer;
+    box-shadow: 0 4px 14px #0008, inset 0 0 20px #0008;
+  }
+
+  body.graphics-hd-ui .camp-start-sanctum .camp-start-action-confirm {
+    background-color: #122018ef;
+    color: #d8dfd1;
+    box-shadow: 0 5px 18px #0009, inset 0 0 22px #24402caa;
+  }
+
+  body.graphics-hd-ui .camp-start-sanctum .camp-start-key {
+    min-width: 43px;
+    height: 26px;
+    border: 1px solid #706344;
+    border-radius: 0;
+    background: #070807;
+    color: #d5b75f;
+    font: 700 0.62rem/1 "Courier New", monospace;
+  }
+
+  body.graphics-hd-ui .camp-start-sanctum > .overlay-hint {
+    margin: 0;
+    color: #746d65;
+    font: 0.6rem/1 "Courier New", monospace;
+    letter-spacing: 0.7px;
+    text-align: center;
+  }
+}
+
+@media (min-width: 1201px) and (max-height: 800px) {
+  body.graphics-hd-ui .overlay-card.overlay-card-camp-start.camp-start-sanctum {
+    min-height: 0;
+    height: calc(100vh - 16px);
+    max-height: none;
+    padding-block: 48px 76px;
+  }
+
+  body.graphics-hd-ui .camp-start-choice { min-height: 73px; }
+  body.graphics-hd-ui :is(.camp-start-route-grid-1, .camp-start-route-grid-2, .camp-start-route-grid-3, .camp-start-route-grid-4) .camp-start-choice { min-height: 73px; }
+}
+
+@media (min-width: 1201px) and (prefers-reduced-motion: reduce) {
+  body.graphics-hd-ui .camp-start-choice { transition: none; }
+}
+
+  body.graphics-hd-ui .camp-start-choice.locked {
+    cursor: not-allowed;
+    filter: grayscale(0.85) brightness(0.5);
+    opacity: 0.62;
+    box-shadow: 0 2px 8px #0007, inset 0 0 20px #000b;
+  }
+
+  body.graphics-hd-ui .camp-start-choice.locked:hover {
+    filter: grayscale(0.85) brightness(0.55);
+  }
+
+  body.graphics-hd-ui .camp-start-choice.locked > img {
+    filter: grayscale(1) brightness(0.55);
+  }
+
+  body.graphics-hd-ui .camp-start-choice.locked > em { color: #716b63; }

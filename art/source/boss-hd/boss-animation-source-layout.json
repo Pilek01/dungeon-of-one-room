@@ -1,0 +1,5269 @@
+{
+  "schemaVersion": 1,
+  "sources": {
+    "vault-guardian/south": {
+      "helperDetectedKey": "#f503f6",
+      "semanticLayout": "4x4",
+      "rawComponentCount": 16,
+      "meaningfulComponentCount": 16,
+      "semanticPoseCount": 16,
+      "detachedEquipmentComponentCount": 0,
+      "removedSmallComponentCount": 0,
+      "crossingComponentCount": 0,
+      "columnCenters": [
+        156.75,
+        470.25,
+        783.75,
+        1097.25
+      ],
+      "rowCenters": [
+        156.75,
+        470.25,
+        783.75,
+        1097.25
+      ],
+      "slots": {
+        "R1C1": {
+          "area": 38662,
+          "bounds": [
+            39,
+            22,
+            284,
+            305
+          ],
+          "componentCount": 1
+        },
+        "R1C2": {
+          "area": 37288,
+          "bounds": [
+            331,
+            22,
+            563,
+            306
+          ],
+          "componentCount": 1
+        },
+        "R1C3": {
+          "area": 37199,
+          "bounds": [
+            647,
+            24,
+            873,
+            307
+          ],
+          "componentCount": 1
+        },
+        "R1C4": {
+          "area": 38317,
+          "bounds": [
+            950,
+            25,
+            1183,
+            307
+          ],
+          "componentCount": 1
+        },
+        "R2C1": {
+          "area": 35275,
+          "bounds": [
+            56,
+            328,
+            277,
+            607
+          ],
+          "componentCount": 1
+        },
+        "R2C2": {
+          "area": 34234,
+          "bounds": [
+            343,
+            329,
+            571,
+            606
+          ],
+          "componentCount": 1
+        },
+        "R2C3": {
+          "area": 32058,
+          "bounds": [
+            651,
+            335,
+            876,
+            606
+          ],
+          "componentCount": 1
+        },
+        "R2C4": {
+          "area": 31700,
+          "bounds": [
+            964,
+            327,
+            1180,
+            597
+          ],
+          "componentCount": 1
+        },
+        "R3C1": {
+          "area": 33995,
+          "bounds": [
+            15,
+            629,
+            279,
+            922
+          ],
+          "componentCount": 1
+        },
+        "R3C2": {
+          "area": 32937,
+          "bounds": [
+            289,
+            627,
+            565,
+            917
+          ],
+          "componentCount": 1
+        },
+        "R3C3": {
+          "area": 30286,
+          "bounds": [
+            580,
+            664,
+            865,
+            912
+          ],
+          "componentCount": 1
+        },
+        "R3C4": {
+          "area": 28729,
+          "bounds": [
+            984,
+            642,
+            1187,
+            912
+          ],
+          "componentCount": 1
+        },
+        "R4C1": {
+          "area": 31037,
+          "bounds": [
+            55,
+            942,
+            273,
+            1204
+          ],
+          "componentCount": 1
+        },
+        "R4C2": {
+          "area": 27812,
+          "bounds": [
+            328,
+            954,
+            552,
+            1207
+          ],
+          "componentCount": 1
+        },
+        "R4C3": {
+          "area": 22503,
+          "bounds": [
+            617,
+            1019,
+            840,
+            1220
+          ],
+          "componentCount": 1
+        },
+        "R4C4": {
+          "area": 19939,
+          "bounds": [
+            880,
+            1077,
+            1220,
+            1213
+          ],
+          "componentCount": 1
+        }
+      },
+      "identity": {
+        "path": "art/source/boss-hd/vault-guardian/vault-guardian-animation-south-source-1024.png",
+        "sha256": "cdc2ba89888c41bc086e83648ef98667d7c03410261de759bc1392c185a0cef5"
+      }
+    },
+    "vault-guardian/north": {
+      "helperDetectedKey": "#ee03ee",
+      "semanticLayout": "4x4",
+      "rawComponentCount": 16,
+      "meaningfulComponentCount": 16,
+      "semanticPoseCount": 16,
+      "detachedEquipmentComponentCount": 0,
+      "removedSmallComponentCount": 0,
+      "crossingComponentCount": 0,
+      "columnCenters": [
+        156.75,
+        470.25,
+        783.75,
+        1097.25
+      ],
+      "rowCenters": [
+        156.75,
+        470.25,
+        783.75,
+        1097.25
+      ],
+      "slots": {
+        "R1C1": {
+          "area": 36079,
+          "bounds": [
+            61,
+            27,
+            294,
+            310
+          ],
+          "componentCount": 1
+        },
+        "R1C2": {
+          "area": 36172,
+          "bounds": [
+            364,
+            27,
+            599,
+            310
+          ],
+          "componentCount": 1
+        },
+        "R1C3": {
+          "area": 35955,
+          "bounds": [
+            663,
+            27,
+            896,
+            313
+          ],
+          "componentCount": 1
+        },
+        "R1C4": {
+          "area": 35173,
+          "bounds": [
+            964,
+            29,
+            1188,
+            310
+          ],
+          "componentCount": 1
+        },
+        "R2C1": {
+          "area": 33086,
+          "bounds": [
+            62,
+            350,
+            287,
+            628
+          ],
+          "componentCount": 1
+        },
+        "R2C2": {
+          "area": 32304,
+          "bounds": [
+            366,
+            351,
+            591,
+            632
+          ],
+          "componentCount": 1
+        },
+        "R2C3": {
+          "area": 31762,
+          "bounds": [
+            666,
+            348,
+            896,
+            630
+          ],
+          "componentCount": 1
+        },
+        "R2C4": {
+          "area": 31610,
+          "bounds": [
+            965,
+            350,
+            1192,
+            630
+          ],
+          "componentCount": 1
+        },
+        "R3C1": {
+          "area": 29813,
+          "bounds": [
+            54,
+            655,
+            305,
+            915
+          ],
+          "componentCount": 1
+        },
+        "R3C2": {
+          "area": 30270,
+          "bounds": [
+            353,
+            653,
+            618,
+            916
+          ],
+          "componentCount": 1
+        },
+        "R3C3": {
+          "area": 30455,
+          "bounds": [
+            634,
+            665,
+            909,
+            920
+          ],
+          "componentCount": 1
+        },
+        "R3C4": {
+          "area": 29439,
+          "bounds": [
+            939,
+            663,
+            1223,
+            915
+          ],
+          "componentCount": 1
+        },
+        "R4C1": {
+          "area": 33565,
+          "bounds": [
+            45,
+            942,
+            292,
+            1208
+          ],
+          "componentCount": 1
+        },
+        "R4C2": {
+          "area": 32407,
+          "bounds": [
+            346,
+            942,
+            597,
+            1205
+          ],
+          "componentCount": 1
+        },
+        "R4C3": {
+          "area": 32136,
+          "bounds": [
+            629,
+            985,
+            912,
+            1218
+          ],
+          "componentCount": 1
+        },
+        "R4C4": {
+          "area": 20396,
+          "bounds": [
+            928,
+            1103,
+            1229,
+            1221
+          ],
+          "componentCount": 1
+        }
+      },
+      "identity": {
+        "path": "art/source/boss-hd/vault-guardian/vault-guardian-animation-north-source-1024.png",
+        "sha256": "4dd3b8e862fa4b18c60da9c495d004040d1d84f34e8d0dea352a4fc4ede57f4f"
+      }
+    },
+    "vault-guardian/east": {
+      "helperDetectedKey": "#f602f7",
+      "semanticLayout": "4x4",
+      "rawComponentCount": 29,
+      "meaningfulComponentCount": 16,
+      "semanticPoseCount": 16,
+      "detachedEquipmentComponentCount": 0,
+      "removedSmallComponentCount": 13,
+      "crossingComponentCount": 0,
+      "columnCenters": [
+        156.75,
+        470.25,
+        783.75,
+        1097.25
+      ],
+      "rowCenters": [
+        156.75,
+        470.25,
+        783.75,
+        1097.25
+      ],
+      "slots": {
+        "R1C1": {
+          "area": 29884,
+          "bounds": [
+            65,
+            20,
+            249,
+            293
+          ],
+          "componentCount": 1
+        },
+        "R1C2": {
+          "area": 28320,
+          "bounds": [
+            347,
+            23,
+            530,
+            294
+          ],
+          "componentCount": 1
+        },
+        "R1C3": {
+          "area": 28025,
+          "bounds": [
+            664,
+            25,
+            833,
+            293
+          ],
+          "componentCount": 1
+        },
+        "R1C4": {
+          "area": 28427,
+          "bounds": [
+            962,
+            22,
+            1139,
+            296
+          ],
+          "componentCount": 1
+        },
+        "R2C1": {
+          "area": 27809,
+          "bounds": [
+            37,
+            334,
+            251,
+            592
+          ],
+          "componentCount": 1
+        },
+        "R2C2": {
+          "area": 28855,
+          "bounds": [
+            344,
+            337,
+            567,
+            593
+          ],
+          "componentCount": 1
+        },
+        "R2C3": {
+          "area": 27953,
+          "bounds": [
+            656,
+            337,
+            871,
+            595
+          ],
+          "componentCount": 1
+        },
+        "R2C4": {
+          "area": 26778,
+          "bounds": [
+            947,
+            337,
+            1156,
+            595
+          ],
+          "componentCount": 1
+        },
+        "R3C1": {
+          "area": 29076,
+          "bounds": [
+            20,
+            638,
+            264,
+            891
+          ],
+          "componentCount": 1
+        },
+        "R3C2": {
+          "area": 28646,
+          "bounds": [
+            318,
+            638,
+            568,
+            894
+          ],
+          "componentCount": 1
+        },
+        "R3C3": {
+          "area": 27756,
+          "bounds": [
+            632,
+            652,
+            946,
+            898
+          ],
+          "componentCount": 1
+        },
+        "R3C4": {
+          "area": 29940,
+          "bounds": [
+            984,
+            642,
+            1210,
+            896
+          ],
+          "componentCount": 1
+        },
+        "R4C1": {
+          "area": 29866,
+          "bounds": [
+            31,
+            951,
+            264,
+            1192
+          ],
+          "componentCount": 1
+        },
+        "R4C2": {
+          "area": 24560,
+          "bounds": [
+            359,
+            953,
+            545,
+            1189
+          ],
+          "componentCount": 1
+        },
+        "R4C3": {
+          "area": 24437,
+          "bounds": [
+            636,
+            1027,
+            887,
+            1177
+          ],
+          "componentCount": 1
+        },
+        "R4C4": {
+          "area": 18932,
+          "bounds": [
+            937,
+            1060,
+            1237,
+            1170
+          ],
+          "componentCount": 1
+        }
+      },
+      "identity": {
+        "path": "art/source/boss-hd/vault-guardian/vault-guardian-animation-east-source-1024.png",
+        "sha256": "751c00634025f805ba2c3cb7b1d6b762fbba41c455775d430ae1f15c232d137c"
+      }
+    },
+    "vault-guardian/west": {
+      "helperDetectedKey": "#f503f3",
+      "semanticLayout": "4x4",
+      "rawComponentCount": 29,
+      "meaningfulComponentCount": 16,
+      "semanticPoseCount": 16,
+      "detachedEquipmentComponentCount": 0,
+      "removedSmallComponentCount": 13,
+      "crossingComponentCount": 0,
+      "columnCenters": [
+        156.75,
+        470.25,
+        783.75,
+        1097.25
+      ],
+      "rowCenters": [
+        156.75,
+        470.25,
+        783.75,
+        1097.25
+      ],
+      "slots": {
+        "R1C1": {
+          "area": 28080,
+          "bounds": [
+            67,
+            24,
+            259,
+            303
+          ],
+          "componentCount": 1
+        },
+        "R1C2": {
+          "area": 27796,
+          "bounds": [
+            371,
+            29,
+            555,
+            304
+          ],
+          "componentCount": 1
+        },
+        "R1C3": {
+          "area": 27447,
+          "bounds": [
+            674,
+            26,
+            852,
+            303
+          ],
+          "componentCount": 1
+        },
+        "R1C4": {
+          "area": 27372,
+          "bounds": [
+            951,
+            28,
+            1128,
+            303
+          ],
+          "componentCount": 1
+        },
+        "R2C1": {
+          "area": 26629,
+          "bounds": [
+            67,
+            323,
+            252,
+            597
+          ],
+          "componentCount": 1
+        },
+        "R2C2": {
+          "area": 26762,
+          "bounds": [
+            368,
+            323,
+            555,
+            598
+          ],
+          "componentCount": 1
+        },
+        "R2C3": {
+          "area": 25013,
+          "bounds": [
+            659,
+            331,
+            841,
+            593
+          ],
+          "componentCount": 1
+        },
+        "R2C4": {
+          "area": 24665,
+          "bounds": [
+            952,
+            338,
+            1141,
+            593
+          ],
+          "componentCount": 1
+        },
+        "R3C1": {
+          "area": 26872,
+          "bounds": [
+            41,
+            631,
+            246,
+            899
+          ],
+          "componentCount": 1
+        },
+        "R3C2": {
+          "area": 27841,
+          "bounds": [
+            323,
+            666,
+            561,
+            907
+          ],
+          "componentCount": 1
+        },
+        "R3C3": {
+          "area": 29204,
+          "bounds": [
+            605,
+            679,
+            883,
+            910
+          ],
+          "componentCount": 1
+        },
+        "R3C4": {
+          "area": 30427,
+          "bounds": [
+            912,
+            669,
+            1198,
+            905
+          ],
+          "componentCount": 1
+        },
+        "R4C1": {
+          "area": 22486,
+          "bounds": [
+            63,
+            956,
+            232,
+            1189
+          ],
+          "componentCount": 1
+        },
+        "R4C2": {
+          "area": 21674,
+          "bounds": [
+            310,
+            994,
+            550,
+            1187
+          ],
+          "componentCount": 1
+        },
+        "R4C3": {
+          "area": 16936,
+          "bounds": [
+            613,
+            1097,
+            890,
+            1201
+          ],
+          "componentCount": 1
+        },
+        "R4C4": {
+          "area": 14476,
+          "bounds": [
+            910,
+            1129,
+            1210,
+            1218
+          ],
+          "componentCount": 1
+        }
+      },
+      "identity": {
+        "path": "art/source/boss-hd/vault-guardian/vault-guardian-animation-west-source-1024.png",
+        "sha256": "f5bec8a0ae8bd1b500960d78b97d064cf21987fdfe26df5698bfa0adb46f2bed"
+      }
+    },
+    "warden-biome-descent/south": {
+      "helperDetectedKey": "#f405f1",
+      "semanticLayout": "4x4",
+      "rawComponentCount": 18,
+      "meaningfulComponentCount": 16,
+      "semanticPoseCount": 16,
+      "detachedEquipmentComponentCount": 0,
+      "removedSmallComponentCount": 2,
+      "crossingComponentCount": 0,
+      "columnCenters": [
+        156.75,
+        470.25,
+        783.75,
+        1097.25
+      ],
+      "rowCenters": [
+        156.75,
+        470.25,
+        783.75,
+        1097.25
+      ],
+      "slots": {
+        "R1C1": {
+          "area": 38600,
+          "bounds": [
+            69,
+            55,
+            281,
+            301
+          ],
+          "componentCount": 1
+        },
+        "R1C2": {
+          "area": 37891,
+          "bounds": [
+            366,
+            65,
+            577,
+            301
+          ],
+          "componentCount": 1
+        },
+        "R1C3": {
+          "area": 37918,
+          "bounds": [
+            674,
+            62,
+            886,
+            301
+          ],
+          "componentCount": 1
+        },
+        "R1C4": {
+          "area": 37911,
+          "bounds": [
+            969,
+            64,
+            1182,
+            301
+          ],
+          "componentCount": 1
+        },
+        "R2C1": {
+          "area": 33203,
+          "bounds": [
+            68,
+            341,
+            276,
+            586
+          ],
+          "componentCount": 1
+        },
+        "R2C2": {
+          "area": 33735,
+          "bounds": [
+            368,
+            340,
+            569,
+            586
+          ],
+          "componentCount": 1
+        },
+        "R2C3": {
+          "area": 34279,
+          "bounds": [
+            673,
+            341,
+            872,
+            585
+          ],
+          "componentCount": 1
+        },
+        "R2C4": {
+          "area": 34568,
+          "bounds": [
+            969,
+            341,
+            1171,
+            586
+          ],
+          "componentCount": 1
+        },
+        "R3C1": {
+          "area": 34342,
+          "bounds": [
+            53,
+            620,
+            280,
+            877
+          ],
+          "componentCount": 1
+        },
+        "R3C2": {
+          "area": 31353,
+          "bounds": [
+            360,
+            672,
+            562,
+            876
+          ],
+          "componentCount": 1
+        },
+        "R3C3": {
+          "area": 29355,
+          "bounds": [
+            669,
+            711,
+            883,
+            893
+          ],
+          "componentCount": 1
+        },
+        "R3C4": {
+          "area": 34475,
+          "bounds": [
+            969,
+            644,
+            1176,
+            879
+          ],
+          "componentCount": 1
+        },
+        "R4C1": {
+          "area": 34451,
+          "bounds": [
+            49,
+            934,
+            267,
+            1168
+          ],
+          "componentCount": 1
+        },
+        "R4C2": {
+          "area": 31350,
+          "bounds": [
+            331,
+            964,
+            563,
+            1170
+          ],
+          "componentCount": 1
+        },
+        "R4C3": {
+          "area": 27160,
+          "bounds": [
+            669,
+            1006,
+            878,
+            1183
+          ],
+          "componentCount": 1
+        },
+        "R4C4": {
+          "area": 23161,
+          "bounds": [
+            919,
+            1049,
+            1197,
+            1183
+          ],
+          "componentCount": 1
+        }
+      },
+      "identity": {
+        "path": "art/source/boss-hd/warden-biome-descent/warden-biome-descent-animation-south-source-1024.png",
+        "sha256": "5db5f32d539d87d2320c8bd6cce747eb49db0f1d3ed6154229ba44ebf18b27b6"
+      }
+    },
+    "warden-biome-descent/north": {
+      "helperDetectedKey": "#f504ed",
+      "semanticLayout": "4x4",
+      "rawComponentCount": 39,
+      "meaningfulComponentCount": 16,
+      "semanticPoseCount": 16,
+      "detachedEquipmentComponentCount": 0,
+      "removedSmallComponentCount": 23,
+      "crossingComponentCount": 0,
+      "columnCenters": [
+        156.75,
+        470.25,
+        783.75,
+        1097.25
+      ],
+      "rowCenters": [
+        156.75,
+        470.25,
+        783.75,
+        1097.25
+      ],
+      "slots": {
+        "R1C1": {
+          "area": 33265,
+          "bounds": [
+            87,
+            62,
+            288,
+            290
+          ],
+          "componentCount": 1
+        },
+        "R1C2": {
+          "area": 33092,
+          "bounds": [
+            377,
+            62,
+            576,
+            290
+          ],
+          "componentCount": 1
+        },
+        "R1C3": {
+          "area": 33079,
+          "bounds": [
+            665,
+            62,
+            865,
+            290
+          ],
+          "componentCount": 1
+        },
+        "R1C4": {
+          "area": 32779,
+          "bounds": [
+            955,
+            62,
+            1155,
+            290
+          ],
+          "componentCount": 1
+        },
+        "R2C1": {
+          "area": 30733,
+          "bounds": [
+            89,
+            347,
+            285,
+            579
+          ],
+          "componentCount": 1
+        },
+        "R2C2": {
+          "area": 30952,
+          "bounds": [
+            376,
+            347,
+            574,
+            580
+          ],
+          "componentCount": 1
+        },
+        "R2C3": {
+          "area": 31248,
+          "bounds": [
+            671,
+            347,
+            866,
+            580
+          ],
+          "componentCount": 1
+        },
+        "R2C4": {
+          "area": 30850,
+          "bounds": [
+            960,
+            347,
+            1155,
+            579
+          ],
+          "componentCount": 1
+        },
+        "R3C1": {
+          "area": 27655,
+          "bounds": [
+            75,
+            639,
+            285,
+            864
+          ],
+          "componentCount": 1
+        },
+        "R3C2": {
+          "area": 27369,
+          "bounds": [
+            354,
+            680,
+            562,
+            867
+          ],
+          "componentCount": 1
+        },
+        "R3C3": {
+          "area": 29474,
+          "bounds": [
+            635,
+            709,
+            909,
+            876
+          ],
+          "componentCount": 1
+        },
+        "R3C4": {
+          "area": 30190,
+          "bounds": [
+            962,
+            654,
+            1154,
+            872
+          ],
+          "componentCount": 1
+        },
+        "R4C1": {
+          "area": 29749,
+          "bounds": [
+            70,
+            928,
+            273,
+            1170
+          ],
+          "componentCount": 1
+        },
+        "R4C2": {
+          "area": 26562,
+          "bounds": [
+            357,
+            939,
+            550,
+            1163
+          ],
+          "componentCount": 1
+        },
+        "R4C3": {
+          "area": 21845,
+          "bounds": [
+            648,
+            1016,
+            878,
+            1187
+          ],
+          "componentCount": 1
+        },
+        "R4C4": {
+          "area": 18681,
+          "bounds": [
+            939,
+            1070,
+            1201,
+            1187
+          ],
+          "componentCount": 1
+        }
+      },
+      "identity": {
+        "path": "art/source/boss-hd/warden-biome-descent/warden-biome-descent-animation-north-source-1024.png",
+        "sha256": "60d3517250a011e32e050176c484fc574850a479de2544b36ba194cf0a8bb7e0"
+      }
+    },
+    "warden-biome-descent/east": {
+      "helperDetectedKey": "#f304f0",
+      "semanticLayout": "4x4",
+      "rawComponentCount": 28,
+      "meaningfulComponentCount": 16,
+      "semanticPoseCount": 16,
+      "detachedEquipmentComponentCount": 0,
+      "removedSmallComponentCount": 12,
+      "crossingComponentCount": 0,
+      "columnCenters": [
+        156.75,
+        470.25,
+        783.75,
+        1097.25
+      ],
+      "rowCenters": [
+        156.75,
+        470.25,
+        783.75,
+        1097.25
+      ],
+      "slots": {
+        "R1C1": {
+          "area": 30368,
+          "bounds": [
+            92,
+            48,
+            267,
+            288
+          ],
+          "componentCount": 1
+        },
+        "R1C2": {
+          "area": 30377,
+          "bounds": [
+            391,
+            48,
+            566,
+            288
+          ],
+          "componentCount": 1
+        },
+        "R1C3": {
+          "area": 30111,
+          "bounds": [
+            693,
+            48,
+            865,
+            288
+          ],
+          "componentCount": 1
+        },
+        "R1C4": {
+          "area": 30647,
+          "bounds": [
+            978,
+            50,
+            1168,
+            288
+          ],
+          "componentCount": 1
+        },
+        "R2C1": {
+          "area": 29484,
+          "bounds": [
+            80,
+            349,
+            291,
+            582
+          ],
+          "componentCount": 1
+        },
+        "R2C2": {
+          "area": 28134,
+          "bounds": [
+            399,
+            349,
+            597,
+            582
+          ],
+          "componentCount": 1
+        },
+        "R2C3": {
+          "area": 29122,
+          "bounds": [
+            675,
+            344,
+            866,
+            580
+          ],
+          "componentCount": 1
+        },
+        "R2C4": {
+          "area": 29051,
+          "bounds": [
+            971,
+            344,
+            1147,
+            580
+          ],
+          "componentCount": 1
+        },
+        "R3C1": {
+          "area": 32574,
+          "bounds": [
+            67,
+            642,
+            286,
+            875
+          ],
+          "componentCount": 1
+        },
+        "R3C2": {
+          "area": 28761,
+          "bounds": [
+            372,
+            677,
+            570,
+            873
+          ],
+          "componentCount": 1
+        },
+        "R3C3": {
+          "area": 33403,
+          "bounds": [
+            633,
+            686,
+            888,
+            887
+          ],
+          "componentCount": 1
+        },
+        "R3C4": {
+          "area": 32743,
+          "bounds": [
+            970,
+            646,
+            1191,
+            875
+          ],
+          "componentCount": 1
+        },
+        "R4C1": {
+          "area": 30295,
+          "bounds": [
+            86,
+            938,
+            269,
+            1176
+          ],
+          "componentCount": 1
+        },
+        "R4C2": {
+          "area": 29513,
+          "bounds": [
+            370,
+            953,
+            550,
+            1176
+          ],
+          "componentCount": 1
+        },
+        "R4C3": {
+          "area": 25014,
+          "bounds": [
+            636,
+            1030,
+            884,
+            1184
+          ],
+          "componentCount": 1
+        },
+        "R4C4": {
+          "area": 21381,
+          "bounds": [
+            926,
+            1080,
+            1210,
+            1190
+          ],
+          "componentCount": 1
+        }
+      },
+      "identity": {
+        "path": "art/source/boss-hd/warden-biome-descent/warden-biome-descent-animation-east-source-1024.png",
+        "sha256": "fde736732d203ba8d7508cebb665625f2db217af4d7a2810259b378d84f3b307"
+      }
+    },
+    "warden-biome-descent/west": {
+      "helperDetectedKey": "#f205f0",
+      "semanticLayout": "4x4",
+      "rawComponentCount": 33,
+      "meaningfulComponentCount": 16,
+      "semanticPoseCount": 16,
+      "detachedEquipmentComponentCount": 0,
+      "removedSmallComponentCount": 17,
+      "crossingComponentCount": 0,
+      "columnCenters": [
+        156.75,
+        470.25,
+        783.75,
+        1097.25
+      ],
+      "rowCenters": [
+        156.75,
+        470.25,
+        783.75,
+        1097.25
+      ],
+      "slots": {
+        "R1C1": {
+          "area": 25887,
+          "bounds": [
+            106,
+            46,
+            249,
+            280
+          ],
+          "componentCount": 1
+        },
+        "R1C2": {
+          "area": 25962,
+          "bounds": [
+            392,
+            48,
+            536,
+            280
+          ],
+          "componentCount": 1
+        },
+        "R1C3": {
+          "area": 25761,
+          "bounds": [
+            684,
+            50,
+            830,
+            281
+          ],
+          "componentCount": 1
+        },
+        "R1C4": {
+          "area": 25722,
+          "bounds": [
+            952,
+            48,
+            1100,
+            281
+          ],
+          "componentCount": 1
+        },
+        "R2C1": {
+          "area": 23688,
+          "bounds": [
+            91,
+            328,
+            248,
+            551
+          ],
+          "componentCount": 1
+        },
+        "R2C2": {
+          "area": 24944,
+          "bounds": [
+            352,
+            329,
+            542,
+            548
+          ],
+          "componentCount": 1
+        },
+        "R2C3": {
+          "area": 22861,
+          "bounds": [
+            653,
+            331,
+            827,
+            550
+          ],
+          "componentCount": 1
+        },
+        "R2C4": {
+          "area": 23223,
+          "bounds": [
+            918,
+            332,
+            1091,
+            552
+          ],
+          "componentCount": 1
+        },
+        "R3C1": {
+          "area": 28145,
+          "bounds": [
+            73,
+            583,
+            256,
+            830
+          ],
+          "componentCount": 1
+        },
+        "R3C2": {
+          "area": 22619,
+          "bounds": [
+            354,
+            649,
+            541,
+            825
+          ],
+          "componentCount": 1
+        },
+        "R3C3": {
+          "area": 30379,
+          "bounds": [
+            603,
+            662,
+            865,
+            851
+          ],
+          "componentCount": 1
+        },
+        "R3C4": {
+          "area": 25976,
+          "bounds": [
+            925,
+            624,
+            1124,
+            830
+          ],
+          "componentCount": 1
+        },
+        "R4C1": {
+          "area": 26275,
+          "bounds": [
+            64,
+            927,
+            254,
+            1146
+          ],
+          "componentCount": 1
+        },
+        "R4C2": {
+          "area": 25225,
+          "bounds": [
+            333,
+            927,
+            521,
+            1150
+          ],
+          "componentCount": 1
+        },
+        "R4C3": {
+          "area": 25778,
+          "bounds": [
+            578,
+            1013,
+            834,
+            1184
+          ],
+          "componentCount": 1
+        },
+        "R4C4": {
+          "area": 23861,
+          "bounds": [
+            877,
+            1070,
+            1190,
+            1204
+          ],
+          "componentCount": 1
+        }
+      },
+      "identity": {
+        "path": "art/source/boss-hd/warden-biome-descent/warden-biome-descent-animation-west-source-1024.png",
+        "sha256": "87879cae56249dfac8bec4bb2900408b72a1753b80fc40fc269d5744d83acd2f"
+      }
+    },
+    "warden-biome-corruption/south": {
+      "helperDetectedKey": "#f003ef",
+      "semanticLayout": "4x4",
+      "rawComponentCount": 37,
+      "meaningfulComponentCount": 16,
+      "semanticPoseCount": 16,
+      "detachedEquipmentComponentCount": 0,
+      "removedSmallComponentCount": 21,
+      "crossingComponentCount": 0,
+      "columnCenters": [
+        156.75,
+        470.25,
+        783.75,
+        1097.25
+      ],
+      "rowCenters": [
+        156.75,
+        470.25,
+        783.75,
+        1097.25
+      ],
+      "slots": {
+        "R1C1": {
+          "area": 37816,
+          "bounds": [
+            51,
+            60,
+            264,
+            307
+          ],
+          "componentCount": 1
+        },
+        "R1C2": {
+          "area": 38032,
+          "bounds": [
+            364,
+            60,
+            576,
+            307
+          ],
+          "componentCount": 1
+        },
+        "R1C3": {
+          "area": 38203,
+          "bounds": [
+            677,
+            60,
+            887,
+            307
+          ],
+          "componentCount": 1
+        },
+        "R1C4": {
+          "area": 37350,
+          "bounds": [
+            975,
+            58,
+            1180,
+            306
+          ],
+          "componentCount": 1
+        },
+        "R2C1": {
+          "area": 32406,
+          "bounds": [
+            58,
+            363,
+            251,
+            603
+          ],
+          "componentCount": 1
+        },
+        "R2C2": {
+          "area": 32721,
+          "bounds": [
+            356,
+            358,
+            556,
+            606
+          ],
+          "componentCount": 1
+        },
+        "R2C3": {
+          "area": 32266,
+          "bounds": [
+            659,
+            358,
+            862,
+            607
+          ],
+          "componentCount": 1
+        },
+        "R2C4": {
+          "area": 32525,
+          "bounds": [
+            959,
+            358,
+            1190,
+            607
+          ],
+          "componentCount": 1
+        },
+        "R3C1": {
+          "area": 35818,
+          "bounds": [
+            26,
+            647,
+            287,
+            887
+          ],
+          "componentCount": 1
+        },
+        "R3C2": {
+          "area": 27113,
+          "bounds": [
+            355,
+            688,
+            553,
+            880
+          ],
+          "componentCount": 1
+        },
+        "R3C3": {
+          "area": 30236,
+          "bounds": [
+            621,
+            712,
+            886,
+            892
+          ],
+          "componentCount": 1
+        },
+        "R3C4": {
+          "area": 32196,
+          "bounds": [
+            962,
+            660,
+            1171,
+            883
+          ],
+          "componentCount": 1
+        },
+        "R4C1": {
+          "area": 36156,
+          "bounds": [
+            30,
+            945,
+            274,
+            1184
+          ],
+          "componentCount": 1
+        },
+        "R4C2": {
+          "area": 31457,
+          "bounds": [
+            333,
+            944,
+            568,
+            1187
+          ],
+          "componentCount": 1
+        },
+        "R4C3": {
+          "area": 25718,
+          "bounds": [
+            653,
+            1004,
+            878,
+            1189
+          ],
+          "componentCount": 1
+        },
+        "R4C4": {
+          "area": 23592,
+          "bounds": [
+            931,
+            1061,
+            1206,
+            1190
+          ],
+          "componentCount": 1
+        }
+      },
+      "identity": {
+        "path": "art/source/boss-hd/warden-biome-corruption/warden-biome-corruption-animation-south-source-1024.png",
+        "sha256": "68eb79d492fa69fc960bd7ea7ba01d9b62bfbeda121f52bb829387b26584c336"
+      }
+    },
+    "warden-biome-corruption/north": {
+      "helperDetectedKey": "#f404ec",
+      "semanticLayout": "4x4",
+      "rawComponentCount": 16,
+      "meaningfulComponentCount": 16,
+      "semanticPoseCount": 16,
+      "detachedEquipmentComponentCount": 0,
+      "removedSmallComponentCount": 0,
+      "crossingComponentCount": 0,
+      "columnCenters": [
+        156.75,
+        470.25,
+        783.75,
+        1097.25
+      ],
+      "rowCenters": [
+        156.75,
+        470.25,
+        783.75,
+        1097.25
+      ],
+      "slots": {
+        "R1C1": {
+          "area": 36958,
+          "bounds": [
+            70,
+            48,
+            270,
+            292
+          ],
+          "componentCount": 1
+        },
+        "R1C2": {
+          "area": 36995,
+          "bounds": [
+            354,
+            48,
+            554,
+            292
+          ],
+          "componentCount": 1
+        },
+        "R1C3": {
+          "area": 36953,
+          "bounds": [
+            662,
+            48,
+            861,
+            292
+          ],
+          "componentCount": 1
+        },
+        "R1C4": {
+          "area": 36991,
+          "bounds": [
+            954,
+            48,
+            1154,
+            292
+          ],
+          "componentCount": 1
+        },
+        "R2C1": {
+          "area": 34972,
+          "bounds": [
+            71,
+            336,
+            268,
+            576
+          ],
+          "componentCount": 1
+        },
+        "R2C2": {
+          "area": 35364,
+          "bounds": [
+            355,
+            336,
+            552,
+            580
+          ],
+          "componentCount": 1
+        },
+        "R2C3": {
+          "area": 35381,
+          "bounds": [
+            663,
+            336,
+            860,
+            579
+          ],
+          "componentCount": 1
+        },
+        "R2C4": {
+          "area": 34589,
+          "bounds": [
+            957,
+            335,
+            1152,
+            580
+          ],
+          "componentCount": 1
+        },
+        "R3C1": {
+          "area": 31500,
+          "bounds": [
+            56,
+            650,
+            283,
+            879
+          ],
+          "componentCount": 1
+        },
+        "R3C2": {
+          "area": 30949,
+          "bounds": [
+            350,
+            657,
+            555,
+            871
+          ],
+          "componentCount": 1
+        },
+        "R3C3": {
+          "area": 32010,
+          "bounds": [
+            624,
+            701,
+            894,
+            882
+          ],
+          "componentCount": 1
+        },
+        "R3C4": {
+          "area": 37010,
+          "bounds": [
+            954,
+            648,
+            1154,
+            892
+          ],
+          "componentCount": 1
+        },
+        "R4C1": {
+          "area": 31950,
+          "bounds": [
+            62,
+            920,
+            269,
+            1172
+          ],
+          "componentCount": 1
+        },
+        "R4C2": {
+          "area": 29021,
+          "bounds": [
+            350,
+            927,
+            540,
+            1167
+          ],
+          "componentCount": 1
+        },
+        "R4C3": {
+          "area": 24448,
+          "bounds": [
+            628,
+            1000,
+            862,
+            1189
+          ],
+          "componentCount": 1
+        },
+        "R4C4": {
+          "area": 22057,
+          "bounds": [
+            913,
+            1051,
+            1190,
+            1186
+          ],
+          "componentCount": 1
+        }
+      },
+      "identity": {
+        "path": "art/source/boss-hd/warden-biome-corruption/warden-biome-corruption-animation-north-source-1024.png",
+        "sha256": "371ecd149ea6677760133ba34b5e7efb1f630c0b04d85e7ead368698999c342b"
+      }
+    },
+    "warden-biome-corruption/east": {
+      "helperDetectedKey": "#f403f1",
+      "semanticLayout": "4x4",
+      "rawComponentCount": 28,
+      "meaningfulComponentCount": 16,
+      "semanticPoseCount": 16,
+      "detachedEquipmentComponentCount": 0,
+      "removedSmallComponentCount": 12,
+      "crossingComponentCount": 0,
+      "columnCenters": [
+        156.75,
+        470.25,
+        783.75,
+        1097.25
+      ],
+      "rowCenters": [
+        156.75,
+        470.25,
+        783.75,
+        1097.25
+      ],
+      "slots": {
+        "R1C1": {
+          "area": 33369,
+          "bounds": [
+            100,
+            43,
+            274,
+            292
+          ],
+          "componentCount": 1
+        },
+        "R1C2": {
+          "area": 32377,
+          "bounds": [
+            387,
+            44,
+            556,
+            292
+          ],
+          "componentCount": 1
+        },
+        "R1C3": {
+          "area": 31521,
+          "bounds": [
+            684,
+            48,
+            855,
+            292
+          ],
+          "componentCount": 1
+        },
+        "R1C4": {
+          "area": 31539,
+          "bounds": [
+            978,
+            46,
+            1145,
+            292
+          ],
+          "componentCount": 1
+        },
+        "R2C1": {
+          "area": 31648,
+          "bounds": [
+            95,
+            342,
+            291,
+            589
+          ],
+          "componentCount": 1
+        },
+        "R2C2": {
+          "area": 30694,
+          "bounds": [
+            387,
+            344,
+            571,
+            589
+          ],
+          "componentCount": 1
+        },
+        "R2C3": {
+          "area": 28015,
+          "bounds": [
+            682,
+            350,
+            871,
+            589
+          ],
+          "componentCount": 1
+        },
+        "R2C4": {
+          "area": 29736,
+          "bounds": [
+            979,
+            349,
+            1164,
+            591
+          ],
+          "componentCount": 1
+        },
+        "R3C1": {
+          "area": 30794,
+          "bounds": [
+            85,
+            660,
+            292,
+            889
+          ],
+          "componentCount": 1
+        },
+        "R3C2": {
+          "area": 30771,
+          "bounds": [
+            370,
+            667,
+            584,
+            889
+          ],
+          "componentCount": 1
+        },
+        "R3C3": {
+          "area": 34142,
+          "bounds": [
+            631,
+            697,
+            895,
+            891
+          ],
+          "componentCount": 1
+        },
+        "R3C4": {
+          "area": 31848,
+          "bounds": [
+            971,
+            659,
+            1166,
+            889
+          ],
+          "componentCount": 1
+        },
+        "R4C1": {
+          "area": 33396,
+          "bounds": [
+            68,
+            946,
+            302,
+            1179
+          ],
+          "componentCount": 1
+        },
+        "R4C2": {
+          "area": 29766,
+          "bounds": [
+            360,
+            951,
+            570,
+            1178
+          ],
+          "componentCount": 1
+        },
+        "R4C3": {
+          "area": 25235,
+          "bounds": [
+            631,
+            1027,
+            884,
+            1186
+          ],
+          "componentCount": 1
+        },
+        "R4C4": {
+          "area": 23457,
+          "bounds": [
+            923,
+            1066,
+            1209,
+            1191
+          ],
+          "componentCount": 1
+        }
+      },
+      "identity": {
+        "path": "art/source/boss-hd/warden-biome-corruption/warden-biome-corruption-animation-east-source-1024.png",
+        "sha256": "8c779e2a482bc424829aba7d07a83051cb22167f2bd08216fddbcfa843146258"
+      }
+    },
+    "warden-biome-corruption/west": {
+      "helperDetectedKey": "#f103eb",
+      "semanticLayout": "4x4",
+      "rawComponentCount": 18,
+      "meaningfulComponentCount": 16,
+      "semanticPoseCount": 16,
+      "detachedEquipmentComponentCount": 0,
+      "removedSmallComponentCount": 2,
+      "crossingComponentCount": 0,
+      "columnCenters": [
+        156.75,
+        470.25,
+        783.75,
+        1097.25
+      ],
+      "rowCenters": [
+        156.75,
+        470.25,
+        783.75,
+        1097.25
+      ],
+      "slots": {
+        "R1C1": {
+          "area": 29481,
+          "bounds": [
+            97,
+            60,
+            256,
+            304
+          ],
+          "componentCount": 1
+        },
+        "R1C2": {
+          "area": 29073,
+          "bounds": [
+            388,
+            60,
+            543,
+            304
+          ],
+          "componentCount": 1
+        },
+        "R1C3": {
+          "area": 28961,
+          "bounds": [
+            694,
+            60,
+            848,
+            304
+          ],
+          "componentCount": 1
+        },
+        "R1C4": {
+          "area": 29357,
+          "bounds": [
+            997,
+            60,
+            1155,
+            304
+          ],
+          "componentCount": 1
+        },
+        "R2C1": {
+          "area": 31178,
+          "bounds": [
+            70,
+            354,
+            259,
+            594
+          ],
+          "componentCount": 1
+        },
+        "R2C2": {
+          "area": 30612,
+          "bounds": [
+            379,
+            356,
+            552,
+            594
+          ],
+          "componentCount": 1
+        },
+        "R2C3": {
+          "area": 31636,
+          "bounds": [
+            664,
+            355,
+            859,
+            594
+          ],
+          "componentCount": 1
+        },
+        "R2C4": {
+          "area": 31311,
+          "bounds": [
+            973,
+            355,
+            1161,
+            594
+          ],
+          "componentCount": 1
+        },
+        "R3C1": {
+          "area": 31480,
+          "bounds": [
+            69,
+            638,
+            263,
+            881
+          ],
+          "componentCount": 1
+        },
+        "R3C2": {
+          "area": 26769,
+          "bounds": [
+            353,
+            680,
+            540,
+            874
+          ],
+          "componentCount": 1
+        },
+        "R3C3": {
+          "area": 35462,
+          "bounds": [
+            594,
+            697,
+            902,
+            894
+          ],
+          "componentCount": 1
+        },
+        "R3C4": {
+          "area": 28435,
+          "bounds": [
+            989,
+            655,
+            1157,
+            881
+          ],
+          "componentCount": 1
+        },
+        "R4C1": {
+          "area": 31248,
+          "bounds": [
+            56,
+            936,
+            256,
+            1178
+          ],
+          "componentCount": 1
+        },
+        "R4C2": {
+          "area": 27740,
+          "bounds": [
+            332,
+            992,
+            544,
+            1181
+          ],
+          "componentCount": 1
+        },
+        "R4C3": {
+          "area": 27031,
+          "bounds": [
+            612,
+            1038,
+            868,
+            1188
+          ],
+          "componentCount": 1
+        },
+        "R4C4": {
+          "area": 21663,
+          "bounds": [
+            921,
+            1079,
+            1204,
+            1193
+          ],
+          "componentCount": 1
+        }
+      },
+      "identity": {
+        "path": "art/source/boss-hd/warden-biome-corruption/warden-biome-corruption-animation-west-source-1024.png",
+        "sha256": "481036d326d3ec57c8ca5c0e6039accbd788e85c47e8bd7a86eb9ba1d9914e5a"
+      }
+    },
+    "warden-biome-abyss/south": {
+      "helperDetectedKey": "#f304eb",
+      "semanticLayout": "4x4",
+      "rawComponentCount": 100,
+      "meaningfulComponentCount": 16,
+      "semanticPoseCount": 16,
+      "detachedEquipmentComponentCount": 0,
+      "removedSmallComponentCount": 84,
+      "crossingComponentCount": 0,
+      "columnCenters": [
+        156.75,
+        470.25,
+        783.75,
+        1097.25
+      ],
+      "rowCenters": [
+        156.75,
+        470.25,
+        783.75,
+        1097.25
+      ],
+      "slots": {
+        "R1C1": {
+          "area": 36634,
+          "bounds": [
+            79,
+            69,
+            289,
+            307
+          ],
+          "componentCount": 1
+        },
+        "R1C2": {
+          "area": 36513,
+          "bounds": [
+            377,
+            69,
+            585,
+            307
+          ],
+          "componentCount": 1
+        },
+        "R1C3": {
+          "area": 35869,
+          "bounds": [
+            674,
+            71,
+            880,
+            307
+          ],
+          "componentCount": 1
+        },
+        "R1C4": {
+          "area": 35891,
+          "bounds": [
+            966,
+            69,
+            1171,
+            307
+          ],
+          "componentCount": 1
+        },
+        "R2C1": {
+          "area": 32427,
+          "bounds": [
+            70,
+            363,
+            289,
+            600
+          ],
+          "componentCount": 1
+        },
+        "R2C2": {
+          "area": 30533,
+          "bounds": [
+            371,
+            370,
+            586,
+            600
+          ],
+          "componentCount": 1
+        },
+        "R2C3": {
+          "area": 30997,
+          "bounds": [
+            672,
+            366,
+            880,
+            600
+          ],
+          "componentCount": 1
+        },
+        "R2C4": {
+          "area": 30770,
+          "bounds": [
+            958,
+            366,
+            1171,
+            600
+          ],
+          "componentCount": 1
+        },
+        "R3C1": {
+          "area": 30545,
+          "bounds": [
+            60,
+            647,
+            283,
+            882
+          ],
+          "componentCount": 1
+        },
+        "R3C2": {
+          "area": 27764,
+          "bounds": [
+            368,
+            690,
+            563,
+            868
+          ],
+          "componentCount": 1
+        },
+        "R3C3": {
+          "area": 32644,
+          "bounds": [
+            635,
+            696,
+            901,
+            896
+          ],
+          "componentCount": 1
+        },
+        "R3C4": {
+          "area": 31575,
+          "bounds": [
+            955,
+            649,
+            1172,
+            879
+          ],
+          "componentCount": 1
+        },
+        "R4C1": {
+          "area": 31161,
+          "bounds": [
+            69,
+            934,
+            282,
+            1173
+          ],
+          "componentCount": 1
+        },
+        "R4C2": {
+          "area": 29689,
+          "bounds": [
+            343,
+            957,
+            578,
+            1168
+          ],
+          "componentCount": 1
+        },
+        "R4C3": {
+          "area": 28475,
+          "bounds": [
+            644,
+            993,
+            871,
+            1188
+          ],
+          "componentCount": 1
+        },
+        "R4C4": {
+          "area": 20236,
+          "bounds": [
+            920,
+            1066,
+            1193,
+            1189
+          ],
+          "componentCount": 1
+        }
+      },
+      "identity": {
+        "path": "art/source/boss-hd/warden-biome-abyss/warden-biome-abyss-animation-south-source-1024.png",
+        "sha256": "1c0dae92982d9f3fa32938ec1b377b1930cafb7f97b6b6623e2f62ef41d1c135"
+      }
+    },
+    "warden-biome-abyss/north": {
+      "helperDetectedKey": "#f005eb",
+      "semanticLayout": "4x4",
+      "rawComponentCount": 277,
+      "meaningfulComponentCount": 16,
+      "semanticPoseCount": 16,
+      "detachedEquipmentComponentCount": 0,
+      "removedSmallComponentCount": 261,
+      "crossingComponentCount": 0,
+      "columnCenters": [
+        156.75,
+        470.25,
+        783.75,
+        1097.25
+      ],
+      "rowCenters": [
+        156.75,
+        470.25,
+        783.75,
+        1097.25
+      ],
+      "slots": {
+        "R1C1": {
+          "area": 31223,
+          "bounds": [
+            92,
+            72,
+            282,
+            292
+          ],
+          "componentCount": 1
+        },
+        "R1C2": {
+          "area": 31203,
+          "bounds": [
+            386,
+            72,
+            577,
+            292
+          ],
+          "componentCount": 1
+        },
+        "R1C3": {
+          "area": 30924,
+          "bounds": [
+            679,
+            74,
+            869,
+            292
+          ],
+          "componentCount": 1
+        },
+        "R1C4": {
+          "area": 30783,
+          "bounds": [
+            971,
+            72,
+            1161,
+            292
+          ],
+          "componentCount": 1
+        },
+        "R2C1": {
+          "area": 31110,
+          "bounds": [
+            91,
+            353,
+            284,
+            588
+          ],
+          "componentCount": 1
+        },
+        "R2C2": {
+          "area": 29472,
+          "bounds": [
+            382,
+            362,
+            576,
+            591
+          ],
+          "componentCount": 1
+        },
+        "R2C3": {
+          "area": 30233,
+          "bounds": [
+            675,
+            357,
+            870,
+            590
+          ],
+          "componentCount": 1
+        },
+        "R2C4": {
+          "area": 30335,
+          "bounds": [
+            967,
+            358,
+            1161,
+            590
+          ],
+          "componentCount": 1
+        },
+        "R3C1": {
+          "area": 27826,
+          "bounds": [
+            77,
+            640,
+            285,
+            870
+          ],
+          "componentCount": 1
+        },
+        "R3C2": {
+          "area": 28484,
+          "bounds": [
+            365,
+            680,
+            576,
+            873
+          ],
+          "componentCount": 1
+        },
+        "R3C3": {
+          "area": 26366,
+          "bounds": [
+            682,
+            703,
+            872,
+            876
+          ],
+          "componentCount": 1
+        },
+        "R3C4": {
+          "area": 29698,
+          "bounds": [
+            973,
+            656,
+            1160,
+            876
+          ],
+          "componentCount": 1
+        },
+        "R4C1": {
+          "area": 28869,
+          "bounds": [
+            76,
+            934,
+            277,
+            1173
+          ],
+          "componentCount": 1
+        },
+        "R4C2": {
+          "area": 26161,
+          "bounds": [
+            368,
+            941,
+            550,
+            1170
+          ],
+          "componentCount": 1
+        },
+        "R4C3": {
+          "area": 20903,
+          "bounds": [
+            660,
+            1022,
+            881,
+            1191
+          ],
+          "componentCount": 1
+        },
+        "R4C4": {
+          "area": 18112,
+          "bounds": [
+            943,
+            1074,
+            1201,
+            1191
+          ],
+          "componentCount": 1
+        }
+      },
+      "identity": {
+        "path": "art/source/boss-hd/warden-biome-abyss/warden-biome-abyss-animation-north-source-1024.png",
+        "sha256": "5209b99d3ed834780837a443e2c6b5b72dfc776b8f4cc579cedb8d3784b8361b"
+      }
+    },
+    "warden-biome-abyss/east": {
+      "helperDetectedKey": "#f204ef",
+      "semanticLayout": "4x4",
+      "rawComponentCount": 112,
+      "meaningfulComponentCount": 16,
+      "semanticPoseCount": 16,
+      "detachedEquipmentComponentCount": 0,
+      "removedSmallComponentCount": 96,
+      "crossingComponentCount": 0,
+      "columnCenters": [
+        156.75,
+        470.25,
+        783.75,
+        1097.25
+      ],
+      "rowCenters": [
+        156.75,
+        470.25,
+        783.75,
+        1097.25
+      ],
+      "slots": {
+        "R1C1": {
+          "area": 31629,
+          "bounds": [
+            72,
+            56,
+            256,
+            298
+          ],
+          "componentCount": 1
+        },
+        "R1C2": {
+          "area": 31147,
+          "bounds": [
+            373,
+            64,
+            558,
+            301
+          ],
+          "componentCount": 1
+        },
+        "R1C3": {
+          "area": 30642,
+          "bounds": [
+            678,
+            64,
+            858,
+            301
+          ],
+          "componentCount": 1
+        },
+        "R1C4": {
+          "area": 30828,
+          "bounds": [
+            973,
+            64,
+            1153,
+            301
+          ],
+          "componentCount": 1
+        },
+        "R2C1": {
+          "area": 30803,
+          "bounds": [
+            62,
+            363,
+            280,
+            602
+          ],
+          "componentCount": 1
+        },
+        "R2C2": {
+          "area": 30901,
+          "bounds": [
+            364,
+            364,
+            581,
+            602
+          ],
+          "componentCount": 1
+        },
+        "R2C3": {
+          "area": 29707,
+          "bounds": [
+            658,
+            364,
+            877,
+            602
+          ],
+          "componentCount": 1
+        },
+        "R2C4": {
+          "area": 30088,
+          "bounds": [
+            961,
+            364,
+            1179,
+            602
+          ],
+          "componentCount": 1
+        },
+        "R3C1": {
+          "area": 31207,
+          "bounds": [
+            56,
+            667,
+            287,
+            890
+          ],
+          "componentCount": 1
+        },
+        "R3C2": {
+          "area": 29001,
+          "bounds": [
+            360,
+            687,
+            581,
+            889
+          ],
+          "componentCount": 1
+        },
+        "R3C3": {
+          "area": 33687,
+          "bounds": [
+            638,
+            705,
+            919,
+            900
+          ],
+          "componentCount": 1
+        },
+        "R3C4": {
+          "area": 28658,
+          "bounds": [
+            966,
+            667,
+            1168,
+            891
+          ],
+          "componentCount": 1
+        },
+        "R4C1": {
+          "area": 24400,
+          "bounds": [
+            53,
+            961,
+            243,
+            1175
+          ],
+          "componentCount": 1
+        },
+        "R4C2": {
+          "area": 26515,
+          "bounds": [
+            374,
+            955,
+            572,
+            1176
+          ],
+          "componentCount": 1
+        },
+        "R4C3": {
+          "area": 24040,
+          "bounds": [
+            628,
+            1022,
+            877,
+            1179
+          ],
+          "componentCount": 1
+        },
+        "R4C4": {
+          "area": 20532,
+          "bounds": [
+            929,
+            1071,
+            1225,
+            1181
+          ],
+          "componentCount": 1
+        }
+      },
+      "identity": {
+        "path": "art/source/boss-hd/warden-biome-abyss/warden-biome-abyss-animation-east-source-1024.png",
+        "sha256": "6f9f5a4d8a47e8c5f3ae401d961b20b0839214a782eb6733b3a15726ab2b9d9d"
+      }
+    },
+    "warden-biome-abyss/west": {
+      "helperDetectedKey": "#f104ed",
+      "semanticLayout": "4x4",
+      "rawComponentCount": 99,
+      "meaningfulComponentCount": 16,
+      "semanticPoseCount": 16,
+      "detachedEquipmentComponentCount": 0,
+      "removedSmallComponentCount": 83,
+      "crossingComponentCount": 0,
+      "columnCenters": [
+        156.75,
+        470.25,
+        783.75,
+        1097.25
+      ],
+      "rowCenters": [
+        156.75,
+        470.25,
+        783.75,
+        1097.25
+      ],
+      "slots": {
+        "R1C1": {
+          "area": 26083,
+          "bounds": [
+            102,
+            71,
+            240,
+            316
+          ],
+          "componentCount": 1
+        },
+        "R1C2": {
+          "area": 26144,
+          "bounds": [
+            392,
+            71,
+            530,
+            317
+          ],
+          "componentCount": 1
+        },
+        "R1C3": {
+          "area": 25760,
+          "bounds": [
+            694,
+            71,
+            832,
+            316
+          ],
+          "componentCount": 1
+        },
+        "R1C4": {
+          "area": 25830,
+          "bounds": [
+            997,
+            71,
+            1135,
+            316
+          ],
+          "componentCount": 1
+        },
+        "R2C1": {
+          "area": 26239,
+          "bounds": [
+            72,
+            343,
+            258,
+            585
+          ],
+          "componentCount": 1
+        },
+        "R2C2": {
+          "area": 29698,
+          "bounds": [
+            363,
+            348,
+            555,
+            592
+          ],
+          "componentCount": 1
+        },
+        "R2C3": {
+          "area": 29036,
+          "bounds": [
+            681,
+            349,
+            861,
+            589
+          ],
+          "componentCount": 1
+        },
+        "R2C4": {
+          "area": 30786,
+          "bounds": [
+            961,
+            347,
+            1156,
+            591
+          ],
+          "componentCount": 1
+        },
+        "R3C1": {
+          "area": 28279,
+          "bounds": [
+            54,
+            637,
+            248,
+            864
+          ],
+          "componentCount": 1
+        },
+        "R3C2": {
+          "area": 26270,
+          "bounds": [
+            347,
+            675,
+            551,
+            866
+          ],
+          "componentCount": 1
+        },
+        "R3C3": {
+          "area": 29040,
+          "bounds": [
+            615,
+            695,
+            870,
+            876
+          ],
+          "componentCount": 1
+        },
+        "R3C4": {
+          "area": 27864,
+          "bounds": [
+            964,
+            636,
+            1162,
+            863
+          ],
+          "componentCount": 1
+        },
+        "R4C1": {
+          "area": 32983,
+          "bounds": [
+            49,
+            922,
+            275,
+            1149
+          ],
+          "componentCount": 1
+        },
+        "R4C2": {
+          "area": 27226,
+          "bounds": [
+            338,
+            940,
+            537,
+            1142
+          ],
+          "componentCount": 1
+        },
+        "R4C3": {
+          "area": 25930,
+          "bounds": [
+            609,
+            994,
+            851,
+            1156
+          ],
+          "componentCount": 1
+        },
+        "R4C4": {
+          "area": 22986,
+          "bounds": [
+            912,
+            1042,
+            1209,
+            1165
+          ],
+          "componentCount": 1
+        }
+      },
+      "identity": {
+        "path": "art/source/boss-hd/warden-biome-abyss/warden-biome-abyss-animation-west-source-1024.png",
+        "sha256": "ac700c99489b1c7f7b893848839ca85e923e1afebebe622fcea3b20d2fb39e70"
+      }
+    },
+    "blacksmith-guardian/south": {
+      "helperDetectedKey": "#f702f5",
+      "semanticLayout": "4x4",
+      "rawComponentCount": 17,
+      "meaningfulComponentCount": 16,
+      "semanticPoseCount": 16,
+      "detachedEquipmentComponentCount": 0,
+      "removedSmallComponentCount": 1,
+      "crossingComponentCount": 0,
+      "columnCenters": [
+        156.75,
+        470.25,
+        783.75,
+        1097.25
+      ],
+      "rowCenters": [
+        156.75,
+        470.25,
+        783.75,
+        1097.25
+      ],
+      "slots": {
+        "R1C1": {
+          "area": 39087,
+          "bounds": [
+            63,
+            39,
+            278,
+            311
+          ],
+          "componentCount": 1
+        },
+        "R1C2": {
+          "area": 36714,
+          "bounds": [
+            375,
+            44,
+            577,
+            313
+          ],
+          "componentCount": 1
+        },
+        "R1C3": {
+          "area": 36726,
+          "bounds": [
+            669,
+            44,
+            871,
+            313
+          ],
+          "componentCount": 1
+        },
+        "R1C4": {
+          "area": 37072,
+          "bounds": [
+            955,
+            44,
+            1158,
+            312
+          ],
+          "componentCount": 1
+        },
+        "R2C1": {
+          "area": 34051,
+          "bounds": [
+            52,
+            346,
+            267,
+            607
+          ],
+          "componentCount": 1
+        },
+        "R2C2": {
+          "area": 33308,
+          "bounds": [
+            347,
+            346,
+            561,
+            615
+          ],
+          "componentCount": 1
+        },
+        "R2C3": {
+          "area": 33772,
+          "bounds": [
+            643,
+            343,
+            860,
+            613
+          ],
+          "componentCount": 1
+        },
+        "R2C4": {
+          "area": 33067,
+          "bounds": [
+            939,
+            346,
+            1153,
+            615
+          ],
+          "componentCount": 1
+        },
+        "R3C1": {
+          "area": 27864,
+          "bounds": [
+            90,
+            666,
+            279,
+            909
+          ],
+          "componentCount": 1
+        },
+        "R3C2": {
+          "area": 34204,
+          "bounds": [
+            339,
+            649,
+            573,
+            910
+          ],
+          "componentCount": 1
+        },
+        "R3C3": {
+          "area": 27107,
+          "bounds": [
+            667,
+            668,
+            856,
+            923
+          ],
+          "componentCount": 1
+        },
+        "R3C4": {
+          "area": 29343,
+          "bounds": [
+            949,
+            628,
+            1117,
+            916
+          ],
+          "componentCount": 1
+        },
+        "R4C1": {
+          "area": 34076,
+          "bounds": [
+            52,
+            949,
+            273,
+            1209
+          ],
+          "componentCount": 1
+        },
+        "R4C2": {
+          "area": 32571,
+          "bounds": [
+            334,
+            950,
+            558,
+            1204
+          ],
+          "componentCount": 1
+        },
+        "R4C3": {
+          "area": 28616,
+          "bounds": [
+            606,
+            1037,
+            865,
+            1229
+          ],
+          "componentCount": 1
+        },
+        "R4C4": {
+          "area": 28525,
+          "bounds": [
+            914,
+            1039,
+            1171,
+            1213
+          ],
+          "componentCount": 1
+        }
+      },
+      "identity": {
+        "path": "art/source/boss-hd/blacksmith-guardian/blacksmith-guardian-animation-south-source-1024.png",
+        "sha256": "6a29ab6ac1767df7ea5f0d40314cc53f8d94782a1840c654d12ac70b52f1217d"
+      }
+    },
+    "blacksmith-guardian/north": {
+      "helperDetectedKey": "#f304f1",
+      "semanticLayout": "4x4",
+      "rawComponentCount": 17,
+      "meaningfulComponentCount": 17,
+      "semanticPoseCount": 16,
+      "detachedEquipmentComponentCount": 1,
+      "removedSmallComponentCount": 0,
+      "crossingComponentCount": 0,
+      "columnCenters": [
+        156.75,
+        470.25,
+        783.75,
+        1097.25
+      ],
+      "rowCenters": [
+        156.75,
+        470.25,
+        783.75,
+        1097.25
+      ],
+      "slots": {
+        "R1C1": {
+          "area": 31838,
+          "bounds": [
+            95,
+            26,
+            286,
+            284
+          ],
+          "componentCount": 1
+        },
+        "R1C2": {
+          "area": 32227,
+          "bounds": [
+            385,
+            25,
+            580,
+            285
+          ],
+          "componentCount": 1
+        },
+        "R1C3": {
+          "area": 31830,
+          "bounds": [
+            697,
+            25,
+            894,
+            287
+          ],
+          "componentCount": 1
+        },
+        "R1C4": {
+          "area": 32581,
+          "bounds": [
+            991,
+            26,
+            1190,
+            285
+          ],
+          "componentCount": 1
+        },
+        "R2C1": {
+          "area": 30360,
+          "bounds": [
+            85,
+            331,
+            283,
+            597
+          ],
+          "componentCount": 1
+        },
+        "R2C2": {
+          "area": 29177,
+          "bounds": [
+            383,
+            332,
+            574,
+            597
+          ],
+          "componentCount": 1
+        },
+        "R2C3": {
+          "area": 31239,
+          "bounds": [
+            686,
+            332,
+            887,
+            594
+          ],
+          "componentCount": 1
+        },
+        "R2C4": {
+          "area": 28977,
+          "bounds": [
+            990,
+            332,
+            1175,
+            596
+          ],
+          "componentCount": 1
+        },
+        "R3C1": {
+          "area": 25163,
+          "bounds": [
+            29,
+            649,
+            254,
+            906
+          ],
+          "componentCount": 1
+        },
+        "R3C2": {
+          "area": 27844,
+          "bounds": [
+            373,
+            630,
+            572,
+            910
+          ],
+          "componentCount": 1
+        },
+        "R3C3": {
+          "area": 22829,
+          "bounds": [
+            698,
+            634,
+            844,
+            912
+          ],
+          "componentCount": 1
+        },
+        "R3C4": {
+          "area": 28076,
+          "bounds": [
+            976,
+            660,
+            1226,
+            912
+          ],
+          "componentCount": 1
+        },
+        "R4C1": {
+          "area": 26823,
+          "bounds": [
+            79,
+            945,
+            293,
+            1193
+          ],
+          "componentCount": 1
+        },
+        "R4C2": {
+          "area": 26272,
+          "bounds": [
+            386,
+            955,
+            598,
+            1198
+          ],
+          "componentCount": 1
+        },
+        "R4C3": {
+          "area": 22560,
+          "bounds": [
+            675,
+            1028,
+            882,
+            1221
+          ],
+          "componentCount": 1
+        },
+        "R4C4": {
+          "area": 25241,
+          "bounds": [
+            947,
+            1057,
+            1197,
+            1228
+          ],
+          "componentCount": 2
+        }
+      },
+      "identity": {
+        "path": "art/source/boss-hd/blacksmith-guardian/blacksmith-guardian-animation-north-source-1024.png",
+        "sha256": "82bf68279517db8a88283828463b7a9264227997c0e4a14f4c821b93ce0dc3e4"
+      }
+    },
+    "blacksmith-guardian/east": {
+      "helperDetectedKey": "#f004ec",
+      "semanticLayout": "4x4",
+      "rawComponentCount": 16,
+      "meaningfulComponentCount": 16,
+      "semanticPoseCount": 16,
+      "detachedEquipmentComponentCount": 0,
+      "removedSmallComponentCount": 0,
+      "crossingComponentCount": 0,
+      "columnCenters": [
+        156.75,
+        470.25,
+        783.75,
+        1097.25
+      ],
+      "rowCenters": [
+        156.75,
+        470.25,
+        783.75,
+        1097.25
+      ],
+      "slots": {
+        "R1C1": {
+          "area": 34874,
+          "bounds": [
+            66,
+            36,
+            240,
+            323
+          ],
+          "componentCount": 1
+        },
+        "R1C2": {
+          "area": 31793,
+          "bounds": [
+            385,
+            40,
+            542,
+            326
+          ],
+          "componentCount": 1
+        },
+        "R1C3": {
+          "area": 29056,
+          "bounds": [
+            700,
+            42,
+            844,
+            324
+          ],
+          "componentCount": 1
+        },
+        "R1C4": {
+          "area": 33057,
+          "bounds": [
+            979,
+            43,
+            1160,
+            323
+          ],
+          "componentCount": 1
+        },
+        "R2C1": {
+          "area": 33705,
+          "bounds": [
+            21,
+            385,
+            268,
+            642
+          ],
+          "componentCount": 1
+        },
+        "R2C2": {
+          "area": 30492,
+          "bounds": [
+            325,
+            389,
+            578,
+            649
+          ],
+          "componentCount": 1
+        },
+        "R2C3": {
+          "area": 31450,
+          "bounds": [
+            662,
+            387,
+            893,
+            648
+          ],
+          "componentCount": 1
+        },
+        "R2C4": {
+          "area": 32119,
+          "bounds": [
+            909,
+            386,
+            1174,
+            638
+          ],
+          "componentCount": 1
+        },
+        "R3C1": {
+          "area": 29864,
+          "bounds": [
+            57,
+            682,
+            244,
+            973
+          ],
+          "componentCount": 1
+        },
+        "R3C2": {
+          "area": 31788,
+          "bounds": [
+            323,
+            726,
+            561,
+            967
+          ],
+          "componentCount": 1
+        },
+        "R3C3": {
+          "area": 30855,
+          "bounds": [
+            654,
+            735,
+            900,
+            965
+          ],
+          "componentCount": 1
+        },
+        "R3C4": {
+          "area": 29721,
+          "bounds": [
+            934,
+            707,
+            1220,
+            945
+          ],
+          "componentCount": 1
+        },
+        "R4C1": {
+          "area": 32608,
+          "bounds": [
+            24,
+            999,
+            284,
+            1230
+          ],
+          "componentCount": 1
+        },
+        "R4C2": {
+          "area": 25682,
+          "bounds": [
+            336,
+            1058,
+            564,
+            1246
+          ],
+          "componentCount": 1
+        },
+        "R4C3": {
+          "area": 23373,
+          "bounds": [
+            613,
+            1114,
+            879,
+            1253
+          ],
+          "componentCount": 1
+        },
+        "R4C4": {
+          "area": 24981,
+          "bounds": [
+            920,
+            1112,
+            1220,
+            1253
+          ],
+          "componentCount": 1
+        }
+      },
+      "identity": {
+        "path": "art/source/boss-hd/blacksmith-guardian/blacksmith-guardian-animation-east-source-1024.png",
+        "sha256": "e082d8e3baa6c71bd819fa3e3005de2391c65e6e7f2b607d2d9e5136e028537c"
+      }
+    },
+    "blacksmith-guardian/west": {
+      "helperDetectedKey": "#f004f2",
+      "semanticLayout": "4x4",
+      "rawComponentCount": 17,
+      "meaningfulComponentCount": 17,
+      "semanticPoseCount": 16,
+      "detachedEquipmentComponentCount": 1,
+      "removedSmallComponentCount": 0,
+      "crossingComponentCount": 0,
+      "columnCenters": [
+        156.75,
+        470.25,
+        783.75,
+        1097.25
+      ],
+      "rowCenters": [
+        156.75,
+        470.25,
+        783.75,
+        1097.25
+      ],
+      "slots": {
+        "R1C1": {
+          "area": 30889,
+          "bounds": [
+            72,
+            33,
+            236,
+            314
+          ],
+          "componentCount": 1
+        },
+        "R1C2": {
+          "area": 29794,
+          "bounds": [
+            371,
+            34,
+            529,
+            314
+          ],
+          "componentCount": 1
+        },
+        "R1C3": {
+          "area": 26542,
+          "bounds": [
+            713,
+            34,
+            844,
+            316
+          ],
+          "componentCount": 1
+        },
+        "R1C4": {
+          "area": 30885,
+          "bounds": [
+            975,
+            32,
+            1138,
+            314
+          ],
+          "componentCount": 1
+        },
+        "R2C1": {
+          "area": 30367,
+          "bounds": [
+            60,
+            346,
+            251,
+            611
+          ],
+          "componentCount": 1
+        },
+        "R2C2": {
+          "area": 30383,
+          "bounds": [
+            356,
+            348,
+            536,
+            610
+          ],
+          "componentCount": 1
+        },
+        "R2C3": {
+          "area": 29256,
+          "bounds": [
+            679,
+            353,
+            871,
+            609
+          ],
+          "componentCount": 1
+        },
+        "R2C4": {
+          "area": 27601,
+          "bounds": [
+            965,
+            356,
+            1153,
+            607
+          ],
+          "componentCount": 1
+        },
+        "R3C1": {
+          "area": 29989,
+          "bounds": [
+            45,
+            652,
+            261,
+            915
+          ],
+          "componentCount": 1
+        },
+        "R3C2": {
+          "area": 32435,
+          "bounds": [
+            308,
+            683,
+            596,
+            915
+          ],
+          "componentCount": 1
+        },
+        "R3C3": {
+          "area": 31595,
+          "bounds": [
+            596,
+            687,
+            910,
+            913
+          ],
+          "componentCount": 1
+        },
+        "R3C4": {
+          "area": 31340,
+          "bounds": [
+            969,
+            596,
+            1171,
+            922
+          ],
+          "componentCount": 1
+        },
+        "R4C1": {
+          "area": 32107,
+          "bounds": [
+            41,
+            955,
+            281,
+            1217
+          ],
+          "componentCount": 1
+        },
+        "R4C2": {
+          "area": 28068,
+          "bounds": [
+            324,
+            989,
+            559,
+            1216
+          ],
+          "componentCount": 1
+        },
+        "R4C3": {
+          "area": 20733,
+          "bounds": [
+            653,
+            1087,
+            909,
+            1206
+          ],
+          "componentCount": 1
+        },
+        "R4C4": {
+          "area": 21429,
+          "bounds": [
+            949,
+            1103,
+            1217,
+            1245
+          ],
+          "componentCount": 2
+        }
+      },
+      "identity": {
+        "path": "art/source/boss-hd/blacksmith-guardian/blacksmith-guardian-animation-west-source-1024.png",
+        "sha256": "a7d02976af8c3b286ffe98d84b17b8528ae19e01e41a491f05fe3553d6ffd101"
+      }
+    },
+    "warden/phase-1/south": {
+      "helperDetectedKey": "#f304f4",
+      "semanticLayout": "4x4",
+      "rawComponentCount": 17,
+      "meaningfulComponentCount": 16,
+      "semanticPoseCount": 16,
+      "detachedEquipmentComponentCount": 0,
+      "removedSmallComponentCount": 1,
+      "crossingComponentCount": 0,
+      "columnCenters": [
+        156.75,
+        470.25,
+        783.75,
+        1097.25
+      ],
+      "rowCenters": [
+        156.75,
+        470.25,
+        783.75,
+        1097.25
+      ],
+      "slots": {
+        "R1C1": {
+          "area": 17999,
+          "bounds": [
+            104,
+            24,
+            212,
+            299
+          ],
+          "componentCount": 1
+        },
+        "R1C2": {
+          "area": 19932,
+          "bounds": [
+            416,
+            23,
+            529,
+            301
+          ],
+          "componentCount": 1
+        },
+        "R1C3": {
+          "area": 19707,
+          "bounds": [
+            720,
+            21,
+            833,
+            300
+          ],
+          "componentCount": 1
+        },
+        "R1C4": {
+          "area": 19898,
+          "bounds": [
+            1017,
+            20,
+            1133,
+            300
+          ],
+          "componentCount": 1
+        },
+        "R2C1": {
+          "area": 19244,
+          "bounds": [
+            100,
+            319,
+            223,
+            588
+          ],
+          "componentCount": 1
+        },
+        "R2C2": {
+          "area": 19782,
+          "bounds": [
+            404,
+            318,
+            528,
+            583
+          ],
+          "componentCount": 1
+        },
+        "R2C3": {
+          "area": 19094,
+          "bounds": [
+            711,
+            318,
+            838,
+            580
+          ],
+          "componentCount": 1
+        },
+        "R2C4": {
+          "area": 19591,
+          "bounds": [
+            1014,
+            317,
+            1141,
+            584
+          ],
+          "componentCount": 1
+        },
+        "R3C1": {
+          "area": 20930,
+          "bounds": [
+            84,
+            607,
+            221,
+            875
+          ],
+          "componentCount": 1
+        },
+        "R3C2": {
+          "area": 23170,
+          "bounds": [
+            362,
+            610,
+            540,
+            881
+          ],
+          "componentCount": 1
+        },
+        "R3C3": {
+          "area": 25441,
+          "bounds": [
+            664,
+            611,
+            882,
+            873
+          ],
+          "componentCount": 1
+        },
+        "R3C4": {
+          "area": 25712,
+          "bounds": [
+            999,
+            608,
+            1168,
+            887
+          ],
+          "componentCount": 1
+        },
+        "R4C1": {
+          "area": 25636,
+          "bounds": [
+            71,
+            918,
+            235,
+            1192
+          ],
+          "componentCount": 1
+        },
+        "R4C2": {
+          "area": 26913,
+          "bounds": [
+            375,
+            924,
+            556,
+            1196
+          ],
+          "componentCount": 1
+        },
+        "R4C3": {
+          "area": 20294,
+          "bounds": [
+            630,
+            1034,
+            869,
+            1197
+          ],
+          "componentCount": 1
+        },
+        "R4C4": {
+          "area": 17786,
+          "bounds": [
+            945,
+            1066,
+            1205,
+            1203
+          ],
+          "componentCount": 1
+        }
+      },
+      "identity": {
+        "path": "art/source/boss-hd/warden-phase-1/warden-phase-1-animation-south-source-1024.png",
+        "sha256": "d92a4d197adba31b091df550efbaff0899b1686107452e68e20272b70385adf0"
+      }
+    },
+    "warden/phase-1/north": {
+      "helperDetectedKey": "#f803f3",
+      "semanticLayout": "4x4",
+      "rawComponentCount": 27,
+      "meaningfulComponentCount": 16,
+      "semanticPoseCount": 16,
+      "detachedEquipmentComponentCount": 0,
+      "removedSmallComponentCount": 11,
+      "crossingComponentCount": 0,
+      "columnCenters": [
+        156.75,
+        470.25,
+        783.75,
+        1097.25
+      ],
+      "rowCenters": [
+        156.75,
+        470.25,
+        783.75,
+        1097.25
+      ],
+      "slots": {
+        "R1C1": {
+          "area": 22809,
+          "bounds": [
+            86,
+            18,
+            216,
+            312
+          ],
+          "componentCount": 1
+        },
+        "R1C2": {
+          "area": 23259,
+          "bounds": [
+            379,
+            18,
+            508,
+            312
+          ],
+          "componentCount": 1
+        },
+        "R1C3": {
+          "area": 23580,
+          "bounds": [
+            683,
+            18,
+            825,
+            312
+          ],
+          "componentCount": 1
+        },
+        "R1C4": {
+          "area": 23533,
+          "bounds": [
+            983,
+            18,
+            1114,
+            313
+          ],
+          "componentCount": 1
+        },
+        "R2C1": {
+          "area": 25569,
+          "bounds": [
+            78,
+            332,
+            245,
+            616
+          ],
+          "componentCount": 1
+        },
+        "R2C2": {
+          "area": 23619,
+          "bounds": [
+            363,
+            332,
+            522,
+            617
+          ],
+          "componentCount": 1
+        },
+        "R2C3": {
+          "area": 26296,
+          "bounds": [
+            667,
+            332,
+            834,
+            617
+          ],
+          "componentCount": 1
+        },
+        "R2C4": {
+          "area": 24795,
+          "bounds": [
+            972,
+            332,
+            1126,
+            617
+          ],
+          "componentCount": 1
+        },
+        "R3C1": {
+          "area": 26921,
+          "bounds": [
+            78,
+            642,
+            249,
+            918
+          ],
+          "componentCount": 1
+        },
+        "R3C2": {
+          "area": 27941,
+          "bounds": [
+            365,
+            640,
+            548,
+            920
+          ],
+          "componentCount": 1
+        },
+        "R3C3": {
+          "area": 28433,
+          "bounds": [
+            670,
+            641,
+            856,
+            925
+          ],
+          "componentCount": 1
+        },
+        "R3C4": {
+          "area": 28485,
+          "bounds": [
+            962,
+            642,
+            1143,
+            925
+          ],
+          "componentCount": 1
+        },
+        "R4C1": {
+          "area": 23609,
+          "bounds": [
+            87,
+            957,
+            251,
+            1210
+          ],
+          "componentCount": 1
+        },
+        "R4C2": {
+          "area": 23355,
+          "bounds": [
+            353,
+            971,
+            543,
+            1210
+          ],
+          "componentCount": 1
+        },
+        "R4C3": {
+          "area": 19562,
+          "bounds": [
+            646,
+            1056,
+            866,
+            1221
+          ],
+          "componentCount": 1
+        },
+        "R4C4": {
+          "area": 15740,
+          "bounds": [
+            953,
+            1102,
+            1190,
+            1219
+          ],
+          "componentCount": 1
+        }
+      },
+      "identity": {
+        "path": "art/source/boss-hd/warden-phase-1/warden-phase-1-animation-north-source-1024.png",
+        "sha256": "88889ab7fbf8bf585a01306bc2150c9afbb17db5367c1335e6c1229c3ada3556"
+      }
+    },
+    "warden/phase-1/east": {
+      "helperDetectedKey": "#f104eb",
+      "semanticLayout": "4x4",
+      "rawComponentCount": 16,
+      "meaningfulComponentCount": 16,
+      "semanticPoseCount": 16,
+      "detachedEquipmentComponentCount": 0,
+      "removedSmallComponentCount": 0,
+      "crossingComponentCount": 0,
+      "columnCenters": [
+        156.75,
+        470.25,
+        783.75,
+        1097.25
+      ],
+      "rowCenters": [
+        156.75,
+        470.25,
+        783.75,
+        1097.25
+      ],
+      "slots": {
+        "R1C1": {
+          "area": 23760,
+          "bounds": [
+            85,
+            27,
+            239,
+            328
+          ],
+          "componentCount": 1
+        },
+        "R1C2": {
+          "area": 23782,
+          "bounds": [
+            379,
+            27,
+            529,
+            328
+          ],
+          "componentCount": 1
+        },
+        "R1C3": {
+          "area": 22356,
+          "bounds": [
+            674,
+            27,
+            814,
+            328
+          ],
+          "componentCount": 1
+        },
+        "R1C4": {
+          "area": 23193,
+          "bounds": [
+            952,
+            29,
+            1097,
+            327
+          ],
+          "componentCount": 1
+        },
+        "R2C1": {
+          "area": 24908,
+          "bounds": [
+            63,
+            360,
+            261,
+            626
+          ],
+          "componentCount": 1
+        },
+        "R2C2": {
+          "area": 24410,
+          "bounds": [
+            354,
+            359,
+            562,
+            623
+          ],
+          "componentCount": 1
+        },
+        "R2C3": {
+          "area": 24064,
+          "bounds": [
+            651,
+            361,
+            849,
+            624
+          ],
+          "componentCount": 1
+        },
+        "R2C4": {
+          "area": 24757,
+          "bounds": [
+            931,
+            357,
+            1145,
+            624
+          ],
+          "componentCount": 1
+        },
+        "R3C1": {
+          "area": 26479,
+          "bounds": [
+            46,
+            653,
+            309,
+            917
+          ],
+          "componentCount": 1
+        },
+        "R3C2": {
+          "area": 25386,
+          "bounds": [
+            329,
+            657,
+            581,
+            918
+          ],
+          "componentCount": 1
+        },
+        "R3C3": {
+          "area": 24886,
+          "bounds": [
+            637,
+            657,
+            873,
+            921
+          ],
+          "componentCount": 1
+        },
+        "R3C4": {
+          "area": 23822,
+          "bounds": [
+            935,
+            658,
+            1164,
+            921
+          ],
+          "componentCount": 1
+        },
+        "R4C1": {
+          "area": 23327,
+          "bounds": [
+            41,
+            964,
+            231,
+            1188
+          ],
+          "componentCount": 1
+        },
+        "R4C2": {
+          "area": 23199,
+          "bounds": [
+            324,
+            966,
+            535,
+            1189
+          ],
+          "componentCount": 1
+        },
+        "R4C3": {
+          "area": 20206,
+          "bounds": [
+            608,
+            1072,
+            870,
+            1197
+          ],
+          "componentCount": 1
+        },
+        "R4C4": {
+          "area": 16534,
+          "bounds": [
+            926,
+            1092,
+            1200,
+            1194
+          ],
+          "componentCount": 1
+        }
+      },
+      "identity": {
+        "path": "art/source/boss-hd/warden-phase-1/warden-phase-1-animation-east-source-1024.png",
+        "sha256": "4dffb556b739814fd0dc35d8c470bd0b32b6afd7737fa16f6a442b3890068d55"
+      }
+    },
+    "warden/phase-1/west": {
+      "helperDetectedKey": "#f503f6",
+      "semanticLayout": "4x4",
+      "rawComponentCount": 23,
+      "meaningfulComponentCount": 16,
+      "semanticPoseCount": 16,
+      "detachedEquipmentComponentCount": 0,
+      "removedSmallComponentCount": 7,
+      "crossingComponentCount": 0,
+      "columnCenters": [
+        156.75,
+        470.25,
+        783.75,
+        1097.25
+      ],
+      "rowCenters": [
+        156.75,
+        470.25,
+        783.75,
+        1097.25
+      ],
+      "slots": {
+        "R1C1": {
+          "area": 21223,
+          "bounds": [
+            109,
+            27,
+            234,
+            313
+          ],
+          "componentCount": 1
+        },
+        "R1C2": {
+          "area": 22900,
+          "bounds": [
+            408,
+            28,
+            544,
+            313
+          ],
+          "componentCount": 1
+        },
+        "R1C3": {
+          "area": 23938,
+          "bounds": [
+            704,
+            28,
+            850,
+            314
+          ],
+          "componentCount": 1
+        },
+        "R1C4": {
+          "area": 23672,
+          "bounds": [
+            1007,
+            28,
+            1147,
+            314
+          ],
+          "componentCount": 1
+        },
+        "R2C1": {
+          "area": 23065,
+          "bounds": [
+            87,
+            346,
+            286,
+            598
+          ],
+          "componentCount": 1
+        },
+        "R2C2": {
+          "area": 22150,
+          "bounds": [
+            382,
+            346,
+            569,
+            597
+          ],
+          "componentCount": 1
+        },
+        "R2C3": {
+          "area": 22449,
+          "bounds": [
+            697,
+            346,
+            880,
+            601
+          ],
+          "componentCount": 1
+        },
+        "R2C4": {
+          "area": 21138,
+          "bounds": [
+            1000,
+            346,
+            1168,
+            592
+          ],
+          "componentCount": 1
+        },
+        "R3C1": {
+          "area": 28401,
+          "bounds": [
+            46,
+            639,
+            286,
+            900
+          ],
+          "componentCount": 1
+        },
+        "R3C2": {
+          "area": 30859,
+          "bounds": [
+            349,
+            639,
+            601,
+            901
+          ],
+          "componentCount": 1
+        },
+        "R3C3": {
+          "area": 27374,
+          "bounds": [
+            661,
+            640,
+            877,
+            906
+          ],
+          "componentCount": 1
+        },
+        "R3C4": {
+          "area": 27896,
+          "bounds": [
+            949,
+            638,
+            1174,
+            906
+          ],
+          "componentCount": 1
+        },
+        "R4C1": {
+          "area": 27499,
+          "bounds": [
+            56,
+            940,
+            267,
+            1203
+          ],
+          "componentCount": 1
+        },
+        "R4C2": {
+          "area": 29168,
+          "bounds": [
+            326,
+            942,
+            547,
+            1203
+          ],
+          "componentCount": 1
+        },
+        "R4C3": {
+          "area": 23154,
+          "bounds": [
+            603,
+            1056,
+            888,
+            1193
+          ],
+          "componentCount": 1
+        },
+        "R4C4": {
+          "area": 20830,
+          "bounds": [
+            930,
+            1063,
+            1208,
+            1195
+          ],
+          "componentCount": 1
+        }
+      },
+      "identity": {
+        "path": "art/source/boss-hd/warden-phase-1/warden-phase-1-animation-west-source-1024.png",
+        "sha256": "43a484fa6e85e576675ddb4d2da46e75a80b1e834d1172135ae3a4daaff38525"
+      }
+    },
+    "warden/phase-2/south": {
+      "helperDetectedKey": "#f503f3",
+      "semanticLayout": "4x4",
+      "rawComponentCount": 34,
+      "meaningfulComponentCount": 16,
+      "semanticPoseCount": 16,
+      "detachedEquipmentComponentCount": 0,
+      "removedSmallComponentCount": 18,
+      "crossingComponentCount": 0,
+      "columnCenters": [
+        156.75,
+        470.25,
+        783.75,
+        1097.25
+      ],
+      "rowCenters": [
+        156.75,
+        470.25,
+        783.75,
+        1097.25
+      ],
+      "slots": {
+        "R1C1": {
+          "area": 30314,
+          "bounds": [
+            55,
+            27,
+            254,
+            314
+          ],
+          "componentCount": 1
+        },
+        "R1C2": {
+          "area": 30989,
+          "bounds": [
+            358,
+            26,
+            568,
+            314
+          ],
+          "componentCount": 1
+        },
+        "R1C3": {
+          "area": 32112,
+          "bounds": [
+            661,
+            25,
+            865,
+            314
+          ],
+          "componentCount": 1
+        },
+        "R1C4": {
+          "area": 31180,
+          "bounds": [
+            953,
+            26,
+            1151,
+            315
+          ],
+          "componentCount": 1
+        },
+        "R2C1": {
+          "area": 30814,
+          "bounds": [
+            34,
+            350,
+            280,
+            624
+          ],
+          "componentCount": 1
+        },
+        "R2C2": {
+          "area": 30108,
+          "bounds": [
+            335,
+            353,
+            564,
+            622
+          ],
+          "componentCount": 1
+        },
+        "R2C3": {
+          "area": 31946,
+          "bounds": [
+            641,
+            347,
+            852,
+            621
+          ],
+          "componentCount": 1
+        },
+        "R2C4": {
+          "area": 34119,
+          "bounds": [
+            908,
+            346,
+            1164,
+            621
+          ],
+          "componentCount": 1
+        },
+        "R3C1": {
+          "area": 30652,
+          "bounds": [
+            71,
+            647,
+            278,
+            931
+          ],
+          "componentCount": 1
+        },
+        "R3C2": {
+          "area": 31317,
+          "bounds": [
+            312,
+            645,
+            603,
+            932
+          ],
+          "componentCount": 1
+        },
+        "R3C3": {
+          "area": 27848,
+          "bounds": [
+            667,
+            648,
+            830,
+            932
+          ],
+          "componentCount": 1
+        },
+        "R3C4": {
+          "area": 32775,
+          "bounds": [
+            920,
+            644,
+            1203,
+            931
+          ],
+          "componentCount": 1
+        },
+        "R4C1": {
+          "area": 30246,
+          "bounds": [
+            70,
+            952,
+            286,
+            1204
+          ],
+          "componentCount": 1
+        },
+        "R4C2": {
+          "area": 31563,
+          "bounds": [
+            326,
+            963,
+            565,
+            1204
+          ],
+          "componentCount": 1
+        },
+        "R4C3": {
+          "area": 23484,
+          "bounds": [
+            626,
+            1026,
+            881,
+            1208
+          ],
+          "componentCount": 1
+        },
+        "R4C4": {
+          "area": 21499,
+          "bounds": [
+            910,
+            1079,
+            1195,
+            1218
+          ],
+          "componentCount": 1
+        }
+      },
+      "identity": {
+        "path": "art/source/boss-hd/warden-phase-2/warden-phase-2-animation-south-source-1024.png",
+        "sha256": "facf8faa0f64786d9de1d5425b0df0fd82230075e66e78d858b43142f71da495"
+      }
+    },
+    "warden/phase-2/north": {
+      "helperDetectedKey": "#f304ee",
+      "semanticLayout": "4x4",
+      "rawComponentCount": 45,
+      "meaningfulComponentCount": 16,
+      "semanticPoseCount": 16,
+      "detachedEquipmentComponentCount": 0,
+      "removedSmallComponentCount": 29,
+      "crossingComponentCount": 0,
+      "columnCenters": [
+        156.75,
+        470.25,
+        783.75,
+        1097.25
+      ],
+      "rowCenters": [
+        156.75,
+        470.25,
+        783.75,
+        1097.25
+      ],
+      "slots": {
+        "R1C1": {
+          "area": 30000,
+          "bounds": [
+            71,
+            18,
+            260,
+            299
+          ],
+          "componentCount": 1
+        },
+        "R1C2": {
+          "area": 30069,
+          "bounds": [
+            371,
+            20,
+            561,
+            299
+          ],
+          "componentCount": 1
+        },
+        "R1C3": {
+          "area": 29836,
+          "bounds": [
+            675,
+            21,
+            865,
+            299
+          ],
+          "componentCount": 1
+        },
+        "R1C4": {
+          "area": 30041,
+          "bounds": [
+            977,
+            20,
+            1169,
+            299
+          ],
+          "componentCount": 1
+        },
+        "R2C1": {
+          "area": 29963,
+          "bounds": [
+            74,
+            332,
+            270,
+            608
+          ],
+          "componentCount": 1
+        },
+        "R2C2": {
+          "area": 29425,
+          "bounds": [
+            381,
+            333,
+            569,
+            608
+          ],
+          "componentCount": 1
+        },
+        "R2C3": {
+          "area": 29674,
+          "bounds": [
+            681,
+            332,
+            875,
+            608
+          ],
+          "componentCount": 1
+        },
+        "R2C4": {
+          "area": 26651,
+          "bounds": [
+            980,
+            330,
+            1158,
+            608
+          ],
+          "componentCount": 1
+        },
+        "R3C1": {
+          "area": 29046,
+          "bounds": [
+            53,
+            634,
+            274,
+            914
+          ],
+          "componentCount": 1
+        },
+        "R3C2": {
+          "area": 30076,
+          "bounds": [
+            340,
+            637,
+            589,
+            911
+          ],
+          "componentCount": 1
+        },
+        "R3C3": {
+          "area": 31012,
+          "bounds": [
+            628,
+            640,
+            897,
+            913
+          ],
+          "componentCount": 1
+        },
+        "R3C4": {
+          "area": 27496,
+          "bounds": [
+            977,
+            639,
+            1177,
+            913
+          ],
+          "componentCount": 1
+        },
+        "R4C1": {
+          "area": 32006,
+          "bounds": [
+            37,
+            943,
+            259,
+            1210
+          ],
+          "componentCount": 1
+        },
+        "R4C2": {
+          "area": 27022,
+          "bounds": [
+            372,
+            944,
+            552,
+            1202
+          ],
+          "componentCount": 1
+        },
+        "R4C3": {
+          "area": 27786,
+          "bounds": [
+            621,
+            1022,
+            866,
+            1214
+          ],
+          "componentCount": 1
+        },
+        "R4C4": {
+          "area": 26503,
+          "bounds": [
+            914,
+            1050,
+            1197,
+            1217
+          ],
+          "componentCount": 1
+        }
+      },
+      "identity": {
+        "path": "art/source/boss-hd/warden-phase-2/warden-phase-2-animation-north-source-1024.png",
+        "sha256": "f895995634db695cfb4c0412b8a2190f1834a52ba7e9cdbfdfe2a26fef75feed"
+      }
+    },
+    "warden/phase-2/east": {
+      "helperDetectedKey": "#f603f3",
+      "semanticLayout": "4x4",
+      "rawComponentCount": 31,
+      "meaningfulComponentCount": 16,
+      "semanticPoseCount": 16,
+      "detachedEquipmentComponentCount": 0,
+      "removedSmallComponentCount": 15,
+      "crossingComponentCount": 0,
+      "columnCenters": [
+        156.75,
+        470.25,
+        783.75,
+        1097.25
+      ],
+      "rowCenters": [
+        156.75,
+        470.25,
+        783.75,
+        1097.25
+      ],
+      "slots": {
+        "R1C1": {
+          "area": 23993,
+          "bounds": [
+            99,
+            17,
+            254,
+            293
+          ],
+          "componentCount": 1
+        },
+        "R1C2": {
+          "area": 24318,
+          "bounds": [
+            387,
+            21,
+            549,
+            294
+          ],
+          "componentCount": 1
+        },
+        "R1C3": {
+          "area": 21012,
+          "bounds": [
+            690,
+            25,
+            834,
+            294
+          ],
+          "componentCount": 1
+        },
+        "R1C4": {
+          "area": 23386,
+          "bounds": [
+            994,
+            20,
+            1156,
+            299
+          ],
+          "componentCount": 1
+        },
+        "R2C1": {
+          "area": 23785,
+          "bounds": [
+            50,
+            352,
+            254,
+            603
+          ],
+          "componentCount": 1
+        },
+        "R2C2": {
+          "area": 27609,
+          "bounds": [
+            354,
+            339,
+            570,
+            606
+          ],
+          "componentCount": 1
+        },
+        "R2C3": {
+          "area": 26393,
+          "bounds": [
+            695,
+            333,
+            862,
+            609
+          ],
+          "componentCount": 1
+        },
+        "R2C4": {
+          "area": 27597,
+          "bounds": [
+            969,
+            341,
+            1184,
+            601
+          ],
+          "componentCount": 1
+        },
+        "R3C1": {
+          "area": 25839,
+          "bounds": [
+            48,
+            653,
+            296,
+            907
+          ],
+          "componentCount": 1
+        },
+        "R3C2": {
+          "area": 26095,
+          "bounds": [
+            364,
+            636,
+            556,
+            911
+          ],
+          "componentCount": 1
+        },
+        "R3C3": {
+          "area": 26793,
+          "bounds": [
+            665,
+            642,
+            880,
+            911
+          ],
+          "componentCount": 1
+        },
+        "R3C4": {
+          "area": 25492,
+          "bounds": [
+            990,
+            649,
+            1197,
+            914
+          ],
+          "componentCount": 1
+        },
+        "R4C1": {
+          "area": 28397,
+          "bounds": [
+            54,
+            955,
+            256,
+            1209
+          ],
+          "componentCount": 1
+        },
+        "R4C2": {
+          "area": 26313,
+          "bounds": [
+            356,
+            996,
+            591,
+            1210
+          ],
+          "componentCount": 1
+        },
+        "R4C3": {
+          "area": 16650,
+          "bounds": [
+            640,
+            1085,
+            884,
+            1206
+          ],
+          "componentCount": 1
+        },
+        "R4C4": {
+          "area": 14633,
+          "bounds": [
+            932,
+            1124,
+            1205,
+            1206
+          ],
+          "componentCount": 1
+        }
+      },
+      "identity": {
+        "path": "art/source/boss-hd/warden-phase-2/warden-phase-2-animation-east-source-1024.png",
+        "sha256": "14f61f680677b85ecc923146dd1464989b32272c48b56e904e931651f26d3f65"
+      }
+    },
+    "warden/phase-2/west": {
+      "helperDetectedKey": "#f603f3",
+      "semanticLayout": "4x4",
+      "rawComponentCount": 24,
+      "meaningfulComponentCount": 16,
+      "semanticPoseCount": 16,
+      "detachedEquipmentComponentCount": 0,
+      "removedSmallComponentCount": 8,
+      "crossingComponentCount": 0,
+      "columnCenters": [
+        156.75,
+        470.25,
+        783.75,
+        1097.25
+      ],
+      "rowCenters": [
+        156.75,
+        470.25,
+        783.75,
+        1097.25
+      ],
+      "slots": {
+        "R1C1": {
+          "area": 24006,
+          "bounds": [
+            75,
+            23,
+            239,
+            298
+          ],
+          "componentCount": 1
+        },
+        "R1C2": {
+          "area": 22538,
+          "bounds": [
+            378,
+            22,
+            519,
+            298
+          ],
+          "componentCount": 1
+        },
+        "R1C3": {
+          "area": 23137,
+          "bounds": [
+            670,
+            24,
+            834,
+            296
+          ],
+          "componentCount": 1
+        },
+        "R1C4": {
+          "area": 24427,
+          "bounds": [
+            966,
+            24,
+            1128,
+            296
+          ],
+          "componentCount": 1
+        },
+        "R2C1": {
+          "area": 22338,
+          "bounds": [
+            66,
+            342,
+            218,
+            601
+          ],
+          "componentCount": 1
+        },
+        "R2C2": {
+          "area": 22977,
+          "bounds": [
+            353,
+            341,
+            531,
+            597
+          ],
+          "componentCount": 1
+        },
+        "R2C3": {
+          "area": 23500,
+          "bounds": [
+            644,
+            336,
+            829,
+            598
+          ],
+          "componentCount": 1
+        },
+        "R2C4": {
+          "area": 23977,
+          "bounds": [
+            934,
+            324,
+            1108,
+            590
+          ],
+          "componentCount": 1
+        },
+        "R3C1": {
+          "area": 20780,
+          "bounds": [
+            57,
+            640,
+            264,
+            893
+          ],
+          "componentCount": 1
+        },
+        "R3C2": {
+          "area": 26888,
+          "bounds": [
+            326,
+            652,
+            595,
+            896
+          ],
+          "componentCount": 1
+        },
+        "R3C3": {
+          "area": 26341,
+          "bounds": [
+            653,
+            657,
+            878,
+            895
+          ],
+          "componentCount": 1
+        },
+        "R3C4": {
+          "area": 22896,
+          "bounds": [
+            971,
+            628,
+            1175,
+            899
+          ],
+          "componentCount": 1
+        },
+        "R4C1": {
+          "area": 23968,
+          "bounds": [
+            83,
+            948,
+            279,
+            1191
+          ],
+          "componentCount": 1
+        },
+        "R4C2": {
+          "area": 23869,
+          "bounds": [
+            359,
+            950,
+            528,
+            1191
+          ],
+          "componentCount": 1
+        },
+        "R4C3": {
+          "area": 22399,
+          "bounds": [
+            590,
+            1061,
+            866,
+            1194
+          ],
+          "componentCount": 1
+        },
+        "R4C4": {
+          "area": 16356,
+          "bounds": [
+            905,
+            1100,
+            1199,
+            1212
+          ],
+          "componentCount": 1
+        }
+      },
+      "identity": {
+        "path": "art/source/boss-hd/warden-phase-2/warden-phase-2-animation-west-source-1024.png",
+        "sha256": "2d3d42e5f38ed8b92b7094dd41805ae78cf4693db76c20f5a1b585f1f4af82fa"
+      }
+    }
+  }
+}

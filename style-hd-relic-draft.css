@@ -1,0 +1,808 @@
+/* HD starting relic draft. Isolated from general relic, Camp, and Forge surfaces. */
+@media (min-width: 1201px) {
+  body.graphics-hd-ui:has(#game.graphics-hd) .screen-overlay.visible:has(.overlay-card-relic-starting) {
+    --draft-ivory: #e8dfd2;
+    --draft-parchment: #c7b9a8;
+    --draft-muted: #8e8379;
+    --draft-faint: #665f59;
+    --draft-gold: #d6b361;
+    --draft-gold-bright: #f0d58e;
+    position: fixed;
+    inset: 0;
+    z-index: 1080;
+    width: 100vw;
+    height: 100vh;
+    box-sizing: border-box;
+    display: grid;
+    place-items: center;
+    padding: clamp(24px, 4vh, 42px);
+    overflow: hidden;
+    background:
+      radial-gradient(circle at 50% 44%, #30364242 0 18%, transparent 58%),
+      radial-gradient(circle at 50% 50%, transparent 0 28%, #020304d8 78%),
+      #020304d9;
+    backdrop-filter: blur(6px) saturate(0.55) brightness(0.42);
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-relic-starting {
+    position: relative;
+    isolation: isolate;
+    width: min(1160px, calc(100vw - 72px));
+    height: min(680px, calc(100vh - 60px));
+    min-height: 600px;
+    max-width: none;
+    max-height: none;
+    flex: none;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    padding: clamp(52px, 6.5vh, 68px) clamp(62px, 5vw, 82px) clamp(38px, 4.8vh, 52px);
+    overflow: hidden;
+    border: 26px solid transparent;
+    border-image: url("assets/hd/ui/abyssal-gothic/board-frame.png") 112 / 26px stretch;
+    border-radius: 0;
+    background:
+      radial-gradient(circle at 50% 2%, #4b506140, transparent 38%),
+      linear-gradient(180deg, #111216f8, #08090bfc),
+      url("assets/hd/ui/abyssal-gothic/panel-texture.png") center / 280px 280px;
+    box-shadow: 0 34px 90px #000, 0 0 70px #28364c30;
+    color: var(--draft-parchment);
+    text-align: center;
+    text-shadow: 0 2px 3px #000;
+    animation: hdStartingDraftEnter 300ms cubic-bezier(0.2, 0.82, 0.3, 1) both;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-relic-starting::before {
+    content: "";
+    position: absolute;
+    z-index: -1;
+    inset: 17px;
+    pointer-events: none;
+    border: 1px solid #5d5c5a5c;
+    box-shadow: inset 0 0 48px #000d;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-relic-starting::after {
+    content: "";
+    position: absolute;
+    z-index: -1;
+    top: 25px;
+    left: 50%;
+    width: min(620px, 64%);
+    height: 34px;
+    transform: translateX(-50%);
+    background: url("assets/hd/ui/abyssal-gothic/section-plaque.png") center / 100% 100% no-repeat;
+    opacity: 0.55;
+    filter: grayscale(0.35) brightness(0.72);
+    pointer-events: none;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-relic-starting > .relic-draft-kicker {
+    margin: 0 0 7px;
+    color: #9e8065;
+    font: 700 clamp(0.6rem, 0.68vw, 0.72rem)/1.2 "Courier New", monospace;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-relic-starting > .overlay-title {
+    margin: 0;
+    color: var(--draft-ivory);
+    font: 600 clamp(2.65rem, 3.6vw, 3.8rem)/0.92 Georgia, "Times New Roman", serif;
+    letter-spacing: clamp(3px, 0.45vw, 7px);
+    text-transform: uppercase;
+    text-shadow: 0 5px 5px #000, 0 0 28px #6d779144;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-relic-starting > .overlay-sub {
+    margin: 8px 0 0;
+    color: #a89d93;
+    font: italic clamp(0.78rem, 0.88vw, 0.92rem)/1.3 Georgia, "Times New Roman", serif;
+    letter-spacing: 0.25px;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-relic-starting > .overlay-hint {
+    order: 0;
+    align-self: center;
+    margin: 12px 0 0;
+    padding: 6px 18px;
+    border-block: 1px solid #65584657;
+    color: #a49175;
+    background: linear-gradient(90deg, transparent, #241d14a8 18% 82%, transparent);
+    font: 700 clamp(0.58rem, 0.66vw, 0.7rem)/1.2 "Courier New", monospace;
+    letter-spacing: 0.55px;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-relic-starting .relic-draft-panel {
+    min-height: 0;
+    flex: 1 1 auto;
+    display: grid;
+    grid-template-rows: minmax(0, 1fr) auto;
+    gap: clamp(12px, 1.8vh, 18px);
+    margin-top: clamp(16px, 2.2vh, 22px);
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-relic-starting .relic-draft-grid-standard {
+    min-height: 0;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: clamp(14px, 1.5vw, 22px);
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-relic-starting .relic-draft-choice-starting {
+    position: relative;
+    min-width: 0;
+    min-height: 0;
+    display: grid;
+    grid-template-rows: minmax(118px, 1fr) auto;
+    grid-template-columns: 1fr;
+    align-items: center;
+    gap: 10px;
+    padding: 20px 22px 24px;
+    overflow: hidden;
+    border: 1px solid color-mix(in srgb, var(--relic-border, #696969) 72%, #373b40);
+    background:
+      radial-gradient(circle at 50% 35%, color-mix(in srgb, var(--relic-accent, #a4a4a4) 12%, transparent), transparent 40%),
+      linear-gradient(180deg, #17191de8, #090a0ced),
+      url("assets/hd/ui/abyssal-gothic/panel-texture.png") center / 240px 240px;
+    box-shadow: inset 0 0 0 1px #020304, inset 0 0 32px #000b;
+    cursor: pointer;
+    transform: translateY(0);
+    transition: transform 150ms ease, filter 150ms ease, border-color 150ms ease, box-shadow 150ms ease;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-relic-starting .relic-draft-choice-starting::after {
+    content: "";
+    position: absolute;
+    inset: 7px;
+    border: 1px solid color-mix(in srgb, var(--relic-accent, #8d929b) 22%, transparent);
+    clip-path: polygon(0 0, 34px 0, 34px 1px, 100% 1px, 100% 100%, calc(100% - 34px) 100%, calc(100% - 34px) calc(100% - 1px), 0 calc(100% - 1px));
+    pointer-events: none;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-relic-starting .relic-draft-choice-starting::before {
+    content: "Relic";
+    position: absolute;
+    z-index: 2;
+    top: 13px;
+    right: 15px;
+    color: #696763;
+    font: 700 0.54rem/1 "Courier New", monospace;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-relic-starting .relic-draft-icon {
+    position: static;
+    z-index: 1;
+    grid-row: 1;
+    align-self: center;
+    justify-self: center;
+    width: clamp(106px, 8.5vw, 134px);
+    height: clamp(106px, 8.5vw, 134px);
+    object-fit: contain;
+    opacity: 0.78;
+    filter:
+      saturate(0.92)
+      brightness(0.88)
+      drop-shadow(0 8px 8px #000)
+      drop-shadow(0 0 14px color-mix(in srgb, var(--relic-accent, #89919d) 32%, transparent));
+    pointer-events: none;
+    transition: opacity 150ms ease, filter 150ms ease, transform 150ms ease;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-relic-starting .relic-draft-key {
+    position: absolute;
+    z-index: 3;
+    top: 13px;
+    left: 14px;
+    width: 35px;
+    height: 29px;
+    display: grid;
+    place-items: center;
+    border: 1px solid #665f52;
+    background: #070809e8;
+    color: #aaa08d;
+    font: 700 0.65rem/1 "Courier New", monospace;
+    letter-spacing: 0.5px;
+    box-shadow: inset 0 0 10px #000;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-relic-starting .relic-draft-choice-copy {
+    position: relative;
+    z-index: 2;
+    grid-row: 2;
+    min-width: 0;
+    display: grid;
+    align-content: end;
+    justify-items: center;
+    gap: 6px;
+    padding: 14px 4px 0;
+    border-top: 1px solid #5b514a59;
+    text-align: center;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-relic-starting .relic-draft-rarity {
+    color: color-mix(in srgb, var(--relic-accent, #a5a5a5) 72%, #c6b99e);
+    font: 700 0.61rem/1 "Courier New", monospace;
+    letter-spacing: 1.8px;
+    text-transform: uppercase;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-relic-starting .relic-draft-choice-copy strong {
+    max-width: 100%;
+    overflow: visible;
+    color: var(--draft-ivory);
+    font: 600 clamp(1.12rem, 1.35vw, 1.42rem)/1.05 Georgia, "Times New Roman", serif;
+    letter-spacing: 0.5px;
+    text-overflow: clip;
+    white-space: normal;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-relic-starting .relic-draft-choice-copy small {
+    display: block;
+    min-height: 1.35em;
+    overflow: visible;
+    color: #a79d93;
+    font: 400 clamp(0.72rem, 0.79vw, 0.82rem)/1.35 "Courier New", monospace;
+    -webkit-line-clamp: unset;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-relic-starting .relic-draft-choice-starting:hover,
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-relic-starting .relic-draft-choice-starting:focus-visible {
+    outline: 1px solid color-mix(in srgb, var(--relic-accent, #b9b9b9) 72%, #dfc77d);
+    outline-offset: 3px;
+    border-color: color-mix(in srgb, var(--relic-accent, #a7a7a7) 65%, #c6a762);
+    filter: brightness(1.1);
+    transform: translateY(-3px);
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-relic-starting .relic-draft-choice-starting.hd-nav-selected {
+    outline: 2px solid var(--draft-gold);
+    outline-offset: 3px;
+    border-color: #c5a65a;
+    background:
+      radial-gradient(circle at 50% 33%, color-mix(in srgb, var(--relic-accent, #b0b0b0) 20%, transparent), transparent 43%),
+      linear-gradient(180deg, #282316ee, #100e0aed),
+      url("assets/hd/ui/abyssal-gothic/panel-texture.png") center / 240px 240px;
+    box-shadow: 0 0 0 1px #171107, 0 0 26px #d2ad4140, inset 4px 0 0 var(--draft-gold), inset 0 0 34px #74521d82;
+    filter: brightness(1.13);
+    transform: translateY(-5px);
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-relic-starting .relic-draft-choice-starting.hd-nav-selected::before {
+    content: "Ready";
+    color: var(--draft-gold-bright);
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-relic-starting .relic-draft-choice-starting.hd-nav-selected .relic-draft-key {
+    border-color: #d0aa58;
+    color: #f2d88e;
+    box-shadow: inset 0 0 12px #674714, 0 0 10px #b9862e4f;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-relic-starting .relic-draft-choice-starting.hd-nav-selected .relic-draft-icon {
+    opacity: 1;
+    filter:
+      saturate(1.14)
+      brightness(1.08)
+      drop-shadow(0 9px 8px #000)
+      drop-shadow(0 0 19px color-mix(in srgb, var(--relic-accent, #a6adb7) 52%, transparent));
+    transform: scale(1.05);
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-relic-starting .relic-draft-starting-footer {
+    min-height: 54px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 22px;
+    padding: 10px 18px;
+    border: 1px solid #514b41;
+    background:
+      linear-gradient(90deg, #191712e8, #0b0c0ced 64%),
+      url("assets/hd/ui/abyssal-gothic/panel-texture.png") center / 220px 220px;
+    color: #aaa096;
+    text-align: left;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-relic-starting .relic-draft-starting-footer > div {
+    display: grid;
+    gap: 3px;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-relic-starting .relic-draft-starting-footer strong {
+    color: #d5c9bb;
+    font: 600 0.84rem/1 Georgia, "Times New Roman", serif;
+    letter-spacing: 1.1px;
+    text-transform: uppercase;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-relic-starting .relic-draft-starting-footer small {
+    color: #817970;
+    font: 400 0.65rem/1.2 "Courier New", monospace;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-relic-starting .relic-draft-starting-footer > span {
+    flex: none;
+    padding: 6px 10px;
+    border: 1px solid #6d5d43;
+    color: #c6a96e;
+    font: 700 0.62rem/1 "Courier New", monospace;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+
+  @media (max-height: 780px) {
+    body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-relic-starting {
+      height: calc(100vh - 40px);
+      min-height: 0;
+      padding-block: 45px 30px;
+    }
+
+    body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-relic-starting > .overlay-title {
+      font-size: clamp(2.25rem, 3vw, 3rem);
+    }
+
+    body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-relic-starting > .overlay-hint {
+      margin-top: 8px;
+    }
+
+    body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-relic-starting .relic-draft-panel {
+      margin-top: 12px;
+      gap: 10px;
+    }
+
+    body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-relic-starting .relic-draft-icon {
+      width: 96px;
+      height: 96px;
+    }
+
+    body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-relic-starting .relic-draft-starting-footer {
+      min-height: 45px;
+      padding-block: 7px;
+    }
+  }
+
+  @media (max-width: 1380px) {
+    body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-relic-starting {
+      width: calc(100vw - 52px);
+      padding-inline: 55px;
+    }
+
+    body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-relic-starting .relic-draft-grid-standard {
+      gap: 12px;
+    }
+
+    body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-relic-starting .relic-draft-choice-starting {
+      padding-inline: 16px;
+    }
+  }
+
+  @keyframes hdStartingDraftEnter {
+    from { opacity: 0; transform: scale(0.975) translateY(8px); }
+    to { opacity: 1; transform: scale(1) translateY(0); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-relic-starting,
+    body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-relic-starting .relic-draft-choice-starting,
+    body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-relic-starting .relic-draft-icon {
+      animation: none;
+      transition: none;
+    }
+  }
+}
+
+
+/* HD standard three-relic reward draft. Other relic flows keep the shared layout. */
+@media (min-width: 1201px) {
+  body.graphics-hd-ui:has(#game.graphics-hd) .screen-overlay.visible:has(.overlay-card-relic-standard) {
+    --reward-ivory: #e7dfd3;
+    --reward-parchment: #c2b5a4;
+    --reward-gold: #d5b05b;
+    --reward-gold-bright: #f2d68d;
+    position: fixed;
+    inset: 0;
+    z-index: 1080;
+    width: 100vw;
+    height: 100vh;
+    box-sizing: border-box;
+    display: grid;
+    place-items: center;
+    padding: clamp(22px, 3.8vh, 40px);
+    overflow: hidden;
+    background:
+      radial-gradient(circle at 50% 42%, #40342230 0 21%, transparent 57%),
+      radial-gradient(circle at 50% 48%, transparent 0 30%, #020304dc 80%),
+      linear-gradient(135deg, #120d09e8, #020304ed 54%, #080b0ded);
+    backdrop-filter: blur(6px) saturate(0.5) brightness(0.4);
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-relic-standard {
+    position: relative;
+    isolation: isolate;
+    width: min(1180px, calc(100vw - 70px));
+    height: min(700px, calc(100vh - 56px));
+    min-height: 610px;
+    max-width: none;
+    max-height: none;
+    flex: none;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    padding: clamp(51px, 6.1vh, 66px) clamp(62px, 5vw, 84px) clamp(36px, 4.5vh, 50px);
+    overflow: hidden;
+    border: 26px solid transparent;
+    border-image: url("assets/hd/ui/abyssal-gothic/board-frame.png") 112 / 26px stretch;
+    border-radius: 0;
+    background:
+      radial-gradient(ellipse at 50% 5%, #71572e32, transparent 42%),
+      linear-gradient(180deg, #141415fa, #08090afb),
+      url("assets/hd/ui/abyssal-gothic/panel-texture.png") center / 280px 280px;
+    box-shadow: 0 36px 96px #000, 0 0 66px #5d3d1f20;
+    color: var(--reward-parchment);
+    text-align: center;
+    text-shadow: 0 2px 3px #000;
+    animation: hdRewardDraftEnter 300ms cubic-bezier(0.2, 0.82, 0.3, 1) both;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-relic-standard::before {
+    content: "";
+    position: absolute;
+    z-index: -1;
+    inset: 17px;
+    pointer-events: none;
+    border: 1px solid #665f5352;
+    box-shadow: inset 0 0 52px #000e;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-relic-standard::after {
+    content: "";
+    position: absolute;
+    z-index: -1;
+    top: 24px;
+    left: 50%;
+    width: min(650px, 65%);
+    height: 36px;
+    transform: translateX(-50%);
+    background: url("assets/hd/ui/abyssal-gothic/section-plaque.png") center / 100% 100% no-repeat;
+    opacity: 0.58;
+    filter: sepia(0.2) brightness(0.72);
+    pointer-events: none;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-relic-standard > .relic-draft-kicker {
+    margin: 0 0 7px;
+    color: #a88b67;
+    font: 700 clamp(0.59rem, 0.67vw, 0.71rem)/1.2 "Courier New", monospace;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-relic-standard > .overlay-title {
+    margin: 0;
+    color: var(--reward-ivory);
+    font: 600 clamp(2.55rem, 3.35vw, 3.55rem)/0.94 Georgia, "Times New Roman", serif;
+    letter-spacing: clamp(3px, 0.42vw, 6px);
+    text-transform: uppercase;
+    text-shadow: 0 5px 5px #000, 0 0 25px #84663c38;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-relic-standard > .overlay-sub {
+    margin: 8px 0 0;
+    color: #aaa097;
+    font: italic clamp(0.77rem, 0.86vw, 0.9rem)/1.3 Georgia, "Times New Roman", serif;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-relic-standard > .overlay-hint {
+    align-self: center;
+    margin: 11px 0 0;
+    padding: 6px 18px;
+    border-block: 1px solid #6c59403d;
+    color: #9d8c74;
+    background: linear-gradient(90deg, transparent, #2a2115a6 18% 82%, transparent);
+    font: 700 clamp(0.57rem, 0.64vw, 0.68rem)/1.2 "Courier New", monospace;
+    letter-spacing: 0.42px;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-relic-standard .relic-draft-panel {
+    min-height: 0;
+    flex: 1 1 auto;
+    display: grid;
+    grid-template-rows: minmax(0, 1fr) auto;
+    gap: clamp(12px, 1.7vh, 17px);
+    margin-top: clamp(16px, 2.1vh, 21px);
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-relic-standard .relic-draft-grid-standard {
+    min-height: 0;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: clamp(14px, 1.6vw, 23px);
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-relic-standard .relic-draft-choice-standard {
+    position: relative;
+    min-width: 0;
+    min-height: 0;
+    display: grid;
+    grid-template: minmax(126px, 1fr) auto / 1fr;
+    align-items: center;
+    gap: 9px;
+    padding: 19px 22px 23px;
+    overflow: hidden;
+    border: 1px solid color-mix(in srgb, var(--relic-border, #696969) 74%, #3d3830);
+    background:
+      radial-gradient(circle at 50% 32%, color-mix(in srgb, var(--relic-accent, #a4a4a4) 14%, transparent), transparent 42%),
+      linear-gradient(180deg, #171719ed, #090a0ced),
+      url("assets/hd/ui/abyssal-gothic/panel-texture.png") center / 240px 240px;
+    box-shadow: inset 0 0 0 1px #020304, inset 0 0 34px #000b;
+    cursor: pointer;
+    transform: translateY(0);
+    transition: transform 150ms ease, filter 150ms ease, border-color 150ms ease, box-shadow 150ms ease;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-relic-standard .relic-draft-choice-standard::after {
+    content: "";
+    position: absolute;
+    inset: 7px;
+    border: 1px solid color-mix(in srgb, var(--relic-accent, #8d929b) 24%, transparent);
+    clip-path: polygon(0 0, 36px 0, 36px 1px, 100% 1px, 100% 100%, calc(100% - 36px) 100%, calc(100% - 36px) calc(100% - 1px), 0 calc(100% - 1px));
+    pointer-events: none;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-relic-standard .relic-draft-choice-standard::before {
+    content: "Recovered";
+    position: absolute;
+    z-index: 2;
+    top: 13px;
+    right: 15px;
+    color: #6f6a63;
+    font: 700 0.53rem/1 "Courier New", monospace;
+    letter-spacing: 1.4px;
+    text-transform: uppercase;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-relic-standard .relic-draft-icon {
+    position: static;
+    z-index: 1;
+    grid-row: 1;
+    align-self: center;
+    justify-self: center;
+    width: clamp(110px, 8.7vw, 138px);
+    height: clamp(110px, 8.7vw, 138px);
+    object-fit: contain;
+    opacity: 0.8;
+    filter: saturate(0.94) brightness(0.88) drop-shadow(0 9px 9px #000) drop-shadow(0 0 15px color-mix(in srgb, var(--relic-accent, #89919d) 34%, transparent));
+    pointer-events: none;
+    transition: opacity 150ms ease, filter 150ms ease, transform 150ms ease;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-relic-standard .relic-draft-key {
+    position: absolute;
+    z-index: 3;
+    top: 13px;
+    left: 14px;
+    width: 36px;
+    height: 29px;
+    display: grid;
+    place-items: center;
+    border: 1px solid #6b6253;
+    background: #070809ed;
+    color: #b0a38d;
+    font: 700 0.64rem/1 "Courier New", monospace;
+    letter-spacing: 0.6px;
+    box-shadow: inset 0 0 10px #000;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-relic-standard .relic-draft-choice-copy {
+    position: relative;
+    z-index: 2;
+    grid-row: 2;
+    min-width: 0;
+    display: grid;
+    align-content: end;
+    justify-items: center;
+    gap: 6px;
+    padding: 14px 4px 0;
+    border-top: 1px solid #62554857;
+    text-align: center;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-relic-standard .relic-draft-rarity {
+    color: color-mix(in srgb, var(--relic-accent, #a5a5a5) 72%, #c5b591);
+    font: 700 0.6rem/1 "Courier New", monospace;
+    letter-spacing: 1.8px;
+    text-transform: uppercase;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-relic-standard .relic-draft-choice-copy strong {
+    max-width: 100%;
+    overflow: visible;
+    color: var(--reward-ivory);
+    font: 600 clamp(1.12rem, 1.33vw, 1.4rem)/1.06 Georgia, "Times New Roman", serif;
+    letter-spacing: 0.4px;
+    text-overflow: clip;
+    white-space: normal;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-relic-standard .relic-draft-choice-copy small {
+    display: block;
+    min-height: 2.7em;
+    overflow: visible;
+    color: #aaa096;
+    font: 400 clamp(0.7rem, 0.77vw, 0.81rem)/1.35 "Courier New", monospace;
+    -webkit-line-clamp: unset;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-relic-standard .relic-draft-choice-standard:hover,
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-relic-standard .relic-draft-choice-standard:focus-visible {
+    outline: 1px solid color-mix(in srgb, var(--relic-accent, #b9b9b9) 70%, #e0c47e);
+    outline-offset: 3px;
+    border-color: color-mix(in srgb, var(--relic-accent, #a7a7a7) 65%, #c6a762);
+    filter: brightness(1.1);
+    transform: translateY(-3px);
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-relic-standard .relic-draft-choice-standard.hd-nav-selected {
+    outline: 2px solid var(--reward-gold);
+    outline-offset: 3px;
+    border-color: #c9a85c;
+    background:
+      radial-gradient(circle at 50% 31%, color-mix(in srgb, var(--relic-accent, #b0b0b0) 22%, transparent), transparent 44%),
+      linear-gradient(180deg, #2a2417f2, #110e09ef),
+      url("assets/hd/ui/abyssal-gothic/panel-texture.png") center / 240px 240px;
+    box-shadow: 0 0 0 1px #171107, 0 0 27px #d2ad4142, inset 4px 0 0 var(--reward-gold), inset 0 0 36px #74521d82;
+    filter: brightness(1.13);
+    transform: translateY(-5px);
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-relic-standard .relic-draft-choice-standard.hd-nav-selected::before {
+    content: "Claim";
+    color: var(--reward-gold-bright);
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-relic-standard .relic-draft-choice-standard.hd-nav-selected .relic-draft-key {
+    border-color: #d0aa58;
+    color: #f2d88e;
+    box-shadow: inset 0 0 12px #674714, 0 0 10px #b9862e4f;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-relic-standard .relic-draft-choice-standard.hd-nav-selected .relic-draft-icon {
+    opacity: 1;
+    filter: saturate(1.14) brightness(1.08) drop-shadow(0 10px 9px #000) drop-shadow(0 0 20px color-mix(in srgb, var(--relic-accent, #a6adb7) 54%, transparent));
+    transform: scale(1.055);
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-relic-standard .relic-draft-skip {
+    position: relative;
+    min-height: 52px;
+    display: grid;
+    grid-template-columns: 38px auto minmax(0, 1fr) auto;
+    align-items: center;
+    justify-content: stretch;
+    gap: 12px;
+    padding: 8px 15px;
+    border: 1px solid #4d4b44;
+    background: linear-gradient(90deg, #121311ed, #090a0aed 72%);
+    color: #99938b;
+    text-align: left;
+    transition: border-color 150ms ease, background 150ms ease, filter 150ms ease;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-relic-standard .relic-draft-skip::after {
+    content: "Skip";
+    color: #756d62;
+    font: 700 0.55rem/1 "Courier New", monospace;
+    letter-spacing: 1.4px;
+    text-transform: uppercase;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-relic-standard .relic-draft-skip .relic-draft-key {
+    position: static;
+    width: 36px;
+    height: 30px;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-relic-standard .relic-draft-skip strong {
+    color: #c8c0b5;
+    font: 600 0.82rem/1 Georgia, "Times New Roman", serif;
+    letter-spacing: 0.4px;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-relic-standard .relic-draft-skip small {
+    min-width: 0;
+    color: #817a72;
+    font: 400 0.62rem/1.25 "Courier New", monospace;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-relic-standard .relic-draft-skip:hover,
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-relic-standard .relic-draft-skip:focus-visible,
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-relic-standard .relic-draft-skip.hd-nav-selected {
+    outline: 1px solid #8f7c5e;
+    outline-offset: 2px;
+    border-color: #8d7958;
+    background: linear-gradient(90deg, #211c14f0, #0d0e0cef 72%);
+    filter: brightness(1.08);
+  }
+
+  @media (max-height: 780px) {
+    body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-relic-standard {
+      height: calc(100vh - 38px);
+      min-height: 0;
+      padding-block: 44px 28px;
+    }
+
+    body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-relic-standard > .overlay-title {
+      font-size: clamp(2.2rem, 2.9vw, 2.9rem);
+    }
+
+    body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-relic-standard > .overlay-hint {
+      margin-top: 8px;
+    }
+
+    body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-relic-standard .relic-draft-panel {
+      margin-top: 12px;
+      gap: 10px;
+    }
+
+    body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-relic-standard .relic-draft-icon {
+      width: 96px;
+      height: 96px;
+    }
+
+    body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-relic-standard .relic-draft-skip {
+      min-height: 46px;
+      padding-block: 6px;
+    }
+  }
+
+  @media (max-width: 1380px) {
+    body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-relic-standard {
+      width: calc(100vw - 50px);
+      padding-inline: 54px;
+    }
+
+    body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-relic-standard .relic-draft-grid-standard {
+      gap: 12px;
+    }
+
+    body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-relic-standard .relic-draft-choice-standard {
+      padding-inline: 16px;
+    }
+  }
+
+  @keyframes hdRewardDraftEnter {
+    from { opacity: 0; transform: scale(0.975) translateY(8px); }
+    to { opacity: 1; transform: scale(1) translateY(0); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-relic-standard,
+    body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-relic-standard .relic-draft-choice-standard,
+    body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-relic-standard .relic-draft-icon {
+      animation: none;
+      transition: none;
+    }
+  }
+}
+
+
+/* Ascension adds a fourth offer; keep the reward field symmetrical. */
+@media (min-width: 1201px) {
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-relic-standard .relic-draft-grid-four {
+    min-height: 0;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-rows: minmax(0, 1fr);
+    gap: clamp(12px, 1.4vw, 19px);
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-relic-standard:has(.relic-draft-grid-four) {
+    width: min(1560px, calc(100vw - 48px));
+    padding-inline: clamp(54px, 4.2vw, 76px);
+  }
+}

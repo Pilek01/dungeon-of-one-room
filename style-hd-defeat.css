@@ -1,0 +1,803 @@
+/* HD defeat surfaces. Isolated from Camp and Forge composition work. */
+@media (min-width: 1201px) {
+  body.graphics-hd-ui:has(#game.graphics-hd) .screen-overlay.visible:has(.death-requiem),
+  body.graphics-hd-ui:has(#game.graphics-hd) .screen-overlay.visible:has(.gameover-requiem) {
+    --defeat-ivory: #e8ddd1;
+    --defeat-parchment: #c9baab;
+    --defeat-muted: #91847a;
+    --defeat-faint: #675d58;
+    --defeat-crimson: #9e3641;
+    --defeat-crimson-bright: #c0545c;
+    --defeat-gold: #d4ae62;
+    --defeat-gold-dim: #8f6b35;
+    position: fixed;
+    inset: 0;
+    z-index: 1100;
+    width: 100vw;
+    height: 100vh;
+    box-sizing: border-box;
+    overflow: hidden;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .screen-overlay.visible:has(.death-requiem) {
+    display: grid;
+    place-items: center;
+    padding: clamp(24px, 4vh, 42px);
+    background:
+      radial-gradient(circle at 50% 43%, transparent 0 16%, #12050794 54%, #020202f2 100%),
+      linear-gradient(180deg, #22080b55, #020202de);
+    backdrop-filter: blur(7px) grayscale(0.76) brightness(0.35);
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .death-requiem {
+    position: relative;
+    isolation: isolate;
+    width: min(960px, calc(100vw - 72px));
+    min-height: min(600px, calc(100vh - 72px));
+    max-width: none;
+    max-height: calc(100vh - 48px);
+    box-sizing: border-box;
+    display: grid;
+    grid-template-rows: auto auto auto auto auto;
+    align-content: center;
+    gap: clamp(13px, 1.8vh, 19px);
+    padding: clamp(54px, 7vh, 72px) clamp(62px, 5.2vw, 84px) clamp(38px, 5vh, 52px);
+    overflow: hidden;
+    border: 26px solid transparent;
+    border-image: url("assets/hd/ui/abyssal-gothic/board-frame.png") 112 / 26px stretch;
+    border-radius: 0;
+    background:
+      radial-gradient(circle at 50% 10%, #6d18234a, transparent 34%),
+      linear-gradient(180deg, #111011f6, #080708fb),
+      url("assets/hd/ui/abyssal-gothic/panel-texture.png") center / 280px 280px;
+    box-shadow: 0 34px 90px #000, 0 0 90px #68111d3a;
+    color: var(--defeat-parchment);
+    text-align: center;
+    text-shadow: 0 2px 3px #000;
+    animation: hdDeathEnter 300ms cubic-bezier(0.2, 0.82, 0.3, 1) both;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .death-requiem::before {
+    content: "";
+    position: absolute;
+    z-index: -1;
+    inset: 18px;
+    pointer-events: none;
+    border: 1px solid #7340476b;
+    box-shadow: inset 0 0 46px #000;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .death-requiem::after {
+    content: "";
+    position: absolute;
+    z-index: -1;
+    top: 32px;
+    left: 50%;
+    width: min(540px, 64%);
+    height: 1px;
+    transform: translateX(-50%);
+    background: linear-gradient(90deg, transparent, #8d4e55, transparent);
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .death-requiem-crest {
+    position: absolute;
+    z-index: 2;
+    top: 20px;
+    left: 50%;
+    width: 58px;
+    height: 58px;
+    display: grid;
+    place-items: center;
+    transform: translateX(-50%) rotate(45deg);
+    border: 1px solid #8f4a52;
+    background:
+      radial-gradient(circle, #b33b493d 0 25%, transparent 27%),
+      #090708;
+    box-shadow: inset 0 0 18px #000, 0 0 26px #8c1e2c42;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .death-requiem-crest::before,
+  body.graphics-hd-ui:has(#game.graphics-hd) .death-requiem-crest::after {
+    content: "";
+    position: absolute;
+    background: linear-gradient(180deg, #bf5d65, #541d24);
+    box-shadow: 0 0 8px #a72e395e;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .death-requiem-crest::before {
+    width: 2px;
+    height: 32px;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .death-requiem-crest::after {
+    width: 32px;
+    height: 2px;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .death-requiem-crest i {
+    width: 34px;
+    height: 34px;
+    border: 1px solid #7040478f;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .death-requiem-header {
+    display: grid;
+    justify-items: center;
+    gap: 8px;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .death-requiem-kicker,
+  body.graphics-hd-ui:has(#game.graphics-hd) .gameover-requiem-kicker {
+    margin: 0;
+    color: #a66d69;
+    font: 700 clamp(0.64rem, 0.72vw, 0.76rem)/1.2 "Courier New", monospace;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .death-requiem-kicker {
+    width: min(520px, 100%);
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 92px minmax(0, 1fr);
+    align-items: center;
+    column-gap: 10px;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .death-requiem-kicker span:first-child {
+    grid-column: 1;
+    text-align: right;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .death-requiem-kicker span:last-child {
+    grid-column: 3;
+    text-align: left;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .death-requiem-kicker span {
+    white-space: nowrap;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .death-requiem-header h2 {
+    margin: 0;
+    color: var(--defeat-ivory);
+    font: 600 clamp(3.7rem, 5vw, 5.15rem)/0.88 Georgia, "Times New Roman", serif;
+    letter-spacing: clamp(4px, 0.5vw, 8px);
+    text-transform: uppercase;
+    text-shadow: 0 5px 5px #000, 0 0 32px #a829363d;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .death-requiem-cause {
+    margin: 0;
+    color: #a99c93;
+    font: italic clamp(0.9rem, 1vw, 1.03rem)/1.35 Georgia, "Times New Roman", serif;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .death-requiem-summary {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(230px, 0.58fr);
+    border-block: 1px solid #5d49444f;
+    background: linear-gradient(90deg, transparent, #130e0fa6 12% 88%, transparent);
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .death-requiem-stats {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .death-requiem-stats > div {
+    min-width: 0;
+    min-height: 92px;
+    display: grid;
+    align-content: center;
+    gap: 8px;
+    padding: 12px 20px;
+    border-right: 1px solid #56423f5c;
+    background: none;
+    box-shadow: none;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .death-requiem-stats span,
+  body.graphics-hd-ui:has(#game.graphics-hd) .death-requiem-vigil span,
+  body.graphics-hd-ui:has(#game.graphics-hd) .gameover-requiem-milestones span,
+  body.graphics-hd-ui:has(#game.graphics-hd) .gameover-requiem-featured span {
+    color: var(--defeat-muted);
+    font: 700 clamp(0.59rem, 0.65vw, 0.7rem)/1.2 "Courier New", monospace;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .death-requiem-stats strong {
+    color: var(--defeat-ivory);
+    font: 600 clamp(1.65rem, 2vw, 2rem)/1 Georgia, "Times New Roman", serif;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .death-requiem-stats .gold strong,
+  body.graphics-hd-ui:has(#game.graphics-hd) .gameover-requiem-featured .gold strong {
+    color: var(--defeat-gold);
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .death-requiem-vigil {
+    min-width: 0;
+    display: grid;
+    align-content: center;
+    justify-items: start;
+    gap: 12px;
+    padding: 12px 22px;
+    text-align: left;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .death-requiem-vigil > div {
+    display: grid;
+    gap: 6px;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .death-requiem-vigil strong {
+    color: #d7c9be;
+    font: 600 clamp(0.9rem, 1vw, 1.05rem)/1.15 Georgia, "Times New Roman", serif;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .death-requiem-vigil em {
+    display: flex;
+    gap: 8px;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .death-requiem-vigil i {
+    width: 19px;
+    height: 7px;
+    transform: skewX(-28deg);
+    border: 1px solid #492a2e;
+    background: #25181a;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .death-requiem-vigil i.remaining {
+    border-color: #ae4a54;
+    background: linear-gradient(90deg, #76262f, #cb5960);
+    box-shadow: 0 0 10px #b4334080;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .death-requiem-penalty {
+    min-height: 54px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 13px;
+    padding: 10px 18px;
+    border: 1px solid #6630386e;
+    background:
+      linear-gradient(90deg, transparent, #4a151d73 18% 82%, transparent),
+      url("assets/hd/ui/abyssal-gothic/panel-texture.png") center / 240px 240px;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .death-requiem-penalty span {
+    flex: none;
+    color: #c06168;
+    font: 700 0.66rem/1 "Courier New", monospace;
+    letter-spacing: 1.7px;
+    text-transform: uppercase;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .death-requiem-penalty span::after {
+    content: "";
+    display: inline-block;
+    width: 22px;
+    height: 1px;
+    margin: 0 0 3px 12px;
+    background: #704047;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .death-requiem-penalty strong {
+    min-width: 0;
+    overflow: hidden;
+    color: #d8c8c0;
+    font: 600 clamp(0.82rem, 0.92vw, 0.96rem)/1.25 Georgia, "Times New Roman", serif;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .death-requiem-actions,
+  body.graphics-hd-ui:has(#game.graphics-hd) .gameover-requiem-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .death-requiem-action,
+  body.graphics-hd-ui:has(#game.graphics-hd) .gameover-requiem-action {
+    min-width: 0;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    gap: 14px;
+    border: 1px solid #4b4642;
+    background:
+      linear-gradient(180deg, #121313f2, #070808f7),
+      url("assets/hd/ui/abyssal-gothic/panel-texture.png") center / 220px 220px;
+    color: #bdb2a8;
+    cursor: pointer;
+    box-shadow: inset 0 0 24px #000c;
+    text-align: left;
+    transition: border-color 120ms ease, filter 120ms ease, transform 120ms ease;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .death-requiem-action {
+    min-height: 76px;
+    padding: 12px 18px;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .death-requiem-action.selected,
+  body.graphics-hd-ui:has(#game.graphics-hd) .gameover-requiem-action.selected {
+    border-color: #a77b42;
+    background:
+      linear-gradient(100deg, #382713e8, #15100bf6 56%, #090a0af7),
+      url("assets/hd/ui/abyssal-gothic/panel-texture.png") center / 220px 220px;
+    color: #eeddbc;
+    box-shadow: inset 4px 0 0 #d4a85e, inset 0 0 28px #6e43199e, 0 0 18px #a66b2733;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) :is(.death-requiem-action, .gameover-requiem-action):hover,
+  body.graphics-hd-ui:has(#game.graphics-hd) :is(.death-requiem-action, .gameover-requiem-action):focus-visible {
+    z-index: 1;
+    outline: 1px solid #d8af69;
+    outline-offset: 3px;
+    filter: brightness(1.14);
+    transform: translateY(-1px);
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .death-requiem-action > span,
+  body.graphics-hd-ui:has(#game.graphics-hd) .gameover-requiem-key {
+    min-width: 40px;
+    height: 38px;
+    display: grid;
+    place-items: center;
+    border: 1px solid #76654d;
+    background: #050606;
+    color: #e0bd78;
+    font: 700 0.72rem/1 "Courier New", monospace;
+    box-shadow: inset 0 0 10px #000;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) :is(.death-requiem-action, .gameover-requiem-action) div {
+    min-width: 0;
+    display: grid;
+    gap: 5px;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) :is(.death-requiem-action, .gameover-requiem-action) strong {
+    color: inherit;
+    font: 600 clamp(0.93rem, 1.05vw, 1.1rem)/1 Georgia, "Times New Roman", serif;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) :is(.death-requiem-action, .gameover-requiem-action) small {
+    min-width: 0;
+    overflow: hidden;
+    color: #8e857d;
+    font: 400 clamp(0.64rem, 0.7vw, 0.74rem)/1.2 "Courier New", monospace;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .death-requiem-hint,
+  body.graphics-hd-ui:has(#game.graphics-hd) .gameover-requiem-hint {
+    margin: -5px 0 0;
+    color: var(--defeat-faint);
+    font: 400 clamp(0.57rem, 0.64vw, 0.67rem)/1.2 "Courier New", monospace;
+    letter-spacing: 0.5px;
+    text-align: center;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .screen-overlay.visible:has(.gameover-requiem) {
+    display: grid;
+    place-items: center;
+    padding: 24px 34px;
+    background:
+      radial-gradient(circle at 50% 18%, #67111e35, transparent 36%),
+      linear-gradient(180deg, #020303d6, #050303f4),
+      url("assets/hd/ui/abyssal-gothic/panel-texture.png") center / 320px 320px repeat;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .gameover-requiem {
+    position: relative;
+    isolation: isolate;
+    width: min(1680px, calc(100vw - 68px));
+    height: min(820px, calc(100vh - 48px));
+    min-height: 640px;
+    max-width: none;
+    max-height: none;
+    box-sizing: border-box;
+    display: grid;
+    grid-template-rows: auto auto minmax(0, 1fr) auto;
+    gap: clamp(11px, 1.5vh, 17px);
+    padding: clamp(16px, 2vh, 24px) clamp(18px, 2vw, 30px) clamp(10px, 1.5vh, 18px);
+    overflow: hidden;
+    border: solid transparent;
+    border-width: 74px 64px 92px;
+    border-image: url("assets/hd/ui/abyssal-gothic/screen-chrome.png") 92 80 122 80 / 74px 64px 92px 64px stretch;
+    border-radius: 0;
+    background:
+      radial-gradient(circle at 50% -12%, #6b182044, transparent 38%),
+      linear-gradient(180deg, #101111fa, #070808fc),
+      url("assets/hd/ui/abyssal-gothic/panel-texture.png") center / 300px 300px;
+    box-shadow: 0 28px 80px #000, 0 0 80px #64101b2e;
+    color: var(--defeat-parchment);
+    text-align: left;
+    text-shadow: 0 2px 3px #000;
+    animation: hdGameOverEnter 340ms cubic-bezier(0.2, 0.82, 0.3, 1) both;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .gameover-requiem::before {
+    content: "";
+    position: absolute;
+    z-index: -1;
+    inset: 9px;
+    pointer-events: none;
+    border: 1px solid #57434760;
+    box-shadow:
+      inset 0 0 0 3px #08090a,
+      inset 0 0 0 4px #303438,
+      inset 0 0 58px #000;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .gameover-requiem-masthead {
+    min-width: 0;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(210px, 0.28fr);
+    align-items: center;
+    gap: clamp(30px, 4vw, 70px);
+    padding-bottom: clamp(13px, 1.7vh, 19px);
+    border-bottom: 1px solid #6950526b;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .gameover-requiem-title-lockup {
+    min-width: 0;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-areas:
+      "kicker kicker"
+      "title cause";
+    align-items: end;
+    gap: 5px clamp(22px, 2.2vw, 38px);
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .gameover-requiem-kicker {
+    grid-area: kicker;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .gameover-requiem-title {
+    grid-area: title;
+    margin: 0;
+    color: var(--defeat-ivory);
+    font: 600 clamp(3.6rem, 4.5vw, 5.4rem)/0.83 Georgia, "Times New Roman", serif;
+    letter-spacing: clamp(2px, 0.32vw, 6px);
+    text-transform: uppercase;
+    white-space: nowrap;
+    text-shadow: 0 6px 5px #000, 0 0 36px #7a182536;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .gameover-requiem-cause {
+    grid-area: cause;
+    margin: 0 0 6px;
+    padding-left: 18px;
+    border-left: 2px solid #77313a;
+    color: #a4958c;
+    font: italic clamp(0.72rem, 0.82vw, 0.88rem)/1.45 Georgia, "Times New Roman", serif;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .gameover-requiem-score {
+    position: relative;
+    min-height: 94px;
+    display: grid;
+    place-content: center;
+    justify-items: center;
+    gap: 1px;
+    padding: 6px 18px;
+    border-inline: 1px solid #69513d6b;
+    background: radial-gradient(circle, #3b2a1554, transparent 72%);
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .gameover-requiem-score::before,
+  body.graphics-hd-ui:has(#game.graphics-hd) .gameover-requiem-score::after {
+    content: "";
+    position: absolute;
+    left: 16%;
+    right: 16%;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, #967442, transparent);
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .gameover-requiem-score::before {
+    top: 0;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .gameover-requiem-score::after {
+    bottom: 0;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .gameover-requiem-score span {
+    color: #a58c67;
+    font: 700 0.63rem/1 "Courier New", monospace;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .gameover-requiem-score strong {
+    color: #edd28f;
+    font: 600 clamp(2.5rem, 3.2vw, 3.55rem)/0.95 Georgia, "Times New Roman", serif;
+    letter-spacing: 2px;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .gameover-requiem-score small {
+    color: #766d64;
+    font: 400 0.58rem/1.2 "Courier New", monospace;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .gameover-requiem-milestones {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    border-block: 1px solid #55464259;
+    background: linear-gradient(90deg, transparent, #171213bf 7% 93%, transparent);
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .gameover-requiem-milestones > div {
+    min-width: 0;
+    min-height: 66px;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 14px;
+    padding: 8px clamp(15px, 1.5vw, 26px);
+    border-right: 1px solid #55413f63;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .gameover-requiem-milestones > div:last-child {
+    border-right: 0;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .gameover-requiem-milestones strong {
+    color: #dbcec3;
+    font: 600 clamp(1.45rem, 1.7vw, 1.85rem)/1 Georgia, "Times New Roman", serif;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .gameover-requiem-ledger {
+    min-width: 0;
+    min-height: 0;
+    display: grid;
+    grid-template-columns: minmax(0, 0.92fr) minmax(0, 1.08fr);
+    gap: clamp(12px, 1.25vw, 20px);
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .gameover-requiem-record {
+    min-width: 0;
+    min-height: 0;
+    display: grid;
+    grid-template-rows: auto minmax(96px, 1fr) auto;
+    gap: clamp(10px, 1.3vh, 14px);
+    padding: clamp(17px, 1.5vw, 24px);
+    border: 1px solid #49413c;
+    background:
+      linear-gradient(145deg, #141212e8, #080909f0),
+      url("assets/hd/ui/abyssal-gothic/panel-texture.png") center / 260px 260px;
+    box-shadow: inset 0 0 34px #000b;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .gameover-requiem-record > header {
+    display: flex;
+    align-items: end;
+    justify-content: space-between;
+    gap: 14px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #584b455e;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .gameover-requiem-record > header > div {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .gameover-requiem-record > header span {
+    min-width: 28px;
+    height: 28px;
+    display: grid;
+    place-items: center;
+    border: 1px solid #755b4b;
+    color: #b48b61;
+    font: 700 0.65rem/1 "Courier New", monospace;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .gameover-requiem-record h3 {
+    margin: 0;
+    color: #d7cdc2;
+    font: 600 clamp(1rem, 1.18vw, 1.27rem)/1 Georgia, "Times New Roman", serif;
+    letter-spacing: 1.7px;
+    text-transform: uppercase;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .gameover-requiem-record > header p {
+    margin: 0;
+    color: #706761;
+    font: italic clamp(0.59rem, 0.65vw, 0.69rem)/1.2 Georgia, "Times New Roman", serif;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .gameover-requiem-featured {
+    min-height: 0;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    align-items: stretch;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .gameover-requiem-featured > div {
+    min-width: 0;
+    display: grid;
+    align-content: center;
+    gap: 8px;
+    padding: 8px clamp(12px, 1.2vw, 20px);
+    border-right: 1px solid #5746405c;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .gameover-requiem-featured > div:first-child {
+    padding-left: 2px;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .gameover-requiem-featured > div:last-child {
+    border-right: 0;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .gameover-requiem-featured strong {
+    color: #e0d5ca;
+    font: 600 clamp(1.65rem, 2vw, 2.2rem)/1 Georgia, "Times New Roman", serif;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .gameover-requiem-details {
+    min-width: 0;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    margin: 0;
+    border-top: 1px solid #4f433e55;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .gameover-requiem-details-wide {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .gameover-requiem-details > div {
+    min-width: 0;
+    display: grid;
+    gap: 4px;
+    padding: 10px clamp(8px, 0.8vw, 13px) 2px;
+    border-right: 1px solid #4f423e52;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .gameover-requiem-details > div:first-child {
+    padding-left: 2px;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .gameover-requiem-details > div:last-child {
+    border-right: 0;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .gameover-requiem-details dt {
+    min-width: 0;
+    color: #776c65;
+    font: 700 clamp(0.52rem, 0.57vw, 0.61rem)/1.2 "Courier New", monospace;
+    letter-spacing: 0.6px;
+    text-transform: uppercase;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .gameover-requiem-details dd {
+    margin: 0;
+    color: #c8bcb1;
+    font: 600 clamp(0.9rem, 1.05vw, 1.12rem)/1 Georgia, "Times New Roman", serif;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .gameover-requiem-footer {
+    display: grid;
+    justify-items: center;
+    gap: 8px;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .gameover-requiem-actions {
+    width: min(940px, 100%);
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .gameover-requiem-action {
+    min-height: 68px;
+    padding: 10px 16px;
+  }
+
+  @keyframes hdDeathEnter {
+    from { opacity: 0; transform: scale(0.97) translateY(10px); }
+    to { opacity: 1; transform: scale(1) translateY(0); }
+  }
+
+  @keyframes hdGameOverEnter {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @media (max-height: 820px) {
+    body.graphics-hd-ui:has(#game.graphics-hd) .death-requiem {
+      min-height: min(570px, calc(100vh - 48px));
+      gap: 11px;
+      padding-block: 48px 30px;
+    }
+
+    body.graphics-hd-ui:has(#game.graphics-hd) .death-requiem-header h2 {
+      font-size: clamp(3.15rem, 4.3vw, 4.4rem);
+    }
+
+    body.graphics-hd-ui:has(#game.graphics-hd) .death-requiem-stats > div {
+      min-height: 78px;
+    }
+
+    body.graphics-hd-ui:has(#game.graphics-hd) .death-requiem-action {
+      min-height: 66px;
+    }
+
+    body.graphics-hd-ui:has(#game.graphics-hd) .gameover-requiem {
+      min-height: 0;
+      gap: 9px;
+      padding-block: 10px 6px;
+    }
+
+    body.graphics-hd-ui:has(#game.graphics-hd) .gameover-requiem-masthead {
+      padding-bottom: 9px;
+    }
+
+    body.graphics-hd-ui:has(#game.graphics-hd) .gameover-requiem-title {
+      font-size: clamp(3.1rem, 3.8vw, 4.5rem);
+    }
+
+    body.graphics-hd-ui:has(#game.graphics-hd) .gameover-requiem-score {
+      min-height: 78px;
+    }
+
+    body.graphics-hd-ui:has(#game.graphics-hd) .gameover-requiem-score strong {
+      font-size: clamp(2.1rem, 2.7vw, 3rem);
+    }
+
+    body.graphics-hd-ui:has(#game.graphics-hd) .gameover-requiem-milestones > div {
+      min-height: 54px;
+    }
+
+    body.graphics-hd-ui:has(#game.graphics-hd) .gameover-requiem-record {
+      gap: 8px;
+      padding-block: 13px;
+    }
+
+    body.graphics-hd-ui:has(#game.graphics-hd) .gameover-requiem-record > header {
+      padding-bottom: 7px;
+    }
+
+    body.graphics-hd-ui:has(#game.graphics-hd) .gameover-requiem-action {
+      min-height: 58px;
+    }
+  }
+
+  @media (max-width: 1380px) {
+    body.graphics-hd-ui:has(#game.graphics-hd) .gameover-requiem {
+      padding-inline: 30px;
+    }
+
+    body.graphics-hd-ui:has(#game.graphics-hd) .gameover-requiem-record > header p {
+      display: none;
+    }
+
+    body.graphics-hd-ui:has(#game.graphics-hd) .gameover-requiem-details dt {
+      letter-spacing: 0;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    body.graphics-hd-ui:has(#game.graphics-hd) .death-requiem,
+    body.graphics-hd-ui:has(#game.graphics-hd) .gameover-requiem {
+      animation: none;
+    }
+
+    body.graphics-hd-ui:has(#game.graphics-hd) .death-requiem-action,
+    body.graphics-hd-ui:has(#game.graphics-hd) .gameover-requiem-action {
+      transition: none;
+    }
+  }
+}

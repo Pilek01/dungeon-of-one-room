@@ -1,0 +1,43 @@
+{
+  "schemaVersion": 1,
+  "name": "warden-void-aegis",
+  "frameSize": [
+    192,
+    192
+  ],
+  "renderSize": [
+    192,
+    192
+  ],
+  "anchor": [
+    0.5,
+    1
+  ],
+  "group": "bosses",
+  "frames": [
+    {
+      "key": "boss.warden.overlay.voidaegis.01",
+      "src": "assets/hd/bosses/overlays/frames/warden-void-aegis-01.png",
+      "group": "bosses",
+      "critical": false
+    },
+    {
+      "key": "boss.warden.overlay.voidaegis.02",
+      "src": "assets/hd/bosses/overlays/frames/warden-void-aegis-02.png",
+      "group": "bosses",
+      "critical": false
+    },
+    {
+      "key": "boss.warden.overlay.voidaegis.03",
+      "src": "assets/hd/bosses/overlays/frames/warden-void-aegis-03.png",
+      "group": "bosses",
+      "critical": false
+    },
+    {
+      "key": "boss.warden.overlay.voidaegis.04",
+      "src": "assets/hd/bosses/overlays/frames/warden-void-aegis-04.png",
+      "group": "bosses",
+      "critical": false
+    }
+  ]
+}

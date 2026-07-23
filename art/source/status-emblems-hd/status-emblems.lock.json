@@ -1,0 +1,67 @@
+{
+  "finalSize": [
+    64,
+    64
+  ],
+  "helper": {
+    "path": "remove_chroma_key.py",
+    "sha256": "7e51236919203b61d07ddffdc6e0b5f501a28661003f5851f26ffbb64bdec1ea"
+  },
+  "normalizedSize": [
+    1024,
+    1024
+  ],
+  "outputs": {
+    "art/source/status-emblems-hd/status-emblems-contact-sheet.png": "e31d7100a422426f04648ab24f705d75b2a981f4dad988fa70bbfff821f3c07a",
+    "assets/hd/ui/status/armor-up.png": "28fe31ba755366c8c7c35195045d9e18af5b483d74f3d13c88bfd21abc937fe2",
+    "assets/hd/ui/status/attack-up.png": "2dcea93c524e44dfd644f405b5577015f608bcfd389bcc6afd8db38e5dfde629",
+    "assets/hd/ui/status/barrier.png": "fc7213e14447863a3fadca68fad802099bd39bb6d76e3950b6a931da6ceeafec",
+    "assets/hd/ui/status/bleed.png": "9b8bb1f2be48f1606432dcf04e35763970ed3f275bf16e0c3f2c32fe4a7d8ed3",
+    "assets/hd/ui/status/blooddrinker.png": "014ed4568ee6655d743783bb63f1fd2a1bafba4f33a8156d2a4e1f3266406f15",
+    "assets/hd/ui/status/burn.png": "d3d15498c08a7b0b31e6fdd556370e50c7ec62f9314449f6ad0a8b6fdcec0493",
+    "assets/hd/ui/status/chaos.png": "292ba189662d8330620329f26701e02d0c8ff485de19f8938b9cf08a7f32c351",
+    "assets/hd/ui/status/chest-upgrade.png": "d42ed2b5785de9b71f488728087771befccde24105225837e73242705fe18275",
+    "assets/hd/ui/status/disorient.png": "0507a9ce35486ffeca2732c5f6fc35aab4ea336bcf8b8eafd8812f92e02dacde",
+    "assets/hd/ui/status/elite.png": "706f5f2e279e49c257f6f19dfe9a6db84169587af72f30298d27247edeac0722",
+    "assets/hd/ui/status/elixir.png": "9c86212748c1cdbeae000492c83e26a49f23a47d52b5c46f5c7b7f5f9866081c",
+    "assets/hd/ui/status/enemy-buff.png": "ce66e9fa4c110db5edaa6a877344d6fc9972bd8afe89d5a383f0f770e11e0adb",
+    "assets/hd/ui/status/freeze.png": "a71d001b6ad4fb352fb784b391aa39a07517a69003fda9c2ae9894bf60d7ee78",
+    "assets/hd/ui/status/fury.png": "1c6cef5219852e1dde29e5b43ccf8c9a5fd0e1e86d9ed13cf9bf7b205cfde2d3",
+    "assets/hd/ui/status/hunger.png": "0415cb5dda145f13a9c2d82b07daf915ec39d85343f8ce50a8e4ad9df4516fa0",
+    "assets/hd/ui/status/juggernaut.png": "c151fbba472fb9da0b6759fc9be952b62c90014f94dca7b1d528c3a5feb12be6",
+    "assets/hd/ui/status/last-stand.png": "a50c2e9373980d60d0380370e02e0b9caf09ddda10232bf3a11d3ed5cd01d762",
+    "assets/hd/ui/status/lifesteal.png": "10dfbe0a34aa15f9fc3bca9240cdd705a31e2b7d3628b2357b47d3d200a4b671",
+    "assets/hd/ui/status/max-hp-up.png": "ee9c8ce124748f5326fe06ca36d2efac4d4a95699d9edeacd5dbcc531438f29c",
+    "assets/hd/ui/status/noise.png": "b968d3a204059d97112e3df67f1c67bbf46dba90488909c41bab5f3d5999baf6",
+    "assets/hd/ui/status/pact.png": "0ee1c8c51fec6d0e0ddab6635feab031cc15164fe11e03784f11657aa7d0bf23",
+    "assets/hd/ui/status/poison.png": "53cbd3f35c24cd24c09633f2a6a56e8aeff2087fcdec5e41648f98791b4bf57b",
+    "assets/hd/ui/status/quickloader.png": "d864ec4fa104491c8bbb4157442236189526c3af1d61e204d2ed533003acb632",
+    "assets/hd/ui/status/relentless.png": "201ebd49a26c18ba87c112227d725bf16e593b0f4f004950ec275ea080b43c23",
+    "assets/hd/ui/status/second-chance.png": "70b993f4a82de1cbe9efe04857e1f683a9025a388955937abf4562d0d3981361",
+    "assets/hd/ui/status/shield.png": "e3c0661c1f54bdf5adebc6358aa9ff0314b28e643c1c99ce0b1009fe914aeb21",
+    "assets/hd/ui/status/shrine-blessing.png": "cba03189c7259d35442057e7c60b1410a5ffc9f49afd87fc649946531d6fc77a",
+    "assets/hd/ui/status/soul-harvest.png": "b841ad75490f6e58d83488c408af690c0a23f5988d8f35b16844d989d9f19236",
+    "assets/hd/ui/status/status-emblems.json": "7b08b18ef917a324dd328dc114b7c14a3a37daa72667a42c8ae8d8492a6dec9d",
+    "assets/hd/ui/status/storm-sigil.png": "a150435a01d371e045d76274cc30d8db4902f66637a6a213b948a6e01bb2d7f7",
+    "assets/hd/ui/status/swap.png": "0615018845c7c8edbfeac4d7bff3dad0881fbb4e6b4f23bc7918f742efd20b45",
+    "assets/hd/ui/status/thorned.png": "9b4851d3f0a54836c8d2acdd8b5b4f548f198a7fd404ce7df9477fb5b6a428ea",
+    "assets/hd/ui/status/volatile.png": "0adf7240b9787f06bd4b3e495e222a71a0184393ee1c89be63935348e783f4ce"
+  },
+  "pillowVersion": "12.1.1",
+  "pipelineSchema": 1,
+  "sharedScale": 0.30434783,
+  "sourceSize": [
+    1254,
+    1254
+  ],
+  "sources": {
+    "combat": {
+      "path": "art/source/status-emblems-hd/combat-status-atlas-source-original-v2.png",
+      "sha256": "c35798a2584da1891da96bf92954ff2a66bb8223b4674fbc26ae9b35e640c85f"
+    },
+    "special": {
+      "path": "art/source/status-emblems-hd/special-affix-atlas-source-original-v2.png",
+      "sha256": "d58436ea48dbf29d40606539bb5abf6f91bc80a326c52cc4d2df51c008488016"
+    }
+  }
+}

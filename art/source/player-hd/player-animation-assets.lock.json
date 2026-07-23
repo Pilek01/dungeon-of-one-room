@@ -1,0 +1,845 @@
+{
+  "helper": {
+    "path": "remove_chroma_key.py",
+    "sha256": "7e51236919203b61d07ddffdc6e0b5f501a28661003f5851f26ffbb64bdec1ea"
+  },
+  "metrics": [
+    {
+      "sharedScale": 0.1901639344262295,
+      "sourceMaxBounds": [
+        305,
+        255
+      ]
+    },
+    {
+      "bounds": [
+        16,
+        13,
+        48,
+        60
+      ],
+      "key": "actor.player.south.idle.01",
+      "src": "assets/hd/actors/player/frames/south-idle-01.png",
+      "visiblePixels": 1154
+    },
+    {
+      "bounds": [
+        16,
+        13,
+        48,
+        60
+      ],
+      "key": "actor.player.south.idle.02",
+      "src": "assets/hd/actors/player/frames/south-idle-02.png",
+      "visiblePixels": 1123
+    },
+    {
+      "bounds": [
+        16,
+        13,
+        48,
+        60
+      ],
+      "key": "actor.player.south.idle.03",
+      "src": "assets/hd/actors/player/frames/south-idle-03.png",
+      "visiblePixels": 1117
+    },
+    {
+      "bounds": [
+        17,
+        13,
+        47,
+        60
+      ],
+      "key": "actor.player.south.idle.04",
+      "src": "assets/hd/actors/player/frames/south-idle-04.png",
+      "visiblePixels": 1090
+    },
+    {
+      "bounds": [
+        15,
+        14,
+        48,
+        60
+      ],
+      "key": "actor.player.south.move.01",
+      "src": "assets/hd/actors/player/frames/south-move-01.png",
+      "visiblePixels": 1013
+    },
+    {
+      "bounds": [
+        16,
+        16,
+        48,
+        60
+      ],
+      "key": "actor.player.south.move.02",
+      "src": "assets/hd/actors/player/frames/south-move-02.png",
+      "visiblePixels": 975
+    },
+    {
+      "bounds": [
+        18,
+        14,
+        46,
+        60
+      ],
+      "key": "actor.player.south.move.03",
+      "src": "assets/hd/actors/player/frames/south-move-03.png",
+      "visiblePixels": 918
+    },
+    {
+      "bounds": [
+        16,
+        17,
+        48,
+        60
+      ],
+      "key": "actor.player.south.move.04",
+      "src": "assets/hd/actors/player/frames/south-move-04.png",
+      "visiblePixels": 934
+    },
+    {
+      "bounds": [
+        12,
+        19,
+        51,
+        60
+      ],
+      "key": "actor.player.south.attack.01",
+      "src": "assets/hd/actors/player/frames/south-attack-01.png",
+      "visiblePixels": 1072
+    },
+    {
+      "bounds": [
+        11,
+        18,
+        52,
+        60
+      ],
+      "key": "actor.player.south.attack.02",
+      "src": "assets/hd/actors/player/frames/south-attack-02.png",
+      "visiblePixels": 955
+    },
+    {
+      "bounds": [
+        16,
+        20,
+        48,
+        60
+      ],
+      "key": "actor.player.south.attack.03",
+      "src": "assets/hd/actors/player/frames/south-attack-03.png",
+      "visiblePixels": 884
+    },
+    {
+      "bounds": [
+        10,
+        17,
+        54,
+        60
+      ],
+      "key": "actor.player.south.attack.04",
+      "src": "assets/hd/actors/player/frames/south-attack-04.png",
+      "visiblePixels": 1025
+    },
+    {
+      "bounds": [
+        18,
+        19,
+        46,
+        60
+      ],
+      "key": "actor.player.south.hit.01",
+      "src": "assets/hd/actors/player/frames/south-hit-01.png",
+      "visiblePixels": 968
+    },
+    {
+      "bounds": [
+        13,
+        18,
+        51,
+        60
+      ],
+      "key": "actor.player.south.hit.02",
+      "src": "assets/hd/actors/player/frames/south-hit-02.png",
+      "visiblePixels": 1076
+    },
+    {
+      "bounds": [
+        11,
+        26,
+        52,
+        60
+      ],
+      "key": "actor.player.south.death.01",
+      "src": "assets/hd/actors/player/frames/south-death-01.png",
+      "visiblePixels": 964
+    },
+    {
+      "bounds": [
+        8,
+        31,
+        55,
+        60
+      ],
+      "key": "actor.player.south.death.02",
+      "src": "assets/hd/actors/player/frames/south-death-02.png",
+      "visiblePixels": 890
+    },
+    {
+      "bounds": [
+        18,
+        20,
+        45,
+        60
+      ],
+      "key": "actor.player.north.idle.01",
+      "src": "assets/hd/actors/player/frames/north-idle-01.png",
+      "visiblePixels": 841
+    },
+    {
+      "bounds": [
+        19,
+        20,
+        45,
+        60
+      ],
+      "key": "actor.player.north.idle.02",
+      "src": "assets/hd/actors/player/frames/north-idle-02.png",
+      "visiblePixels": 825
+    },
+    {
+      "bounds": [
+        19,
+        22,
+        44,
+        60
+      ],
+      "key": "actor.player.north.idle.03",
+      "src": "assets/hd/actors/player/frames/north-idle-03.png",
+      "visiblePixels": 758
+    },
+    {
+      "bounds": [
+        19,
+        21,
+        45,
+        60
+      ],
+      "key": "actor.player.north.idle.04",
+      "src": "assets/hd/actors/player/frames/north-idle-04.png",
+      "visiblePixels": 784
+    },
+    {
+      "bounds": [
+        20,
+        21,
+        43,
+        60
+      ],
+      "key": "actor.player.north.move.01",
+      "src": "assets/hd/actors/player/frames/north-move-01.png",
+      "visiblePixels": 715
+    },
+    {
+      "bounds": [
+        20,
+        20,
+        43,
+        60
+      ],
+      "key": "actor.player.north.move.02",
+      "src": "assets/hd/actors/player/frames/north-move-02.png",
+      "visiblePixels": 736
+    },
+    {
+      "bounds": [
+        18,
+        20,
+        45,
+        60
+      ],
+      "key": "actor.player.north.move.03",
+      "src": "assets/hd/actors/player/frames/north-move-03.png",
+      "visiblePixels": 764
+    },
+    {
+      "bounds": [
+        20,
+        20,
+        43,
+        60
+      ],
+      "key": "actor.player.north.move.04",
+      "src": "assets/hd/actors/player/frames/north-move-04.png",
+      "visiblePixels": 697
+    },
+    {
+      "bounds": [
+        20,
+        20,
+        43,
+        60
+      ],
+      "key": "actor.player.north.attack.01",
+      "src": "assets/hd/actors/player/frames/north-attack-01.png",
+      "visiblePixels": 752
+    },
+    {
+      "bounds": [
+        17,
+        20,
+        47,
+        60
+      ],
+      "key": "actor.player.north.attack.02",
+      "src": "assets/hd/actors/player/frames/north-attack-02.png",
+      "visiblePixels": 868
+    },
+    {
+      "bounds": [
+        18,
+        20,
+        46,
+        60
+      ],
+      "key": "actor.player.north.attack.03",
+      "src": "assets/hd/actors/player/frames/north-attack-03.png",
+      "visiblePixels": 822
+    },
+    {
+      "bounds": [
+        9,
+        23,
+        54,
+        60
+      ],
+      "key": "actor.player.north.attack.04",
+      "src": "assets/hd/actors/player/frames/north-attack-04.png",
+      "visiblePixels": 882
+    },
+    {
+      "bounds": [
+        17,
+        24,
+        47,
+        60
+      ],
+      "key": "actor.player.north.hit.01",
+      "src": "assets/hd/actors/player/frames/north-hit-01.png",
+      "visiblePixels": 838
+    },
+    {
+      "bounds": [
+        17,
+        24,
+        47,
+        60
+      ],
+      "key": "actor.player.north.hit.02",
+      "src": "assets/hd/actors/player/frames/north-hit-02.png",
+      "visiblePixels": 824
+    },
+    {
+      "bounds": [
+        14,
+        27,
+        49,
+        60
+      ],
+      "key": "actor.player.north.death.01",
+      "src": "assets/hd/actors/player/frames/north-death-01.png",
+      "visiblePixels": 816
+    },
+    {
+      "bounds": [
+        14,
+        33,
+        49,
+        60
+      ],
+      "key": "actor.player.north.death.02",
+      "src": "assets/hd/actors/player/frames/north-death-02.png",
+      "visiblePixels": 754
+    },
+    {
+      "bounds": [
+        21,
+        20,
+        42,
+        60
+      ],
+      "key": "actor.player.east.idle.01",
+      "src": "assets/hd/actors/player/frames/east-idle-01.png",
+      "visiblePixels": 623
+    },
+    {
+      "bounds": [
+        21,
+        20,
+        42,
+        60
+      ],
+      "key": "actor.player.east.idle.02",
+      "src": "assets/hd/actors/player/frames/east-idle-02.png",
+      "visiblePixels": 642
+    },
+    {
+      "bounds": [
+        21,
+        22,
+        43,
+        60
+      ],
+      "key": "actor.player.east.idle.03",
+      "src": "assets/hd/actors/player/frames/east-idle-03.png",
+      "visiblePixels": 627
+    },
+    {
+      "bounds": [
+        18,
+        23,
+        45,
+        60
+      ],
+      "key": "actor.player.east.idle.04",
+      "src": "assets/hd/actors/player/frames/east-idle-04.png",
+      "visiblePixels": 685
+    },
+    {
+      "bounds": [
+        15,
+        23,
+        49,
+        60
+      ],
+      "key": "actor.player.east.move.01",
+      "src": "assets/hd/actors/player/frames/east-move-01.png",
+      "visiblePixels": 741
+    },
+    {
+      "bounds": [
+        13,
+        26,
+        51,
+        60
+      ],
+      "key": "actor.player.east.move.02",
+      "src": "assets/hd/actors/player/frames/east-move-02.png",
+      "visiblePixels": 725
+    },
+    {
+      "bounds": [
+        12,
+        26,
+        52,
+        60
+      ],
+      "key": "actor.player.east.move.03",
+      "src": "assets/hd/actors/player/frames/east-move-03.png",
+      "visiblePixels": 762
+    },
+    {
+      "bounds": [
+        12,
+        26,
+        52,
+        60
+      ],
+      "key": "actor.player.east.move.04",
+      "src": "assets/hd/actors/player/frames/east-move-04.png",
+      "visiblePixels": 773
+    },
+    {
+      "bounds": [
+        20,
+        22,
+        44,
+        60
+      ],
+      "key": "actor.player.east.attack.01",
+      "src": "assets/hd/actors/player/frames/east-attack-01.png",
+      "visiblePixels": 748
+    },
+    {
+      "bounds": [
+        9,
+        25,
+        54,
+        60
+      ],
+      "key": "actor.player.east.attack.02",
+      "src": "assets/hd/actors/player/frames/east-attack-02.png",
+      "visiblePixels": 823
+    },
+    {
+      "bounds": [
+        6,
+        24,
+        58,
+        60
+      ],
+      "key": "actor.player.east.attack.03",
+      "src": "assets/hd/actors/player/frames/east-attack-03.png",
+      "visiblePixels": 883
+    },
+    {
+      "bounds": [
+        15,
+        24,
+        48,
+        60
+      ],
+      "key": "actor.player.east.attack.04",
+      "src": "assets/hd/actors/player/frames/east-attack-04.png",
+      "visiblePixels": 713
+    },
+    {
+      "bounds": [
+        17,
+        23,
+        46,
+        60
+      ],
+      "key": "actor.player.east.hit.01",
+      "src": "assets/hd/actors/player/frames/east-hit-01.png",
+      "visiblePixels": 809
+    },
+    {
+      "bounds": [
+        16,
+        26,
+        48,
+        60
+      ],
+      "key": "actor.player.east.hit.02",
+      "src": "assets/hd/actors/player/frames/east-hit-02.png",
+      "visiblePixels": 778
+    },
+    {
+      "bounds": [
+        9,
+        39,
+        55,
+        60
+      ],
+      "key": "actor.player.east.death.01",
+      "src": "assets/hd/actors/player/frames/east-death-01.png",
+      "visiblePixels": 698
+    },
+    {
+      "bounds": [
+        9,
+        41,
+        55,
+        60
+      ],
+      "key": "actor.player.east.death.02",
+      "src": "assets/hd/actors/player/frames/east-death-02.png",
+      "visiblePixels": 666
+    },
+    {
+      "bounds": [
+        18,
+        17,
+        46,
+        60
+      ],
+      "key": "actor.player.west.idle.01",
+      "src": "assets/hd/actors/player/frames/west-idle-01.png",
+      "visiblePixels": 763
+    },
+    {
+      "bounds": [
+        19,
+        17,
+        45,
+        60
+      ],
+      "key": "actor.player.west.idle.02",
+      "src": "assets/hd/actors/player/frames/west-idle-02.png",
+      "visiblePixels": 749
+    },
+    {
+      "bounds": [
+        19,
+        18,
+        45,
+        60
+      ],
+      "key": "actor.player.west.idle.03",
+      "src": "assets/hd/actors/player/frames/west-idle-03.png",
+      "visiblePixels": 739
+    },
+    {
+      "bounds": [
+        18,
+        18,
+        45,
+        60
+      ],
+      "key": "actor.player.west.idle.04",
+      "src": "assets/hd/actors/player/frames/west-idle-04.png",
+      "visiblePixels": 745
+    },
+    {
+      "bounds": [
+        15,
+        19,
+        49,
+        60
+      ],
+      "key": "actor.player.west.move.01",
+      "src": "assets/hd/actors/player/frames/west-move-01.png",
+      "visiblePixels": 849
+    },
+    {
+      "bounds": [
+        13,
+        19,
+        50,
+        60
+      ],
+      "key": "actor.player.west.move.02",
+      "src": "assets/hd/actors/player/frames/west-move-02.png",
+      "visiblePixels": 880
+    },
+    {
+      "bounds": [
+        12,
+        19,
+        52,
+        60
+      ],
+      "key": "actor.player.west.move.03",
+      "src": "assets/hd/actors/player/frames/west-move-03.png",
+      "visiblePixels": 898
+    },
+    {
+      "bounds": [
+        13,
+        19,
+        50,
+        60
+      ],
+      "key": "actor.player.west.move.04",
+      "src": "assets/hd/actors/player/frames/west-move-04.png",
+      "visiblePixels": 877
+    },
+    {
+      "bounds": [
+        14,
+        21,
+        50,
+        60
+      ],
+      "key": "actor.player.west.attack.01",
+      "src": "assets/hd/actors/player/frames/west-attack-01.png",
+      "visiblePixels": 848
+    },
+    {
+      "bounds": [
+        3,
+        23,
+        60,
+        60
+      ],
+      "key": "actor.player.west.attack.02",
+      "src": "assets/hd/actors/player/frames/west-attack-02.png",
+      "visiblePixels": 993
+    },
+    {
+      "bounds": [
+        7,
+        24,
+        56,
+        60
+      ],
+      "key": "actor.player.west.attack.03",
+      "src": "assets/hd/actors/player/frames/west-attack-03.png",
+      "visiblePixels": 950
+    },
+    {
+      "bounds": [
+        17,
+        20,
+        47,
+        60
+      ],
+      "key": "actor.player.west.attack.04",
+      "src": "assets/hd/actors/player/frames/west-attack-04.png",
+      "visiblePixels": 789
+    },
+    {
+      "bounds": [
+        19,
+        20,
+        45,
+        60
+      ],
+      "key": "actor.player.west.hit.01",
+      "src": "assets/hd/actors/player/frames/west-hit-01.png",
+      "visiblePixels": 864
+    },
+    {
+      "bounds": [
+        20,
+        19,
+        44,
+        60
+      ],
+      "key": "actor.player.west.hit.02",
+      "src": "assets/hd/actors/player/frames/west-hit-02.png",
+      "visiblePixels": 806
+    },
+    {
+      "bounds": [
+        13,
+        39,
+        50,
+        60
+      ],
+      "key": "actor.player.west.death.01",
+      "src": "assets/hd/actors/player/frames/west-death-01.png",
+      "visiblePixels": 726
+    },
+    {
+      "bounds": [
+        6,
+        42,
+        58,
+        60
+      ],
+      "key": "actor.player.west.death.02",
+      "src": "assets/hd/actors/player/frames/west-death-02.png",
+      "visiblePixels": 816
+    }
+  ],
+  "normalization": {
+    "bottomCenterRoot": [
+      32,
+      60
+    ],
+    "frameSize": [
+      64,
+      64
+    ],
+    "maxFrameBounds": [
+      58,
+      56
+    ],
+    "meaningfulComponentArea": 500
+  },
+  "outputs": {
+    "art/source/player-hd/player-animation-contact-sheet.png": "0904fc67f73e0e975c65d4338abdb98e9b0266b755a5ee13cf5580982688f011",
+    "art/source/player-hd/player-animation-east-normalized-1024.png": "e9598c5d791b14b25935e04c3015a815a82e5fb5fd283e3b164ff0a429324add",
+    "art/source/player-hd/player-animation-north-normalized-1024.png": "820891aba3fb514af49faeaba5d757e5b3cc759ae3080cef4bfd64748fa7283d",
+    "art/source/player-hd/player-animation-source-layout.json": "91d49ac8c3c549ac7fbc1f85b299ffade5a3916f82b30ac3aa7ead441ddad423",
+    "art/source/player-hd/player-animation-south-normalized-1024.png": "c6797f8c0e402552f62362f785c93ba868fd9e41ba2965f8e4e67c8cec26b268",
+    "art/source/player-hd/player-animation-west-normalized-1024.png": "83b84ccb1e46e7ee9518cf7ce4e0a59ae4ef77798026170a4885e1e6d96ba37f",
+    "assets/hd/actors/player/frames/east-attack-01.png": "d2c161af0b8014543de9b6404c5c5b45420d7b89d1b233f52d75e5f82db7961e",
+    "assets/hd/actors/player/frames/east-attack-02.png": "2a258f636c2efdf043f154eccea731648b2887e170378e8a71bf1cf07d88005a",
+    "assets/hd/actors/player/frames/east-attack-03.png": "405e4d7fd374bf3857656c519ac5ac7e29253b55af30552a32a347a60a8ddff8",
+    "assets/hd/actors/player/frames/east-attack-04.png": "019a578f490bce7b108cc674b1e94645c5173ac9ec57b17678594b3541649a53",
+    "assets/hd/actors/player/frames/east-death-01.png": "70f71daa282f98ac59d116ab77aa047e35551973441a87dab7ea68c24771142c",
+    "assets/hd/actors/player/frames/east-death-02.png": "d2132187f5ec8c94ed8eb2a5e3cf5585d06c20108bd212e8c0b6ea49e404dd84",
+    "assets/hd/actors/player/frames/east-hit-01.png": "b3a5c260f09934667e300431b506529b8334e6d93402e1462bda54e652b66d5a",
+    "assets/hd/actors/player/frames/east-hit-02.png": "63ddd75ef5b4cd7e9925670704509d22ec36ab1e4c4c8933d8649d0351eb48cc",
+    "assets/hd/actors/player/frames/east-idle-01.png": "3bf4c1d8ce263d98dad5bc2d5676aca1577f6c7f37a787d35d14326c805047a1",
+    "assets/hd/actors/player/frames/east-idle-02.png": "55b3697e340e3066d7815ac72379a012119dfabdc8c013b26eb8a8dcbabced6b",
+    "assets/hd/actors/player/frames/east-idle-03.png": "0bff8a389d5fbff84c09232cc8696e055e4da0c55b5df233fc580d155e20f22f",
+    "assets/hd/actors/player/frames/east-idle-04.png": "d9412070c0d6ad135cdb9fd6c3c9dc66d6701fc8d2144ff2b44fcd90a53cfd07",
+    "assets/hd/actors/player/frames/east-move-01.png": "01794436193a93c0421873b711d7ac431818a72f70be40da941be0ba75d10b65",
+    "assets/hd/actors/player/frames/east-move-02.png": "3ee0ae4c5a13416e3e70ef1f2cb7a5e5d80bc033e82f4ee1740792747c96a903",
+    "assets/hd/actors/player/frames/east-move-03.png": "9de16869cd837fb2511cd7f4fb660cf5879b8c13094a10aa7c19c699a581b8cb",
+    "assets/hd/actors/player/frames/east-move-04.png": "7e8769242d1a1cbd900242837caa656112aab370a5d5e9d18f116f7ddb7f5270",
+    "assets/hd/actors/player/frames/north-attack-01.png": "83d1d882a7250e494b7376a75750c3f75e0729a9b0849754e4a04851f9faf141",
+    "assets/hd/actors/player/frames/north-attack-02.png": "8f87727ff2fb6ab7b70cceb0b0645ef4cd2c5c25e15ea78455b4ab069644cabd",
+    "assets/hd/actors/player/frames/north-attack-03.png": "911bd59df9dde68b7cefaa2e54a016426b874d79c8a79345e8f554728af8ca2c",
+    "assets/hd/actors/player/frames/north-attack-04.png": "40944a4b524a38cde5399ed9d590c9368ab167219919d3a87a99a4d696f05a87",
+    "assets/hd/actors/player/frames/north-death-01.png": "efdf6e0f62a64feb7d1e0fb36f4b7484355e04362e6d4dea28c47b4b6511802c",
+    "assets/hd/actors/player/frames/north-death-02.png": "232e661f0f8db127f2e0a4931cae680843f4aad9788a36a6d109c619cfa16595",
+    "assets/hd/actors/player/frames/north-hit-01.png": "90fcd0fd8a6418678e3f3d0b1110713616159210c846b847426acda4cf5011a2",
+    "assets/hd/actors/player/frames/north-hit-02.png": "58e614dba8112ee04d4efafe3256ce79a2f9b44918ad26f00eb8564be5777df1",
+    "assets/hd/actors/player/frames/north-idle-01.png": "7533a047637e5b53e569d44ba6268ac6a460e2036f86d17c4278cc88c82bdae6",
+    "assets/hd/actors/player/frames/north-idle-02.png": "4335a06d62721e84f7c216954754a59b8a9d387ee93a58a724630ab67c290f71",
+    "assets/hd/actors/player/frames/north-idle-03.png": "9e9374629480801fc4ba676ed94d0cbcb4b38ddd402e48f133f58a8c394cccce",
+    "assets/hd/actors/player/frames/north-idle-04.png": "4bf05cf138ba12a59a68356c6213ffcac7cd4038021d038a6dc6ef6214913190",
+    "assets/hd/actors/player/frames/north-move-01.png": "58c6d2ac2aa2db32f5329ef1274f0e46c5b894517c5ec60223c40afb79047e15",
+    "assets/hd/actors/player/frames/north-move-02.png": "9ebf0929da996eb10e5b37adf53c5976b48993cef7ae40ee46bb053a5f2e4d95",
+    "assets/hd/actors/player/frames/north-move-03.png": "44d8827339d7e57717ea9e02958c1f1a518bf09708a853669aeee3206bd65d2c",
+    "assets/hd/actors/player/frames/north-move-04.png": "95287f70a28cede6477cc702f4e3038a44c8903628dc542cf4dea1387aa40c83",
+    "assets/hd/actors/player/frames/south-attack-01.png": "351ee3a734f66a4ee7d794437910b117c5fd2d24adc52998f334d4e2dd06e812",
+    "assets/hd/actors/player/frames/south-attack-02.png": "5cf4e4bf30f241f66feed50de753cba484f8571a46a04474a5be97cc83761401",
+    "assets/hd/actors/player/frames/south-attack-03.png": "117c5f7fc01ea28a69a86b7b6f8a9c87a9bcc6286fa244f5ddad16d751012645",
+    "assets/hd/actors/player/frames/south-attack-04.png": "9bb3e77e198d1d6b4ba57131096825001446175cc19466a602d0010307767c16",
+    "assets/hd/actors/player/frames/south-death-01.png": "23bc92f28217cfc295594f3c6af81de23f17f51bb81c7db01619041d839a8950",
+    "assets/hd/actors/player/frames/south-death-02.png": "db274eee8263ce737acad1c6e9f894ffb6d35bb5404b256f918bcb8d13223a74",
+    "assets/hd/actors/player/frames/south-hit-01.png": "7423753eca9d065438004117d98f4dfbf55dad8b5d989ece715634536f747add",
+    "assets/hd/actors/player/frames/south-hit-02.png": "2f0dc78b9e2645d6b69d3ad7da6940f0a427b947728cb56540fced962fa7b16e",
+    "assets/hd/actors/player/frames/south-idle-01.png": "8882c91fcbd8e6d91103057a9468c3066d32a257977d1712d2e9363ccdccd3c4",
+    "assets/hd/actors/player/frames/south-idle-02.png": "d8ebd678fd6055eddeadfba7ffaffd96c7e3c0c27515ecac6a890471279fec42",
+    "assets/hd/actors/player/frames/south-idle-03.png": "af541ce203234644c4a507c33a035fdc25d85db092d8799de792842a88a8cc20",
+    "assets/hd/actors/player/frames/south-idle-04.png": "6cb3250a3b1c650e1af3d811af195768ff843c2d5eb8398ff02febcb0bde28e9",
+    "assets/hd/actors/player/frames/south-move-01.png": "5b5f020e718de84ebff41a0b4f359ee7540a99fa345dc58ae8f6e2c5540e3d1f",
+    "assets/hd/actors/player/frames/south-move-02.png": "ec6cff6b4fc597b50c4dff827b08c1ee704104b50329c7b22a6624252b70d446",
+    "assets/hd/actors/player/frames/south-move-03.png": "20c8f9c4890f62794d4c275930b83c1f7425e98b9df742b1ca9ab2f35eb42782",
+    "assets/hd/actors/player/frames/south-move-04.png": "5e5a1a6e845b5552555fd19d2b8963b565104834868071dd6987293cfe7b4dcf",
+    "assets/hd/actors/player/frames/west-attack-01.png": "da7d586a41d73fd3100fe8d222b93c6c23bed992c65507da079a428ebbfbcb58",
+    "assets/hd/actors/player/frames/west-attack-02.png": "941e25dc63076069c70a7ce49c6a4a74e9728d09f0425fa3367d044c684cfc43",
+    "assets/hd/actors/player/frames/west-attack-03.png": "2965f54353bf28aeb12bc0e4876056c76fd9f0644a58b2ab0a2cff7b575189a9",
+    "assets/hd/actors/player/frames/west-attack-04.png": "d370b9665fe717027b9c5a2843bb113efdb71cf875a9dece07c3bee542668a4c",
+    "assets/hd/actors/player/frames/west-death-01.png": "c232f615b322271d78328b7de23e4eeef0fd626701bca84f289217d06107c635",
+    "assets/hd/actors/player/frames/west-death-02.png": "a4957a6e742539f5aaff11cc2296b70d4a05f63cb6057ea9dfe17f3c5605d19c",
+    "assets/hd/actors/player/frames/west-hit-01.png": "e1bf5047089fc5f67a910dffc6f2d51bce349b46095fc3ec9c4be644c91da4dd",
+    "assets/hd/actors/player/frames/west-hit-02.png": "8f2777e67b839d6fc1ae05ac7ab52bbe74df6c21237c04fa7b0ca10b9d020ddc",
+    "assets/hd/actors/player/frames/west-idle-01.png": "81389276cea4b497958ec4128e3eb6c2304f5d376899768b01a1f5a7f61c0f4c",
+    "assets/hd/actors/player/frames/west-idle-02.png": "c24e8b047f7e2e6680aff3de8371ce49b5e3110abaa7babffb061b3874df53f9",
+    "assets/hd/actors/player/frames/west-idle-03.png": "6339e7ffcbb8614a86086e1da59b3f73d86e3a5d77aad8d8f3f9aacee773034e",
+    "assets/hd/actors/player/frames/west-idle-04.png": "260ba14d19a5b2b71a2cafbad0b748bf75a197ca33f200ee9b3a4f2ef44ab7ca",
+    "assets/hd/actors/player/frames/west-move-01.png": "cd8ed05ee650b77eff45a31f187245896cd73b7dc774e91749c19407e073ea09",
+    "assets/hd/actors/player/frames/west-move-02.png": "a3037726d86c76db549d1b0bbeef94d0ca5361d9f3902de8d6e25b1b2a4afcd4",
+    "assets/hd/actors/player/frames/west-move-03.png": "3f8b141e4ef47bcfa2b10359d083169664176c28c7ae7bc19d9c49b67c203ac8",
+    "assets/hd/actors/player/frames/west-move-04.png": "f78136100e7d984a465b7e7a635db64298a7258c8ddaeae9b66ca0248234d4bd",
+    "assets/hd/actors/player/player-manifest.json": "c4eddf083d7b59a190839d525cb11c4ec58236846e222252882fd48acb007bab"
+  },
+  "pillowVersion": "12.1.1",
+  "pipelineSchema": 1,
+  "sourceOrder": [
+    "south",
+    "north",
+    "east",
+    "west"
+  ],
+  "sources": {
+    "east": {
+      "height": 1254,
+      "mode": "RGB",
+      "path": "art/source/player-hd/player-animation-east-source-1024.png",
+      "sha256": "19da543aea6592de7cbdd398bcf6be551abef96eb1c323906f0338eb39a6fe40",
+      "width": 1254
+    },
+    "north": {
+      "height": 1254,
+      "mode": "RGB",
+      "path": "art/source/player-hd/player-animation-north-source-1024.png",
+      "sha256": "ff130a2efd2677d758048a14bf697f7e0714d3167d0571444b9fcb648d74c861",
+      "width": 1254
+    },
+    "south": {
+      "height": 1254,
+      "mode": "RGB",
+      "path": "art/source/player-hd/player-animation-south-source-1024.png",
+      "sha256": "8945c8f41ea083cf5717072058466fd9ec19c8ebee77653956e1fcaea04e66d3",
+      "width": 1254
+    },
+    "west": {
+      "height": 1254,
+      "mode": "RGB",
+      "path": "art/source/player-hd/player-animation-west-source-1024.png",
+      "sha256": "25f525a787acf7dca43b62fb51c31a1406d0e9f30da876cffb3ddaca7324db24",
+      "width": 1254
+    }
+  }
+}

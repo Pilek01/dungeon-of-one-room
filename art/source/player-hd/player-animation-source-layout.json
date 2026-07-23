@@ -1,0 +1,1150 @@
+{
+  "schemaVersion": 1,
+  "directionOrder": [
+    "south",
+    "north",
+    "east",
+    "west"
+  ],
+  "sources": {
+    "south": {
+      "identity": {
+        "path": "art/source/player-hd/player-animation-south-source-1024.png",
+        "sha256": "8945c8f41ea083cf5717072058466fd9ec19c8ebee77653956e1fcaea04e66d3",
+        "width": 1254,
+        "height": 1254,
+        "mode": "RGB"
+      },
+      "helperDetectedKey": "#f405f0",
+      "semanticLayout": "4x4",
+      "columnCenters": [
+        165.125,
+        453.5,
+        759.5,
+        1067.375
+      ],
+      "rowCenters": [
+        181.375,
+        478.375,
+        782.25,
+        1079.625
+      ],
+      "occupiedSlotCount": 16,
+      "rawComponentCount": 16,
+      "meaningfulComponentCount": 16,
+      "removedSmallComponentCount": 0,
+      "removedSmallComponentAreas": [],
+      "crossingComponentCount": 0,
+      "slots": {
+        "R1C1": {
+          "meaningfulPixels": 24959,
+          "meaningfulComponentCount": 1,
+          "componentAreas": [
+            24959
+          ],
+          "componentBounds": [
+            [
+              83,
+              54,
+              254,
+              304
+            ]
+          ]
+        },
+        "R1C2": {
+          "meaningfulPixels": 24661,
+          "meaningfulComponentCount": 1,
+          "componentAreas": [
+            24661
+          ],
+          "componentBounds": [
+            [
+              378,
+              56,
+              552,
+              306
+            ]
+          ]
+        },
+        "R1C3": {
+          "meaningfulPixels": 24517,
+          "meaningfulComponentCount": 1,
+          "componentAreas": [
+            24517
+          ],
+          "componentBounds": [
+            [
+              682,
+              56,
+              852,
+              308
+            ]
+          ]
+        },
+        "R1C4": {
+          "meaningfulPixels": 24269,
+          "meaningfulComponentCount": 1,
+          "componentAreas": [
+            24269
+          ],
+          "componentBounds": [
+            [
+              985,
+              57,
+              1149,
+              310
+            ]
+          ]
+        },
+        "R2C1": {
+          "meaningfulPixels": 22114,
+          "meaningfulComponentCount": 1,
+          "componentAreas": [
+            22114
+          ],
+          "componentBounds": [
+            [
+              74,
+              358,
+              254,
+              602
+            ]
+          ]
+        },
+        "R2C2": {
+          "meaningfulPixels": 20821,
+          "meaningfulComponentCount": 1,
+          "componentAreas": [
+            20821
+          ],
+          "componentBounds": [
+            [
+              374,
+              355,
+              545,
+              591
+            ]
+          ]
+        },
+        "R2C3": {
+          "meaningfulPixels": 20349,
+          "meaningfulComponentCount": 1,
+          "componentAreas": [
+            20349
+          ],
+          "componentBounds": [
+            [
+              691,
+              359,
+              844,
+              603
+            ]
+          ]
+        },
+        "R2C4": {
+          "meaningfulPixels": 20226,
+          "meaningfulComponentCount": 1,
+          "componentAreas": [
+            20226
+          ],
+          "componentBounds": [
+            [
+              973,
+              363,
+              1146,
+              596
+            ]
+          ]
+        },
+        "R3C1": {
+          "meaningfulPixels": 23741,
+          "meaningfulComponentCount": 1,
+          "componentAreas": [
+            23741
+          ],
+          "componentBounds": [
+            [
+              54,
+              660,
+              265,
+              881
+            ]
+          ]
+        },
+        "R3C2": {
+          "meaningfulPixels": 19537,
+          "meaningfulComponentCount": 1,
+          "componentAreas": [
+            19537
+          ],
+          "componentBounds": [
+            [
+              333,
+              675,
+              552,
+              898
+            ]
+          ]
+        },
+        "R3C3": {
+          "meaningfulPixels": 19228,
+          "meaningfulComponentCount": 1,
+          "componentAreas": [
+            19228
+          ],
+          "componentBounds": [
+            [
+              672,
+              682,
+              847,
+              898
+            ]
+          ]
+        },
+        "R3C4": {
+          "meaningfulPixels": 21858,
+          "meaningfulComponentCount": 1,
+          "componentAreas": [
+            21858
+          ],
+          "componentBounds": [
+            [
+              973,
+              668,
+              1210,
+              896
+            ]
+          ]
+        },
+        "R4C1": {
+          "meaningfulPixels": 22064,
+          "meaningfulComponentCount": 1,
+          "componentAreas": [
+            22064
+          ],
+          "componentBounds": [
+            [
+              92,
+              948,
+              245,
+              1168
+            ]
+          ]
+        },
+        "R4C2": {
+          "meaningfulPixels": 22755,
+          "meaningfulComponentCount": 1,
+          "componentAreas": [
+            22755
+          ],
+          "componentBounds": [
+            [
+              346,
+              952,
+              548,
+              1176
+            ]
+          ]
+        },
+        "R4C3": {
+          "meaningfulPixels": 21998,
+          "meaningfulComponentCount": 1,
+          "componentAreas": [
+            21998
+          ],
+          "componentBounds": [
+            [
+              633,
+              1003,
+              855,
+              1186
+            ]
+          ]
+        },
+        "R4C4": {
+          "meaningfulPixels": 19825,
+          "meaningfulComponentCount": 1,
+          "componentAreas": [
+            19825
+          ],
+          "componentBounds": [
+            [
+              925,
+              1024,
+              1178,
+              1180
+            ]
+          ]
+        }
+      }
+    },
+    "north": {
+      "identity": {
+        "path": "art/source/player-hd/player-animation-north-source-1024.png",
+        "sha256": "ff130a2efd2677d758048a14bf697f7e0714d3167d0571444b9fcb648d74c861",
+        "width": 1254,
+        "height": 1254,
+        "mode": "RGB"
+      },
+      "helperDetectedKey": "#f504f2",
+      "semanticLayout": "4x4",
+      "columnCenters": [
+        177.75,
+        455.125,
+        767.25,
+        1066.5
+      ],
+      "rowCenters": [
+        169.25,
+        469.625,
+        762.625,
+        1091.9
+      ],
+      "occupiedSlotCount": 16,
+      "rawComponentCount": 59,
+      "meaningfulComponentCount": 17,
+      "removedSmallComponentCount": 42,
+      "removedSmallComponentAreas": [
+        12,
+        9,
+        6,
+        4,
+        4,
+        4,
+        3,
+        3,
+        3,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "crossingComponentCount": 0,
+      "slots": {
+        "R1C1": {
+          "meaningfulPixels": 18313,
+          "meaningfulComponentCount": 1,
+          "componentAreas": [
+            18313
+          ],
+          "componentBounds": [
+            [
+              109,
+              59,
+              253,
+              271
+            ]
+          ]
+        },
+        "R1C2": {
+          "meaningfulPixels": 17884,
+          "meaningfulComponentCount": 1,
+          "componentAreas": [
+            17884
+          ],
+          "componentBounds": [
+            [
+              394,
+              59,
+              533,
+              271
+            ]
+          ]
+        },
+        "R1C3": {
+          "meaningfulPixels": 17721,
+          "meaningfulComponentCount": 1,
+          "componentAreas": [
+            17721
+          ],
+          "componentBounds": [
+            [
+              699,
+              73,
+              836,
+              278
+            ]
+          ]
+        },
+        "R1C4": {
+          "meaningfulPixels": 17686,
+          "meaningfulComponentCount": 1,
+          "componentAreas": [
+            17686
+          ],
+          "componentBounds": [
+            [
+              1005,
+              66,
+              1146,
+              277
+            ]
+          ]
+        },
+        "R2C1": {
+          "meaningfulPixels": 16411,
+          "meaningfulComponentCount": 1,
+          "componentAreas": [
+            16411
+          ],
+          "componentBounds": [
+            [
+              110,
+              363,
+              236,
+              574
+            ]
+          ]
+        },
+        "R2C2": {
+          "meaningfulPixels": 16890,
+          "meaningfulComponentCount": 1,
+          "componentAreas": [
+            16890
+          ],
+          "componentBounds": [
+            [
+              394,
+              363,
+              521,
+              579
+            ]
+          ]
+        },
+        "R2C3": {
+          "meaningfulPixels": 16857,
+          "meaningfulComponentCount": 1,
+          "componentAreas": [
+            16857
+          ],
+          "componentBounds": [
+            [
+              679,
+              362,
+              824,
+              578
+            ]
+          ]
+        },
+        "R2C4": {
+          "meaningfulPixels": 15677,
+          "meaningfulComponentCount": 1,
+          "componentAreas": [
+            15677
+          ],
+          "componentBounds": [
+            [
+              1001,
+              362,
+              1127,
+              576
+            ]
+          ]
+        },
+        "R3C1": {
+          "meaningfulPixels": 17244,
+          "meaningfulComponentCount": 1,
+          "componentAreas": [
+            17244
+          ],
+          "componentBounds": [
+            [
+              105,
+              656,
+              232,
+              870
+            ]
+          ]
+        },
+        "R3C2": {
+          "meaningfulPixels": 18184,
+          "meaningfulComponentCount": 1,
+          "componentAreas": [
+            18184
+          ],
+          "componentBounds": [
+            [
+              380,
+              656,
+              541,
+              867
+            ]
+          ]
+        },
+        "R3C3": {
+          "meaningfulPixels": 17917,
+          "meaningfulComponentCount": 1,
+          "componentAreas": [
+            17917
+          ],
+          "componentBounds": [
+            [
+              698,
+              653,
+              849,
+              869
+            ]
+          ]
+        },
+        "R3C4": {
+          "meaningfulPixels": 18829,
+          "meaningfulComponentCount": 1,
+          "componentAreas": [
+            18829
+          ],
+          "componentBounds": [
+            [
+              908,
+              666,
+              1151,
+              864
+            ]
+          ]
+        },
+        "R4C1": {
+          "meaningfulPixels": 18339,
+          "meaningfulComponentCount": 1,
+          "componentAreas": [
+            18339
+          ],
+          "componentBounds": [
+            [
+              108,
+              959,
+              269,
+              1152
+            ]
+          ]
+        },
+        "R4C2": {
+          "meaningfulPixels": 18460,
+          "meaningfulComponentCount": 1,
+          "componentAreas": [
+            18460
+          ],
+          "componentBounds": [
+            [
+              357,
+              957,
+              521,
+              1152
+            ]
+          ]
+        },
+        "R4C3": {
+          "meaningfulPixels": 17992,
+          "meaningfulComponentCount": 1,
+          "componentAreas": [
+            17992
+          ],
+          "componentBounds": [
+            [
+              682,
+              993,
+              871,
+              1170
+            ]
+          ]
+        },
+        "R4C4": {
+          "meaningfulPixels": 16612,
+          "meaningfulComponentCount": 2,
+          "componentAreas": [
+            15598,
+            1014
+          ],
+          "componentBounds": [
+            [
+              954,
+              1043,
+              1130,
+              1186
+            ],
+            [
+              1102,
+              1118,
+              1141,
+              1189
+            ]
+          ],
+          "detachedProp": "sword"
+        }
+      }
+    },
+    "east": {
+      "identity": {
+        "path": "art/source/player-hd/player-animation-east-source-1024.png",
+        "sha256": "19da543aea6592de7cbdd398bcf6be551abef96eb1c323906f0338eb39a6fe40",
+        "width": 1254,
+        "height": 1254,
+        "mode": "RGB"
+      },
+      "helperDetectedKey": "#f204f0",
+      "semanticLayout": "4x4",
+      "columnCenters": [
+        185.625,
+        471.625,
+        768.625,
+        1059.375
+      ],
+      "rowCenters": [
+        186.75,
+        477.375,
+        765.75,
+        1077.25
+      ],
+      "occupiedSlotCount": 16,
+      "rawComponentCount": 19,
+      "meaningfulComponentCount": 16,
+      "removedSmallComponentCount": 3,
+      "removedSmallComponentAreas": [
+        86,
+        66,
+        22
+      ],
+      "crossingComponentCount": 0,
+      "slots": {
+        "R1C1": {
+          "meaningfulPixels": 13584,
+          "meaningfulComponentCount": 1,
+          "componentAreas": [
+            13584
+          ],
+          "componentBounds": [
+            [
+              125,
+              76,
+              242,
+              289
+            ]
+          ]
+        },
+        "R1C2": {
+          "meaningfulPixels": 13726,
+          "meaningfulComponentCount": 1,
+          "componentAreas": [
+            13726
+          ],
+          "componentBounds": [
+            [
+              406,
+              78,
+              520,
+              290
+            ]
+          ]
+        },
+        "R1C3": {
+          "meaningfulPixels": 13420,
+          "meaningfulComponentCount": 1,
+          "componentAreas": [
+            13420
+          ],
+          "componentBounds": [
+            [
+              690,
+              87,
+              810,
+              291
+            ]
+          ]
+        },
+        "R1C4": {
+          "meaningfulPixels": 14095,
+          "meaningfulComponentCount": 1,
+          "componentAreas": [
+            14095
+          ],
+          "componentBounds": [
+            [
+              977,
+              92,
+              1121,
+              291
+            ]
+          ]
+        },
+        "R2C1": {
+          "meaningfulPixels": 14469,
+          "meaningfulComponentCount": 1,
+          "componentAreas": [
+            14469
+          ],
+          "componentBounds": [
+            [
+              99,
+              372,
+              280,
+              572
+            ]
+          ]
+        },
+        "R2C2": {
+          "meaningfulPixels": 14761,
+          "meaningfulComponentCount": 1,
+          "componentAreas": [
+            14761
+          ],
+          "componentBounds": [
+            [
+              368,
+              386,
+              571,
+              569
+            ]
+          ]
+        },
+        "R2C3": {
+          "meaningfulPixels": 15092,
+          "meaningfulComponentCount": 1,
+          "componentAreas": [
+            15092
+          ],
+          "componentBounds": [
+            [
+              650,
+              388,
+              861,
+              570
+            ]
+          ]
+        },
+        "R2C4": {
+          "meaningfulPixels": 15539,
+          "meaningfulComponentCount": 1,
+          "componentAreas": [
+            15539
+          ],
+          "componentBounds": [
+            [
+              938,
+              390,
+              1150,
+              572
+            ]
+          ]
+        },
+        "R3C1": {
+          "meaningfulPixels": 16382,
+          "meaningfulComponentCount": 1,
+          "componentAreas": [
+            16382
+          ],
+          "componentBounds": [
+            [
+              117,
+              654,
+              245,
+              860
+            ]
+          ]
+        },
+        "R3C2": {
+          "meaningfulPixels": 16595,
+          "meaningfulComponentCount": 1,
+          "componentAreas": [
+            16595
+          ],
+          "componentBounds": [
+            [
+              377,
+              677,
+              618,
+              863
+            ]
+          ]
+        },
+        "R3C3": {
+          "meaningfulPixels": 17756,
+          "meaningfulComponentCount": 1,
+          "componentAreas": [
+            17756
+          ],
+          "componentBounds": [
+            [
+              662,
+              673,
+              942,
+              864
+            ]
+          ]
+        },
+        "R3C4": {
+          "meaningfulPixels": 14789,
+          "meaningfulComponentCount": 1,
+          "componentAreas": [
+            14789
+          ],
+          "componentBounds": [
+            [
+              974,
+              670,
+              1154,
+              865
+            ]
+          ]
+        },
+        "R4C1": {
+          "meaningfulPixels": 17378,
+          "meaningfulComponentCount": 1,
+          "componentAreas": [
+            17378
+          ],
+          "componentBounds": [
+            [
+              110,
+              939,
+              267,
+              1137
+            ]
+          ]
+        },
+        "R4C2": {
+          "meaningfulPixels": 16864,
+          "meaningfulComponentCount": 1,
+          "componentAreas": [
+            16864
+          ],
+          "componentBounds": [
+            [
+              370,
+              960,
+              543,
+              1144
+            ]
+          ]
+        },
+        "R4C3": {
+          "meaningfulPixels": 15268,
+          "meaningfulComponentCount": 1,
+          "componentAreas": [
+            15268
+          ],
+          "componentBounds": [
+            [
+              645,
+              1044,
+              889,
+              1161
+            ]
+          ]
+        },
+        "R4C4": {
+          "meaningfulPixels": 14449,
+          "meaningfulComponentCount": 1,
+          "componentAreas": [
+            14449
+          ],
+          "componentBounds": [
+            [
+              958,
+              1065,
+              1203,
+              1168
+            ]
+          ]
+        }
+      }
+    },
+    "west": {
+      "identity": {
+        "path": "art/source/player-hd/player-animation-west-source-1024.png",
+        "sha256": "25f525a787acf7dca43b62fb51c31a1406d0e9f30da876cffb3ddaca7324db24",
+        "width": 1254,
+        "height": 1254,
+        "mode": "RGB"
+      },
+      "helperDetectedKey": "#f404f2",
+      "semanticLayout": "4x4",
+      "columnCenters": [
+        163.0,
+        444.875,
+        740.875,
+        1041.0
+      ],
+      "rowCenters": [
+        183.0,
+        466.375,
+        755.875,
+        1066.75
+      ],
+      "occupiedSlotCount": 16,
+      "rawComponentCount": 16,
+      "meaningfulComponentCount": 16,
+      "removedSmallComponentCount": 0,
+      "removedSmallComponentAreas": [],
+      "crossingComponentCount": 0,
+      "slots": {
+        "R1C1": {
+          "meaningfulPixels": 16459,
+          "meaningfulComponentCount": 1,
+          "componentAreas": [
+            16459
+          ],
+          "componentBounds": [
+            [
+              92,
+              66,
+              246,
+              296
+            ]
+          ]
+        },
+        "R1C2": {
+          "meaningfulPixels": 16079,
+          "meaningfulComponentCount": 1,
+          "componentAreas": [
+            16079
+          ],
+          "componentBounds": [
+            [
+              379,
+              66,
+              521,
+              296
+            ]
+          ]
+        },
+        "R1C3": {
+          "meaningfulPixels": 16020,
+          "meaningfulComponentCount": 1,
+          "componentAreas": [
+            16020
+          ],
+          "componentBounds": [
+            [
+              673,
+              70,
+              816,
+              297
+            ]
+          ]
+        },
+        "R1C4": {
+          "meaningfulPixels": 15619,
+          "meaningfulComponentCount": 1,
+          "componentAreas": [
+            15619
+          ],
+          "componentBounds": [
+            [
+              970,
+              74,
+              1115,
+              299
+            ]
+          ]
+        },
+        "R2C1": {
+          "meaningfulPixels": 17350,
+          "meaningfulComponentCount": 1,
+          "componentAreas": [
+            17350
+          ],
+          "componentBounds": [
+            [
+              68,
+              353,
+              249,
+              572
+            ]
+          ]
+        },
+        "R2C2": {
+          "meaningfulPixels": 18412,
+          "meaningfulComponentCount": 1,
+          "componentAreas": [
+            18412
+          ],
+          "componentBounds": [
+            [
+              343,
+              355,
+              542,
+              576
+            ]
+          ]
+        },
+        "R2C3": {
+          "meaningfulPixels": 18406,
+          "meaningfulComponentCount": 1,
+          "componentAreas": [
+            18406
+          ],
+          "componentBounds": [
+            [
+              632,
+              357,
+              843,
+              579
+            ]
+          ]
+        },
+        "R2C4": {
+          "meaningfulPixels": 18013,
+          "meaningfulComponentCount": 1,
+          "componentAreas": [
+            18013
+          ],
+          "componentBounds": [
+            [
+              925,
+              360,
+              1125,
+              579
+            ]
+          ]
+        },
+        "R3C1": {
+          "meaningfulPixels": 17568,
+          "meaningfulComponentCount": 1,
+          "componentAreas": [
+            17568
+          ],
+          "componentBounds": [
+            [
+              57,
+              648,
+              250,
+              857
+            ]
+          ]
+        },
+        "R3C2": {
+          "meaningfulPixels": 20280,
+          "meaningfulComponentCount": 1,
+          "componentAreas": [
+            20280
+          ],
+          "componentBounds": [
+            [
+              281,
+              655,
+              585,
+              854
+            ]
+          ]
+        },
+        "R3C3": {
+          "meaningfulPixels": 20092,
+          "meaningfulComponentCount": 1,
+          "componentAreas": [
+            20092
+          ],
+          "componentBounds": [
+            [
+              619,
+              663,
+              880,
+              856
+            ]
+          ]
+        },
+        "R3C4": {
+          "meaningfulPixels": 16632,
+          "meaningfulComponentCount": 1,
+          "componentAreas": [
+            16632
+          ],
+          "componentBounds": [
+            [
+              967,
+              649,
+              1127,
+              865
+            ]
+          ]
+        },
+        "R4C1": {
+          "meaningfulPixels": 19211,
+          "meaningfulComponentCount": 1,
+          "componentAreas": [
+            19211
+          ],
+          "componentBounds": [
+            [
+              101,
+              930,
+              241,
+              1147
+            ]
+          ]
+        },
+        "R4C2": {
+          "meaningfulPixels": 18174,
+          "meaningfulComponentCount": 1,
+          "componentAreas": [
+            18174
+          ],
+          "componentBounds": [
+            [
+              389,
+              930,
+              519,
+              1151
+            ]
+          ]
+        },
+        "R4C3": {
+          "meaningfulPixels": 17014,
+          "meaningfulComponentCount": 1,
+          "componentAreas": [
+            17014
+          ],
+          "componentBounds": [
+            [
+              632,
+              1030,
+              832,
+              1144
+            ]
+          ]
+        },
+        "R4C4": {
+          "meaningfulPixels": 18800,
+          "meaningfulComponentCount": 1,
+          "componentAreas": [
+            18800
+          ],
+          "componentBounds": [
+            [
+              910,
+              1052,
+              1189,
+              1150
+            ]
+          ]
+        }
+      }
+    }
+  }
+}

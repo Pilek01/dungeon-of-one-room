@@ -1,0 +1,715 @@
+{
+  "schemaVersion": 1,
+  "profile": "warden-biome-abyss",
+  "type": "warden",
+  "frameSize": [
+    160,
+    160
+  ],
+  "renderSize": [
+    160,
+    160
+  ],
+  "renderSizeRationale": "The void-crystal Abyss Warden uses the existing 160 px milestone-boss footprint and shared bottom-center gameplay root.",
+  "anchor": [
+    0.5,
+    1
+  ],
+  "group": "bosses",
+  "clips": [
+    {
+      "name": "idle",
+      "frameCount": 4,
+      "fps": 4,
+      "loop": true
+    },
+    {
+      "name": "move",
+      "frameCount": 4,
+      "fps": 8,
+      "loop": true
+    },
+    {
+      "name": "cast",
+      "frameCount": 4,
+      "fps": 10,
+      "loop": false
+    },
+    {
+      "name": "hit",
+      "frameCount": 2,
+      "fps": 10,
+      "loop": false
+    },
+    {
+      "name": "death",
+      "frameCount": 2,
+      "fps": 6,
+      "loop": false
+    }
+  ],
+  "source": {
+    "sha256": "f8430ab56ef4abf1c24640a4385c43655721ffe46a02142bbb0052d2d2447b0a",
+    "sheets": {
+      "south": {
+        "path": "art/source/boss-hd/warden-biome-abyss/warden-biome-abyss-animation-south-source-1024.png",
+        "sha256": "1c0dae92982d9f3fa32938ec1b377b1930cafb7f97b6b6623e2f62ef41d1c135"
+      },
+      "north": {
+        "path": "art/source/boss-hd/warden-biome-abyss/warden-biome-abyss-animation-north-source-1024.png",
+        "sha256": "5209b99d3ed834780837a443e2c6b5b72dfc776b8f4cc579cedb8d3784b8361b"
+      },
+      "east": {
+        "path": "art/source/boss-hd/warden-biome-abyss/warden-biome-abyss-animation-east-source-1024.png",
+        "sha256": "6f9f5a4d8a47e8c5f3ae401d961b20b0839214a782eb6733b3a15726ab2b9d9d"
+      },
+      "west": {
+        "path": "art/source/boss-hd/warden-biome-abyss/warden-biome-abyss-animation-west-source-1024.png",
+        "sha256": "ac700c99489b1c7f7b893848839ca85e923e1afebebe622fcea3b20d2fb39e70"
+      }
+    }
+  },
+  "frames": [
+    {
+      "type": "warden",
+      "direction": "south",
+      "clip": "idle",
+      "frame": 1,
+      "key": "boss.warden.abyss.south.idle.01",
+      "src": "assets/hd/bosses/warden-biome-abyss/frames/south-idle-01.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden",
+      "direction": "south",
+      "clip": "idle",
+      "frame": 2,
+      "key": "boss.warden.abyss.south.idle.02",
+      "src": "assets/hd/bosses/warden-biome-abyss/frames/south-idle-02.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden",
+      "direction": "south",
+      "clip": "idle",
+      "frame": 3,
+      "key": "boss.warden.abyss.south.idle.03",
+      "src": "assets/hd/bosses/warden-biome-abyss/frames/south-idle-03.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden",
+      "direction": "south",
+      "clip": "idle",
+      "frame": 4,
+      "key": "boss.warden.abyss.south.idle.04",
+      "src": "assets/hd/bosses/warden-biome-abyss/frames/south-idle-04.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden",
+      "direction": "south",
+      "clip": "move",
+      "frame": 1,
+      "key": "boss.warden.abyss.south.move.01",
+      "src": "assets/hd/bosses/warden-biome-abyss/frames/south-move-01.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden",
+      "direction": "south",
+      "clip": "move",
+      "frame": 2,
+      "key": "boss.warden.abyss.south.move.02",
+      "src": "assets/hd/bosses/warden-biome-abyss/frames/south-move-02.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden",
+      "direction": "south",
+      "clip": "move",
+      "frame": 3,
+      "key": "boss.warden.abyss.south.move.03",
+      "src": "assets/hd/bosses/warden-biome-abyss/frames/south-move-03.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden",
+      "direction": "south",
+      "clip": "move",
+      "frame": 4,
+      "key": "boss.warden.abyss.south.move.04",
+      "src": "assets/hd/bosses/warden-biome-abyss/frames/south-move-04.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden",
+      "direction": "south",
+      "clip": "cast",
+      "frame": 1,
+      "key": "boss.warden.abyss.south.cast.01",
+      "src": "assets/hd/bosses/warden-biome-abyss/frames/south-cast-01.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden",
+      "direction": "south",
+      "clip": "cast",
+      "frame": 2,
+      "key": "boss.warden.abyss.south.cast.02",
+      "src": "assets/hd/bosses/warden-biome-abyss/frames/south-cast-02.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden",
+      "direction": "south",
+      "clip": "cast",
+      "frame": 3,
+      "key": "boss.warden.abyss.south.cast.03",
+      "src": "assets/hd/bosses/warden-biome-abyss/frames/south-cast-03.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden",
+      "direction": "south",
+      "clip": "cast",
+      "frame": 4,
+      "key": "boss.warden.abyss.south.cast.04",
+      "src": "assets/hd/bosses/warden-biome-abyss/frames/south-cast-04.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden",
+      "direction": "south",
+      "clip": "hit",
+      "frame": 1,
+      "key": "boss.warden.abyss.south.hit.01",
+      "src": "assets/hd/bosses/warden-biome-abyss/frames/south-hit-01.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden",
+      "direction": "south",
+      "clip": "hit",
+      "frame": 2,
+      "key": "boss.warden.abyss.south.hit.02",
+      "src": "assets/hd/bosses/warden-biome-abyss/frames/south-hit-02.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden",
+      "direction": "south",
+      "clip": "death",
+      "frame": 1,
+      "key": "boss.warden.abyss.south.death.01",
+      "src": "assets/hd/bosses/warden-biome-abyss/frames/south-death-01.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden",
+      "direction": "south",
+      "clip": "death",
+      "frame": 2,
+      "key": "boss.warden.abyss.south.death.02",
+      "src": "assets/hd/bosses/warden-biome-abyss/frames/south-death-02.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden",
+      "direction": "north",
+      "clip": "idle",
+      "frame": 1,
+      "key": "boss.warden.abyss.north.idle.01",
+      "src": "assets/hd/bosses/warden-biome-abyss/frames/north-idle-01.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden",
+      "direction": "north",
+      "clip": "idle",
+      "frame": 2,
+      "key": "boss.warden.abyss.north.idle.02",
+      "src": "assets/hd/bosses/warden-biome-abyss/frames/north-idle-02.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden",
+      "direction": "north",
+      "clip": "idle",
+      "frame": 3,
+      "key": "boss.warden.abyss.north.idle.03",
+      "src": "assets/hd/bosses/warden-biome-abyss/frames/north-idle-03.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden",
+      "direction": "north",
+      "clip": "idle",
+      "frame": 4,
+      "key": "boss.warden.abyss.north.idle.04",
+      "src": "assets/hd/bosses/warden-biome-abyss/frames/north-idle-04.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden",
+      "direction": "north",
+      "clip": "move",
+      "frame": 1,
+      "key": "boss.warden.abyss.north.move.01",
+      "src": "assets/hd/bosses/warden-biome-abyss/frames/north-move-01.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden",
+      "direction": "north",
+      "clip": "move",
+      "frame": 2,
+      "key": "boss.warden.abyss.north.move.02",
+      "src": "assets/hd/bosses/warden-biome-abyss/frames/north-move-02.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden",
+      "direction": "north",
+      "clip": "move",
+      "frame": 3,
+      "key": "boss.warden.abyss.north.move.03",
+      "src": "assets/hd/bosses/warden-biome-abyss/frames/north-move-03.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden",
+      "direction": "north",
+      "clip": "move",
+      "frame": 4,
+      "key": "boss.warden.abyss.north.move.04",
+      "src": "assets/hd/bosses/warden-biome-abyss/frames/north-move-04.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden",
+      "direction": "north",
+      "clip": "cast",
+      "frame": 1,
+      "key": "boss.warden.abyss.north.cast.01",
+      "src": "assets/hd/bosses/warden-biome-abyss/frames/north-cast-01.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden",
+      "direction": "north",
+      "clip": "cast",
+      "frame": 2,
+      "key": "boss.warden.abyss.north.cast.02",
+      "src": "assets/hd/bosses/warden-biome-abyss/frames/north-cast-02.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden",
+      "direction": "north",
+      "clip": "cast",
+      "frame": 3,
+      "key": "boss.warden.abyss.north.cast.03",
+      "src": "assets/hd/bosses/warden-biome-abyss/frames/north-cast-03.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden",
+      "direction": "north",
+      "clip": "cast",
+      "frame": 4,
+      "key": "boss.warden.abyss.north.cast.04",
+      "src": "assets/hd/bosses/warden-biome-abyss/frames/north-cast-04.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden",
+      "direction": "north",
+      "clip": "hit",
+      "frame": 1,
+      "key": "boss.warden.abyss.north.hit.01",
+      "src": "assets/hd/bosses/warden-biome-abyss/frames/north-hit-01.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden",
+      "direction": "north",
+      "clip": "hit",
+      "frame": 2,
+      "key": "boss.warden.abyss.north.hit.02",
+      "src": "assets/hd/bosses/warden-biome-abyss/frames/north-hit-02.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden",
+      "direction": "north",
+      "clip": "death",
+      "frame": 1,
+      "key": "boss.warden.abyss.north.death.01",
+      "src": "assets/hd/bosses/warden-biome-abyss/frames/north-death-01.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden",
+      "direction": "north",
+      "clip": "death",
+      "frame": 2,
+      "key": "boss.warden.abyss.north.death.02",
+      "src": "assets/hd/bosses/warden-biome-abyss/frames/north-death-02.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden",
+      "direction": "east",
+      "clip": "idle",
+      "frame": 1,
+      "key": "boss.warden.abyss.east.idle.01",
+      "src": "assets/hd/bosses/warden-biome-abyss/frames/east-idle-01.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden",
+      "direction": "east",
+      "clip": "idle",
+      "frame": 2,
+      "key": "boss.warden.abyss.east.idle.02",
+      "src": "assets/hd/bosses/warden-biome-abyss/frames/east-idle-02.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden",
+      "direction": "east",
+      "clip": "idle",
+      "frame": 3,
+      "key": "boss.warden.abyss.east.idle.03",
+      "src": "assets/hd/bosses/warden-biome-abyss/frames/east-idle-03.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden",
+      "direction": "east",
+      "clip": "idle",
+      "frame": 4,
+      "key": "boss.warden.abyss.east.idle.04",
+      "src": "assets/hd/bosses/warden-biome-abyss/frames/east-idle-04.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden",
+      "direction": "east",
+      "clip": "move",
+      "frame": 1,
+      "key": "boss.warden.abyss.east.move.01",
+      "src": "assets/hd/bosses/warden-biome-abyss/frames/east-move-01.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden",
+      "direction": "east",
+      "clip": "move",
+      "frame": 2,
+      "key": "boss.warden.abyss.east.move.02",
+      "src": "assets/hd/bosses/warden-biome-abyss/frames/east-move-02.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden",
+      "direction": "east",
+      "clip": "move",
+      "frame": 3,
+      "key": "boss.warden.abyss.east.move.03",
+      "src": "assets/hd/bosses/warden-biome-abyss/frames/east-move-03.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden",
+      "direction": "east",
+      "clip": "move",
+      "frame": 4,
+      "key": "boss.warden.abyss.east.move.04",
+      "src": "assets/hd/bosses/warden-biome-abyss/frames/east-move-04.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden",
+      "direction": "east",
+      "clip": "cast",
+      "frame": 1,
+      "key": "boss.warden.abyss.east.cast.01",
+      "src": "assets/hd/bosses/warden-biome-abyss/frames/east-cast-01.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden",
+      "direction": "east",
+      "clip": "cast",
+      "frame": 2,
+      "key": "boss.warden.abyss.east.cast.02",
+      "src": "assets/hd/bosses/warden-biome-abyss/frames/east-cast-02.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden",
+      "direction": "east",
+      "clip": "cast",
+      "frame": 3,
+      "key": "boss.warden.abyss.east.cast.03",
+      "src": "assets/hd/bosses/warden-biome-abyss/frames/east-cast-03.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden",
+      "direction": "east",
+      "clip": "cast",
+      "frame": 4,
+      "key": "boss.warden.abyss.east.cast.04",
+      "src": "assets/hd/bosses/warden-biome-abyss/frames/east-cast-04.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden",
+      "direction": "east",
+      "clip": "hit",
+      "frame": 1,
+      "key": "boss.warden.abyss.east.hit.01",
+      "src": "assets/hd/bosses/warden-biome-abyss/frames/east-hit-01.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden",
+      "direction": "east",
+      "clip": "hit",
+      "frame": 2,
+      "key": "boss.warden.abyss.east.hit.02",
+      "src": "assets/hd/bosses/warden-biome-abyss/frames/east-hit-02.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden",
+      "direction": "east",
+      "clip": "death",
+      "frame": 1,
+      "key": "boss.warden.abyss.east.death.01",
+      "src": "assets/hd/bosses/warden-biome-abyss/frames/east-death-01.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden",
+      "direction": "east",
+      "clip": "death",
+      "frame": 2,
+      "key": "boss.warden.abyss.east.death.02",
+      "src": "assets/hd/bosses/warden-biome-abyss/frames/east-death-02.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden",
+      "direction": "west",
+      "clip": "idle",
+      "frame": 1,
+      "key": "boss.warden.abyss.west.idle.01",
+      "src": "assets/hd/bosses/warden-biome-abyss/frames/west-idle-01.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden",
+      "direction": "west",
+      "clip": "idle",
+      "frame": 2,
+      "key": "boss.warden.abyss.west.idle.02",
+      "src": "assets/hd/bosses/warden-biome-abyss/frames/west-idle-02.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden",
+      "direction": "west",
+      "clip": "idle",
+      "frame": 3,
+      "key": "boss.warden.abyss.west.idle.03",
+      "src": "assets/hd/bosses/warden-biome-abyss/frames/west-idle-03.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden",
+      "direction": "west",
+      "clip": "idle",
+      "frame": 4,
+      "key": "boss.warden.abyss.west.idle.04",
+      "src": "assets/hd/bosses/warden-biome-abyss/frames/west-idle-04.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden",
+      "direction": "west",
+      "clip": "move",
+      "frame": 1,
+      "key": "boss.warden.abyss.west.move.01",
+      "src": "assets/hd/bosses/warden-biome-abyss/frames/west-move-01.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden",
+      "direction": "west",
+      "clip": "move",
+      "frame": 2,
+      "key": "boss.warden.abyss.west.move.02",
+      "src": "assets/hd/bosses/warden-biome-abyss/frames/west-move-02.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden",
+      "direction": "west",
+      "clip": "move",
+      "frame": 3,
+      "key": "boss.warden.abyss.west.move.03",
+      "src": "assets/hd/bosses/warden-biome-abyss/frames/west-move-03.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden",
+      "direction": "west",
+      "clip": "move",
+      "frame": 4,
+      "key": "boss.warden.abyss.west.move.04",
+      "src": "assets/hd/bosses/warden-biome-abyss/frames/west-move-04.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden",
+      "direction": "west",
+      "clip": "cast",
+      "frame": 1,
+      "key": "boss.warden.abyss.west.cast.01",
+      "src": "assets/hd/bosses/warden-biome-abyss/frames/west-cast-01.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden",
+      "direction": "west",
+      "clip": "cast",
+      "frame": 2,
+      "key": "boss.warden.abyss.west.cast.02",
+      "src": "assets/hd/bosses/warden-biome-abyss/frames/west-cast-02.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden",
+      "direction": "west",
+      "clip": "cast",
+      "frame": 3,
+      "key": "boss.warden.abyss.west.cast.03",
+      "src": "assets/hd/bosses/warden-biome-abyss/frames/west-cast-03.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden",
+      "direction": "west",
+      "clip": "cast",
+      "frame": 4,
+      "key": "boss.warden.abyss.west.cast.04",
+      "src": "assets/hd/bosses/warden-biome-abyss/frames/west-cast-04.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden",
+      "direction": "west",
+      "clip": "hit",
+      "frame": 1,
+      "key": "boss.warden.abyss.west.hit.01",
+      "src": "assets/hd/bosses/warden-biome-abyss/frames/west-hit-01.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden",
+      "direction": "west",
+      "clip": "hit",
+      "frame": 2,
+      "key": "boss.warden.abyss.west.hit.02",
+      "src": "assets/hd/bosses/warden-biome-abyss/frames/west-hit-02.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden",
+      "direction": "west",
+      "clip": "death",
+      "frame": 1,
+      "key": "boss.warden.abyss.west.death.01",
+      "src": "assets/hd/bosses/warden-biome-abyss/frames/west-death-01.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "warden",
+      "direction": "west",
+      "clip": "death",
+      "frame": 2,
+      "key": "boss.warden.abyss.west.death.02",
+      "src": "assets/hd/bosses/warden-biome-abyss/frames/west-death-02.png",
+      "group": "bosses",
+      "critical": true
+    }
+  ],
+  "biome": "abyss"
+}

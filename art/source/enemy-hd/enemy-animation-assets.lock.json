@@ -1,0 +1,4166 @@
+{
+  "anchor": [
+    0.5,
+    1
+  ],
+  "chromaKey": "#ff00ff",
+  "frameSize": [
+    64,
+    64
+  ],
+  "helper": {
+    "path": "remove_chroma_key.py",
+    "playerBuilderSha256": "3ada7d7ea2fd12ecbce752a7cdab0c0acb168eb0537bbe725f0dc2cd7e22bf70",
+    "sha256": "7e51236919203b61d07ddffdc6e0b5f501a28661003f5851f26ffbb64bdec1ea"
+  },
+  "metrics": {
+    "acolyte": {
+      "frames": [
+        {
+          "bounds": [
+            18,
+            5,
+            47,
+            61
+          ],
+          "key": "enemy.acolyte.south.idle.01"
+        },
+        {
+          "bounds": [
+            18,
+            4,
+            47,
+            61
+          ],
+          "key": "enemy.acolyte.south.idle.02"
+        },
+        {
+          "bounds": [
+            17,
+            6,
+            47,
+            61
+          ],
+          "key": "enemy.acolyte.south.idle.03"
+        },
+        {
+          "bounds": [
+            17,
+            5,
+            47,
+            61
+          ],
+          "key": "enemy.acolyte.south.idle.04"
+        },
+        {
+          "bounds": [
+            19,
+            11,
+            45,
+            61
+          ],
+          "key": "enemy.acolyte.south.move.01"
+        },
+        {
+          "bounds": [
+            16,
+            12,
+            48,
+            61
+          ],
+          "key": "enemy.acolyte.south.move.02"
+        },
+        {
+          "bounds": [
+            17,
+            12,
+            47,
+            61
+          ],
+          "key": "enemy.acolyte.south.move.03"
+        },
+        {
+          "bounds": [
+            16,
+            11,
+            48,
+            61
+          ],
+          "key": "enemy.acolyte.south.move.04"
+        },
+        {
+          "bounds": [
+            17,
+            11,
+            48,
+            61
+          ],
+          "key": "enemy.acolyte.south.attack.01"
+        },
+        {
+          "bounds": [
+            17,
+            12,
+            48,
+            61
+          ],
+          "key": "enemy.acolyte.south.attack.02"
+        },
+        {
+          "bounds": [
+            16,
+            15,
+            48,
+            61
+          ],
+          "key": "enemy.acolyte.south.attack.03"
+        },
+        {
+          "bounds": [
+            14,
+            14,
+            50,
+            61
+          ],
+          "key": "enemy.acolyte.south.attack.04"
+        },
+        {
+          "bounds": [
+            15,
+            17,
+            49,
+            61
+          ],
+          "key": "enemy.acolyte.south.hit.01"
+        },
+        {
+          "bounds": [
+            14,
+            21,
+            50,
+            61
+          ],
+          "key": "enemy.acolyte.south.hit.02"
+        },
+        {
+          "bounds": [
+            7,
+            39,
+            58,
+            61
+          ],
+          "key": "enemy.acolyte.south.death.01"
+        },
+        {
+          "bounds": [
+            3,
+            36,
+            61,
+            61
+          ],
+          "key": "enemy.acolyte.south.death.02"
+        },
+        {
+          "bounds": [
+            18,
+            16,
+            46,
+            61
+          ],
+          "key": "enemy.acolyte.north.idle.01"
+        },
+        {
+          "bounds": [
+            18,
+            16,
+            47,
+            61
+          ],
+          "key": "enemy.acolyte.north.idle.02"
+        },
+        {
+          "bounds": [
+            18,
+            16,
+            46,
+            61
+          ],
+          "key": "enemy.acolyte.north.idle.03"
+        },
+        {
+          "bounds": [
+            19,
+            17,
+            45,
+            61
+          ],
+          "key": "enemy.acolyte.north.idle.04"
+        },
+        {
+          "bounds": [
+            20,
+            15,
+            45,
+            61
+          ],
+          "key": "enemy.acolyte.north.move.01"
+        },
+        {
+          "bounds": [
+            18,
+            15,
+            46,
+            61
+          ],
+          "key": "enemy.acolyte.north.move.02"
+        },
+        {
+          "bounds": [
+            19,
+            13,
+            46,
+            61
+          ],
+          "key": "enemy.acolyte.north.move.03"
+        },
+        {
+          "bounds": [
+            20,
+            13,
+            45,
+            61
+          ],
+          "key": "enemy.acolyte.north.move.04"
+        },
+        {
+          "bounds": [
+            18,
+            11,
+            47,
+            61
+          ],
+          "key": "enemy.acolyte.north.attack.01"
+        },
+        {
+          "bounds": [
+            18,
+            12,
+            46,
+            61
+          ],
+          "key": "enemy.acolyte.north.attack.02"
+        },
+        {
+          "bounds": [
+            19,
+            14,
+            46,
+            61
+          ],
+          "key": "enemy.acolyte.north.attack.03"
+        },
+        {
+          "bounds": [
+            20,
+            14,
+            45,
+            61
+          ],
+          "key": "enemy.acolyte.north.attack.04"
+        },
+        {
+          "bounds": [
+            20,
+            13,
+            45,
+            61
+          ],
+          "key": "enemy.acolyte.north.hit.01"
+        },
+        {
+          "bounds": [
+            20,
+            20,
+            45,
+            61
+          ],
+          "key": "enemy.acolyte.north.hit.02"
+        },
+        {
+          "bounds": [
+            17,
+            33,
+            48,
+            61
+          ],
+          "key": "enemy.acolyte.north.death.01"
+        },
+        {
+          "bounds": [
+            10,
+            39,
+            55,
+            61
+          ],
+          "key": "enemy.acolyte.north.death.02"
+        },
+        {
+          "bounds": [
+            20,
+            13,
+            44,
+            61
+          ],
+          "key": "enemy.acolyte.east.idle.01"
+        },
+        {
+          "bounds": [
+            20,
+            12,
+            45,
+            61
+          ],
+          "key": "enemy.acolyte.east.idle.02"
+        },
+        {
+          "bounds": [
+            20,
+            12,
+            44,
+            61
+          ],
+          "key": "enemy.acolyte.east.idle.03"
+        },
+        {
+          "bounds": [
+            20,
+            12,
+            44,
+            61
+          ],
+          "key": "enemy.acolyte.east.idle.04"
+        },
+        {
+          "bounds": [
+            18,
+            15,
+            47,
+            61
+          ],
+          "key": "enemy.acolyte.east.move.01"
+        },
+        {
+          "bounds": [
+            16,
+            16,
+            48,
+            61
+          ],
+          "key": "enemy.acolyte.east.move.02"
+        },
+        {
+          "bounds": [
+            17,
+            18,
+            48,
+            61
+          ],
+          "key": "enemy.acolyte.east.move.03"
+        },
+        {
+          "bounds": [
+            17,
+            19,
+            47,
+            61
+          ],
+          "key": "enemy.acolyte.east.move.04"
+        },
+        {
+          "bounds": [
+            11,
+            22,
+            53,
+            61
+          ],
+          "key": "enemy.acolyte.east.attack.01"
+        },
+        {
+          "bounds": [
+            10,
+            17,
+            55,
+            61
+          ],
+          "key": "enemy.acolyte.east.attack.02"
+        },
+        {
+          "bounds": [
+            12,
+            22,
+            53,
+            61
+          ],
+          "key": "enemy.acolyte.east.attack.03"
+        },
+        {
+          "bounds": [
+            19,
+            25,
+            46,
+            61
+          ],
+          "key": "enemy.acolyte.east.attack.04"
+        },
+        {
+          "bounds": [
+            16,
+            12,
+            48,
+            61
+          ],
+          "key": "enemy.acolyte.east.hit.01"
+        },
+        {
+          "bounds": [
+            17,
+            12,
+            47,
+            61
+          ],
+          "key": "enemy.acolyte.east.hit.02"
+        },
+        {
+          "bounds": [
+            10,
+            22,
+            54,
+            61
+          ],
+          "key": "enemy.acolyte.east.death.01"
+        },
+        {
+          "bounds": [
+            11,
+            43,
+            54,
+            61
+          ],
+          "key": "enemy.acolyte.east.death.02"
+        },
+        {
+          "bounds": [
+            19,
+            12,
+            46,
+            61
+          ],
+          "key": "enemy.acolyte.west.idle.01"
+        },
+        {
+          "bounds": [
+            19,
+            14,
+            45,
+            61
+          ],
+          "key": "enemy.acolyte.west.idle.02"
+        },
+        {
+          "bounds": [
+            19,
+            13,
+            45,
+            61
+          ],
+          "key": "enemy.acolyte.west.idle.03"
+        },
+        {
+          "bounds": [
+            19,
+            13,
+            46,
+            61
+          ],
+          "key": "enemy.acolyte.west.idle.04"
+        },
+        {
+          "bounds": [
+            17,
+            14,
+            47,
+            61
+          ],
+          "key": "enemy.acolyte.west.move.01"
+        },
+        {
+          "bounds": [
+            16,
+            15,
+            48,
+            61
+          ],
+          "key": "enemy.acolyte.west.move.02"
+        },
+        {
+          "bounds": [
+            16,
+            15,
+            48,
+            61
+          ],
+          "key": "enemy.acolyte.west.move.03"
+        },
+        {
+          "bounds": [
+            17,
+            17,
+            48,
+            61
+          ],
+          "key": "enemy.acolyte.west.move.04"
+        },
+        {
+          "bounds": [
+            18,
+            12,
+            46,
+            61
+          ],
+          "key": "enemy.acolyte.west.attack.01"
+        },
+        {
+          "bounds": [
+            12,
+            20,
+            53,
+            61
+          ],
+          "key": "enemy.acolyte.west.attack.02"
+        },
+        {
+          "bounds": [
+            19,
+            12,
+            45,
+            61
+          ],
+          "key": "enemy.acolyte.west.attack.03"
+        },
+        {
+          "bounds": [
+            11,
+            19,
+            53,
+            61
+          ],
+          "key": "enemy.acolyte.west.attack.04"
+        },
+        {
+          "bounds": [
+            15,
+            20,
+            50,
+            61
+          ],
+          "key": "enemy.acolyte.west.hit.01"
+        },
+        {
+          "bounds": [
+            13,
+            23,
+            51,
+            61
+          ],
+          "key": "enemy.acolyte.west.hit.02"
+        },
+        {
+          "bounds": [
+            9,
+            37,
+            55,
+            61
+          ],
+          "key": "enemy.acolyte.west.death.01"
+        },
+        {
+          "bounds": [
+            7,
+            42,
+            57,
+            61
+          ],
+          "key": "enemy.acolyte.west.death.02"
+        }
+      ],
+      "sharedScale": 0.2109090909090909,
+      "sourceMaxBounds": [
+        275,
+        268
+      ]
+    },
+    "brute": {
+      "frames": [
+        {
+          "bounds": [
+            10,
+            22,
+            55,
+            61
+          ],
+          "key": "enemy.brute.south.idle.01"
+        },
+        {
+          "bounds": [
+            10,
+            22,
+            54,
+            61
+          ],
+          "key": "enemy.brute.south.idle.02"
+        },
+        {
+          "bounds": [
+            11,
+            22,
+            54,
+            61
+          ],
+          "key": "enemy.brute.south.idle.03"
+        },
+        {
+          "bounds": [
+            10,
+            22,
+            54,
+            61
+          ],
+          "key": "enemy.brute.south.idle.04"
+        },
+        {
+          "bounds": [
+            10,
+            21,
+            54,
+            61
+          ],
+          "key": "enemy.brute.south.move.01"
+        },
+        {
+          "bounds": [
+            9,
+            21,
+            55,
+            61
+          ],
+          "key": "enemy.brute.south.move.02"
+        },
+        {
+          "bounds": [
+            12,
+            21,
+            53,
+            61
+          ],
+          "key": "enemy.brute.south.move.03"
+        },
+        {
+          "bounds": [
+            13,
+            21,
+            52,
+            61
+          ],
+          "key": "enemy.brute.south.move.04"
+        },
+        {
+          "bounds": [
+            14,
+            17,
+            51,
+            61
+          ],
+          "key": "enemy.brute.south.attack.01"
+        },
+        {
+          "bounds": [
+            16,
+            9,
+            48,
+            61
+          ],
+          "key": "enemy.brute.south.attack.02"
+        },
+        {
+          "bounds": [
+            17,
+            16,
+            48,
+            61
+          ],
+          "key": "enemy.brute.south.attack.03"
+        },
+        {
+          "bounds": [
+            8,
+            26,
+            57,
+            61
+          ],
+          "key": "enemy.brute.south.attack.04"
+        },
+        {
+          "bounds": [
+            13,
+            17,
+            52,
+            61
+          ],
+          "key": "enemy.brute.south.hit.01"
+        },
+        {
+          "bounds": [
+            14,
+            22,
+            50,
+            61
+          ],
+          "key": "enemy.brute.south.hit.02"
+        },
+        {
+          "bounds": [
+            10,
+            24,
+            54,
+            61
+          ],
+          "key": "enemy.brute.south.death.01"
+        },
+        {
+          "bounds": [
+            8,
+            31,
+            56,
+            61
+          ],
+          "key": "enemy.brute.south.death.02"
+        },
+        {
+          "bounds": [
+            11,
+            21,
+            54,
+            61
+          ],
+          "key": "enemy.brute.north.idle.01"
+        },
+        {
+          "bounds": [
+            11,
+            21,
+            53,
+            61
+          ],
+          "key": "enemy.brute.north.idle.02"
+        },
+        {
+          "bounds": [
+            12,
+            21,
+            53,
+            61
+          ],
+          "key": "enemy.brute.north.idle.03"
+        },
+        {
+          "bounds": [
+            12,
+            21,
+            52,
+            61
+          ],
+          "key": "enemy.brute.north.idle.04"
+        },
+        {
+          "bounds": [
+            13,
+            23,
+            52,
+            61
+          ],
+          "key": "enemy.brute.north.move.01"
+        },
+        {
+          "bounds": [
+            13,
+            22,
+            51,
+            61
+          ],
+          "key": "enemy.brute.north.move.02"
+        },
+        {
+          "bounds": [
+            14,
+            21,
+            51,
+            61
+          ],
+          "key": "enemy.brute.north.move.03"
+        },
+        {
+          "bounds": [
+            14,
+            22,
+            51,
+            61
+          ],
+          "key": "enemy.brute.north.move.04"
+        },
+        {
+          "bounds": [
+            12,
+            24,
+            53,
+            61
+          ],
+          "key": "enemy.brute.north.attack.01"
+        },
+        {
+          "bounds": [
+            15,
+            18,
+            49,
+            61
+          ],
+          "key": "enemy.brute.north.attack.02"
+        },
+        {
+          "bounds": [
+            16,
+            12,
+            48,
+            61
+          ],
+          "key": "enemy.brute.north.attack.03"
+        },
+        {
+          "bounds": [
+            18,
+            9,
+            46,
+            61
+          ],
+          "key": "enemy.brute.north.attack.04"
+        },
+        {
+          "bounds": [
+            16,
+            26,
+            49,
+            61
+          ],
+          "key": "enemy.brute.north.hit.01"
+        },
+        {
+          "bounds": [
+            16,
+            27,
+            48,
+            61
+          ],
+          "key": "enemy.brute.north.hit.02"
+        },
+        {
+          "bounds": [
+            11,
+            26,
+            53,
+            61
+          ],
+          "key": "enemy.brute.north.death.01"
+        },
+        {
+          "bounds": [
+            9,
+            28,
+            55,
+            61
+          ],
+          "key": "enemy.brute.north.death.02"
+        },
+        {
+          "bounds": [
+            12,
+            25,
+            52,
+            61
+          ],
+          "key": "enemy.brute.east.idle.01"
+        },
+        {
+          "bounds": [
+            13,
+            25,
+            52,
+            61
+          ],
+          "key": "enemy.brute.east.idle.02"
+        },
+        {
+          "bounds": [
+            14,
+            25,
+            51,
+            61
+          ],
+          "key": "enemy.brute.east.idle.03"
+        },
+        {
+          "bounds": [
+            13,
+            26,
+            51,
+            61
+          ],
+          "key": "enemy.brute.east.idle.04"
+        },
+        {
+          "bounds": [
+            13,
+            26,
+            51,
+            61
+          ],
+          "key": "enemy.brute.east.move.01"
+        },
+        {
+          "bounds": [
+            15,
+            25,
+            49,
+            61
+          ],
+          "key": "enemy.brute.east.move.02"
+        },
+        {
+          "bounds": [
+            15,
+            27,
+            50,
+            61
+          ],
+          "key": "enemy.brute.east.move.03"
+        },
+        {
+          "bounds": [
+            13,
+            26,
+            51,
+            61
+          ],
+          "key": "enemy.brute.east.move.04"
+        },
+        {
+          "bounds": [
+            13,
+            19,
+            52,
+            61
+          ],
+          "key": "enemy.brute.east.attack.01"
+        },
+        {
+          "bounds": [
+            14,
+            23,
+            51,
+            61
+          ],
+          "key": "enemy.brute.east.attack.02"
+        },
+        {
+          "bounds": [
+            9,
+            27,
+            55,
+            61
+          ],
+          "key": "enemy.brute.east.attack.03"
+        },
+        {
+          "bounds": [
+            7,
+            27,
+            57,
+            61
+          ],
+          "key": "enemy.brute.east.attack.04"
+        },
+        {
+          "bounds": [
+            15,
+            21,
+            50,
+            61
+          ],
+          "key": "enemy.brute.east.hit.01"
+        },
+        {
+          "bounds": [
+            19,
+            24,
+            45,
+            61
+          ],
+          "key": "enemy.brute.east.hit.02"
+        },
+        {
+          "bounds": [
+            10,
+            29,
+            55,
+            61
+          ],
+          "key": "enemy.brute.east.death.01"
+        },
+        {
+          "bounds": [
+            8,
+            39,
+            57,
+            61
+          ],
+          "key": "enemy.brute.east.death.02"
+        },
+        {
+          "bounds": [
+            12,
+            24,
+            52,
+            61
+          ],
+          "key": "enemy.brute.west.idle.01"
+        },
+        {
+          "bounds": [
+            12,
+            24,
+            53,
+            61
+          ],
+          "key": "enemy.brute.west.idle.02"
+        },
+        {
+          "bounds": [
+            14,
+            24,
+            51,
+            61
+          ],
+          "key": "enemy.brute.west.idle.03"
+        },
+        {
+          "bounds": [
+            13,
+            25,
+            51,
+            61
+          ],
+          "key": "enemy.brute.west.idle.04"
+        },
+        {
+          "bounds": [
+            11,
+            25,
+            54,
+            61
+          ],
+          "key": "enemy.brute.west.move.01"
+        },
+        {
+          "bounds": [
+            11,
+            25,
+            54,
+            61
+          ],
+          "key": "enemy.brute.west.move.02"
+        },
+        {
+          "bounds": [
+            10,
+            24,
+            54,
+            61
+          ],
+          "key": "enemy.brute.west.move.03"
+        },
+        {
+          "bounds": [
+            11,
+            25,
+            53,
+            61
+          ],
+          "key": "enemy.brute.west.move.04"
+        },
+        {
+          "bounds": [
+            11,
+            27,
+            54,
+            61
+          ],
+          "key": "enemy.brute.west.attack.01"
+        },
+        {
+          "bounds": [
+            14,
+            15,
+            50,
+            61
+          ],
+          "key": "enemy.brute.west.attack.02"
+        },
+        {
+          "bounds": [
+            6,
+            27,
+            58,
+            61
+          ],
+          "key": "enemy.brute.west.attack.03"
+        },
+        {
+          "bounds": [
+            6,
+            28,
+            58,
+            61
+          ],
+          "key": "enemy.brute.west.attack.04"
+        },
+        {
+          "bounds": [
+            13,
+            20,
+            52,
+            61
+          ],
+          "key": "enemy.brute.west.hit.01"
+        },
+        {
+          "bounds": [
+            14,
+            23,
+            51,
+            61
+          ],
+          "key": "enemy.brute.west.hit.02"
+        },
+        {
+          "bounds": [
+            5,
+            34,
+            60,
+            61
+          ],
+          "key": "enemy.brute.west.death.01"
+        },
+        {
+          "bounds": [
+            3,
+            41,
+            61,
+            61
+          ],
+          "key": "enemy.brute.west.death.02"
+        }
+      ],
+      "sharedScale": 0.19078947368421054,
+      "sourceMaxBounds": [
+        304,
+        273
+      ]
+    },
+    "otter": {
+      "frames": [
+        {
+          "bounds": [
+            17,
+            18,
+            47,
+            61
+          ],
+          "key": "enemy.otter.south.idle.01"
+        },
+        {
+          "bounds": [
+            17,
+            19,
+            47,
+            61
+          ],
+          "key": "enemy.otter.south.idle.02"
+        },
+        {
+          "bounds": [
+            18,
+            19,
+            47,
+            61
+          ],
+          "key": "enemy.otter.south.idle.03"
+        },
+        {
+          "bounds": [
+            18,
+            19,
+            47,
+            61
+          ],
+          "key": "enemy.otter.south.idle.04"
+        },
+        {
+          "bounds": [
+            17,
+            23,
+            48,
+            61
+          ],
+          "key": "enemy.otter.south.move.01"
+        },
+        {
+          "bounds": [
+            16,
+            25,
+            48,
+            61
+          ],
+          "key": "enemy.otter.south.move.02"
+        },
+        {
+          "bounds": [
+            17,
+            26,
+            47,
+            61
+          ],
+          "key": "enemy.otter.south.move.03"
+        },
+        {
+          "bounds": [
+            17,
+            26,
+            48,
+            61
+          ],
+          "key": "enemy.otter.south.move.04"
+        },
+        {
+          "bounds": [
+            18,
+            23,
+            46,
+            61
+          ],
+          "key": "enemy.otter.south.attack.01"
+        },
+        {
+          "bounds": [
+            19,
+            24,
+            45,
+            61
+          ],
+          "key": "enemy.otter.south.attack.02"
+        },
+        {
+          "bounds": [
+            19,
+            25,
+            45,
+            61
+          ],
+          "key": "enemy.otter.south.attack.03"
+        },
+        {
+          "bounds": [
+            18,
+            27,
+            46,
+            61
+          ],
+          "key": "enemy.otter.south.attack.04"
+        },
+        {
+          "bounds": [
+            19,
+            25,
+            46,
+            61
+          ],
+          "key": "enemy.otter.south.hit.01"
+        },
+        {
+          "bounds": [
+            18,
+            32,
+            46,
+            61
+          ],
+          "key": "enemy.otter.south.hit.02"
+        },
+        {
+          "bounds": [
+            14,
+            34,
+            50,
+            61
+          ],
+          "key": "enemy.otter.south.death.01"
+        },
+        {
+          "bounds": [
+            13,
+            38,
+            52,
+            61
+          ],
+          "key": "enemy.otter.south.death.02"
+        },
+        {
+          "bounds": [
+            20,
+            24,
+            45,
+            61
+          ],
+          "key": "enemy.otter.north.idle.01"
+        },
+        {
+          "bounds": [
+            21,
+            25,
+            43,
+            61
+          ],
+          "key": "enemy.otter.north.idle.02"
+        },
+        {
+          "bounds": [
+            20,
+            24,
+            44,
+            61
+          ],
+          "key": "enemy.otter.north.idle.03"
+        },
+        {
+          "bounds": [
+            20,
+            24,
+            44,
+            61
+          ],
+          "key": "enemy.otter.north.idle.04"
+        },
+        {
+          "bounds": [
+            19,
+            23,
+            46,
+            61
+          ],
+          "key": "enemy.otter.north.move.01"
+        },
+        {
+          "bounds": [
+            21,
+            24,
+            43,
+            61
+          ],
+          "key": "enemy.otter.north.move.02"
+        },
+        {
+          "bounds": [
+            20,
+            24,
+            45,
+            61
+          ],
+          "key": "enemy.otter.north.move.03"
+        },
+        {
+          "bounds": [
+            21,
+            23,
+            44,
+            61
+          ],
+          "key": "enemy.otter.north.move.04"
+        },
+        {
+          "bounds": [
+            19,
+            28,
+            46,
+            61
+          ],
+          "key": "enemy.otter.north.attack.01"
+        },
+        {
+          "bounds": [
+            15,
+            28,
+            50,
+            61
+          ],
+          "key": "enemy.otter.north.attack.02"
+        },
+        {
+          "bounds": [
+            12,
+            25,
+            53,
+            61
+          ],
+          "key": "enemy.otter.north.attack.03"
+        },
+        {
+          "bounds": [
+            15,
+            29,
+            49,
+            61
+          ],
+          "key": "enemy.otter.north.attack.04"
+        },
+        {
+          "bounds": [
+            18,
+            26,
+            46,
+            61
+          ],
+          "key": "enemy.otter.north.hit.01"
+        },
+        {
+          "bounds": [
+            17,
+            29,
+            47,
+            61
+          ],
+          "key": "enemy.otter.north.hit.02"
+        },
+        {
+          "bounds": [
+            14,
+            30,
+            50,
+            61
+          ],
+          "key": "enemy.otter.north.death.01"
+        },
+        {
+          "bounds": [
+            14,
+            31,
+            51,
+            61
+          ],
+          "key": "enemy.otter.north.death.02"
+        },
+        {
+          "bounds": [
+            18,
+            22,
+            47,
+            61
+          ],
+          "key": "enemy.otter.east.idle.01"
+        },
+        {
+          "bounds": [
+            17,
+            22,
+            47,
+            61
+          ],
+          "key": "enemy.otter.east.idle.02"
+        },
+        {
+          "bounds": [
+            18,
+            22,
+            47,
+            61
+          ],
+          "key": "enemy.otter.east.idle.03"
+        },
+        {
+          "bounds": [
+            18,
+            22,
+            47,
+            61
+          ],
+          "key": "enemy.otter.east.idle.04"
+        },
+        {
+          "bounds": [
+            15,
+            25,
+            49,
+            61
+          ],
+          "key": "enemy.otter.east.move.01"
+        },
+        {
+          "bounds": [
+            15,
+            25,
+            49,
+            61
+          ],
+          "key": "enemy.otter.east.move.02"
+        },
+        {
+          "bounds": [
+            17,
+            25,
+            48,
+            61
+          ],
+          "key": "enemy.otter.east.move.03"
+        },
+        {
+          "bounds": [
+            16,
+            25,
+            48,
+            61
+          ],
+          "key": "enemy.otter.east.move.04"
+        },
+        {
+          "bounds": [
+            13,
+            27,
+            51,
+            61
+          ],
+          "key": "enemy.otter.east.attack.01"
+        },
+        {
+          "bounds": [
+            15,
+            29,
+            49,
+            61
+          ],
+          "key": "enemy.otter.east.attack.02"
+        },
+        {
+          "bounds": [
+            17,
+            29,
+            48,
+            61
+          ],
+          "key": "enemy.otter.east.attack.03"
+        },
+        {
+          "bounds": [
+            16,
+            29,
+            49,
+            61
+          ],
+          "key": "enemy.otter.east.attack.04"
+        },
+        {
+          "bounds": [
+            17,
+            25,
+            47,
+            61
+          ],
+          "key": "enemy.otter.east.hit.01"
+        },
+        {
+          "bounds": [
+            16,
+            28,
+            48,
+            61
+          ],
+          "key": "enemy.otter.east.hit.02"
+        },
+        {
+          "bounds": [
+            14,
+            43,
+            51,
+            61
+          ],
+          "key": "enemy.otter.east.death.01"
+        },
+        {
+          "bounds": [
+            10,
+            48,
+            54,
+            61
+          ],
+          "key": "enemy.otter.east.death.02"
+        },
+        {
+          "bounds": [
+            13,
+            17,
+            51,
+            61
+          ],
+          "key": "enemy.otter.west.idle.01"
+        },
+        {
+          "bounds": [
+            12,
+            17,
+            52,
+            61
+          ],
+          "key": "enemy.otter.west.idle.02"
+        },
+        {
+          "bounds": [
+            13,
+            18,
+            52,
+            61
+          ],
+          "key": "enemy.otter.west.idle.03"
+        },
+        {
+          "bounds": [
+            14,
+            19,
+            51,
+            61
+          ],
+          "key": "enemy.otter.west.idle.04"
+        },
+        {
+          "bounds": [
+            9,
+            22,
+            56,
+            61
+          ],
+          "key": "enemy.otter.west.move.01"
+        },
+        {
+          "bounds": [
+            8,
+            24,
+            56,
+            61
+          ],
+          "key": "enemy.otter.west.move.02"
+        },
+        {
+          "bounds": [
+            8,
+            24,
+            56,
+            61
+          ],
+          "key": "enemy.otter.west.move.03"
+        },
+        {
+          "bounds": [
+            7,
+            23,
+            58,
+            61
+          ],
+          "key": "enemy.otter.west.move.04"
+        },
+        {
+          "bounds": [
+            7,
+            27,
+            57,
+            61
+          ],
+          "key": "enemy.otter.west.attack.01"
+        },
+        {
+          "bounds": [
+            3,
+            27,
+            61,
+            61
+          ],
+          "key": "enemy.otter.west.attack.02"
+        },
+        {
+          "bounds": [
+            12,
+            27,
+            53,
+            61
+          ],
+          "key": "enemy.otter.west.attack.03"
+        },
+        {
+          "bounds": [
+            6,
+            26,
+            59,
+            61
+          ],
+          "key": "enemy.otter.west.attack.04"
+        },
+        {
+          "bounds": [
+            13,
+            27,
+            51,
+            61
+          ],
+          "key": "enemy.otter.west.hit.01"
+        },
+        {
+          "bounds": [
+            14,
+            28,
+            50,
+            61
+          ],
+          "key": "enemy.otter.west.hit.02"
+        },
+        {
+          "bounds": [
+            7,
+            41,
+            57,
+            61
+          ],
+          "key": "enemy.otter.west.death.01"
+        },
+        {
+          "bounds": [
+            7,
+            47,
+            58,
+            61
+          ],
+          "key": "enemy.otter.west.death.02"
+        }
+      ],
+      "sharedScale": 0.17008797653958943,
+      "sourceMaxBounds": [
+        341,
+        258
+      ]
+    },
+    "skeleton": {
+      "frames": [
+        {
+          "bounds": [
+            14,
+            7,
+            50,
+            61
+          ],
+          "key": "enemy.skeleton.south.idle.01"
+        },
+        {
+          "bounds": [
+            14,
+            7,
+            51,
+            61
+          ],
+          "key": "enemy.skeleton.south.idle.02"
+        },
+        {
+          "bounds": [
+            14,
+            7,
+            51,
+            61
+          ],
+          "key": "enemy.skeleton.south.idle.03"
+        },
+        {
+          "bounds": [
+            14,
+            7,
+            50,
+            61
+          ],
+          "key": "enemy.skeleton.south.idle.04"
+        },
+        {
+          "bounds": [
+            20,
+            14,
+            45,
+            61
+          ],
+          "key": "enemy.skeleton.south.move.01"
+        },
+        {
+          "bounds": [
+            21,
+            14,
+            43,
+            61
+          ],
+          "key": "enemy.skeleton.south.move.02"
+        },
+        {
+          "bounds": [
+            21,
+            12,
+            44,
+            61
+          ],
+          "key": "enemy.skeleton.south.move.03"
+        },
+        {
+          "bounds": [
+            20,
+            14,
+            44,
+            61
+          ],
+          "key": "enemy.skeleton.south.move.04"
+        },
+        {
+          "bounds": [
+            17,
+            9,
+            47,
+            61
+          ],
+          "key": "enemy.skeleton.south.attack.01"
+        },
+        {
+          "bounds": [
+            15,
+            8,
+            50,
+            61
+          ],
+          "key": "enemy.skeleton.south.attack.02"
+        },
+        {
+          "bounds": [
+            17,
+            11,
+            47,
+            61
+          ],
+          "key": "enemy.skeleton.south.attack.03"
+        },
+        {
+          "bounds": [
+            13,
+            14,
+            51,
+            61
+          ],
+          "key": "enemy.skeleton.south.attack.04"
+        },
+        {
+          "bounds": [
+            16,
+            16,
+            48,
+            61
+          ],
+          "key": "enemy.skeleton.south.hit.01"
+        },
+        {
+          "bounds": [
+            15,
+            23,
+            50,
+            61
+          ],
+          "key": "enemy.skeleton.south.hit.02"
+        },
+        {
+          "bounds": [
+            16,
+            36,
+            48,
+            61
+          ],
+          "key": "enemy.skeleton.south.death.01"
+        },
+        {
+          "bounds": [
+            12,
+            43,
+            53,
+            61
+          ],
+          "key": "enemy.skeleton.south.death.02"
+        },
+        {
+          "bounds": [
+            14,
+            12,
+            50,
+            61
+          ],
+          "key": "enemy.skeleton.north.idle.01"
+        },
+        {
+          "bounds": [
+            18,
+            12,
+            47,
+            61
+          ],
+          "key": "enemy.skeleton.north.idle.02"
+        },
+        {
+          "bounds": [
+            17,
+            12,
+            47,
+            61
+          ],
+          "key": "enemy.skeleton.north.idle.03"
+        },
+        {
+          "bounds": [
+            15,
+            12,
+            50,
+            61
+          ],
+          "key": "enemy.skeleton.north.idle.04"
+        },
+        {
+          "bounds": [
+            14,
+            11,
+            51,
+            61
+          ],
+          "key": "enemy.skeleton.north.move.01"
+        },
+        {
+          "bounds": [
+            16,
+            11,
+            49,
+            61
+          ],
+          "key": "enemy.skeleton.north.move.02"
+        },
+        {
+          "bounds": [
+            14,
+            11,
+            51,
+            61
+          ],
+          "key": "enemy.skeleton.north.move.03"
+        },
+        {
+          "bounds": [
+            16,
+            11,
+            49,
+            61
+          ],
+          "key": "enemy.skeleton.north.move.04"
+        },
+        {
+          "bounds": [
+            12,
+            12,
+            53,
+            61
+          ],
+          "key": "enemy.skeleton.north.attack.01"
+        },
+        {
+          "bounds": [
+            15,
+            4,
+            50,
+            61
+          ],
+          "key": "enemy.skeleton.north.attack.02"
+        },
+        {
+          "bounds": [
+            15,
+            3,
+            50,
+            61
+          ],
+          "key": "enemy.skeleton.north.attack.03"
+        },
+        {
+          "bounds": [
+            16,
+            11,
+            48,
+            61
+          ],
+          "key": "enemy.skeleton.north.attack.04"
+        },
+        {
+          "bounds": [
+            17,
+            13,
+            47,
+            61
+          ],
+          "key": "enemy.skeleton.north.hit.01"
+        },
+        {
+          "bounds": [
+            15,
+            17,
+            49,
+            61
+          ],
+          "key": "enemy.skeleton.north.hit.02"
+        },
+        {
+          "bounds": [
+            13,
+            27,
+            52,
+            61
+          ],
+          "key": "enemy.skeleton.north.death.01"
+        },
+        {
+          "bounds": [
+            9,
+            36,
+            55,
+            61
+          ],
+          "key": "enemy.skeleton.north.death.02"
+        },
+        {
+          "bounds": [
+            16,
+            11,
+            48,
+            61
+          ],
+          "key": "enemy.skeleton.east.idle.01"
+        },
+        {
+          "bounds": [
+            16,
+            11,
+            48,
+            61
+          ],
+          "key": "enemy.skeleton.east.idle.02"
+        },
+        {
+          "bounds": [
+            17,
+            11,
+            47,
+            61
+          ],
+          "key": "enemy.skeleton.east.idle.03"
+        },
+        {
+          "bounds": [
+            17,
+            11,
+            48,
+            61
+          ],
+          "key": "enemy.skeleton.east.idle.04"
+        },
+        {
+          "bounds": [
+            13,
+            15,
+            52,
+            61
+          ],
+          "key": "enemy.skeleton.east.move.01"
+        },
+        {
+          "bounds": [
+            12,
+            15,
+            52,
+            61
+          ],
+          "key": "enemy.skeleton.east.move.02"
+        },
+        {
+          "bounds": [
+            12,
+            16,
+            52,
+            61
+          ],
+          "key": "enemy.skeleton.east.move.03"
+        },
+        {
+          "bounds": [
+            14,
+            16,
+            51,
+            61
+          ],
+          "key": "enemy.skeleton.east.move.04"
+        },
+        {
+          "bounds": [
+            14,
+            13,
+            51,
+            61
+          ],
+          "key": "enemy.skeleton.east.attack.01"
+        },
+        {
+          "bounds": [
+            12,
+            8,
+            53,
+            61
+          ],
+          "key": "enemy.skeleton.east.attack.02"
+        },
+        {
+          "bounds": [
+            8,
+            10,
+            56,
+            61
+          ],
+          "key": "enemy.skeleton.east.attack.03"
+        },
+        {
+          "bounds": [
+            17,
+            14,
+            48,
+            61
+          ],
+          "key": "enemy.skeleton.east.attack.04"
+        },
+        {
+          "bounds": [
+            12,
+            16,
+            52,
+            61
+          ],
+          "key": "enemy.skeleton.east.hit.01"
+        },
+        {
+          "bounds": [
+            12,
+            20,
+            53,
+            61
+          ],
+          "key": "enemy.skeleton.east.hit.02"
+        },
+        {
+          "bounds": [
+            7,
+            37,
+            58,
+            61
+          ],
+          "key": "enemy.skeleton.east.death.01"
+        },
+        {
+          "bounds": [
+            4,
+            43,
+            61,
+            61
+          ],
+          "key": "enemy.skeleton.east.death.02"
+        },
+        {
+          "bounds": [
+            15,
+            7,
+            50,
+            61
+          ],
+          "key": "enemy.skeleton.west.idle.01"
+        },
+        {
+          "bounds": [
+            15,
+            7,
+            50,
+            61
+          ],
+          "key": "enemy.skeleton.west.idle.02"
+        },
+        {
+          "bounds": [
+            16,
+            7,
+            48,
+            61
+          ],
+          "key": "enemy.skeleton.west.idle.03"
+        },
+        {
+          "bounds": [
+            13,
+            7,
+            51,
+            61
+          ],
+          "key": "enemy.skeleton.west.idle.04"
+        },
+        {
+          "bounds": [
+            13,
+            14,
+            51,
+            61
+          ],
+          "key": "enemy.skeleton.west.move.01"
+        },
+        {
+          "bounds": [
+            13,
+            14,
+            52,
+            61
+          ],
+          "key": "enemy.skeleton.west.move.02"
+        },
+        {
+          "bounds": [
+            13,
+            14,
+            52,
+            61
+          ],
+          "key": "enemy.skeleton.west.move.03"
+        },
+        {
+          "bounds": [
+            14,
+            14,
+            51,
+            61
+          ],
+          "key": "enemy.skeleton.west.move.04"
+        },
+        {
+          "bounds": [
+            12,
+            9,
+            52,
+            61
+          ],
+          "key": "enemy.skeleton.west.attack.01"
+        },
+        {
+          "bounds": [
+            10,
+            9,
+            54,
+            61
+          ],
+          "key": "enemy.skeleton.west.attack.02"
+        },
+        {
+          "bounds": [
+            14,
+            17,
+            51,
+            61
+          ],
+          "key": "enemy.skeleton.west.attack.03"
+        },
+        {
+          "bounds": [
+            18,
+            12,
+            47,
+            61
+          ],
+          "key": "enemy.skeleton.west.attack.04"
+        },
+        {
+          "bounds": [
+            12,
+            19,
+            53,
+            61
+          ],
+          "key": "enemy.skeleton.west.hit.01"
+        },
+        {
+          "bounds": [
+            10,
+            19,
+            55,
+            61
+          ],
+          "key": "enemy.skeleton.west.hit.02"
+        },
+        {
+          "bounds": [
+            9,
+            38,
+            56,
+            61
+          ],
+          "key": "enemy.skeleton.west.death.01"
+        },
+        {
+          "bounds": [
+            8,
+            45,
+            56,
+            61
+          ],
+          "key": "enemy.skeleton.west.death.02"
+        }
+      ],
+      "sharedScale": 0.20279720279720279,
+      "sourceMaxBounds": [
+        280,
+        286
+      ]
+    },
+    "skitter": {
+      "frames": [
+        {
+          "bounds": [
+            10,
+            12,
+            54,
+            61
+          ],
+          "key": "enemy.skitter.south.idle.01"
+        },
+        {
+          "bounds": [
+            11,
+            12,
+            54,
+            61
+          ],
+          "key": "enemy.skitter.south.idle.02"
+        },
+        {
+          "bounds": [
+            10,
+            14,
+            55,
+            61
+          ],
+          "key": "enemy.skitter.south.idle.03"
+        },
+        {
+          "bounds": [
+            12,
+            12,
+            53,
+            61
+          ],
+          "key": "enemy.skitter.south.idle.04"
+        },
+        {
+          "bounds": [
+            9,
+            12,
+            55,
+            61
+          ],
+          "key": "enemy.skitter.south.move.01"
+        },
+        {
+          "bounds": [
+            10,
+            12,
+            54,
+            61
+          ],
+          "key": "enemy.skitter.south.move.02"
+        },
+        {
+          "bounds": [
+            9,
+            12,
+            56,
+            61
+          ],
+          "key": "enemy.skitter.south.move.03"
+        },
+        {
+          "bounds": [
+            9,
+            11,
+            55,
+            61
+          ],
+          "key": "enemy.skitter.south.move.04"
+        },
+        {
+          "bounds": [
+            13,
+            24,
+            52,
+            61
+          ],
+          "key": "enemy.skitter.south.attack.01"
+        },
+        {
+          "bounds": [
+            13,
+            24,
+            52,
+            61
+          ],
+          "key": "enemy.skitter.south.attack.02"
+        },
+        {
+          "bounds": [
+            13,
+            24,
+            52,
+            61
+          ],
+          "key": "enemy.skitter.south.attack.03"
+        },
+        {
+          "bounds": [
+            13,
+            23,
+            51,
+            61
+          ],
+          "key": "enemy.skitter.south.attack.04"
+        },
+        {
+          "bounds": [
+            13,
+            29,
+            51,
+            61
+          ],
+          "key": "enemy.skitter.south.hit.01"
+        },
+        {
+          "bounds": [
+            14,
+            34,
+            51,
+            61
+          ],
+          "key": "enemy.skitter.south.hit.02"
+        },
+        {
+          "bounds": [
+            15,
+            30,
+            50,
+            61
+          ],
+          "key": "enemy.skitter.south.death.01"
+        },
+        {
+          "bounds": [
+            13,
+            32,
+            52,
+            61
+          ],
+          "key": "enemy.skitter.south.death.02"
+        },
+        {
+          "bounds": [
+            9,
+            12,
+            55,
+            61
+          ],
+          "key": "enemy.skitter.north.idle.01"
+        },
+        {
+          "bounds": [
+            10,
+            12,
+            54,
+            61
+          ],
+          "key": "enemy.skitter.north.idle.02"
+        },
+        {
+          "bounds": [
+            11,
+            12,
+            53,
+            61
+          ],
+          "key": "enemy.skitter.north.idle.03"
+        },
+        {
+          "bounds": [
+            12,
+            12,
+            53,
+            61
+          ],
+          "key": "enemy.skitter.north.idle.04"
+        },
+        {
+          "bounds": [
+            13,
+            11,
+            51,
+            61
+          ],
+          "key": "enemy.skitter.north.move.01"
+        },
+        {
+          "bounds": [
+            12,
+            12,
+            53,
+            61
+          ],
+          "key": "enemy.skitter.north.move.02"
+        },
+        {
+          "bounds": [
+            11,
+            11,
+            54,
+            61
+          ],
+          "key": "enemy.skitter.north.move.03"
+        },
+        {
+          "bounds": [
+            14,
+            11,
+            50,
+            61
+          ],
+          "key": "enemy.skitter.north.move.04"
+        },
+        {
+          "bounds": [
+            16,
+            11,
+            48,
+            61
+          ],
+          "key": "enemy.skitter.north.attack.01"
+        },
+        {
+          "bounds": [
+            15,
+            12,
+            49,
+            61
+          ],
+          "key": "enemy.skitter.north.attack.02"
+        },
+        {
+          "bounds": [
+            15,
+            12,
+            50,
+            61
+          ],
+          "key": "enemy.skitter.north.attack.03"
+        },
+        {
+          "bounds": [
+            13,
+            12,
+            52,
+            61
+          ],
+          "key": "enemy.skitter.north.attack.04"
+        },
+        {
+          "bounds": [
+            16,
+            11,
+            48,
+            61
+          ],
+          "key": "enemy.skitter.north.hit.01"
+        },
+        {
+          "bounds": [
+            16,
+            10,
+            48,
+            61
+          ],
+          "key": "enemy.skitter.north.hit.02"
+        },
+        {
+          "bounds": [
+            16,
+            15,
+            48,
+            61
+          ],
+          "key": "enemy.skitter.north.death.01"
+        },
+        {
+          "bounds": [
+            14,
+            28,
+            51,
+            61
+          ],
+          "key": "enemy.skitter.north.death.02"
+        },
+        {
+          "bounds": [
+            11,
+            26,
+            54,
+            61
+          ],
+          "key": "enemy.skitter.east.idle.01"
+        },
+        {
+          "bounds": [
+            10,
+            25,
+            54,
+            61
+          ],
+          "key": "enemy.skitter.east.idle.02"
+        },
+        {
+          "bounds": [
+            11,
+            26,
+            53,
+            61
+          ],
+          "key": "enemy.skitter.east.idle.03"
+        },
+        {
+          "bounds": [
+            11,
+            25,
+            53,
+            61
+          ],
+          "key": "enemy.skitter.east.idle.04"
+        },
+        {
+          "bounds": [
+            6,
+            29,
+            58,
+            61
+          ],
+          "key": "enemy.skitter.east.move.01"
+        },
+        {
+          "bounds": [
+            6,
+            30,
+            59,
+            61
+          ],
+          "key": "enemy.skitter.east.move.02"
+        },
+        {
+          "bounds": [
+            8,
+            31,
+            57,
+            61
+          ],
+          "key": "enemy.skitter.east.move.03"
+        },
+        {
+          "bounds": [
+            6,
+            33,
+            58,
+            61
+          ],
+          "key": "enemy.skitter.east.move.04"
+        },
+        {
+          "bounds": [
+            8,
+            31,
+            57,
+            61
+          ],
+          "key": "enemy.skitter.east.attack.01"
+        },
+        {
+          "bounds": [
+            7,
+            31,
+            58,
+            61
+          ],
+          "key": "enemy.skitter.east.attack.02"
+        },
+        {
+          "bounds": [
+            3,
+            34,
+            61,
+            61
+          ],
+          "key": "enemy.skitter.east.attack.03"
+        },
+        {
+          "bounds": [
+            6,
+            31,
+            59,
+            61
+          ],
+          "key": "enemy.skitter.east.attack.04"
+        },
+        {
+          "bounds": [
+            15,
+            26,
+            50,
+            61
+          ],
+          "key": "enemy.skitter.east.hit.01"
+        },
+        {
+          "bounds": [
+            16,
+            30,
+            48,
+            61
+          ],
+          "key": "enemy.skitter.east.hit.02"
+        },
+        {
+          "bounds": [
+            12,
+            34,
+            52,
+            61
+          ],
+          "key": "enemy.skitter.east.death.01"
+        },
+        {
+          "bounds": [
+            9,
+            44,
+            56,
+            61
+          ],
+          "key": "enemy.skitter.east.death.02"
+        },
+        {
+          "bounds": [
+            14,
+            31,
+            50,
+            61
+          ],
+          "key": "enemy.skitter.west.idle.01"
+        },
+        {
+          "bounds": [
+            14,
+            31,
+            50,
+            61
+          ],
+          "key": "enemy.skitter.west.idle.02"
+        },
+        {
+          "bounds": [
+            15,
+            34,
+            49,
+            61
+          ],
+          "key": "enemy.skitter.west.idle.03"
+        },
+        {
+          "bounds": [
+            15,
+            33,
+            50,
+            61
+          ],
+          "key": "enemy.skitter.west.idle.04"
+        },
+        {
+          "bounds": [
+            11,
+            31,
+            53,
+            61
+          ],
+          "key": "enemy.skitter.west.move.01"
+        },
+        {
+          "bounds": [
+            10,
+            35,
+            55,
+            61
+          ],
+          "key": "enemy.skitter.west.move.02"
+        },
+        {
+          "bounds": [
+            10,
+            36,
+            55,
+            61
+          ],
+          "key": "enemy.skitter.west.move.03"
+        },
+        {
+          "bounds": [
+            9,
+            36,
+            55,
+            61
+          ],
+          "key": "enemy.skitter.west.move.04"
+        },
+        {
+          "bounds": [
+            8,
+            35,
+            56,
+            61
+          ],
+          "key": "enemy.skitter.west.attack.01"
+        },
+        {
+          "bounds": [
+            6,
+            35,
+            58,
+            61
+          ],
+          "key": "enemy.skitter.west.attack.02"
+        },
+        {
+          "bounds": [
+            7,
+            37,
+            57,
+            61
+          ],
+          "key": "enemy.skitter.west.attack.03"
+        },
+        {
+          "bounds": [
+            5,
+            37,
+            60,
+            61
+          ],
+          "key": "enemy.skitter.west.attack.04"
+        },
+        {
+          "bounds": [
+            16,
+            29,
+            48,
+            61
+          ],
+          "key": "enemy.skitter.west.hit.01"
+        },
+        {
+          "bounds": [
+            17,
+            32,
+            48,
+            61
+          ],
+          "key": "enemy.skitter.west.hit.02"
+        },
+        {
+          "bounds": [
+            17,
+            38,
+            48,
+            61
+          ],
+          "key": "enemy.skitter.west.death.01"
+        },
+        {
+          "bounds": [
+            16,
+            37,
+            49,
+            61
+          ],
+          "key": "enemy.skitter.west.death.02"
+        }
+      ],
+      "sharedScale": 0.21722846441947566,
+      "sourceMaxBounds": [
+        267,
+        234
+      ]
+    },
+    "slime": {
+      "frames": [
+        {
+          "bounds": [
+            6,
+            26,
+            58,
+            61
+          ],
+          "key": "enemy.slime.south.idle.01"
+        },
+        {
+          "bounds": [
+            6,
+            26,
+            58,
+            61
+          ],
+          "key": "enemy.slime.south.idle.02"
+        },
+        {
+          "bounds": [
+            7,
+            26,
+            58,
+            61
+          ],
+          "key": "enemy.slime.south.idle.03"
+        },
+        {
+          "bounds": [
+            6,
+            26,
+            58,
+            61
+          ],
+          "key": "enemy.slime.south.idle.04"
+        },
+        {
+          "bounds": [
+            5,
+            26,
+            59,
+            61
+          ],
+          "key": "enemy.slime.south.move.01"
+        },
+        {
+          "bounds": [
+            5,
+            25,
+            59,
+            61
+          ],
+          "key": "enemy.slime.south.move.02"
+        },
+        {
+          "bounds": [
+            6,
+            25,
+            59,
+            61
+          ],
+          "key": "enemy.slime.south.move.03"
+        },
+        {
+          "bounds": [
+            3,
+            24,
+            61,
+            61
+          ],
+          "key": "enemy.slime.south.move.04"
+        },
+        {
+          "bounds": [
+            5,
+            21,
+            59,
+            61
+          ],
+          "key": "enemy.slime.south.attack.01"
+        },
+        {
+          "bounds": [
+            7,
+            21,
+            58,
+            61
+          ],
+          "key": "enemy.slime.south.attack.02"
+        },
+        {
+          "bounds": [
+            6,
+            23,
+            58,
+            61
+          ],
+          "key": "enemy.slime.south.attack.03"
+        },
+        {
+          "bounds": [
+            4,
+            23,
+            60,
+            61
+          ],
+          "key": "enemy.slime.south.attack.04"
+        },
+        {
+          "bounds": [
+            7,
+            28,
+            58,
+            61
+          ],
+          "key": "enemy.slime.south.hit.01"
+        },
+        {
+          "bounds": [
+            7,
+            25,
+            57,
+            61
+          ],
+          "key": "enemy.slime.south.hit.02"
+        },
+        {
+          "bounds": [
+            7,
+            27,
+            57,
+            61
+          ],
+          "key": "enemy.slime.south.death.01"
+        },
+        {
+          "bounds": [
+            5,
+            35,
+            59,
+            61
+          ],
+          "key": "enemy.slime.south.death.02"
+        },
+        {
+          "bounds": [
+            8,
+            30,
+            56,
+            61
+          ],
+          "key": "enemy.slime.north.idle.01"
+        },
+        {
+          "bounds": [
+            8,
+            31,
+            56,
+            61
+          ],
+          "key": "enemy.slime.north.idle.02"
+        },
+        {
+          "bounds": [
+            8,
+            31,
+            57,
+            61
+          ],
+          "key": "enemy.slime.north.idle.03"
+        },
+        {
+          "bounds": [
+            10,
+            30,
+            55,
+            61
+          ],
+          "key": "enemy.slime.north.idle.04"
+        },
+        {
+          "bounds": [
+            10,
+            20,
+            54,
+            61
+          ],
+          "key": "enemy.slime.north.move.01"
+        },
+        {
+          "bounds": [
+            11,
+            19,
+            54,
+            61
+          ],
+          "key": "enemy.slime.north.move.02"
+        },
+        {
+          "bounds": [
+            10,
+            19,
+            54,
+            61
+          ],
+          "key": "enemy.slime.north.move.03"
+        },
+        {
+          "bounds": [
+            9,
+            19,
+            55,
+            61
+          ],
+          "key": "enemy.slime.north.move.04"
+        },
+        {
+          "bounds": [
+            11,
+            19,
+            54,
+            61
+          ],
+          "key": "enemy.slime.north.attack.01"
+        },
+        {
+          "bounds": [
+            9,
+            19,
+            56,
+            61
+          ],
+          "key": "enemy.slime.north.attack.02"
+        },
+        {
+          "bounds": [
+            10,
+            19,
+            54,
+            61
+          ],
+          "key": "enemy.slime.north.attack.03"
+        },
+        {
+          "bounds": [
+            9,
+            21,
+            56,
+            61
+          ],
+          "key": "enemy.slime.north.attack.04"
+        },
+        {
+          "bounds": [
+            9,
+            32,
+            56,
+            61
+          ],
+          "key": "enemy.slime.north.hit.01"
+        },
+        {
+          "bounds": [
+            11,
+            34,
+            54,
+            61
+          ],
+          "key": "enemy.slime.north.hit.02"
+        },
+        {
+          "bounds": [
+            7,
+            36,
+            57,
+            61
+          ],
+          "key": "enemy.slime.north.death.01"
+        },
+        {
+          "bounds": [
+            6,
+            39,
+            59,
+            61
+          ],
+          "key": "enemy.slime.north.death.02"
+        },
+        {
+          "bounds": [
+            8,
+            34,
+            57,
+            61
+          ],
+          "key": "enemy.slime.east.idle.01"
+        },
+        {
+          "bounds": [
+            8,
+            34,
+            56,
+            61
+          ],
+          "key": "enemy.slime.east.idle.02"
+        },
+        {
+          "bounds": [
+            8,
+            34,
+            56,
+            61
+          ],
+          "key": "enemy.slime.east.idle.03"
+        },
+        {
+          "bounds": [
+            9,
+            33,
+            56,
+            61
+          ],
+          "key": "enemy.slime.east.idle.04"
+        },
+        {
+          "bounds": [
+            7,
+            38,
+            58,
+            61
+          ],
+          "key": "enemy.slime.east.move.01"
+        },
+        {
+          "bounds": [
+            8,
+            37,
+            57,
+            61
+          ],
+          "key": "enemy.slime.east.move.02"
+        },
+        {
+          "bounds": [
+            8,
+            36,
+            57,
+            61
+          ],
+          "key": "enemy.slime.east.move.03"
+        },
+        {
+          "bounds": [
+            9,
+            35,
+            56,
+            61
+          ],
+          "key": "enemy.slime.east.move.04"
+        },
+        {
+          "bounds": [
+            8,
+            35,
+            57,
+            61
+          ],
+          "key": "enemy.slime.east.attack.01"
+        },
+        {
+          "bounds": [
+            7,
+            33,
+            57,
+            61
+          ],
+          "key": "enemy.slime.east.attack.02"
+        },
+        {
+          "bounds": [
+            7,
+            28,
+            58,
+            61
+          ],
+          "key": "enemy.slime.east.attack.03"
+        },
+        {
+          "bounds": [
+            8,
+            33,
+            57,
+            61
+          ],
+          "key": "enemy.slime.east.attack.04"
+        },
+        {
+          "bounds": [
+            10,
+            33,
+            54,
+            61
+          ],
+          "key": "enemy.slime.east.hit.01"
+        },
+        {
+          "bounds": [
+            11,
+            33,
+            54,
+            61
+          ],
+          "key": "enemy.slime.east.hit.02"
+        },
+        {
+          "bounds": [
+            7,
+            44,
+            57,
+            61
+          ],
+          "key": "enemy.slime.east.death.01"
+        },
+        {
+          "bounds": [
+            7,
+            44,
+            57,
+            61
+          ],
+          "key": "enemy.slime.east.death.02"
+        },
+        {
+          "bounds": [
+            7,
+            32,
+            58,
+            61
+          ],
+          "key": "enemy.slime.west.idle.01"
+        },
+        {
+          "bounds": [
+            7,
+            32,
+            58,
+            61
+          ],
+          "key": "enemy.slime.west.idle.02"
+        },
+        {
+          "bounds": [
+            7,
+            32,
+            58,
+            61
+          ],
+          "key": "enemy.slime.west.idle.03"
+        },
+        {
+          "bounds": [
+            7,
+            33,
+            57,
+            61
+          ],
+          "key": "enemy.slime.west.idle.04"
+        },
+        {
+          "bounds": [
+            6,
+            33,
+            58,
+            61
+          ],
+          "key": "enemy.slime.west.move.01"
+        },
+        {
+          "bounds": [
+            5,
+            33,
+            59,
+            61
+          ],
+          "key": "enemy.slime.west.move.02"
+        },
+        {
+          "bounds": [
+            6,
+            33,
+            59,
+            61
+          ],
+          "key": "enemy.slime.west.move.03"
+        },
+        {
+          "bounds": [
+            5,
+            31,
+            60,
+            61
+          ],
+          "key": "enemy.slime.west.move.04"
+        },
+        {
+          "bounds": [
+            5,
+            29,
+            59,
+            61
+          ],
+          "key": "enemy.slime.west.attack.01"
+        },
+        {
+          "bounds": [
+            4,
+            31,
+            60,
+            61
+          ],
+          "key": "enemy.slime.west.attack.02"
+        },
+        {
+          "bounds": [
+            5,
+            32,
+            60,
+            61
+          ],
+          "key": "enemy.slime.west.attack.03"
+        },
+        {
+          "bounds": [
+            4,
+            35,
+            61,
+            61
+          ],
+          "key": "enemy.slime.west.attack.04"
+        },
+        {
+          "bounds": [
+            7,
+            31,
+            57,
+            61
+          ],
+          "key": "enemy.slime.west.hit.01"
+        },
+        {
+          "bounds": [
+            6,
+            34,
+            58,
+            61
+          ],
+          "key": "enemy.slime.west.hit.02"
+        },
+        {
+          "bounds": [
+            6,
+            39,
+            59,
+            61
+          ],
+          "key": "enemy.slime.west.death.01"
+        },
+        {
+          "bounds": [
+            6,
+            43,
+            59,
+            61
+          ],
+          "key": "enemy.slime.west.death.02"
+        }
+      ],
+      "sharedScale": 0.20069204152249134,
+      "sourceMaxBounds": [
+        289,
+        211
+      ]
+    },
+    "totem": {
+      "frames": [
+        {
+          "bounds": [
+            18,
+            3,
+            47,
+            61
+          ],
+          "key": "enemy.totem.base.idle.01"
+        },
+        {
+          "bounds": [
+            18,
+            3,
+            47,
+            61
+          ],
+          "key": "enemy.totem.base.idle.02"
+        },
+        {
+          "bounds": [
+            18,
+            3,
+            47,
+            61
+          ],
+          "key": "enemy.totem.base.idle.03"
+        },
+        {
+          "bounds": [
+            18,
+            3,
+            47,
+            61
+          ],
+          "key": "enemy.totem.base.idle.04"
+        },
+        {
+          "bounds": [
+            18,
+            3,
+            47,
+            61
+          ],
+          "key": "enemy.totem.base.awaken.01"
+        },
+        {
+          "bounds": [
+            18,
+            3,
+            46,
+            61
+          ],
+          "key": "enemy.totem.base.awaken.02"
+        },
+        {
+          "bounds": [
+            18,
+            3,
+            46,
+            61
+          ],
+          "key": "enemy.totem.base.awaken.03"
+        },
+        {
+          "bounds": [
+            18,
+            3,
+            47,
+            61
+          ],
+          "key": "enemy.totem.base.awaken.04"
+        },
+        {
+          "bounds": [
+            18,
+            3,
+            47,
+            61
+          ],
+          "key": "enemy.totem.base.cast.01"
+        },
+        {
+          "bounds": [
+            18,
+            4,
+            46,
+            61
+          ],
+          "key": "enemy.totem.base.cast.02"
+        },
+        {
+          "bounds": [
+            18,
+            4,
+            46,
+            61
+          ],
+          "key": "enemy.totem.base.cast.03"
+        },
+        {
+          "bounds": [
+            18,
+            4,
+            47,
+            61
+          ],
+          "key": "enemy.totem.base.cast.04"
+        },
+        {
+          "bounds": [
+            20,
+            26,
+            45,
+            61
+          ],
+          "key": "enemy.totem.base.hit.01"
+        },
+        {
+          "bounds": [
+            20,
+            26,
+            45,
+            61
+          ],
+          "key": "enemy.totem.base.hit.02"
+        },
+        {
+          "bounds": [
+            20,
+            27,
+            45,
+            61
+          ],
+          "key": "enemy.totem.base.death.01"
+        },
+        {
+          "bounds": [
+            19,
+            31,
+            45,
+            61
+          ],
+          "key": "enemy.totem.base.death.02"
+        }
+      ],
+      "sharedScale": 0.17522658610271905,
+      "sourceMaxBounds": [
+        164,
+        331
+      ]
+    }
+  },
+  "normalization": {
+    "bottomCenterRoot": [
+      32,
+      60
+    ],
+    "maxFrameBounds": [
+      58,
+      58
+    ],
+    "meaningfulComponentArea": 500,
+    "otterWestPolicy": "16 disconnected components; centroid slot assignment; alpha component mask; 224px normalized extent; strict normalized gate"
+  },
+  "outputs": {
+    "art/source/enemy-hd/acolyte/acolyte-animation-contact-sheet.png": "daeb5451b0060b363661cbaee3987a1581feca7b28431b66ff567b6273c90db1",
+    "art/source/enemy-hd/acolyte/acolyte-animation-east-normalized-1024.png": "14233507c3d7be34f51c509611985c80c382c6c223627c02505aa883760eeb2f",
+    "art/source/enemy-hd/acolyte/acolyte-animation-north-normalized-1024.png": "b2b81d0e108c9b67c663e8f6a9d5e05429f31639b5298d319202a71eb3a00efb",
+    "art/source/enemy-hd/acolyte/acolyte-animation-south-normalized-1024.png": "1968678b3024092f4b80eae104309f9a0941f069810ab426fb6e1f6702fb1523",
+    "art/source/enemy-hd/acolyte/acolyte-animation-west-normalized-1024.png": "3de7084633a03a19cad330d418d8bfea502892197d4b8a24441157105dd6c694",
+    "art/source/enemy-hd/brute/brute-animation-contact-sheet.png": "46bfe8e167df5187e883816fa45336559e6ca2154dc33534438be0a712a38812",
+    "art/source/enemy-hd/brute/brute-animation-east-normalized-1024.png": "56482b792aaa9fafebbd553d7a8183bc1ab5af2a9daa9d69775a22c8a9985c63",
+    "art/source/enemy-hd/brute/brute-animation-north-normalized-1024.png": "43c99b9737921a4bb7001ef7aee7ea08681e35aad7c4a23e55f29a0a5bb346d2",
+    "art/source/enemy-hd/brute/brute-animation-south-normalized-1024.png": "7e3fc042e0b39b5e0dae883ec180cb192c7fc79ba76892648ae4a97870a5cbb8",
+    "art/source/enemy-hd/brute/brute-animation-west-normalized-1024.png": "80f5695d5891ccd087b6292b84689be209021fbc8567396bf85737f3268bab83",
+    "art/source/enemy-hd/enemy-animation-contact-sheet.png": "37bcd9f423c76ea0ed425b71189648a75ac99f869ee6d4a22c6b6df8075557bb",
+    "art/source/enemy-hd/enemy-animation-source-layout.json": "ef0b40b6cf59faa7c53720f7d615d1804f3f86f9b935b1f6ee91c4969d48c130",
+    "art/source/enemy-hd/otter/otter-animation-contact-sheet.png": "d837768f76f9e1824a3fe4e4cdf6f44224f200e8663dd9a1469c349a0ee971f2",
+    "art/source/enemy-hd/otter/otter-animation-east-normalized-1024.png": "229cf9281b8cf982b01161d216e58a8baab90441ddc660be48f46293f61c847c",
+    "art/source/enemy-hd/otter/otter-animation-north-normalized-1024.png": "4fba9273f81a40c511d0e796adcbf364308bdf1fbdec7a6a05c5c5ad42ed91a5",
+    "art/source/enemy-hd/otter/otter-animation-south-normalized-1024.png": "00d91cc82e1a3c81d950f391373a1e5a93679b9bc6a422c3f8a6dcfbc6632a47",
+    "art/source/enemy-hd/otter/otter-animation-west-normalized-1024.png": "8c94c35dd956b86b5b01097c5f8b112c9bf0bb06fb72a98f4a1251ba76e6fc72",
+    "art/source/enemy-hd/skeleton/skeleton-animation-contact-sheet.png": "584a338b511cb2a46df590e6f4166f471a08fdc96d7b4ea0a439bed494269f10",
+    "art/source/enemy-hd/skeleton/skeleton-animation-east-normalized-1024.png": "481e82b23ac1aa6c58b4a89f163e1d1e2267d5f687ee2914f350b67eae4edf98",
+    "art/source/enemy-hd/skeleton/skeleton-animation-north-normalized-1024.png": "a0b206379124a8763cd55707f81111c0e7a8e8f9d58294dbd3ca282e98d7daff",
+    "art/source/enemy-hd/skeleton/skeleton-animation-south-normalized-1024.png": "4c6637cbd22bffffd5a36b5d461d4428fb3490f45d2e2a44741550e467e42e9d",
+    "art/source/enemy-hd/skeleton/skeleton-animation-west-normalized-1024.png": "9e5e9ed2a12e3638aadfd723ff284c4c4c8dc3b43450c3486da3c5555147dcb4",
+    "art/source/enemy-hd/skitter/skitter-animation-contact-sheet.png": "f3a06878a0cd9a95e6dbce16b44bd7827a64428b4bb1d59e47d8af64957b136a",
+    "art/source/enemy-hd/skitter/skitter-animation-east-normalized-1024.png": "22b3346f097915c2875d234d696d2c595fb80c9c0ee6075d909823399968539f",
+    "art/source/enemy-hd/skitter/skitter-animation-north-normalized-1024.png": "25d5a907ddfde283f62406deb0de686254fedc9c46374e26b503c8575d3e3481",
+    "art/source/enemy-hd/skitter/skitter-animation-south-normalized-1024.png": "d3c6484e8909927c57427f3b7c47bd94d45d24368c1180c83b2cb6648be0a69c",
+    "art/source/enemy-hd/skitter/skitter-animation-west-normalized-1024.png": "b54b32a78aff1977043849dd033a9846f98a9cac704ff5e3e0ca4dc9cc152b7a",
+    "art/source/enemy-hd/slime/slime-animation-contact-sheet.png": "8a02273cfb15052a1d29fb6d0fabba1fab7fa8e851ecd0fec213c79265c6facb",
+    "art/source/enemy-hd/slime/slime-animation-east-normalized-1024.png": "5d8b4791c02c4348415ebbdebabb7f3d570420e2261f3492b02d20e522fbc202",
+    "art/source/enemy-hd/slime/slime-animation-north-normalized-1024.png": "332ac5f738d614a0e46986481a654f78b25f3977c12ff9f8e9d2c90129f7aae1",
+    "art/source/enemy-hd/slime/slime-animation-south-normalized-1024.png": "1c44f12eb828794c5b177562972f8a2d2c83647a29c243a1ad872e6f4bbdd49c",
+    "art/source/enemy-hd/slime/slime-animation-west-normalized-1024.png": "e7e8c524727c2b4bbca3776adb3d60ef27e1ee22c30c785f3eb955816ec739b6",
+    "art/source/enemy-hd/totem/totem-animation-base-normalized-1024.png": "9fe0398ef87fad66221a972e1d80222b8631c32e3f4d098f5f983ef50022416d",
+    "art/source/enemy-hd/totem/totem-animation-contact-sheet.png": "fab3cde5a688eb1b121e1ba9787977195a28a9ae879eea9a679936ef21821cfd",
+    "assets/hd/enemies/acolyte/acolyte-manifest.json": "6f42c0e1e264fd53ea4efd54dbd859a3d837ceb13340e5cf1499660ef68b354e",
+    "assets/hd/enemies/acolyte/frames/east-attack-01.png": "e506f46e981db062e039debdcc70098fb02fb21f06374f4942a839802623725f",
+    "assets/hd/enemies/acolyte/frames/east-attack-02.png": "cbe9ee09e6baa6ade805fc562d820a79cf25ee5d2c945b75aa8a1ff09092eb53",
+    "assets/hd/enemies/acolyte/frames/east-attack-03.png": "91f163447a7d319d0a4640eae0fad91ea51e94aa5082f2c098853c26c9c53eaf",
+    "assets/hd/enemies/acolyte/frames/east-attack-04.png": "b2ff5a0d2138484009f73f1ac077c3484edbcb4c18f82968ed135ca2c302f1ea",
+    "assets/hd/enemies/acolyte/frames/east-death-01.png": "2b24db2e7826f468e52832dac89d1339087972c93f460abbb99ebef8e5656295",
+    "assets/hd/enemies/acolyte/frames/east-death-02.png": "71b6bdd27bdbfae9d76bdc41485a1d7795f8ba19aee4f7e5a2b8486d4a735fbb",
+    "assets/hd/enemies/acolyte/frames/east-hit-01.png": "5fbb8483737306caa63b5988ac8ecfce77db5b4e38cc6e089d7d985bd325636b",
+    "assets/hd/enemies/acolyte/frames/east-hit-02.png": "ca2f42b7fb67fc2a41a8d9a3978d168703b2a234aec173200cf558bd707e7e6a",
+    "assets/hd/enemies/acolyte/frames/east-idle-01.png": "0f969f8a89c75f964e6e8c2064743283728d0218aad21b8d95405ed443031aae",
+    "assets/hd/enemies/acolyte/frames/east-idle-02.png": "f3159831c52e0c031cea5b1996c448c9ea0dcc35ddff4da52754f43c6c2fb67d",
+    "assets/hd/enemies/acolyte/frames/east-idle-03.png": "96ea6471e0e7f43e035d0794cfc00c7288e17314748ef290f3553dd048dab433",
+    "assets/hd/enemies/acolyte/frames/east-idle-04.png": "8fc20d2b413e93e642ff9a0f727fcf18718cc0402cfe08fd03d4ed058ada78b6",
+    "assets/hd/enemies/acolyte/frames/east-move-01.png": "236eeaa810e22fa6984a0058346f5503686e1cbf348ee4d178097d04cd3a88a0",
+    "assets/hd/enemies/acolyte/frames/east-move-02.png": "4f185f50b47394abca28017734bdd011d5899ff3e0d7321926efb0860379e362",
+    "assets/hd/enemies/acolyte/frames/east-move-03.png": "1b82095fd2c6e98b64fb38bcfc7ab837fb53bc5b6ff59d92a83b76c721949c1c",
+    "assets/hd/enemies/acolyte/frames/east-move-04.png": "e1156522e6614efdd6e34da899fcc26f6de5fb2dc30add0e1553e42ce2b1ca61",
+    "assets/hd/enemies/acolyte/frames/north-attack-01.png": "08d8bf99252f78ef0ee3f2dff8113bae5ad892aa5fc5644cc9274753cc4b485e",
+    "assets/hd/enemies/acolyte/frames/north-attack-02.png": "9507a5075a9c3e437abc920661c89349af10ec2ad5076df47fb80955b0157f60",
+    "assets/hd/enemies/acolyte/frames/north-attack-03.png": "8547598fe01023ae1b841b41e8ff5000b8d78c8100226d01df8a06281847a73e",
+    "assets/hd/enemies/acolyte/frames/north-attack-04.png": "00dc84960cd6d1ff126b14d39b1eba45c42ddb7a56cfcb6822e1ec8f05103214",
+    "assets/hd/enemies/acolyte/frames/north-death-01.png": "1f66bf31b5900bf25a822a875534253df743753c5d4592556bc2cdf20319d40a",
+    "assets/hd/enemies/acolyte/frames/north-death-02.png": "0a1c7fb166d4e78007365f73f36c00512d0a6486a23ed38dc8a68cb690b7aabf",
+    "assets/hd/enemies/acolyte/frames/north-hit-01.png": "95e82d794ba973ef4c85c354350708d97362b902dfc329848195e707a64c197a",
+    "assets/hd/enemies/acolyte/frames/north-hit-02.png": "4fdb9d166d50fca56b3dad079e558c455b2e1f83784d7c54d434f4f7582df56b",
+    "assets/hd/enemies/acolyte/frames/north-idle-01.png": "c3a7edb185e62911c8aceffae25c9013e25bb861690c49d1648d1b3561bfb783",
+    "assets/hd/enemies/acolyte/frames/north-idle-02.png": "cbbba3e2b9a3bfe44f42988d59f0f6c217f05f1b462bdc026a7b285b5dcbad6b",
+    "assets/hd/enemies/acolyte/frames/north-idle-03.png": "31afb30eeec5e9101ef63fade1e4af9ad82ce38db733c3ea22e4520de6f774da",
+    "assets/hd/enemies/acolyte/frames/north-idle-04.png": "a584026ed96bee87053e9185994f8deb5ba3be2cf82c5bdb47154e9c6ba07584",
+    "assets/hd/enemies/acolyte/frames/north-move-01.png": "682bf61b759de4f983c7d8d46f080d44ab2662cdd8c2d5e70150ac56c2cec874",
+    "assets/hd/enemies/acolyte/frames/north-move-02.png": "d89a6e57813eb94db2782b34d2fe72a77e43eba455b77768411a87886639cdd9",
+    "assets/hd/enemies/acolyte/frames/north-move-03.png": "e13976f91027be787b62f102aa3f3650b7882fbb6c45341eaf8ad19151f23b19",
+    "assets/hd/enemies/acolyte/frames/north-move-04.png": "d3b22ccc8aa389059065f1c000c454cddc4300746c16a287b00b1df9ca5be92a",
+    "assets/hd/enemies/acolyte/frames/south-attack-01.png": "9777441a0169c20b6f02c67ac6346c7fd76e8962308c87f2767dffbe7958eed1",
+    "assets/hd/enemies/acolyte/frames/south-attack-02.png": "29d9d252ffa3763979c12ceeaaf7b1b1e2ba37e327adc33f44b5bbb9da2e7b86",
+    "assets/hd/enemies/acolyte/frames/south-attack-03.png": "fe50ce7940c600dcc8b99536358ce8c185f5ae63a2f0bf7affcfd2c81f8ee296",
+    "assets/hd/enemies/acolyte/frames/south-attack-04.png": "d62c7bbc35cd5dd16a6f9ecc35177aa24adc032f803b3d8928a5c1a8a16ddab2",
+    "assets/hd/enemies/acolyte/frames/south-death-01.png": "06dbc1544c137c2eefaab78212928c5c8671a18b37af3973452544da9e253902",
+    "assets/hd/enemies/acolyte/frames/south-death-02.png": "d05b1aa9325577a7b9aa68cb77da42ea0abcc0f55a11bc2d2eea00878406a882",
+    "assets/hd/enemies/acolyte/frames/south-hit-01.png": "56ee77a0adb7528f80724f614a3e3c1809fbf5fca11569e7fc92f125da1558ab",
+    "assets/hd/enemies/acolyte/frames/south-hit-02.png": "52705ae5d95c43cc9b2c471422e2c73d38880ba7505831536915a698bbfd030e",
+    "assets/hd/enemies/acolyte/frames/south-idle-01.png": "95c3c796730639829a68b664687e7b2098b2ef554de468014655d918b76b40e3",
+    "assets/hd/enemies/acolyte/frames/south-idle-02.png": "f00b7c6c4bb356e9bd71b9a221fff73cff46b09a4dca60b74140a75582f4f600",
+    "assets/hd/enemies/acolyte/frames/south-idle-03.png": "10d2b8d8fa411eaaf4aec0a95619faa07a1c1f454138a8a15725dc7facdf1765",
+    "assets/hd/enemies/acolyte/frames/south-idle-04.png": "d227a9978bf03440ad3dca6f939445e894037ef3a3c429ac7a1ff974193b6ac8",
+    "assets/hd/enemies/acolyte/frames/south-move-01.png": "38289916a7e65421a0766492aee2260b70641fea3ec9e312d873362238cbcc11",
+    "assets/hd/enemies/acolyte/frames/south-move-02.png": "6fa6cc597cb594d6b7bb2a6c3d95a0b4a54503c720044f7cdd8756cb090fb071",
+    "assets/hd/enemies/acolyte/frames/south-move-03.png": "62f5906f040e43e0a69ca23d960ebb135157e32116e0d94da7cba882b087120d",
+    "assets/hd/enemies/acolyte/frames/south-move-04.png": "7ff90a2c2079d5dab3cfa37379a58be9926c386e24ca25a351be891f36e6d38a",
+    "assets/hd/enemies/acolyte/frames/west-attack-01.png": "900d3ef3ae77be5a2b981dcca3bf33ffee6131b8bd21f11a3435479af1fcbf41",
+    "assets/hd/enemies/acolyte/frames/west-attack-02.png": "733461303a948b522c90dc944cf9864412f4f70f3db9b4110c400842dbcb141d",
+    "assets/hd/enemies/acolyte/frames/west-attack-03.png": "ffc6dfeae3465bf1d0d3e8615590229c2132af7677101c390a5e9785a0ac2b6c",
+    "assets/hd/enemies/acolyte/frames/west-attack-04.png": "0dfb324fab307f6a9d898d7155a283532b862d8fc82e562a4bf64e1886272552",
+    "assets/hd/enemies/acolyte/frames/west-death-01.png": "f04533b95271944c0bcbe926660972a3624a2a0cd4cd1a495ba1519eb1ed1979",
+    "assets/hd/enemies/acolyte/frames/west-death-02.png": "1f524caf8d6009ee79b95f7f0662930c87383f054b074837fc7aabd6eca1a75f",
+    "assets/hd/enemies/acolyte/frames/west-hit-01.png": "8862eb50d231199ff1be6b01a3a7a21c02ad56f4a13fece1520dbc896d71bb3a",
+    "assets/hd/enemies/acolyte/frames/west-hit-02.png": "61379bc11b3a2c2a3cb3ade52534ff6b46471ee6d5ac495dd6e5e4b86599edb6",
+    "assets/hd/enemies/acolyte/frames/west-idle-01.png": "4e592b0266078cffa1b585cc4a630b98b528d6b205eee5a48b65cb20e951fa3d",
+    "assets/hd/enemies/acolyte/frames/west-idle-02.png": "8689e938491fb800ae0f1e439a24841622f5a80c5bd1884bd95df213a03887ac",
+    "assets/hd/enemies/acolyte/frames/west-idle-03.png": "39915ba093651ee110dbcd41b8ce65726d3e85fd8605933c4c4c7fdd4765b630",
+    "assets/hd/enemies/acolyte/frames/west-idle-04.png": "3a24d6aaba39fe43e0fa2280485b9ff048051f5c1a4dc4ff39de9f5ce0fd57f7",
+    "assets/hd/enemies/acolyte/frames/west-move-01.png": "dcf0bfc5daf4eb7695eca9d7dc3118ea438003ea29935a5af9ac5902a53b3a15",
+    "assets/hd/enemies/acolyte/frames/west-move-02.png": "597fe6fe830d6a476e2fc0f60602cad28461eb66c612bb4a46eb50ee22e4045a",
+    "assets/hd/enemies/acolyte/frames/west-move-03.png": "7344faa1f4c88b1deb55de4fec136b854f5a0cf62bf75af2403d66430943ac00",
+    "assets/hd/enemies/acolyte/frames/west-move-04.png": "66818a689ab26b0eed2fc1ce70780b3de30cc640db7341d80fb5b4a9e9109226",
+    "assets/hd/enemies/brute/brute-manifest.json": "c2d16a492853f357a0f02ede317ba3635de3a03ef9db71c42909496671e6a651",
+    "assets/hd/enemies/brute/frames/east-attack-01.png": "b80b1bf8510fb6dccb528e64ecd448b88d9f0d3c178f5590aade159f1b61bc64",
+    "assets/hd/enemies/brute/frames/east-attack-02.png": "c23c3fbfa83377d263c14fba661145a0e20a6f3382d21cef60fb9cddbb18c1a3",
+    "assets/hd/enemies/brute/frames/east-attack-03.png": "c3a2e859516d32f56b0075a4dc54c30bc9d99795b386adc9797f9b6eb0cc93cf",
+    "assets/hd/enemies/brute/frames/east-attack-04.png": "9e0f4e71963c6aa9e16b63491b5aab5435c6dd592c85f4674d13185eb5f2fc28",
+    "assets/hd/enemies/brute/frames/east-death-01.png": "d9771ef93d1d7510b241801147248abd00e3fffc83a427ce833eac3fa8a1e2bf",
+    "assets/hd/enemies/brute/frames/east-death-02.png": "aec91588fae9f25a53ea7e1e1cd1d059c34de3b93ec2fcb307a1819e9671b66d",
+    "assets/hd/enemies/brute/frames/east-hit-01.png": "bf2ee2f94bdd1d9a0696a10c01b507a0dbd809370a72895ea78622509122b14c",
+    "assets/hd/enemies/brute/frames/east-hit-02.png": "a8dffd2165de30bf372d89a70c1405262a4af592d4d60f88a2b4c3d58fe95636",
+    "assets/hd/enemies/brute/frames/east-idle-01.png": "0ddcb16b3b1e4bb7c9029351f1155d508cbe8c3743e8f771c714db9658e4607d",
+    "assets/hd/enemies/brute/frames/east-idle-02.png": "cd2a39d7793edf542cd57183c85b4b0069bae1caab524eb9f15932edfcd6ef25",
+    "assets/hd/enemies/brute/frames/east-idle-03.png": "0b5fca37c9284bb636f6fec38a17c00a03e683762db00adb7d7adee3dc2ce65b",
+    "assets/hd/enemies/brute/frames/east-idle-04.png": "8df90f061c803322149962204aaaa9bbfd6383c6569fdf83434b47e2fe38c1c4",
+    "assets/hd/enemies/brute/frames/east-move-01.png": "16d96276d0d77420aa98c47bf587b4f5e17bdcd27884ec6b35b1f7605b041ba0",
+    "assets/hd/enemies/brute/frames/east-move-02.png": "e4dc5d4da9d4252a2e70d60bd27ed918ceeff3a53a04ba06f5e84d60c1157cb0",
+    "assets/hd/enemies/brute/frames/east-move-03.png": "cc17dc32007602b63395459130f1adafc9b525bc16fb2b87edeeeab22e92c3c0",
+    "assets/hd/enemies/brute/frames/east-move-04.png": "300134c3d65b8f7d9b47ff0cec97c251533af8db4129811a28572e3a1b299362",
+    "assets/hd/enemies/brute/frames/north-attack-01.png": "921933e0979f96a78838007bd3d4e27df610eacd2829f6c351d1b6423d07e8ed",
+    "assets/hd/enemies/brute/frames/north-attack-02.png": "cc2b4b0bae94df301cb056c0c4f64218cea25025a6fed5c9c399f154a782018d",
+    "assets/hd/enemies/brute/frames/north-attack-03.png": "23672c7cc44c612cbd42313365df0823c4bb4ed179dc8e3b9629d7d16f9f8faf",
+    "assets/hd/enemies/brute/frames/north-attack-04.png": "d6a9bd278b1de9e0ed47d42b0bc0c9eb55f54c562055e81d91fd3ab091bc67af",
+    "assets/hd/enemies/brute/frames/north-death-01.png": "7fac13f57970bf1b0600d22c52bd3c1eeef583bb9cd28665c9b1fcbbc3d68233",
+    "assets/hd/enemies/brute/frames/north-death-02.png": "4fc9b6b881d90ebddfa61370a3d4f5111fadc79335ec7b53d3fb81598f8154e2",
+    "assets/hd/enemies/brute/frames/north-hit-01.png": "ad05aaa4da1fbb0da78335fb2fd9395fbb1a78c5e2a621e99f7895de30597dda",
+    "assets/hd/enemies/brute/frames/north-hit-02.png": "89a1beab1d0526dab793311e0f7dc2faee3aa59730dd31fbeac0a030fed63ad7",
+    "assets/hd/enemies/brute/frames/north-idle-01.png": "c3f9ac55af441ae786175410454b27961cc8fbed084dfa3822317606dbf5f3eb",
+    "assets/hd/enemies/brute/frames/north-idle-02.png": "b32077751169dc100efa9a6fae824350677c29060fac70ee174bee2d55fd0736",
+    "assets/hd/enemies/brute/frames/north-idle-03.png": "2edf39a18d55b51c56ee0812a2158f097d75e50d7dd7f7548d146ee7a63eac34",
+    "assets/hd/enemies/brute/frames/north-idle-04.png": "0009e272ba9af81c4ef3ae23175294c56c47b62c6a8c55cc5f290bc9a4c4c3d5",
+    "assets/hd/enemies/brute/frames/north-move-01.png": "7c0d684feacb1cbf4e46a5c9e4cef742dd3f91d4e5412a7dada8c79806bdb339",
+    "assets/hd/enemies/brute/frames/north-move-02.png": "b998c9c1705f9cdef1fe88cf73d41ada5967b20fb0bb55224a7edbd345334676",
+    "assets/hd/enemies/brute/frames/north-move-03.png": "52ac46b3a8bb75fdb9c017942116fb7362421900b719b70a19ff03b090a6c4a4",
+    "assets/hd/enemies/brute/frames/north-move-04.png": "e03553e080438e6206b2dbf322e0e9c32cef9ca85e63d043c0e57756532500e1",
+    "assets/hd/enemies/brute/frames/south-attack-01.png": "a054d4fcda4b09482ef764363d14d0acb593dbdeebad608ed9afb5178fec9956",
+    "assets/hd/enemies/brute/frames/south-attack-02.png": "7dad14b11e0777cf6177d020860a0d247f83ac82bf51daedb5ad5aa3b4e7d43c",
+    "assets/hd/enemies/brute/frames/south-attack-03.png": "e4b7524113640d9e228f6ae64c271f02322892b45b38ae625d00fe9d59897c15",
+    "assets/hd/enemies/brute/frames/south-attack-04.png": "e85988922ec2074dd87e3af4f5c3df46b19d92771c7b11fe4647348220bbfe9d",
+    "assets/hd/enemies/brute/frames/south-death-01.png": "52e6df507eb6638f21b8adc1808573f6160cccb23a79168bde238451364dd32e",
+    "assets/hd/enemies/brute/frames/south-death-02.png": "ab10252f2c188b2fc9f16ba7f32691ce47083838df6caf8fe5769cb75b43c780",
+    "assets/hd/enemies/brute/frames/south-hit-01.png": "87dc73449743e69d2f14b339789ffd825e223af21dc131b3d54265c1dc16da9a",
+    "assets/hd/enemies/brute/frames/south-hit-02.png": "acfd66fe74a9cb18efc1647722dd06fce4b793408bac5a5e4b9f0a5c2da5cbe7",
+    "assets/hd/enemies/brute/frames/south-idle-01.png": "d57beebf8ae911ca44bb3188fd847b81945d6da5e0203520f601fe2ffb227f85",
+    "assets/hd/enemies/brute/frames/south-idle-02.png": "a0d94fbbe42f1b848cea440e38149434e6a5695ae0eb402c8f37b1549b30f2e0",
+    "assets/hd/enemies/brute/frames/south-idle-03.png": "27588ece9aaa2988e6a16f23b441bce6e4d8cef72baedd510dd19a477854cb1d",
+    "assets/hd/enemies/brute/frames/south-idle-04.png": "7964750aeb7a02c08ee2a179426fe5fde1ada8b427db1341d7c8389dedcc91e5",
+    "assets/hd/enemies/brute/frames/south-move-01.png": "a971ef968cf96fcc213e04533b918c82cddbbd9bbd05eeb2b2665d64f76a88ea",
+    "assets/hd/enemies/brute/frames/south-move-02.png": "3ab6c53df1e5de8f1b42a15969a4dca24c02f445093af2552177a1f44920288d",
+    "assets/hd/enemies/brute/frames/south-move-03.png": "27073bb26076e5e17ab34038c3520cb5d9374fe6ba1f19d421b0990b061f06ae",
+    "assets/hd/enemies/brute/frames/south-move-04.png": "ebbf0c4858a3bdd07c3e8b9c84896d97fbfe54d2cead3148b2e5f6d2a7573b81",
+    "assets/hd/enemies/brute/frames/west-attack-01.png": "e04dacddb46910c79f19945dc30098ad2f86f89e55a7cfdd70f11ae94f8a8731",
+    "assets/hd/enemies/brute/frames/west-attack-02.png": "ad3dbde80eac95d77510a6fbc1442c06613e97241eecff53e6699153d35e2ec7",
+    "assets/hd/enemies/brute/frames/west-attack-03.png": "2c43372158f68a62123e8a263064c1ae15f70ef0acbd0cdbef8ce3c38a61ec0c",
+    "assets/hd/enemies/brute/frames/west-attack-04.png": "4af4a628fe522e5cdece6f703c6f9c395947fb4a836bc9bc47225d5aabe58ca5",
+    "assets/hd/enemies/brute/frames/west-death-01.png": "64b77e915c9587ae7da98090109eedf3f6bdba02b990ce17fba6243a9f450ed6",
+    "assets/hd/enemies/brute/frames/west-death-02.png": "f434edd03403a2e9f4bd01cf376fbe895ae1ce6724abd92aaa4fd676a4399938",
+    "assets/hd/enemies/brute/frames/west-hit-01.png": "5d95f6fbc40c441c620acc4c90a63921a5a14df943b6e025a5674166269addc5",
+    "assets/hd/enemies/brute/frames/west-hit-02.png": "639c0a645b26015e6f7fedf771f35798cc8f1edb4673057729dce85530feb414",
+    "assets/hd/enemies/brute/frames/west-idle-01.png": "8df1f3f0b64ce274409b4578491e158150c1830cf71b059801a321b93dc23fb9",
+    "assets/hd/enemies/brute/frames/west-idle-02.png": "06b6eaf807b83939fe483cf23b709f07cfc313545069cba78a6874b37cbc944d",
+    "assets/hd/enemies/brute/frames/west-idle-03.png": "6239fd82d493cc362ea575fc4885a6266a9ad6786b7ba46ec103e9ab8f5d4ba8",
+    "assets/hd/enemies/brute/frames/west-idle-04.png": "eb55781df088b86e923edd54a6a8345f90d97735e91b4c154ca06b8a941bf19c",
+    "assets/hd/enemies/brute/frames/west-move-01.png": "70ef619e09e8df8361ccfa293a7f761d8b23cfc644cf6c60bd320a2d683bcdcc",
+    "assets/hd/enemies/brute/frames/west-move-02.png": "ae715b45eb011924450f8bdd4136837b6b58d677a89ffe4240190c6faf7a0af3",
+    "assets/hd/enemies/brute/frames/west-move-03.png": "fe37fd41c0107b9a3cad49e136d6acdab3a125d82299f87fc4b721cb44cd6221",
+    "assets/hd/enemies/brute/frames/west-move-04.png": "d151b30c7214c1f3fa41838e9a73aa4e9cdf3425f2768c788cf2e838496db4c6",
+    "assets/hd/enemies/otter/frames/east-attack-01.png": "3f385eb61c76677c63d7e75dbbad23ee325e116e1ed5d261ac999c2e59c2d712",
+    "assets/hd/enemies/otter/frames/east-attack-02.png": "c7a575e001b0abc0bf759ce127a5ed8d9d48af9eb62b7ebb1ec26fb89f4dbbd6",
+    "assets/hd/enemies/otter/frames/east-attack-03.png": "03b90390987b1e2130c52d9ac212272cc6d0736699d0c7ca8c89ea090e9cf9f9",
+    "assets/hd/enemies/otter/frames/east-attack-04.png": "8751f235ab7f622d7b6b81e489d37a5fc003cf6c949893c3e3dc47358a892ad2",
+    "assets/hd/enemies/otter/frames/east-death-01.png": "4aee8b8bb0af77f457760fa1a5ee6b2a1aed813a3f635c3b0bb5e557b74e854c",
+    "assets/hd/enemies/otter/frames/east-death-02.png": "4ac6b8dff91eb0b7da660581bfaf5c9a843f18a408704787f9a05df5bc99525b",
+    "assets/hd/enemies/otter/frames/east-hit-01.png": "59326e51a212e81a017b801efe1a337da8c53c5df838c5fa7e8be6659908e2d9",
+    "assets/hd/enemies/otter/frames/east-hit-02.png": "fe310074c8d5eae02f91eaf72e9cde0deb4625b7db7936a5ad512784e3a1733b",
+    "assets/hd/enemies/otter/frames/east-idle-01.png": "4f4d7745baadea474c3ffca0c330a927a4b29150b218c99c09453cca847b7e30",
+    "assets/hd/enemies/otter/frames/east-idle-02.png": "5113cfd64641a9461a28b44262c26b28bd9ee97e83b465d0ac91b817696b42fc",
+    "assets/hd/enemies/otter/frames/east-idle-03.png": "22849e16d36f71f503230b5f554fa93009896758bc3e612454518cef848d1bd6",
+    "assets/hd/enemies/otter/frames/east-idle-04.png": "4d9da88ff8da03c2cade5b41f91549cf29f43d67c550f5d6b42bd4a4a9c850ed",
+    "assets/hd/enemies/otter/frames/east-move-01.png": "87043d25ab370f887033b7be0cd9ec2ae39f6a361f7220776f301f9e56a7dbdb",
+    "assets/hd/enemies/otter/frames/east-move-02.png": "82a14c999416333aa3a1553b4235efcd3b09629dae7e878a7b35209c8b785c4a",
+    "assets/hd/enemies/otter/frames/east-move-03.png": "d828714c8422c3615c6bb8b5305f5cf40653ffd664020d6d826f935d73a7ed55",
+    "assets/hd/enemies/otter/frames/east-move-04.png": "78e6df79b7262c013cc0a13c1e678c785014e8407f0d89e50c13c1b0259e597e",
+    "assets/hd/enemies/otter/frames/north-attack-01.png": "5d17af4a0dd90d86218e89991e0b0986566228a44cf8ac8e27db33da89a5e4cd",
+    "assets/hd/enemies/otter/frames/north-attack-02.png": "b590c48d75a271a10257ae2f261f2cf87589ea3c1a7f3492122006996f947511",
+    "assets/hd/enemies/otter/frames/north-attack-03.png": "9a88bbde576a8ae02e7111e666ee309deec033f26f6c77825436b3c41c5c3a41",
+    "assets/hd/enemies/otter/frames/north-attack-04.png": "e090dd27e01ef1426532e003fded8ac6e3c5df42b82f16f1431ab19581bfb69d",
+    "assets/hd/enemies/otter/frames/north-death-01.png": "5e0449582c114518bd119494c173c4c2c9ce8427edcbc572fe207c3080e4e78b",
+    "assets/hd/enemies/otter/frames/north-death-02.png": "28c790b0b53a306c25c0f0632acd750156c69bf7afd120ebc1f39a7ddd3b39a2",
+    "assets/hd/enemies/otter/frames/north-hit-01.png": "d57c94a2f057efb75dc356f9f46a45228aeb4b4dadd0d56e674d8d26684e69d5",
+    "assets/hd/enemies/otter/frames/north-hit-02.png": "d6351678bf653747026ab316b13cf2bf2df450fa0328a145d023d88eb7adc36c",
+    "assets/hd/enemies/otter/frames/north-idle-01.png": "75180792dbcba22ca973daa4941b9ad0dee9f0649c28da77026debd008726446",
+    "assets/hd/enemies/otter/frames/north-idle-02.png": "ed7700dc8a25fe0404a0e4514b831f502205d6b250144ddf5b7587572b7ee884",
+    "assets/hd/enemies/otter/frames/north-idle-03.png": "179ba95124438affe5cc20cd719641470b541a4b845f9b1a34aa208d9b7259a2",
+    "assets/hd/enemies/otter/frames/north-idle-04.png": "3fdae1099eda6a5ec80ea235e161e043a41c26f7b42014b83e5763157162b07f",
+    "assets/hd/enemies/otter/frames/north-move-01.png": "db9b93ec0d44cb715a9c345aceae4fcd640e3449ea8c0af536257a2e6e46e285",
+    "assets/hd/enemies/otter/frames/north-move-02.png": "5f499c5b8016ebdae687a909b22169789ea8bc280b464e99470afc368ff81474",
+    "assets/hd/enemies/otter/frames/north-move-03.png": "49d4e1759e59f3c97ba063ac3c9758ab86472111852deb0caadc1532c9000833",
+    "assets/hd/enemies/otter/frames/north-move-04.png": "bd650555dd731e8604fec030add72d955e18805da9b82236cd0882b95d3b3807",
+    "assets/hd/enemies/otter/frames/south-attack-01.png": "53ee53105a8d8b506e6a11b0e2e592f2b748388c6b1c5f7084c258794e9e79dd",
+    "assets/hd/enemies/otter/frames/south-attack-02.png": "eb69d9e075d1221a8499ac3d9d2454bd3bb0fe5b98f7770ee88f7eeb60e2c080",
+    "assets/hd/enemies/otter/frames/south-attack-03.png": "306fc8b7910564042b9694fcb752f5d081bc67a60f53148afbc64e645c679604",
+    "assets/hd/enemies/otter/frames/south-attack-04.png": "22a61f0a0c0b13d457d4d1c8eda06cbbae87a9a42e7701e6c8a2cd2207784943",
+    "assets/hd/enemies/otter/frames/south-death-01.png": "0dbe9599ac7f29a65e19b88976326fe309089849cd3a60d331dcdd7f73fcd585",
+    "assets/hd/enemies/otter/frames/south-death-02.png": "7c04fb0e40941f9ee6c4412580bac40af24eb3a4c950f90acaed2b372e808336",
+    "assets/hd/enemies/otter/frames/south-hit-01.png": "a862096608568efc64281a2ea48247b4cbb886a51affb49375bba878509861d6",
+    "assets/hd/enemies/otter/frames/south-hit-02.png": "d795c4ce846642b5b7931f32069a86b464ba935c639d5a2d16ae411cf8ecee86",
+    "assets/hd/enemies/otter/frames/south-idle-01.png": "2be28b8dbc53c480589aa6408b0972e4f7433f02fa6a1e880e05c86b79ac0397",
+    "assets/hd/enemies/otter/frames/south-idle-02.png": "8de5dd7fec03a8864867ae7cc8bc580a6857aaa12d1e70d98ded52aa4f0bf6f6",
+    "assets/hd/enemies/otter/frames/south-idle-03.png": "44bbe415d3b2b1ce70a55ea902ba565136813003bc2ba863e913d30c60ac77a9",
+    "assets/hd/enemies/otter/frames/south-idle-04.png": "ad181d4b2d45649057dde6755c49dd56d8d23d095f62e9656af543a63ee7a349",
+    "assets/hd/enemies/otter/frames/south-move-01.png": "6da2e2282836e099742a1ac5e0b7e7c9171fe8121a742bda65de7c06abeca251",
+    "assets/hd/enemies/otter/frames/south-move-02.png": "797583cdb81c19a97549e32f74922141d8fc71f123dedd3a29198d9de252fc3d",
+    "assets/hd/enemies/otter/frames/south-move-03.png": "0edfd3aeaee448df360328b6c1a34d7e2f778c023cffadb5809bfd4bd813fef0",
+    "assets/hd/enemies/otter/frames/south-move-04.png": "69b7e621fdb45b3d963e1ede2fb92667ab5cac3b80404becc4e7584164af2cf4",
+    "assets/hd/enemies/otter/frames/west-attack-01.png": "86dd0f9871f6dd51c69196a8b35a00648ed2eb76b62893aab222212a4c744e78",
+    "assets/hd/enemies/otter/frames/west-attack-02.png": "bdaa411a5e0d19a787c8d32059b0a62bb686f29e7c31826610f1e99f2efb56f3",
+    "assets/hd/enemies/otter/frames/west-attack-03.png": "a18a99896676fd8974a7680b2f0095e022b42693065003e7dfda22f2a7d6de85",
+    "assets/hd/enemies/otter/frames/west-attack-04.png": "48303215f2ec5c2d15489ee5c5e0b9a7c88850da843fe2ab6338886a79925e0e",
+    "assets/hd/enemies/otter/frames/west-death-01.png": "e6c410d7185441c9e47a43c1b65bc764dff796af33634c2495ce452088163137",
+    "assets/hd/enemies/otter/frames/west-death-02.png": "469e1fea928eead0179f28e06d0837f15160cd54cde28c4b5382a6fb0d3ba129",
+    "assets/hd/enemies/otter/frames/west-hit-01.png": "51418c77409cc051f6de259c9303526498dfec0b251f506fb0266c93024ad967",
+    "assets/hd/enemies/otter/frames/west-hit-02.png": "16925cc1df1b442fae711299dfaebf1498c6f2d18f388a6734b8de2d29bbcc79",
+    "assets/hd/enemies/otter/frames/west-idle-01.png": "9f666a8116a9d85a40ce5c543b8fd64fd16982b16731eca61d3eff03d19bc8b1",
+    "assets/hd/enemies/otter/frames/west-idle-02.png": "0f6b935dd6c2485e2f6e7fe311eda01878ce2511dbb7db70989cdb48ab11dde7",
+    "assets/hd/enemies/otter/frames/west-idle-03.png": "f2f22d583f58655ca92d42923254a443cb31d64d4145b09ab5669a55ca681af3",
+    "assets/hd/enemies/otter/frames/west-idle-04.png": "833da808df0b2b98f4bdd9e784a9274fa001ca5cc0e67fd3bedaa0ec271f5192",
+    "assets/hd/enemies/otter/frames/west-move-01.png": "2e4a3cc2d1227699f5fd9602189b42f68f3d7c5a6f0f4feb83b6bd8dc66525d8",
+    "assets/hd/enemies/otter/frames/west-move-02.png": "0f9fcabe41371a1a76b0d039022164b22a111bcef1dadc9753cf82238b9b21a4",
+    "assets/hd/enemies/otter/frames/west-move-03.png": "9dfc997d1c6270794a949bcfa6cf14087e7695d587a8a6619a81e708b5b3954e",
+    "assets/hd/enemies/otter/frames/west-move-04.png": "8a2361245671e276bc5f7858e4c162f8e73ed416b55bf41077fdded2ee918b9b",
+    "assets/hd/enemies/otter/otter-manifest.json": "9bd7ef1e6985e2af4cf646d0e847418515137e602b2b8357728d4c89563d9750",
+    "assets/hd/enemies/skeleton/frames/east-attack-01.png": "3f57082ec76e1743dfb1d1cf4288ff02806d93387f54a595ee5add706e43fc22",
+    "assets/hd/enemies/skeleton/frames/east-attack-02.png": "ae84c609810c2697accc995c868f39a6d2163a77d30ea56a7565d5fcac26f1aa",
+    "assets/hd/enemies/skeleton/frames/east-attack-03.png": "a2840d9fdb0b53d7156ca7d28ff7e2aa506ee272bf28aac86294ad4f60aedeee",
+    "assets/hd/enemies/skeleton/frames/east-attack-04.png": "8f08b3d9c33602823433da64f9d864d6370a7f9ce93fd9a6d08c76084c4bb9a9",
+    "assets/hd/enemies/skeleton/frames/east-death-01.png": "af1b4aeeed22d713cc11a37b2ee45eafc7b2fab72484a68f171dd29e67104e07",
+    "assets/hd/enemies/skeleton/frames/east-death-02.png": "c75e6d49f43ef561e59bfe52103714fb96fc105bb6f96a71d7e2f637cda299d7",
+    "assets/hd/enemies/skeleton/frames/east-hit-01.png": "383b18cdc71b08010999a61ef36d66915baf1f868c4d023845aabca9e4238222",
+    "assets/hd/enemies/skeleton/frames/east-hit-02.png": "ca1d5064f2ed1dbfff1b9c778ff3630e6fb78c910fb789c0d947d9177e762053",
+    "assets/hd/enemies/skeleton/frames/east-idle-01.png": "55eb6188662153bd711cbf3e8b1c192ba35b14e5e4317c8319dd09348bd468c4",
+    "assets/hd/enemies/skeleton/frames/east-idle-02.png": "a1be79d702f2714909cdf23336dfdce4e21a2e3dfccb7f57d698f3b0fc3ed6e0",
+    "assets/hd/enemies/skeleton/frames/east-idle-03.png": "81b19ec76098d557b9c13ad69d5db3906c58ffda75d289ec0629d762299e1a86",
+    "assets/hd/enemies/skeleton/frames/east-idle-04.png": "895bf85512a313f7b0798f66cd8be610d4018a9325e7bbf524dfee6e79f50d36",
+    "assets/hd/enemies/skeleton/frames/east-move-01.png": "075f58ddba2d4fbd9d9438b05c6eb38057d2fa98fa164ce810fb49a48440d6e0",
+    "assets/hd/enemies/skeleton/frames/east-move-02.png": "708c1ec972770351b83a978402e96a5b4d28583a0bd5033029f6589ac2ac90b8",
+    "assets/hd/enemies/skeleton/frames/east-move-03.png": "8752e828178553b62c028c4df715aa17fa9cccf393cd96f30079fbb69a60ea15",
+    "assets/hd/enemies/skeleton/frames/east-move-04.png": "4554250f510aca2dacf982135a4404e80b6afe2c0899a47fca71c355880d4e4b",
+    "assets/hd/enemies/skeleton/frames/north-attack-01.png": "ac3d25bf4367dd840bed100e2482290475daeaece3f1a955ae0833c8a46311b6",
+    "assets/hd/enemies/skeleton/frames/north-attack-02.png": "81012b368b0ad7a36f4b4a682835f49259286bf9c362d0672b7d53f19cad3b47",
+    "assets/hd/enemies/skeleton/frames/north-attack-03.png": "23aa45f332e7ae179867c0d64c5a98bd19ccad239cfd66420d4252302e6410db",
+    "assets/hd/enemies/skeleton/frames/north-attack-04.png": "2a59462e17d1752584c2216c9b57493d1e29e776e0ec3a93f845930ee2fa9a38",
+    "assets/hd/enemies/skeleton/frames/north-death-01.png": "b7cb73125065b24f689b70910725e10e4f3ff00af21fb254fd94f2e8a9f9a2b4",
+    "assets/hd/enemies/skeleton/frames/north-death-02.png": "2966391f54a2f3c47135392745ac057e07ac2032a9490860c723ebe416ad2a1a",
+    "assets/hd/enemies/skeleton/frames/north-hit-01.png": "681bc6908ed99c727b3635c314f2840bbe90606dcc82f793236c94ffb696506a",
+    "assets/hd/enemies/skeleton/frames/north-hit-02.png": "a13af201911e2b6cb3a62dd59f6e361efc76eabd0a86069558d5653ec63230f4",
+    "assets/hd/enemies/skeleton/frames/north-idle-01.png": "845a594c62d215fd859d6d2533c3c5a4d693dbb3c807cddd471aef069985eafb",
+    "assets/hd/enemies/skeleton/frames/north-idle-02.png": "bc70cc58393822dad032cc7cc2441479920dad54ca3246f1b04e346da922218c",
+    "assets/hd/enemies/skeleton/frames/north-idle-03.png": "0d2a1f8f61a2ace8f46f8b33acaac54d8c1893105a9e9710044d8c9671e08717",
+    "assets/hd/enemies/skeleton/frames/north-idle-04.png": "386f1a764c4c74f5f5da0b7dbe15074fd05f728319bba084d22f1cc56cc9374c",
+    "assets/hd/enemies/skeleton/frames/north-move-01.png": "9cecc0f69aaba988a6193a8dc862a5781f687e89c7ebabfb6e24ebe5e84338c2",
+    "assets/hd/enemies/skeleton/frames/north-move-02.png": "452e81f3597dccb6528cf0ddee20ba8b3b0eb0e68f5daf39d1c9f1089e679658",
+    "assets/hd/enemies/skeleton/frames/north-move-03.png": "51f7222cc42212b00b442f8b0a36e459394f666a50670752f51f6fd1f531c9ec",
+    "assets/hd/enemies/skeleton/frames/north-move-04.png": "c135fd8e543ff66a285c310b2c014854714153b3947221381b0c053bc5bc322b",
+    "assets/hd/enemies/skeleton/frames/south-attack-01.png": "1c343bfeba8ac2a08cf969ea65fc9a36d94a820ea3b1f213a2adcbf133566055",
+    "assets/hd/enemies/skeleton/frames/south-attack-02.png": "09b87d53c10d1e314ff454187838ec957041520ac94e979f1b0cbdb834682d45",
+    "assets/hd/enemies/skeleton/frames/south-attack-03.png": "f1d18b8eca2d432d4868eac74ac8bd6eb187fc822c94f87330db520c27675a11",
+    "assets/hd/enemies/skeleton/frames/south-attack-04.png": "203798b6c64e6cb2b31dbe2804e3e2a17989dd404ab141d3218e11466d13a0d2",
+    "assets/hd/enemies/skeleton/frames/south-death-01.png": "d6c4781561638f4e331fecdcd63d7ea50a1d3e03d4c17c56ab6e3754b84a5192",
+    "assets/hd/enemies/skeleton/frames/south-death-02.png": "148fde40b6ef5eadb5c4968465015c6867e2acba0cef0f3fd9c5265161429016",
+    "assets/hd/enemies/skeleton/frames/south-hit-01.png": "ca912d2f5c5bdd05705529d3b88870d4da07ca5bd4e46a93a0b5754bdbfe3915",
+    "assets/hd/enemies/skeleton/frames/south-hit-02.png": "bd9696079616ab4df18b5b73643d72b9004a6bfa1a2f373c447863451e2f6996",
+    "assets/hd/enemies/skeleton/frames/south-idle-01.png": "66fa8117f05bea71337d7035809ce337fb80b8c98c01f9d9308b8d8772f74c3f",
+    "assets/hd/enemies/skeleton/frames/south-idle-02.png": "33d63bfbf8351b44082c264ca9cbfdbad4ba049e7430224d7d3868a6782cd988",
+    "assets/hd/enemies/skeleton/frames/south-idle-03.png": "28bb852db0cf25913b79a863f47ba9119d4c74f248634121fcaa719679904204",
+    "assets/hd/enemies/skeleton/frames/south-idle-04.png": "a3b68b183fc0a59f463bee3edff8e781a57becd3ad65dab6eb5bad0ed35debcb",
+    "assets/hd/enemies/skeleton/frames/south-move-01.png": "ce542fd611bb075c9dcdc5e76b9a39b5e9c6c9f4f0900920cca2cc54596b427f",
+    "assets/hd/enemies/skeleton/frames/south-move-02.png": "bc918c005522618e3e81592500170a6360e3028a36964a5d19b9bae229c44384",
+    "assets/hd/enemies/skeleton/frames/south-move-03.png": "14fde52b6fe673440328f53db17a8eb1071c7e70911483f24ba5db757d94daea",
+    "assets/hd/enemies/skeleton/frames/south-move-04.png": "3a3362dffd5654843504eac7ab97fb9426d63aa0ea78e1d736ca59ab8f3d727f",
+    "assets/hd/enemies/skeleton/frames/west-attack-01.png": "8ef3f39c51ccc2be4a9f5724b823579eb52e125c4a09b781932aab52cb279781",
+    "assets/hd/enemies/skeleton/frames/west-attack-02.png": "af926cbbe59ae53619eabb470733b9eed69106bb58df222c2f693155a7f92c83",
+    "assets/hd/enemies/skeleton/frames/west-attack-03.png": "346e48c13969ebd55215136841539aae1c76c51a9c31fffd59315165caed3bd5",
+    "assets/hd/enemies/skeleton/frames/west-attack-04.png": "e8d8a184686831cef60eecb112444466d1ff052dedf8aa9423d380b42f318677",
+    "assets/hd/enemies/skeleton/frames/west-death-01.png": "62039142fa048364d0abebf3beb15ed74b18c844551c40c845e23661ca0c2658",
+    "assets/hd/enemies/skeleton/frames/west-death-02.png": "ea396b51820006ad8b7fef5622574659a45dba0bee42b74475e31a618faba80f",
+    "assets/hd/enemies/skeleton/frames/west-hit-01.png": "a23b66063f27192cd637aa552d0ec63e5174d798c2c887538fb039ccd2005a06",
+    "assets/hd/enemies/skeleton/frames/west-hit-02.png": "3726816fcf1c4acf660799a31278f55119e6c96c1ac7133b56ac6ac3feaa2089",
+    "assets/hd/enemies/skeleton/frames/west-idle-01.png": "673d0a0a41c9d392d273749f4717a99b45505d9ac74dbd7912c6533b3c40ad95",
+    "assets/hd/enemies/skeleton/frames/west-idle-02.png": "9378d7064f6319ab51999e4c815aee3f013d9bfb9d0a9770a6379efe941f5238",
+    "assets/hd/enemies/skeleton/frames/west-idle-03.png": "69b41bed70ddb43bcae1aa350fd262799bb0bb7a6d440050332b1212f377f689",
+    "assets/hd/enemies/skeleton/frames/west-idle-04.png": "42aebf13a4005c021f15debcba74d55b63c54cc0684776be9b0b39b69c1fdab3",
+    "assets/hd/enemies/skeleton/frames/west-move-01.png": "3c8538eca7686c9f07fcac506e135ff089f470a288aee068806b330e873057eb",
+    "assets/hd/enemies/skeleton/frames/west-move-02.png": "5a2bc7e065789c9ac39044dbbb9736801a7682abc88f353e7b75023cb82cc14b",
+    "assets/hd/enemies/skeleton/frames/west-move-03.png": "227ddabe6cc77589f6f934f7bbadb5fc8c2a787d25655df4840eb09ce7aa938d",
+    "assets/hd/enemies/skeleton/frames/west-move-04.png": "67ccf6be84cdc47171fd117128367467701b7b846bdfa13eecbdc3536e593d4a",
+    "assets/hd/enemies/skeleton/skeleton-manifest.json": "00612165beaeb313e19a5d7ef4518893d302b82e61257321870b23b72a18f5fd",
+    "assets/hd/enemies/skitter/frames/east-attack-01.png": "e568fb0e5de4a9960b6d6c3e3712df85c7a1217682b64734c055faf5c1b2ed2d",
+    "assets/hd/enemies/skitter/frames/east-attack-02.png": "9ab9391cac02e578990236e380b1a822ebc42f2cd658703032ea8ccc66c8a04f",
+    "assets/hd/enemies/skitter/frames/east-attack-03.png": "5d9af87536c46a8e8a4995589fe71b2ea666b101bf732ab527dd33dbd5566611",
+    "assets/hd/enemies/skitter/frames/east-attack-04.png": "36939f1f4dfdd86ed77b53b49e8c492af0a27ad17b3e54ae1511b74ddac8af08",
+    "assets/hd/enemies/skitter/frames/east-death-01.png": "bf4f67eb13851b2eb3d0d4c4dddb669d7109cd91ea9f2705a830ed416101d727",
+    "assets/hd/enemies/skitter/frames/east-death-02.png": "7482e8e6e194ebd60798a2a2765d8a7185425f0d45aaa56f81ae800b6913c75c",
+    "assets/hd/enemies/skitter/frames/east-hit-01.png": "3ad8ff6c3d0cf31510e0a848a041aef0e12ce5a29edef95250f829efd0fb1e5d",
+    "assets/hd/enemies/skitter/frames/east-hit-02.png": "8baba1f3e20b54b1033d9a1479854b268309de944d9f85d67b23879899124d4d",
+    "assets/hd/enemies/skitter/frames/east-idle-01.png": "a44d75f5351ed2051af7b7c13eb1cff83d26ec2e79adbe658d1e9493c1f93928",
+    "assets/hd/enemies/skitter/frames/east-idle-02.png": "5a3a4c24c6628c1d9281f6ba6847b5a5444aa2db846e8734839aa7e2a2032d0c",
+    "assets/hd/enemies/skitter/frames/east-idle-03.png": "f7126ea12573c331dd389178d171f29eb52b19021880a4a77339e1cd4aba478d",
+    "assets/hd/enemies/skitter/frames/east-idle-04.png": "d7ded8dec077239a2962dc9de42d335403e80d642d9ea11ff02e7809a8ac4254",
+    "assets/hd/enemies/skitter/frames/east-move-01.png": "06705a472a79ca8486cd309c157b2e26bfebd71f0c1a14d2d4b76cbbca987f3d",
+    "assets/hd/enemies/skitter/frames/east-move-02.png": "9abd6e8554da5e1e433f49623452d856deb0b6fd0b5f2c88773f50065d271180",
+    "assets/hd/enemies/skitter/frames/east-move-03.png": "236579edf60be19bf7f9069e65e9c5aaef2e87fa01dff567de556f3c4cb7df9c",
+    "assets/hd/enemies/skitter/frames/east-move-04.png": "88e7c1fbfb4c613cf9f0ac751e031fed3bdd3c571ee7f3a26a4621a83abc7141",
+    "assets/hd/enemies/skitter/frames/north-attack-01.png": "77c69c12541f67b751c6c348d64f5b4d152f146089bc34b46b90dcbfe51aee16",
+    "assets/hd/enemies/skitter/frames/north-attack-02.png": "dd5dc29d3f3693d9d86a48bd6a5cd37f36a18fa40beae8a9774b86f31a3f2855",
+    "assets/hd/enemies/skitter/frames/north-attack-03.png": "1688351c07150c77b06e4d962d3752191989ba6406435a525dad8b4898fa9cc4",
+    "assets/hd/enemies/skitter/frames/north-attack-04.png": "4dd0f7bde9ef8ab1ef44bae88030d00e00e974d76ff4928576c6b101b73ac052",
+    "assets/hd/enemies/skitter/frames/north-death-01.png": "9eab177e5ca0e953693e5d05a25ff15449a692252a34bc197494b132c5e056c3",
+    "assets/hd/enemies/skitter/frames/north-death-02.png": "819ca95b78597b5f9e57812a0a1500ef19bdaf4a02f0b80b9b0e197849a02a2d",
+    "assets/hd/enemies/skitter/frames/north-hit-01.png": "15c62f3c71350e33e8b6948523c53a7a4e1475d96ea8cea412bb797b3e0fe0d9",
+    "assets/hd/enemies/skitter/frames/north-hit-02.png": "a0c6b410c3b7042fa3d513acfbc1a08c569f3d1bdbad717f5b2e98aa956da9e5",
+    "assets/hd/enemies/skitter/frames/north-idle-01.png": "89ae4f9b08a7829ee8f8a31a6a1f35246f984be9b291b6f7786ff0a4ce87770e",
+    "assets/hd/enemies/skitter/frames/north-idle-02.png": "0b6e6cef1cf7481b53c5953c1f76b633a462c6cbfd392887ac1fbd7ec49b2732",
+    "assets/hd/enemies/skitter/frames/north-idle-03.png": "b561ffda2dc27b1540ec731b6ebee7f686f52212a9195b0565e5618874587b5b",
+    "assets/hd/enemies/skitter/frames/north-idle-04.png": "f8822424086543ea5bcd00453bb7c98b4ce9d61129be336f6b015233317426cd",
+    "assets/hd/enemies/skitter/frames/north-move-01.png": "0a6504666c30a824d84dc5d607ea6d71dbbdd94a99f027deab0f195a6f217183",
+    "assets/hd/enemies/skitter/frames/north-move-02.png": "1ff24c31ee0da26b45c300e59187ad07d911990b33175d9b10f7220e245927cc",
+    "assets/hd/enemies/skitter/frames/north-move-03.png": "16eeb6c1a0ea9c83d59d178ead8e15ca3b987f35d5cddf3863f68be4db5b0597",
+    "assets/hd/enemies/skitter/frames/north-move-04.png": "ba911718a7b70e6983532bf5deeba107cf4cbf51121cfa879101bbf4219e3734",
+    "assets/hd/enemies/skitter/frames/south-attack-01.png": "b191ec15ef81680720a21a617cef16d4970564ca73364a673b9f39eefc7060bb",
+    "assets/hd/enemies/skitter/frames/south-attack-02.png": "3af3307fd068ce840c93ef735e9cf7ca8139bf6254b171b84a2d3db7ac126c7a",
+    "assets/hd/enemies/skitter/frames/south-attack-03.png": "5f112c4ae64ae78f01833103cc8d3c3e078840e5213813e03611475a8195b787",
+    "assets/hd/enemies/skitter/frames/south-attack-04.png": "ef01593ba03cdd159d538f4a3d27ea6a329c50193ef74d31061f43774f14cb11",
+    "assets/hd/enemies/skitter/frames/south-death-01.png": "28172681b2f5882053b6d1d6bc4e88f4564bfce01392175698caa9999b17cbd2",
+    "assets/hd/enemies/skitter/frames/south-death-02.png": "4816360e093c03952ac5db5d5a0ec947b3088cbc5bca48c7d9efb2bd373fac35",
+    "assets/hd/enemies/skitter/frames/south-hit-01.png": "45df856663b78d22082804f0744a6113160e3e97af2142b8ea73953da33acdfc",
+    "assets/hd/enemies/skitter/frames/south-hit-02.png": "d8b6ceed121694c1c75ed05ad15a46b637a6c08bacbd179e60447c87dfa57f6f",
+    "assets/hd/enemies/skitter/frames/south-idle-01.png": "5921bc30b883c5fa336708c17da266813d84b0e60667603b8ef5f375ba76ed40",
+    "assets/hd/enemies/skitter/frames/south-idle-02.png": "55bf6fb2248f45b5831b3d99f1c3aebf3b159bc9f046b81cc27020495b7842b4",
+    "assets/hd/enemies/skitter/frames/south-idle-03.png": "7d94ce0e1b7d213341d7b3817b6460fea04e7b7ac999fdcb37fa4511bc528772",
+    "assets/hd/enemies/skitter/frames/south-idle-04.png": "4bd3918d68c4ef182b5e466e75e4d2f17fc921189845df258ec3df7752b8eb0b",
+    "assets/hd/enemies/skitter/frames/south-move-01.png": "cea38d4fdcdad110ed1e1e106fb1c8958a387511ae85d3308cb974520480f3ed",
+    "assets/hd/enemies/skitter/frames/south-move-02.png": "c39069da66d1ad44428ff3ebe3ea04e6588f8503d1b62e20f8bd7c1b08cc459f",
+    "assets/hd/enemies/skitter/frames/south-move-03.png": "ee7f86611177751f8997a9299be846b0c70378fe32fef827c75c9d7a3530c436",
+    "assets/hd/enemies/skitter/frames/south-move-04.png": "4ab08c78016c553988adf1ee3a4369e5549019c3c5272e45a4ea3839242084d4",
+    "assets/hd/enemies/skitter/frames/west-attack-01.png": "70510bf2bffef7abd100b5f4421b94c759a56619f4078a8ff7b203dc2a95dcf3",
+    "assets/hd/enemies/skitter/frames/west-attack-02.png": "93e91328239f76315c9f720d64b25dd2b76b3700f89a61480336c7fdccabb675",
+    "assets/hd/enemies/skitter/frames/west-attack-03.png": "eee62b2872c0b551060f8c439ee4e9c063e14711d443a0def1a88d5832a54018",
+    "assets/hd/enemies/skitter/frames/west-attack-04.png": "e8f61f9d5259378756f3470b592f0786366aa3c2b9ad847bd3d4f6fa8cd03031",
+    "assets/hd/enemies/skitter/frames/west-death-01.png": "f0b4b76e6d6283c9e1b2762c871ebce4071a2c03dffed9699bb09219e9e0aeee",
+    "assets/hd/enemies/skitter/frames/west-death-02.png": "22cf805f2f3127cd6b924e3d66d05890c884fc8b5ccacb9bd59f82048da4efc5",
+    "assets/hd/enemies/skitter/frames/west-hit-01.png": "a9c2ea975915f2ae67d512bc0f6bbdccbc8c3f52d66b2e99f04097eba4c03223",
+    "assets/hd/enemies/skitter/frames/west-hit-02.png": "1f89215ca9572594cd4679de6387667f33c00f3e8a7a57f009e1347edd6a8f02",
+    "assets/hd/enemies/skitter/frames/west-idle-01.png": "79be3c817da3ff30709e2eafb45673314316b1c4f6e08d7f5c0ecb52aa43a9c2",
+    "assets/hd/enemies/skitter/frames/west-idle-02.png": "766c6c22b37b7aa192e9a47f56a8137f2640cb03a1901660d6077cecc8274576",
+    "assets/hd/enemies/skitter/frames/west-idle-03.png": "afe48d99e1de013e99d24cb13768ea189c8f0ee35b59ef30679c9c01bc4abc45",
+    "assets/hd/enemies/skitter/frames/west-idle-04.png": "f4a85e33a180b5d221a053aee3bdc9dc988a2996817e9c82ef223a661d2057f2",
+    "assets/hd/enemies/skitter/frames/west-move-01.png": "627f6a2c77f4a12c3e37c3ef01a5d5d39ba9e147e10f9ec1e9836064c6582350",
+    "assets/hd/enemies/skitter/frames/west-move-02.png": "2368379798d2e1d051e9a8fd1f18fb442a379ab5b36743735509a232a6f66927",
+    "assets/hd/enemies/skitter/frames/west-move-03.png": "4d3362fff740876452614e5a9ddccb6c814f319fb8fe8a40bedf2489c66e5d67",
+    "assets/hd/enemies/skitter/frames/west-move-04.png": "ede0ae775e14bc78addeb92436c181110c909e2cfa4a0d9a74f5d07f5b3fc6b7",
+    "assets/hd/enemies/skitter/skitter-manifest.json": "8458d83473f8e74d21bcd0362b23b5d5ce8bf4d598dc9718f3f4f5fb225bcd5b",
+    "assets/hd/enemies/slime/frames/east-attack-01.png": "05336295dec3fb7de3dc7357a2aeb8a74a9244a42f12ef8ce52ed8c4cdb1122f",
+    "assets/hd/enemies/slime/frames/east-attack-02.png": "d531abc8e459d75fe751dac8aed73e69ff317d64b43f3b3f7af94047abcc0133",
+    "assets/hd/enemies/slime/frames/east-attack-03.png": "2453567e295fec596ec91dae3406dba02c01ac9fadf5dc66597543104789e1a0",
+    "assets/hd/enemies/slime/frames/east-attack-04.png": "064c1f10f404415bba952b9b6139aa3c13f1918e636bb2192767f623c43c7600",
+    "assets/hd/enemies/slime/frames/east-death-01.png": "59ba908c360c3fcab1a949425b8efa7b0ae087d5c7b749479add3460f9b936f5",
+    "assets/hd/enemies/slime/frames/east-death-02.png": "f3be94e33c711cb0a10df253c120adc4a0eb59920c62d552b20f7257bfabff77",
+    "assets/hd/enemies/slime/frames/east-hit-01.png": "b4766c2bea91fd1441b50afab910b4b0da4acd526f9914fe2a063ec2a454b5ba",
+    "assets/hd/enemies/slime/frames/east-hit-02.png": "94101ab1966383abf1e6ec32a7cc97d428f76d92efe375578fb9ef567947b793",
+    "assets/hd/enemies/slime/frames/east-idle-01.png": "e8284cfd40c1ba0f42731dda68217adf0df240bc32f0d060db9e9001f0ebf2ea",
+    "assets/hd/enemies/slime/frames/east-idle-02.png": "0cd6bf07e4e9d249e06e5a58991a3b36a1ad1e1838fe9ae957fe75ccce790178",
+    "assets/hd/enemies/slime/frames/east-idle-03.png": "045c38697f9da23ab2b96196b9e5ae50942c8537f2b4661682a40554fa1e53b6",
+    "assets/hd/enemies/slime/frames/east-idle-04.png": "fd3b28468cad7624c3c98068369eb574ce1ac6a064d053e54fc63ec6a358f220",
+    "assets/hd/enemies/slime/frames/east-move-01.png": "9271e23e4af7ffcb66a0b087ba9a82fac796470c251cd2464b0391b64f0d52a5",
+    "assets/hd/enemies/slime/frames/east-move-02.png": "d645a532b8f2d1942f224d9c6ba44ff10b9061d76a92880189828c1ff32fec42",
+    "assets/hd/enemies/slime/frames/east-move-03.png": "0754ecc58c2fa6157da9c03f067053d2a42e5816109d8a55e1e3224504f1e09f",
+    "assets/hd/enemies/slime/frames/east-move-04.png": "3c2325f7f7cf2d17cde0e231af5d6b7fefbc58a55d33a3e19cb67d77b00e0863",
+    "assets/hd/enemies/slime/frames/north-attack-01.png": "d744194d0cbd9fdbaf57cfd37d02b79fba2973f0c09a133f82fb6a5bfaf0ea47",
+    "assets/hd/enemies/slime/frames/north-attack-02.png": "6d8d7f56cf56024fcf896f1b21258dd4ded7cc430ebc19def05f22113c25a001",
+    "assets/hd/enemies/slime/frames/north-attack-03.png": "ac666adb02b5eaf695f0207eec32e6c3db65bbfc74a61ab015eec3c060347e12",
+    "assets/hd/enemies/slime/frames/north-attack-04.png": "2fe6ff58b09c645d56ca9695d4019354fef8e3383861a03b3ae69a65f6ef9a6c",
+    "assets/hd/enemies/slime/frames/north-death-01.png": "c6ac7ba25e9ca43394f37ffb49aee1f1a82532ec28b68b42cfbccf7dd3dd37a0",
+    "assets/hd/enemies/slime/frames/north-death-02.png": "03765af46efbf53b7207b2f68a8e0882cabef1887408e106896540feb9700638",
+    "assets/hd/enemies/slime/frames/north-hit-01.png": "a4218ac12f69385f3220026d4196fc024e876b8e2183802af8a8180f59832d86",
+    "assets/hd/enemies/slime/frames/north-hit-02.png": "d921606aabfa80936fad34197bf63ff24560cca7c016d8687ea9c7310809d23a",
+    "assets/hd/enemies/slime/frames/north-idle-01.png": "98ffe6727790486ac9858c33dc79e0b57f066f198eba2fabab18d136a958808e",
+    "assets/hd/enemies/slime/frames/north-idle-02.png": "d2e6352950484ea23bc771ee307a40be1ed96da050ad8855aa2ca5b8f3881f7e",
+    "assets/hd/enemies/slime/frames/north-idle-03.png": "336d207cb5f11d98d37fb738b1556d6330f5d4266244af3396059328819d7ab1",
+    "assets/hd/enemies/slime/frames/north-idle-04.png": "0c537198d880a287974fdf121bfd79c2d66b4e78aab6d49660c32166465f4011",
+    "assets/hd/enemies/slime/frames/north-move-01.png": "67c2215672eec246ff93f9f21afd992c6d50e523495dcc51c59e111da478993a",
+    "assets/hd/enemies/slime/frames/north-move-02.png": "99750d479e0372e270649b9464a8a767a54d714c61df7c084342fb748083919d",
+    "assets/hd/enemies/slime/frames/north-move-03.png": "f6e07a1f5b58c2788d91380d05c7e9736d3e8dd46f6dad1cf8b367cbea66a8fe",
+    "assets/hd/enemies/slime/frames/north-move-04.png": "e5524299bf1789bddfec619c917b49bdb9958e1c03b00715d13ff9cf0502824d",
+    "assets/hd/enemies/slime/frames/south-attack-01.png": "24e8827b00c40907ba8ae7668c50e161d6af24568ae891f1769521d82084b9fa",
+    "assets/hd/enemies/slime/frames/south-attack-02.png": "60eb70a96b326e64560b0c72d52304c2470e79f783af5448a6f6e9e04b10005e",
+    "assets/hd/enemies/slime/frames/south-attack-03.png": "21442f28ca2e55af59d19d1108d598020dbb60b95313ea99ba474511b21d45db",
+    "assets/hd/enemies/slime/frames/south-attack-04.png": "73a3d8960ac54de7fb42bd70dc00b139cc78960b5780eabe19804d68a5a935aa",
+    "assets/hd/enemies/slime/frames/south-death-01.png": "a454688f7e5359aae926a6d37382b56e6547e6901fcf20058a5b611cc1c24c48",
+    "assets/hd/enemies/slime/frames/south-death-02.png": "5091ee04505e77afd2fcb66f9a85c14b4bc949c224891a25bc620a5d56710ffb",
+    "assets/hd/enemies/slime/frames/south-hit-01.png": "4dd3fd1871403e2125bbfe4e5629a99d37242f31bc6388d6548e3b164680afd9",
+    "assets/hd/enemies/slime/frames/south-hit-02.png": "b9bf6fe704e284b9b1325eab9334d2aa560642947051788f173062116ada4c20",
+    "assets/hd/enemies/slime/frames/south-idle-01.png": "10b791a7e795a47ef090cddfda7484b6d0b9240c60e16b2dec183d85a9103962",
+    "assets/hd/enemies/slime/frames/south-idle-02.png": "09c28ea6fd9e9a26f05de933ca5f973309552603c026f80d446f62994d50003b",
+    "assets/hd/enemies/slime/frames/south-idle-03.png": "1f71f12847061c8fd28848210a00a4670be1a34bd32ff80b48c9fc9b218f662a",
+    "assets/hd/enemies/slime/frames/south-idle-04.png": "b7a50ea2a90ab2d02b43bd58408249780c286f434982c66b63a5ff50b3c2d103",
+    "assets/hd/enemies/slime/frames/south-move-01.png": "937684697f0040053f1198a1cecce32e986336928eea4660a5ac42ae7f5ca4b1",
+    "assets/hd/enemies/slime/frames/south-move-02.png": "cae47f1fa9984b7e88c3fc4a3b47d8f9d2fd6fa2fc711842e413b8215f1354a3",
+    "assets/hd/enemies/slime/frames/south-move-03.png": "ed9e369adf263a73a2623cd9f9c524683f2f20cad19f6c79e5c34f93479dbb3b",
+    "assets/hd/enemies/slime/frames/south-move-04.png": "ac5a2abf48843941b1927dc7b48a05af95dfc81e6be9029a8513c5d7d59fb1bd",
+    "assets/hd/enemies/slime/frames/west-attack-01.png": "a23c47ca1e65ef91dc8d1ca7ada47d26967525dd53e326a7c36786694fe4dc11",
+    "assets/hd/enemies/slime/frames/west-attack-02.png": "ea232c2c3aa20562b7343f5a49a5197a0344fd9add1d33311f16a305105e77ac",
+    "assets/hd/enemies/slime/frames/west-attack-03.png": "e44a56e1e9caba645ed36ff046fe27ddea8f941fdebec0ebfa8fae84553eab0e",
+    "assets/hd/enemies/slime/frames/west-attack-04.png": "95f5f096758e56765efda91c29af6c14af4581431f73d072e9a1598a2abac79a",
+    "assets/hd/enemies/slime/frames/west-death-01.png": "0502f2d2d3e9709dfcbbef1a7a1b545f946583a9fb92fa32011c7330052e1fbe",
+    "assets/hd/enemies/slime/frames/west-death-02.png": "2b1b7fc94ac81b15f5b76d32ae328f1749c20b36efbf5c7b7ca0679d24e4e8f2",
+    "assets/hd/enemies/slime/frames/west-hit-01.png": "95e369997551f50f98b6664fa61034c48a8616689ab7dfabefa2e63b4d804e9e",
+    "assets/hd/enemies/slime/frames/west-hit-02.png": "c089bfc2c1b7b9ee49731227c994e85709631a441d4e1695fc97d5bf7d888eb6",
+    "assets/hd/enemies/slime/frames/west-idle-01.png": "f9406d595b1f10360e581c3cff12502053e6fe4e711550db3d027629175cbe95",
+    "assets/hd/enemies/slime/frames/west-idle-02.png": "981c5383271da94ad919109d2372f0aa679cf0940f760ffc18e5c7ac8cafc3c5",
+    "assets/hd/enemies/slime/frames/west-idle-03.png": "6cccb62fb999b02e351c85d01bb066574f6dfd7250873493c944d7087b4c1d76",
+    "assets/hd/enemies/slime/frames/west-idle-04.png": "0aafd60a83022ad084b62d521b385c7c3f60be838d2a5bb7f9723e25f54e3b53",
+    "assets/hd/enemies/slime/frames/west-move-01.png": "00c9837bc96cdec17280f5f645b631baa0554bc5f22db89712c4ed9dbf4b6015",
+    "assets/hd/enemies/slime/frames/west-move-02.png": "0c8a3aa6a235897a8d7bf8265de28dc90886f7f8fa73c53d492e12cfa75f1414",
+    "assets/hd/enemies/slime/frames/west-move-03.png": "52eabc659cb090edaac86140af16c2f8a7e2eb60966b5822f2ee5e66abc1e169",
+    "assets/hd/enemies/slime/frames/west-move-04.png": "411815f02b0af8b8e6a0b56083a039f9df3e4106d7c7a7415e15ae6bac8cc9c0",
+    "assets/hd/enemies/slime/slime-manifest.json": "b4711be6acd815edba3a0bef7c5dac46bdfa48f7bde952ab774abae22b7cb253",
+    "assets/hd/enemies/totem/frames/base-awaken-01.png": "1a549cff28f7b6aa63e57aeb8d5abe67bdf420c84bbb58e4494041018325d83e",
+    "assets/hd/enemies/totem/frames/base-awaken-02.png": "9cff5c8823fdba330f61fc566066f0799b98f411dba80796e0b49468f2fa2d58",
+    "assets/hd/enemies/totem/frames/base-awaken-03.png": "3d5a7af456b69b33f09bd5aa9f0afc16761d4dd3c66cd7b6ba469db53cb1293a",
+    "assets/hd/enemies/totem/frames/base-awaken-04.png": "2078213decaa57701c55029e2809d084e6c75cfc3870ae2eb2f7fe03c50a3efd",
+    "assets/hd/enemies/totem/frames/base-cast-01.png": "8cc70f31e18af3b9b48f45ad866e8cdd16b886e0052574d81106ed7e2913947e",
+    "assets/hd/enemies/totem/frames/base-cast-02.png": "9c8a3793709d9a25531fe5f5e20904d32334ff05a682d4f06f9a2a183475cc31",
+    "assets/hd/enemies/totem/frames/base-cast-03.png": "5961a79db6a06fa9e15f39edfb6eff3b3b03cec262e4cd910a05ff6900e195d2",
+    "assets/hd/enemies/totem/frames/base-cast-04.png": "49968bbd63ac25adb2c70f00cb6acb28259e9c4c5faeddc1e70a367f531b733e",
+    "assets/hd/enemies/totem/frames/base-death-01.png": "97636451dc218a5637b3a105ab456cf5ec3bb17f2bc185cddf48d15e7cf6aaf3",
+    "assets/hd/enemies/totem/frames/base-death-02.png": "885a3b349997369e90df23b0eb0a7d67aa1808dfd05d4a70b9787aaed7a617d6",
+    "assets/hd/enemies/totem/frames/base-hit-01.png": "5b835722763fc848e683a7089984a140a3064053108a604f2e170c6e47ee1400",
+    "assets/hd/enemies/totem/frames/base-hit-02.png": "8f98ec0245908d9d48a759ed83ad0427a8b4ca27f52df997241d480a213fbeb6",
+    "assets/hd/enemies/totem/frames/base-idle-01.png": "81ddb750f1df283b211d98df418991a709688ae764aaac3e18c33b499bd14bb6",
+    "assets/hd/enemies/totem/frames/base-idle-02.png": "6efec0bef66ff4828742a325e0255a8522d179916d106ec9eae371c54ab1aede",
+    "assets/hd/enemies/totem/frames/base-idle-03.png": "196dbf9b327783895a18cc80dc0791bfd64762376395a28b5fa73f54b870fae2",
+    "assets/hd/enemies/totem/frames/base-idle-04.png": "c82dd692c6b6f125113d45a215586d0486a809e01f1d4eac044c612866fabb89",
+    "assets/hd/enemies/totem/totem-manifest.json": "c27db1b46bed385125ef1d45316dcc9ec351e43fbf2e1dc8caa854cfbb5a84fe"
+  },
+  "pillowVersion": "12.1.1",
+  "pipelineSchema": 1,
+  "schemaVersion": 1,
+  "sourceSheets": {
+    "art/source/enemy-hd/acolyte/acolyte-animation-east-source-1024.png": "b6e8d827074660efce7ace727f0d4b7a26185033778873226439390ae077dee9",
+    "art/source/enemy-hd/acolyte/acolyte-animation-north-source-1024.png": "be449aa5514e07c9a8f3042bcb3293f082103afe9069f11e79b2d9ab02ddaa3c",
+    "art/source/enemy-hd/acolyte/acolyte-animation-south-source-1024.png": "40a7a96635c487a4198cadab6663f4f1fb068b606002781ecabe606fd5caa738",
+    "art/source/enemy-hd/acolyte/acolyte-animation-west-source-1024.png": "6a01808bf2565d537a98823be274d8d8436a77e53901208c6285f47e5b1815c2",
+    "art/source/enemy-hd/brute/brute-animation-east-source-1024.png": "622b773897919a3b100ed191011d0172c4b40df36d60faad81190826adee7ac5",
+    "art/source/enemy-hd/brute/brute-animation-north-source-1024.png": "ef51fdd12633fad249ae443039a3af80aac771196f6c5cfebaafb9b9b1903b2a",
+    "art/source/enemy-hd/brute/brute-animation-south-source-1024.png": "7e733c614c42b862f570d06064c6d2a55eba596bf7b6e3bfbed9807ac4538358",
+    "art/source/enemy-hd/brute/brute-animation-west-source-1024.png": "f227594eac617abe71838906df871b0b36e0b753365c6bc4d6b4dd9f8efa3b17",
+    "art/source/enemy-hd/otter/otter-animation-east-source-1024.png": "39bb7688c29ccd009a0e2d7269ae6f5a4cb83d7f9ffbcdee5dd256a0c3b65951",
+    "art/source/enemy-hd/otter/otter-animation-north-source-1024.png": "e96ee21f49d0e45f366c90d57ca0e572a6d5dc18b4fc2a48160899ef464a91f0",
+    "art/source/enemy-hd/otter/otter-animation-south-source-1024.png": "66eabd08e242de54faa3e2a6c2f2fe5842cd4c74f1fd083596d3aac841d79c0f",
+    "art/source/enemy-hd/otter/otter-animation-west-source-1024.png": "8a81a439582378c9b728fda86475af994979642db6c8abaced5e70f2944a6de8",
+    "art/source/enemy-hd/skeleton/skeleton-animation-east-source-1024.png": "9fdd2bbf0ab93bb5c0199cb0c064fd870adf9ee2d989981bfd48d79efbe2d45d",
+    "art/source/enemy-hd/skeleton/skeleton-animation-north-source-1024.png": "7698e19ab7586778babe7beb89bcde06232cca74f8954f73eb151e1f73dcc39f",
+    "art/source/enemy-hd/skeleton/skeleton-animation-south-source-1024.png": "56870eb9693f789a97ba09aa181cfa33ea25585ebf3915cf041b26864c0eb643",
+    "art/source/enemy-hd/skeleton/skeleton-animation-west-source-1024.png": "e9dae7b05984ca4cc89c617a5ce1646daed3110e3b8372b3d37978efd7107804",
+    "art/source/enemy-hd/skitter/skitter-animation-east-source-1024.png": "11cbba2193ee2b892c18833ba19fa66cfa3f45c0d8214bf61ec496ec0f63f87e",
+    "art/source/enemy-hd/skitter/skitter-animation-north-source-1024.png": "506f7aeccff71fa92c5fe4548a309eb4e2ad845821fe93f039f4eb00f8d7d997",
+    "art/source/enemy-hd/skitter/skitter-animation-south-source-1024.png": "903f022df277b6e9723933662f930b74f51ccc423e4fb60dc76de4ef7ee44f6b",
+    "art/source/enemy-hd/skitter/skitter-animation-west-source-1024.png": "340f7ad892131a8cc780cd124b7d48e1f9bed6af718e90c1afb58bb1c1b522b6",
+    "art/source/enemy-hd/slime/slime-animation-east-source-1024.png": "b4c7622b8a44f639f3c02bba007730baf3e137d481aea1e51ca1bb745dd35c9c",
+    "art/source/enemy-hd/slime/slime-animation-north-source-1024.png": "76981775acca188a47bd0127c72ddbfc95c3166768d59e6db370be50b34a25e4",
+    "art/source/enemy-hd/slime/slime-animation-south-source-1024.png": "43492d0ac4687cd053b69583de66cfab157402ab2b54e0a61e5a17782f8489fc",
+    "art/source/enemy-hd/slime/slime-animation-west-source-1024.png": "9abb483b4bf6a021a63c92f46e5f33a0985411c97a8ee266d63be54a0b26e506",
+    "art/source/enemy-hd/totem/totem-animation-base-source-1024.png": "ddc8cf5028684c86753752ba4775435e3260b5fd77bf5e3424eadd0a6f935a7e"
+  }
+}

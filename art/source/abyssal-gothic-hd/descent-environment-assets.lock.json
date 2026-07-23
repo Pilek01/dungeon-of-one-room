@@ -1,0 +1,113 @@
+{
+  "assets": {
+    "assets/hd/environment/descent/decal-crack.png": "5a1ccf93d26af1347b701ca34c1aabf90858420a6a505fdbf305a17310ffeb09",
+    "assets/hd/environment/descent/decal-stain-01.png": "132622ad7426b2ea5c9275122d7c9cbc6d68a584f8a6fb67ac9302c4137415fb",
+    "assets/hd/environment/descent/decal-stain-02.png": "b9abba70103d978f624a570295807a087b97dd07470a7c523cdd129fcf8c1206",
+    "assets/hd/environment/descent/decal-stain-03.png": "abdaaf18af8ec8d4487dde98924887b7fc1abe9718095a637fc29459a2e369a1",
+    "assets/hd/environment/descent/floor-b.png": "6c1e431bb7013fe6df7b8102f024bb308f7bd4197419ea2082b9e93e07369f3a",
+    "assets/hd/environment/descent/floor-base.png": "6ff752e486a9daddc5b17e221b3e1f9711d0f1f126a1c55850be066cb4a33661",
+    "assets/hd/environment/descent/floor-c.png": "8f0583363d19f9573387748a60f67bec13c8e82671475683079b4b4eee773435",
+    "assets/hd/environment/descent/floor-crack-cross.png": "4decd5ff609c48b95db8665f7e47a62af7de3247b589168b393a858b300649b4",
+    "assets/hd/environment/descent/floor-skull.png": "a4631cfb5dbc6b89a7e7fdfa1d5f8d0040d4f2fde9314f5387949e6ad4627f44",
+    "assets/hd/environment/descent/floor-var3.png": "ec17d4098bd273cf486395cd0e767040422688cc6d8899d7c1f1396137163e3c",
+    "assets/hd/environment/descent/floor-var4.png": "c3bb595e1269e909d07796247f0b385bbcd794670cf8021c7f507890af6a96db",
+    "assets/hd/environment/descent/grate.png": "31abc0774584c9f4a1767e9446e706adf83f6db3dd7ccd7fee46fdb89895988b",
+    "assets/hd/environment/descent/rubble.png": "5a5f61cec662c120ab51e1d3688f9c94c867a503d14d08b4d2221b7683327822",
+    "assets/hd/environment/descent/wall-corner-northeast.png": "bb9f555a4b426e57037cd20591aedd203943d403b65205a6f9aa3814ee5eea22",
+    "assets/hd/environment/descent/wall-corner-northwest.png": "5abbab5732844d5826d0d436364debd9a10ee604a26471dea81e1aec106673bb",
+    "assets/hd/environment/descent/wall-corner-southeast.png": "dcec625570e6a50eabe2f1fe0469da0dc963dd24406b49c299ce5858ef18a95a",
+    "assets/hd/environment/descent/wall-corner-southwest.png": "b885765a7b183ae36af3ddc2834acc5bfbafc53f80faac09f34f217a61b5dee6",
+    "assets/hd/environment/descent/wall-east.png": "65d8a348b4a804d228de526c3a8becaa6013780e6066b2901121ef2706d629f2",
+    "assets/hd/environment/descent/wall-north.png": "03e498723922c19f730e565d2d3dcf7bf0ace4252de819da1daf0612a9954416",
+    "assets/hd/environment/descent/wall-south.png": "0d1a0f8b7bca4dd4fadf1aec9111f6d3f19af956de1b9e0328e500aac8d4f6d6",
+    "assets/hd/environment/descent/wall-west.png": "6ad55f98fefabd4c9941a7ef3ed016590a0a5345388b6afc1b8910f17f628050",
+    "assets/hd/hazards/common/mine-armed.png": "6213cdf89f4ba1cb3e1e91d626e601aa62f21dfb2f92d58ef0efcc5c89370ff0",
+    "assets/hd/hazards/common/mine-unarmed.png": "3e7f2e7546775be265da2922587fa5a494bc2b51647933cde500b3ffb56d6f16",
+    "assets/hd/hazards/common/spikes-armed.png": "e4273474c5068e301f00fab3b1b173063be0840ce28c5bc9f3862ddde254ebab",
+    "assets/hd/hazards/descent/mine-armed.png": "6213cdf89f4ba1cb3e1e91d626e601aa62f21dfb2f92d58ef0efcc5c89370ff0",
+    "assets/hd/hazards/descent/mine-unarmed.png": "3e7f2e7546775be265da2922587fa5a494bc2b51647933cde500b3ffb56d6f16",
+    "assets/hd/hazards/descent/spikes-armed.png": "8d309cc47f2f90752040fae8a09808d1bfea6789444181271a19c6e212885a2a",
+    "assets/hd/objects/common/chest-normal.png": "bdb0ca7d8330301a8c53c3f660f19c7a5c629348a5e14a8094036724c8ef34f4",
+    "assets/hd/objects/common/portal-active-01.png": "81b14dbbb0b5c30b1795c15d604654e070674b835c31c0c8274ec00664801a27",
+    "assets/hd/objects/common/portal-active-02.png": "626af1e9e2a472803f48fe5235259a74f19388061c6448b42e2ebf13fca84d3e",
+    "assets/hd/objects/common/portal-active-03.png": "5da0c241618da591b1b07c587de4fb20daf781828fb42fde1b2d58f63e1e003e",
+    "assets/hd/objects/common/portal-frame.png": "464ac29d8ac234f274a90d9c313e2a229667747110c829710fee712434f104e6",
+    "assets/hd/objects/common/portal-inactive.png": "464ac29d8ac234f274a90d9c313e2a229667747110c829710fee712434f104e6",
+    "assets/hd/objects/common/portal-swirl-01.png": "cc2d5da1c71f2065a8e79afadf4d3ef5a225418c946324836e289ce291cfef27",
+    "assets/hd/objects/common/portal-swirl-02.png": "173da6d4e74def50debcc8340a4308456cfd4e0e5fadb6b6f19438a349d54690",
+    "assets/hd/objects/common/portal-swirl-03.png": "e970d066fded93d8fe5cb7cf063da37c9142ac644b9fb1de08518cdd4e7b6146",
+    "assets/hd/objects/common/portal-swirl-04.png": "57557f6ffd51a85cfc47b82eaf4273be340c68a0f16ed416900cbff225a44a46",
+    "assets/hd/objects/common/portal-swirl-05.png": "b3c1fa8dc6f9e12a1058bbce88a4d933c0f680870852c0f369b4765f0d8226c5",
+    "assets/hd/objects/common/portal-swirl-06.png": "4b12cf49fb6ecee1672c5d4aceb4d4241c175b2bfc524bab3d401303cefe6abc",
+    "assets/hd/objects/common/portal-swirl-07.png": "b5ea09eb9b2e4e57bdbaa9e7ee6bc4bc01a361a9b55ae917f642eedcbd73e722",
+    "assets/hd/objects/common/portal-swirl-08.png": "26dff56f9692ca3d91b29979918972d0916ec72d2bf656876a56c47ea9293be3",
+    "assets/hd/objects/common/shrine-active.png": "4c8d76100f82b54f38b97798b523aa2ae7f7b8c8629b168b75de6efec853eaf8",
+    "assets/hd/objects/common/shrine-inactive.png": "85033a92903f1ea908f1cd96ea116755240321c66cca1a38609bbfef9828da08",
+    "assets/hd/objects/common/torch-lit-01.png": "1ebf96dcca207c40367f3da0af52878e4e59c3aae057f4391d2032998913f3a9",
+    "assets/hd/objects/common/torch-lit-02.png": "d6b56373c7b3af01d975b1789679c4eec7bd9352bae9f4c7345a868021b2ce66",
+    "assets/hd/objects/common/torch-lit-03.png": "e4d10f45d1759e3f50ef1b10e352ccfe3b64b1cc6b9a12cabcfc52e7b1c11443",
+    "assets/hd/objects/common/torch-unlit.png": "813802af24e0eae95402f473d6deee862507261fa85fbcaa864949b926b7bd24"
+  },
+  "brazierSource": {
+    "path": "art/source/portal-brazier-hd/brazier-atlas-source-original.png",
+    "sha256": "8fc0f572ac5155ee0832eeaf65a48017694b23c5c89b493a42279f7835950cd4"
+  },
+  "classicFloorSource": {
+    "path": "assets/sprite/tileset.png",
+    "sha256": "2d768e27bcbd08a5402a79551af67b2e18c523ece31b2e1245d8942c38413b79"
+  },
+  "hazardMineSource": {
+    "path": "art/source/abyssal-gothic-hd/hazard-mine-source-original.png",
+    "sha256": "064236cc6c46eef1b4c008e01dcbc33543c68b7a4cdecd905c20b800606fcaaa"
+  },
+  "hazardSpikesSource": {
+    "path": "art/source/abyssal-gothic-hd/hazard-spikes-source-original.png",
+    "sha256": "792cd2cbdc4a705d36c433f091e274663d4b103576d1ca3078a086b48635c29b"
+  },
+  "helper": {
+    "path": "remove_chroma_key.py",
+    "sha256": "7e51236919203b61d07ddffdc6e0b5f501a28661003f5851f26ffbb64bdec1ea"
+  },
+  "normalizedAtlas": {
+    "path": "art/source/abyssal-gothic-hd/descent-environment-source-1024.png",
+    "sha256": "de0189b1dd5fd998bfd545788f08a6d125b9c2bffc40d32b5da91cf0c669d355"
+  },
+  "normalizedHazardMineSource": {
+    "path": "art/source/abyssal-gothic-hd/hazard-mine-source-1024.png",
+    "sha256": "da0609ff732760eba29f280ce5ab9d61f8b8999edf33442f2e2e33d681fce218"
+  },
+  "normalizedHazardSpikesSource": {
+    "path": "art/source/abyssal-gothic-hd/hazard-spikes-source-1024.png",
+    "sha256": "598ecb25262afa07066a871e578579d43a8f29a9e45b1d46032a040864576730"
+  },
+  "normalizedPortalSource": {
+    "path": "art/source/abyssal-gothic-hd/common-portal-source-1024.png",
+    "sha256": "541e95c83313fc27b1f089ba9278e53a7477ed0eef293d084137687fa23c9506"
+  },
+  "normalizedShrineActiveSource": {
+    "path": "art/source/abyssal-gothic-hd/shrine-active-3d-source-1024.png",
+    "sha256": "104a522d654457817b64f7ae44e5c5b7c932f7ba74a3b2f1fee89afa15a66077"
+  },
+  "normalizedShrineInactiveSource": {
+    "path": "art/source/abyssal-gothic-hd/shrine-inactive-3d-source-1024.png",
+    "sha256": "834af26e6e9b50a7db28993791bd2ab708f0a218dcd35e6dc9be49fd058c8a33"
+  },
+  "pillowVersion": "12.1.1",
+  "pipelineSchema": 2,
+  "portalSource": {
+    "path": "art/source/abyssal-gothic-hd/common-portal-source-original-1254.png",
+    "sha256": "f6420fc18542af41f35b21b665f5800ae0abfd76240341766bfc163ee4c739d7"
+  },
+  "shrineActiveSource": {
+    "path": "art/source/abyssal-gothic-hd/shrine-active-3d-source-original.png",
+    "sha256": "36810b1f2bc89932405413565f0a8e07034462d21b105b68a2eb9dda32a54c53"
+  },
+  "shrineInactiveSource": {
+    "path": "art/source/abyssal-gothic-hd/shrine-inactive-3d-source-original.png",
+    "sha256": "41426e6040ee672ea418042981c596957e6175a8eeccb8da58347f7016ecc7fe"
+  },
+  "source": {
+    "path": "art/source/abyssal-gothic-hd/descent-environment-source-original-1254.png",
+    "sha256": "95d42f7402d5e8be87d9739069b090fd6c9f3269a6e0adb3e28565da065883d2"
+  }
+}

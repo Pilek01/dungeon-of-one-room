@@ -1,0 +1,35 @@
+{
+  "mode": "built-in-imagegen",
+  "useCase": "stylized-concept",
+  "chromaKey": "#ff00ff",
+  "camera": "top-down/three-quarter orthographic dungeon-game camera",
+  "constraints": [
+    "whole 4x4 sheets, never independent frames",
+    "exactly 16 isolated slots with no crossing",
+    "perfectly flat #ff00ff background",
+    "no text, labels, UI, borders, scenery, detached particles, or watermark"
+  ],
+  "sources": {
+    "corruption-env-source-original.png": {
+      "sha256": "5ca073fe55065c17989daf947621f42cc309950c50305f6dc11da8a4091cba65",
+      "prompt": "Exact 4x4 Corruption environment atlas: R1 floor, north wall, south wall, west wall; R2 east wall, northwest, northeast, southwest corners; R3 southeast corner, crack, grate, rubble; R4 stain sampler, infected sigil/vein sampler, dust/scar/residue sampler, unlit plus three amber torch states. Grey-green masonry, desaturated viridian infection, ochre, cold steel."
+    },
+    "abyss-env-source-original.png": {
+      "sha256": "671d384d86322e33345ad778bbfedf9482afad04162c3fd3ba2da3fd0792260f",
+      "prompt": "Exact 4x4 Abyss environment atlas with the same slot grammar as Corruption. Black basalt and obsidian, silver ash, blue-violet seams, tiny cyan pinlights, restrained amber torches."
+    },
+    "merchant-seed-source-original.png": {
+      "sha256": "a1b16d560ef89f9fcbc4bd8151f184a04d937fe50b2d1fc30c56f5762c3396b6",
+      "prompt": "Single compact hooded relic trader facing south: oxidized bronze, dark teal-black layered cloth, turquoise charm and practical pack; bottom-center anchor on flat #ff00ff."
+    },
+    "core-props-source-original.png": {
+      "sha256": "7fffd23347dd0bc596040b783e6b5596ce36a0a65cac212475a67e806d356846",
+      "reference": "merchant-seed-source-original.png",
+      "prompt": "Exact 4x4 core setpiece atlas: R1 approved merchant idle01-04; R2 forge dormant/ready01/ready02/used; R3 pact dormant/ready01/ready02/used; R4 vault seal blocked/cleared and otter chest ready/opened. Preserve merchant identity."
+    },
+    "portals-boss-source-original.png": {
+      "sha256": "318e62b9b11ea586723d170bccfa6989a8ec2c671662669f09cb43fdfb9d36e3",
+      "prompt": "Exact 4x4 portal/boss atlas: R1 vault portal inactive/active01-03; R2 forge portal inactive/active01-03; R3 otter portal inactive/active01-03; R4 boss floor seal phase01/phase02 and wall relief north/south."
+    }
+  }
+}

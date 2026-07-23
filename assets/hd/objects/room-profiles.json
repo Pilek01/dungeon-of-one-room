@@ -1,0 +1,368 @@
+{
+  "object.boss.floorseal.phase01": {
+    "anchor": "center",
+    "height": 192,
+    "layer": "decals",
+    "width": 192
+  },
+  "object.boss.floorseal.phase02": {
+    "anchor": "center",
+    "height": 192,
+    "layer": "decals",
+    "width": 192
+  },
+  "object.boss.relief.north": {
+    "anchor": "center",
+    "height": 64,
+    "layer": "decals",
+    "width": 64
+  },
+  "object.boss.relief.south": {
+    "anchor": "center",
+    "height": 64,
+    "layer": "decals",
+    "width": 64
+  },
+  "object.forge.dormant": {
+    "anchor": "bottom-center",
+    "height": 192,
+    "layer": "objects",
+    "width": 192
+  },
+  "object.forge.portal.active01": {
+    "anchor": "bottom-center",
+    "height": 128,
+    "layer": "objects",
+    "width": 128
+  },
+  "object.forge.portal.active02": {
+    "anchor": "bottom-center",
+    "height": 128,
+    "layer": "objects",
+    "width": 128
+  },
+  "object.forge.portal.active03": {
+    "anchor": "bottom-center",
+    "height": 128,
+    "layer": "objects",
+    "width": 128
+  },
+  "object.forge.portal.frame": {
+    "anchor": "bottom-center",
+    "height": 128,
+    "layer": "objects",
+    "width": 128
+  },
+  "object.forge.portal.inactive": {
+    "anchor": "bottom-center",
+    "height": 128,
+    "layer": "objects",
+    "width": 128
+  },
+  "object.forge.portal.swirl01": {
+    "anchor": "bottom-center",
+    "height": 128,
+    "layer": "objects",
+    "width": 128
+  },
+  "object.forge.portal.swirl02": {
+    "anchor": "bottom-center",
+    "height": 128,
+    "layer": "objects",
+    "width": 128
+  },
+  "object.forge.portal.swirl03": {
+    "anchor": "bottom-center",
+    "height": 128,
+    "layer": "objects",
+    "width": 128
+  },
+  "object.forge.portal.swirl04": {
+    "anchor": "bottom-center",
+    "height": 128,
+    "layer": "objects",
+    "width": 128
+  },
+  "object.forge.portal.swirl05": {
+    "anchor": "bottom-center",
+    "height": 128,
+    "layer": "objects",
+    "width": 128
+  },
+  "object.forge.portal.swirl06": {
+    "anchor": "bottom-center",
+    "height": 128,
+    "layer": "objects",
+    "width": 128
+  },
+  "object.forge.portal.swirl07": {
+    "anchor": "bottom-center",
+    "height": 128,
+    "layer": "objects",
+    "width": 128
+  },
+  "object.forge.portal.swirl08": {
+    "anchor": "bottom-center",
+    "height": 128,
+    "layer": "objects",
+    "width": 128
+  },
+  "object.forge.ready01": {
+    "anchor": "bottom-center",
+    "height": 192,
+    "layer": "objects",
+    "width": 192
+  },
+  "object.forge.ready02": {
+    "anchor": "bottom-center",
+    "height": 192,
+    "layer": "objects",
+    "width": 192
+  },
+  "object.forge.used": {
+    "anchor": "bottom-center",
+    "height": 192,
+    "layer": "objects",
+    "width": 192
+  },
+  "object.merchant.idle01": {
+    "anchor": "bottom-center",
+    "height": 96,
+    "layer": "objects",
+    "width": 96
+  },
+  "object.merchant.idle02": {
+    "anchor": "bottom-center",
+    "height": 96,
+    "layer": "objects",
+    "width": 96
+  },
+  "object.merchant.idle03": {
+    "anchor": "bottom-center",
+    "height": 96,
+    "layer": "objects",
+    "width": 96
+  },
+  "object.merchant.idle04": {
+    "anchor": "bottom-center",
+    "height": 96,
+    "layer": "objects",
+    "width": 96
+  },
+  "object.otter.chest.opened": {
+    "anchor": "bottom-center",
+    "height": 64,
+    "layer": "objects",
+    "width": 64
+  },
+  "object.otter.chest.ready": {
+    "anchor": "bottom-center",
+    "height": 64,
+    "layer": "objects",
+    "width": 64
+  },
+  "object.otter.portal.active01": {
+    "anchor": "bottom-center",
+    "height": 128,
+    "layer": "objects",
+    "width": 128
+  },
+  "object.otter.portal.active02": {
+    "anchor": "bottom-center",
+    "height": 128,
+    "layer": "objects",
+    "width": 128
+  },
+  "object.otter.portal.active03": {
+    "anchor": "bottom-center",
+    "height": 128,
+    "layer": "objects",
+    "width": 128
+  },
+  "object.otter.portal.frame": {
+    "anchor": "bottom-center",
+    "height": 128,
+    "layer": "objects",
+    "width": 128
+  },
+  "object.otter.portal.inactive": {
+    "anchor": "bottom-center",
+    "height": 128,
+    "layer": "objects",
+    "width": 128
+  },
+  "object.otter.portal.swirl01": {
+    "anchor": "bottom-center",
+    "height": 128,
+    "layer": "objects",
+    "width": 128
+  },
+  "object.otter.portal.swirl02": {
+    "anchor": "bottom-center",
+    "height": 128,
+    "layer": "objects",
+    "width": 128
+  },
+  "object.otter.portal.swirl03": {
+    "anchor": "bottom-center",
+    "height": 128,
+    "layer": "objects",
+    "width": 128
+  },
+  "object.otter.portal.swirl04": {
+    "anchor": "bottom-center",
+    "height": 128,
+    "layer": "objects",
+    "width": 128
+  },
+  "object.otter.portal.swirl05": {
+    "anchor": "bottom-center",
+    "height": 128,
+    "layer": "objects",
+    "width": 128
+  },
+  "object.otter.portal.swirl06": {
+    "anchor": "bottom-center",
+    "height": 128,
+    "layer": "objects",
+    "width": 128
+  },
+  "object.otter.portal.swirl07": {
+    "anchor": "bottom-center",
+    "height": 128,
+    "layer": "objects",
+    "width": 128
+  },
+  "object.otter.portal.swirl08": {
+    "anchor": "bottom-center",
+    "height": 128,
+    "layer": "objects",
+    "width": 128
+  },
+  "object.otter.seal.blocked": {
+    "anchor": "center",
+    "height": 128,
+    "layer": "decals",
+    "width": 128
+  },
+  "object.otter.seal.cleared": {
+    "anchor": "center",
+    "height": 128,
+    "layer": "decals",
+    "width": 128
+  },
+  "object.pact.dormant": {
+    "anchor": "bottom-center",
+    "height": 128,
+    "layer": "objects",
+    "width": 128
+  },
+  "object.pact.ready01": {
+    "anchor": "bottom-center",
+    "height": 128,
+    "layer": "objects",
+    "width": 128
+  },
+  "object.pact.ready02": {
+    "anchor": "bottom-center",
+    "height": 128,
+    "layer": "objects",
+    "width": 128
+  },
+  "object.pact.used": {
+    "anchor": "bottom-center",
+    "height": 128,
+    "layer": "objects",
+    "width": 128
+  },
+  "object.vault.portal.active01": {
+    "anchor": "bottom-center",
+    "height": 128,
+    "layer": "objects",
+    "width": 128
+  },
+  "object.vault.portal.active02": {
+    "anchor": "bottom-center",
+    "height": 128,
+    "layer": "objects",
+    "width": 128
+  },
+  "object.vault.portal.active03": {
+    "anchor": "bottom-center",
+    "height": 128,
+    "layer": "objects",
+    "width": 128
+  },
+  "object.vault.portal.frame": {
+    "anchor": "bottom-center",
+    "height": 128,
+    "layer": "objects",
+    "width": 128
+  },
+  "object.vault.portal.inactive": {
+    "anchor": "bottom-center",
+    "height": 128,
+    "layer": "objects",
+    "width": 128
+  },
+  "object.vault.portal.swirl01": {
+    "anchor": "bottom-center",
+    "height": 128,
+    "layer": "objects",
+    "width": 128
+  },
+  "object.vault.portal.swirl02": {
+    "anchor": "bottom-center",
+    "height": 128,
+    "layer": "objects",
+    "width": 128
+  },
+  "object.vault.portal.swirl03": {
+    "anchor": "bottom-center",
+    "height": 128,
+    "layer": "objects",
+    "width": 128
+  },
+  "object.vault.portal.swirl04": {
+    "anchor": "bottom-center",
+    "height": 128,
+    "layer": "objects",
+    "width": 128
+  },
+  "object.vault.portal.swirl05": {
+    "anchor": "bottom-center",
+    "height": 128,
+    "layer": "objects",
+    "width": 128
+  },
+  "object.vault.portal.swirl06": {
+    "anchor": "bottom-center",
+    "height": 128,
+    "layer": "objects",
+    "width": 128
+  },
+  "object.vault.portal.swirl07": {
+    "anchor": "bottom-center",
+    "height": 128,
+    "layer": "objects",
+    "width": 128
+  },
+  "object.vault.portal.swirl08": {
+    "anchor": "bottom-center",
+    "height": 128,
+    "layer": "objects",
+    "width": 128
+  },
+  "object.vault.seal.blocked": {
+    "anchor": "center",
+    "height": 128,
+    "layer": "decals",
+    "width": 128
+  },
+  "object.vault.seal.cleared": {
+    "anchor": "center",
+    "height": 128,
+    "layer": "decals",
+    "width": 128
+  }
+}

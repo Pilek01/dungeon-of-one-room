@@ -1,0 +1,674 @@
+/* HD main and pause menu: restrained polish for the original vertical list. */
+@media (min-width: 1201px) {
+  body.graphics-hd-ui:has(#game.graphics-hd) .screen-overlay.visible:has(.overlay-card-main-menu) {
+    background:
+      radial-gradient(circle at 50% 45%, #28344032 0 21%, transparent 58%),
+      radial-gradient(circle at 50% 50%, transparent 0 31%, #010203d9 80%),
+      #020304b8;
+    backdrop-filter: blur(4px) saturate(0.58) brightness(0.52);
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-main-menu {
+    position: relative;
+    isolation: isolate;
+    width: min(438px, calc(100vw - 48px));
+    min-height: 620px;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    padding: 76px 56px 62px;
+    overflow: hidden;
+    border: 0;
+    border-radius: 0;
+    background-color: #07090b;
+    background-image:
+      url("assets/hd/ui/abyssal-gothic/menu-frame.png"),
+      radial-gradient(ellipse at 50% 20%, #33404c26, transparent 43%),
+      url("assets/hd/ui/abyssal-gothic/panel-texture.png");
+    background-position: center, center, center;
+    background-repeat: no-repeat, no-repeat, repeat;
+    background-size: 100% 100%, 100% 100%, 240px 240px;
+    box-shadow: 0 28px 68px #000e, 0 0 36px #2735421f;
+    color: #c1b7a8;
+    text-align: center;
+    filter: none;
+    animation: none;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-main-menu::before {
+    content: "";
+    position: absolute;
+    z-index: -1;
+    inset: 58px 38px 47px;
+    border: 1px solid #60666a1f;
+    background: linear-gradient(180deg, #11151936, #05070820);
+    box-shadow: inset 0 0 34px #0008;
+    pointer-events: none;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-main-menu::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    bottom: 50px;
+    width: 58%;
+    height: 1px;
+    transform: translateX(-50%);
+    background: linear-gradient(90deg, transparent, #7c6a4b52, transparent);
+    pointer-events: none;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-main-menu > .overlay-title {
+    margin: 0;
+    color: #e4d9c7;
+    font: 600 clamp(1.5rem, 1.8vw, 1.7rem)/1.05 Georgia, "Times New Roman", serif;
+    letter-spacing: 3.2px;
+    text-transform: uppercase;
+    text-shadow: 0 3px 3px #000, 0 0 18px #7a8b9d35;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-main-menu > .overlay-sub {
+    margin: 5px 0 0;
+    color: #8c9498;
+    font: 700 0.62rem/1.2 "Courier New", monospace;
+    letter-spacing: 1.6px;
+    text-transform: uppercase;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-main-menu > .overlay-hint {
+    order: 2;
+    margin: 8px 0 0;
+    color: #928878;
+    font: 400 0.61rem/1.3 "Courier New", monospace;
+    letter-spacing: 0.45px;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-main-menu > .overlay-menu {
+    order: 1;
+    width: 100%;
+    max-height: none;
+    display: grid;
+    gap: 7px;
+    margin: 16px 0 0;
+    padding: 0;
+    overflow: visible;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-main-menu .overlay-menu-row {
+    position: relative;
+    min-height: 50px;
+    box-sizing: border-box;
+    display: grid;
+    grid-template-columns: 36px minmax(0, 1fr);
+    align-items: center;
+    gap: 12px;
+    padding: 6px 11px;
+    border: 1px solid #444b50;
+    border-radius: 0;
+    background:
+      linear-gradient(90deg, #151a1edb, #0a0d10e8),
+      url("assets/hd/ui/abyssal-gothic/panel-texture.png") center / 210px 210px;
+    box-shadow: inset 0 0 0 1px #030405, inset 0 0 18px #0008;
+    text-align: left;
+    transition: border-color 130ms ease, box-shadow 130ms ease, filter 130ms ease;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-main-menu .overlay-menu-row > div:not(.overlay-menu-key) > br,
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-main-menu .overlay-menu-row > div:not(.overlay-menu-key) > span {
+    display: none;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-main-menu .overlay-menu-row strong {
+    display: block;
+    overflow: hidden;
+    color: #d8d1c6;
+    font: 600 0.96rem/1.1 Georgia, "Times New Roman", serif;
+    letter-spacing: 0.25px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-main-menu .overlay-menu-key {
+    width: 34px;
+    min-width: 34px;
+    height: 34px;
+    box-sizing: border-box;
+    display: grid;
+    place-items: center;
+    border: 1px solid #596168;
+    background: linear-gradient(180deg, #1b2024, #090c0e);
+    color: #c2b79f;
+    font: 700 0.74rem/1 "Courier New", monospace;
+    box-shadow: inset 0 0 0 1px #050607, inset 0 0 10px #000b;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-main-menu .overlay-menu-row.selected {
+    outline: 1px solid #9ba5aa;
+    outline-offset: 2px;
+    border-color: #829099;
+    background:
+      linear-gradient(90deg, #35424bbf, #151b20ed 76%),
+      url("assets/hd/ui/abyssal-gothic/panel-texture.png") center / 210px 210px;
+    box-shadow: inset 4px 0 0 #b89a62, inset 0 0 0 1px #050607, 0 0 15px #7187962b;
+    filter: brightness(1.08);
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-main-menu .overlay-menu-row.selected strong {
+    color: #f0e7d7;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-main-menu .overlay-menu-row.selected .overlay-menu-key {
+    border-color: #a78c5d;
+    background: linear-gradient(180deg, #29271f, #0e0f0e);
+    color: #edd292;
+    box-shadow: inset 0 0 10px #4d3918, 0 0 7px #b58b2d38;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-pause-menu .overlay-menu-row:nth-child(1) {
+    border-color: #584046;
+    background:
+      linear-gradient(90deg, #211317cc, #0c090be8),
+      url("assets/hd/ui/abyssal-gothic/panel-texture.png") center / 210px 210px;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-pause-menu .overlay-menu-row:nth-child(2).selected {
+    outline-color: #9eadb0;
+    border-color: #82979c;
+    background:
+      linear-gradient(90deg, #30454cbf, #11191ded 76%),
+      url("assets/hd/ui/abyssal-gothic/panel-texture.png") center / 210px 210px;
+    box-shadow: inset 4px 0 0 #a8c0bc, inset 0 0 0 1px #050607, 0 0 15px #6f9aa238;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-pause-menu .overlay-menu-row:nth-child(2).selected .overlay-menu-key {
+    border-color: #829ea0;
+    color: #d9e4df;
+    box-shadow: inset 0 0 10px #183d43, 0 0 7px #6f9aa23d;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-main-menu .overlay-menu-row.disabled {
+    opacity: 0.38;
+    filter: saturate(0.35);
+  }
+
+  @media (max-height: 780px) {
+    body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-main-menu {
+      width: min(410px, calc(100vw - 40px));
+      min-height: 0;
+      padding: 62px 50px 50px;
+    }
+
+    body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-main-menu > .overlay-title {
+      font-size: 1.38rem;
+    }
+
+    body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-main-menu > .overlay-menu {
+      gap: 5px;
+      margin-top: 12px;
+    }
+
+    body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-main-menu .overlay-menu-row {
+      min-height: 43px;
+      grid-template-columns: 31px minmax(0, 1fr);
+      padding-block: 4px;
+    }
+
+    body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-main-menu .overlay-menu-key {
+      width: 30px;
+      min-width: 30px;
+      height: 30px;
+    }
+  }
+
+  @keyframes hdMenuListEnter {
+    from { opacity: 0; transform: translateY(7px) scale(0.988); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-main-menu,
+    body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-main-menu .overlay-menu-row {
+      animation: none;
+      transition: none;
+    }
+  }
+}
+
+/* Shared HD menu language. Classic keeps its original key badges and typography. */
+@media (min-width: 1201px) {
+  body.graphics-hd-ui:has(#game.graphics-hd) :is(
+    .overlay-card-main-menu,
+    .overlay-card-options,
+    .tutorial-overlay-card,
+    .overlay-card-dialog,
+    .overlay-card-confirm,
+    .overlay-card-leaderboard
+  ) {
+    --hd-menu-gothic: "Copperplate Gothic Light", "Copperplate Gothic", "Palatino Linotype", Georgia, serif;
+    animation: none !important;
+    border: 0;
+    border-radius: 0;
+    background-color: #07090b;
+    background-image:
+      url("assets/hd/ui/abyssal-gothic/menu-frame.png"),
+      radial-gradient(ellipse at 50% 18%, #33404c24, transparent 42%),
+      url("assets/hd/ui/abyssal-gothic/panel-texture.png");
+    background-position: center, center, center;
+    background-repeat: no-repeat, no-repeat, repeat;
+    background-size: 100% 100%, 100% 100%, 240px 240px;
+    box-shadow: 0 28px 68px #000e, 0 0 34px #2634401f;
+    filter: none;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) :is(.overlay-card-options, .overlay-card-confirm) {
+    width: min(438px, calc(100vw - 48px));
+    min-height: 520px;
+    max-height: calc(100vh - 36px);
+    padding: 72px 56px 58px;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-options { min-height: 620px; }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-options-tutorial {
+    width: min(520px, calc(100vw - 48px));
+    height: min(690px, calc(100vh - 36px));
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-dialog {
+    width: min(460px, calc(100vw - 48px));
+    min-height: 390px;
+    padding: 74px 58px 60px;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-leaderboard {
+    width: min(680px, calc(100vw - 48px));
+    min-height: 620px;
+    padding: 76px 64px 60px;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .tutorial-overlay-card {
+    width: min(680px, calc(100vw - 48px));
+    height: min(680px, calc(100vh - 36px));
+    padding: 76px 64px 60px;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) :is(
+    .overlay-card-main-menu,
+    .overlay-card-options,
+    .tutorial-overlay-card,
+    .overlay-card-dialog,
+    .overlay-card-confirm,
+    .overlay-card-leaderboard
+  ) > .overlay-title {
+    color: #e5dac7;
+    font-family: var(--hd-menu-gothic);
+    font-weight: 600;
+    letter-spacing: 2.6px;
+    text-transform: uppercase;
+    text-shadow: 0 3px 3px #000, 0 0 16px #71889a32;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-main-menu > .overlay-title {
+    font-family: var(--hd-menu-gothic);
+    letter-spacing: 3.4px;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) :is(
+    .overlay-card-main-menu,
+    .overlay-card-options,
+    .overlay-card-confirm
+  ) .overlay-menu {
+    width: 100%;
+    max-height: none;
+    display: grid;
+    gap: 7px;
+    padding: 0;
+    overflow-x: visible;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) :is(.overlay-card-options, .overlay-card-confirm) .overlay-menu {
+    margin-top: 16px;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) :is(
+    .overlay-card-main-menu,
+    .overlay-card-options,
+    .overlay-card-danger.overlay-card-confirm
+  ) .overlay-menu-key {
+    display: none;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) :is(
+    .overlay-card-main-menu,
+    .overlay-card-options,
+    .overlay-card-danger.overlay-card-confirm
+  ) .overlay-menu-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) :is(.overlay-card-options, .overlay-card-confirm) .overlay-menu-row {
+    min-height: 50px;
+    align-items: center;
+    padding: 7px 12px;
+    border: 1px solid #444b50;
+    border-radius: 0;
+    background:
+      linear-gradient(90deg, #151a1edb, #0a0d10e8),
+      url("assets/hd/ui/abyssal-gothic/panel-texture.png") center / 210px 210px;
+    box-shadow: inset 0 0 0 1px #030405, inset 0 0 18px #0008;
+    transition: none;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) :is(
+    .overlay-card-main-menu,
+    .overlay-card-options,
+    .overlay-card-confirm
+  ) .overlay-menu-row strong {
+    color: #ddd4c6;
+    font-family: var(--hd-menu-gothic);
+    font-weight: 600;
+    letter-spacing: 0.45px;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) :is(.overlay-card-options, .overlay-card-confirm) .overlay-menu-row span {
+    margin-top: 3px;
+    color: #8f918e;
+    font-size: 0.62rem;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) :is(.overlay-card-options, .overlay-card-confirm) .overlay-menu-row.selected {
+    outline: 1px solid #9ba5aa;
+    outline-offset: 2px;
+    border-color: #829099;
+    background:
+      linear-gradient(90deg, #35424bbf, #151b20ed 76%),
+      url("assets/hd/ui/abyssal-gothic/panel-texture.png") center / 210px 210px;
+    box-shadow: inset 4px 0 0 #b89a62, inset 0 0 0 1px #050607, 0 0 15px #7187962b;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) :is(.overlay-card-options, .overlay-card-confirm) .overlay-menu-row.selected strong {
+    color: #f0e7d7;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) :is(
+    .overlay-card-main-menu,
+    .overlay-card-options,
+    .overlay-card-confirm
+  ) > .overlay-hint {
+    color: #928878;
+    font-size: 0.61rem;
+    letter-spacing: 0.45px;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .screen-overlay.visible:has(:is(
+    .overlay-card-options,
+    .tutorial-overlay-card,
+    .overlay-card-dialog,
+    .overlay-card-confirm,
+    .overlay-card-leaderboard
+  )) {
+    background:
+      radial-gradient(circle at 50% 45%, #28344032 0 21%, transparent 58%),
+      radial-gradient(circle at 50% 50%, transparent 0 31%, #010203d9 80%),
+      #020304b8;
+    backdrop-filter: blur(4px) saturate(0.58) brightness(0.52);
+  }
+}
+
+/* One typography scale for every HD menu and submenu. */
+@media (min-width: 1201px) {
+  body.graphics-hd-ui:has(#game.graphics-hd) :is(
+    .overlay-card-main-menu,
+    .overlay-card-options,
+    .tutorial-overlay-card,
+    .overlay-card-dialog,
+    .overlay-card-confirm,
+    .overlay-card-leaderboard
+  ) {
+    --hd-menu-gothic: "Copperplate Gothic Light", "Copperplate Gothic", "Palatino Linotype", Georgia, serif;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) :is(
+    .overlay-card-main-menu,
+    .overlay-card-options,
+    .tutorial-overlay-card,
+    .overlay-card-dialog,
+    .overlay-card-confirm,
+    .overlay-card-leaderboard
+  ) > .overlay-title {
+    font-family: var(--hd-menu-gothic);
+    font-size: 1.52rem;
+    font-weight: 600;
+    line-height: 1.05;
+    letter-spacing: 3px;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) :is(
+    .overlay-card-main-menu,
+    .overlay-card-options,
+    .tutorial-overlay-card,
+    .overlay-card-dialog,
+    .overlay-card-confirm,
+    .overlay-card-leaderboard
+  ) > .overlay-sub {
+    font-family: "Courier Prime", "Cascadia Mono", monospace;
+    font-size: 0.64rem;
+    font-weight: 600;
+    line-height: 1.25;
+    letter-spacing: 1px;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) :is(
+    .overlay-card-main-menu,
+    .overlay-card-options,
+    .overlay-card-confirm
+  ) .overlay-menu-row strong {
+    font-family: var(--hd-menu-gothic);
+    font-size: 0.92rem;
+    font-weight: 600;
+    line-height: 1.1;
+    letter-spacing: 0.45px;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) :is(
+    .overlay-card-main-menu,
+    .overlay-card-options,
+    .overlay-card-confirm
+  ) .overlay-menu-row span {
+    font-family: "Courier Prime", "Cascadia Mono", monospace;
+    font-size: 0.62rem;
+    line-height: 1.2;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) :is(
+    .overlay-card-main-menu,
+    .overlay-card-options,
+    .tutorial-overlay-card,
+    .overlay-card-dialog,
+    .overlay-card-confirm,
+    .overlay-card-leaderboard
+  ) > .overlay-hint {
+    font-family: "Courier Prime", "Cascadia Mono", monospace;
+    font-size: 0.61rem;
+    line-height: 1.3;
+    letter-spacing: 0.45px;
+  }
+}
+/* Lift nested HD menus above the board and side-frame stacking layers. */
+@media (min-width: 1201px) {
+  body.graphics-hd-ui:has(#game.graphics-hd) .board:has(.screen-overlay.visible :is(
+    .overlay-card-options,
+    .tutorial-overlay-card,
+    .overlay-card-dialog,
+    .overlay-card-confirm,
+    .overlay-card-leaderboard
+  )) {
+    position: relative;
+    z-index: 5000;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .canvas-wrap:has(.screen-overlay.visible :is(
+    .overlay-card-options,
+    .tutorial-overlay-card,
+    .overlay-card-dialog,
+    .overlay-card-confirm,
+    .overlay-card-leaderboard
+  )) {
+    z-index: 5001;
+    overflow: visible;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .screen-overlay.visible:has(:is(
+    .overlay-card-options,
+    .tutorial-overlay-card,
+    .overlay-card-dialog,
+    .overlay-card-confirm,
+    .overlay-card-leaderboard
+  )) {
+    z-index: 5002;
+    overflow: visible;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .tutorial-overlay-card > .tutorial-sections {
+    scroll-behavior: smooth;
+    overscroll-behavior: contain;
+  }
+}
+
+
+/* Standalone title scene. Fresh launch and post-Game-Over return share this
+   environment; the in-run pause menu intentionally keeps the live HUD. */
+@media (min-width: 1201px) {
+  body.graphics-hd-ui.main-menu-only:has(#game.graphics-hd) .app {
+    width: 100vw;
+    max-width: none;
+    min-height: 100vh;
+    padding: 0;
+    background: #020304;
+  }
+
+  body.graphics-hd-ui.main-menu-only:has(#game.graphics-hd) .canvas-wrap {
+    padding: 0;
+    background: none;
+    box-shadow: none;
+  }
+
+  body.graphics-hd-ui.main-menu-only:has(#game.graphics-hd) .screen-overlay.visible:has(
+    .overlay-card-main-menu:not(.overlay-card-pause-menu)
+  ) {
+    position: fixed;
+    inset: 0;
+    width: 100vw;
+    height: 100vh;
+    box-sizing: border-box;
+    align-items: center;
+    justify-content: flex-end;
+    padding: clamp(24px, 4vh, 62px) clamp(52px, 8vw, 164px);
+    overflow: hidden;
+    isolation: isolate;
+    background:
+      linear-gradient(90deg, #0102030a 0 34%, #02030455 52%, #010203d9 76%, #010203fa 100%),
+      linear-gradient(180deg, #0203042e 0, transparent 38%, #010203b8 100%),
+      radial-gradient(circle at 24% 39%, #b6532626 0, transparent 22%),
+      url("assets/hd/ui/boot/abyssal-gate.png") 27% 52% / cover no-repeat #020304;
+    backdrop-filter: none;
+  }
+
+  body.graphics-hd-ui.main-menu-only:has(#game.graphics-hd) .screen-overlay.visible:has(
+    .overlay-card-main-menu:not(.overlay-card-pause-menu)
+  )::before {
+    content: "";
+    position: absolute;
+    z-index: 0;
+    top: 10%;
+    right: calc(clamp(52px, 8vw, 164px) + 478px);
+    bottom: 10%;
+    width: 1px;
+    pointer-events: none;
+    opacity: 0.72;
+    background: linear-gradient(180deg, transparent, #806c495c 18%, #b0915d8f 50%, #806c495c 82%, transparent);
+    box-shadow: 0 0 22px #9b713b33;
+  }
+
+  body.graphics-hd-ui.main-menu-only:has(#game.graphics-hd) .screen-overlay.visible:has(
+    .overlay-card-main-menu:not(.overlay-card-pause-menu)
+  )::after {
+    content: "";
+    position: absolute;
+    z-index: 0;
+    top: 50%;
+    right: calc(clamp(52px, 8vw, 164px) + 472px);
+    width: 11px;
+    height: 11px;
+    transform: translateY(-50%) rotate(45deg);
+    pointer-events: none;
+    border: 1px solid #b69a68a8;
+    background: #17130e;
+    box-shadow: 0 0 0 4px #070706b8, 0 0 18px #c48d3942;
+  }
+
+  body.graphics-hd-ui.main-menu-only:has(#game.graphics-hd) .overlay-card-main-menu:not(.overlay-card-pause-menu) {
+    z-index: 1;
+    filter: drop-shadow(0 26px 38px #000d) drop-shadow(0 0 20px #9b75401c);
+  }
+}
+
+/* Emergency extraction: keep content clear of the carved frame and reuse the HD plaque language. */
+@media (min-width: 1201px) {
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-confirm.emergency-extract-confirm {
+    padding: 104px 56px 58px;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .emergency-extract-confirm > .overlay-title {
+    font-family: var(--hd-menu-gothic);
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .emergency-extract-confirm > :is(.overlay-sub, .overlay-hint),
+  body.graphics-hd-ui:has(#game.graphics-hd) .emergency-extract-confirm .overlay-menu-row span,
+  body.graphics-hd-ui:has(#game.graphics-hd) .emergency-extract-confirm .overlay-menu-key {
+    font-family: "Courier Prime", "Cascadia Mono", monospace;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .emergency-extract-confirm > .overlay-menu {
+    width: 84%;
+    justify-self: center;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .emergency-extract-confirm .overlay-menu-row {
+    min-height: 66px;
+    box-sizing: border-box;
+    border: 8px solid transparent;
+    border-image-source: url("assets/hd/ui/abyssal-gothic/section-plaque.png");
+    border-image-slice: 70 118;
+    border-image-width: 10px 16px;
+    background: #090c0aeb url("assets/hd/ui/abyssal-gothic/panel-texture.png") center / 280px 280px;
+    background-blend-mode: multiply;
+    box-shadow: 0 4px 14px #0008, inset 0 0 20px #0008;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .emergency-extract-confirm .overlay-menu-row strong {
+    font-family: var(--hd-menu-gothic);
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .emergency-extract-confirm .overlay-menu-row.selected {
+    outline: 2px solid #b98b55;
+    outline-offset: -2px;
+    border-color: transparent;
+    background: #211413ef url("assets/hd/ui/abyssal-gothic/panel-texture.png") center / 280px 280px;
+    background-blend-mode: multiply;
+    box-shadow: 0 0 0 1px #23100d, 0 0 18px #a6595340, inset 3px 0 0 #bd6d62;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .emergency-extract-confirm .overlay-menu-key {
+    border-color: #786a58;
+    background: #080909;
+    color: #d4b774;
+  }
+}
+
+@media (min-width: 1201px) and (max-height: 720px) {
+  body.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-confirm.emergency-extract-confirm {
+    padding-top: 88px;
+  }
+}

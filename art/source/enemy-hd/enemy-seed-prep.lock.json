@@ -1,0 +1,334 @@
+{
+  "schemaVersion": 1,
+  "chromaKey": "#ff00ff",
+  "pillowVersion": "12.1.1",
+  "helper": {
+    "path": "remove_chroma_key.py",
+    "sha256": "7e51236919203b61d07ddffdc6e0b5f501a28661003f5851f26ffbb64bdec1ea"
+  },
+  "seeds": {
+    "slime": {
+      "path": "art/source/enemy-hd/slime-south-idle-seed.png",
+      "sha256": "2d2ae351f3bb0f164c2ea3bf9bbd9ccbaced0f49830c970a903dbb66a1ba2ca1",
+      "width": 1254,
+      "height": 1254,
+      "mode": "RGB",
+      "preview": "art/source/enemy-hd/slime/slime-south-idle-preview-64.png",
+      "metrics": {
+        "bounds": [
+          4,
+          31,
+          60,
+          61
+        ],
+        "visiblePixels": 1351
+      }
+    },
+    "skeleton": {
+      "path": "art/source/enemy-hd/skeleton-south-idle-seed.png",
+      "sha256": "9f91dd5f623f43d54104cfc194d49cf7c4ca1c9c22f98707d20ce50aadcc94ae",
+      "width": 1254,
+      "height": 1254,
+      "mode": "RGB",
+      "preview": "art/source/enemy-hd/skeleton/skeleton-south-idle-preview-64.png",
+      "metrics": {
+        "bounds": [
+          14,
+          5,
+          50,
+          61
+        ],
+        "visiblePixels": 1161
+      }
+    },
+    "brute": {
+      "path": "art/source/enemy-hd/brute-south-idle-seed.png",
+      "sha256": "b78c700899430fe2d53b440b7bfc50ffcff269a51ceaa288590e9f73e246859e",
+      "width": 1254,
+      "height": 1254,
+      "mode": "RGB",
+      "preview": "art/source/enemy-hd/brute/brute-south-idle-preview-64.png",
+      "metrics": {
+        "bounds": [
+          2,
+          8,
+          62,
+          61
+        ],
+        "visiblePixels": 2495
+      }
+    },
+    "acolyte": {
+      "path": "art/source/enemy-hd/acolyte-south-idle-seed.png",
+      "sha256": "f6ea1677b38b08ad353e5b7453b2f20f65e58c81ad0afec422fc9bc2d5d755cf",
+      "width": 1254,
+      "height": 1254,
+      "mode": "RGB",
+      "preview": "art/source/enemy-hd/acolyte/acolyte-south-idle-preview-64.png",
+      "metrics": {
+        "bounds": [
+          18,
+          3,
+          47,
+          61
+        ],
+        "visiblePixels": 1369
+      }
+    },
+    "skitter": {
+      "path": "art/source/enemy-hd/skitter-south-idle-seed.png",
+      "sha256": "bee13c818e6c7bd52ebc4c49cf203ba381869c768ec97fb13ae1b538ecf09226",
+      "width": 1254,
+      "height": 1254,
+      "mode": "RGB",
+      "preview": "art/source/enemy-hd/skitter/skitter-south-idle-preview-64.png",
+      "metrics": {
+        "bounds": [
+          13,
+          23,
+          52,
+          61
+        ],
+        "visiblePixels": 1041
+      }
+    },
+    "totem": {
+      "path": "art/source/enemy-hd/totem-south-idle-seed.png",
+      "sha256": "fddec3716f813899ae5276a02d6e3ee7292cdfff7a53cbcf006dbcbb7caa9a12",
+      "width": 1254,
+      "height": 1254,
+      "mode": "RGB",
+      "preview": "art/source/enemy-hd/totem/totem-south-idle-preview-64.png",
+      "metrics": {
+        "bounds": [
+          18,
+          3,
+          46,
+          61
+        ],
+        "visiblePixels": 1286
+      }
+    },
+    "otter": {
+      "path": "art/source/enemy-hd/otter-south-idle-seed.png",
+      "sha256": "e0a8f617973ae1f1945eb13ceca86cc2ba82b58cc50a6393d2531dfa1c5bab77",
+      "width": 1254,
+      "height": 1254,
+      "mode": "RGB",
+      "preview": "art/source/enemy-hd/otter/otter-south-idle-preview-64.png",
+      "metrics": {
+        "bounds": [
+          12,
+          5,
+          53,
+          61
+        ],
+        "visiblePixels": 1582
+      }
+    }
+  },
+  "helperDetectedKeys": {
+    "slime": "#f508ee",
+    "skeleton": "#f903ef",
+    "brute": "#f502f2",
+    "acolyte": "#f702f1",
+    "skitter": "#f603ef",
+    "totem": "#f702ee",
+    "otter": "#f402ef"
+  },
+  "editCanvases": {
+    "art/source/enemy-hd/slime/slime-animation-south-edit-canvas-1024.png": {
+      "width": 1024,
+      "height": 1024,
+      "mode": "RGB",
+      "sha256": "56c819b9a6cb4ed6c4844c8fbb18823204f59f5c83273e762225ded65868fdac"
+    },
+    "art/source/enemy-hd/slime/slime-animation-north-edit-canvas-1024.png": {
+      "width": 1024,
+      "height": 1024,
+      "mode": "RGB",
+      "sha256": "56c819b9a6cb4ed6c4844c8fbb18823204f59f5c83273e762225ded65868fdac"
+    },
+    "art/source/enemy-hd/slime/slime-animation-east-edit-canvas-1024.png": {
+      "width": 1024,
+      "height": 1024,
+      "mode": "RGB",
+      "sha256": "56c819b9a6cb4ed6c4844c8fbb18823204f59f5c83273e762225ded65868fdac"
+    },
+    "art/source/enemy-hd/slime/slime-animation-west-edit-canvas-1024.png": {
+      "width": 1024,
+      "height": 1024,
+      "mode": "RGB",
+      "sha256": "56c819b9a6cb4ed6c4844c8fbb18823204f59f5c83273e762225ded65868fdac"
+    },
+    "art/source/enemy-hd/skeleton/skeleton-animation-south-edit-canvas-1024.png": {
+      "width": 1024,
+      "height": 1024,
+      "mode": "RGB",
+      "sha256": "709895c4639f4f8f5725c39f57fe139ac671afb69c1aa06bcab3183229e7569a"
+    },
+    "art/source/enemy-hd/skeleton/skeleton-animation-north-edit-canvas-1024.png": {
+      "width": 1024,
+      "height": 1024,
+      "mode": "RGB",
+      "sha256": "709895c4639f4f8f5725c39f57fe139ac671afb69c1aa06bcab3183229e7569a"
+    },
+    "art/source/enemy-hd/skeleton/skeleton-animation-east-edit-canvas-1024.png": {
+      "width": 1024,
+      "height": 1024,
+      "mode": "RGB",
+      "sha256": "709895c4639f4f8f5725c39f57fe139ac671afb69c1aa06bcab3183229e7569a"
+    },
+    "art/source/enemy-hd/skeleton/skeleton-animation-west-edit-canvas-1024.png": {
+      "width": 1024,
+      "height": 1024,
+      "mode": "RGB",
+      "sha256": "709895c4639f4f8f5725c39f57fe139ac671afb69c1aa06bcab3183229e7569a"
+    },
+    "art/source/enemy-hd/brute/brute-animation-south-edit-canvas-1024.png": {
+      "width": 1024,
+      "height": 1024,
+      "mode": "RGB",
+      "sha256": "79c7cc4dc80d354ca918a71a18e992571e8ff64e260f1a5d560ac269e93494ba"
+    },
+    "art/source/enemy-hd/brute/brute-animation-north-edit-canvas-1024.png": {
+      "width": 1024,
+      "height": 1024,
+      "mode": "RGB",
+      "sha256": "79c7cc4dc80d354ca918a71a18e992571e8ff64e260f1a5d560ac269e93494ba"
+    },
+    "art/source/enemy-hd/brute/brute-animation-east-edit-canvas-1024.png": {
+      "width": 1024,
+      "height": 1024,
+      "mode": "RGB",
+      "sha256": "79c7cc4dc80d354ca918a71a18e992571e8ff64e260f1a5d560ac269e93494ba"
+    },
+    "art/source/enemy-hd/brute/brute-animation-west-edit-canvas-1024.png": {
+      "width": 1024,
+      "height": 1024,
+      "mode": "RGB",
+      "sha256": "79c7cc4dc80d354ca918a71a18e992571e8ff64e260f1a5d560ac269e93494ba"
+    },
+    "art/source/enemy-hd/acolyte/acolyte-animation-south-edit-canvas-1024.png": {
+      "width": 1024,
+      "height": 1024,
+      "mode": "RGB",
+      "sha256": "62a098c02ef07a0a609ab6b4e5b4efc50b4053a1c04029cdad962c78d70723c0"
+    },
+    "art/source/enemy-hd/acolyte/acolyte-animation-north-edit-canvas-1024.png": {
+      "width": 1024,
+      "height": 1024,
+      "mode": "RGB",
+      "sha256": "62a098c02ef07a0a609ab6b4e5b4efc50b4053a1c04029cdad962c78d70723c0"
+    },
+    "art/source/enemy-hd/acolyte/acolyte-animation-east-edit-canvas-1024.png": {
+      "width": 1024,
+      "height": 1024,
+      "mode": "RGB",
+      "sha256": "62a098c02ef07a0a609ab6b4e5b4efc50b4053a1c04029cdad962c78d70723c0"
+    },
+    "art/source/enemy-hd/acolyte/acolyte-animation-west-edit-canvas-1024.png": {
+      "width": 1024,
+      "height": 1024,
+      "mode": "RGB",
+      "sha256": "62a098c02ef07a0a609ab6b4e5b4efc50b4053a1c04029cdad962c78d70723c0"
+    },
+    "art/source/enemy-hd/skitter/skitter-animation-south-edit-canvas-1024.png": {
+      "width": 1024,
+      "height": 1024,
+      "mode": "RGB",
+      "sha256": "9f9ff3020464282c1ca135f06f9379d3f518efd4dfae9edfadcafe02b90398ee"
+    },
+    "art/source/enemy-hd/skitter/skitter-animation-north-edit-canvas-1024.png": {
+      "width": 1024,
+      "height": 1024,
+      "mode": "RGB",
+      "sha256": "9f9ff3020464282c1ca135f06f9379d3f518efd4dfae9edfadcafe02b90398ee"
+    },
+    "art/source/enemy-hd/skitter/skitter-animation-east-edit-canvas-1024.png": {
+      "width": 1024,
+      "height": 1024,
+      "mode": "RGB",
+      "sha256": "9f9ff3020464282c1ca135f06f9379d3f518efd4dfae9edfadcafe02b90398ee"
+    },
+    "art/source/enemy-hd/skitter/skitter-animation-west-edit-canvas-1024.png": {
+      "width": 1024,
+      "height": 1024,
+      "mode": "RGB",
+      "sha256": "9f9ff3020464282c1ca135f06f9379d3f518efd4dfae9edfadcafe02b90398ee"
+    },
+    "art/source/enemy-hd/totem/totem-animation-base-edit-canvas-1024.png": {
+      "width": 1024,
+      "height": 1024,
+      "mode": "RGB",
+      "sha256": "ce48ec64646d434adfb4b11e6f4abb776e79a034a3f701cf020537cb70f7acab"
+    },
+    "art/source/enemy-hd/otter/otter-animation-south-edit-canvas-1024.png": {
+      "width": 1024,
+      "height": 1024,
+      "mode": "RGB",
+      "sha256": "287f2b4ea377c463eab5dff84201baad6e141524474bdaee597a390e35d3d9af"
+    },
+    "art/source/enemy-hd/otter/otter-animation-north-edit-canvas-1024.png": {
+      "width": 1024,
+      "height": 1024,
+      "mode": "RGB",
+      "sha256": "287f2b4ea377c463eab5dff84201baad6e141524474bdaee597a390e35d3d9af"
+    },
+    "art/source/enemy-hd/otter/otter-animation-east-edit-canvas-1024.png": {
+      "width": 1024,
+      "height": 1024,
+      "mode": "RGB",
+      "sha256": "287f2b4ea377c463eab5dff84201baad6e141524474bdaee597a390e35d3d9af"
+    },
+    "art/source/enemy-hd/otter/otter-animation-west-edit-canvas-1024.png": {
+      "width": 1024,
+      "height": 1024,
+      "mode": "RGB",
+      "sha256": "287f2b4ea377c463eab5dff84201baad6e141524474bdaee597a390e35d3d9af"
+    }
+  },
+  "outputs": {
+    "art/source/enemy-hd/slime/slime-south-idle-keyed.png": "1f5e456d2746c976d45e635b56bb1abbc78c47c71f91ae64aea9c639a1828c6e",
+    "art/source/enemy-hd/skeleton/skeleton-south-idle-keyed.png": "74598ecd2e6ac8965068a92a76229a4f6ab7ad847514336ce9095e466f192b55",
+    "art/source/enemy-hd/brute/brute-south-idle-keyed.png": "76b8aad5ece01c2d36ad440f78d9d1aac4e2ae9c7d13d87cdddd58dd3adcf4d8",
+    "art/source/enemy-hd/acolyte/acolyte-south-idle-keyed.png": "4dc4e2619d0a313aa37492380c47570719159a5c30fec0ca92733658f603f843",
+    "art/source/enemy-hd/skitter/skitter-south-idle-keyed.png": "f53473043d366e1d975a0902d75c7da9dcdf66c1fc39998cbcfb49ee1627365b",
+    "art/source/enemy-hd/totem/totem-south-idle-keyed.png": "460ddfb16414bc986c537f2b5da6fa441d51870411e1378c55b5ffd3826ddb24",
+    "art/source/enemy-hd/otter/otter-south-idle-keyed.png": "3384c0dea65f67a72d5132fd90a7d6d22d6718b59a74b7fbd2d802471bad117e",
+    "art/source/enemy-hd/slime/slime-south-idle-preview-64.png": "de604709102885c360963603169d75cc6ddd5a40c9f6e87414e3364c7dc44528",
+    "art/source/enemy-hd/skeleton/skeleton-south-idle-preview-64.png": "6729e28876a103d0da4b0b0907df4b7c6af3096f3ef84394fa11a500166ffc84",
+    "art/source/enemy-hd/brute/brute-south-idle-preview-64.png": "ee4aaca05a62e9831a40fffe437891304c17f1970e32e41acc2ffa9a394e10c2",
+    "art/source/enemy-hd/acolyte/acolyte-south-idle-preview-64.png": "edd968124f6c7b50abb82f2fdfb12fc03a294d300a3096bf4232a47818a67839",
+    "art/source/enemy-hd/skitter/skitter-south-idle-preview-64.png": "4f9fcd0ef390932d44769907dfcb5ac9969d77f26be99068a0fbe0710b1f2569",
+    "art/source/enemy-hd/totem/totem-south-idle-preview-64.png": "737b137a33566095d89f21b96032bf57ca876d81f36247be32ac67b1ad81bd71",
+    "art/source/enemy-hd/otter/otter-south-idle-preview-64.png": "5edf32b51ee959683c8022260bfc9b08c9735f22f2ea73d2bc14e82905d37339",
+    "art/source/enemy-hd/slime/slime-animation-south-edit-canvas-1024.png": "56c819b9a6cb4ed6c4844c8fbb18823204f59f5c83273e762225ded65868fdac",
+    "art/source/enemy-hd/slime/slime-animation-north-edit-canvas-1024.png": "56c819b9a6cb4ed6c4844c8fbb18823204f59f5c83273e762225ded65868fdac",
+    "art/source/enemy-hd/slime/slime-animation-east-edit-canvas-1024.png": "56c819b9a6cb4ed6c4844c8fbb18823204f59f5c83273e762225ded65868fdac",
+    "art/source/enemy-hd/slime/slime-animation-west-edit-canvas-1024.png": "56c819b9a6cb4ed6c4844c8fbb18823204f59f5c83273e762225ded65868fdac",
+    "art/source/enemy-hd/skeleton/skeleton-animation-south-edit-canvas-1024.png": "709895c4639f4f8f5725c39f57fe139ac671afb69c1aa06bcab3183229e7569a",
+    "art/source/enemy-hd/skeleton/skeleton-animation-north-edit-canvas-1024.png": "709895c4639f4f8f5725c39f57fe139ac671afb69c1aa06bcab3183229e7569a",
+    "art/source/enemy-hd/skeleton/skeleton-animation-east-edit-canvas-1024.png": "709895c4639f4f8f5725c39f57fe139ac671afb69c1aa06bcab3183229e7569a",
+    "art/source/enemy-hd/skeleton/skeleton-animation-west-edit-canvas-1024.png": "709895c4639f4f8f5725c39f57fe139ac671afb69c1aa06bcab3183229e7569a",
+    "art/source/enemy-hd/brute/brute-animation-south-edit-canvas-1024.png": "79c7cc4dc80d354ca918a71a18e992571e8ff64e260f1a5d560ac269e93494ba",
+    "art/source/enemy-hd/brute/brute-animation-north-edit-canvas-1024.png": "79c7cc4dc80d354ca918a71a18e992571e8ff64e260f1a5d560ac269e93494ba",
+    "art/source/enemy-hd/brute/brute-animation-east-edit-canvas-1024.png": "79c7cc4dc80d354ca918a71a18e992571e8ff64e260f1a5d560ac269e93494ba",
+    "art/source/enemy-hd/brute/brute-animation-west-edit-canvas-1024.png": "79c7cc4dc80d354ca918a71a18e992571e8ff64e260f1a5d560ac269e93494ba",
+    "art/source/enemy-hd/acolyte/acolyte-animation-south-edit-canvas-1024.png": "62a098c02ef07a0a609ab6b4e5b4efc50b4053a1c04029cdad962c78d70723c0",
+    "art/source/enemy-hd/acolyte/acolyte-animation-north-edit-canvas-1024.png": "62a098c02ef07a0a609ab6b4e5b4efc50b4053a1c04029cdad962c78d70723c0",
+    "art/source/enemy-hd/acolyte/acolyte-animation-east-edit-canvas-1024.png": "62a098c02ef07a0a609ab6b4e5b4efc50b4053a1c04029cdad962c78d70723c0",
+    "art/source/enemy-hd/acolyte/acolyte-animation-west-edit-canvas-1024.png": "62a098c02ef07a0a609ab6b4e5b4efc50b4053a1c04029cdad962c78d70723c0",
+    "art/source/enemy-hd/skitter/skitter-animation-south-edit-canvas-1024.png": "9f9ff3020464282c1ca135f06f9379d3f518efd4dfae9edfadcafe02b90398ee",
+    "art/source/enemy-hd/skitter/skitter-animation-north-edit-canvas-1024.png": "9f9ff3020464282c1ca135f06f9379d3f518efd4dfae9edfadcafe02b90398ee",
+    "art/source/enemy-hd/skitter/skitter-animation-east-edit-canvas-1024.png": "9f9ff3020464282c1ca135f06f9379d3f518efd4dfae9edfadcafe02b90398ee",
+    "art/source/enemy-hd/skitter/skitter-animation-west-edit-canvas-1024.png": "9f9ff3020464282c1ca135f06f9379d3f518efd4dfae9edfadcafe02b90398ee",
+    "art/source/enemy-hd/totem/totem-animation-base-edit-canvas-1024.png": "ce48ec64646d434adfb4b11e6f4abb776e79a034a3f701cf020537cb70f7acab",
+    "art/source/enemy-hd/otter/otter-animation-south-edit-canvas-1024.png": "287f2b4ea377c463eab5dff84201baad6e141524474bdaee597a390e35d3d9af",
+    "art/source/enemy-hd/otter/otter-animation-north-edit-canvas-1024.png": "287f2b4ea377c463eab5dff84201baad6e141524474bdaee597a390e35d3d9af",
+    "art/source/enemy-hd/otter/otter-animation-east-edit-canvas-1024.png": "287f2b4ea377c463eab5dff84201baad6e141524474bdaee597a390e35d3d9af",
+    "art/source/enemy-hd/otter/otter-animation-west-edit-canvas-1024.png": "287f2b4ea377c463eab5dff84201baad6e141524474bdaee597a390e35d3d9af",
+    "art/briefs/enemy-hd-direction-prompts.json": "bc0f570c441d6cb8a48e7eb7c6a674caa30146b2713ae492c91bbb6daed2e24b",
+    "art/source/enemy-hd/enemy-seed-contact-sheet-64.png": "62f4a7f48a4855b989ae9ff0bd583fba8a4faaef2a4101312dd7ca54e0f10484"
+  }
+}

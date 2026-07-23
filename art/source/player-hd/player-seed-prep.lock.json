@@ -1,0 +1,197 @@
+{
+  "helper": {
+    "path": "remove_chroma_key.py",
+    "sha256": "7e51236919203b61d07ddffdc6e0b5f501a28661003f5851f26ffbb64bdec1ea"
+  },
+  "metrics": {
+    "directionAnchors": {
+      "east": {
+        "bounds": [
+          18,
+          5,
+          45,
+          60
+        ],
+        "confidence": "high",
+        "exact": 0,
+        "near": 0,
+        "sharedScale": 0.41176471,
+        "sourceGrid": [
+          4,
+          1
+        ],
+        "visible": 1075
+      },
+      "north": {
+        "bounds": [
+          14,
+          6,
+          49,
+          60
+        ],
+        "confidence": "high",
+        "exact": 0,
+        "near": 0,
+        "sharedScale": 0.41176471,
+        "sourceGrid": [
+          3,
+          1
+        ],
+        "visible": 1429
+      },
+      "west": {
+        "bounds": [
+          22,
+          5,
+          42,
+          60
+        ],
+        "confidence": "high",
+        "exact": 0,
+        "near": 0,
+        "sharedScale": 0.41176471,
+        "sourceGrid": [
+          6,
+          1
+        ],
+        "visible": 972
+      }
+    },
+    "editCanvases": {
+      "east": {
+        "bounds": [
+          72,
+          20,
+          183,
+          243
+        ],
+        "insideNonKey": 17200,
+        "outsideNonKey": 0
+      },
+      "north": {
+        "bounds": [
+          56,
+          24,
+          199,
+          243
+        ],
+        "insideNonKey": 22864,
+        "outsideNonKey": 0
+      },
+      "south": {
+        "bounds": [
+          56,
+          20,
+          199,
+          243
+        ],
+        "insideNonKey": 23488,
+        "outsideNonKey": 0
+      },
+      "west": {
+        "bounds": [
+          88,
+          20,
+          171,
+          243
+        ],
+        "insideNonKey": 15552,
+        "outsideNonKey": 0
+      }
+    },
+    "keyed": {
+      "bounds": [
+        322,
+        150,
+        893,
+        1032
+      ],
+      "exact": 0,
+      "near": 0,
+      "visible": 293126
+    },
+    "normalized": {
+      "bounds": [
+        14,
+        5,
+        49,
+        60
+      ],
+      "exact": 0,
+      "near": 0,
+      "visible": 1468
+    },
+    "rejectedKeyed": {
+      "bounds": [
+        24,
+        27,
+        1226,
+        1239
+      ],
+      "exact": 0,
+      "near": 0,
+      "visible": 402165
+    },
+    "rejectedLayout": {
+      "componentCount": 70,
+      "detectedLayout": "10x7",
+      "rawComponentCount": 72
+    },
+    "seedHelperDetectedKey": "#fb02f9"
+  },
+  "normalization": {
+    "bottomCenterRoot": [
+      32,
+      60
+    ],
+    "editCanvasSize": [
+      1024,
+      1024
+    ],
+    "editGrid": [
+      4,
+      4
+    ],
+    "frameSize": [
+      64,
+      64
+    ],
+    "logicalSlotSize": 256,
+    "maxBounds": [
+      56,
+      56
+    ]
+  },
+  "outputs": {
+    "art/briefs/player-hd-direction-prompts.json": "5b1934852c62c5e9a42897d3088b53856d355cf735d4bd62b4aa2b48a8dd04b5",
+    "art/source/player-hd/player-animation-east-edit-canvas-1024.png": "2d0d5aebb3d1ff7bb3049f4ebd9e33d9d6cb3b7b7509ebeb37286e2ffac30ae1",
+    "art/source/player-hd/player-animation-north-edit-canvas-1024.png": "0bdcb9ee872ec3a075b074976ec30c4f00b03ab2733adc6b28700783644acc14",
+    "art/source/player-hd/player-animation-rejected-layout-analysis.json": "09a602330e5e1dffaf20b81e342cb19feaf5687bde109dde8961a80eeacee5da",
+    "art/source/player-hd/player-animation-rejected-layout-components.png": "bdefe1f7a4fcc0066718378d2f2597c859748f7817b1d07207268298906b2a01",
+    "art/source/player-hd/player-animation-south-edit-canvas-1024.png": "fc557a684dc99acc56eee87dc0be298076fd40be258ecbaade1a9f0703821e76",
+    "art/source/player-hd/player-animation-west-edit-canvas-1024.png": "b708165448bd130a724fda927e11740e6dd9c145700be62ef244c16636d754d2",
+    "art/source/player-hd/player-direction-anchor-comparison.png": "4a4d86e87b15bc8000b3a6b3ae1b82dd7f3da248e3b9c8953639b70e8bada0ad",
+    "art/source/player-hd/player-east-idle-anchor-preview-64.png": "60f69bc682d1938355eb9824851161686a707d61b7ca541e1ab25e578f086f4f",
+    "art/source/player-hd/player-north-idle-anchor-preview-64.png": "637ef66aa9f5c7d7e1928b5f8e6f0c47188cfd4b790fd2ea6742b231bed33053",
+    "art/source/player-hd/player-seed-comparison.png": "613c94fac1c0ed9d02850b3fb4ccef7cf55633d10abb10ccfacbe29fc06c1da9",
+    "art/source/player-hd/player-south-idle-keyed.png": "7c40ae7e925d4e1380305de1c7c1b7a0d4e499cc245afbff68abc47b39563143",
+    "art/source/player-hd/player-south-idle-preview-64.png": "3cf0997ea19cefbe10812aaf171cdba878199b376e5d910e03b84be088e0deda",
+    "art/source/player-hd/player-west-idle-anchor-preview-64.png": "6524abaff61bd7c0101ebefe98726ff3ee407829e3eb5ab7579bc46ffd0b4e02"
+  },
+  "pillowVersion": "12.1.1",
+  "pipelineSchema": 2,
+  "rejectedSource": {
+    "height": 1254,
+    "mode": "RGB",
+    "path": "art/source/player-hd/player-animation-atlas-rejected-layout.png",
+    "sha256": "3ae0de590ca039525d1db721c1539df146affc57a90939631cfccbc667d96d64",
+    "width": 1254
+  },
+  "source": {
+    "height": 1254,
+    "mode": "RGB",
+    "path": "art/source/player-hd/player-south-idle-seed.png",
+    "sha256": "c890fc3c09eb7537faa2350793a1d6919f64dc31a6a85d2232d3d37ae46f474d",
+    "width": 1254
+  }
+}

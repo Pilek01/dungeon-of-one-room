@@ -1,0 +1,691 @@
+{
+  "schemaVersion": 1,
+  "type": "brute",
+  "frameSize": [
+    64,
+    64
+  ],
+  "renderSize": [
+    64,
+    64
+  ],
+  "anchor": [
+    0.5,
+    1
+  ],
+  "group": "enemies",
+  "clips": [
+    {
+      "name": "idle",
+      "frameCount": 4,
+      "fps": 4,
+      "loop": true
+    },
+    {
+      "name": "move",
+      "frameCount": 4,
+      "fps": 8,
+      "loop": true
+    },
+    {
+      "name": "attack",
+      "frameCount": 4,
+      "fps": 12,
+      "loop": false
+    },
+    {
+      "name": "hit",
+      "frameCount": 2,
+      "fps": 10,
+      "loop": false
+    },
+    {
+      "name": "death",
+      "frameCount": 2,
+      "fps": 6,
+      "loop": false
+    }
+  ],
+  "frames": [
+    {
+      "type": "brute",
+      "direction": "south",
+      "clip": "idle",
+      "frame": 1,
+      "key": "enemy.brute.south.idle.01",
+      "src": "assets/hd/enemies/brute/frames/south-idle-01.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "brute",
+      "direction": "south",
+      "clip": "idle",
+      "frame": 2,
+      "key": "enemy.brute.south.idle.02",
+      "src": "assets/hd/enemies/brute/frames/south-idle-02.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "brute",
+      "direction": "south",
+      "clip": "idle",
+      "frame": 3,
+      "key": "enemy.brute.south.idle.03",
+      "src": "assets/hd/enemies/brute/frames/south-idle-03.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "brute",
+      "direction": "south",
+      "clip": "idle",
+      "frame": 4,
+      "key": "enemy.brute.south.idle.04",
+      "src": "assets/hd/enemies/brute/frames/south-idle-04.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "brute",
+      "direction": "south",
+      "clip": "move",
+      "frame": 1,
+      "key": "enemy.brute.south.move.01",
+      "src": "assets/hd/enemies/brute/frames/south-move-01.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "brute",
+      "direction": "south",
+      "clip": "move",
+      "frame": 2,
+      "key": "enemy.brute.south.move.02",
+      "src": "assets/hd/enemies/brute/frames/south-move-02.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "brute",
+      "direction": "south",
+      "clip": "move",
+      "frame": 3,
+      "key": "enemy.brute.south.move.03",
+      "src": "assets/hd/enemies/brute/frames/south-move-03.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "brute",
+      "direction": "south",
+      "clip": "move",
+      "frame": 4,
+      "key": "enemy.brute.south.move.04",
+      "src": "assets/hd/enemies/brute/frames/south-move-04.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "brute",
+      "direction": "south",
+      "clip": "attack",
+      "frame": 1,
+      "key": "enemy.brute.south.attack.01",
+      "src": "assets/hd/enemies/brute/frames/south-attack-01.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "brute",
+      "direction": "south",
+      "clip": "attack",
+      "frame": 2,
+      "key": "enemy.brute.south.attack.02",
+      "src": "assets/hd/enemies/brute/frames/south-attack-02.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "brute",
+      "direction": "south",
+      "clip": "attack",
+      "frame": 3,
+      "key": "enemy.brute.south.attack.03",
+      "src": "assets/hd/enemies/brute/frames/south-attack-03.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "brute",
+      "direction": "south",
+      "clip": "attack",
+      "frame": 4,
+      "key": "enemy.brute.south.attack.04",
+      "src": "assets/hd/enemies/brute/frames/south-attack-04.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "brute",
+      "direction": "south",
+      "clip": "hit",
+      "frame": 1,
+      "key": "enemy.brute.south.hit.01",
+      "src": "assets/hd/enemies/brute/frames/south-hit-01.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "brute",
+      "direction": "south",
+      "clip": "hit",
+      "frame": 2,
+      "key": "enemy.brute.south.hit.02",
+      "src": "assets/hd/enemies/brute/frames/south-hit-02.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "brute",
+      "direction": "south",
+      "clip": "death",
+      "frame": 1,
+      "key": "enemy.brute.south.death.01",
+      "src": "assets/hd/enemies/brute/frames/south-death-01.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "brute",
+      "direction": "south",
+      "clip": "death",
+      "frame": 2,
+      "key": "enemy.brute.south.death.02",
+      "src": "assets/hd/enemies/brute/frames/south-death-02.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "brute",
+      "direction": "north",
+      "clip": "idle",
+      "frame": 1,
+      "key": "enemy.brute.north.idle.01",
+      "src": "assets/hd/enemies/brute/frames/north-idle-01.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "brute",
+      "direction": "north",
+      "clip": "idle",
+      "frame": 2,
+      "key": "enemy.brute.north.idle.02",
+      "src": "assets/hd/enemies/brute/frames/north-idle-02.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "brute",
+      "direction": "north",
+      "clip": "idle",
+      "frame": 3,
+      "key": "enemy.brute.north.idle.03",
+      "src": "assets/hd/enemies/brute/frames/north-idle-03.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "brute",
+      "direction": "north",
+      "clip": "idle",
+      "frame": 4,
+      "key": "enemy.brute.north.idle.04",
+      "src": "assets/hd/enemies/brute/frames/north-idle-04.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "brute",
+      "direction": "north",
+      "clip": "move",
+      "frame": 1,
+      "key": "enemy.brute.north.move.01",
+      "src": "assets/hd/enemies/brute/frames/north-move-01.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "brute",
+      "direction": "north",
+      "clip": "move",
+      "frame": 2,
+      "key": "enemy.brute.north.move.02",
+      "src": "assets/hd/enemies/brute/frames/north-move-02.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "brute",
+      "direction": "north",
+      "clip": "move",
+      "frame": 3,
+      "key": "enemy.brute.north.move.03",
+      "src": "assets/hd/enemies/brute/frames/north-move-03.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "brute",
+      "direction": "north",
+      "clip": "move",
+      "frame": 4,
+      "key": "enemy.brute.north.move.04",
+      "src": "assets/hd/enemies/brute/frames/north-move-04.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "brute",
+      "direction": "north",
+      "clip": "attack",
+      "frame": 1,
+      "key": "enemy.brute.north.attack.01",
+      "src": "assets/hd/enemies/brute/frames/north-attack-01.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "brute",
+      "direction": "north",
+      "clip": "attack",
+      "frame": 2,
+      "key": "enemy.brute.north.attack.02",
+      "src": "assets/hd/enemies/brute/frames/north-attack-02.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "brute",
+      "direction": "north",
+      "clip": "attack",
+      "frame": 3,
+      "key": "enemy.brute.north.attack.03",
+      "src": "assets/hd/enemies/brute/frames/north-attack-03.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "brute",
+      "direction": "north",
+      "clip": "attack",
+      "frame": 4,
+      "key": "enemy.brute.north.attack.04",
+      "src": "assets/hd/enemies/brute/frames/north-attack-04.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "brute",
+      "direction": "north",
+      "clip": "hit",
+      "frame": 1,
+      "key": "enemy.brute.north.hit.01",
+      "src": "assets/hd/enemies/brute/frames/north-hit-01.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "brute",
+      "direction": "north",
+      "clip": "hit",
+      "frame": 2,
+      "key": "enemy.brute.north.hit.02",
+      "src": "assets/hd/enemies/brute/frames/north-hit-02.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "brute",
+      "direction": "north",
+      "clip": "death",
+      "frame": 1,
+      "key": "enemy.brute.north.death.01",
+      "src": "assets/hd/enemies/brute/frames/north-death-01.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "brute",
+      "direction": "north",
+      "clip": "death",
+      "frame": 2,
+      "key": "enemy.brute.north.death.02",
+      "src": "assets/hd/enemies/brute/frames/north-death-02.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "brute",
+      "direction": "east",
+      "clip": "idle",
+      "frame": 1,
+      "key": "enemy.brute.east.idle.01",
+      "src": "assets/hd/enemies/brute/frames/east-idle-01.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "brute",
+      "direction": "east",
+      "clip": "idle",
+      "frame": 2,
+      "key": "enemy.brute.east.idle.02",
+      "src": "assets/hd/enemies/brute/frames/east-idle-02.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "brute",
+      "direction": "east",
+      "clip": "idle",
+      "frame": 3,
+      "key": "enemy.brute.east.idle.03",
+      "src": "assets/hd/enemies/brute/frames/east-idle-03.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "brute",
+      "direction": "east",
+      "clip": "idle",
+      "frame": 4,
+      "key": "enemy.brute.east.idle.04",
+      "src": "assets/hd/enemies/brute/frames/east-idle-04.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "brute",
+      "direction": "east",
+      "clip": "move",
+      "frame": 1,
+      "key": "enemy.brute.east.move.01",
+      "src": "assets/hd/enemies/brute/frames/east-move-01.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "brute",
+      "direction": "east",
+      "clip": "move",
+      "frame": 2,
+      "key": "enemy.brute.east.move.02",
+      "src": "assets/hd/enemies/brute/frames/east-move-02.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "brute",
+      "direction": "east",
+      "clip": "move",
+      "frame": 3,
+      "key": "enemy.brute.east.move.03",
+      "src": "assets/hd/enemies/brute/frames/east-move-03.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "brute",
+      "direction": "east",
+      "clip": "move",
+      "frame": 4,
+      "key": "enemy.brute.east.move.04",
+      "src": "assets/hd/enemies/brute/frames/east-move-04.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "brute",
+      "direction": "east",
+      "clip": "attack",
+      "frame": 1,
+      "key": "enemy.brute.east.attack.01",
+      "src": "assets/hd/enemies/brute/frames/east-attack-01.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "brute",
+      "direction": "east",
+      "clip": "attack",
+      "frame": 2,
+      "key": "enemy.brute.east.attack.02",
+      "src": "assets/hd/enemies/brute/frames/east-attack-02.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "brute",
+      "direction": "east",
+      "clip": "attack",
+      "frame": 3,
+      "key": "enemy.brute.east.attack.03",
+      "src": "assets/hd/enemies/brute/frames/east-attack-03.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "brute",
+      "direction": "east",
+      "clip": "attack",
+      "frame": 4,
+      "key": "enemy.brute.east.attack.04",
+      "src": "assets/hd/enemies/brute/frames/east-attack-04.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "brute",
+      "direction": "east",
+      "clip": "hit",
+      "frame": 1,
+      "key": "enemy.brute.east.hit.01",
+      "src": "assets/hd/enemies/brute/frames/east-hit-01.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "brute",
+      "direction": "east",
+      "clip": "hit",
+      "frame": 2,
+      "key": "enemy.brute.east.hit.02",
+      "src": "assets/hd/enemies/brute/frames/east-hit-02.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "brute",
+      "direction": "east",
+      "clip": "death",
+      "frame": 1,
+      "key": "enemy.brute.east.death.01",
+      "src": "assets/hd/enemies/brute/frames/east-death-01.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "brute",
+      "direction": "east",
+      "clip": "death",
+      "frame": 2,
+      "key": "enemy.brute.east.death.02",
+      "src": "assets/hd/enemies/brute/frames/east-death-02.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "brute",
+      "direction": "west",
+      "clip": "idle",
+      "frame": 1,
+      "key": "enemy.brute.west.idle.01",
+      "src": "assets/hd/enemies/brute/frames/west-idle-01.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "brute",
+      "direction": "west",
+      "clip": "idle",
+      "frame": 2,
+      "key": "enemy.brute.west.idle.02",
+      "src": "assets/hd/enemies/brute/frames/west-idle-02.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "brute",
+      "direction": "west",
+      "clip": "idle",
+      "frame": 3,
+      "key": "enemy.brute.west.idle.03",
+      "src": "assets/hd/enemies/brute/frames/west-idle-03.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "brute",
+      "direction": "west",
+      "clip": "idle",
+      "frame": 4,
+      "key": "enemy.brute.west.idle.04",
+      "src": "assets/hd/enemies/brute/frames/west-idle-04.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "brute",
+      "direction": "west",
+      "clip": "move",
+      "frame": 1,
+      "key": "enemy.brute.west.move.01",
+      "src": "assets/hd/enemies/brute/frames/west-move-01.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "brute",
+      "direction": "west",
+      "clip": "move",
+      "frame": 2,
+      "key": "enemy.brute.west.move.02",
+      "src": "assets/hd/enemies/brute/frames/west-move-02.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "brute",
+      "direction": "west",
+      "clip": "move",
+      "frame": 3,
+      "key": "enemy.brute.west.move.03",
+      "src": "assets/hd/enemies/brute/frames/west-move-03.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "brute",
+      "direction": "west",
+      "clip": "move",
+      "frame": 4,
+      "key": "enemy.brute.west.move.04",
+      "src": "assets/hd/enemies/brute/frames/west-move-04.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "brute",
+      "direction": "west",
+      "clip": "attack",
+      "frame": 1,
+      "key": "enemy.brute.west.attack.01",
+      "src": "assets/hd/enemies/brute/frames/west-attack-01.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "brute",
+      "direction": "west",
+      "clip": "attack",
+      "frame": 2,
+      "key": "enemy.brute.west.attack.02",
+      "src": "assets/hd/enemies/brute/frames/west-attack-02.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "brute",
+      "direction": "west",
+      "clip": "attack",
+      "frame": 3,
+      "key": "enemy.brute.west.attack.03",
+      "src": "assets/hd/enemies/brute/frames/west-attack-03.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "brute",
+      "direction": "west",
+      "clip": "attack",
+      "frame": 4,
+      "key": "enemy.brute.west.attack.04",
+      "src": "assets/hd/enemies/brute/frames/west-attack-04.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "brute",
+      "direction": "west",
+      "clip": "hit",
+      "frame": 1,
+      "key": "enemy.brute.west.hit.01",
+      "src": "assets/hd/enemies/brute/frames/west-hit-01.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "brute",
+      "direction": "west",
+      "clip": "hit",
+      "frame": 2,
+      "key": "enemy.brute.west.hit.02",
+      "src": "assets/hd/enemies/brute/frames/west-hit-02.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "brute",
+      "direction": "west",
+      "clip": "death",
+      "frame": 1,
+      "key": "enemy.brute.west.death.01",
+      "src": "assets/hd/enemies/brute/frames/west-death-01.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "brute",
+      "direction": "west",
+      "clip": "death",
+      "frame": 2,
+      "key": "enemy.brute.west.death.02",
+      "src": "assets/hd/enemies/brute/frames/west-death-02.png",
+      "group": "enemies",
+      "critical": true
+    }
+  ]
+}

@@ -1,0 +1,691 @@
+{
+  "schemaVersion": 1,
+  "type": "skitter",
+  "frameSize": [
+    64,
+    64
+  ],
+  "renderSize": [
+    64,
+    64
+  ],
+  "anchor": [
+    0.5,
+    1
+  ],
+  "group": "enemies",
+  "clips": [
+    {
+      "name": "idle",
+      "frameCount": 4,
+      "fps": 4,
+      "loop": true
+    },
+    {
+      "name": "move",
+      "frameCount": 4,
+      "fps": 8,
+      "loop": true
+    },
+    {
+      "name": "attack",
+      "frameCount": 4,
+      "fps": 12,
+      "loop": false
+    },
+    {
+      "name": "hit",
+      "frameCount": 2,
+      "fps": 10,
+      "loop": false
+    },
+    {
+      "name": "death",
+      "frameCount": 2,
+      "fps": 6,
+      "loop": false
+    }
+  ],
+  "frames": [
+    {
+      "type": "skitter",
+      "direction": "south",
+      "clip": "idle",
+      "frame": 1,
+      "key": "enemy.skitter.south.idle.01",
+      "src": "assets/hd/enemies/skitter/frames/south-idle-01.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "skitter",
+      "direction": "south",
+      "clip": "idle",
+      "frame": 2,
+      "key": "enemy.skitter.south.idle.02",
+      "src": "assets/hd/enemies/skitter/frames/south-idle-02.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "skitter",
+      "direction": "south",
+      "clip": "idle",
+      "frame": 3,
+      "key": "enemy.skitter.south.idle.03",
+      "src": "assets/hd/enemies/skitter/frames/south-idle-03.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "skitter",
+      "direction": "south",
+      "clip": "idle",
+      "frame": 4,
+      "key": "enemy.skitter.south.idle.04",
+      "src": "assets/hd/enemies/skitter/frames/south-idle-04.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "skitter",
+      "direction": "south",
+      "clip": "move",
+      "frame": 1,
+      "key": "enemy.skitter.south.move.01",
+      "src": "assets/hd/enemies/skitter/frames/south-move-01.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "skitter",
+      "direction": "south",
+      "clip": "move",
+      "frame": 2,
+      "key": "enemy.skitter.south.move.02",
+      "src": "assets/hd/enemies/skitter/frames/south-move-02.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "skitter",
+      "direction": "south",
+      "clip": "move",
+      "frame": 3,
+      "key": "enemy.skitter.south.move.03",
+      "src": "assets/hd/enemies/skitter/frames/south-move-03.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "skitter",
+      "direction": "south",
+      "clip": "move",
+      "frame": 4,
+      "key": "enemy.skitter.south.move.04",
+      "src": "assets/hd/enemies/skitter/frames/south-move-04.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "skitter",
+      "direction": "south",
+      "clip": "attack",
+      "frame": 1,
+      "key": "enemy.skitter.south.attack.01",
+      "src": "assets/hd/enemies/skitter/frames/south-attack-01.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "skitter",
+      "direction": "south",
+      "clip": "attack",
+      "frame": 2,
+      "key": "enemy.skitter.south.attack.02",
+      "src": "assets/hd/enemies/skitter/frames/south-attack-02.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "skitter",
+      "direction": "south",
+      "clip": "attack",
+      "frame": 3,
+      "key": "enemy.skitter.south.attack.03",
+      "src": "assets/hd/enemies/skitter/frames/south-attack-03.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "skitter",
+      "direction": "south",
+      "clip": "attack",
+      "frame": 4,
+      "key": "enemy.skitter.south.attack.04",
+      "src": "assets/hd/enemies/skitter/frames/south-attack-04.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "skitter",
+      "direction": "south",
+      "clip": "hit",
+      "frame": 1,
+      "key": "enemy.skitter.south.hit.01",
+      "src": "assets/hd/enemies/skitter/frames/south-hit-01.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "skitter",
+      "direction": "south",
+      "clip": "hit",
+      "frame": 2,
+      "key": "enemy.skitter.south.hit.02",
+      "src": "assets/hd/enemies/skitter/frames/south-hit-02.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "skitter",
+      "direction": "south",
+      "clip": "death",
+      "frame": 1,
+      "key": "enemy.skitter.south.death.01",
+      "src": "assets/hd/enemies/skitter/frames/south-death-01.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "skitter",
+      "direction": "south",
+      "clip": "death",
+      "frame": 2,
+      "key": "enemy.skitter.south.death.02",
+      "src": "assets/hd/enemies/skitter/frames/south-death-02.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "skitter",
+      "direction": "north",
+      "clip": "idle",
+      "frame": 1,
+      "key": "enemy.skitter.north.idle.01",
+      "src": "assets/hd/enemies/skitter/frames/north-idle-01.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "skitter",
+      "direction": "north",
+      "clip": "idle",
+      "frame": 2,
+      "key": "enemy.skitter.north.idle.02",
+      "src": "assets/hd/enemies/skitter/frames/north-idle-02.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "skitter",
+      "direction": "north",
+      "clip": "idle",
+      "frame": 3,
+      "key": "enemy.skitter.north.idle.03",
+      "src": "assets/hd/enemies/skitter/frames/north-idle-03.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "skitter",
+      "direction": "north",
+      "clip": "idle",
+      "frame": 4,
+      "key": "enemy.skitter.north.idle.04",
+      "src": "assets/hd/enemies/skitter/frames/north-idle-04.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "skitter",
+      "direction": "north",
+      "clip": "move",
+      "frame": 1,
+      "key": "enemy.skitter.north.move.01",
+      "src": "assets/hd/enemies/skitter/frames/north-move-01.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "skitter",
+      "direction": "north",
+      "clip": "move",
+      "frame": 2,
+      "key": "enemy.skitter.north.move.02",
+      "src": "assets/hd/enemies/skitter/frames/north-move-02.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "skitter",
+      "direction": "north",
+      "clip": "move",
+      "frame": 3,
+      "key": "enemy.skitter.north.move.03",
+      "src": "assets/hd/enemies/skitter/frames/north-move-03.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "skitter",
+      "direction": "north",
+      "clip": "move",
+      "frame": 4,
+      "key": "enemy.skitter.north.move.04",
+      "src": "assets/hd/enemies/skitter/frames/north-move-04.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "skitter",
+      "direction": "north",
+      "clip": "attack",
+      "frame": 1,
+      "key": "enemy.skitter.north.attack.01",
+      "src": "assets/hd/enemies/skitter/frames/north-attack-01.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "skitter",
+      "direction": "north",
+      "clip": "attack",
+      "frame": 2,
+      "key": "enemy.skitter.north.attack.02",
+      "src": "assets/hd/enemies/skitter/frames/north-attack-02.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "skitter",
+      "direction": "north",
+      "clip": "attack",
+      "frame": 3,
+      "key": "enemy.skitter.north.attack.03",
+      "src": "assets/hd/enemies/skitter/frames/north-attack-03.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "skitter",
+      "direction": "north",
+      "clip": "attack",
+      "frame": 4,
+      "key": "enemy.skitter.north.attack.04",
+      "src": "assets/hd/enemies/skitter/frames/north-attack-04.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "skitter",
+      "direction": "north",
+      "clip": "hit",
+      "frame": 1,
+      "key": "enemy.skitter.north.hit.01",
+      "src": "assets/hd/enemies/skitter/frames/north-hit-01.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "skitter",
+      "direction": "north",
+      "clip": "hit",
+      "frame": 2,
+      "key": "enemy.skitter.north.hit.02",
+      "src": "assets/hd/enemies/skitter/frames/north-hit-02.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "skitter",
+      "direction": "north",
+      "clip": "death",
+      "frame": 1,
+      "key": "enemy.skitter.north.death.01",
+      "src": "assets/hd/enemies/skitter/frames/north-death-01.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "skitter",
+      "direction": "north",
+      "clip": "death",
+      "frame": 2,
+      "key": "enemy.skitter.north.death.02",
+      "src": "assets/hd/enemies/skitter/frames/north-death-02.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "skitter",
+      "direction": "east",
+      "clip": "idle",
+      "frame": 1,
+      "key": "enemy.skitter.east.idle.01",
+      "src": "assets/hd/enemies/skitter/frames/east-idle-01.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "skitter",
+      "direction": "east",
+      "clip": "idle",
+      "frame": 2,
+      "key": "enemy.skitter.east.idle.02",
+      "src": "assets/hd/enemies/skitter/frames/east-idle-02.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "skitter",
+      "direction": "east",
+      "clip": "idle",
+      "frame": 3,
+      "key": "enemy.skitter.east.idle.03",
+      "src": "assets/hd/enemies/skitter/frames/east-idle-03.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "skitter",
+      "direction": "east",
+      "clip": "idle",
+      "frame": 4,
+      "key": "enemy.skitter.east.idle.04",
+      "src": "assets/hd/enemies/skitter/frames/east-idle-04.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "skitter",
+      "direction": "east",
+      "clip": "move",
+      "frame": 1,
+      "key": "enemy.skitter.east.move.01",
+      "src": "assets/hd/enemies/skitter/frames/east-move-01.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "skitter",
+      "direction": "east",
+      "clip": "move",
+      "frame": 2,
+      "key": "enemy.skitter.east.move.02",
+      "src": "assets/hd/enemies/skitter/frames/east-move-02.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "skitter",
+      "direction": "east",
+      "clip": "move",
+      "frame": 3,
+      "key": "enemy.skitter.east.move.03",
+      "src": "assets/hd/enemies/skitter/frames/east-move-03.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "skitter",
+      "direction": "east",
+      "clip": "move",
+      "frame": 4,
+      "key": "enemy.skitter.east.move.04",
+      "src": "assets/hd/enemies/skitter/frames/east-move-04.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "skitter",
+      "direction": "east",
+      "clip": "attack",
+      "frame": 1,
+      "key": "enemy.skitter.east.attack.01",
+      "src": "assets/hd/enemies/skitter/frames/east-attack-01.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "skitter",
+      "direction": "east",
+      "clip": "attack",
+      "frame": 2,
+      "key": "enemy.skitter.east.attack.02",
+      "src": "assets/hd/enemies/skitter/frames/east-attack-02.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "skitter",
+      "direction": "east",
+      "clip": "attack",
+      "frame": 3,
+      "key": "enemy.skitter.east.attack.03",
+      "src": "assets/hd/enemies/skitter/frames/east-attack-03.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "skitter",
+      "direction": "east",
+      "clip": "attack",
+      "frame": 4,
+      "key": "enemy.skitter.east.attack.04",
+      "src": "assets/hd/enemies/skitter/frames/east-attack-04.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "skitter",
+      "direction": "east",
+      "clip": "hit",
+      "frame": 1,
+      "key": "enemy.skitter.east.hit.01",
+      "src": "assets/hd/enemies/skitter/frames/east-hit-01.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "skitter",
+      "direction": "east",
+      "clip": "hit",
+      "frame": 2,
+      "key": "enemy.skitter.east.hit.02",
+      "src": "assets/hd/enemies/skitter/frames/east-hit-02.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "skitter",
+      "direction": "east",
+      "clip": "death",
+      "frame": 1,
+      "key": "enemy.skitter.east.death.01",
+      "src": "assets/hd/enemies/skitter/frames/east-death-01.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "skitter",
+      "direction": "east",
+      "clip": "death",
+      "frame": 2,
+      "key": "enemy.skitter.east.death.02",
+      "src": "assets/hd/enemies/skitter/frames/east-death-02.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "skitter",
+      "direction": "west",
+      "clip": "idle",
+      "frame": 1,
+      "key": "enemy.skitter.west.idle.01",
+      "src": "assets/hd/enemies/skitter/frames/west-idle-01.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "skitter",
+      "direction": "west",
+      "clip": "idle",
+      "frame": 2,
+      "key": "enemy.skitter.west.idle.02",
+      "src": "assets/hd/enemies/skitter/frames/west-idle-02.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "skitter",
+      "direction": "west",
+      "clip": "idle",
+      "frame": 3,
+      "key": "enemy.skitter.west.idle.03",
+      "src": "assets/hd/enemies/skitter/frames/west-idle-03.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "skitter",
+      "direction": "west",
+      "clip": "idle",
+      "frame": 4,
+      "key": "enemy.skitter.west.idle.04",
+      "src": "assets/hd/enemies/skitter/frames/west-idle-04.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "skitter",
+      "direction": "west",
+      "clip": "move",
+      "frame": 1,
+      "key": "enemy.skitter.west.move.01",
+      "src": "assets/hd/enemies/skitter/frames/west-move-01.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "skitter",
+      "direction": "west",
+      "clip": "move",
+      "frame": 2,
+      "key": "enemy.skitter.west.move.02",
+      "src": "assets/hd/enemies/skitter/frames/west-move-02.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "skitter",
+      "direction": "west",
+      "clip": "move",
+      "frame": 3,
+      "key": "enemy.skitter.west.move.03",
+      "src": "assets/hd/enemies/skitter/frames/west-move-03.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "skitter",
+      "direction": "west",
+      "clip": "move",
+      "frame": 4,
+      "key": "enemy.skitter.west.move.04",
+      "src": "assets/hd/enemies/skitter/frames/west-move-04.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "skitter",
+      "direction": "west",
+      "clip": "attack",
+      "frame": 1,
+      "key": "enemy.skitter.west.attack.01",
+      "src": "assets/hd/enemies/skitter/frames/west-attack-01.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "skitter",
+      "direction": "west",
+      "clip": "attack",
+      "frame": 2,
+      "key": "enemy.skitter.west.attack.02",
+      "src": "assets/hd/enemies/skitter/frames/west-attack-02.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "skitter",
+      "direction": "west",
+      "clip": "attack",
+      "frame": 3,
+      "key": "enemy.skitter.west.attack.03",
+      "src": "assets/hd/enemies/skitter/frames/west-attack-03.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "skitter",
+      "direction": "west",
+      "clip": "attack",
+      "frame": 4,
+      "key": "enemy.skitter.west.attack.04",
+      "src": "assets/hd/enemies/skitter/frames/west-attack-04.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "skitter",
+      "direction": "west",
+      "clip": "hit",
+      "frame": 1,
+      "key": "enemy.skitter.west.hit.01",
+      "src": "assets/hd/enemies/skitter/frames/west-hit-01.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "skitter",
+      "direction": "west",
+      "clip": "hit",
+      "frame": 2,
+      "key": "enemy.skitter.west.hit.02",
+      "src": "assets/hd/enemies/skitter/frames/west-hit-02.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "skitter",
+      "direction": "west",
+      "clip": "death",
+      "frame": 1,
+      "key": "enemy.skitter.west.death.01",
+      "src": "assets/hd/enemies/skitter/frames/west-death-01.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "skitter",
+      "direction": "west",
+      "clip": "death",
+      "frame": 2,
+      "key": "enemy.skitter.west.death.02",
+      "src": "assets/hd/enemies/skitter/frames/west-death-02.png",
+      "group": "enemies",
+      "critical": true
+    }
+  ]
+}

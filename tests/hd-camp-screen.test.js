@@ -1,0 +1,53 @@
+const assert = require("node:assert/strict");
+const fs = require("node:fs");
+const path = require("node:path");
+
+const root = path.resolve(__dirname, "..");
+const game = fs.readFileSync(path.join(root, "game.js"), "utf8");
+const css = fs.readFileSync(path.join(root, "style-hd-composition.css"), "utf8");
+const campBackground = path.join(root, "assets", "hd", "ui", "camp", "ember-sanctuary-background.png");
+assert.ok(fs.existsSync(campBackground), "HD Camp background asset should exist");
+
+assert.match(game, /function buildCampOverlayContent\(\)/);
+assert.match(game, /camp-revamp-tab\$\{view === tab\.id \? " active" : ""\}/);
+assert.match(game, /camp-revamp-upgrade/);
+assert.match(game, /camp-revamp-mutator/);
+assert.match(game, /camp-revamp-elixir/);
+assert.match(game, /camp-revamp-relic/);
+assert.match(game, /\{ id: "relics", label: "Relics" \}/);
+assert.match(game, /camp-revamp-action-icon/);
+assert.match(game, /const upgradeIconById = Object\.freeze/);
+assert.match(game, /camp-revamp-key camp-revamp-icon/);
+assert.match(game, /camp-revamp-content/);
+assert.match(game, /camp-revamp-guide">Left \/ Right tabs \| Up \/ Down select \| Enter/);
+assert.match(game, /affordable \? `\$\{cost\}g` : `NEED \$\{missing\}g`/);
+assert.match(game, /Permanent bonuses carry between runs/);
+assert.match(game, /Enter twice to confirm a relic sale/);
+assert.match(game, /function sellCampRelicAtIndex\(index\)/);
+assert.match(game, /data-camp-key="\$\{upgrade\.key\}"/);
+assert.match(game, /data-camp-view="\$\{tab\.id\}"/);
+assert.match(game, /function buildCampOverlayContent\(\)[\s\S]*data-camp-key="r"[\s\S]*data-camp-key="t"/);
+assert.match(game, /const activateCampControl = \(control\) =>/);
+assert.match(game, /state\.campPanelView = campView/);
+assert.match(game, /camp-start-action camp-start-action-confirm" data-camp-key="Enter"/);
+assert.match(game, /camp-start-action camp-start-action-cancel" data-camp-key="Escape"/);
+assert.match(game, /data-ui-tooltip-title="\$\{escapeHtmlAttr\(/);
+assert.match(game, /mutatorsEl\.innerHTML = buildActiveMutatorSummary\(\)/);
+assert.match(game, /overlayExtraBlock = buildCampOverlayContent\(\)/);
+
+assert.match(css, /background-image:\s*url\("assets\/hd\/ui\/camp\/ember-sanctuary-background\.png"\)/);
+assert.match(css, /\.overlay-card-camp\s*\{[\s\S]*width:\s*100vw[\s\S]*height:\s*100vh[\s\S]*grid-template-columns:\s*minmax\(300px, 28vw\)/);
+assert.match(css, /\.overlay-card-camp > \.overlay-title,[\s\S]*\.overlay-card-camp > \.camp-revamp \{ grid-column: 2; \}/);
+assert.match(css, /border-image-source:\s*url\("assets\/hd\/ui\/abyssal-gothic\/board-frame\.png"\)/);
+assert.match(css, /border-image-source:\s*url\("assets\/hd\/ui\/abyssal-gothic\/section-plaque\.png"\)/);
+assert.match(css, /\.camp-revamp-action\.primary\s*\{[\s\S]*width:\s*min\(860px, 72%\)[\s\S]*min-height:\s*clamp\(54px, 6vh, 70px\)/);
+assert.match(css, /\.camp-revamp-action\.primary strong\s*\{[\s\S]*font-size:\s*clamp\(0\.9rem, 1\.05vw, 1\.2rem\)/);
+assert.match(css, /\.camp-revamp-action-icon\s*\{/);
+assert.match(css, /\.camp-revamp-grid\s*\{[\s\S]*grid-template-columns:\s*repeat\(2,[\s\S]*grid-template-rows:\s*repeat\(5,[\s\S]*overflow:\s*hidden/);
+assert.match(css, /\.camp-revamp-tabs\s*\{[\s\S]*grid-template-columns:\s*repeat\(4,/);
+assert.match(css, /\.camp-revamp-content\s*\{[\s\S]*background:\s*#050706b8/);
+assert.match(css, /\.camp-revamp-row\.locked,[\s\S]*opacity:\s*0\.88/);
+
+assert.match(css, /font-size:\s*clamp\(0\.95rem, 1vw, 1\.22rem\)/);
+assert.match(css, /:has\(\.overlay-card-camp\) \.hd-ui-tooltip\s*\{[\s\S]*display:\s*none !important/);
+console.log("HD camp screen contract tests passed");

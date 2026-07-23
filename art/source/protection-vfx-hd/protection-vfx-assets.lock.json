@@ -1,0 +1,154 @@
+{
+  "assets": {
+    "assets/hd/vfx/protection/blacksmith-barrier/front-01.png": "797fc5b2621fae62a2bb43eb686ccac660f3f50c14308bebdabf7574c2adb65a",
+    "assets/hd/vfx/protection/blacksmith-barrier/front-02.png": "98ab56f44fd5db9e77f43593cabe9c5de9da4d2575bad7a82e36d0beb75a93d8",
+    "assets/hd/vfx/protection/blacksmith-barrier/front-03.png": "435abbb3d30894c1820f745f23a9eab9b38b7705208fb6af41002c151625c025",
+    "assets/hd/vfx/protection/blacksmith-barrier/front-04.png": "4fcc6e46f4c570ba913b15bd9202950eed49dc264eb7b10fb1cd75b58a20b4a3",
+    "assets/hd/vfx/protection/blacksmith-barrier/front-05.png": "ccdfcb351af4d07ebc8809fa8776a8ad106abd61263b3568ef8778afd188439a",
+    "assets/hd/vfx/protection/blacksmith-barrier/front-06.png": "c0c4357406ded371ebaecfa626844d65f1f5d758acf2db861f3285c5cb07f869",
+    "assets/hd/vfx/protection/blacksmith-barrier/front-07.png": "ed2c27b699b899f933fbf1b0b6c84fc82f694af45942f8f88e43a456da413dcd",
+    "assets/hd/vfx/protection/blacksmith-barrier/front-08.png": "756ce1c30d0d6c5ed13d76c34427bb958c5cc1190797ed6b9c6a4765c3024a05",
+    "assets/hd/vfx/protection/blacksmith-barrier/rear-01.png": "705a72068590809d45ce43bc14995db4df3956ee54fe9963fc6c9d3c9bd365da",
+    "assets/hd/vfx/protection/blacksmith-barrier/rear-02.png": "c51a9e3edb0c87c65af0e07aa104dc84b134aa2acd32a80504d2decea36f59eb",
+    "assets/hd/vfx/protection/blacksmith-barrier/rear-03.png": "474bca33f557d0167a72519ac231de8b22415ce531aa5bdec16d087bddec276d",
+    "assets/hd/vfx/protection/blacksmith-barrier/rear-04.png": "4b77cc9bfd0711a9e161539bb2a4b1f4413e9092994832a4619c76f504acfcbf",
+    "assets/hd/vfx/protection/blacksmith-barrier/rear-05.png": "03225423345ce066601987650aebd23d213497e712343ea45c56347a437b9646",
+    "assets/hd/vfx/protection/blacksmith-barrier/rear-06.png": "a2c897acb3a21c7b9a4b497981aa3c82f1a610d03b08438475b34d4c95112ad7",
+    "assets/hd/vfx/protection/blacksmith-barrier/rear-07.png": "c219bc98d0e21ce2783d142fc7acf38d17d6f6f24019a285fa2c57537c54afaa",
+    "assets/hd/vfx/protection/blacksmith-barrier/rear-08.png": "d75ebd51eddccc5e0eb0934dd084fcf2382afcea61df2a3ae2bf4b2e6e974513",
+    "assets/hd/vfx/protection/player-barrier/front-01.png": "09b38917ad2d780bb186d6dbfa25d75ba804d0fc7c8ed8d907e09faabfb95b89",
+    "assets/hd/vfx/protection/player-barrier/front-02.png": "b8f7adb72098808c2347b7060997b07a60b72de01fb54dc9bc59dab01a64c056",
+    "assets/hd/vfx/protection/player-barrier/front-03.png": "3200aae0d7751b014f96df362dc6c5c4d1390ad42c292ba16599828a96374a27",
+    "assets/hd/vfx/protection/player-barrier/front-04.png": "774e74274f71333faac659f707a2bb926e71f3238a1a1376434a78974d0f7e4a",
+    "assets/hd/vfx/protection/player-barrier/front-05.png": "7ddfb4074a7738d97cc1dfebb037ee9d797e7b160abfb768765420274207e6ea",
+    "assets/hd/vfx/protection/player-barrier/front-06.png": "75a5e292565daf33c2863a687b8360794673cafc99012c5d85d026d044932818",
+    "assets/hd/vfx/protection/player-barrier/front-07.png": "aae328871343f8f1dc96949b17d1f252f88b5fab5d65e2d4b8808972cf3ec764",
+    "assets/hd/vfx/protection/player-barrier/front-08.png": "07d17a1d3ff4e2bca4e8e3a7b2ab8a91a9e80fbefac60f77c1e7bb871a69056a",
+    "assets/hd/vfx/protection/player-barrier/rear-01.png": "3eee06e96abbc899d9a0ad1a5bb9a989be56b25dc2e84fd24414ad88877d7aa3",
+    "assets/hd/vfx/protection/player-barrier/rear-02.png": "67c27c35767294def63dcf6549b562f2389a12362eeed06a962a9ee07e0284e0",
+    "assets/hd/vfx/protection/player-barrier/rear-03.png": "44663b7e30225f98bceb415e10adc1d5f9ce2b6d25ac688c2081e7f1b831669f",
+    "assets/hd/vfx/protection/player-barrier/rear-04.png": "aee2b69c774e33bd949b0d47a19735f93751ae902fd19c206e0bfcb079517546",
+    "assets/hd/vfx/protection/player-barrier/rear-05.png": "3a4b65ebacd3a8970085a2e13b5a841ca2116f70168cc575f0526b23780c18c7",
+    "assets/hd/vfx/protection/player-barrier/rear-06.png": "a574f55a791e269501520c866703ea32421ba0477f74e2ae76f92a90abfc03a0",
+    "assets/hd/vfx/protection/player-barrier/rear-07.png": "fd4a0f7562524fe721c5993e1308eeb9efd40774dfdec295606002f02cbf1957",
+    "assets/hd/vfx/protection/player-barrier/rear-08.png": "e8f66ba93eb9e83b2cc32a75715f497bc54664c278a2fab5afa73fe4b26b8322",
+    "assets/hd/vfx/protection/player-shield/front-01.png": "19e135ec1b6f3803afe8d975ffceea7b479430e52d0af9c0816177aa7b30a803",
+    "assets/hd/vfx/protection/player-shield/front-02.png": "cbcab59e63a5c86abafb3bd451e1aa62ae63d5cf3020b486e61562d1428aab91",
+    "assets/hd/vfx/protection/player-shield/front-03.png": "7380c8f603c691d8ae0295fa79babb7260a3434ac410a128b26ada42856ca826",
+    "assets/hd/vfx/protection/player-shield/front-04.png": "16a7116ec6447664e30306d3b0ff8d793cd2024aabc01f1916b7e4d485329f3f",
+    "assets/hd/vfx/protection/player-shield/front-05.png": "9d77ce2b686ca5dea0150eceed9dc0ec57933bcd416d92459a4fd7f8bc0d3952",
+    "assets/hd/vfx/protection/player-shield/front-06.png": "1f0f62bdc38ca8758c27d6409e045ab53e42f29cc8d054c375bcf6a6aa3a673f",
+    "assets/hd/vfx/protection/player-shield/front-07.png": "73280297495332a1ef4c505ad56cfdc4cffbd8d6b68ed7a50d469faff141e481",
+    "assets/hd/vfx/protection/player-shield/front-08.png": "353647022b7ec96a4690942a3765f298b8c1f9257aee9ecc163f412b17491a2a",
+    "assets/hd/vfx/protection/player-shield/rear-01.png": "0b5230ae2c3167000f94df2ed36ae27ed7b50072b3466f02e9e55a5433a6f05c",
+    "assets/hd/vfx/protection/player-shield/rear-02.png": "846bd15cbb353a69bd8935adc1262dd474d4fbc0b5f6eda231d93830e3e5616d",
+    "assets/hd/vfx/protection/player-shield/rear-03.png": "ea4b48dd5be4724ce085080b358e602fda19b43f9cd52e0742ed05f839c9141a",
+    "assets/hd/vfx/protection/player-shield/rear-04.png": "0fea4c44a6058c60470b90f03cda9b81e90dc89cddcd9a26f67f2703613482ef",
+    "assets/hd/vfx/protection/player-shield/rear-05.png": "7129f8217913fbb8f87c1ebdf4760910eace677f82dff5a0c260561b3d3a9211",
+    "assets/hd/vfx/protection/player-shield/rear-06.png": "b0c5f7a9ff947db74150237979bc8b197f1be07459071697624957daf0211e3e",
+    "assets/hd/vfx/protection/player-shield/rear-07.png": "0333c208ccb95078590f577a1b7de95251ccc4c92e1f7e6009fe9282bb639a69",
+    "assets/hd/vfx/protection/player-shield/rear-08.png": "f2b3154589bbc7793a65db925dd874d56ed6e272249b8e6815d156c86c3b21d1",
+    "assets/hd/vfx/protection/warden-aegis/front-01.png": "600cdc0eeec57c4bf40cd90d6680d714596bae49062533feeaee8fd15db96e88",
+    "assets/hd/vfx/protection/warden-aegis/front-02.png": "07f41ab9f0c26f363a549ce64ba717256609a5a44390bbeaacb94a8585ad65d7",
+    "assets/hd/vfx/protection/warden-aegis/front-03.png": "91c8d28bf19cb62092e09abd915eae87be41dc2b10f6a96fd710ee4ead88bfcf",
+    "assets/hd/vfx/protection/warden-aegis/front-04.png": "1bdbe5b7473d0460cee5f2907fa36591b4fb202774a1e6c1a8b03dff9e4044ab",
+    "assets/hd/vfx/protection/warden-aegis/front-05.png": "f5246169e487af0dc260a69436f63b6df4678edc7b68482718501fb7bfc1f881",
+    "assets/hd/vfx/protection/warden-aegis/front-06.png": "7c980e1bff7a4b83ba716dd8d7e5945687516150b5250340618a80bf3f0c6866",
+    "assets/hd/vfx/protection/warden-aegis/front-07.png": "8acd19f5ee37af305fb48f41370101679c4f06c6c4fd48b37da69f2bca186512",
+    "assets/hd/vfx/protection/warden-aegis/front-08.png": "5ea40d2108e9400ad38788efd6890a3878d665b54e1c030770ba84e300b2e4e7",
+    "assets/hd/vfx/protection/warden-aegis/rear-01.png": "50a8e8c64fc33f36ee0ba5bd5b59649c2a32f0c3448e1a87b18bf18eb5da030a",
+    "assets/hd/vfx/protection/warden-aegis/rear-02.png": "a1a873588ad319b6536c871d76548bf3afd7c7606e109d308f46d631405f0788",
+    "assets/hd/vfx/protection/warden-aegis/rear-03.png": "046b481583f8475262d73306259c4750c470be522e1404cb62a79acc3b6e5cec",
+    "assets/hd/vfx/protection/warden-aegis/rear-04.png": "4fb1b8996ae01ac6a87becb56e6a3af3aa148d1c45411f620a4a51dc4cd6624c",
+    "assets/hd/vfx/protection/warden-aegis/rear-05.png": "d21a0457a45cbe99f9aab01b0c6745daf3c8e511d010c0641803c10de186df3e",
+    "assets/hd/vfx/protection/warden-aegis/rear-06.png": "a093c68e6a3808c0e9d5e25ed5ea75cda5ef821e35f01940947234185076ca73",
+    "assets/hd/vfx/protection/warden-aegis/rear-07.png": "1aaa584b7941af1150ba3edeebb2f793059777b373eb63d967225e83a2996912",
+    "assets/hd/vfx/protection/warden-aegis/rear-08.png": "2541112e24b91d70bc92e3ed69ef1db40a2db6640eff8f00b25b023923ea3771"
+  },
+  "pillowVersion": "12.1.1",
+  "pipelineSchema": 1,
+  "profiles": {
+    "blacksmith-barrier": {
+      "center": [
+        128,
+        148
+      ],
+      "frames": 8,
+      "geometry": "iron-dome",
+      "layers": [
+        "rear",
+        "front"
+      ],
+      "radius": [
+        91,
+        99
+      ],
+      "size": 256
+    },
+    "player-barrier": {
+      "center": [
+        64,
+        68
+      ],
+      "frames": 8,
+      "geometry": "crystal-shell",
+      "layers": [
+        "rear",
+        "front"
+      ],
+      "radius": [
+        52,
+        55
+      ],
+      "size": 128
+    },
+    "player-shield": {
+      "center": [
+        64,
+        70
+      ],
+      "frames": 8,
+      "geometry": "hex-sphere",
+      "layers": [
+        "rear",
+        "front"
+      ],
+      "radius": [
+        45,
+        48
+      ],
+      "size": 128
+    },
+    "warden-aegis": {
+      "center": [
+        128,
+        139
+      ],
+      "frames": 8,
+      "geometry": "counter-rings",
+      "layers": [
+        "rear",
+        "front"
+      ],
+      "radius": [
+        104,
+        110
+      ],
+      "size": 256
+    }
+  },
+  "sources": {
+    "aegis": {
+      "path": "assets/sprite/shield/voidaegis.png",
+      "sha256": "261972fe3dad253b6914467f99f7feee5a34b6a9063551d0292910f511d6e017"
+    },
+    "barrier": {
+      "path": "assets/sprite/shield/barrier.png",
+      "sha256": "7ed2afaf5ee81113a8c2ea72cb1499d46d06c46bcba3f81f7e705c8d21b07613"
+    },
+    "shield": {
+      "path": "assets/sprite/shield/shield.png",
+      "sha256": "953e7fe0e492a3f96da7bf6e0f2e00713d3ef5d74239e10687e816953fba2d48"
+    }
+  }
+}

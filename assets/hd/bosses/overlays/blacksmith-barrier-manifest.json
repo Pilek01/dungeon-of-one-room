@@ -1,0 +1,43 @@
+{
+  "schemaVersion": 1,
+  "name": "blacksmith-barrier",
+  "frameSize": [
+    192,
+    192
+  ],
+  "renderSize": [
+    192,
+    192
+  ],
+  "anchor": [
+    0.5,
+    1
+  ],
+  "group": "bosses",
+  "frames": [
+    {
+      "key": "boss.blacksmith_guardian.overlay.barrier.01",
+      "src": "assets/hd/bosses/overlays/frames/blacksmith-barrier-01.png",
+      "group": "bosses",
+      "critical": false
+    },
+    {
+      "key": "boss.blacksmith_guardian.overlay.barrier.02",
+      "src": "assets/hd/bosses/overlays/frames/blacksmith-barrier-02.png",
+      "group": "bosses",
+      "critical": false
+    },
+    {
+      "key": "boss.blacksmith_guardian.overlay.barrier.03",
+      "src": "assets/hd/bosses/overlays/frames/blacksmith-barrier-03.png",
+      "group": "bosses",
+      "critical": false
+    },
+    {
+      "key": "boss.blacksmith_guardian.overlay.barrier.04",
+      "src": "assets/hd/bosses/overlays/frames/blacksmith-barrier-04.png",
+      "group": "bosses",
+      "critical": false
+    }
+  ]
+}

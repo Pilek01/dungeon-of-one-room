@@ -1,0 +1,500 @@
+{
+  "schemaVersion": 1,
+  "actor": "player",
+  "frameSize": [
+    64,
+    64
+  ],
+  "anchor": [
+    0.5,
+    1
+  ],
+  "directions": [
+    "south",
+    "north",
+    "east",
+    "west"
+  ],
+  "clips": [
+    {
+      "name": "idle",
+      "frameCount": 4,
+      "fps": 4,
+      "loop": true
+    },
+    {
+      "name": "move",
+      "frameCount": 4,
+      "fps": 8,
+      "loop": true
+    },
+    {
+      "name": "attack",
+      "frameCount": 4,
+      "fps": 12,
+      "loop": false
+    },
+    {
+      "name": "hit",
+      "frameCount": 2,
+      "fps": 10,
+      "loop": false
+    },
+    {
+      "name": "death",
+      "frameCount": 2,
+      "fps": 6,
+      "loop": false
+    }
+  ],
+  "frames": [
+    {
+      "direction": "south",
+      "clip": "idle",
+      "frame": 1,
+      "key": "actor.player.south.idle.01",
+      "src": "assets/hd/actors/player/frames/south-idle-01.png"
+    },
+    {
+      "direction": "south",
+      "clip": "idle",
+      "frame": 2,
+      "key": "actor.player.south.idle.02",
+      "src": "assets/hd/actors/player/frames/south-idle-02.png"
+    },
+    {
+      "direction": "south",
+      "clip": "idle",
+      "frame": 3,
+      "key": "actor.player.south.idle.03",
+      "src": "assets/hd/actors/player/frames/south-idle-03.png"
+    },
+    {
+      "direction": "south",
+      "clip": "idle",
+      "frame": 4,
+      "key": "actor.player.south.idle.04",
+      "src": "assets/hd/actors/player/frames/south-idle-04.png"
+    },
+    {
+      "direction": "south",
+      "clip": "move",
+      "frame": 1,
+      "key": "actor.player.south.move.01",
+      "src": "assets/hd/actors/player/frames/south-move-01.png"
+    },
+    {
+      "direction": "south",
+      "clip": "move",
+      "frame": 2,
+      "key": "actor.player.south.move.02",
+      "src": "assets/hd/actors/player/frames/south-move-02.png"
+    },
+    {
+      "direction": "south",
+      "clip": "move",
+      "frame": 3,
+      "key": "actor.player.south.move.03",
+      "src": "assets/hd/actors/player/frames/south-move-03.png"
+    },
+    {
+      "direction": "south",
+      "clip": "move",
+      "frame": 4,
+      "key": "actor.player.south.move.04",
+      "src": "assets/hd/actors/player/frames/south-move-04.png"
+    },
+    {
+      "direction": "south",
+      "clip": "attack",
+      "frame": 1,
+      "key": "actor.player.south.attack.01",
+      "src": "assets/hd/actors/player/frames/south-attack-01.png"
+    },
+    {
+      "direction": "south",
+      "clip": "attack",
+      "frame": 2,
+      "key": "actor.player.south.attack.02",
+      "src": "assets/hd/actors/player/frames/south-attack-02.png"
+    },
+    {
+      "direction": "south",
+      "clip": "attack",
+      "frame": 3,
+      "key": "actor.player.south.attack.03",
+      "src": "assets/hd/actors/player/frames/south-attack-03.png"
+    },
+    {
+      "direction": "south",
+      "clip": "attack",
+      "frame": 4,
+      "key": "actor.player.south.attack.04",
+      "src": "assets/hd/actors/player/frames/south-attack-04.png"
+    },
+    {
+      "direction": "south",
+      "clip": "hit",
+      "frame": 1,
+      "key": "actor.player.south.hit.01",
+      "src": "assets/hd/actors/player/frames/south-hit-01.png"
+    },
+    {
+      "direction": "south",
+      "clip": "hit",
+      "frame": 2,
+      "key": "actor.player.south.hit.02",
+      "src": "assets/hd/actors/player/frames/south-hit-02.png"
+    },
+    {
+      "direction": "south",
+      "clip": "death",
+      "frame": 1,
+      "key": "actor.player.south.death.01",
+      "src": "assets/hd/actors/player/frames/south-death-01.png"
+    },
+    {
+      "direction": "south",
+      "clip": "death",
+      "frame": 2,
+      "key": "actor.player.south.death.02",
+      "src": "assets/hd/actors/player/frames/south-death-02.png"
+    },
+    {
+      "direction": "north",
+      "clip": "idle",
+      "frame": 1,
+      "key": "actor.player.north.idle.01",
+      "src": "assets/hd/actors/player/frames/north-idle-01.png"
+    },
+    {
+      "direction": "north",
+      "clip": "idle",
+      "frame": 2,
+      "key": "actor.player.north.idle.02",
+      "src": "assets/hd/actors/player/frames/north-idle-02.png"
+    },
+    {
+      "direction": "north",
+      "clip": "idle",
+      "frame": 3,
+      "key": "actor.player.north.idle.03",
+      "src": "assets/hd/actors/player/frames/north-idle-03.png"
+    },
+    {
+      "direction": "north",
+      "clip": "idle",
+      "frame": 4,
+      "key": "actor.player.north.idle.04",
+      "src": "assets/hd/actors/player/frames/north-idle-04.png"
+    },
+    {
+      "direction": "north",
+      "clip": "move",
+      "frame": 1,
+      "key": "actor.player.north.move.01",
+      "src": "assets/hd/actors/player/frames/north-move-01.png"
+    },
+    {
+      "direction": "north",
+      "clip": "move",
+      "frame": 2,
+      "key": "actor.player.north.move.02",
+      "src": "assets/hd/actors/player/frames/north-move-02.png"
+    },
+    {
+      "direction": "north",
+      "clip": "move",
+      "frame": 3,
+      "key": "actor.player.north.move.03",
+      "src": "assets/hd/actors/player/frames/north-move-03.png"
+    },
+    {
+      "direction": "north",
+      "clip": "move",
+      "frame": 4,
+      "key": "actor.player.north.move.04",
+      "src": "assets/hd/actors/player/frames/north-move-04.png"
+    },
+    {
+      "direction": "north",
+      "clip": "attack",
+      "frame": 1,
+      "key": "actor.player.north.attack.01",
+      "src": "assets/hd/actors/player/frames/north-attack-01.png"
+    },
+    {
+      "direction": "north",
+      "clip": "attack",
+      "frame": 2,
+      "key": "actor.player.north.attack.02",
+      "src": "assets/hd/actors/player/frames/north-attack-02.png"
+    },
+    {
+      "direction": "north",
+      "clip": "attack",
+      "frame": 3,
+      "key": "actor.player.north.attack.03",
+      "src": "assets/hd/actors/player/frames/north-attack-03.png"
+    },
+    {
+      "direction": "north",
+      "clip": "attack",
+      "frame": 4,
+      "key": "actor.player.north.attack.04",
+      "src": "assets/hd/actors/player/frames/north-attack-04.png"
+    },
+    {
+      "direction": "north",
+      "clip": "hit",
+      "frame": 1,
+      "key": "actor.player.north.hit.01",
+      "src": "assets/hd/actors/player/frames/north-hit-01.png"
+    },
+    {
+      "direction": "north",
+      "clip": "hit",
+      "frame": 2,
+      "key": "actor.player.north.hit.02",
+      "src": "assets/hd/actors/player/frames/north-hit-02.png"
+    },
+    {
+      "direction": "north",
+      "clip": "death",
+      "frame": 1,
+      "key": "actor.player.north.death.01",
+      "src": "assets/hd/actors/player/frames/north-death-01.png"
+    },
+    {
+      "direction": "north",
+      "clip": "death",
+      "frame": 2,
+      "key": "actor.player.north.death.02",
+      "src": "assets/hd/actors/player/frames/north-death-02.png"
+    },
+    {
+      "direction": "east",
+      "clip": "idle",
+      "frame": 1,
+      "key": "actor.player.east.idle.01",
+      "src": "assets/hd/actors/player/frames/east-idle-01.png"
+    },
+    {
+      "direction": "east",
+      "clip": "idle",
+      "frame": 2,
+      "key": "actor.player.east.idle.02",
+      "src": "assets/hd/actors/player/frames/east-idle-02.png"
+    },
+    {
+      "direction": "east",
+      "clip": "idle",
+      "frame": 3,
+      "key": "actor.player.east.idle.03",
+      "src": "assets/hd/actors/player/frames/east-idle-03.png"
+    },
+    {
+      "direction": "east",
+      "clip": "idle",
+      "frame": 4,
+      "key": "actor.player.east.idle.04",
+      "src": "assets/hd/actors/player/frames/east-idle-04.png"
+    },
+    {
+      "direction": "east",
+      "clip": "move",
+      "frame": 1,
+      "key": "actor.player.east.move.01",
+      "src": "assets/hd/actors/player/frames/east-move-01.png"
+    },
+    {
+      "direction": "east",
+      "clip": "move",
+      "frame": 2,
+      "key": "actor.player.east.move.02",
+      "src": "assets/hd/actors/player/frames/east-move-02.png"
+    },
+    {
+      "direction": "east",
+      "clip": "move",
+      "frame": 3,
+      "key": "actor.player.east.move.03",
+      "src": "assets/hd/actors/player/frames/east-move-03.png"
+    },
+    {
+      "direction": "east",
+      "clip": "move",
+      "frame": 4,
+      "key": "actor.player.east.move.04",
+      "src": "assets/hd/actors/player/frames/east-move-04.png"
+    },
+    {
+      "direction": "east",
+      "clip": "attack",
+      "frame": 1,
+      "key": "actor.player.east.attack.01",
+      "src": "assets/hd/actors/player/frames/east-attack-01.png"
+    },
+    {
+      "direction": "east",
+      "clip": "attack",
+      "frame": 2,
+      "key": "actor.player.east.attack.02",
+      "src": "assets/hd/actors/player/frames/east-attack-02.png"
+    },
+    {
+      "direction": "east",
+      "clip": "attack",
+      "frame": 3,
+      "key": "actor.player.east.attack.03",
+      "src": "assets/hd/actors/player/frames/east-attack-03.png"
+    },
+    {
+      "direction": "east",
+      "clip": "attack",
+      "frame": 4,
+      "key": "actor.player.east.attack.04",
+      "src": "assets/hd/actors/player/frames/east-attack-04.png"
+    },
+    {
+      "direction": "east",
+      "clip": "hit",
+      "frame": 1,
+      "key": "actor.player.east.hit.01",
+      "src": "assets/hd/actors/player/frames/east-hit-01.png"
+    },
+    {
+      "direction": "east",
+      "clip": "hit",
+      "frame": 2,
+      "key": "actor.player.east.hit.02",
+      "src": "assets/hd/actors/player/frames/east-hit-02.png"
+    },
+    {
+      "direction": "east",
+      "clip": "death",
+      "frame": 1,
+      "key": "actor.player.east.death.01",
+      "src": "assets/hd/actors/player/frames/east-death-01.png"
+    },
+    {
+      "direction": "east",
+      "clip": "death",
+      "frame": 2,
+      "key": "actor.player.east.death.02",
+      "src": "assets/hd/actors/player/frames/east-death-02.png"
+    },
+    {
+      "direction": "west",
+      "clip": "idle",
+      "frame": 1,
+      "key": "actor.player.west.idle.01",
+      "src": "assets/hd/actors/player/frames/west-idle-01.png"
+    },
+    {
+      "direction": "west",
+      "clip": "idle",
+      "frame": 2,
+      "key": "actor.player.west.idle.02",
+      "src": "assets/hd/actors/player/frames/west-idle-02.png"
+    },
+    {
+      "direction": "west",
+      "clip": "idle",
+      "frame": 3,
+      "key": "actor.player.west.idle.03",
+      "src": "assets/hd/actors/player/frames/west-idle-03.png"
+    },
+    {
+      "direction": "west",
+      "clip": "idle",
+      "frame": 4,
+      "key": "actor.player.west.idle.04",
+      "src": "assets/hd/actors/player/frames/west-idle-04.png"
+    },
+    {
+      "direction": "west",
+      "clip": "move",
+      "frame": 1,
+      "key": "actor.player.west.move.01",
+      "src": "assets/hd/actors/player/frames/west-move-01.png"
+    },
+    {
+      "direction": "west",
+      "clip": "move",
+      "frame": 2,
+      "key": "actor.player.west.move.02",
+      "src": "assets/hd/actors/player/frames/west-move-02.png"
+    },
+    {
+      "direction": "west",
+      "clip": "move",
+      "frame": 3,
+      "key": "actor.player.west.move.03",
+      "src": "assets/hd/actors/player/frames/west-move-03.png"
+    },
+    {
+      "direction": "west",
+      "clip": "move",
+      "frame": 4,
+      "key": "actor.player.west.move.04",
+      "src": "assets/hd/actors/player/frames/west-move-04.png"
+    },
+    {
+      "direction": "west",
+      "clip": "attack",
+      "frame": 1,
+      "key": "actor.player.west.attack.01",
+      "src": "assets/hd/actors/player/frames/west-attack-01.png"
+    },
+    {
+      "direction": "west",
+      "clip": "attack",
+      "frame": 2,
+      "key": "actor.player.west.attack.02",
+      "src": "assets/hd/actors/player/frames/west-attack-02.png"
+    },
+    {
+      "direction": "west",
+      "clip": "attack",
+      "frame": 3,
+      "key": "actor.player.west.attack.03",
+      "src": "assets/hd/actors/player/frames/west-attack-03.png"
+    },
+    {
+      "direction": "west",
+      "clip": "attack",
+      "frame": 4,
+      "key": "actor.player.west.attack.04",
+      "src": "assets/hd/actors/player/frames/west-attack-04.png"
+    },
+    {
+      "direction": "west",
+      "clip": "hit",
+      "frame": 1,
+      "key": "actor.player.west.hit.01",
+      "src": "assets/hd/actors/player/frames/west-hit-01.png"
+    },
+    {
+      "direction": "west",
+      "clip": "hit",
+      "frame": 2,
+      "key": "actor.player.west.hit.02",
+      "src": "assets/hd/actors/player/frames/west-hit-02.png"
+    },
+    {
+      "direction": "west",
+      "clip": "death",
+      "frame": 1,
+      "key": "actor.player.west.death.01",
+      "src": "assets/hd/actors/player/frames/west-death-01.png"
+    },
+    {
+      "direction": "west",
+      "clip": "death",
+      "frame": 2,
+      "key": "actor.player.west.death.02",
+      "src": "assets/hd/actors/player/frames/west-death-02.png"
+    }
+  ]
+}

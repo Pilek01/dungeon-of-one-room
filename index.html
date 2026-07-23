@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dungeon of One Room</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 64 64%27%3E%3Crect width=%2764%27 height=%2764%27 rx=%2712%27 fill=%27%230b0912%27/%3E%3Cpath d=%27M16 14h32v36H16z%27 fill=%27none%27 stroke=%27%23a875ff%27 stroke-width=%274%27/%3E%3Cpath d=%27M24 22h16v20H24z%27 fill=%27%23241a38%27 stroke=%27%23e0c6ff%27 stroke-width=%273%27/%3E%3Ccircle cx=%2736%27 cy=%2732%27 r=%272%27 fill=%27%23ffd36b%27/%3E%3C/svg%3E" />
+  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="style-hd-composition.css" />
+  <link rel="stylesheet" href="style-hd-menu.css" />
+  <link rel="stylesheet" href="style-hd-forge.css" />
+  <link rel="stylesheet" href="style-hd-merchant.css" />
+  <link rel="stylesheet" href="style-hd-pact.css" />
+  <link rel="stylesheet" href="style-hd-defeat.css" />
+  <link rel="stylesheet" href="style-hd-relic-draft.css" />
+  <link rel="stylesheet" href="style-hd-boot.css" />
+</head>
+<body>
+  <div id="bootScreen" class="boot-screen">
+    <div class="boot-content">
+      <img src="assets/logo.png" alt="Dungeon of One Room" class="boot-logo" />
+      <h1 class="boot-hd-brand" aria-label="Dungeon of One Room">
+        <span class="boot-hd-brand-dungeon">Dungeon</span>
+        <span class="boot-hd-brand-room"><small>of</small> One Room</span>
+        <span class="boot-hd-brand-oath">One room. One chance. One last descent.</span>
+      </h1>
+      <p class="boot-press">Press any button to start</p>
+      <p class="boot-credits">Made by Kamil Matysek</p>
+    </div>
+  </div>
+  <main class="app app-hidden" id="gameApp">
+    <section class="layout" id="layout">
+      <div class="layout-track" id="layoutTrack">
+        <aside class="panel panel-left">
+          <h2 class="panel-title">Player</h2>
+          <section class="hud" id="hud" aria-live="polite"></section>
+        </aside>
+        <div class="board">
+          <header class="titlebar">
+            <h1>Dungeon of One Room</h1>
+            <p>One room. One chance. One last descent.</p>
+          </header>
+          <div id="depthBadge" class="depth-badge" aria-live="polite"></div>
+          <div class="room-stage">
+            <aside class="room-resource-rail room-resource-rail-left" id="leftResourceRail" aria-label="Fury and elixir resources">
+              <div class="room-resource-group room-resource-fury" id="furyIconRail" aria-label="Fury"></div>
+              <div class="room-resource-group room-resource-elixir" id="elixirIconRail" aria-label="Elixir"></div>
+            </aside>
+            <aside class="room-vital-rail room-vital-rail-hp" id="hpRail" aria-label="Health">
+              <span class="room-vital-value" id="hpRailValue">0</span>
+              <div class="room-vital-track" id="hpRailTrack" role="meter" aria-label="Health" aria-valuemin="0" aria-valuenow="0" aria-valuemax="100">
+                <span class="room-vital-fill"></span>
+                <span class="room-vital-shine"></span>
+              </div>
+              <span class="room-vital-label">HP</span>
+            </aside>
+            <div class="canvas-wrap">
+              <canvas id="game" width="144" height="144" aria-label="Gra dungeon"></canvas>
+              <div id="roomIntroOverlay" class="room-intro-overlay" aria-hidden="true"></div>
+              <div id="screenOverlay" class="screen-overlay" aria-live="polite"></div>
+            </div>
+            <aside class="room-vital-rail room-vital-rail-protection" id="protectionRail" aria-label="Shield and barrier">
+              <div class="room-protection-meter room-protection-meter-shield">
+                <span class="room-vital-value" id="shieldRailValue">0</span>
+                <div class="room-vital-track" id="shieldRailTrack" role="meter" aria-label="Shield" aria-valuemin="0" aria-valuenow="0" aria-valuemax="100">
+                  <span class="room-vital-fill"></span>
+                  <span class="room-vital-shine"></span>
+                </div>
+                <span class="room-vital-label">SH</span>
+              </div>
+              <div class="room-protection-meter room-protection-meter-barrier">
+                <span class="room-vital-value" id="barrierRailValue">0</span>
+                <div class="room-vital-track" id="barrierRailTrack" role="meter" aria-label="Barrier" aria-valuemin="0" aria-valuenow="0" aria-valuemax="100">
+                  <span class="room-vital-fill"></span>
+                  <span class="room-vital-shine"></span>
+                </div>
+                <span class="room-vital-label">BR</span>
+              </div>
+            </aside>
+            <aside class="room-resource-rail room-resource-rail-right" id="potionResourceRail" aria-label="Potions">
+              <div class="room-resource-group room-resource-potions" id="potionIconRail" aria-label="Potions"></div>
+            </aside>
+          </div>
+          <section id="skillsBar" class="skills-bar" aria-live="polite"></section>
+          <div class="mobile-controls" id="mobileControls" aria-label="Sterowanie dotykowe">
+            <div class="mobile-controls-row">
+              <div class="mobile-dpad" aria-label="Kierunki ruchu">
+                <button class="dpad-btn dpad-up"    id="mbtnUp"    type="button" aria-label="Góra">▲</button>
+                <div class="dpad-middle-row">
+                  <button class="dpad-btn dpad-left"  id="mbtnLeft"  type="button" aria-label="Lewo">◀</button>
+                  <span class="dpad-center"></span>
+                  <button class="dpad-btn dpad-right" id="mbtnRight" type="button" aria-label="Prawo">▶</button>
+                </div>
+                <button class="dpad-btn dpad-down"  id="mbtnDown"  type="button" aria-label="Dół">▼</button>
+              </div>
+              <div class="mobile-action-buttons">
+                <button class="mact-btn mact-skill mact-z" id="mbtnZ" type="button" aria-label="Umiejętność Z">Z</button>
+                <button class="mact-btn mact-skill mact-x" id="mbtnX" type="button" aria-label="Umiejętność X">X</button>
+                <button class="mact-btn mact-skill mact-c" id="mbtnC" type="button" aria-label="Umiejętność C">C</button>
+                <button class="mact-btn mact-action mact-f" id="mbtnF" type="button" aria-label="Mikstura (F)">F</button>
+                <button class="mact-btn mact-action mact-e" id="mbtnE" type="button" aria-label="Akcja (E)">E</button>
+                <button class="mact-btn mact-action mact-q" id="mbtnQ" type="button" aria-label="Odwrót (Q)">Q</button>
+              </div>
+            </div>
+            <div class="mobile-restart-row" id="mobileRestartRow">
+              <button class="mact-btn mact-restart" id="mbtnR" type="button" aria-label="Restart / Nowy run (R)">▶ Start / Restart (R)</button>
+            </div>
+          </div>
+        </div>
+        <aside class="panel panel-right">
+          <h2 class="panel-title">Info</h2>
+          <section class="actions" id="actions"></section>
+          <section class="active-effects" id="activeEffects"></section>
+          <section class="mutators" id="mutators"></section>
+          <section class="log" id="log"></section>
+        </aside>
+      </div>
+      <div id="mobileSwipeHint" class="mobile-swipe-hint" aria-live="polite">
+        <strong>Swipe Panels</strong>
+        <span>Swipe left/right for stats and effects. Use Menu to open main menu.</span>
+      </div>
+      <button id="mobileMenuButton" class="mobile-menu-button" type="button" aria-label="Open main menu">Menu</button>
+    </section>
+    <footer class="app-footer">
+      <span id="appVersion" aria-live="polite"></span>
+    </footer>
+  </main>
+  <script src="config.js"></script>
+  <script src="enemy-blackboard.js"></script>
+  <script src="enemy-director.js"></script>
+  <script src="enemy-tactics.js"></script>
+  <script src="enemy-debug-overlay.js"></script>
+  <script src="relic-data.js"></script>
+  <script src="relic-runtime.js"></script>
+  <script src="camp-data.js"></script>
+  <script src="camp-runtime.js"></script>
+  <script src="skills-data.js"></script>
+  <script src="skill-tooltips.js"></script>
+  <script src="skills-actions.js"></script>
+  <script src="loot-tables.js"></script>
+  <script src="elixir-data.js"></script>
+  <script src="mutator-data.js"></script>
+  <script src="scenario-overrides.js"></script>
+  <script src="build-identity.js"></script>
+  <script src="merchant-curation.js"></script>
+  <script src="boss-campaign.js"></script>
+  <script src="expansion-content.js"></script>
+  <script src="forge-room.js"></script>
+  <script src="pact-room.js"></script>
+  <script src="pact-effects.js"></script>
+  <script src="pact-sigil-fx.js"></script>
+  <script src="vault-room.js"></script>
+  <script src="final-boss-flow.js"></script>
+  <script src="room-pity.js"></script>
+  <script src="room-object-placement.js"></script>
+  <script src="room-visual-reservations.js"></script>
+  <script src="bot-safety.js"></script>
+  <script src="hazard-kill.js"></script>
+  <script src="pit-hazard.js"></script>
+  <script src="forced-movement.js"></script>
+  <script src="dash-damage.js"></script>
+  <script src="render/hd-expansion-art-entries.js"></script>
+  <script src="render/hd-asset-manifest.js"></script>
+  <script src="render/hd-status-emblems.js"></script>
+  <script src="render/hd-asset-loader.js"></script>
+  <script src="render/hd-vfx.js"></script>
+  <script src="render/hd-lighting.js"></script>
+  <script src="render/hd-renderer-layers.js"></script>
+  <script src="render/hd-renderer.js"></script>
+  <script src="render/visual-snapshot.js"></script>
+  <script src="render/graphics-preference.js"></script>
+  <script src="game.js"></script>
+</body>
+</html>

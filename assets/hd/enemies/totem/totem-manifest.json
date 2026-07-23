@@ -1,0 +1,211 @@
+{
+  "schemaVersion": 1,
+  "type": "totem",
+  "frameSize": [
+    64,
+    64
+  ],
+  "renderSize": [
+    64,
+    64
+  ],
+  "anchor": [
+    0.5,
+    1
+  ],
+  "group": "enemies",
+  "clips": [
+    {
+      "name": "idle",
+      "frameCount": 4,
+      "fps": 4,
+      "loop": true
+    },
+    {
+      "name": "awaken",
+      "frameCount": 4,
+      "fps": 8,
+      "loop": false
+    },
+    {
+      "name": "cast",
+      "frameCount": 4,
+      "fps": 10,
+      "loop": false
+    },
+    {
+      "name": "hit",
+      "frameCount": 2,
+      "fps": 10,
+      "loop": false
+    },
+    {
+      "name": "death",
+      "frameCount": 2,
+      "fps": 6,
+      "loop": false
+    }
+  ],
+  "frames": [
+    {
+      "type": "totem",
+      "direction": "base",
+      "clip": "idle",
+      "frame": 1,
+      "key": "enemy.totem.base.idle.01",
+      "src": "assets/hd/enemies/totem/frames/base-idle-01.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "totem",
+      "direction": "base",
+      "clip": "idle",
+      "frame": 2,
+      "key": "enemy.totem.base.idle.02",
+      "src": "assets/hd/enemies/totem/frames/base-idle-02.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "totem",
+      "direction": "base",
+      "clip": "idle",
+      "frame": 3,
+      "key": "enemy.totem.base.idle.03",
+      "src": "assets/hd/enemies/totem/frames/base-idle-03.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "totem",
+      "direction": "base",
+      "clip": "idle",
+      "frame": 4,
+      "key": "enemy.totem.base.idle.04",
+      "src": "assets/hd/enemies/totem/frames/base-idle-04.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "totem",
+      "direction": "base",
+      "clip": "awaken",
+      "frame": 1,
+      "key": "enemy.totem.base.awaken.01",
+      "src": "assets/hd/enemies/totem/frames/base-awaken-01.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "totem",
+      "direction": "base",
+      "clip": "awaken",
+      "frame": 2,
+      "key": "enemy.totem.base.awaken.02",
+      "src": "assets/hd/enemies/totem/frames/base-awaken-02.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "totem",
+      "direction": "base",
+      "clip": "awaken",
+      "frame": 3,
+      "key": "enemy.totem.base.awaken.03",
+      "src": "assets/hd/enemies/totem/frames/base-awaken-03.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "totem",
+      "direction": "base",
+      "clip": "awaken",
+      "frame": 4,
+      "key": "enemy.totem.base.awaken.04",
+      "src": "assets/hd/enemies/totem/frames/base-awaken-04.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "totem",
+      "direction": "base",
+      "clip": "cast",
+      "frame": 1,
+      "key": "enemy.totem.base.cast.01",
+      "src": "assets/hd/enemies/totem/frames/base-cast-01.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "totem",
+      "direction": "base",
+      "clip": "cast",
+      "frame": 2,
+      "key": "enemy.totem.base.cast.02",
+      "src": "assets/hd/enemies/totem/frames/base-cast-02.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "totem",
+      "direction": "base",
+      "clip": "cast",
+      "frame": 3,
+      "key": "enemy.totem.base.cast.03",
+      "src": "assets/hd/enemies/totem/frames/base-cast-03.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "totem",
+      "direction": "base",
+      "clip": "cast",
+      "frame": 4,
+      "key": "enemy.totem.base.cast.04",
+      "src": "assets/hd/enemies/totem/frames/base-cast-04.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "totem",
+      "direction": "base",
+      "clip": "hit",
+      "frame": 1,
+      "key": "enemy.totem.base.hit.01",
+      "src": "assets/hd/enemies/totem/frames/base-hit-01.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "totem",
+      "direction": "base",
+      "clip": "hit",
+      "frame": 2,
+      "key": "enemy.totem.base.hit.02",
+      "src": "assets/hd/enemies/totem/frames/base-hit-02.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "totem",
+      "direction": "base",
+      "clip": "death",
+      "frame": 1,
+      "key": "enemy.totem.base.death.01",
+      "src": "assets/hd/enemies/totem/frames/base-death-01.png",
+      "group": "enemies",
+      "critical": true
+    },
+    {
+      "type": "totem",
+      "direction": "base",
+      "clip": "death",
+      "frame": 2,
+      "key": "enemy.totem.base.death.02",
+      "src": "assets/hd/enemies/totem/frames/base-death-02.png",
+      "group": "enemies",
+      "critical": true
+    }
+  ]
+}

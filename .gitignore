@@ -1,0 +1,9 @@
+node_modules/
+output/
+audit-*/
+.worktrees/
+art/work/
+
+*.log
+.DS_Store
+Thumbs.db

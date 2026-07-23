@@ -1,0 +1,55 @@
+const assert = require("node:assert/strict");
+const fs = require("node:fs");
+const path = require("node:path");
+
+const root = path.resolve(__dirname, "..");
+const game = fs.readFileSync(path.join(root, "game.js"), "utf8");
+const css = fs.readFileSync(path.join(root, "style-hd-composition.css"), "utf8");
+const merchantCss = fs.readFileSync(path.join(root, "style-hd-merchant.css"), "utf8");
+const indexHtml = fs.readFileSync(path.join(root, "index.html"), "utf8");
+
+assert.match(game, /merchant-menu-dashboard/);
+assert.match(game, /merchant-section-skills/);
+assert.match(game, /merchant-section-relics/);
+assert.match(game, /merchant-section-consumables/);
+assert.match(game, /merchant-section-utilities/);
+assert.match(game, /merchant-section-buyback/);
+assert.match(game, /merchant-menu-buyback/);
+assert.match(game, /merchant-buyback-summary/);
+assert.match(game, /merchant-buyback-grid/);
+assert.match(game, /merchant-buyback-action/);
+assert.match(game, /class="\$\{classes\} merchant-row" data-merchant-key=/);
+assert.match(game, /data-merchant-key="\$\{escapeHtmlAttr\(key\)\}"/);
+assert.match(game, /merchant-buyback-row" data-merchant-key="\$\{index \+ 1\}"/);
+assert.match(game, /screenOverlayEl\.addEventListener\("click"[\s\S]*merchant-row\[data-merchant-key\]/);
+assert.match(game, /window\.dispatchEvent\(new KeyboardEvent\("keydown", \{ key: merchantKey, bubbles: true \}\)\)/);
+assert.match(game, /bindHdUiTooltipSurface\(screenOverlayEl\)/);
+assert.match(game, /merchant-sanctuary/);
+assert.match(game, /merchant-row-icon/);
+assert.match(game, /merchant-row-action/);
+assert.match(game, /iconSrc: getMerchantRelicIcon\(getRelicById\(relicSlot\.relicId\)\)/);
+assert.match(game, /merchant-view-black-market/);
+assert.match(game, /merchant-view-buyback/);
+assert.match(game, /tooltipAttributes = useHdMerchantUi/);
+
+assert.match(css, /\.screen-overlay\.visible:has\(\.overlay-card-merchant\)\s*\{[\s\S]*position:\s*fixed[\s\S]*width:\s*100vw[\s\S]*height:\s*100vh[\s\S]*brightness\(0\.4\)/);
+assert.match(css, /\.overlay-card-merchant\s*\{[\s\S]*width:\s*min\(1240px, calc\(100vw - 36px\)\)[\s\S]*flex:\s*0 0 min\(1240px, calc\(100vw - 36px\)\)[\s\S]*height:\s*min\(692px, calc\(100vh - 28px\)\)/);
+assert.match(css, /\.overlay-card-merchant \.merchant-row\s*\{[\s\S]*min-height:\s*46px/);
+assert.match(css, /\.merchant-menu-dashboard\s*\{[\s\S]*grid-template-columns:\s*repeat\(2,[\s\S]*"skills relics"[\s\S]*"consumables utilities"[\s\S]*"buyback buyback"/);
+assert.match(css, /\.overlay-card-merchant > \.overlay-menu\s*\{[\s\S]*overflow:\s*hidden/);
+assert.match(css, /\.overlay-card-merchant:has\(> \.overlay-hint\)\s*\{[\s\S]*grid-template-rows:\s*auto auto auto minmax\(0, 1fr\)/);
+assert.match(css, /\.overlay-card-merchant \.merchant-row > div:last-child > span\s*\{[\s\S]*overflow:\s*hidden[\s\S]*text-overflow:\s*ellipsis[\s\S]*white-space:\s*nowrap/);
+assert.match(css, /\.merchant-menu-selection\s*\{[\s\S]*grid-template-columns:\s*repeat\(2,[\s\S]*align-content:\s*center/);
+assert.match(css, /\.merchant-menu-buyback\s*\{[\s\S]*align-content:\s*start/);
+assert.match(css, /\.merchant-buyback-row\s*\{[\s\S]*grid-template-columns:[\s\S]*minmax\(0, 1fr\)[\s\S]*auto/);
+assert.match(css, /\.merchant-buyback-action\s*\{[\s\S]*text-align:\s*right/);
+assert.match(indexHtml, /style-hd-merchant\.css/);
+assert.match(merchantCss, /curio-market-background\.png/);
+assert.match(merchantCss, /\.merchant-sanctuary\s*\{[\s\S]*width:\s*min\(920px, 64vw\)[\s\S]*flex:\s*0 0 min\(920px, 64vw\)/);
+assert.match(merchantCss, /\.merchant-menu-dashboard\s*\{[\s\S]*"skills relics"[\s\S]*"consumables utilities"[\s\S]*"buyback buyback"/);
+assert.match(merchantCss, /\.merchant-row\.hd-nav-selected/);
+assert.match(merchantCss, /\.merchant-menu-selection\s*\{[\s\S]*repeat\(2,/);
+assert.match(merchantCss, /\.merchant-buyback-grid\s*\{[\s\S]*repeat\(2,/);
+assert.equal(fs.existsSync(path.join(root, "assets", "hd", "ui", "merchant", "curio-market-background.png")), true);
+
+console.log("HD merchant screen contract tests passed");

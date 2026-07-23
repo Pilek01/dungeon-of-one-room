@@ -1,0 +1,41 @@
+{
+  "hazardSources": {
+    "assets/hd/hazards/abyss/mine-armed.png": "04e0ebe0f5fe07e12e8b9cef3b4e60911e01e774636022344e91f2390e1cdb9f",
+    "assets/hd/hazards/abyss/mine-unarmed.png": "94575354531633baa2b260491459e1618944b68bf89ff9d4f620eb7ee404e324",
+    "assets/hd/hazards/abyss/spikes-armed.png": "e10d3572a29ad418cb32b4aa696900dd41b056a9499283ac4079791f4708090e"
+  },
+  "outputs": {
+    "assets/hd/environment/beyond/boss-room.png": "2fb1ab98ec0931e98e45f090d1d5359cc3ca4c1cea064e2995bd384156b75d85",
+    "assets/hd/environment/beyond/room-01.png": "0dcdbcfbf7b9dcf536a13bb7fdad352a20730f095241e9e8408a4cd1f8b93bb9",
+    "assets/hd/environment/beyond/room-02.png": "216b362ab46ab3dd24cd97310650528e5d93b0bf0c0ed16a0b1d71d2ade696d4",
+    "assets/hd/environment/beyond/room-03.png": "f79400fd31a937ba931321d222713ada503ec7ea0e5682a95933da58fc350822",
+    "assets/hd/hazards/beyond/mine-armed.png": "ccb89b40ff40902ed3fdf8f0f84b2e96c78968d74d6aba277c53a693fbf7a4b3",
+    "assets/hd/hazards/beyond/mine-unarmed.png": "4e2fd3fb03219963ef2a7ac78af83d27ce4be0f537f5222f92f6c7420247e795",
+    "assets/hd/hazards/beyond/pit-00.png": "96167b186a783f0d1b3cf071ab0c0ae7974c065d58e1937e65b2eae00f56860f",
+    "assets/hd/hazards/beyond/pit-01.png": "3a6dcbeb2b16c16622282a14ba21c6e780d30345673c8f7945cf671bcbb939d0",
+    "assets/hd/hazards/beyond/pit-02.png": "a157fc795913b2ac6514209371040aea2e344a7b4f3abe2337ac642e833d9be8",
+    "assets/hd/hazards/beyond/pit-03.png": "b663e323e1ae07cd7dd2ade5fc41205239f840d35569baafc23ea581725af9f6",
+    "assets/hd/hazards/beyond/pit-04.png": "88b57640e30aae4f8f33802393cc285fd43648d96ad2f64e5b1b8f59a0871828",
+    "assets/hd/hazards/beyond/pit-05.png": "aa458e79e68ec75cbac683d9f63748664fa2a71aabaf0481c80534eb787f1157",
+    "assets/hd/hazards/beyond/pit-06.png": "11903ec0186c82c5e164ba0b3eacaaf122a0f9c25ddb5912baaa41482b97a02b",
+    "assets/hd/hazards/beyond/pit-07.png": "49519334ac79ac7ccfeea8cd503e0bb8ec92404c529d741f8beb47f586991ce4",
+    "assets/hd/hazards/beyond/pit-08.png": "4809670901d9e185269b7950d03bba845ac54031110157c1d1f4b5dd7210f027",
+    "assets/hd/hazards/beyond/pit-09.png": "cc085458289a034954fa9651a06c5d7bcf053007e64fff914feea95df7d87f3f",
+    "assets/hd/hazards/beyond/pit-10.png": "59bbfbf473785f3ae07fbf60aa1c2c4e26d09cea9bbccc8498db89d5abf147d0",
+    "assets/hd/hazards/beyond/pit-11.png": "a07912dc1a488a38b7d2e272a77dadecb136fd4ca01408e43dc122956f0070a1",
+    "assets/hd/hazards/beyond/pit-12.png": "d247a9ced4cc90b2a4056953ac4141a5310be2e169b3a1ef04cbea68b72e9f12",
+    "assets/hd/hazards/beyond/pit-13.png": "84f1d2aa676c8d64fdd90b482d57caf52e8956dea0acda56688978da81412a76",
+    "assets/hd/hazards/beyond/pit-14.png": "af405e6ab94ce107f8a47830ad8fafa22ae73f1115795cb1a7a36fb9901174ca",
+    "assets/hd/hazards/beyond/pit-15.png": "96f2f268e70f0eeae0434116b71a3e2a82908d7de2f6f19275461a9b05a5a0d6",
+    "assets/hd/hazards/beyond/spikes-armed.png": "49e28ff2b7b0f8b6c07edec6c6c573e31964b2113f5ce16928204264c8429b61"
+  },
+  "pillowVersion": "12.1.1",
+  "schemaVersion": 1,
+  "sources": {
+    "beyond-boss-room-source-original.png": "7efd28ec198b26b4c5165b9273358ca9751b4d0630eb395968483028bd960bd7",
+    "beyond-pit-atlas-v2-source-original.png": "1805a6c8e0526fe9788c0870da81ea022dfdd7699bc592353388ccd586795c98",
+    "beyond-room-01-source-original.png": "c16427a95cd1272bf8985acba3446ee658f3b3b2edadacaae8fcef95ed51c117",
+    "beyond-room-02-source-original.png": "82a50738b051803d8ba753dfd8d1b8da7f8c582a658ab63c23537c66c7110b74",
+    "beyond-room-03-source-original.png": "7f0b1ede4331cc70521dc3b958e9ea1c31fd89a8958f9e041b9b3c9ed0cf2924"
+  }
+}

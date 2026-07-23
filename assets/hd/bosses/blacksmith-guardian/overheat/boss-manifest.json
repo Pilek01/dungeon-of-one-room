@@ -1,0 +1,692 @@
+{
+  "schemaVersion": 1,
+  "type": "blacksmith_guardian.overheat",
+  "frameSize": [
+    128,
+    128
+  ],
+  "renderSize": [
+    128,
+    128
+  ],
+  "anchor": [
+    0.5,
+    1
+  ],
+  "group": "bosses",
+  "clips": [
+    {
+      "name": "idle",
+      "frameCount": 4,
+      "fps": 4,
+      "loop": true
+    },
+    {
+      "name": "move",
+      "frameCount": 4,
+      "fps": 8,
+      "loop": true
+    },
+    {
+      "name": "attack",
+      "frameCount": 4,
+      "fps": 12,
+      "loop": false
+    },
+    {
+      "name": "hit",
+      "frameCount": 2,
+      "fps": 10,
+      "loop": false
+    },
+    {
+      "name": "death",
+      "frameCount": 2,
+      "fps": 6,
+      "loop": false
+    }
+  ],
+  "frames": [
+    {
+      "type": "blacksmith_guardian.overheat",
+      "direction": "south",
+      "clip": "idle",
+      "frame": 1,
+      "key": "boss.blacksmith_guardian.overheat.south.idle.01",
+      "src": "assets/hd/bosses/blacksmith-guardian/overheat/frames/south-idle-01.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "blacksmith_guardian.overheat",
+      "direction": "south",
+      "clip": "idle",
+      "frame": 2,
+      "key": "boss.blacksmith_guardian.overheat.south.idle.02",
+      "src": "assets/hd/bosses/blacksmith-guardian/overheat/frames/south-idle-02.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "blacksmith_guardian.overheat",
+      "direction": "south",
+      "clip": "idle",
+      "frame": 3,
+      "key": "boss.blacksmith_guardian.overheat.south.idle.03",
+      "src": "assets/hd/bosses/blacksmith-guardian/overheat/frames/south-idle-03.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "blacksmith_guardian.overheat",
+      "direction": "south",
+      "clip": "idle",
+      "frame": 4,
+      "key": "boss.blacksmith_guardian.overheat.south.idle.04",
+      "src": "assets/hd/bosses/blacksmith-guardian/overheat/frames/south-idle-04.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "blacksmith_guardian.overheat",
+      "direction": "south",
+      "clip": "move",
+      "frame": 1,
+      "key": "boss.blacksmith_guardian.overheat.south.move.01",
+      "src": "assets/hd/bosses/blacksmith-guardian/overheat/frames/south-move-01.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "blacksmith_guardian.overheat",
+      "direction": "south",
+      "clip": "move",
+      "frame": 2,
+      "key": "boss.blacksmith_guardian.overheat.south.move.02",
+      "src": "assets/hd/bosses/blacksmith-guardian/overheat/frames/south-move-02.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "blacksmith_guardian.overheat",
+      "direction": "south",
+      "clip": "move",
+      "frame": 3,
+      "key": "boss.blacksmith_guardian.overheat.south.move.03",
+      "src": "assets/hd/bosses/blacksmith-guardian/overheat/frames/south-move-03.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "blacksmith_guardian.overheat",
+      "direction": "south",
+      "clip": "move",
+      "frame": 4,
+      "key": "boss.blacksmith_guardian.overheat.south.move.04",
+      "src": "assets/hd/bosses/blacksmith-guardian/overheat/frames/south-move-04.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "blacksmith_guardian.overheat",
+      "direction": "south",
+      "clip": "attack",
+      "frame": 1,
+      "key": "boss.blacksmith_guardian.overheat.south.attack.01",
+      "src": "assets/hd/bosses/blacksmith-guardian/overheat/frames/south-attack-01.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "blacksmith_guardian.overheat",
+      "direction": "south",
+      "clip": "attack",
+      "frame": 2,
+      "key": "boss.blacksmith_guardian.overheat.south.attack.02",
+      "src": "assets/hd/bosses/blacksmith-guardian/overheat/frames/south-attack-02.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "blacksmith_guardian.overheat",
+      "direction": "south",
+      "clip": "attack",
+      "frame": 3,
+      "key": "boss.blacksmith_guardian.overheat.south.attack.03",
+      "src": "assets/hd/bosses/blacksmith-guardian/overheat/frames/south-attack-03.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "blacksmith_guardian.overheat",
+      "direction": "south",
+      "clip": "attack",
+      "frame": 4,
+      "key": "boss.blacksmith_guardian.overheat.south.attack.04",
+      "src": "assets/hd/bosses/blacksmith-guardian/overheat/frames/south-attack-04.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "blacksmith_guardian.overheat",
+      "direction": "south",
+      "clip": "hit",
+      "frame": 1,
+      "key": "boss.blacksmith_guardian.overheat.south.hit.01",
+      "src": "assets/hd/bosses/blacksmith-guardian/overheat/frames/south-hit-01.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "blacksmith_guardian.overheat",
+      "direction": "south",
+      "clip": "hit",
+      "frame": 2,
+      "key": "boss.blacksmith_guardian.overheat.south.hit.02",
+      "src": "assets/hd/bosses/blacksmith-guardian/overheat/frames/south-hit-02.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "blacksmith_guardian.overheat",
+      "direction": "south",
+      "clip": "death",
+      "frame": 1,
+      "key": "boss.blacksmith_guardian.overheat.south.death.01",
+      "src": "assets/hd/bosses/blacksmith-guardian/overheat/frames/south-death-01.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "blacksmith_guardian.overheat",
+      "direction": "south",
+      "clip": "death",
+      "frame": 2,
+      "key": "boss.blacksmith_guardian.overheat.south.death.02",
+      "src": "assets/hd/bosses/blacksmith-guardian/overheat/frames/south-death-02.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "blacksmith_guardian.overheat",
+      "direction": "north",
+      "clip": "idle",
+      "frame": 1,
+      "key": "boss.blacksmith_guardian.overheat.north.idle.01",
+      "src": "assets/hd/bosses/blacksmith-guardian/overheat/frames/north-idle-01.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "blacksmith_guardian.overheat",
+      "direction": "north",
+      "clip": "idle",
+      "frame": 2,
+      "key": "boss.blacksmith_guardian.overheat.north.idle.02",
+      "src": "assets/hd/bosses/blacksmith-guardian/overheat/frames/north-idle-02.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "blacksmith_guardian.overheat",
+      "direction": "north",
+      "clip": "idle",
+      "frame": 3,
+      "key": "boss.blacksmith_guardian.overheat.north.idle.03",
+      "src": "assets/hd/bosses/blacksmith-guardian/overheat/frames/north-idle-03.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "blacksmith_guardian.overheat",
+      "direction": "north",
+      "clip": "idle",
+      "frame": 4,
+      "key": "boss.blacksmith_guardian.overheat.north.idle.04",
+      "src": "assets/hd/bosses/blacksmith-guardian/overheat/frames/north-idle-04.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "blacksmith_guardian.overheat",
+      "direction": "north",
+      "clip": "move",
+      "frame": 1,
+      "key": "boss.blacksmith_guardian.overheat.north.move.01",
+      "src": "assets/hd/bosses/blacksmith-guardian/overheat/frames/north-move-01.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "blacksmith_guardian.overheat",
+      "direction": "north",
+      "clip": "move",
+      "frame": 2,
+      "key": "boss.blacksmith_guardian.overheat.north.move.02",
+      "src": "assets/hd/bosses/blacksmith-guardian/overheat/frames/north-move-02.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "blacksmith_guardian.overheat",
+      "direction": "north",
+      "clip": "move",
+      "frame": 3,
+      "key": "boss.blacksmith_guardian.overheat.north.move.03",
+      "src": "assets/hd/bosses/blacksmith-guardian/overheat/frames/north-move-03.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "blacksmith_guardian.overheat",
+      "direction": "north",
+      "clip": "move",
+      "frame": 4,
+      "key": "boss.blacksmith_guardian.overheat.north.move.04",
+      "src": "assets/hd/bosses/blacksmith-guardian/overheat/frames/north-move-04.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "blacksmith_guardian.overheat",
+      "direction": "north",
+      "clip": "attack",
+      "frame": 1,
+      "key": "boss.blacksmith_guardian.overheat.north.attack.01",
+      "src": "assets/hd/bosses/blacksmith-guardian/overheat/frames/north-attack-01.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "blacksmith_guardian.overheat",
+      "direction": "north",
+      "clip": "attack",
+      "frame": 2,
+      "key": "boss.blacksmith_guardian.overheat.north.attack.02",
+      "src": "assets/hd/bosses/blacksmith-guardian/overheat/frames/north-attack-02.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "blacksmith_guardian.overheat",
+      "direction": "north",
+      "clip": "attack",
+      "frame": 3,
+      "key": "boss.blacksmith_guardian.overheat.north.attack.03",
+      "src": "assets/hd/bosses/blacksmith-guardian/overheat/frames/north-attack-03.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "blacksmith_guardian.overheat",
+      "direction": "north",
+      "clip": "attack",
+      "frame": 4,
+      "key": "boss.blacksmith_guardian.overheat.north.attack.04",
+      "src": "assets/hd/bosses/blacksmith-guardian/overheat/frames/north-attack-04.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "blacksmith_guardian.overheat",
+      "direction": "north",
+      "clip": "hit",
+      "frame": 1,
+      "key": "boss.blacksmith_guardian.overheat.north.hit.01",
+      "src": "assets/hd/bosses/blacksmith-guardian/overheat/frames/north-hit-01.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "blacksmith_guardian.overheat",
+      "direction": "north",
+      "clip": "hit",
+      "frame": 2,
+      "key": "boss.blacksmith_guardian.overheat.north.hit.02",
+      "src": "assets/hd/bosses/blacksmith-guardian/overheat/frames/north-hit-02.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "blacksmith_guardian.overheat",
+      "direction": "north",
+      "clip": "death",
+      "frame": 1,
+      "key": "boss.blacksmith_guardian.overheat.north.death.01",
+      "src": "assets/hd/bosses/blacksmith-guardian/overheat/frames/north-death-01.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "blacksmith_guardian.overheat",
+      "direction": "north",
+      "clip": "death",
+      "frame": 2,
+      "key": "boss.blacksmith_guardian.overheat.north.death.02",
+      "src": "assets/hd/bosses/blacksmith-guardian/overheat/frames/north-death-02.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "blacksmith_guardian.overheat",
+      "direction": "east",
+      "clip": "idle",
+      "frame": 1,
+      "key": "boss.blacksmith_guardian.overheat.east.idle.01",
+      "src": "assets/hd/bosses/blacksmith-guardian/overheat/frames/east-idle-01.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "blacksmith_guardian.overheat",
+      "direction": "east",
+      "clip": "idle",
+      "frame": 2,
+      "key": "boss.blacksmith_guardian.overheat.east.idle.02",
+      "src": "assets/hd/bosses/blacksmith-guardian/overheat/frames/east-idle-02.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "blacksmith_guardian.overheat",
+      "direction": "east",
+      "clip": "idle",
+      "frame": 3,
+      "key": "boss.blacksmith_guardian.overheat.east.idle.03",
+      "src": "assets/hd/bosses/blacksmith-guardian/overheat/frames/east-idle-03.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "blacksmith_guardian.overheat",
+      "direction": "east",
+      "clip": "idle",
+      "frame": 4,
+      "key": "boss.blacksmith_guardian.overheat.east.idle.04",
+      "src": "assets/hd/bosses/blacksmith-guardian/overheat/frames/east-idle-04.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "blacksmith_guardian.overheat",
+      "direction": "east",
+      "clip": "move",
+      "frame": 1,
+      "key": "boss.blacksmith_guardian.overheat.east.move.01",
+      "src": "assets/hd/bosses/blacksmith-guardian/overheat/frames/east-move-01.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "blacksmith_guardian.overheat",
+      "direction": "east",
+      "clip": "move",
+      "frame": 2,
+      "key": "boss.blacksmith_guardian.overheat.east.move.02",
+      "src": "assets/hd/bosses/blacksmith-guardian/overheat/frames/east-move-02.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "blacksmith_guardian.overheat",
+      "direction": "east",
+      "clip": "move",
+      "frame": 3,
+      "key": "boss.blacksmith_guardian.overheat.east.move.03",
+      "src": "assets/hd/bosses/blacksmith-guardian/overheat/frames/east-move-03.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "blacksmith_guardian.overheat",
+      "direction": "east",
+      "clip": "move",
+      "frame": 4,
+      "key": "boss.blacksmith_guardian.overheat.east.move.04",
+      "src": "assets/hd/bosses/blacksmith-guardian/overheat/frames/east-move-04.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "blacksmith_guardian.overheat",
+      "direction": "east",
+      "clip": "attack",
+      "frame": 1,
+      "key": "boss.blacksmith_guardian.overheat.east.attack.01",
+      "src": "assets/hd/bosses/blacksmith-guardian/overheat/frames/east-attack-01.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "blacksmith_guardian.overheat",
+      "direction": "east",
+      "clip": "attack",
+      "frame": 2,
+      "key": "boss.blacksmith_guardian.overheat.east.attack.02",
+      "src": "assets/hd/bosses/blacksmith-guardian/overheat/frames/east-attack-02.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "blacksmith_guardian.overheat",
+      "direction": "east",
+      "clip": "attack",
+      "frame": 3,
+      "key": "boss.blacksmith_guardian.overheat.east.attack.03",
+      "src": "assets/hd/bosses/blacksmith-guardian/overheat/frames/east-attack-03.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "blacksmith_guardian.overheat",
+      "direction": "east",
+      "clip": "attack",
+      "frame": 4,
+      "key": "boss.blacksmith_guardian.overheat.east.attack.04",
+      "src": "assets/hd/bosses/blacksmith-guardian/overheat/frames/east-attack-04.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "blacksmith_guardian.overheat",
+      "direction": "east",
+      "clip": "hit",
+      "frame": 1,
+      "key": "boss.blacksmith_guardian.overheat.east.hit.01",
+      "src": "assets/hd/bosses/blacksmith-guardian/overheat/frames/east-hit-01.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "blacksmith_guardian.overheat",
+      "direction": "east",
+      "clip": "hit",
+      "frame": 2,
+      "key": "boss.blacksmith_guardian.overheat.east.hit.02",
+      "src": "assets/hd/bosses/blacksmith-guardian/overheat/frames/east-hit-02.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "blacksmith_guardian.overheat",
+      "direction": "east",
+      "clip": "death",
+      "frame": 1,
+      "key": "boss.blacksmith_guardian.overheat.east.death.01",
+      "src": "assets/hd/bosses/blacksmith-guardian/overheat/frames/east-death-01.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "blacksmith_guardian.overheat",
+      "direction": "east",
+      "clip": "death",
+      "frame": 2,
+      "key": "boss.blacksmith_guardian.overheat.east.death.02",
+      "src": "assets/hd/bosses/blacksmith-guardian/overheat/frames/east-death-02.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "blacksmith_guardian.overheat",
+      "direction": "west",
+      "clip": "idle",
+      "frame": 1,
+      "key": "boss.blacksmith_guardian.overheat.west.idle.01",
+      "src": "assets/hd/bosses/blacksmith-guardian/overheat/frames/west-idle-01.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "blacksmith_guardian.overheat",
+      "direction": "west",
+      "clip": "idle",
+      "frame": 2,
+      "key": "boss.blacksmith_guardian.overheat.west.idle.02",
+      "src": "assets/hd/bosses/blacksmith-guardian/overheat/frames/west-idle-02.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "blacksmith_guardian.overheat",
+      "direction": "west",
+      "clip": "idle",
+      "frame": 3,
+      "key": "boss.blacksmith_guardian.overheat.west.idle.03",
+      "src": "assets/hd/bosses/blacksmith-guardian/overheat/frames/west-idle-03.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "blacksmith_guardian.overheat",
+      "direction": "west",
+      "clip": "idle",
+      "frame": 4,
+      "key": "boss.blacksmith_guardian.overheat.west.idle.04",
+      "src": "assets/hd/bosses/blacksmith-guardian/overheat/frames/west-idle-04.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "blacksmith_guardian.overheat",
+      "direction": "west",
+      "clip": "move",
+      "frame": 1,
+      "key": "boss.blacksmith_guardian.overheat.west.move.01",
+      "src": "assets/hd/bosses/blacksmith-guardian/overheat/frames/west-move-01.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "blacksmith_guardian.overheat",
+      "direction": "west",
+      "clip": "move",
+      "frame": 2,
+      "key": "boss.blacksmith_guardian.overheat.west.move.02",
+      "src": "assets/hd/bosses/blacksmith-guardian/overheat/frames/west-move-02.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "blacksmith_guardian.overheat",
+      "direction": "west",
+      "clip": "move",
+      "frame": 3,
+      "key": "boss.blacksmith_guardian.overheat.west.move.03",
+      "src": "assets/hd/bosses/blacksmith-guardian/overheat/frames/west-move-03.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "blacksmith_guardian.overheat",
+      "direction": "west",
+      "clip": "move",
+      "frame": 4,
+      "key": "boss.blacksmith_guardian.overheat.west.move.04",
+      "src": "assets/hd/bosses/blacksmith-guardian/overheat/frames/west-move-04.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "blacksmith_guardian.overheat",
+      "direction": "west",
+      "clip": "attack",
+      "frame": 1,
+      "key": "boss.blacksmith_guardian.overheat.west.attack.01",
+      "src": "assets/hd/bosses/blacksmith-guardian/overheat/frames/west-attack-01.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "blacksmith_guardian.overheat",
+      "direction": "west",
+      "clip": "attack",
+      "frame": 2,
+      "key": "boss.blacksmith_guardian.overheat.west.attack.02",
+      "src": "assets/hd/bosses/blacksmith-guardian/overheat/frames/west-attack-02.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "blacksmith_guardian.overheat",
+      "direction": "west",
+      "clip": "attack",
+      "frame": 3,
+      "key": "boss.blacksmith_guardian.overheat.west.attack.03",
+      "src": "assets/hd/bosses/blacksmith-guardian/overheat/frames/west-attack-03.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "blacksmith_guardian.overheat",
+      "direction": "west",
+      "clip": "attack",
+      "frame": 4,
+      "key": "boss.blacksmith_guardian.overheat.west.attack.04",
+      "src": "assets/hd/bosses/blacksmith-guardian/overheat/frames/west-attack-04.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "blacksmith_guardian.overheat",
+      "direction": "west",
+      "clip": "hit",
+      "frame": 1,
+      "key": "boss.blacksmith_guardian.overheat.west.hit.01",
+      "src": "assets/hd/bosses/blacksmith-guardian/overheat/frames/west-hit-01.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "blacksmith_guardian.overheat",
+      "direction": "west",
+      "clip": "hit",
+      "frame": 2,
+      "key": "boss.blacksmith_guardian.overheat.west.hit.02",
+      "src": "assets/hd/bosses/blacksmith-guardian/overheat/frames/west-hit-02.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "blacksmith_guardian.overheat",
+      "direction": "west",
+      "clip": "death",
+      "frame": 1,
+      "key": "boss.blacksmith_guardian.overheat.west.death.01",
+      "src": "assets/hd/bosses/blacksmith-guardian/overheat/frames/west-death-01.png",
+      "group": "bosses",
+      "critical": true
+    },
+    {
+      "type": "blacksmith_guardian.overheat",
+      "direction": "west",
+      "clip": "death",
+      "frame": 2,
+      "key": "boss.blacksmith_guardian.overheat.west.death.02",
+      "src": "assets/hd/bosses/blacksmith-guardian/overheat/frames/west-death-02.png",
+      "group": "bosses",
+      "critical": true
+    }
+  ],
+  "profile": "blacksmith-guardian-overheat"
+}
