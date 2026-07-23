@@ -9,6 +9,10 @@ import {
 import {
   settleRoomRewardEnvelopeV3
 } from "../src/rulesets/v08-meta-1/reward-policy.js";
+import {
+  applyRelicAcquisition,
+  createEmptyRelicBuildV08
+} from "../src/rulesets/v08-meta-1/relic-policy.js";
 
 function seededOracle(seed) {
   let state = (seed >>> 0) || 1;
@@ -44,7 +48,22 @@ async function issued(seed, build) {
     { runId: resolved.runId, season: resolved.season },
     resolved
   );
-  if (build) initial.build = structuredClone(build);
+  initial.status = "active";
+  if (build) {
+    let canonicalBuild = createEmptyRelicBuildV08();
+    for (const relicId of build.relics || []) {
+      canonicalBuild = await applyRelicAcquisition(canonicalBuild, {
+        relicId,
+        acquiredRevision: initial.revision,
+        acquisitionSource: "phase3b2a_property",
+        sourceOfferId: `fixture_${relicId}`
+      });
+    }
+    for (const field of ["mutators", "pacts", "campUpgrades", "skillTiers", "elixirs"]) {
+      canonicalBuild[field] = structuredClone(build[field] ?? canonicalBuild[field]);
+    }
+    initial.build = canonicalBuild;
+  }
   return issueNextRoomDirectiveV08(initial, resolved);
 }
 

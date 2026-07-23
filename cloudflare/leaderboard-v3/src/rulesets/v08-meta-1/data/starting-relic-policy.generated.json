@@ -1,0 +1,52 @@
+{
+  "schemaVersion": 1,
+  "rulesetId": "v08-meta-1",
+  "sourceCommit": "f98820c99066d810169e100beb23a54a332734bd",
+  "sources": [
+    {
+      "file": "boss-campaign.js",
+      "byteLength": 8061,
+      "sha256": "ad885efec2e4bce42514c80a77a9a2cbf0f7310f396f423f5e95da16af60940d"
+    },
+    {
+      "file": "game.js",
+      "byteLength": 1292796,
+      "sha256": "a7d436f8cdde618e7bab802322a658d2055f201950d9ae7b4598269feff3df00"
+    },
+    {
+      "file": "loot-tables.js",
+      "byteLength": 2509,
+      "sha256": "9343a62db72aacd89d16ab0efa3c1fba0c40d08cc1e82e10795990299467e0a9"
+    },
+    {
+      "file": "merchant-curation.js",
+      "byteLength": 827,
+      "sha256": "84dbcbb30c0909cb309154826df7c80d816fe9db90584a8af880eacfc70ceba9"
+    },
+    {
+      "file": "relic-data.js",
+      "byteLength": 9135,
+      "sha256": "fa4cdd27c3b3b9d2b61df3bc346a4123e9d3f70f58afdc16cd626411d6bdfa59"
+    },
+    {
+      "file": "relic-runtime.js",
+      "byteLength": 9127,
+      "sha256": "87e02a9a1519aa5c9c621e23fabe5400cfda8274c1aa39c50cd471478e642d97"
+    }
+  ],
+  "canonicalData": {
+    "offerType": "starting_relic",
+    "sourceType": "run_start",
+    "sourceId": "v08-fixed-starting-relics",
+    "choiceCount": 3,
+    "choiceOrderPolicy": "legacy-fixed-order",
+    "startingRelicIds": [
+      "fang",
+      "plating",
+      "lucky"
+    ],
+    "selectionRequired": true,
+    "skipAllowed": false,
+    "nextStatus": "active"
+  }
+}

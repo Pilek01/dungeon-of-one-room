@@ -1,0 +1,254 @@
+import catalogDocument from "./data/relic-catalog.generated.json" with { type: "json" };
+import buildMetadataDocument from "./data/relic-build-metadata.generated.json" with { type: "json" };
+import slotPolicyDocument from "./data/relic-slot-policy.generated.json" with { type: "json" };
+
+const catalog = catalogDocument.canonicalData;
+const buildMetadata = buildMetadataDocument.canonicalData;
+const slotPolicy = slotPolicyDocument.canonicalData;
+const relicById = new Map(catalog.relics.map((entry) => [entry.relicId, entry]));
+
+function canonicalJson(value) {
+  if (Array.isArray(value)) return `[${value.map(canonicalJson).join(",")}]`;
+  if (value && typeof value === "object") {
+    return `{${Object.keys(value).sort().map(
+      (key) => `${JSON.stringify(key)}:${canonicalJson(value[key])}`
+    ).join(",")}}`;
+  }
+  return JSON.stringify(value);
+}
+
+async function sha256(value, cryptoProvider = globalThis.crypto) {
+  if (!cryptoProvider?.subtle) throw new TypeError("CRYPTO_PROVIDER_REQUIRED");
+  const bytes = new TextEncoder().encode(canonicalJson(value));
+  const digest = await cryptoProvider.subtle.digest("SHA-256", bytes);
+  return `sha256:${Array.from(
+    new Uint8Array(digest),
+    (byte) => byte.toString(16).padStart(2, "0")
+  ).join("")}`;
+}
+
+function requireRelic(relicId) {
+  const relic = relicById.get(String(relicId || ""));
+  if (!relic) throw new TypeError(`RELIC_UNKNOWN:${String(relicId || "")}`);
+  return relic;
+}
+
+function buildDigestInput(build) {
+  return {
+    relics: build.relics,
+    relicSlotBase: build.relicSlotBase,
+    relicSlotBonus: build.relicSlotBonus,
+    relicSlotLimit: build.relicSlotLimit,
+    relicSlotsUsed: build.relicSlotsUsed,
+    uniqueRelicCount: build.uniqueRelicCount,
+    totalRelicStacks: build.totalRelicStacks
+  };
+}
+
+function summarizeRelics(relics) {
+  let relicSlotBonus = 0;
+  let relicSlotsUsed = 0;
+  let totalRelicStacks = 0;
+  for (const entry of relics) {
+    const policy = requireRelic(entry.relicId);
+    if (!Number.isSafeInteger(entry.stacks) || entry.stacks < 1 || entry.stacks > policy.maximumStacks) {
+      throw new TypeError(`RELIC_STACKS_INVALID:${entry.relicId}`);
+    }
+    relicSlotBonus += policy.bonusRelicSlots;
+    relicSlotsUsed += policy.slotCost * entry.stacks;
+    totalRelicStacks += entry.stacks;
+  }
+  return {
+    relicSlotBonus,
+    relicSlotLimit: slotPolicy.baseRelicSlots + relicSlotBonus,
+    relicSlotsUsed,
+    uniqueRelicCount: relics.length,
+    totalRelicStacks
+  };
+}
+
+export function createEmptyRelicBuildV08() {
+  return {
+    relics: [],
+    relicSlotBase: slotPolicy.baseRelicSlots,
+    relicSlotBonus: 0,
+    relicSlotLimit: slotPolicy.baseRelicSlots,
+    relicSlotsUsed: 0,
+    uniqueRelicCount: 0,
+    totalRelicStacks: 0,
+    buildDigest: "sha256:939e68a3048e9671285fd4fd2fde751111e3d8a7c27541272f3628d556a44ba7",
+    mutators: [],
+    pacts: [],
+    campUpgrades: {},
+    skillTiers: {},
+    elixirs: []
+  };
+}
+
+export function getRelicCatalogEntryV08(relicId) {
+  return structuredClone(requireRelic(relicId));
+}
+
+export function getRelicStackLimit(relicId) {
+  return requireRelic(relicId).maximumStacks;
+}
+
+export function getRelicSlotCost(relicId) {
+  return requireRelic(relicId).slotCost;
+}
+
+export function getRelicSlotLimit(build) {
+  return summarizeRelics(Array.isArray(build?.relics) ? build.relics : []).relicSlotLimit;
+}
+
+export function canAcquireRelic(build, relicId) {
+  const policy = requireRelic(relicId);
+  const relics = Array.isArray(build?.relics) ? build.relics : [];
+  const existing = relics.find((entry) => entry.relicId === relicId);
+  if (existing && !policy.stackable) {
+    return { allowed: false, code: `RELIC_UNIQUE_DUPLICATE:${relicId}` };
+  }
+  if (existing && existing.stacks >= policy.maximumStacks) {
+    return { allowed: false, code: `RELIC_STACK_LIMIT_REACHED:${relicId}` };
+  }
+  const mythicCount = relics.filter((entry) => requireRelic(entry.relicId).mythic).length;
+  if (policy.mythic && mythicCount >= slotPolicy.maximumMythicRelics) {
+    return { allowed: false, code: "RELIC_MYTHIC_LIMIT_REACHED" };
+  }
+  const legendaryCount = relics.filter((entry) => requireRelic(entry.relicId).legendary).length;
+  const legendaryLimit = relics.some((entry) => entry.relicId === slotPolicy.doubleLegendaryRelicId)
+    || relicId === slotPolicy.doubleLegendaryRelicId
+    ? slotPolicy.maximumLegendaryRelicsWithBonus
+    : slotPolicy.maximumLegendaryRelics;
+  if (policy.legendary && legendaryCount >= legendaryLimit) {
+    return { allowed: false, code: "RELIC_LEGENDARY_LIMIT_REACHED" };
+  }
+  const summary = summarizeRelics(relics);
+  const incomingBonus = existing ? 0 : policy.bonusRelicSlots;
+  const nextLimit = slotPolicy.baseRelicSlots + summary.relicSlotBonus + incomingBonus;
+  if (summary.relicSlotsUsed + policy.slotCost > nextLimit) {
+    return { allowed: false, code: "RELIC_SLOTS_FULL" };
+  }
+  return { allowed: true, code: null };
+}
+
+export async function computeRelicBuildDigestV08(build, cryptoProvider = globalThis.crypto) {
+  assertCanonicalRelicBuildV08(build);
+  return sha256(buildDigestInput(build), cryptoProvider);
+}
+
+export async function assertCanonicalRelicBuildDigestV08(
+  build,
+  cryptoProvider = globalThis.crypto
+) {
+  const expected = await computeRelicBuildDigestV08(build, cryptoProvider);
+  if (build.buildDigest !== expected) throw new TypeError("RELIC_BUILD_DIGEST_MISMATCH");
+  return build;
+}
+
+export async function applyRelicAcquisition(build, acquisition, context = {}) {
+  const relicId = String(acquisition?.relicId || "");
+  const policy = requireRelic(relicId);
+  const verdict = canAcquireRelic(build, relicId);
+  if (!verdict.allowed) throw new TypeError(verdict.code);
+  if (!Number.isSafeInteger(acquisition.acquiredRevision) || acquisition.acquiredRevision < 0) {
+    throw new TypeError("RELIC_ACQUIRED_REVISION_INVALID");
+  }
+  const acquisitionSource = String(acquisition.acquisitionSource || "").trim();
+  const sourceOfferId = String(acquisition.sourceOfferId || "").trim();
+  if (!acquisitionSource) throw new TypeError("RELIC_ACQUISITION_SOURCE_REQUIRED");
+  if (!sourceOfferId) throw new TypeError("RELIC_SOURCE_OFFER_REQUIRED");
+
+  const next = structuredClone(build);
+  const existing = next.relics.find((entry) => entry.relicId === relicId);
+  if (existing) {
+    existing.stacks += 1;
+  } else {
+    next.relics.push({
+      relicId,
+      stacks: 1,
+      acquiredRevision: acquisition.acquiredRevision,
+      acquisitionSource,
+      sourceOfferId
+    });
+  }
+  const summary = summarizeRelics(next.relics);
+  Object.assign(next, {
+    relicSlotBase: slotPolicy.baseRelicSlots,
+    ...summary
+  });
+  next.buildDigest = await sha256(buildDigestInput(next), context.cryptoProvider);
+  return next;
+}
+
+export function assertCanonicalRelicBuildV08(build) {
+  if (!build || typeof build !== "object" || !Array.isArray(build.relics)) {
+    throw new TypeError("RELIC_BUILD_INVALID");
+  }
+  const seen = new Set();
+  for (const entry of build.relics) {
+    if (!entry || typeof entry !== "object") throw new TypeError("RELIC_BUILD_ENTRY_INVALID");
+    const allowedFields = new Set([
+      "relicId",
+      "stacks",
+      "acquiredRevision",
+      "acquisitionSource",
+      "sourceOfferId"
+    ]);
+    for (const field of Object.keys(entry)) {
+      if (!allowedFields.has(field)) {
+        throw new TypeError(`RELIC_BUILD_ENTRY_UNKNOWN_FIELD:${field}`);
+      }
+    }
+    if (seen.has(entry.relicId)) throw new TypeError(`RELIC_BUILD_DUPLICATE_ENTRY:${entry.relicId}`);
+    seen.add(entry.relicId);
+    requireRelic(entry.relicId);
+    for (const field of ["acquiredRevision"]) {
+      if (!Number.isSafeInteger(entry[field]) || entry[field] < 0) {
+        throw new TypeError(`RELIC_BUILD_ENTRY_INVALID:${field}`);
+      }
+    }
+    for (const field of ["acquisitionSource", "sourceOfferId"]) {
+      if (!String(entry[field] || "").trim()) throw new TypeError(`RELIC_BUILD_ENTRY_INVALID:${field}`);
+    }
+  }
+  const summary = summarizeRelics(build.relics);
+  const mythicCount = build.relics.filter((entry) => requireRelic(entry.relicId).mythic).length;
+  if (mythicCount > slotPolicy.maximumMythicRelics) {
+    throw new TypeError("RELIC_BUILD_MYTHIC_LIMIT_EXCEEDED");
+  }
+  const legendaryCount = build.relics.filter((entry) => requireRelic(entry.relicId).legendary).length;
+  const legendaryLimit = build.relics.some(
+    (entry) => entry.relicId === slotPolicy.doubleLegendaryRelicId
+  )
+    ? slotPolicy.maximumLegendaryRelicsWithBonus
+    : slotPolicy.maximumLegendaryRelics;
+  if (legendaryCount > legendaryLimit) {
+    throw new TypeError("RELIC_BUILD_LEGENDARY_LIMIT_EXCEEDED");
+  }
+  if (summary.relicSlotsUsed > summary.relicSlotLimit) {
+    throw new TypeError("RELIC_BUILD_SLOT_LIMIT_EXCEEDED");
+  }
+  for (const [field, expected] of Object.entries({
+    relicSlotBase: slotPolicy.baseRelicSlots,
+    ...summary
+  })) {
+    if (build[field] !== expected) throw new TypeError(`RELIC_BUILD_SUMMARY_MISMATCH:${field}`);
+  }
+  if (!/^sha256:[a-f0-9]{64}$/u.test(build.buildDigest)) {
+    throw new TypeError("RELIC_BUILD_DIGEST_INVALID");
+  }
+  return build;
+}
+
+export function projectPublicBuild(build) {
+  assertCanonicalRelicBuildV08(build);
+  return Object.fromEntries(buildMetadata.publicProjectionFields.map((field) => [
+    field,
+    field === "relics"
+      ? build.relics.map(({ relicId, stacks }) => ({ relicId, stacks }))
+      : structuredClone(build[field])
+  ]));
+}
+
+export const V08_RELIC_POLICY_DATA = Object.freeze({ catalog, buildMetadata, slotPolicy });

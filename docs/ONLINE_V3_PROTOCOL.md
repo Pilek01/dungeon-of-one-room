@@ -1,8 +1,7 @@
 # Dungeon Online v3 protocol
 
 Status: isolated Phase 2 Worker contract plus a disconnected, `test-only`
-Phase 3B1 room-directive ruleset. No browser client or production ruleset is
-connected.
+Phase 3B2B1 ruleset. No browser client or production ruleset is connected.
 
 ```text
 base path: /api/v3
@@ -35,7 +34,10 @@ Authenticated mutations contain `runId`, `checkpointToken`, `roomDirectiveId`, a
 }
 ```
 
-Success is `201` and returns `runId`, revision 0, `checkpointToken`, and canonical public `metaState` with the first server-issued room directive.
+The active Phase 2 fixture returns a first room directive. The disconnected
+Phase 3B2B1 ruleset instead begins with a private starting-relic offer and no
+room directive; a valid opaque starting choice is required before the first
+directive can be issued. No production endpoint exposes that flow yet.
 
 The Worker fails closed with `503` when a matching complete ruleset, HMAC secret, or D1 binding is unavailable. Phase 2 has no production ruleset.
 
@@ -168,9 +170,11 @@ cover:
 This test runtime uses only the fixture ruleset. It does not establish or imply
 a production v0.8 ruleset.
 
-The Phase 3B1 `v08-meta-1` directory implements deterministic initial state,
+The Phase 3B2B1 `v08-meta-1` directory implements deterministic initial state,
+mandatory opaque starting-relic selection, a canonical relic build ledger,
 room selection and `RoomDirectiveV3` consumption for isolated tests. Its
 descriptor is `test-only`, registry resolution rejects it, and neither active
 entrypoint imports it. It therefore does not alter any route or payload above.
-Future production offers must be opaque, bound to run/revision/directive, and
-selected by ID; client prices and resulting totals remain non-authoritative.
+The test-only starting offer is opaque, bound to run/ruleset/revision, and
+selected by ID. Future non-starting offers and endpoint integration remain
+deferred; client prices and resulting totals remain non-authoritative.

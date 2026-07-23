@@ -98,7 +98,11 @@ async function createRun(fixture, options = {}) {
     secret: options.secret || secret(),
     randomOracle: oracle
   });
-  const state = await ruleset.createRun(fixture.initialMetaState, context);
+  const offered = await ruleset.createRun(fixture.initialMetaState, context);
+  const state = await ruleset.selectStartingRelic(offered, {
+    offerId: offered.pendingOffer.offerId,
+    choiceId: offered.pendingOffer.choices[0].choiceId
+  }, context);
   return { ruleset, state, context };
 }
 
@@ -151,10 +155,10 @@ const runners = {
     const { ruleset, state, context } = await createRun(fixture);
     const next = await ruleset.consumeRoomDirective(state, operationFor(state), context);
     assert.equal(next.depth, 1);
-    assert.equal(next.revision, 1);
+    assert.equal(next.revision, 2);
     assert.equal(next.roomIndex, 2);
     assert.equal(next.currentRoomDirective.depth, 2);
-    assert.equal(next.currentRoomDirective.revision, 1);
+    assert.equal(next.currentRoomDirective.revision, 2);
   },
 
   async "skip-depth-rejected"(fixture) {
@@ -253,6 +257,7 @@ const runners = {
     const oracle = zeroOracle();
     const context = contextFor(fixture, { randomOracle: oracle });
     const state = createInitialMetaStateV08(fixture.initialMetaState, context);
+    state.status = "active";
     state.statistics.roomsCompleted = 20;
     state.specialRoomScheduleState.otterRoomsSeenThisRun = 3;
     state.specialRoomScheduleState.forgeSeenInGame = true;
@@ -308,6 +313,7 @@ const runners = {
   async "parallel-issue-same-revision"(fixture) {
     const context = contextFor(fixture, { secret: secret("parallel") });
     const initial = createInitialMetaStateV08(fixture.initialMetaState, context);
+    initial.status = "active";
     const [left, right] = await Promise.all([
       issueNextRoomDirectiveV08(initial, context),
       issueNextRoomDirectiveV08(initial, context)

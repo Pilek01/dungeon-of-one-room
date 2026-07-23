@@ -58,6 +58,10 @@ async function runToVictory(seed) {
     randomOracle
   };
   let state = await ruleset.createRun({ startDepth: 0 }, context);
+  state = await ruleset.selectStartingRelic(state, {
+    offerId: state.pendingOffer.offerId,
+    choiceId: state.pendingOffer.choices[0].choiceId
+  }, context);
   const directiveIds = new Set();
   let previousDepth = 0;
   let previousRoomIndex = 0;
@@ -124,6 +128,10 @@ test("property: retry and serialized state round-trip preserve schedule state", 
     randomOracle
   };
   let state = await ruleset.createRun({ startDepth: 0 }, context);
+  state = await ruleset.selectStartingRelic(state, {
+    offerId: state.pendingOffer.offerId,
+    choiceId: state.pendingOffer.choices[0].choiceId
+  }, context);
   for (let index = 0; index < 12; index += 1) {
     state = await ruleset.consumeRoomDirective(state, operationFor(state), context);
   }

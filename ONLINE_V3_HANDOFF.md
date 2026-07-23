@@ -1,4 +1,4 @@
-# Online v3 handoff - Phase 3B2A
+# Online v3 handoff - Phase 3B2B1
 
 Date: 2026-07-24
 
@@ -36,6 +36,76 @@ The Phase 3B2A local commit subject is:
 
 ```text
 Implement Online v3 reward envelopes and authoritative gold ledger
+```
+
+The Phase 3B2B1 local commit subject is:
+
+```text
+Implement Online v3 starting relic offer and canonical build ledger
+```
+
+## Phase 3B2B1 outcome
+
+Phase 3B2B1 adds the complete 58-relic v0.8 inventory, five generated
+canonical relic policy documents, an authoritative grouped relic ledger,
+stable build digest and safe public projection, plus the fixed mandatory
+starting offer for `fang`, `plating`, and `lucky`.
+
+New runs remain `awaiting_starting_relic` with no room directive until a valid
+opaque `offerId`/`choiceId` selection is accepted. Selection advances the
+revision, writes exactly one canonical relic acquisition, archives a bounded
+consumed receipt, and only then issues the first room directive. Exact retries
+are no-ops; changed, stale, foreign, unknown, and forged selections fail
+closed.
+
+The generator now also reads active `relic-runtime.js`,
+`merchant-curation.js`, and `boss-campaign.js`, and writes:
+
+```text
+relic-catalog.generated.json
+relic-stack-policy.generated.json
+relic-slot-policy.generated.json
+starting-relic-policy.generated.json
+relic-build-metadata.generated.json
+```
+
+The previous Phase 3B2A hash was:
+
+```text
+sha256:29df5d1f7b5cb4042e1abbe77a625b7e2250fffce13e6d9ca37f41fffe07665f
+```
+
+The Phase 3B2B1 hash is:
+
+```text
+sha256:ca964ec0ce54dd9ea550e4814fb4cc151a699da01d1970637e30cd25c64bf800
+```
+
+The descriptor remains `test-only`; neither hash was activated. Active Worker
+routes, D1, `recent_ops_json`, Wrangler, game files, CSS, assets and audio are
+unchanged.
+
+Verification adds exactly 33 executable golden fixtures, 1,000 seeded
+offer/selection runs, and 1,000 seeded catalog acquisition sequences.
+
+Phase 3B2B1 validation:
+
+```text
+generator drift check:       PASS
+unit/fixture tests:          191 pass, 0 fail
+real runtime/D1 tests:         9 pass, 0 fail
+combined:                    200 pass, 0 fail
+headed game baseline smoke: PASS
+```
+
+Explicitly deferred: all non-starting relic offers, rarity/pity, Merchant,
+mutator/skill/elixir offers, Camp, Forge, Pact, lives, score, leaderboard,
+relic effect activation, endpoint/client integration, push and deployment.
+
+Detailed record:
+
+```text
+docs/ONLINE_V3_PHASE3B2B1.md
 ```
 
 ## Phase 3B2A outcome

@@ -23,6 +23,12 @@ const SOURCE_INPUTS = Object.freeze([
     file: "game.js",
     symbols: [
       "MAX_DEPTH",
+      "MAX_RELICS",
+      "STARTING_RELIC_IDS",
+      "MYTHIC_RELIC_ID",
+      "MYTHIC_RELIC_SLOT_BONUS",
+      "MYTHIC_DOUBLE_LEGENDARY_ID",
+      "MAX_NORMAL_RELIC_STACK",
       "START_DEPTH_CHECKPOINTS",
       "START_DEPTH_UNLOCK_BOSS_DEPTHS",
       "MAX_LIVES",
@@ -64,7 +70,19 @@ const SOURCE_INPUTS = Object.freeze([
   },
   {
     file: "relic-data.js",
-    symbols: ["Golden Idol", "Void Reaper", "Chaos Orb"]
+    symbols: ["RELICS", "Golden Idol", "Void Reaper", "Chaos Orb"]
+  },
+  {
+    file: "relic-runtime.js",
+    symbols: ["getRelicStackCount", "isNormalRelicStackAtCap", "getRelicInventoryGroups"]
+  },
+  {
+    file: "merchant-curation.js",
+    symbols: ["chooseMerchantRelicOffer"]
+  },
+  {
+    file: "boss-campaign.js",
+    symbols: ["BOSS_PROFILES"]
   }
 ]);
 
@@ -76,6 +94,11 @@ const GENERATED_FILES = Object.freeze([
   "special-room-policy.generated.json",
   "gold-sources.generated.json",
   "gold-modifiers.generated.json",
+  "relic-catalog.generated.json",
+  "relic-stack-policy.generated.json",
+  "relic-slot-policy.generated.json",
+  "starting-relic-policy.generated.json",
+  "relic-build-metadata.generated.json",
   "room-reward-bounds.generated.json",
   "chest-reward-bounds.generated.json"
 ]);
@@ -235,6 +258,242 @@ function parsePactProfiles(source) {
   }
   if (profiles.length === 0) throw new Error("SOURCE_PARSE_FAILED:PACT_ROOM_PROFILES:entries");
   return profiles;
+}
+
+function parseRelics(source) {
+  const block = extractBalancedBlock(source, "const RELICS", "[", "]");
+  const relics = [];
+  const pattern = /\{\s*id:\s*"([^"]+)",\s*rarity:\s*"([^"]+)",\s*name:\s*"([^"]+)",\s*desc:\s*"([^"]*)"\s*\}/gu;
+  for (const match of block.matchAll(pattern)) {
+    relics.push({
+      id: match[1],
+      rarity: match[2],
+      name: match[3],
+      description: match[4]
+    });
+  }
+  if (relics.length === 0) throw new Error("SOURCE_PARSE_FAILED:RELICS:entries");
+  const ids = relics.map((entry) => entry.id);
+  if (new Set(ids).size !== ids.length) throw new Error("ACTIVE_RELIC_ID_DUPLICATE");
+  return relics;
+}
+
+function extractStringArray(text, name) {
+  const escaped = name.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&");
+  const body = requireMatch(
+    text,
+    new RegExp(`const\\s+${escaped}\\s*=\\s*Object\\.freeze\\(\\[([\\s\\S]*?)\\]\\)\\s*;`, "u"),
+    name
+  )[1];
+  return Array.from(body.matchAll(/"([^"]+)"/gu), (match) => match[1]);
+}
+
+function extractStringConstant(text, name) {
+  const escaped = name.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&");
+  return requireMatch(
+    text,
+    new RegExp(`const\\s+${escaped}\\s*=\\s*"([^"]+)"\\s*;`, "u"),
+    name
+  )[1];
+}
+
+function buildRelicCanonicalData(records, textByFile) {
+  const gameSource = textByFile.get("game.js");
+  const relicSource = textByFile.get("relic-data.js");
+  const relicRuntimeSource = textByFile.get("relic-runtime.js");
+  const relics = parseRelics(relicSource);
+  const relicIds = relics.map((entry) => entry.id);
+  const knownIds = new Set(relicIds);
+  const startingRelicIds = extractStringArray(gameSource, "STARTING_RELIC_IDS");
+  const maximumRelicSlots = extractNumber(gameSource, "MAX_RELICS");
+  const maximumNormalRelicStack = extractNumber(gameSource, "MAX_NORMAL_RELIC_STACK");
+  const slotBonusRelicId = extractStringConstant(gameSource, "MYTHIC_RELIC_ID");
+  const slotBonus = extractNumber(gameSource, "MYTHIC_RELIC_SLOT_BONUS");
+  const doubleLegendaryRelicId = extractStringConstant(gameSource, "MYTHIC_DOUBLE_LEGENDARY_ID");
+  const nonStackableNormalIds = [
+    "shrineward",
+    "ironboots",
+    "scoutlens",
+    "fieldrations",
+    "trapweave",
+    "cachekey"
+  ];
+  const goldModifierByRelicId = {
+    idol: "golden-idol",
+    voidreaper: "void-reaper-crit-kill",
+    chaosorb: "chaos-orb-gold-roll"
+  };
+  const acquisitionSourcesByRarity = {
+    normal: ["starting_relic", "relic_draft", "boss_drop", "merchant", "forge", "otter", "vault"],
+    rare: ["relic_draft", "boss_drop", "merchant", "forge", "otter", "vault"],
+    epic: ["relic_draft", "boss_drop", "merchant", "forge", "otter", "vault"],
+    legendary: ["relic_draft", "boss_drop", "merchant", "forge", "otter", "vault"],
+    mythic: [
+      "relic_draft",
+      "boss_drop",
+      "merchant",
+      "forge",
+      "otter",
+      "vault",
+      "mythic_replacement_roll"
+    ]
+  };
+
+  for (const relicId of startingRelicIds) {
+    if (!knownIds.has(relicId)) throw new Error(`STARTING_RELIC_ID_UNKNOWN:${relicId}`);
+  }
+  for (const relicId of [...nonStackableNormalIds, slotBonusRelicId, doubleLegendaryRelicId]) {
+    if (!knownIds.has(relicId)) throw new Error(`ACTIVE_RELIC_ID_MISMATCH:${relicId}`);
+  }
+  for (const relicId of Object.keys(goldModifierByRelicId)) {
+    if (!knownIds.has(relicId)) throw new Error(`GOLD_RELIC_MODIFIER_UNKNOWN:${relicId}`);
+  }
+  for (const match of gameSource.matchAll(/\b(?:hasRelic|getRelicById|applyRelic|removeRelic)\("([^"]+)"\)/gu)) {
+    if (!knownIds.has(match[1])) throw new Error(`ACTIVE_RELIC_ID_MISMATCH:${match[1]}`);
+  }
+  for (const marker of ["getRelicStackCount", "isNormalRelicStackAtCap", "getRelicInventoryGroups"]) {
+    if (!relicRuntimeSource.includes(marker)) throw new Error(`SOURCE_SYMBOL_MISSING:relic-runtime.js:${marker}`);
+  }
+
+  const catalog = relics.map((relic) => {
+    const stackable = relic.rarity === "normal" && !nonStackableNormalIds.includes(relic.id);
+    const mythicRules = relic.rarity === "mythic"
+      ? {
+          maximumOwnedMythics: 1,
+          grantsRelicSlots: relic.id === slotBonusRelicId ? slotBonus : 0,
+          legendarySlotLimit: relic.id === doubleLegendaryRelicId ? 2 : 1
+        }
+      : null;
+    return {
+      relicId: relic.id,
+      displayName: relic.name,
+      rarity: relic.rarity,
+      startingEligible: startingRelicIds.includes(relic.id),
+      stackable,
+      maximumStacks: stackable ? maximumNormalRelicStack : 1,
+      slotCost: 1,
+      unique: !stackable,
+      legendary: relic.rarity === "legendary",
+      mythic: relic.rarity === "mythic",
+      mythicRules,
+      bonusRelicSlots: relic.id === slotBonusRelicId ? slotBonus : 0,
+      mutuallyExclusiveWith: relic.rarity === "mythic"
+        ? relics.filter((entry) => entry.rarity === "mythic" && entry.id !== relic.id).map((entry) => entry.id)
+        : [],
+      acquisitionSources: acquisitionSourcesByRarity[relic.rarity].filter(
+        (source) => source !== "starting_relic" || startingRelicIds.includes(relic.id)
+      ),
+      depthRestrictions: [],
+      bossRestrictions: [],
+      goldModifierRef: goldModifierByRelicId[relic.id] || null,
+      buildMetadataFields: [
+        "relicId",
+        "stacks",
+        "acquiredRevision",
+        "acquisitionSource",
+        "sourceOfferId"
+      ],
+      legacySourceFiles: ["relic-data.js", "relic-runtime.js", "game.js"],
+      legacySourceSymbols: [
+        `RELICS:${relic.id}`,
+        "isRelicStackable",
+        "applyRelic"
+      ],
+      notes: relic.description
+    };
+  });
+
+  const sources = sourceRefs(records, [
+    "game.js",
+    "relic-data.js",
+    "relic-runtime.js",
+    "loot-tables.js",
+    "merchant-curation.js",
+    "boss-campaign.js"
+  ]);
+  const common = { schemaVersion: 1, rulesetId: RULESET_ID, sourceCommit: BASELINE_COMMIT, sources };
+  return new Map([
+    ["relic-catalog.generated.json", {
+      ...common,
+      canonicalData: {
+        inventoryCount: catalog.length,
+        rarityCounts: Object.fromEntries(
+          ["normal", "rare", "epic", "legendary", "mythic"].map((rarity) => [
+            rarity,
+            catalog.filter((entry) => entry.rarity === rarity).length
+          ])
+        ),
+        relics: catalog
+      }
+    }],
+    ["relic-stack-policy.generated.json", {
+      ...common,
+      canonicalData: {
+        maximumNormalRelicStack,
+        stackableRelicIds: catalog.filter((entry) => entry.stackable).map((entry) => entry.relicId),
+        nonStackableRelicIds: catalog.filter((entry) => !entry.stackable).map((entry) => entry.relicId),
+        stackUnitConsumesSlot: true
+      }
+    }],
+    ["relic-slot-policy.generated.json", {
+      ...common,
+      canonicalData: {
+        baseRelicSlots: maximumRelicSlots,
+        slotCostPerStack: 1,
+        slotBonusRelicId,
+        slotBonus,
+        maximumLegendaryRelics: 1,
+        doubleLegendaryRelicId,
+        maximumLegendaryRelicsWithBonus: 2,
+        maximumMythicRelics: 1
+      }
+    }],
+    ["starting-relic-policy.generated.json", {
+      ...common,
+      canonicalData: {
+        offerType: "starting_relic",
+        sourceType: "run_start",
+        sourceId: "v08-fixed-starting-relics",
+        choiceCount: startingRelicIds.length,
+        choiceOrderPolicy: "legacy-fixed-order",
+        startingRelicIds,
+        selectionRequired: true,
+        skipAllowed: false,
+        nextStatus: "active"
+      }
+    }],
+    ["relic-build-metadata.generated.json", {
+      ...common,
+      canonicalData: {
+        buildFields: [
+          "relics",
+          "relicSlotBase",
+          "relicSlotBonus",
+          "relicSlotLimit",
+          "relicSlotsUsed",
+          "uniqueRelicCount",
+          "totalRelicStacks",
+          "buildDigest"
+        ],
+        relicEntryFields: [
+          "relicId",
+          "stacks",
+          "acquiredRevision",
+          "acquisitionSource",
+          "sourceOfferId"
+        ],
+        digestPolicy: "sha256 canonical JSON excluding buildDigest",
+        publicProjectionFields: [
+          "relics",
+          "relicSlotLimit",
+          "relicSlotsUsed",
+          "uniqueRelicCount",
+          "totalRelicStacks",
+          "buildDigest"
+        ]
+      }
+    }]
+  ]);
 }
 
 async function readSources() {
@@ -1008,7 +1267,7 @@ function buildCanonicalData(records, textByFile) {
       legalPactIds: ["avarice"],
       legalCampUpgradeIds: ["treasure_sense", "bounty_contract"],
       modifiers: [
-        { id: "golden-idol", buildPath: "relics", buildId: "idol", perStackAdditive: goldenIdolBonus, stackCap: maxNormalRelicStack, appliesTo: ["multiplied-grant"] },
+        { id: "golden-idol", buildPath: "relics", buildId: "idol", perStackAdditive: goldenIdolBonus, stackCap: 1, appliesTo: ["multiplied-grant"] },
         { id: "greed", buildPath: "mutators", buildId: "greed", additive: 0.4, stackCap: 1, appliesTo: ["multiplied-grant"] },
         { id: "standard-mutator-gold", buildPath: "mutators", excludes: ["greed"], additivePerUnique: 0.2, stackCap: mutatorIds.length - 1, appliesTo: ["multiplied-grant"] },
         { id: "elitist", buildPath: "mutators", buildId: "elitist", multiplicative: 1.6, stackCap: 1, appliesTo: ["elite-kill"] },
@@ -1121,9 +1380,10 @@ function buildCanonicalData(records, textByFile) {
     schemaVersion: 3,
     rulesetId: RULESET_ID,
     sourceCommit,
-    purpose: "Phase 3B1 room progression plus Phase 3B2A gold and reward-envelope source inventory",
+    purpose: "Phase 3B1 room progression, Phase 3B2A gold, and Phase 3B2B1 relic/starting-offer source inventory",
     sources: records
   };
+  const relicData = buildRelicCanonicalData(records, textByFile);
   return new Map([
     ["source-manifest.generated.json", sourceManifest],
     ["run-progression.generated.json", runProgression],
@@ -1133,7 +1393,8 @@ function buildCanonicalData(records, textByFile) {
     ["gold-sources.generated.json", goldSourcesData],
     ["gold-modifiers.generated.json", goldModifiersData],
     ["room-reward-bounds.generated.json", roomRewardBoundsData],
-    ["chest-reward-bounds.generated.json", chestRewardBoundsData]
+    ["chest-reward-bounds.generated.json", chestRewardBoundsData],
+    ...relicData
   ]);
 }
 

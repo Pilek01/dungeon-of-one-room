@@ -18,6 +18,7 @@ import {
   createRoomRewardEnvelopeV3,
   settleRoomRewardEnvelopeV3
 } from "./reward-policy.js";
+import { assertCanonicalRelicBuildDigestV08 } from "./relic-policy.js";
 import {
   deriveIntInclusive,
   deriveRandomBytes
@@ -268,6 +269,7 @@ function updateScheduleForIssuedRoom(scheduleState, roomType, depth) {
 
 export async function issueNextRoomDirectiveV08(state, context = {}) {
   assertMetaStateV08(state);
+  await assertCanonicalRelicBuildDigestV08(state.build, context.cryptoProvider);
   if (state.status !== "active") throw new TypeError("RUN_NOT_ACTIVE");
   if (state.currentRoomDirective && !state.currentRoomDirective.consumed) {
     assertRoomDirectiveV3(state.currentRoomDirective);

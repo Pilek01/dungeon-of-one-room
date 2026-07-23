@@ -6,6 +6,7 @@ import {
   calculateMultipliedGoldV08,
   resolveGoldModifierV08
 } from "./gold-policy.js";
+import { assertCanonicalRelicBuildDigestV08 } from "./relic-policy.js";
 
 const chestBounds = chestBoundsDocument.canonicalData;
 const rewardBounds = rewardBoundsDocument.canonicalData;
@@ -353,6 +354,7 @@ function calculateClaimAmount(state, envelope, claim, slotById) {
 }
 
 export async function settleRoomRewardEnvelopeV3(state, request, context = {}) {
+  await assertCanonicalRelicBuildDigestV08(state.build, context.cryptoProvider);
   const envelope = assertRoomRewardEnvelopeV3(state.currentRewardEnvelope);
   const digest = await sha256(requestDigestInput(request), context.cryptoProvider);
   const previous = (state.rewardSettlementHistory || []).find(

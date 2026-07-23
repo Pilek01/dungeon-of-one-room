@@ -6,6 +6,27 @@ import {
   issueNextRoomDirectiveV08
 } from "./room-policy.js";
 import { settleRoomRewardEnvelopeV3 } from "./reward-policy.js";
+import {
+  issueStartingRelicOfferV08,
+  projectPublicStartingRelicOfferV08,
+  selectStartingRelic
+} from "./starting-relic-offer.js";
+export {
+  applyRelicAcquisition,
+  assertCanonicalRelicBuildDigestV08,
+  canAcquireRelic,
+  computeRelicBuildDigestV08,
+  getRelicSlotCost,
+  getRelicSlotLimit,
+  getRelicStackLimit,
+  projectPublicBuild
+} from "./relic-policy.js";
+export {
+  assertStartingRelicOfferV08,
+  issueStartingRelicOfferV08,
+  projectPublicStartingRelicOfferV08,
+  selectStartingRelic
+} from "./starting-relic-offer.js";
 
 function mergeContext(options, context) {
   return {
@@ -27,7 +48,18 @@ export function createV08Meta1Ruleset(options = {}) {
 
     async createRun(input, context) {
       const initial = createInitialMetaStateV08(input, context);
-      return issueNextRoomDirectiveV08(initial, mergeContext(options, context));
+      return issueStartingRelicOfferV08(initial, mergeContext(options, context));
+    },
+
+    async selectStartingRelic(state, request, context = {}) {
+      const mergedContext = mergeContext(options, context);
+      const selected = await selectStartingRelic(state, request, mergedContext);
+      if (selected.currentRoomDirective) return selected;
+      return issueNextRoomDirectiveV08(selected, mergedContext);
+    },
+
+    projectPublicStartingRelicOffer(offer) {
+      return projectPublicStartingRelicOfferV08(offer);
     },
 
     async issueRoomDirective(state, context = {}) {

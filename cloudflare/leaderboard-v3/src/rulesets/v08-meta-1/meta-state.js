@@ -5,6 +5,10 @@ import {
   RULESET_ID
 } from "./constants.js";
 import { assertGoldLedgerV08 } from "./gold-policy.js";
+import {
+  assertCanonicalRelicBuildV08,
+  createEmptyRelicBuildV08
+} from "./relic-policy.js";
 
 const progression = progressionDocument.canonicalData;
 
@@ -34,17 +38,6 @@ function normalizeStartDepth(input) {
     if (!unlocked.has(requested)) throw new TypeError("START_DEPTH_LOCKED");
   }
   return requested;
-}
-
-function emptyBuild() {
-  return {
-    relics: [],
-    mutators: [],
-    pacts: [],
-    campUpgrades: {},
-    skillTiers: {},
-    elixirs: []
-  };
 }
 
 function createGoldLedger() {
@@ -92,7 +85,7 @@ export function createInitialMetaStateV08(input = {}, context = {}) {
     rulesetHash: manifest.rulesetHash,
     runId,
     season,
-    status: "active",
+    status: "awaiting_starting_relic",
     revision: progression.initialRevision,
     startDepth,
     depth: firstDirectiveDepth - progression.depthTransition,
@@ -106,8 +99,9 @@ export function createInitialMetaStateV08(input = {}, context = {}) {
     goldLedger: createGoldLedger(),
     rewardSettlementHistory: [],
     lives: progression.initialLives,
-    build: emptyBuild(),
+    build: createEmptyRelicBuildV08(),
     pendingOffer: null,
+    offerSettlementHistory: [],
     pendingInventory: null,
     specialRoomScheduleState: createScheduleState(input.specialRoomHistory),
     statistics: {
@@ -136,7 +130,9 @@ export function assertMetaStateV08(state) {
   if (!state || typeof state !== "object") throw new TypeError("META_STATE_INVALID");
   if (state.rulesetId !== RULESET_ID) throw new TypeError("RULESET_ID_MISMATCH");
   if (state.rulesetHash !== manifest.rulesetHash) throw new TypeError("RULESET_HASH_MISMATCH");
-  if (!["active", "victory"].includes(state.status)) throw new TypeError("RUN_STATUS_INVALID");
+  if (!["awaiting_starting_relic", "active", "victory"].includes(state.status)) {
+    throw new TypeError("RUN_STATUS_INVALID");
+  }
   for (const [field, minimum] of [
     ["revision", 0],
     ["depth", 0],
@@ -152,7 +148,14 @@ export function assertMetaStateV08(state) {
   requireText(state.runId, "META_STATE_INVALID:runId");
   requireText(state.season, "META_STATE_INVALID:season");
   if (!state.build || typeof state.build !== "object") throw new TypeError("META_STATE_INVALID:build");
+  assertCanonicalRelicBuildV08(state.build);
   assertGoldLedgerV08(state);
+  if (!Array.isArray(state.offerSettlementHistory) || state.offerSettlementHistory.length > 64) {
+    throw new TypeError("META_STATE_INVALID:offerSettlementHistory");
+  }
+  if (state.status === "awaiting_starting_relic" && state.currentRoomDirective) {
+    throw new TypeError("META_STATE_STARTING_RELIC_ROOM_DIRECTIVE_FORBIDDEN");
+  }
   if (!Array.isArray(state.rewardSettlementHistory) || state.rewardSettlementHistory.length > 64) {
     throw new TypeError("META_STATE_INVALID:rewardSettlementHistory");
   }

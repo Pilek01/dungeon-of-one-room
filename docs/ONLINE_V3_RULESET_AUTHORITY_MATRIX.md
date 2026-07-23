@@ -127,3 +127,17 @@ The JSONL block is the machine-readable source used by the completeness test. Ev
 ## Audit summary
 
 This matrix intentionally separates deterministic state transitions from the truth of local combat. The recommended server surface owns schedules, offers, inventories, prices, persistent progression, score and publication. It accepts only bounded combat summaries and treats proc timing, HP, enemy behavior, actual death and full combat legality as heuristic or client-only evidence.
+
+## Phase 3B2B1 implemented authority additions
+
+The isolated test-only ruleset now implements three previously planned
+authorities:
+
+| Feature | Authority | Implemented validation and storage |
+|---|---|---|
+| Starting relic offer | `SERVER_ISSUED` | Fixed v0.8 set, opaque offer/choice IDs, run/ruleset/revision binding, mandatory one-time choice, bounded consumed receipt |
+| Relic inventory and slot policy | `SERVER_DERIVED` | Generated 58-entry catalog, stack/unique/legendary/mythic/capacity checks, canonical grouped ledger |
+| Public relic build | `SERVER_DERIVED` | Canonical digest and allowlisted projection without acquisition source/revision/private offer ID |
+
+The browser client, active Worker endpoint, regular relic drops, rarity/pity,
+Merchant, and relic effect activation remain outside this implementation.

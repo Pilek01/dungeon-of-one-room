@@ -16,6 +16,10 @@ import {
 import {
   createV08Meta1Ruleset
 } from "../src/rulesets/v08-meta-1/index.js";
+import {
+  applyRelicAcquisition,
+  createEmptyRelicBuildV08
+} from "../src/rulesets/v08-meta-1/relic-policy.js";
 
 const WORKER_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const fixtures = JSON.parse(await readFile(
@@ -80,7 +84,22 @@ async function issuedState(options = {}) {
     state.depth = options.depth;
     state.roomIndex = options.depth;
   }
-  if (options.build) state.build = structuredClone(options.build);
+  state.status = "active";
+  if (options.build) {
+    let build = createEmptyRelicBuildV08();
+    for (const relicId of options.build.relics || []) {
+      build = await applyRelicAcquisition(build, {
+        relicId,
+        acquiredRevision: state.revision,
+        acquisitionSource: "phase3b2a_fixture",
+        sourceOfferId: `fixture_${relicId}`
+      });
+    }
+    for (const field of ["mutators", "pacts", "campUpgrades", "skillTiers", "elixirs"]) {
+      build[field] = structuredClone(options.build[field] ?? build[field]);
+    }
+    state.build = build;
+  }
   return issueNextRoomDirectiveV08(state, resolvedContext);
 }
 
@@ -325,7 +344,7 @@ const runners = Object.fromEntries(fixtures.map((fixture) => [
       case "modifier-stack-cap": {
         const { result } = await settleWithClaims([], {
           build: {
-            relics: ["idol", "idol", "idol", "idol", "idol", "idol"],
+            relics: ["idol"],
             mutators: [],
             pacts: [],
             campUpgrades: {},
@@ -333,7 +352,7 @@ const runners = Object.fromEntries(fixtures.map((fixture) => [
             elixirs: []
           }
         });
-        assert.equal(result.authoritativeGoldDelta, 4);
+        assert.equal(result.authoritativeGoldDelta, 2);
         return;
       }
       case "room-type-mismatch": {
@@ -404,7 +423,7 @@ const runners = Object.fromEntries(fixtures.map((fixture) => [
         const state = await issuedState({
           depth: 89,
           build: {
-            relics: ["idol", "idol", "idol", "idol", "idol"],
+            relics: ["idol"],
             mutators: ["berserker", "bulwark", "alchemist", "greed", "hunter", "resilience", "momentum", "famine", "elitist", "ascension"],
             pacts: ["avarice"],
             campUpgrades: { treasure_sense: 5, bounty_contract: 5 },

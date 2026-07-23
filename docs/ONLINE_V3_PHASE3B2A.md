@@ -183,7 +183,8 @@ Implemented v0.8 ordering:
 
 Supported gold-affecting state:
 
-- Golden Idol: +15% per stack, normal relic stack cap 5;
+- Golden Idol: +15%; Phase 3B2B1 later confirmed it is a rare unique relic
+  and corrected the generated cap from 5 to 1;
 - Greed: +40%;
 - each unique non-Greed mutator: +20%;
 - Elitist: x1.6 on elite reward before the general multiplier;
@@ -192,8 +193,9 @@ Supported gold-affecting state:
 - Bounty Contract: +10% enemy base per level, cap 5.
 
 Known presentation-only relics do not affect the ledger. Unknown relic,
-mutator, pact, or camp-upgrade IDs fail closed. The policy does not implement
-how any item is acquired; that belongs to Phase 3B2B.
+mutator, pact, or camp-upgrade IDs fail closed. Phase 3B2A itself did not
+implement acquisition. Phase 3B2B1 later added the isolated starting relic
+acquisition and canonical relic ledger.
 
 Void Reaper crit-kill gold and Chaos Orb turn-roll gold remain
 `HEURISTIC_ONLY` and are not awarded by 3B2A. Crossroads, Arena, and Otter
@@ -252,6 +254,6 @@ responses or `recent_ops_json`.
 score, leaderboard, D1, endpoint, game client, or deployment behavior is
 implemented here.
 
-Next phase: Phase 3B2B, server-issued starting relic/relic/mutator/skill/elixir
-offers and a canonical build ledger, still without integration with
+Follow-up implemented separately: Phase 3B2B1 covers only the starting relic
+offer and canonical relic build ledger, still without integration with
 `game.js`.

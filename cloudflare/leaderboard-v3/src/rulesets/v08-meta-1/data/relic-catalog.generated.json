@@ -1,0 +1,2628 @@
+{
+  "schemaVersion": 1,
+  "rulesetId": "v08-meta-1",
+  "sourceCommit": "f98820c99066d810169e100beb23a54a332734bd",
+  "sources": [
+    {
+      "file": "boss-campaign.js",
+      "byteLength": 8061,
+      "sha256": "ad885efec2e4bce42514c80a77a9a2cbf0f7310f396f423f5e95da16af60940d"
+    },
+    {
+      "file": "game.js",
+      "byteLength": 1292796,
+      "sha256": "a7d436f8cdde618e7bab802322a658d2055f201950d9ae7b4598269feff3df00"
+    },
+    {
+      "file": "loot-tables.js",
+      "byteLength": 2509,
+      "sha256": "9343a62db72aacd89d16ab0efa3c1fba0c40d08cc1e82e10795990299467e0a9"
+    },
+    {
+      "file": "merchant-curation.js",
+      "byteLength": 827,
+      "sha256": "84dbcbb30c0909cb309154826df7c80d816fe9db90584a8af880eacfc70ceba9"
+    },
+    {
+      "file": "relic-data.js",
+      "byteLength": 9135,
+      "sha256": "fa4cdd27c3b3b9d2b61df3bc346a4123e9d3f70f58afdc16cd626411d6bdfa59"
+    },
+    {
+      "file": "relic-runtime.js",
+      "byteLength": 9127,
+      "sha256": "87e02a9a1519aa5c9c621e23fabe5400cfda8274c1aa39c50cd471478e642d97"
+    }
+  ],
+  "canonicalData": {
+    "inventoryCount": 58,
+    "rarityCounts": {
+      "normal": 13,
+      "rare": 13,
+      "epic": 19,
+      "legendary": 10,
+      "mythic": 3
+    },
+    "relics": [
+      {
+        "relicId": "fang",
+        "displayName": "Fang Charm",
+        "rarity": "normal",
+        "startingEligible": true,
+        "stackable": true,
+        "maximumStacks": 5,
+        "slotCost": 1,
+        "unique": false,
+        "legendary": false,
+        "mythic": false,
+        "mythicRules": null,
+        "bonusRelicSlots": 0,
+        "mutuallyExclusiveWith": [],
+        "acquisitionSources": [
+          "starting_relic",
+          "relic_draft",
+          "boss_drop",
+          "merchant",
+          "forge",
+          "otter",
+          "vault"
+        ],
+        "depthRestrictions": [],
+        "bossRestrictions": [],
+        "goldModifierRef": null,
+        "buildMetadataFields": [
+          "relicId",
+          "stacks",
+          "acquiredRevision",
+          "acquisitionSource",
+          "sourceOfferId"
+        ],
+        "legacySourceFiles": [
+          "relic-data.js",
+          "relic-runtime.js",
+          "game.js"
+        ],
+        "legacySourceSymbols": [
+          "RELICS:fang",
+          "isRelicStackable",
+          "applyRelic"
+        ],
+        "notes": "+10 ATK"
+      },
+      {
+        "relicId": "plating",
+        "displayName": "Bone Plating",
+        "rarity": "normal",
+        "startingEligible": true,
+        "stackable": true,
+        "maximumStacks": 5,
+        "slotCost": 1,
+        "unique": false,
+        "legendary": false,
+        "mythic": false,
+        "mythicRules": null,
+        "bonusRelicSlots": 0,
+        "mutuallyExclusiveWith": [],
+        "acquisitionSources": [
+          "starting_relic",
+          "relic_draft",
+          "boss_drop",
+          "merchant",
+          "forge",
+          "otter",
+          "vault"
+        ],
+        "depthRestrictions": [],
+        "bossRestrictions": [],
+        "goldModifierRef": null,
+        "buildMetadataFields": [
+          "relicId",
+          "stacks",
+          "acquiredRevision",
+          "acquisitionSource",
+          "sourceOfferId"
+        ],
+        "legacySourceFiles": [
+          "relic-data.js",
+          "relic-runtime.js",
+          "game.js"
+        ],
+        "legacySourceSymbols": [
+          "RELICS:plating",
+          "isRelicStackable",
+          "applyRelic"
+        ],
+        "notes": "+10 ARM"
+      },
+      {
+        "relicId": "lucky",
+        "displayName": "Lucky Coin",
+        "rarity": "normal",
+        "startingEligible": true,
+        "stackable": true,
+        "maximumStacks": 5,
+        "slotCost": 1,
+        "unique": false,
+        "legendary": false,
+        "mythic": false,
+        "mythicRules": null,
+        "bonusRelicSlots": 0,
+        "mutuallyExclusiveWith": [],
+        "acquisitionSources": [
+          "starting_relic",
+          "relic_draft",
+          "boss_drop",
+          "merchant",
+          "forge",
+          "otter",
+          "vault"
+        ],
+        "depthRestrictions": [],
+        "bossRestrictions": [],
+        "goldModifierRef": null,
+        "buildMetadataFields": [
+          "relicId",
+          "stacks",
+          "acquiredRevision",
+          "acquisitionSource",
+          "sourceOfferId"
+        ],
+        "legacySourceFiles": [
+          "relic-data.js",
+          "relic-runtime.js",
+          "game.js"
+        ],
+        "legacySourceSymbols": [
+          "RELICS:lucky",
+          "isRelicStackable",
+          "applyRelic"
+        ],
+        "notes": "+5% crit"
+      },
+      {
+        "relicId": "flask",
+        "displayName": "Spare Flask",
+        "rarity": "normal",
+        "startingEligible": false,
+        "stackable": true,
+        "maximumStacks": 5,
+        "slotCost": 1,
+        "unique": false,
+        "legendary": false,
+        "mythic": false,
+        "mythicRules": null,
+        "bonusRelicSlots": 0,
+        "mutuallyExclusiveWith": [],
+        "acquisitionSources": [
+          "relic_draft",
+          "boss_drop",
+          "merchant",
+          "forge",
+          "otter",
+          "vault"
+        ],
+        "depthRestrictions": [],
+        "bossRestrictions": [],
+        "goldModifierRef": null,
+        "buildMetadataFields": [
+          "relicId",
+          "stacks",
+          "acquiredRevision",
+          "acquisitionSource",
+          "sourceOfferId"
+        ],
+        "legacySourceFiles": [
+          "relic-data.js",
+          "relic-runtime.js",
+          "game.js"
+        ],
+        "legacySourceSymbols": [
+          "RELICS:flask",
+          "isRelicStackable",
+          "applyRelic"
+        ],
+        "notes": "+1 potion"
+      },
+      {
+        "relicId": "lifebloom",
+        "displayName": "Lifebloom Seed",
+        "rarity": "normal",
+        "startingEligible": false,
+        "stackable": true,
+        "maximumStacks": 5,
+        "slotCost": 1,
+        "unique": false,
+        "legendary": false,
+        "mythic": false,
+        "mythicRules": null,
+        "bonusRelicSlots": 0,
+        "mutuallyExclusiveWith": [],
+        "acquisitionSources": [
+          "relic_draft",
+          "boss_drop",
+          "merchant",
+          "forge",
+          "otter",
+          "vault"
+        ],
+        "depthRestrictions": [],
+        "bossRestrictions": [],
+        "goldModifierRef": null,
+        "buildMetadataFields": [
+          "relicId",
+          "stacks",
+          "acquiredRevision",
+          "acquisitionSource",
+          "sourceOfferId"
+        ],
+        "legacySourceFiles": [
+          "relic-data.js",
+          "relic-runtime.js",
+          "game.js"
+        ],
+        "legacySourceSymbols": [
+          "RELICS:lifebloom",
+          "isRelicStackable",
+          "applyRelic"
+        ],
+        "notes": "+20 max HP and heal 20"
+      },
+      {
+        "relicId": "ironboots",
+        "displayName": "Iron Boots",
+        "rarity": "normal",
+        "startingEligible": false,
+        "stackable": false,
+        "maximumStacks": 1,
+        "slotCost": 1,
+        "unique": true,
+        "legendary": false,
+        "mythic": false,
+        "mythicRules": null,
+        "bonusRelicSlots": 0,
+        "mutuallyExclusiveWith": [],
+        "acquisitionSources": [
+          "relic_draft",
+          "boss_drop",
+          "merchant",
+          "forge",
+          "otter",
+          "vault"
+        ],
+        "depthRestrictions": [],
+        "bossRestrictions": [],
+        "goldModifierRef": null,
+        "buildMetadataFields": [
+          "relicId",
+          "stacks",
+          "acquiredRevision",
+          "acquisitionSource",
+          "sourceOfferId"
+        ],
+        "legacySourceFiles": [
+          "relic-data.js",
+          "relic-runtime.js",
+          "game.js"
+        ],
+        "legacySourceSymbols": [
+          "RELICS:ironboots",
+          "isRelicStackable",
+          "applyRelic"
+        ],
+        "notes": "Immune to spike damage. Non-stackable"
+      },
+      {
+        "relicId": "fieldrations",
+        "displayName": "Field Rations",
+        "rarity": "normal",
+        "startingEligible": false,
+        "stackable": false,
+        "maximumStacks": 1,
+        "slotCost": 1,
+        "unique": true,
+        "legendary": false,
+        "mythic": false,
+        "mythicRules": null,
+        "bonusRelicSlots": 0,
+        "mutuallyExclusiveWith": [],
+        "acquisitionSources": [
+          "relic_draft",
+          "boss_drop",
+          "merchant",
+          "forge",
+          "otter",
+          "vault"
+        ],
+        "depthRestrictions": [],
+        "bossRestrictions": [],
+        "goldModifierRef": null,
+        "buildMetadataFields": [
+          "relicId",
+          "stacks",
+          "acquiredRevision",
+          "acquisitionSource",
+          "sourceOfferId"
+        ],
+        "legacySourceFiles": [
+          "relic-data.js",
+          "relic-runtime.js",
+          "game.js"
+        ],
+        "legacySourceSymbols": [
+          "RELICS:fieldrations",
+          "isRelicStackable",
+          "applyRelic"
+        ],
+        "notes": "+20 HP at the start of each depth. Non-stackable"
+      },
+      {
+        "relicId": "quickloader",
+        "displayName": "Quickloader",
+        "rarity": "normal",
+        "startingEligible": false,
+        "stackable": true,
+        "maximumStacks": 5,
+        "slotCost": 1,
+        "unique": false,
+        "legendary": false,
+        "mythic": false,
+        "mythicRules": null,
+        "bonusRelicSlots": 0,
+        "mutuallyExclusiveWith": [],
+        "acquisitionSources": [
+          "relic_draft",
+          "boss_drop",
+          "merchant",
+          "forge",
+          "otter",
+          "vault"
+        ],
+        "depthRestrictions": [],
+        "bossRestrictions": [],
+        "goldModifierRef": null,
+        "buildMetadataFields": [
+          "relicId",
+          "stacks",
+          "acquiredRevision",
+          "acquisitionSource",
+          "sourceOfferId"
+        ],
+        "legacySourceFiles": [
+          "relic-data.js",
+          "relic-runtime.js",
+          "game.js"
+        ],
+        "legacySourceSymbols": [
+          "RELICS:quickloader",
+          "isRelicStackable",
+          "applyRelic"
+        ],
+        "notes": "Potions also grant +10 ATK for 3 turns"
+      },
+      {
+        "relicId": "trapweave",
+        "displayName": "Trapweaver Padding",
+        "rarity": "normal",
+        "startingEligible": false,
+        "stackable": false,
+        "maximumStacks": 1,
+        "slotCost": 1,
+        "unique": true,
+        "legendary": false,
+        "mythic": false,
+        "mythicRules": null,
+        "bonusRelicSlots": 0,
+        "mutuallyExclusiveWith": [],
+        "acquisitionSources": [
+          "relic_draft",
+          "boss_drop",
+          "merchant",
+          "forge",
+          "otter",
+          "vault"
+        ],
+        "depthRestrictions": [],
+        "bossRestrictions": [],
+        "goldModifierRef": null,
+        "buildMetadataFields": [
+          "relicId",
+          "stacks",
+          "acquiredRevision",
+          "acquisitionSource",
+          "sourceOfferId"
+        ],
+        "legacySourceFiles": [
+          "relic-data.js",
+          "relic-runtime.js",
+          "game.js"
+        ],
+        "legacySourceSymbols": [
+          "RELICS:trapweave",
+          "isRelicStackable",
+          "applyRelic"
+        ],
+        "notes": "Take 35% less environmental damage. Non-stackable"
+      },
+      {
+        "relicId": "cachekey",
+        "displayName": "Cache Key",
+        "rarity": "normal",
+        "startingEligible": false,
+        "stackable": false,
+        "maximumStacks": 1,
+        "slotCost": 1,
+        "unique": true,
+        "legendary": false,
+        "mythic": false,
+        "mythicRules": null,
+        "bonusRelicSlots": 0,
+        "mutuallyExclusiveWith": [],
+        "acquisitionSources": [
+          "relic_draft",
+          "boss_drop",
+          "merchant",
+          "forge",
+          "otter",
+          "vault"
+        ],
+        "depthRestrictions": [],
+        "bossRestrictions": [],
+        "goldModifierRef": null,
+        "buildMetadataFields": [
+          "relicId",
+          "stacks",
+          "acquiredRevision",
+          "acquisitionSource",
+          "sourceOfferId"
+        ],
+        "legacySourceFiles": [
+          "relic-data.js",
+          "relic-runtime.js",
+          "game.js"
+        ],
+        "legacySourceSymbols": [
+          "RELICS:cachekey",
+          "isRelicStackable",
+          "applyRelic"
+        ],
+        "notes": "The first chest opened each depth grants 8% max HP as Barrier. Non-stackable"
+      },
+      {
+        "relicId": "idol",
+        "displayName": "Golden Idol",
+        "rarity": "rare",
+        "startingEligible": false,
+        "stackable": false,
+        "maximumStacks": 1,
+        "slotCost": 1,
+        "unique": true,
+        "legendary": false,
+        "mythic": false,
+        "mythicRules": null,
+        "bonusRelicSlots": 0,
+        "mutuallyExclusiveWith": [],
+        "acquisitionSources": [
+          "relic_draft",
+          "boss_drop",
+          "merchant",
+          "forge",
+          "otter",
+          "vault"
+        ],
+        "depthRestrictions": [],
+        "bossRestrictions": [],
+        "goldModifierRef": "golden-idol",
+        "buildMetadataFields": [
+          "relicId",
+          "stacks",
+          "acquiredRevision",
+          "acquisitionSource",
+          "sourceOfferId"
+        ],
+        "legacySourceFiles": [
+          "relic-data.js",
+          "relic-runtime.js",
+          "game.js"
+        ],
+        "legacySourceSymbols": [
+          "RELICS:idol",
+          "isRelicStackable",
+          "applyRelic"
+        ],
+        "notes": "+15% gold gain this run"
+      },
+      {
+        "relicId": "thornmail",
+        "displayName": "Thorn Mail",
+        "rarity": "rare",
+        "startingEligible": false,
+        "stackable": false,
+        "maximumStacks": 1,
+        "slotCost": 1,
+        "unique": true,
+        "legendary": false,
+        "mythic": false,
+        "mythicRules": null,
+        "bonusRelicSlots": 0,
+        "mutuallyExclusiveWith": [],
+        "acquisitionSources": [
+          "relic_draft",
+          "boss_drop",
+          "merchant",
+          "forge",
+          "otter",
+          "vault"
+        ],
+        "depthRestrictions": [],
+        "bossRestrictions": [],
+        "goldModifierRef": null,
+        "buildMetadataFields": [
+          "relicId",
+          "stacks",
+          "acquiredRevision",
+          "acquisitionSource",
+          "sourceOfferId"
+        ],
+        "legacySourceFiles": [
+          "relic-data.js",
+          "relic-runtime.js",
+          "game.js"
+        ],
+        "legacySourceSymbols": [
+          "RELICS:thornmail",
+          "isRelicStackable",
+          "applyRelic"
+        ],
+        "notes": "Melee attackers take 20% reflected damage"
+      },
+      {
+        "relicId": "adrenal",
+        "displayName": "Adrenaline Vial",
+        "rarity": "rare",
+        "startingEligible": false,
+        "stackable": false,
+        "maximumStacks": 1,
+        "slotCost": 1,
+        "unique": true,
+        "legendary": false,
+        "mythic": false,
+        "mythicRules": null,
+        "bonusRelicSlots": 0,
+        "mutuallyExclusiveWith": [],
+        "acquisitionSources": [
+          "relic_draft",
+          "boss_drop",
+          "merchant",
+          "forge",
+          "otter",
+          "vault"
+        ],
+        "depthRestrictions": [],
+        "bossRestrictions": [],
+        "goldModifierRef": null,
+        "buildMetadataFields": [
+          "relicId",
+          "stacks",
+          "acquiredRevision",
+          "acquisitionSource",
+          "sourceOfferId"
+        ],
+        "legacySourceFiles": [
+          "relic-data.js",
+          "relic-runtime.js",
+          "game.js"
+        ],
+        "legacySourceSymbols": [
+          "RELICS:adrenal",
+          "isRelicStackable",
+          "applyRelic"
+        ],
+        "notes": "Max fury +2, start with 2 fury"
+      },
+      {
+        "relicId": "scoutlens",
+        "displayName": "Scout's Lens",
+        "rarity": "normal",
+        "startingEligible": false,
+        "stackable": false,
+        "maximumStacks": 1,
+        "slotCost": 1,
+        "unique": true,
+        "legendary": false,
+        "mythic": false,
+        "mythicRules": null,
+        "bonusRelicSlots": 0,
+        "mutuallyExclusiveWith": [],
+        "acquisitionSources": [
+          "relic_draft",
+          "boss_drop",
+          "merchant",
+          "forge",
+          "otter",
+          "vault"
+        ],
+        "depthRestrictions": [],
+        "bossRestrictions": [],
+        "goldModifierRef": null,
+        "buildMetadataFields": [
+          "relicId",
+          "stacks",
+          "acquiredRevision",
+          "acquisitionSource",
+          "sourceOfferId"
+        ],
+        "legacySourceFiles": [
+          "relic-data.js",
+          "relic-runtime.js",
+          "game.js"
+        ],
+        "legacySourceSymbols": [
+          "RELICS:scoutlens",
+          "isRelicStackable",
+          "applyRelic"
+        ],
+        "notes": "Enemy HP bars visible. Non-stackable"
+      },
+      {
+        "relicId": "magnet",
+        "displayName": "Magnetic Shard",
+        "rarity": "rare",
+        "startingEligible": false,
+        "stackable": false,
+        "maximumStacks": 1,
+        "slotCost": 1,
+        "unique": true,
+        "legendary": false,
+        "mythic": false,
+        "mythicRules": null,
+        "bonusRelicSlots": 0,
+        "mutuallyExclusiveWith": [],
+        "acquisitionSources": [
+          "relic_draft",
+          "boss_drop",
+          "merchant",
+          "forge",
+          "otter",
+          "vault"
+        ],
+        "depthRestrictions": [],
+        "bossRestrictions": [],
+        "goldModifierRef": null,
+        "buildMetadataFields": [
+          "relicId",
+          "stacks",
+          "acquiredRevision",
+          "acquisitionSource",
+          "sourceOfferId"
+        ],
+        "legacySourceFiles": [
+          "relic-data.js",
+          "relic-runtime.js",
+          "game.js"
+        ],
+        "legacySourceSymbols": [
+          "RELICS:magnet",
+          "isRelicStackable",
+          "applyRelic"
+        ],
+        "notes": "Auto-loot chests within 2 tiles"
+      },
+      {
+        "relicId": "shrineward",
+        "displayName": "Shrine Ward",
+        "rarity": "normal",
+        "startingEligible": false,
+        "stackable": false,
+        "maximumStacks": 1,
+        "slotCost": 1,
+        "unique": true,
+        "legendary": false,
+        "mythic": false,
+        "mythicRules": null,
+        "bonusRelicSlots": 0,
+        "mutuallyExclusiveWith": [],
+        "acquisitionSources": [
+          "relic_draft",
+          "boss_drop",
+          "merchant",
+          "forge",
+          "otter",
+          "vault"
+        ],
+        "depthRestrictions": [],
+        "bossRestrictions": [],
+        "goldModifierRef": null,
+        "buildMetadataFields": [
+          "relicId",
+          "stacks",
+          "acquiredRevision",
+          "acquisitionSource",
+          "sourceOfferId"
+        ],
+        "legacySourceFiles": [
+          "relic-data.js",
+          "relic-runtime.js",
+          "game.js"
+        ],
+        "legacySourceSymbols": [
+          "RELICS:shrineward",
+          "isRelicStackable",
+          "applyRelic"
+        ],
+        "notes": "Shrines always bless. Chests never trigger traps. Non-stackable"
+      },
+      {
+        "relicId": "merchfavor1",
+        "displayName": "Merchant's Favor I",
+        "rarity": "normal",
+        "startingEligible": false,
+        "stackable": true,
+        "maximumStacks": 5,
+        "slotCost": 1,
+        "unique": false,
+        "legendary": false,
+        "mythic": false,
+        "mythicRules": null,
+        "bonusRelicSlots": 0,
+        "mutuallyExclusiveWith": [],
+        "acquisitionSources": [
+          "relic_draft",
+          "boss_drop",
+          "merchant",
+          "forge",
+          "otter",
+          "vault"
+        ],
+        "depthRestrictions": [],
+        "bossRestrictions": [],
+        "goldModifierRef": null,
+        "buildMetadataFields": [
+          "relicId",
+          "stacks",
+          "acquiredRevision",
+          "acquisitionSource",
+          "sourceOfferId"
+        ],
+        "legacySourceFiles": [
+          "relic-data.js",
+          "relic-runtime.js",
+          "game.js"
+        ],
+        "legacySourceSymbols": [
+          "RELICS:merchfavor1",
+          "isRelicStackable",
+          "applyRelic"
+        ],
+        "notes": "Merchant prices -15%. Doesn't stack with other Merchant's Favor tiers."
+      },
+      {
+        "relicId": "merchfavor",
+        "displayName": "Merchant's Favor II",
+        "rarity": "rare",
+        "startingEligible": false,
+        "stackable": false,
+        "maximumStacks": 1,
+        "slotCost": 1,
+        "unique": true,
+        "legendary": false,
+        "mythic": false,
+        "mythicRules": null,
+        "bonusRelicSlots": 0,
+        "mutuallyExclusiveWith": [],
+        "acquisitionSources": [
+          "relic_draft",
+          "boss_drop",
+          "merchant",
+          "forge",
+          "otter",
+          "vault"
+        ],
+        "depthRestrictions": [],
+        "bossRestrictions": [],
+        "goldModifierRef": null,
+        "buildMetadataFields": [
+          "relicId",
+          "stacks",
+          "acquiredRevision",
+          "acquisitionSource",
+          "sourceOfferId"
+        ],
+        "legacySourceFiles": [
+          "relic-data.js",
+          "relic-runtime.js",
+          "game.js"
+        ],
+        "legacySourceSymbols": [
+          "RELICS:merchfavor",
+          "isRelicStackable",
+          "applyRelic"
+        ],
+        "notes": "Merchant prices -30%. Doesn't stack with other Merchant's Favor tiers."
+      },
+      {
+        "relicId": "merchfavor3",
+        "displayName": "Merchant's Favor III",
+        "rarity": "epic",
+        "startingEligible": false,
+        "stackable": false,
+        "maximumStacks": 1,
+        "slotCost": 1,
+        "unique": true,
+        "legendary": false,
+        "mythic": false,
+        "mythicRules": null,
+        "bonusRelicSlots": 0,
+        "mutuallyExclusiveWith": [],
+        "acquisitionSources": [
+          "relic_draft",
+          "boss_drop",
+          "merchant",
+          "forge",
+          "otter",
+          "vault"
+        ],
+        "depthRestrictions": [],
+        "bossRestrictions": [],
+        "goldModifierRef": null,
+        "buildMetadataFields": [
+          "relicId",
+          "stacks",
+          "acquiredRevision",
+          "acquisitionSource",
+          "sourceOfferId"
+        ],
+        "legacySourceFiles": [
+          "relic-data.js",
+          "relic-runtime.js",
+          "game.js"
+        ],
+        "legacySourceSymbols": [
+          "RELICS:merchfavor3",
+          "isRelicStackable",
+          "applyRelic"
+        ],
+        "notes": "Merchant prices -45%. Doesn't stack with other Merchant's Favor tiers."
+      },
+      {
+        "relicId": "risk",
+        "displayName": "Risk",
+        "rarity": "rare",
+        "startingEligible": false,
+        "stackable": false,
+        "maximumStacks": 1,
+        "slotCost": 1,
+        "unique": true,
+        "legendary": false,
+        "mythic": false,
+        "mythicRules": null,
+        "bonusRelicSlots": 0,
+        "mutuallyExclusiveWith": [],
+        "acquisitionSources": [
+          "relic_draft",
+          "boss_drop",
+          "merchant",
+          "forge",
+          "otter",
+          "vault"
+        ],
+        "depthRestrictions": [],
+        "bossRestrictions": [],
+        "goldModifierRef": null,
+        "buildMetadataFields": [
+          "relicId",
+          "stacks",
+          "acquiredRevision",
+          "acquisitionSource",
+          "sourceOfferId"
+        ],
+        "legacySourceFiles": [
+          "relic-data.js",
+          "relic-runtime.js",
+          "game.js"
+        ],
+        "legacySourceSymbols": [
+          "RELICS:risk",
+          "isRelicStackable",
+          "applyRelic"
+        ],
+        "notes": "+40% damage. You cannot use potions"
+      },
+      {
+        "relicId": "sharpsight",
+        "displayName": "Sharpsight Loop",
+        "rarity": "rare",
+        "startingEligible": false,
+        "stackable": false,
+        "maximumStacks": 1,
+        "slotCost": 1,
+        "unique": true,
+        "legendary": false,
+        "mythic": false,
+        "mythicRules": null,
+        "bonusRelicSlots": 0,
+        "mutuallyExclusiveWith": [],
+        "acquisitionSources": [
+          "relic_draft",
+          "boss_drop",
+          "merchant",
+          "forge",
+          "otter",
+          "vault"
+        ],
+        "depthRestrictions": [],
+        "bossRestrictions": [],
+        "goldModifierRef": null,
+        "buildMetadataFields": [
+          "relicId",
+          "stacks",
+          "acquiredRevision",
+          "acquisitionSource",
+          "sourceOfferId"
+        ],
+        "legacySourceFiles": [
+          "relic-data.js",
+          "relic-runtime.js",
+          "game.js"
+        ],
+        "legacySourceSymbols": [
+          "RELICS:sharpsight",
+          "isRelicStackable",
+          "applyRelic"
+        ],
+        "notes": "+10% damage to full-HP enemies"
+      },
+      {
+        "relicId": "gambleredge",
+        "displayName": "Gambler's Edge",
+        "rarity": "rare",
+        "startingEligible": false,
+        "stackable": false,
+        "maximumStacks": 1,
+        "slotCost": 1,
+        "unique": true,
+        "legendary": false,
+        "mythic": false,
+        "mythicRules": null,
+        "bonusRelicSlots": 0,
+        "mutuallyExclusiveWith": [],
+        "acquisitionSources": [
+          "relic_draft",
+          "boss_drop",
+          "merchant",
+          "forge",
+          "otter",
+          "vault"
+        ],
+        "depthRestrictions": [],
+        "bossRestrictions": [],
+        "goldModifierRef": null,
+        "buildMetadataFields": [
+          "relicId",
+          "stacks",
+          "acquiredRevision",
+          "acquisitionSource",
+          "sourceOfferId"
+        ],
+        "legacySourceFiles": [
+          "relic-data.js",
+          "relic-runtime.js",
+          "game.js"
+        ],
+        "legacySourceSymbols": [
+          "RELICS:gambleredge",
+          "isRelicStackable",
+          "applyRelic"
+        ],
+        "notes": "+12% crit, -20 ARM"
+      },
+      {
+        "relicId": "laststandtorque",
+        "displayName": "Last Stand Torque",
+        "rarity": "rare",
+        "startingEligible": false,
+        "stackable": false,
+        "maximumStacks": 1,
+        "slotCost": 1,
+        "unique": true,
+        "legendary": false,
+        "mythic": false,
+        "mythicRules": null,
+        "bonusRelicSlots": 0,
+        "mutuallyExclusiveWith": [],
+        "acquisitionSources": [
+          "relic_draft",
+          "boss_drop",
+          "merchant",
+          "forge",
+          "otter",
+          "vault"
+        ],
+        "depthRestrictions": [],
+        "bossRestrictions": [],
+        "goldModifierRef": null,
+        "buildMetadataFields": [
+          "relicId",
+          "stacks",
+          "acquiredRevision",
+          "acquisitionSource",
+          "sourceOfferId"
+        ],
+        "legacySourceFiles": [
+          "relic-data.js",
+          "relic-runtime.js",
+          "game.js"
+        ],
+        "legacySourceSymbols": [
+          "RELICS:laststandtorque",
+          "isRelicStackable",
+          "applyRelic"
+        ],
+        "notes": "While below 50% HP: +20 ATK"
+      },
+      {
+        "relicId": "thinbuckler",
+        "displayName": "Thin Buckler",
+        "rarity": "rare",
+        "startingEligible": false,
+        "stackable": false,
+        "maximumStacks": 1,
+        "slotCost": 1,
+        "unique": true,
+        "legendary": false,
+        "mythic": false,
+        "mythicRules": null,
+        "bonusRelicSlots": 0,
+        "mutuallyExclusiveWith": [],
+        "acquisitionSources": [
+          "relic_draft",
+          "boss_drop",
+          "merchant",
+          "forge",
+          "otter",
+          "vault"
+        ],
+        "depthRestrictions": [],
+        "bossRestrictions": [],
+        "goldModifierRef": null,
+        "buildMetadataFields": [
+          "relicId",
+          "stacks",
+          "acquiredRevision",
+          "acquisitionSource",
+          "sourceOfferId"
+        ],
+        "legacySourceFiles": [
+          "relic-data.js",
+          "relic-runtime.js",
+          "game.js"
+        ],
+        "legacySourceSymbols": [
+          "RELICS:thinbuckler",
+          "isRelicStackable",
+          "applyRelic"
+        ],
+        "notes": "Start combat with +6% Max HP barrier"
+      },
+      {
+        "relicId": "duelistseal",
+        "displayName": "Duelist Seal",
+        "rarity": "rare",
+        "startingEligible": false,
+        "stackable": false,
+        "maximumStacks": 1,
+        "slotCost": 1,
+        "unique": true,
+        "legendary": false,
+        "mythic": false,
+        "mythicRules": null,
+        "bonusRelicSlots": 0,
+        "mutuallyExclusiveWith": [],
+        "acquisitionSources": [
+          "relic_draft",
+          "boss_drop",
+          "merchant",
+          "forge",
+          "otter",
+          "vault"
+        ],
+        "depthRestrictions": [],
+        "bossRestrictions": [],
+        "goldModifierRef": null,
+        "buildMetadataFields": [
+          "relicId",
+          "stacks",
+          "acquiredRevision",
+          "acquisitionSource",
+          "sourceOfferId"
+        ],
+        "legacySourceFiles": [
+          "relic-data.js",
+          "relic-runtime.js",
+          "game.js"
+        ],
+        "legacySourceSymbols": [
+          "RELICS:duelistseal",
+          "isRelicStackable",
+          "applyRelic"
+        ],
+        "notes": "While exactly one enemy remains: deal +20% damage and take 15% less damage"
+      },
+      {
+        "relicId": "afterimageboots",
+        "displayName": "Afterimage Boots",
+        "rarity": "rare",
+        "startingEligible": false,
+        "stackable": false,
+        "maximumStacks": 1,
+        "slotCost": 1,
+        "unique": true,
+        "legendary": false,
+        "mythic": false,
+        "mythicRules": null,
+        "bonusRelicSlots": 0,
+        "mutuallyExclusiveWith": [],
+        "acquisitionSources": [
+          "relic_draft",
+          "boss_drop",
+          "merchant",
+          "forge",
+          "otter",
+          "vault"
+        ],
+        "depthRestrictions": [],
+        "bossRestrictions": [],
+        "goldModifierRef": null,
+        "buildMetadataFields": [
+          "relicId",
+          "stacks",
+          "acquiredRevision",
+          "acquisitionSource",
+          "sourceOfferId"
+        ],
+        "legacySourceFiles": [
+          "relic-data.js",
+          "relic-runtime.js",
+          "game.js"
+        ],
+        "legacySourceSymbols": [
+          "RELICS:afterimageboots",
+          "isRelicStackable",
+          "applyRelic"
+        ],
+        "notes": "Dash grants Barrier equal to 10% max HP"
+      },
+      {
+        "relicId": "alchemistscoil",
+        "displayName": "Alchemist Coil",
+        "rarity": "rare",
+        "startingEligible": false,
+        "stackable": false,
+        "maximumStacks": 1,
+        "slotCost": 1,
+        "unique": true,
+        "legendary": false,
+        "mythic": false,
+        "mythicRules": null,
+        "bonusRelicSlots": 0,
+        "mutuallyExclusiveWith": [],
+        "acquisitionSources": [
+          "relic_draft",
+          "boss_drop",
+          "merchant",
+          "forge",
+          "otter",
+          "vault"
+        ],
+        "depthRestrictions": [],
+        "bossRestrictions": [],
+        "goldModifierRef": null,
+        "buildMetadataFields": [
+          "relicId",
+          "stacks",
+          "acquiredRevision",
+          "acquisitionSource",
+          "sourceOfferId"
+        ],
+        "legacySourceFiles": [
+          "relic-data.js",
+          "relic-runtime.js",
+          "game.js"
+        ],
+        "legacySourceSymbols": [
+          "RELICS:alchemistscoil",
+          "isRelicStackable",
+          "applyRelic"
+        ],
+        "notes": "Using a potion reduces every active skill cooldown by 2 turns"
+      },
+      {
+        "relicId": "vampfang",
+        "displayName": "Vampiric Fang",
+        "rarity": "epic",
+        "startingEligible": false,
+        "stackable": false,
+        "maximumStacks": 1,
+        "slotCost": 1,
+        "unique": true,
+        "legendary": false,
+        "mythic": false,
+        "mythicRules": null,
+        "bonusRelicSlots": 0,
+        "mutuallyExclusiveWith": [],
+        "acquisitionSources": [
+          "relic_draft",
+          "boss_drop",
+          "merchant",
+          "forge",
+          "otter",
+          "vault"
+        ],
+        "depthRestrictions": [],
+        "bossRestrictions": [],
+        "goldModifierRef": null,
+        "buildMetadataFields": [
+          "relicId",
+          "stacks",
+          "acquiredRevision",
+          "acquisitionSource",
+          "sourceOfferId"
+        ],
+        "legacySourceFiles": [
+          "relic-data.js",
+          "relic-runtime.js",
+          "game.js"
+        ],
+        "legacySourceSymbols": [
+          "RELICS:vampfang",
+          "isRelicStackable",
+          "applyRelic"
+        ],
+        "notes": "Lifesteal: heal 10% of damage dealt on each hit (cap 20/hit)"
+      },
+      {
+        "relicId": "glasscannon",
+        "displayName": "Glass Cannon",
+        "rarity": "epic",
+        "startingEligible": false,
+        "stackable": false,
+        "maximumStacks": 1,
+        "slotCost": 1,
+        "unique": true,
+        "legendary": false,
+        "mythic": false,
+        "mythicRules": null,
+        "bonusRelicSlots": 0,
+        "mutuallyExclusiveWith": [],
+        "acquisitionSources": [
+          "relic_draft",
+          "boss_drop",
+          "merchant",
+          "forge",
+          "otter",
+          "vault"
+        ],
+        "depthRestrictions": [],
+        "bossRestrictions": [],
+        "goldModifierRef": null,
+        "buildMetadataFields": [
+          "relicId",
+          "stacks",
+          "acquiredRevision",
+          "acquisitionSource",
+          "sourceOfferId"
+        ],
+        "legacySourceFiles": [
+          "relic-data.js",
+          "relic-runtime.js",
+          "game.js"
+        ],
+        "legacySourceSymbols": [
+          "RELICS:glasscannon",
+          "isRelicStackable",
+          "applyRelic"
+        ],
+        "notes": "+30 ATK, -55% max HP"
+      },
+      {
+        "relicId": "echostrike",
+        "displayName": "Echo Strike",
+        "rarity": "epic",
+        "startingEligible": false,
+        "stackable": false,
+        "maximumStacks": 1,
+        "slotCost": 1,
+        "unique": true,
+        "legendary": false,
+        "mythic": false,
+        "mythicRules": null,
+        "bonusRelicSlots": 0,
+        "mutuallyExclusiveWith": [],
+        "acquisitionSources": [
+          "relic_draft",
+          "boss_drop",
+          "merchant",
+          "forge",
+          "otter",
+          "vault"
+        ],
+        "depthRestrictions": [],
+        "bossRestrictions": [],
+        "goldModifierRef": null,
+        "buildMetadataFields": [
+          "relicId",
+          "stacks",
+          "acquiredRevision",
+          "acquisitionSource",
+          "sourceOfferId"
+        ],
+        "legacySourceFiles": [
+          "relic-data.js",
+          "relic-runtime.js",
+          "game.js"
+        ],
+        "legacySourceSymbols": [
+          "RELICS:echostrike",
+          "isRelicStackable",
+          "applyRelic"
+        ],
+        "notes": "25% chance to hit twice"
+      },
+      {
+        "relicId": "phasecloak",
+        "displayName": "Phase Cloak",
+        "rarity": "epic",
+        "startingEligible": false,
+        "stackable": false,
+        "maximumStacks": 1,
+        "slotCost": 1,
+        "unique": true,
+        "legendary": false,
+        "mythic": false,
+        "mythicRules": null,
+        "bonusRelicSlots": 0,
+        "mutuallyExclusiveWith": [],
+        "acquisitionSources": [
+          "relic_draft",
+          "boss_drop",
+          "merchant",
+          "forge",
+          "otter",
+          "vault"
+        ],
+        "depthRestrictions": [],
+        "bossRestrictions": [],
+        "goldModifierRef": null,
+        "buildMetadataFields": [
+          "relicId",
+          "stacks",
+          "acquiredRevision",
+          "acquisitionSource",
+          "sourceOfferId"
+        ],
+        "legacySourceFiles": [
+          "relic-data.js",
+          "relic-runtime.js",
+          "game.js"
+        ],
+        "legacySourceSymbols": [
+          "RELICS:phasecloak",
+          "isRelicStackable",
+          "applyRelic"
+        ],
+        "notes": "Auto-dodge every 3rd turn"
+      },
+      {
+        "relicId": "soulharvest",
+        "displayName": "Soul Harvest",
+        "rarity": "epic",
+        "startingEligible": false,
+        "stackable": false,
+        "maximumStacks": 1,
+        "slotCost": 1,
+        "unique": true,
+        "legendary": false,
+        "mythic": false,
+        "mythicRules": null,
+        "bonusRelicSlots": 0,
+        "mutuallyExclusiveWith": [],
+        "acquisitionSources": [
+          "relic_draft",
+          "boss_drop",
+          "merchant",
+          "forge",
+          "otter",
+          "vault"
+        ],
+        "depthRestrictions": [],
+        "bossRestrictions": [],
+        "goldModifierRef": null,
+        "buildMetadataFields": [
+          "relicId",
+          "stacks",
+          "acquiredRevision",
+          "acquisitionSource",
+          "sourceOfferId"
+        ],
+        "legacySourceFiles": [
+          "relic-data.js",
+          "relic-runtime.js",
+          "game.js"
+        ],
+        "legacySourceSymbols": [
+          "RELICS:soulharvest",
+          "isRelicStackable",
+          "applyRelic"
+        ],
+        "notes": "Every 50 kills: +5 max HP (cap +100)"
+      },
+      {
+        "relicId": "burnblade",
+        "displayName": "Burning Blade",
+        "rarity": "epic",
+        "startingEligible": false,
+        "stackable": false,
+        "maximumStacks": 1,
+        "slotCost": 1,
+        "unique": true,
+        "legendary": false,
+        "mythic": false,
+        "mythicRules": null,
+        "bonusRelicSlots": 0,
+        "mutuallyExclusiveWith": [],
+        "acquisitionSources": [
+          "relic_draft",
+          "boss_drop",
+          "merchant",
+          "forge",
+          "otter",
+          "vault"
+        ],
+        "depthRestrictions": [],
+        "bossRestrictions": [],
+        "goldModifierRef": null,
+        "buildMetadataFields": [
+          "relicId",
+          "stacks",
+          "acquiredRevision",
+          "acquisitionSource",
+          "sourceOfferId"
+        ],
+        "legacySourceFiles": [
+          "relic-data.js",
+          "relic-runtime.js",
+          "game.js"
+        ],
+        "legacySourceSymbols": [
+          "RELICS:burnblade",
+          "isRelicStackable",
+          "applyRelic"
+        ],
+        "notes": "Attacks ignite: 30 dmg/turn for 3 turns"
+      },
+      {
+        "relicId": "frostamulet",
+        "displayName": "Frost Amulet",
+        "rarity": "epic",
+        "startingEligible": false,
+        "stackable": false,
+        "maximumStacks": 1,
+        "slotCost": 1,
+        "unique": true,
+        "legendary": false,
+        "mythic": false,
+        "mythicRules": null,
+        "bonusRelicSlots": 0,
+        "mutuallyExclusiveWith": [],
+        "acquisitionSources": [
+          "relic_draft",
+          "boss_drop",
+          "merchant",
+          "forge",
+          "otter",
+          "vault"
+        ],
+        "depthRestrictions": [],
+        "bossRestrictions": [],
+        "goldModifierRef": null,
+        "buildMetadataFields": [
+          "relicId",
+          "stacks",
+          "acquiredRevision",
+          "acquisitionSource",
+          "sourceOfferId"
+        ],
+        "legacySourceFiles": [
+          "relic-data.js",
+          "relic-runtime.js",
+          "game.js"
+        ],
+        "legacySourceSymbols": [
+          "RELICS:frostamulet",
+          "isRelicStackable",
+          "applyRelic"
+        ],
+        "notes": "Nearby non-elites 15% chance to freeze (boss/elite immune)"
+      },
+      {
+        "relicId": "bloodvial",
+        "displayName": "Blood Vial",
+        "rarity": "epic",
+        "startingEligible": false,
+        "stackable": false,
+        "maximumStacks": 1,
+        "slotCost": 1,
+        "unique": true,
+        "legendary": false,
+        "mythic": false,
+        "mythicRules": null,
+        "bonusRelicSlots": 0,
+        "mutuallyExclusiveWith": [],
+        "acquisitionSources": [
+          "relic_draft",
+          "boss_drop",
+          "merchant",
+          "forge",
+          "otter",
+          "vault"
+        ],
+        "depthRestrictions": [],
+        "bossRestrictions": [],
+        "goldModifierRef": null,
+        "buildMetadataFields": [
+          "relicId",
+          "stacks",
+          "acquiredRevision",
+          "acquisitionSource",
+          "sourceOfferId"
+        ],
+        "legacySourceFiles": [
+          "relic-data.js",
+          "relic-runtime.js",
+          "game.js"
+        ],
+        "legacySourceSymbols": [
+          "RELICS:bloodvial",
+          "isRelicStackable",
+          "applyRelic"
+        ],
+        "notes": "Overheal converts into barrier"
+      },
+      {
+        "relicId": "executionseal",
+        "displayName": "Executioner's Seal",
+        "rarity": "epic",
+        "startingEligible": false,
+        "stackable": false,
+        "maximumStacks": 1,
+        "slotCost": 1,
+        "unique": true,
+        "legendary": false,
+        "mythic": false,
+        "mythicRules": null,
+        "bonusRelicSlots": 0,
+        "mutuallyExclusiveWith": [],
+        "acquisitionSources": [
+          "relic_draft",
+          "boss_drop",
+          "merchant",
+          "forge",
+          "otter",
+          "vault"
+        ],
+        "depthRestrictions": [],
+        "bossRestrictions": [],
+        "goldModifierRef": null,
+        "buildMetadataFields": [
+          "relicId",
+          "stacks",
+          "acquiredRevision",
+          "acquisitionSource",
+          "sourceOfferId"
+        ],
+        "legacySourceFiles": [
+          "relic-data.js",
+          "relic-runtime.js",
+          "game.js"
+        ],
+        "legacySourceSymbols": [
+          "RELICS:executionseal",
+          "isRelicStackable",
+          "applyRelic"
+        ],
+        "notes": "+25% damage to enemies below 40% HP"
+      },
+      {
+        "relicId": "stormsigil",
+        "displayName": "Storm Sigil",
+        "rarity": "epic",
+        "startingEligible": false,
+        "stackable": false,
+        "maximumStacks": 1,
+        "slotCost": 1,
+        "unique": true,
+        "legendary": false,
+        "mythic": false,
+        "mythicRules": null,
+        "bonusRelicSlots": 0,
+        "mutuallyExclusiveWith": [],
+        "acquisitionSources": [
+          "relic_draft",
+          "boss_drop",
+          "merchant",
+          "forge",
+          "otter",
+          "vault"
+        ],
+        "depthRestrictions": [],
+        "bossRestrictions": [],
+        "goldModifierRef": null,
+        "buildMetadataFields": [
+          "relicId",
+          "stacks",
+          "acquiredRevision",
+          "acquisitionSource",
+          "sourceOfferId"
+        ],
+        "legacySourceFiles": [
+          "relic-data.js",
+          "relic-runtime.js",
+          "game.js"
+        ],
+        "legacySourceSymbols": [
+          "RELICS:stormsigil",
+          "isRelicStackable",
+          "applyRelic"
+        ],
+        "notes": "Every 10th hit deals +30 bonus damage"
+      },
+      {
+        "relicId": "gravewhisper",
+        "displayName": "Grave Whisper",
+        "rarity": "epic",
+        "startingEligible": false,
+        "stackable": false,
+        "maximumStacks": 1,
+        "slotCost": 1,
+        "unique": true,
+        "legendary": false,
+        "mythic": false,
+        "mythicRules": null,
+        "bonusRelicSlots": 0,
+        "mutuallyExclusiveWith": [],
+        "acquisitionSources": [
+          "relic_draft",
+          "boss_drop",
+          "merchant",
+          "forge",
+          "otter",
+          "vault"
+        ],
+        "depthRestrictions": [],
+        "bossRestrictions": [],
+        "goldModifierRef": null,
+        "buildMetadataFields": [
+          "relicId",
+          "stacks",
+          "acquiredRevision",
+          "acquisitionSource",
+          "sourceOfferId"
+        ],
+        "legacySourceFiles": [
+          "relic-data.js",
+          "relic-runtime.js",
+          "game.js"
+        ],
+        "legacySourceSymbols": [
+          "RELICS:gravewhisper",
+          "isRelicStackable",
+          "applyRelic"
+        ],
+        "notes": "Kills grant +5 ATK for this encounter (cap +25)"
+      },
+      {
+        "relicId": "mirrorcarapace",
+        "displayName": "Mirror Carapace",
+        "rarity": "epic",
+        "startingEligible": false,
+        "stackable": false,
+        "maximumStacks": 1,
+        "slotCost": 1,
+        "unique": true,
+        "legendary": false,
+        "mythic": false,
+        "mythicRules": null,
+        "bonusRelicSlots": 0,
+        "mutuallyExclusiveWith": [],
+        "acquisitionSources": [
+          "relic_draft",
+          "boss_drop",
+          "merchant",
+          "forge",
+          "otter",
+          "vault"
+        ],
+        "depthRestrictions": [],
+        "bossRestrictions": [],
+        "goldModifierRef": null,
+        "buildMetadataFields": [
+          "relicId",
+          "stacks",
+          "acquiredRevision",
+          "acquisitionSource",
+          "sourceOfferId"
+        ],
+        "legacySourceFiles": [
+          "relic-data.js",
+          "relic-runtime.js",
+          "game.js"
+        ],
+        "legacySourceSymbols": [
+          "RELICS:mirrorcarapace",
+          "isRelicStackable",
+          "applyRelic"
+        ],
+        "notes": "Take 15% less damage. Deal 10% less damage"
+      },
+      {
+        "relicId": "momentumengine",
+        "displayName": "Momentum Engine",
+        "rarity": "epic",
+        "startingEligible": false,
+        "stackable": false,
+        "maximumStacks": 1,
+        "slotCost": 1,
+        "unique": true,
+        "legendary": false,
+        "mythic": false,
+        "mythicRules": null,
+        "bonusRelicSlots": 0,
+        "mutuallyExclusiveWith": [],
+        "acquisitionSources": [
+          "relic_draft",
+          "boss_drop",
+          "merchant",
+          "forge",
+          "otter",
+          "vault"
+        ],
+        "depthRestrictions": [],
+        "bossRestrictions": [],
+        "goldModifierRef": null,
+        "buildMetadataFields": [
+          "relicId",
+          "stacks",
+          "acquiredRevision",
+          "acquisitionSource",
+          "sourceOfferId"
+        ],
+        "legacySourceFiles": [
+          "relic-data.js",
+          "relic-runtime.js",
+          "game.js"
+        ],
+        "legacySourceSymbols": [
+          "RELICS:momentumengine",
+          "isRelicStackable",
+          "applyRelic"
+        ],
+        "notes": "Dash deals +20% damage"
+      },
+      {
+        "relicId": "executionchain",
+        "displayName": "Execution Chain",
+        "rarity": "epic",
+        "startingEligible": false,
+        "stackable": false,
+        "maximumStacks": 1,
+        "slotCost": 1,
+        "unique": true,
+        "legendary": false,
+        "mythic": false,
+        "mythicRules": null,
+        "bonusRelicSlots": 0,
+        "mutuallyExclusiveWith": [],
+        "acquisitionSources": [
+          "relic_draft",
+          "boss_drop",
+          "merchant",
+          "forge",
+          "otter",
+          "vault"
+        ],
+        "depthRestrictions": [],
+        "bossRestrictions": [],
+        "goldModifierRef": null,
+        "buildMetadataFields": [
+          "relicId",
+          "stacks",
+          "acquiredRevision",
+          "acquisitionSource",
+          "sourceOfferId"
+        ],
+        "legacySourceFiles": [
+          "relic-data.js",
+          "relic-runtime.js",
+          "game.js"
+        ],
+        "legacySourceSymbols": [
+          "RELICS:executionchain",
+          "isRelicStackable",
+          "applyRelic"
+        ],
+        "notes": "Kills reduce all skill cooldowns by 1 turn; elite and boss kills reduce them by 2"
+      },
+      {
+        "relicId": "aegisdynamo",
+        "displayName": "Aegis Dynamo",
+        "rarity": "epic",
+        "startingEligible": false,
+        "stackable": false,
+        "maximumStacks": 1,
+        "slotCost": 1,
+        "unique": true,
+        "legendary": false,
+        "mythic": false,
+        "mythicRules": null,
+        "bonusRelicSlots": 0,
+        "mutuallyExclusiveWith": [],
+        "acquisitionSources": [
+          "relic_draft",
+          "boss_drop",
+          "merchant",
+          "forge",
+          "otter",
+          "vault"
+        ],
+        "depthRestrictions": [],
+        "bossRestrictions": [],
+        "goldModifierRef": null,
+        "buildMetadataFields": [
+          "relicId",
+          "stacks",
+          "acquiredRevision",
+          "acquisitionSource",
+          "sourceOfferId"
+        ],
+        "legacySourceFiles": [
+          "relic-data.js",
+          "relic-runtime.js",
+          "game.js"
+        ],
+        "legacySourceSymbols": [
+          "RELICS:aegisdynamo",
+          "isRelicStackable",
+          "applyRelic"
+        ],
+        "notes": "Absorb at least 33% max HP with Shield or Barrier in a single hit to empower your next hit by 40%"
+      },
+      {
+        "relicId": "hazardprism",
+        "displayName": "Hazard Prism",
+        "rarity": "epic",
+        "startingEligible": false,
+        "stackable": false,
+        "maximumStacks": 1,
+        "slotCost": 1,
+        "unique": true,
+        "legendary": false,
+        "mythic": false,
+        "mythicRules": null,
+        "bonusRelicSlots": 0,
+        "mutuallyExclusiveWith": [],
+        "acquisitionSources": [
+          "relic_draft",
+          "boss_drop",
+          "merchant",
+          "forge",
+          "otter",
+          "vault"
+        ],
+        "depthRestrictions": [],
+        "bossRestrictions": [],
+        "goldModifierRef": null,
+        "buildMetadataFields": [
+          "relicId",
+          "stacks",
+          "acquiredRevision",
+          "acquisitionSource",
+          "sourceOfferId"
+        ],
+        "legacySourceFiles": [
+          "relic-data.js",
+          "relic-runtime.js",
+          "game.js"
+        ],
+        "legacySourceSymbols": [
+          "RELICS:hazardprism",
+          "isRelicStackable",
+          "applyRelic"
+        ],
+        "notes": "Enemies hurt by environmental hazards become Exposed for 3 turns and take +20% damage from you"
+      },
+      {
+        "relicId": "fracturedsigil",
+        "displayName": "Fractured Sigil",
+        "rarity": "legendary",
+        "startingEligible": false,
+        "stackable": false,
+        "maximumStacks": 1,
+        "slotCost": 1,
+        "unique": true,
+        "legendary": true,
+        "mythic": false,
+        "mythicRules": null,
+        "bonusRelicSlots": 0,
+        "mutuallyExclusiveWith": [],
+        "acquisitionSources": [
+          "relic_draft",
+          "boss_drop",
+          "merchant",
+          "forge",
+          "otter",
+          "vault"
+        ],
+        "depthRestrictions": [],
+        "bossRestrictions": [],
+        "goldModifierRef": null,
+        "buildMetadataFields": [
+          "relicId",
+          "stacks",
+          "acquiredRevision",
+          "acquisitionSource",
+          "sourceOfferId"
+        ],
+        "legacySourceFiles": [
+          "relic-data.js",
+          "relic-runtime.js",
+          "game.js"
+        ],
+        "legacySourceSymbols": [
+          "RELICS:fracturedsigil",
+          "isRelicStackable",
+          "applyRelic"
+        ],
+        "notes": "Shield skill becomes Barrier. Gain 60% of normal Shield value as persistent barrier"
+      },
+      {
+        "relicId": "borrowedtime",
+        "displayName": "Borrowed Time",
+        "rarity": "epic",
+        "startingEligible": false,
+        "stackable": false,
+        "maximumStacks": 1,
+        "slotCost": 1,
+        "unique": true,
+        "legendary": false,
+        "mythic": false,
+        "mythicRules": null,
+        "bonusRelicSlots": 0,
+        "mutuallyExclusiveWith": [],
+        "acquisitionSources": [
+          "relic_draft",
+          "boss_drop",
+          "merchant",
+          "forge",
+          "otter",
+          "vault"
+        ],
+        "depthRestrictions": [],
+        "bossRestrictions": [],
+        "goldModifierRef": null,
+        "buildMetadataFields": [
+          "relicId",
+          "stacks",
+          "acquiredRevision",
+          "acquisitionSource",
+          "sourceOfferId"
+        ],
+        "legacySourceFiles": [
+          "relic-data.js",
+          "relic-runtime.js",
+          "game.js"
+        ],
+        "legacySourceSymbols": [
+          "RELICS:borrowedtime",
+          "isRelicStackable",
+          "applyRelic"
+        ],
+        "notes": "When a skill comes off cooldown: gain +15% Max HP barrier"
+      },
+      {
+        "relicId": "deadeyeprism",
+        "displayName": "Deadeye Prism",
+        "rarity": "epic",
+        "startingEligible": false,
+        "stackable": false,
+        "maximumStacks": 1,
+        "slotCost": 1,
+        "unique": true,
+        "legendary": false,
+        "mythic": false,
+        "mythicRules": null,
+        "bonusRelicSlots": 0,
+        "mutuallyExclusiveWith": [],
+        "acquisitionSources": [
+          "relic_draft",
+          "boss_drop",
+          "merchant",
+          "forge",
+          "otter",
+          "vault"
+        ],
+        "depthRestrictions": [],
+        "bossRestrictions": [],
+        "goldModifierRef": null,
+        "buildMetadataFields": [
+          "relicId",
+          "stacks",
+          "acquiredRevision",
+          "acquisitionSource",
+          "sourceOfferId"
+        ],
+        "legacySourceFiles": [
+          "relic-data.js",
+          "relic-runtime.js",
+          "game.js"
+        ],
+        "legacySourceSymbols": [
+          "RELICS:deadeyeprism",
+          "isRelicStackable",
+          "applyRelic"
+        ],
+        "notes": "+5% crit chance. Critical hits deal x3 damage"
+      },
+      {
+        "relicId": "chronoloop",
+        "displayName": "Chrono Loop",
+        "rarity": "legendary",
+        "startingEligible": false,
+        "stackable": false,
+        "maximumStacks": 1,
+        "slotCost": 1,
+        "unique": true,
+        "legendary": true,
+        "mythic": false,
+        "mythicRules": null,
+        "bonusRelicSlots": 0,
+        "mutuallyExclusiveWith": [],
+        "acquisitionSources": [
+          "relic_draft",
+          "boss_drop",
+          "merchant",
+          "forge",
+          "otter",
+          "vault"
+        ],
+        "depthRestrictions": [],
+        "bossRestrictions": [],
+        "goldModifierRef": null,
+        "buildMetadataFields": [
+          "relicId",
+          "stacks",
+          "acquiredRevision",
+          "acquisitionSource",
+          "sourceOfferId"
+        ],
+        "legacySourceFiles": [
+          "relic-data.js",
+          "relic-runtime.js",
+          "game.js"
+        ],
+        "legacySourceSymbols": [
+          "RELICS:chronoloop",
+          "isRelicStackable",
+          "applyRelic"
+        ],
+        "notes": "Cheat death once per run: revive 50% HP, deal 100 damage to nearby enemies"
+      },
+      {
+        "relicId": "voidreaper",
+        "displayName": "Void Reaper",
+        "rarity": "legendary",
+        "startingEligible": false,
+        "stackable": false,
+        "maximumStacks": 1,
+        "slotCost": 1,
+        "unique": true,
+        "legendary": true,
+        "mythic": false,
+        "mythicRules": null,
+        "bonusRelicSlots": 0,
+        "mutuallyExclusiveWith": [],
+        "acquisitionSources": [
+          "relic_draft",
+          "boss_drop",
+          "merchant",
+          "forge",
+          "otter",
+          "vault"
+        ],
+        "depthRestrictions": [],
+        "bossRestrictions": [],
+        "goldModifierRef": "void-reaper-crit-kill",
+        "buildMetadataFields": [
+          "relicId",
+          "stacks",
+          "acquiredRevision",
+          "acquisitionSource",
+          "sourceOfferId"
+        ],
+        "legacySourceFiles": [
+          "relic-data.js",
+          "relic-runtime.js",
+          "game.js"
+        ],
+        "legacySourceSymbols": [
+          "RELICS:voidreaper",
+          "isRelicStackable",
+          "applyRelic"
+        ],
+        "notes": "Crits execute <30% HP enemies. +15% crit. Crit kills +10 gold"
+      },
+      {
+        "relicId": "titanheart",
+        "displayName": "Titan's Heart",
+        "rarity": "legendary",
+        "startingEligible": false,
+        "stackable": false,
+        "maximumStacks": 1,
+        "slotCost": 1,
+        "unique": true,
+        "legendary": true,
+        "mythic": false,
+        "mythicRules": null,
+        "bonusRelicSlots": 0,
+        "mutuallyExclusiveWith": [],
+        "acquisitionSources": [
+          "relic_draft",
+          "boss_drop",
+          "merchant",
+          "forge",
+          "otter",
+          "vault"
+        ],
+        "depthRestrictions": [],
+        "bossRestrictions": [],
+        "goldModifierRef": null,
+        "buildMetadataFields": [
+          "relicId",
+          "stacks",
+          "acquiredRevision",
+          "acquisitionSource",
+          "sourceOfferId"
+        ],
+        "legacySourceFiles": [
+          "relic-data.js",
+          "relic-runtime.js",
+          "game.js"
+        ],
+        "legacySourceSymbols": [
+          "RELICS:titanheart",
+          "isRelicStackable",
+          "applyRelic"
+        ],
+        "notes": "+60 max HP, +12 ARM, -20 ATK. Potions heal +30%"
+      },
+      {
+        "relicId": "engineofwar",
+        "displayName": "Engine of War",
+        "rarity": "legendary",
+        "startingEligible": false,
+        "stackable": false,
+        "maximumStacks": 1,
+        "slotCost": 1,
+        "unique": true,
+        "legendary": true,
+        "mythic": false,
+        "mythicRules": null,
+        "bonusRelicSlots": 0,
+        "mutuallyExclusiveWith": [],
+        "acquisitionSources": [
+          "relic_draft",
+          "boss_drop",
+          "merchant",
+          "forge",
+          "otter",
+          "vault"
+        ],
+        "depthRestrictions": [],
+        "bossRestrictions": [],
+        "goldModifierRef": null,
+        "buildMetadataFields": [
+          "relicId",
+          "stacks",
+          "acquiredRevision",
+          "acquisitionSource",
+          "sourceOfferId"
+        ],
+        "legacySourceFiles": [
+          "relic-data.js",
+          "relic-runtime.js",
+          "game.js"
+        ],
+        "legacySourceSymbols": [
+          "RELICS:engineofwar",
+          "isRelicStackable",
+          "applyRelic"
+        ],
+        "notes": "Below 30% HP: gain +100 shield, +30% damage and +20% lifesteal for 3 turns (once per depth)"
+      },
+      {
+        "relicId": "lastresort",
+        "displayName": "The Last Resort",
+        "rarity": "legendary",
+        "startingEligible": false,
+        "stackable": false,
+        "maximumStacks": 1,
+        "slotCost": 1,
+        "unique": true,
+        "legendary": true,
+        "mythic": false,
+        "mythicRules": null,
+        "bonusRelicSlots": 0,
+        "mutuallyExclusiveWith": [],
+        "acquisitionSources": [
+          "relic_draft",
+          "boss_drop",
+          "merchant",
+          "forge",
+          "otter",
+          "vault"
+        ],
+        "depthRestrictions": [],
+        "bossRestrictions": [],
+        "goldModifierRef": null,
+        "buildMetadataFields": [
+          "relicId",
+          "stacks",
+          "acquiredRevision",
+          "acquisitionSource",
+          "sourceOfferId"
+        ],
+        "legacySourceFiles": [
+          "relic-data.js",
+          "relic-runtime.js",
+          "game.js"
+        ],
+        "legacySourceSymbols": [
+          "RELICS:lastresort",
+          "isRelicStackable",
+          "applyRelic"
+        ],
+        "notes": "If HP drops below 35% during combat: reset all skill cooldowns once per combat"
+      },
+      {
+        "relicId": "crownofoneroom",
+        "displayName": "Crown of the One Room",
+        "rarity": "legendary",
+        "startingEligible": false,
+        "stackable": false,
+        "maximumStacks": 1,
+        "slotCost": 1,
+        "unique": true,
+        "legendary": true,
+        "mythic": false,
+        "mythicRules": null,
+        "bonusRelicSlots": 0,
+        "mutuallyExclusiveWith": [],
+        "acquisitionSources": [
+          "relic_draft",
+          "boss_drop",
+          "merchant",
+          "forge",
+          "otter",
+          "vault"
+        ],
+        "depthRestrictions": [],
+        "bossRestrictions": [],
+        "goldModifierRef": null,
+        "buildMetadataFields": [
+          "relicId",
+          "stacks",
+          "acquiredRevision",
+          "acquisitionSource",
+          "sourceOfferId"
+        ],
+        "legacySourceFiles": [
+          "relic-data.js",
+          "relic-runtime.js",
+          "game.js"
+        ],
+        "legacySourceSymbols": [
+          "RELICS:crownofoneroom",
+          "isRelicStackable",
+          "applyRelic"
+        ],
+        "notes": "Every 5 combat turns: gain +40% Max HP barrier. It vanishes after 2 turns."
+      },
+      {
+        "relicId": "chaosorb",
+        "displayName": "Chaos Orb",
+        "rarity": "legendary",
+        "startingEligible": false,
+        "stackable": false,
+        "maximumStacks": 1,
+        "slotCost": 1,
+        "unique": true,
+        "legendary": true,
+        "mythic": false,
+        "mythicRules": null,
+        "bonusRelicSlots": 0,
+        "mutuallyExclusiveWith": [],
+        "acquisitionSources": [
+          "relic_draft",
+          "boss_drop",
+          "merchant",
+          "forge",
+          "otter",
+          "vault"
+        ],
+        "depthRestrictions": [],
+        "bossRestrictions": [],
+        "goldModifierRef": "chaos-orb-gold-roll",
+        "buildMetadataFields": [
+          "relicId",
+          "stacks",
+          "acquiredRevision",
+          "acquisitionSource",
+          "sourceOfferId"
+        ],
+        "legacySourceFiles": [
+          "relic-data.js",
+          "relic-runtime.js",
+          "game.js"
+        ],
+        "legacySourceSymbols": [
+          "RELICS:chaosorb",
+          "isRelicStackable",
+          "applyRelic"
+        ],
+        "notes": "Every 10 turns rolls 1 of 6 effects: +20 ATK, +20 HP/kill, +20 gold, 100 dmg random enemy, safe teleport, or nothing"
+      },
+      {
+        "relicId": "perfectrhythm",
+        "displayName": "Perfect Rhythm",
+        "rarity": "legendary",
+        "startingEligible": false,
+        "stackable": false,
+        "maximumStacks": 1,
+        "slotCost": 1,
+        "unique": true,
+        "legendary": true,
+        "mythic": false,
+        "mythicRules": null,
+        "bonusRelicSlots": 0,
+        "mutuallyExclusiveWith": [],
+        "acquisitionSources": [
+          "relic_draft",
+          "boss_drop",
+          "merchant",
+          "forge",
+          "otter",
+          "vault"
+        ],
+        "depthRestrictions": [],
+        "bossRestrictions": [],
+        "goldModifierRef": null,
+        "buildMetadataFields": [
+          "relicId",
+          "stacks",
+          "acquiredRevision",
+          "acquisitionSource",
+          "sourceOfferId"
+        ],
+        "legacySourceFiles": [
+          "relic-data.js",
+          "relic-runtime.js",
+          "game.js"
+        ],
+        "legacySourceSymbols": [
+          "RELICS:perfectrhythm",
+          "isRelicStackable",
+          "applyRelic"
+        ],
+        "notes": "After 3 combat turns without losing HP, deal +30% damage until you lose HP"
+      },
+      {
+        "relicId": "labyrinthheart",
+        "displayName": "Heart of the Labyrinth",
+        "rarity": "legendary",
+        "startingEligible": false,
+        "stackable": false,
+        "maximumStacks": 1,
+        "slotCost": 1,
+        "unique": true,
+        "legendary": true,
+        "mythic": false,
+        "mythicRules": null,
+        "bonusRelicSlots": 0,
+        "mutuallyExclusiveWith": [],
+        "acquisitionSources": [
+          "relic_draft",
+          "boss_drop",
+          "merchant",
+          "forge",
+          "otter",
+          "vault"
+        ],
+        "depthRestrictions": [],
+        "bossRestrictions": [],
+        "goldModifierRef": null,
+        "buildMetadataFields": [
+          "relicId",
+          "stacks",
+          "acquiredRevision",
+          "acquisitionSource",
+          "sourceOfferId"
+        ],
+        "legacySourceFiles": [
+          "relic-data.js",
+          "relic-runtime.js",
+          "game.js"
+        ],
+        "legacySourceSymbols": [
+          "RELICS:labyrinthheart",
+          "isRelicStackable",
+          "applyRelic"
+        ],
+        "notes": "Flawless combat clears grant +5 max HP and +2 ATK, up to 8 times"
+      },
+      {
+        "relicId": "oathofruin",
+        "displayName": "Oath of Ruin",
+        "rarity": "mythic",
+        "startingEligible": false,
+        "stackable": false,
+        "maximumStacks": 1,
+        "slotCost": 1,
+        "unique": true,
+        "legendary": false,
+        "mythic": true,
+        "mythicRules": {
+          "maximumOwnedMythics": 1,
+          "grantsRelicSlots": 0,
+          "legendarySlotLimit": 1
+        },
+        "bonusRelicSlots": 0,
+        "mutuallyExclusiveWith": [
+          "abyssalreliquary",
+          "crownconcord"
+        ],
+        "acquisitionSources": [
+          "relic_draft",
+          "boss_drop",
+          "merchant",
+          "forge",
+          "otter",
+          "vault",
+          "mythic_replacement_roll"
+        ],
+        "depthRestrictions": [],
+        "bossRestrictions": [],
+        "goldModifierRef": null,
+        "buildMetadataFields": [
+          "relicId",
+          "stacks",
+          "acquiredRevision",
+          "acquisitionSource",
+          "sourceOfferId"
+        ],
+        "legacySourceFiles": [
+          "relic-data.js",
+          "relic-runtime.js",
+          "game.js"
+        ],
+        "legacySourceSymbols": [
+          "RELICS:oathofruin",
+          "isRelicStackable",
+          "applyRelic"
+        ],
+        "notes": "-70% skill cooldowns. Casting a skill costs 8% current HP (barrier first). Potions locked for 3 turns."
+      },
+      {
+        "relicId": "abyssalreliquary",
+        "displayName": "Abyssal Reliquary",
+        "rarity": "mythic",
+        "startingEligible": false,
+        "stackable": false,
+        "maximumStacks": 1,
+        "slotCost": 1,
+        "unique": true,
+        "legendary": false,
+        "mythic": true,
+        "mythicRules": {
+          "maximumOwnedMythics": 1,
+          "grantsRelicSlots": 2,
+          "legendarySlotLimit": 1
+        },
+        "bonusRelicSlots": 2,
+        "mutuallyExclusiveWith": [
+          "oathofruin",
+          "crownconcord"
+        ],
+        "acquisitionSources": [
+          "relic_draft",
+          "boss_drop",
+          "merchant",
+          "forge",
+          "otter",
+          "vault",
+          "mythic_replacement_roll"
+        ],
+        "depthRestrictions": [],
+        "bossRestrictions": [],
+        "goldModifierRef": null,
+        "buildMetadataFields": [
+          "relicId",
+          "stacks",
+          "acquiredRevision",
+          "acquisitionSource",
+          "sourceOfferId"
+        ],
+        "legacySourceFiles": [
+          "relic-data.js",
+          "relic-runtime.js",
+          "game.js"
+        ],
+        "legacySourceSymbols": [
+          "RELICS:abyssalreliquary",
+          "isRelicStackable",
+          "applyRelic"
+        ],
+        "notes": "+2 max relic slots. Protected from death penalty"
+      },
+      {
+        "relicId": "crownconcord",
+        "displayName": "Crown Concord",
+        "rarity": "mythic",
+        "startingEligible": false,
+        "stackable": false,
+        "maximumStacks": 1,
+        "slotCost": 1,
+        "unique": true,
+        "legendary": false,
+        "mythic": true,
+        "mythicRules": {
+          "maximumOwnedMythics": 1,
+          "grantsRelicSlots": 0,
+          "legendarySlotLimit": 2
+        },
+        "bonusRelicSlots": 0,
+        "mutuallyExclusiveWith": [
+          "oathofruin",
+          "abyssalreliquary"
+        ],
+        "acquisitionSources": [
+          "relic_draft",
+          "boss_drop",
+          "merchant",
+          "forge",
+          "otter",
+          "vault",
+          "mythic_replacement_roll"
+        ],
+        "depthRestrictions": [],
+        "bossRestrictions": [],
+        "goldModifierRef": null,
+        "buildMetadataFields": [
+          "relicId",
+          "stacks",
+          "acquiredRevision",
+          "acquisitionSource",
+          "sourceOfferId"
+        ],
+        "legacySourceFiles": [
+          "relic-data.js",
+          "relic-runtime.js",
+          "game.js"
+        ],
+        "legacySourceSymbols": [
+          "RELICS:crownconcord",
+          "isRelicStackable",
+          "applyRelic"
+        ],
+        "notes": "You can equip up to 2 legendary relics"
+      }
+    ]
+  }
+}

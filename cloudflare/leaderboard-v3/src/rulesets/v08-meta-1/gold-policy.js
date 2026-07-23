@@ -11,6 +11,12 @@ const legalRelics = new Set([
   ...modifiers.legalRelicIds,
   ...modifiers.presentationOnlyFixtureRelicIds
 ]);
+const goldenIdolStackCap = modifiers.modifiers.find(
+  (entry) => entry.id === "golden-idol"
+)?.stackCap;
+if (!Number.isSafeInteger(goldenIdolStackCap) || goldenIdolStackCap < 1) {
+  throw new TypeError("GOLDEN_IDOL_STACK_CAP_INVALID");
+}
 
 export const GOLD_POLICY_SPEC = Object.freeze({
   moduleFile: "gold-policy.js",
@@ -31,15 +37,23 @@ function requireSafeAmount(value, code) {
 }
 
 function normalizeBuild(canonicalBuild = {}) {
-  const relics = Array.isArray(canonicalBuild.relics) ? [...canonicalBuild.relics] : [];
+  const relics = Array.isArray(canonicalBuild.relics)
+    ? canonicalBuild.relics.map((entry) => {
+        if (!entry || typeof entry !== "object") throw new TypeError("CANONICAL_BUILD_RELIC_ENTRY_INVALID");
+        const relicId = String(entry.relicId || "");
+        const stacks = Number(entry.stacks);
+        if (!legalRelics.has(relicId)) throw new TypeError(`CANONICAL_BUILD_RELIC_UNKNOWN:${relicId}`);
+        if (!Number.isSafeInteger(stacks) || stacks < 1) {
+          throw new TypeError(`CANONICAL_BUILD_RELIC_STACKS_INVALID:${relicId}`);
+        }
+        return { relicId, stacks };
+      })
+    : [];
   const mutators = Array.isArray(canonicalBuild.mutators) ? [...canonicalBuild.mutators] : [];
   const pacts = Array.isArray(canonicalBuild.pacts) ? [...canonicalBuild.pacts] : [];
   const campUpgrades = canonicalBuild.campUpgrades && typeof canonicalBuild.campUpgrades === "object"
     ? { ...canonicalBuild.campUpgrades }
     : {};
-  for (const relicId of relics) {
-    if (!legalRelics.has(relicId)) throw new TypeError(`CANONICAL_BUILD_RELIC_UNKNOWN:${relicId}`);
-  }
   for (const mutatorId of mutators) {
     if (!legalMutators.has(mutatorId)) throw new TypeError(`CANONICAL_BUILD_MUTATOR_UNKNOWN:${mutatorId}`);
   }
@@ -63,8 +77,8 @@ function level(build, id, cap) {
 
 function globalMultiplier(build) {
   const idolCount = Math.min(
-    modifiers.maximumNormalRelicStack,
-    build.relics.filter((id) => id === "idol").length
+    goldenIdolStackCap,
+    build.relics.find((entry) => entry.relicId === "idol")?.stacks || 0
   );
   const nonGreedMutators = build.mutators.filter((id) => id !== "greed").length;
   return 1 +

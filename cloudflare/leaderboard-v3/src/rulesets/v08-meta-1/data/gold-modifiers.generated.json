@@ -174,7 +174,7 @@
         "buildPath": "relics",
         "buildId": "idol",
         "perStackAdditive": 0.15,
-        "stackCap": 5,
+        "stackCap": 1,
         "appliesTo": [
           "multiplied-grant"
         ]

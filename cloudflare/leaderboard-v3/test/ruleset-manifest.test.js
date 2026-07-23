@@ -81,7 +81,7 @@ test("ruleset hash is file-order independent and changes with any file byte", as
   assert.notEqual(sha256(canonicalJson(hashInputFor(manifest, changed))), forward);
 });
 
-test("generated Phase 3B1 and 3B2A data is canonical and source-bound", async () => {
+test("generated Phase 3B1, 3B2A and 3B2B1 data is canonical and source-bound", async () => {
   const names = [
     "source-manifest.generated.json",
     "run-progression.generated.json",
@@ -90,6 +90,11 @@ test("generated Phase 3B1 and 3B2A data is canonical and source-bound", async ()
     "special-room-policy.generated.json",
     "gold-sources.generated.json",
     "gold-modifiers.generated.json",
+    "relic-catalog.generated.json",
+    "relic-stack-policy.generated.json",
+    "relic-slot-policy.generated.json",
+    "starting-relic-policy.generated.json",
+    "relic-build-metadata.generated.json",
     "room-reward-bounds.generated.json",
     "chest-reward-bounds.generated.json"
   ];
@@ -112,28 +117,30 @@ test("generated Phase 3B1 and 3B2A data is canonical and source-bound", async ()
   }
 });
 
-test("source manifest contains only active Phase 3B1/3B2A baseline sources", async () => {
+test("source manifest contains only active Phase 3B1/3B2A/3B2B1 baseline sources", async () => {
   const manifest = JSON.parse(
     await readFile(path.join(DATA_ROOT, "source-manifest.generated.json"), "utf8")
   );
   assert.deepEqual(
     manifest.sources.map((source) => source.file),
     [
+      "boss-campaign.js",
       "camp-data.js",
       "camp-runtime.js",
       "expansion-content.js",
       "game.js",
       "loot-tables.js",
+      "merchant-curation.js",
       "mutator-data.js",
       "pact-room.js",
       "relic-data.js",
+      "relic-runtime.js",
       "room-pity.js"
     ]
   );
   const forbiddenDeferredSources = [
     "skills-data.js",
     "elixir-data.js",
-    "merchant-curation.js",
     "forge-room.js",
     "pact-effects.js"
   ];
