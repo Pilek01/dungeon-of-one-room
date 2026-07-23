@@ -1,0 +1,14 @@
+name = "dungeon-online-v3"
+main = "src/index.js"
+compatibility_date = "2026-07-23"
+compatibility_flags = ["nodejs_compat"]
+
+[[d1_databases]]
+binding = "DB"
+database_name = "dungeon-online-v3-local"
+database_id = "REPLACE_WITH_D1_DATABASE_ID"
+migrations_dir = "migrations"
+
+[observability]
+enabled = true
+head_sampling_rate = 1

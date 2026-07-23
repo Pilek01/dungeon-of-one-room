@@ -1,127 +1,124 @@
-# Online v3 handoff — Phase 0 and Phase 1
+# Online v3 handoff - Phase 2
 
 Date: 2026-07-23
+
 Workspace: `D:\Codex workstation\Dungeon\dungeon-online-v3`
-Source snapshot: `D:\Codex workstation\Dungeon\dungeon-4.0` (read-only during this work)
 
-## Completed
+Protected baseline: `f98820c99066d810169e100beb23a54a332734bd`
 
-- Copied the v0.8.0 pre-Online game into a clean, separate workspace.
-- Excluded obvious generated/cache/worktree output only.
-- Initialized a new repository.
-- Created root baseline commit:
-  - SHA: `f98820c99066d810169e100beb23a54a332734bd`
-  - subject: `Baseline v0.8.0 before Online v3`
-- Confirmed copied `config.js`, `game.js`, and `index.html` hashes match the source.
-- Added one baseline smoke runner and retained its output only under ignored `output/`.
-- Added the isolated Phase 1 Online v3 contract modules and documents.
-- Did not modify or load any original game/runtime file.
-- Did not build a Worker, endpoint, network request, v2 compatibility layer, deployment, push, rebase, or worktree.
+Phase 1 commit: `0fe1423 Add Online v3 architecture and no-op boundary`
 
-## Baseline verification
+## Delivered
 
-Command:
+Phase 2 adds an isolated Cloudflare Worker under `cloudflare/leaderboard-v3` with:
 
-```text
-node scripts/online-v3-baseline-smoke.mjs
-```
+- pure domain transitions returning `{ nextState, response, storageEffects }`;
+- injected, fail-closed `RulesetV3` with six required methods;
+- fixture-only deterministic ruleset data;
+- canonical HMAC-SHA-256 checkpoint tokens using Web Crypto;
+- D1 repositories and one migration containing exactly two tables;
+- optimistic revision concurrency and atomic finalize/publication;
+- bounded in-row idempotency replay history;
+- all six `/api/v3` endpoints;
+- authoritative gold, depth, build, offer, inventory, schedule, and score transitions;
+- explicit `checkpoint_verified_v3` publication;
+- fixture endpoint, domain, token, migration, D1-budget, network-loss, idempotency, and baseline-guard tests;
+- an explicit 20-case anti-tamper matrix.
 
-Result:
+No production ruleset is included. No Online v3 module is loaded by `index.html`, and no game/client integration was performed.
 
-```text
-Online v3 baseline smoke PASS (headed)
-```
+## Validation
 
-Verified through local HTTP in a real headed Chromium session:
-
-- game version `v0.8.0`;
-- boot/loading presentation;
-- Classic Shrine;
-- HD Shrine;
-- cheat menu and its options;
-- Observer Bot enabled and acting;
-- Vault with one Guardian;
-- local save and Continue at the same depth;
-- Final Defeat after the last life;
-- animation/motion samples;
-- audio toggle and SFX/audio inventory;
-- HUD structure;
-- zero `/api` requests;
-- zero browser console errors;
-- zero uncaught page errors.
-
-Recorded `net::ERR_ABORTED` media preloads were navigation/context-close cancellations. No unexpected request failure occurred.
-
-Reference output:
+Worker suite:
 
 ```text
-output/online-v3-baseline/
-  baseline-smoke-summary.json
-  console-and-network.json
-  sfx-and-audio.json
-  hud-structure.json
-  cheat-menu-options.json
-  motion-timeline.json
-  final-defeat-summary.json
-  01-boot.png
-  02-classic-shrine.png
-  03-hd-shrine.png
-  04-cheat-menu.png
-  05-vault.png
-  06-observer-bot.png
-  07-save-continue-menu.png
-  08-final-defeat.png
-  motion-000ms.png
-  motion-120ms.png
-  motion-240ms.png
-  motion-360ms.png
+npm.cmd test
+64 tests, 64 pass, 0 fail
 ```
 
-These files remain ignored and uncommitted.
-
-Static baseline checks:
-
-- `node --check game.js`: pass.
-- `node tests/expansion-release.test.js`: pass.
-- Focused active audio mapping test: pass.
-- Full `tests/audio-freeze.test.js`: 4/5 pass; the existing meta-test “Duplicate active declarations must fail explicitly” fails, while the actual active soundtrack mapping contract passes. No audio source was changed.
-
-## Phase 1 files
+Payload-size diagnostics included in that suite:
 
 ```text
-online-v3/ranked-v3-hooks.js
-online-v3/ranked-v3-client.js
-online-v3/ranked-v3-recorder.js
-online-v3/ranked-v3-protocol.js
-online-v3/ranked-v3-checkpoints.js
-online-v3/ranked-v3-storage.js
-online-v3/ranked-v3-leaderboard-ui.js
-docs/ONLINE_V3_ARCHITECTURE.md
-docs/ONLINE_V3_PROTOCOL.md
-ONLINE_V3_HANDOFF.md
+fixture checkpoint token: 614 bytes
+fixture checkpoint request: 1167 bytes
+request limit: 65536 bytes
 ```
 
-The exact Practice adapter is synchronous and inert. None of these scripts is referenced by `index.html`; therefore Phase 1 cannot change gameplay or issue a request.
+Other checks:
 
-## Guardrail status
+```text
+node --check every Worker JavaScript file: pass
+node --check game.js: pass
+node tests/expansion-release.test.js: pass
+focused active soundtrack/audio contract: 1/1 pass
+node scripts/online-v3-baseline-smoke.mjs: PASS (headed)
+```
 
-- Original game files: unchanged from baseline commit.
-- Practice Online v3 traffic: zero.
-- New Online v3 request implementation: none.
-- Input/game-loop waits: none.
-- Animation/audio/HUD/Classic/HD/cheat/Observer Bot/special-room edits: none.
-- New selectors: `ranked-v3-*` only.
-- New storage prefix: `dungeonRankedV3`.
-- New route prefix: `/api/v3`.
-- Ranked/Online v2 imports: none.
+The headed browser artifacts remain ignored under:
 
-## Next phase — not started
+```text
+output/online-v3-baseline
+```
 
-1. Write Worker fixtures for all six route contracts without wiring the game.
-2. Add protocol conformance fixtures for revisions, idempotency, room nonce, token expiry, retries and terminal replay.
-3. Implement the two-table D1 repository behind an isolated test boundary.
-4. Exercise checkpoint rejection and network-loss fixtures.
-5. Review the eight-hook plan before inserting any hook into `game.js`.
-6. Re-run the full headed baseline after each integration slice and compare the retained presentation/motion/audio/HUD references.
+The local baseline runner `scripts/online-v3-baseline-smoke.mjs` remains intentionally untracked and is not part of either implementation commit.
 
-The detailed state model, D1 schema, hook plan, threat model, guardrails, and read-only v2 presentation inventory are in `docs/ONLINE_V3_ARCHITECTURE.md`. Exact request/response/error/retry contracts are in `docs/ONLINE_V3_PROTOCOL.md`.
+`wrangler` is not installed in this workspace. No package was downloaded and no local Worker runtime or deployment was started. Migration shape is exercised with Node SQLite; Worker behavior uses injected repositories.
+
+## Security and storage contract
+
+- Secret binding: `RANKED_V3_HMAC_SECRET`, minimum 32 UTF-8 bytes.
+- Token claims: protocol, run, revision, season, ruleset hash, state digest, directive, nonce, issue time, expiry.
+- D1 is authoritative even when a token signature is valid.
+- Normal mutation: one read plus `UPDATE ... WHERE run_id = ? AND revision = ?`.
+- Finalize: one read plus a two-statement D1 batch.
+- Losing an optimistic-concurrency race returns `409 REVISION_CONFLICT`.
+- Exact request/key replay returns the stored response, including after the original token expires.
+- Changed content under an existing key returns `409 IDEMPOTENCY_KEY_REUSED`.
+- Recent operation history is capped at 24 entries in `ranked_runs.recent_ops_json`.
+- No per-command, replay, event, or idempotency table exists.
+
+## Deliberate limitation
+
+Online v3 verifies checkpoint continuity and authoritative meta progression. It does not verify combat execution.
+
+A modified client can fabricate a plausible compact command journal and combat outcome. The journal is a bounded heuristic signal only. The Worker therefore publishes `verification_level = "checkpoint_verified_v3"` and makes no claim of server-authoritative combat.
+
+## Network-loss contract
+
+Retry with the exact same serialized body and the same `Idempotency-Key`. If the original operation committed but its response was lost, the Worker returns the stored response and performs no second reward, charge, revision advance, finalize, or leaderboard insert. If execution never began, the first received retry performs the operation once. Browser-side retry queue implementation remains future work.
+
+## Protected baseline
+
+Phase 2 changes none of:
+
+```text
+game.js
+config.js
+index.html
+style.css
+style-hd-*.css
+assets/**
+audio/**
+cheat behavior
+Observer Bot behavior
+special-room behavior
+```
+
+The Worker imports no game, DOM, audio, HUD, renderer, or Ranked/Online v2 module. `index.html` contains no v3 script reference.
+
+## Not done
+
+- no production v0.8 ruleset or invented balance data;
+- no browser fetch client or retry queue;
+- no hooks in the game;
+- no leaderboard UI integration;
+- no Worker runtime launch;
+- no D1 resource creation;
+- no secret creation;
+- no deploy, push, rebase, merge, or worktree.
+
+The Phase 2 commit subject is:
+
+```text
+Implement isolated Online v3 Worker and fixture tests
+```
