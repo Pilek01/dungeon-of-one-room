@@ -1,6 +1,6 @@
-# Online v3 handoff - Phase 3B1
+# Online v3 handoff - Phase 3B2A
 
-Date: 2026-07-23
+Date: 2026-07-24
 
 Workspace: `D:\Codex workstation\Dungeon\dungeon-online-v3`
 
@@ -30,6 +30,66 @@ The Phase 3B1 local commit subject is:
 
 ```text
 Implement Online v3 room directives and deterministic ruleset RNG
+```
+
+The Phase 3B2A local commit subject is:
+
+```text
+Implement Online v3 reward envelopes and authoritative gold ledger
+```
+
+## Phase 3B2A outcome
+
+Phase 3B2A adds an isolated private `RoomRewardEnvelopeV3`, bounded room-result
+claims, canonical v0.8 gold modifiers, a compact authoritative gold ledger,
+deterministic anomaly reason codes, and a 26-entry inventory of active gold
+sources. The public directive exposes only `rewardEnvelopeRef`; the full
+envelope remains private canonical state.
+
+The generator now also writes:
+
+```text
+gold-sources.generated.json
+gold-modifiers.generated.json
+room-reward-bounds.generated.json
+chest-reward-bounds.generated.json
+```
+
+It records active source hashes and rejects an unclassified change to the
+active `grantGold` call set. The Phase 3B2A corpus contains 36 executable
+golden fixtures plus property tests over 1,000 deterministic envelopes.
+
+The previous Phase 3B1 hash was:
+
+```text
+sha256:8096931c55e096a51c6e2a5a84fcc7faf3d814bdaa24db6abb1dd613f00b16b5
+```
+
+The Phase 3B2A hash is:
+
+```text
+sha256:29df5d1f7b5cb4042e1abbe77a625b7e2250fffce13e6d9ca37f41fffe07665f
+```
+
+Both are test-only history; neither is an activated production ruleset.
+Registry resolution remains fail-closed. Active Worker routes, the fixture
+ruleset, D1 schema, `recent_ops_json` limit 24, Wrangler configuration, and the
+browser game are unchanged.
+
+Honesty boundary: room-clear amounts and canonical modifiers are derived by
+the Worker. Enemy, elite, hazard, and chest results are only bounded client
+attestations. A modified client can still claim the maximum allowed local
+result; the envelope limits the scale but does not prove combat. Void Reaper,
+Chaos Orb, and offer-empty fallbacks remain heuristic/deferred.
+
+`pendingOffer` remains `null`. No starting relic, relic, mutator, skill,
+elixir, Merchant, Camp, Forge, Pact, lives, score, leaderboard, endpoint,
+client integration, push, or deployment is part of 3B2A.
+
+Detailed record:
+
+```text
+docs/ONLINE_V3_PHASE3B2A.md
 ```
 
 ## Phase 3B1 outcome

@@ -4,6 +4,7 @@ import {
   CONSUMED_DIRECTIVE_HISTORY_LIMIT,
   RULESET_ID
 } from "./constants.js";
+import { assertGoldLedgerV08 } from "./gold-policy.js";
 
 const progression = progressionDocument.canonicalData;
 
@@ -39,8 +40,25 @@ function emptyBuild() {
   return {
     relics: [],
     mutators: [],
+    pacts: [],
+    campUpgrades: {},
     skillTiers: {},
     elixirs: []
+  };
+}
+
+function createGoldLedger() {
+  return {
+    earnedServerDerived: 0,
+    earnedBoundedAttested: 0,
+    spentServerDerived: 0,
+    lastDelta: 0,
+    lastEnvelopeId: null,
+    roomClaimsAccepted: 0,
+    roomClaimsRejected: 0,
+    anomalyScore: 0,
+    anomalyFlags: [],
+    maximumClaimStreak: 0
   };
 }
 
@@ -80,10 +98,13 @@ export function createInitialMetaStateV08(input = {}, context = {}) {
     depth: firstDirectiveDepth - progression.depthTransition,
     roomIndex: progression.initialRoomIndex,
     currentRoomDirective: null,
+    currentRewardEnvelope: null,
     consumedDirectiveIds: [],
     consumedDirectiveNonces: [],
     consumedDirectiveHistoryLimit: CONSUMED_DIRECTIVE_HISTORY_LIMIT,
     gold: progression.initialGold,
+    goldLedger: createGoldLedger(),
+    rewardSettlementHistory: [],
     lives: progression.initialLives,
     build: emptyBuild(),
     pendingOffer: null,
@@ -131,6 +152,10 @@ export function assertMetaStateV08(state) {
   requireText(state.runId, "META_STATE_INVALID:runId");
   requireText(state.season, "META_STATE_INVALID:season");
   if (!state.build || typeof state.build !== "object") throw new TypeError("META_STATE_INVALID:build");
+  assertGoldLedgerV08(state);
+  if (!Array.isArray(state.rewardSettlementHistory) || state.rewardSettlementHistory.length > 64) {
+    throw new TypeError("META_STATE_INVALID:rewardSettlementHistory");
+  }
   if (!state.specialRoomScheduleState || typeof state.specialRoomScheduleState !== "object") {
     throw new TypeError("META_STATE_INVALID:specialRoomScheduleState");
   }

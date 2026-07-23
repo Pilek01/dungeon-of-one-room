@@ -5,6 +5,7 @@ import {
   consumeRoomDirectiveV08,
   issueNextRoomDirectiveV08
 } from "./room-policy.js";
+import { settleRoomRewardEnvelopeV3 } from "./reward-policy.js";
 
 function mergeContext(options, context) {
   return {
@@ -37,6 +38,14 @@ export function createV08Meta1Ruleset(options = {}) {
       return consumeRoomDirectiveV08(
         state,
         operation,
+        mergeContext(options, context)
+      );
+    },
+
+    async settleRoomRewardEnvelope(state, request, context = {}) {
+      return settleRoomRewardEnvelopeV3(
+        state,
+        request,
         mergeContext(options, context)
       );
     }

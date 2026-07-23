@@ -81,13 +81,17 @@ test("ruleset hash is file-order independent and changes with any file byte", as
   assert.notEqual(sha256(canonicalJson(hashInputFor(manifest, changed))), forward);
 });
 
-test("generated Phase 3B1 data is canonical and source-bound", async () => {
+test("generated Phase 3B1 and 3B2A data is canonical and source-bound", async () => {
   const names = [
     "source-manifest.generated.json",
     "run-progression.generated.json",
     "room-types.generated.json",
     "room-eligibility.generated.json",
-    "special-room-policy.generated.json"
+    "special-room-policy.generated.json",
+    "gold-sources.generated.json",
+    "gold-modifiers.generated.json",
+    "room-reward-bounds.generated.json",
+    "chest-reward-bounds.generated.json"
   ];
   for (const name of names) {
     const document = JSON.parse(await readFile(path.join(DATA_ROOT, name), "utf8"));
@@ -108,26 +112,32 @@ test("generated Phase 3B1 data is canonical and source-bound", async () => {
   }
 });
 
-test("source manifest contains only active Phase 3B1 baseline sources", async () => {
+test("source manifest contains only active Phase 3B1/3B2A baseline sources", async () => {
   const manifest = JSON.parse(
     await readFile(path.join(DATA_ROOT, "source-manifest.generated.json"), "utf8")
   );
   assert.deepEqual(
     manifest.sources.map((source) => source.file),
-    ["expansion-content.js", "game.js", "pact-room.js", "room-pity.js"]
+    [
+      "camp-data.js",
+      "camp-runtime.js",
+      "expansion-content.js",
+      "game.js",
+      "loot-tables.js",
+      "mutator-data.js",
+      "pact-room.js",
+      "relic-data.js",
+      "room-pity.js"
+    ]
   );
-  const forbiddenEconomySources = [
-    "camp-data.js",
-    "relic-data.js",
-    "loot-tables.js",
-    "mutator-data.js",
+  const forbiddenDeferredSources = [
     "skills-data.js",
     "elixir-data.js",
     "merchant-curation.js",
     "forge-room.js",
     "pact-effects.js"
   ];
-  for (const forbidden of forbiddenEconomySources) {
+  for (const forbidden of forbiddenDeferredSources) {
     assert.ok(!manifest.sources.some((source) => source.file === forbidden), forbidden);
   }
 });

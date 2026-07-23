@@ -1,9 +1,29 @@
 {
-  "schemaVersion": 2,
+  "schemaVersion": 3,
   "rulesetId": "v08-meta-1",
   "sourceCommit": "f98820c99066d810169e100beb23a54a332734bd",
-  "purpose": "Phase 3B1 canonical room progression and special-room scheduling",
+  "purpose": "Phase 3B1 room progression plus Phase 3B2A gold and reward-envelope source inventory",
   "sources": [
+    {
+      "file": "camp-data.js",
+      "byteLength": 2248,
+      "sha256": "30a481222fc6b1e20ca033a8a72b3da8eb2198b18f83030a5b42548825c78d2b",
+      "evidenceSymbols": [
+        "treasure_sense",
+        "bounty_contract",
+        "CAMP_UPGRADES"
+      ]
+    },
+    {
+      "file": "camp-runtime.js",
+      "byteLength": 30381,
+      "sha256": "302c3442e6e02442f21283b073603bb051e912ac365c55541d4a1b7afe76997a",
+      "evidenceSymbols": [
+        "state.player.gold",
+        "Merchant buys",
+        "spendMerchantUpgradeGold"
+      ]
+    },
     {
       "file": "expansion-content.js",
       "byteLength": 3741,
@@ -31,6 +51,26 @@
       ]
     },
     {
+      "file": "loot-tables.js",
+      "byteLength": 2509,
+      "sha256": "9343a62db72aacd89d16ab0efa3c1fba0c40d08cc1e82e10795990299467e0a9",
+      "evidenceSymbols": [
+        "CHEST_THRESHOLD_TREASURE",
+        "CHEST_THRESHOLD_STANDARD",
+        "rollChestOutcome"
+      ]
+    },
+    {
+      "file": "mutator-data.js",
+      "byteLength": 3244,
+      "sha256": "3e45b4bd282137fb324c6d452bbe248d422c208a2a802028e79263138d1be0b8",
+      "evidenceSymbols": [
+        "greed",
+        "elitist",
+        "MUTATORS"
+      ]
+    },
+    {
       "file": "pact-room.js",
       "byteLength": 5791,
       "sha256": "d94a3d19bab8fe69bf9d3f2dac5a0555e268af7327855c5a675e53149d4355c6",
@@ -38,6 +78,16 @@
         "PACT_ROOM_PROFILES",
         "getPactRoomProfile",
         "canOfferPactRoom"
+      ]
+    },
+    {
+      "file": "relic-data.js",
+      "byteLength": 9135,
+      "sha256": "fa4cdd27c3b3b9d2b61df3bc346a4123e9d3f70f58afdc16cd626411d6bdfa59",
+      "evidenceSymbols": [
+        "Golden Idol",
+        "Void Reaper",
+        "Chaos Orb"
       ]
     },
     {

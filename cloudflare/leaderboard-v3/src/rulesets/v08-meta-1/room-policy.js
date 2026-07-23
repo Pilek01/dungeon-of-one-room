@@ -15,6 +15,10 @@ import {
   createRoomDirectiveV3
 } from "./room-directive.js";
 import {
+  createRoomRewardEnvelopeV3,
+  settleRoomRewardEnvelopeV3
+} from "./reward-policy.js";
+import {
   deriveIntInclusive,
   deriveRandomBytes
 } from "./rng.js";
@@ -35,13 +39,14 @@ const ONE_MILLION = 1_000_000;
 export const ROOM_POLICY_SPEC = Object.freeze({
   moduleFile: "room-policy.js",
   authority: "SERVER_ISSUED",
-  implementationStatus: "phase-3b1-test-only",
+  implementationStatus: "phase-3b2a-test-only",
   controls: Object.freeze([
     "roomType",
     "roomCategory",
     "directiveId",
     "roomNonce",
     "directiveSeed",
+    "rewardEnvelopeRef",
     "sequentialDepth",
     "sequentialRoomIndex"
   ]),
@@ -50,9 +55,7 @@ export const ROOM_POLICY_SPEC = Object.freeze({
     "playerPosition",
     "enemyPositions",
     "enemyAI",
-    "combatOutcome",
-    "gold",
-    "rewards"
+    "combatOutcome"
   ])
 });
 
@@ -300,6 +303,14 @@ export async function issueNextRoomDirectiveV08(state, context = {}) {
     roomIndex,
     16
   );
+  const envelopeIdBytes = await randomBytes(
+    state,
+    context,
+    "room-reward-envelope/id",
+    roomIndex,
+    16
+  );
+  const envelopeId = `reward_${bytesToHex(envelopeIdBytes)}`;
   const directive = createRoomDirectiveV3({
     directiveId: `directive_${bytesToHex(directiveIdBytes)}`,
     runId: state.runId,
@@ -310,6 +321,7 @@ export async function issueNextRoomDirectiveV08(state, context = {}) {
     roomCategory: roomDefinition.category,
     directiveSeed: bytesToHex(seedBytes),
     roomNonce: `nonce_${bytesToHex(nonceBytes)}`,
+    rewardEnvelopeRef: envelopeId,
     specialRoomPayload: roomDefinition.category === "special"
       ? {
           policySource: selection.source,
@@ -320,8 +332,15 @@ export async function issueNextRoomDirectiveV08(state, context = {}) {
   });
 
   const next = cloneMetaStateV08(state);
+  const rewardEnvelope = await createRoomRewardEnvelopeV3({
+    state,
+    directive,
+    envelopeId,
+    cryptoProvider: context.cryptoProvider
+  });
   next.roomIndex = roomIndex;
   next.currentRoomDirective = directive;
+  next.currentRewardEnvelope = rewardEnvelope;
   next.specialRoomScheduleState = updateScheduleForIssuedRoom(
     next.specialRoomScheduleState,
     directive.roomType,
@@ -383,13 +402,30 @@ export async function consumeRoomDirectiveV08(state, operation = {}, context = {
   if (state.status !== "active") throw new TypeError("RUN_NOT_ACTIVE");
   if (!state.currentRoomDirective) throw new TypeError("ROOM_DIRECTIVE_REQUIRED");
   const directive = assertOperationMatches(state, operation);
-  const goldBefore = state.gold;
   const livesBefore = state.lives;
   const buildBefore = JSON.stringify(state.build);
-  const next = cloneMetaStateV08(state);
+  const fixedDelta = state.currentRewardEnvelope.fixedAwards.reduce(
+    (sum, award) => sum + award.amount,
+    0
+  );
+  const rewardClaim = operation.rewardClaim || {
+    envelopeId: state.currentRewardEnvelope.envelopeId,
+    roomDirectiveId: directive.directiveId,
+    roomNonce: directive.roomNonce,
+    claims: [],
+    reportedGoldDelta: fixedDelta,
+    reportedGoldTotal: state.gold + fixedDelta,
+    turnCount: 0,
+    elapsedMs: Math.max(100, Number(context.elapsedMs) || 100),
+    commandJournalDigest: "room-completion-attestation",
+    compactRoomProof: "room-completed"
+  };
+  const settlement = await settleRoomRewardEnvelopeV3(state, rewardClaim, context);
+  const next = settlement.state;
   next.depth = directive.depth;
   next.revision += 1;
   next.currentRoomDirective = null;
+  next.currentRewardEnvelope = null;
   next.consumedDirectiveIds = appendBounded(next.consumedDirectiveIds, directive.directiveId);
   next.consumedDirectiveNonces = appendBounded(next.consumedDirectiveNonces, directive.roomNonce);
   next.statistics.roomsCompleted += 1;
@@ -407,11 +443,10 @@ export async function consumeRoomDirectiveV08(state, operation = {}, context = {
   }
 
   if (
-    next.gold !== goldBefore ||
     next.lives !== livesBefore ||
     JSON.stringify(next.build) !== buildBefore
   ) {
-    throw new Error("PHASE_3B1_META_SCOPE_VIOLATION");
+    throw new Error("PHASE_3B2A_META_SCOPE_VIOLATION");
   }
   return next;
 }

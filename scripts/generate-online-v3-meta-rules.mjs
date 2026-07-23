@@ -45,6 +45,26 @@ const SOURCE_INPUTS = Object.freeze([
   {
     file: "pact-room.js",
     symbols: ["PACT_ROOM_PROFILES", "getPactRoomProfile", "canOfferPactRoom"]
+  },
+  {
+    file: "camp-data.js",
+    symbols: ["treasure_sense", "bounty_contract", "CAMP_UPGRADES"]
+  },
+  {
+    file: "camp-runtime.js",
+    symbols: ["state.player.gold", "Merchant buys", "spendMerchantUpgradeGold"]
+  },
+  {
+    file: "loot-tables.js",
+    symbols: ["CHEST_THRESHOLD_TREASURE", "CHEST_THRESHOLD_STANDARD", "rollChestOutcome"]
+  },
+  {
+    file: "mutator-data.js",
+    symbols: ["greed", "elitist", "MUTATORS"]
+  },
+  {
+    file: "relic-data.js",
+    symbols: ["Golden Idol", "Void Reaper", "Chaos Orb"]
   }
 ]);
 
@@ -53,7 +73,11 @@ const GENERATED_FILES = Object.freeze([
   "run-progression.generated.json",
   "room-types.generated.json",
   "room-eligibility.generated.json",
-  "special-room-policy.generated.json"
+  "special-room-policy.generated.json",
+  "gold-sources.generated.json",
+  "gold-modifiers.generated.json",
+  "room-reward-bounds.generated.json",
+  "chest-reward-bounds.generated.json"
 ]);
 
 function sha256(value) {
@@ -243,11 +267,50 @@ function sourceRefs(records, files) {
     .map(({ file, byteLength, sha256: digest }) => ({ file, byteLength, sha256: digest }));
 }
 
+function goldSourceEntry({
+  sourceId,
+  legacySourceFile,
+  legacyFunctionOrConstant,
+  authorityClass,
+  calculationInputs = [],
+  serverKnownInputs = [],
+  clientAttestedInputs = [],
+  maximumPerRoomKnown = false,
+  maximumPerRunKnown = false,
+  stackingRules = "not-applicable",
+  roundingRules = "not-applicable",
+  appliedOrder = [],
+  eligibleRoomTypes = [],
+  generatedDataRef = null,
+  notes = ""
+}) {
+  return {
+    sourceId,
+    legacySourceFile,
+    legacyFunctionOrConstant,
+    authorityClass,
+    calculationInputs,
+    serverKnownInputs,
+    clientAttestedInputs,
+    maximumPerRoomKnown,
+    maximumPerRunKnown,
+    stackingRules,
+    roundingRules,
+    appliedOrder,
+    eligibleRoomTypes,
+    generatedDataRef,
+    notes
+  };
+}
+
 function buildCanonicalData(records, textByFile) {
   const gameSource = textByFile.get("game.js");
   const pitySource = textByFile.get("room-pity.js");
   const expansionSource = textByFile.get("expansion-content.js");
   const pactSource = textByFile.get("pact-room.js");
+  const campDataSource = textByFile.get("camp-data.js");
+  const mutatorSource = textByFile.get("mutator-data.js");
+  const relicDataSource = textByFile.get("relic-data.js");
   const maxDepth = extractNumber(gameSource, "MAX_DEPTH");
   const startDepthCheckpoints = extractNumericArray(gameSource, "START_DEPTH_CHECKPOINTS");
   const startDepthUnlockBossDepths = extractNumericArray(
@@ -279,6 +342,33 @@ function buildCanonicalData(records, textByFile) {
   const forgePityDepth = extractNumber(pitySource, "FORGE_PITY_DEPTH");
   const otterPityDepth = extractNumber(pitySource, "OTTER_PITY_DEPTH");
   const sourceCommit = BASELINE_COMMIT;
+  const maxRelics = extractNumber(gameSource, "MAX_RELICS");
+  const maxNormalRelicStack = extractNumber(gameSource, "MAX_NORMAL_RELIC_STACK");
+  const maximumElitesPerRoom = extractNumber(gameSource, "MAX_ELITES_PER_ROOM");
+  const maximumOtterEnemies = extractNumber(gameSource, "OTTER_ROOM_ENEMY_MAX");
+  const goldenIdolBonus = extractNumber(gameSource, "GOLDEN_IDOL_GOLD_MULTIPLIER");
+  const voidReaperGold = extractNumber(gameSource, "VOID_REAPER_CRIT_KILL_GOLD");
+  const chaosOrbGold = extractNumber(gameSource, "CHAOS_ORB_GOLD_BONUS");
+  const avaricePotionGold = extractNumber(
+    gameSource,
+    "CROSSROADS_MERCY_AVARICE_GOLD_PER_POTION"
+  );
+  const mutatorIds = Array.from(
+    mutatorSource.matchAll(/\bid:\s*"([a-z_]+)"/gu),
+    (match) => match[1]
+  );
+  const relicIds = Array.from(
+    relicDataSource.matchAll(/\{\s*id:\s*"([a-z0-9_]+)"/gu),
+    (match) => match[1]
+  );
+  const campUpgradeCaps = Object.fromEntries(
+    Array.from(
+      campDataSource.matchAll(
+        /\bid:\s*"(treasure_sense|bounty_contract)"[\s\S]*?\bmax:\s*(\d+)/gu
+      ),
+      (match) => [match[1], Number(match[2])]
+    )
+  );
 
   const baseRoomCategories = Object.freeze({
     combat: "normal",
@@ -568,11 +658,470 @@ function buildCanonicalData(records, textByFile) {
       ]
     }
   };
-  const sourceManifest = {
-    schemaVersion: 2,
+  const goldSourceFiles = [
+    "game.js",
+    "camp-data.js",
+    "camp-runtime.js",
+    "loot-tables.js",
+    "mutator-data.js",
+    "relic-data.js",
+    "pact-room.js"
+  ];
+  const allRunRooms = roomTypes
+    .filter((entry) =>
+      entry.scheduleEligible && !["merchant", "crossroads"].includes(entry.id)
+    )
+    .map((entry) => entry.id)
+    .sort();
+  const grantOrder = [
+    "source base amount",
+    "source-specific bounty/elite/treasure modifier",
+    "Math.round",
+    "run additive gold multiplier",
+    "Pact of Avarice multiplier",
+    "Math.round",
+    "minimum positive grant of 1"
+  ];
+  const goldSources = [
+    goldSourceEntry({
+      sourceId: "room-clear",
+      legacySourceFile: "game.js",
+      legacyFunctionOrConstant: "checkRoomClearBonus/goldBonus",
+      authorityClass: "SERVER_DERIVED",
+      calculationInputs: ["depth", "roomType", "bossRoom"],
+      serverKnownInputs: ["directive.depth", "directive.roomType", "canonicalBuild"],
+      maximumPerRoomKnown: true,
+      maximumPerRunKnown: true,
+      stackingRules: "once per completed room",
+      roundingRules: "integer base then grantGold rounding",
+      appliedOrder: grantOrder,
+      eligibleRoomTypes: allRunRooms,
+      generatedDataRef: "room-reward-bounds.generated.json#roomClear",
+      notes: "Includes the +10 boss/final clear adjustment. Terminal victory has no separate gold grant."
+    }),
+    goldSourceEntry({
+      sourceId: "enemy-kill",
+      legacySourceFile: "game.js",
+      legacyFunctionOrConstant: "rewardForEnemy/killEnemy",
+      authorityClass: "BOUNDED_CLIENT_ATTESTED",
+      calculationInputs: ["enemy.type", "enemy.rewardBonus", "enemy.elite", "canonicalBuild"],
+      serverKnownInputs: ["directive.roomType", "canonicalBuild"],
+      clientAttestedInputs: ["enemy category", "count"],
+      maximumPerRoomKnown: true,
+      maximumPerRunKnown: true,
+      stackingRules: "one grant per killed enemy; aggregate count bounded by envelope",
+      roundingRules: "source-specific multiplier rounded before grantGold",
+      appliedOrder: grantOrder,
+      eligibleRoomTypes: allRunRooms.filter((id) => !["crossroads", "merchant"].includes(id)),
+      generatedDataRef: "room-reward-bounds.generated.json#enemyClaims",
+      notes: "The Worker cannot prove a local kill. A modified client can claim the envelope maximum."
+    }),
+    goldSourceEntry({
+      sourceId: "elite-kill",
+      legacySourceFile: "game.js",
+      legacyFunctionOrConstant: "rewardForEnemy/MAX_ELITES_PER_ROOM",
+      authorityClass: "BOUNDED_CLIENT_ATTESTED",
+      calculationInputs: ["enemy.type", "enemy.rewardBonus", "eliteGoldMult"],
+      serverKnownInputs: ["canonicalBuild"],
+      clientAttestedInputs: ["elite category", "count"],
+      maximumPerRoomKnown: true,
+      maximumPerRunKnown: true,
+      stackingRules: `maximum ${maximumElitesPerRoom} elites per room`,
+      roundingRules: "elite and bounty multiplication then Math.round; grantGold rounds again",
+      appliedOrder: grantOrder,
+      eligibleRoomTypes: allRunRooms.filter((id) => !["crossroads", "merchant"].includes(id)),
+      generatedDataRef: "room-reward-bounds.generated.json#eliteClaims",
+      notes: "Elite affixes do not add gold independently; elite status changes the reward multiplier."
+    }),
+    goldSourceEntry({
+      sourceId: "boss-kill",
+      legacySourceFile: "game.js",
+      legacyFunctionOrConstant: "rewardForEnemy(type=warden)",
+      authorityClass: "BOUNDED_CLIENT_ATTESTED",
+      calculationInputs: ["warden base 35", "bounty multiplier", "canonicalBuild"],
+      serverKnownInputs: ["directive.roomType", "canonicalBuild"],
+      clientAttestedInputs: ["boss defeated count"],
+      maximumPerRoomKnown: true,
+      maximumPerRunKnown: true,
+      stackingRules: "one Warden claim in boss/final room",
+      roundingRules: "bounty Math.round then grantGold Math.round",
+      appliedOrder: grantOrder,
+      eligibleRoomTypes: ["boss", "final"],
+      generatedDataRef: "room-reward-bounds.generated.json#bossClaims",
+      notes: "Boss room completion attestation does not prove the local kill sequence."
+    }),
+    goldSourceEntry({
+      sourceId: "spike-kill-fallback",
+      legacySourceFile: "game.js",
+      legacyFunctionOrConstant: "tickEnemyBleeds/resolveEnemyHazardStep grantGold(1)",
+      authorityClass: "BOUNDED_CLIENT_ATTESTED",
+      calculationInputs: ["hazard kill count", "canonicalBuild"],
+      serverKnownInputs: ["canonicalBuild"],
+      clientAttestedInputs: ["hazard kill count"],
+      maximumPerRoomKnown: true,
+      maximumPerRunKnown: true,
+      stackingRules: "shares the room enemy-count budget",
+      roundingRules: "grantGold rounding",
+      appliedOrder: grantOrder,
+      eligibleRoomTypes: allRunRooms.filter((id) => !["crossroads", "merchant"].includes(id)),
+      generatedDataRef: "room-reward-bounds.generated.json#hazardClaims",
+      notes: "Legacy grants 1 instead of rewardForEnemy when spikes finish an enemy."
+    }),
+    ...[
+      ["chest-gold", "openChest outcome=gold", "BOUNDED_CLIENT_ATTESTED", "standard or treasure chest random 4..8"],
+      ["chest-stat-cap-fallback", "applyChestCapFallback", "BOUNDED_CLIENT_ATTESTED", "ATK/ARM/HP cap fallback may become gold"],
+      ["chest-alchemist-fallback", "openChest Alchemist health/healing branches", "BOUNDED_CLIENT_ATTESTED", "random 2..5"],
+      ["chest-avarice-potion-fallback", "openChest Pact of Avarice potion branch", "BOUNDED_CLIENT_ATTESTED", "random 2..5"],
+      ["chest-shrine-ward-conversion", "rollChestOutcome trap+Shrine Ward", "BOUNDED_CLIENT_ATTESTED", "converted trap follows gold outcome"],
+      ["vault-chest-bonus", "openChest roomType=vault grantGold(50)", "BOUNDED_CLIENT_ATTESTED", "added once for each surviving opened vault chest"]
+    ].map(([sourceId, symbol, authorityClass, notes]) => goldSourceEntry({
+      sourceId,
+      legacySourceFile: sourceId === "chest-shrine-ward-conversion" ? "loot-tables.js" : "game.js",
+      legacyFunctionOrConstant: symbol,
+      authorityClass,
+      calculationInputs: ["claim slot", "chest outcome", "canonicalBuild"],
+      serverKnownInputs: ["directive.roomType", "canonicalBuild", "issued claim slots"],
+      clientAttestedInputs: ["slot ID", "outcome category"],
+      maximumPerRoomKnown: true,
+      maximumPerRunKnown: true,
+      stackingRules: "each issued slot can be consumed once",
+      roundingRules: "source amount then Treasure Sense where applicable; grantGold Math.round",
+      appliedOrder: grantOrder,
+      eligibleRoomTypes: allRunRooms.filter((id) => !["crossroads", "merchant", "otter", "arena"].includes(id)),
+      generatedDataRef: "chest-reward-bounds.generated.json",
+      notes
+    })),
+    ...[
+      ["crossroads-power-empty", "openCrossroadsPowerChest grantGold(80)", ["crossroads"], "empty relic draft only"],
+      ["crossroads-mercy-avarice", "openCrossroadsMercyChest", ["crossroads"], `${avaricePotionGold} per empty potion slot under Avarice`],
+      ["arena-cache-empty", "openStoredRelicChest grantGold(60)", ["arena"], "empty generated relic cache only"],
+      ["otter-crimson-empty", "openChest otter_red grantGold(50)", ["otter"], "empty generated relic offer only"]
+    ].map(([sourceId, symbol, eligibleRoomTypes, notes]) => goldSourceEntry({
+      sourceId,
+      legacySourceFile: "game.js",
+      legacyFunctionOrConstant: symbol,
+      authorityClass: "HEURISTIC_ONLY",
+      calculationInputs: ["local offer resolution", "canonicalBuild"],
+      serverKnownInputs: ["directive.roomType", "canonicalBuild"],
+      clientAttestedInputs: ["fallback occurred"],
+      maximumPerRoomKnown: true,
+      maximumPerRunKnown: true,
+      stackingRules: "at most one special cache/chest",
+      roundingRules: "grantGold Math.round",
+      appliedOrder: grantOrder,
+      eligibleRoomTypes,
+      generatedDataRef: "room-reward-bounds.generated.json#deferredFallbacks",
+      notes: `${notes}; not awarded in Phase 3B2A because offer state is deferred.`
+    })),
+    goldSourceEntry({
+      sourceId: "void-reaper-crit-kill",
+      legacySourceFile: "game.js",
+      legacyFunctionOrConstant: "VOID_REAPER_CRIT_KILL_GOLD/killEnemy",
+      authorityClass: "HEURISTIC_ONLY",
+      calculationInputs: ["crit kill sequence", "Void Reaper ownership"],
+      serverKnownInputs: ["canonicalBuild"],
+      clientAttestedInputs: ["crit kill proc count"],
+      maximumPerRoomKnown: true,
+      maximumPerRunKnown: true,
+      stackingRules: "one proc per eligible crit kill",
+      roundingRules: "grantGold Math.round",
+      appliedOrder: grantOrder,
+      eligibleRoomTypes: allRunRooms,
+      generatedDataRef: "gold-modifiers.generated.json#procRelics",
+      notes: `Legacy base ${voidReaperGold}; exact crit/HP state is not proven and no gold is awarded in Phase 3B2A.`
+    }),
+    goldSourceEntry({
+      sourceId: "chaos-orb-gold-roll",
+      legacySourceFile: "game.js",
+      legacyFunctionOrConstant: "CHAOS_ORB_ROLL_INTERVAL/CHAOS_ORB_GOLD_BONUS",
+      authorityClass: "HEURISTIC_ONLY",
+      calculationInputs: ["turn sequence", "Chaos Orb roll"],
+      serverKnownInputs: ["canonicalBuild"],
+      clientAttestedInputs: ["proc count"],
+      maximumPerRoomKnown: false,
+      maximumPerRunKnown: false,
+      stackingRules: "every 10 local turns; one of six outcomes",
+      roundingRules: "applyMultiplier=false; Math.round only",
+      appliedOrder: ["base amount", "Math.round", "minimum positive grant of 1"],
+      eligibleRoomTypes: allRunRooms,
+      generatedDataRef: "gold-modifiers.generated.json#procRelics",
+      notes: `Legacy base ${chaosOrbGold}; unbounded local turn inflation prevents a safe reward claim.`
+    }),
+    goldSourceEntry({
+      sourceId: "merchant-buyback",
+      legacySourceFile: "camp-runtime.js",
+      legacyFunctionOrConstant: "confirmMerchantBuyback",
+      authorityClass: "SERVER_DERIVED",
+      calculationInputs: ["server-owned relic", "server-issued buyback quote"],
+      serverKnownInputs: ["canonical inventory", "pending server quote"],
+      maximumPerRoomKnown: false,
+      maximumPerRunKnown: false,
+      stackingRules: "transactional; consumes one relic",
+      roundingRules: "integer payout",
+      appliedOrder: ["validate quote", "consume relic", "add payout"],
+      eligibleRoomTypes: ["merchant"],
+      generatedDataRef: null,
+      notes: "Inventory only. Merchant transactions are explicitly deferred beyond Phase 3B2A."
+    }),
+    goldSourceEntry({
+      sourceId: "merchant-spend",
+      legacySourceFile: "camp-runtime.js",
+      legacyFunctionOrConstant: "spendMerchantUpgradeGold",
+      authorityClass: "SERVER_DERIVED",
+      calculationInputs: ["server-issued price", "canonical run wallet"],
+      serverKnownInputs: ["pending transaction", "gold"],
+      maximumPerRoomKnown: false,
+      maximumPerRunKnown: false,
+      stackingRules: "transactional debit; cannot make gold negative",
+      roundingRules: "integer cost",
+      appliedOrder: ["validate purchase", "debit run gold then camp gold"],
+      eligibleRoomTypes: ["merchant"],
+      generatedDataRef: null,
+      notes: "Sink inventory only. Not implemented in Phase 3B2A."
+    }),
+    goldSourceEntry({
+      sourceId: "extract-transfer",
+      legacySourceFile: "game.js",
+      legacyFunctionOrConstant: "extractRun",
+      authorityClass: "SERVER_DERIVED",
+      calculationInputs: ["canonical run gold", "extract mode"],
+      serverKnownInputs: ["gold", "room completion", "emergency_stash level"],
+      maximumPerRoomKnown: true,
+      maximumPerRunKnown: true,
+      stackingRules: "terminates run; transfers or loses existing gold, does not earn run gold",
+      roundingRules: "full extract uses rounded gold; emergency extract uses floor",
+      appliedOrder: ["resolve loss ratio", "transfer retained amount", "clear run wallet"],
+      eligibleRoomTypes: allRunRooms,
+      generatedDataRef: null,
+      notes: "Inventory only. Extract and Camp ledger are deferred."
+    }),
+    ...[
+      ["shrine-direct-gold", "useShrine/rollShrineOutcome", ["shrine"], "no direct gold grant in active v0.8"],
+      ["forge-direct-gold", "forge-room interaction", ["forge"], "no direct gold grant; guardian and room-clear sources still apply"],
+      ["pact-room-direct-gold", "pact-room interaction", ["pact"], "no direct award; Avarice is a modifier"],
+      ["terminal-victory-direct-gold", "triggerDepth100Victory", ["final"], "no separate terminal award; boss/enemy and room-clear sources apply"],
+      ["elite-affix-direct-gold", "applyEliteAffix", allRunRooms, "affixes add no independent gold; elite status is inventoried separately"]
+    ].map(([sourceId, symbol, eligibleRoomTypes, notes]) => goldSourceEntry({
+      sourceId,
+      legacySourceFile: sourceId === "pact-room-direct-gold" ? "pact-room.js" : "game.js",
+      legacyFunctionOrConstant: symbol,
+      authorityClass: "SERVER_DERIVED",
+      calculationInputs: [],
+      serverKnownInputs: ["directive.roomType"],
+      maximumPerRoomKnown: true,
+      maximumPerRunKnown: true,
+      stackingRules: "zero direct award",
+      roundingRules: "not-applicable",
+      appliedOrder: [],
+      eligibleRoomTypes,
+      generatedDataRef: "gold-sources.generated.json",
+      notes
+    })),
+    goldSourceEntry({
+      sourceId: "debug-cheat-gold",
+      legacySourceFile: "game.js",
+      legacyFunctionOrConstant: "debug +100 gold / Observer Bot unlimited gold",
+      authorityClass: "CLIENT_ONLY",
+      calculationInputs: ["local debug state"],
+      clientAttestedInputs: ["none accepted online"],
+      maximumPerRoomKnown: false,
+      maximumPerRunKnown: false,
+      stackingRules: "excluded from Online v3",
+      roundingRules: "not-applicable",
+      appliedOrder: [],
+      eligibleRoomTypes: [],
+      generatedDataRef: "gold-sources.generated.json",
+      notes: "Active local diagnostic behavior, explicitly noncanonical and never claimable."
+    })
+  ].sort((left, right) => left.sourceId.localeCompare(right.sourceId));
+  const grantGoldCallArguments = Array.from(
+    gameSource.matchAll(/\bgrantGold\(([^;\r\n]*)\)/gu),
+    (match) => match[1].replace(/\s+/gu, " ").trim()
+  ).filter((argument) => argument !== "amount, options = {}").sort();
+  const classifiedGrantGoldCallArguments = [
+    "100, { applyMultiplier: false }",
+    "1",
+    "1",
+    "80",
+    "50",
+    "50",
+    "60",
+    "CHAOS_ORB_GOLD_BONUS, { applyMultiplier: false }",
+    "VOID_REAPER_CRIT_KILL_GOLD",
+    "emptyPotionSlots * CROSSROADS_MERCY_AVARICE_GOLD_PER_POTION",
+    "goldBonus",
+    "randInt(2, 5)",
+    "randInt(2, 5)",
+    "randInt(2, 5)",
+    "raw",
+    "rawGold",
+    "rewardForEnemy(enemy)"
+  ].sort();
+  if (canonicalJson(grantGoldCallArguments) !== canonicalJson(classifiedGrantGoldCallArguments)) {
+    throw new Error("UNCLASSIFIED_ACTIVE_GOLD_SOURCE:game.js:grantGold");
+  }
+
+  const authorityClasses = Object.fromEntries(
+    ["SERVER_DERIVED", "SERVER_ISSUED", "BOUNDED_CLIENT_ATTESTED", "HEURISTIC_ONLY", "CLIENT_ONLY"]
+      .map((authorityClass) => [
+        authorityClass,
+        goldSources.filter((entry) => entry.authorityClass === authorityClass).length
+      ])
+  );
+  const goldSourcesData = {
+    schemaVersion: 1,
     rulesetId: RULESET_ID,
     sourceCommit,
-    purpose: "Phase 3B1 canonical room progression and special-room scheduling",
+    sources: sourceRefs(records, goldSourceFiles),
+    canonicalData: {
+      inventoryCompletenessMarkers: [
+        "function grantGold",
+        "state.player.gold = Math.max(0, Number(state.player.gold) || 0) + payout",
+        "state.player.gold -= fromRun",
+        "state.player.gold = keptGold",
+        "OBSERVER_BOT_UNLIMITED_GOLD"
+      ],
+      grantGoldCallArguments,
+      authorityClasses,
+      goldSources
+    }
+  };
+  const goldModifiersData = {
+    schemaVersion: 1,
+    rulesetId: RULESET_ID,
+    sourceCommit,
+    sources: sourceRefs(records, [
+      "game.js",
+      "camp-data.js",
+      "mutator-data.js",
+      "relic-data.js",
+      "pact-room.js"
+    ]),
+    canonicalData: {
+      maximumRelicSlots: maxRelics,
+      maximumNormalRelicStack: maxNormalRelicStack,
+      legalRelicIds: [...new Set(relicIds)].sort(),
+      presentationOnlyFixtureRelicIds: [...new Set(relicIds)]
+        .filter((id) => !["idol", "voidreaper", "chaosorb"].includes(id))
+        .sort(),
+      legalMutatorIds: mutatorIds.sort(),
+      legalPactIds: ["avarice"],
+      legalCampUpgradeIds: ["treasure_sense", "bounty_contract"],
+      modifiers: [
+        { id: "golden-idol", buildPath: "relics", buildId: "idol", perStackAdditive: goldenIdolBonus, stackCap: maxNormalRelicStack, appliesTo: ["multiplied-grant"] },
+        { id: "greed", buildPath: "mutators", buildId: "greed", additive: 0.4, stackCap: 1, appliesTo: ["multiplied-grant"] },
+        { id: "standard-mutator-gold", buildPath: "mutators", excludes: ["greed"], additivePerUnique: 0.2, stackCap: mutatorIds.length - 1, appliesTo: ["multiplied-grant"] },
+        { id: "elitist", buildPath: "mutators", buildId: "elitist", multiplicative: 1.6, stackCap: 1, appliesTo: ["elite-kill"] },
+        { id: "avarice", buildPath: "pacts", buildId: "avarice", multiplicative: 1.4, stackCap: 1, appliesTo: ["multiplied-grant"] },
+        { id: "treasure-sense", buildPath: "campUpgrades.treasure_sense", multiplicativePerLevel: 0.1, levelCap: campUpgradeCaps.treasure_sense, appliesTo: ["chest-base"] },
+        { id: "bounty-contract", buildPath: "campUpgrades.bounty_contract", multiplicativePerLevel: 0.1, levelCap: campUpgradeCaps.bounty_contract, appliesTo: ["enemy-base"] }
+      ],
+      roundingOrder: grantOrder,
+      procRelics: [
+        { id: "voidreaper", sourceId: "void-reaper-crit-kill", baseGold: voidReaperGold, phase3b2aAuthority: "HEURISTIC_ONLY" },
+        { id: "chaosorb", sourceId: "chaos-orb-gold-roll", baseGold: chaosOrbGold, applyMultiplier: false, phase3b2aAuthority: "HEURISTIC_ONLY" }
+      ]
+    }
+  };
+  const enemyBase = {
+    slime: 2,
+    skeleton: 3,
+    brute: 4,
+    skitter: 4,
+    acolyte: 5,
+    totem: 6,
+    riftweaver: 7,
+    bulwark: 9,
+    guardian: 16,
+    blacksmith_guardian: 20,
+    otter: 25,
+    warden: 35
+  };
+  const maximumEnemiesByRoom = Object.fromEntries(
+    roomTypes.filter((entry) => entry.scheduleEligible).map((entry) => [
+      entry.id,
+      entry.id === "merchant" || entry.id === "crossroads"
+        ? 0
+        : entry.id === "otter"
+          ? maximumOtterEnemies
+          : entry.id === "arena"
+            ? 14
+            : entry.id === "boss" || entry.id === "final"
+              ? 5
+              : entry.id === "duel" || entry.id === "forge" || entry.id === "vault"
+                ? 1
+                : entry.id === "horde"
+                  ? 9
+                  : 9
+    ])
+  );
+  const roomRewardBoundsData = {
+    schemaVersion: 1,
+    rulesetId: RULESET_ID,
+    sourceCommit,
+    sources: sourceRefs(records, ["game.js", "camp-data.js", "mutator-data.js"]),
+    canonicalData: {
+      policyVersion: "v08-gold-claims-1",
+      roomClear: {
+        baseFormula: "2 + floor(depth / 2)",
+        excludedRoomTypes: ["crossroads", "merchant"],
+        adjustments: { treasure: -1, vault: -2, shrine: 1, cursed: 4, bossOrFinal: 10 },
+        minimum: 1,
+        maximumBaseAtDepth100: 62
+      },
+      enemyClaims: {
+        baseGoldByEnemyType: enemyBase,
+        maximumEnemiesByRoom,
+        maximumElitesPerRoom,
+        rewardBonusByRoom: { horde: 1, duel: 10, arena: 2 },
+        duplicatePolicy: "REJECT_DUPLICATE_CLAIM_ID"
+      },
+      bossClaims: { claimId: "enemy:warden", maximumCount: 1, requiredRoomTypes: ["boss", "final"] },
+      hazardClaims: { claimId: "hazard-kill", unitBaseGold: 1, sharesEnemyBudget: true },
+      telemetryBounds: { minimumElapsedMs: 100, minimumTurnCount: 0, maximumTurnCount: 100000 },
+      boundedHistoryLimit: 64,
+      maximumGoldDeltaHardCap: 10000,
+      deferredFallbacks: ["crossroads-power-empty", "crossroads-mercy-avarice", "arena-cache-empty", "otter-crimson-empty"]
+    }
+  };
+  const chestRewardBoundsData = {
+    schemaVersion: 1,
+    rulesetId: RULESET_ID,
+    sourceCommit,
+    sources: sourceRefs(records, ["game.js", "loot-tables.js", "camp-data.js"]),
+    canonicalData: {
+      maximumChestSlotsByRoom: {
+        arena: 1,
+        boss: 2,
+        combat: 2,
+        cursed: 1,
+        duel: 1,
+        final: 2,
+        forge: 0,
+        horde: 1,
+        merchant: 0,
+        otter: 1,
+        pact: 0,
+        shrine: 1,
+        treasure: 3,
+        vault: 10,
+        ambush: 1,
+        crossroads: 1
+      },
+      standardGoldBase: { minimum: 4, maximum: 8 },
+      treasureMultiplier: 6,
+      alchemistFallbackBase: { minimum: 2, maximum: 5 },
+      avaricePotionFallbackBase: { minimum: 2, maximum: 5 },
+      vaultBonusBase: 50,
+      specialFallbackBase: { arena: 60, crossroads: 80, otter: 50 },
+      slotPolicy: "opaque sequential slots; no physical coordinates; consume at most once"
+    }
+  };
+  const sourceManifest = {
+    schemaVersion: 3,
+    rulesetId: RULESET_ID,
+    sourceCommit,
+    purpose: "Phase 3B1 room progression plus Phase 3B2A gold and reward-envelope source inventory",
     sources: records
   };
   return new Map([
@@ -580,7 +1129,11 @@ function buildCanonicalData(records, textByFile) {
     ["run-progression.generated.json", runProgression],
     ["room-types.generated.json", roomTypesData],
     ["room-eligibility.generated.json", roomEligibilityData],
-    ["special-room-policy.generated.json", specialRoomPolicyData]
+    ["special-room-policy.generated.json", specialRoomPolicyData],
+    ["gold-sources.generated.json", goldSourcesData],
+    ["gold-modifiers.generated.json", goldModifiersData],
+    ["room-reward-bounds.generated.json", roomRewardBoundsData],
+    ["chest-reward-bounds.generated.json", chestRewardBoundsData]
   ]);
 }
 

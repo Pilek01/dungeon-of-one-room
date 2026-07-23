@@ -85,7 +85,13 @@ async function runToVictory(seed) {
     );
     assert.ok(next.depth >= previousDepth);
     assert.ok(next.depth - previousDepth <= 1);
-    assert.equal(next.gold, 0);
+    assert.ok(next.gold >= state.gold);
+    assert.equal(
+      next.gold,
+      next.goldLedger.earnedServerDerived +
+        next.goldLedger.earnedBoundedAttested -
+        next.goldLedger.spentServerDerived
+    );
     assert.equal(next.lives, 5);
     assert.equal(JSON.stringify(next.build), initialBuild);
     previousDepth = next.depth;

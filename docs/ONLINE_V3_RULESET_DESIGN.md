@@ -70,7 +70,7 @@ The directive contains a compact encounter/reward manifest: allowed enemy types/
 
 Recommendation: Model C with bounded combat attestation. Use server-derived fixed rewards for room-clear and transactions; issue enemy/chest maxima for combat-dependent rewards. For `Void Reaper` and turn/proc rewards, either cap and mark heuristic or exclude them from verified gold until their cadence can be issued. This gives casual tamper resistance without pretending to resist a determined reverse engineer.
 
-## Phase 3B1 `RoomDirectiveV3`
+## Phase 3B2A `RoomDirectiveV3` and private reward envelope
 
 ```js
 {
@@ -84,8 +84,8 @@ Recommendation: Model C with bounded combat attestation. Use server-derived fixe
   directiveSeed,         // opaque seed; not the RNG secret
   roomNonce,
   specialRoomPayload,    // bounded policy descriptor or null
-  rewardEnvelope: null,  // deferred to Phase 3B2
-  offerPolicyRef: null,  // deferred to Phase 3B2
+  rewardEnvelopeRef,     // opaque reference to private canonical envelope
+  offerPolicyRef: null,  // deferred to Phase 3B2B
   issuedAt,
   consumed: false
 }
@@ -93,8 +93,12 @@ Recommendation: Model C with bounded combat attestation. Use server-derived fixe
 
 The directive selects normal room type, boss/final phase, guaranteed Merchant,
 Vault, Otter, Forge, Pact, Crossroads, Blood Arena, Shrine and other rare
-rooms. Physical placement, actors, combat, rewards and offers remain local or
-deferred. Phase 3B1 does not add a `buildRoom()` hook.
+rooms. Physical placement, actors and combat remain local. Phase 3B2A settles
+only server-derived fixed awards and bounded client-attested enemy/chest
+results. Offers remain deferred, and there is still no `buildRoom()` hook.
+
+The full private `RoomRewardEnvelopeV3` is documented in
+`ONLINE_V3_PHASE3B2A.md`. It never appears in the public directive.
 
 Validity rules:
 
@@ -278,11 +282,11 @@ Player explanation:
 
 No UI is changed in Phase 3B1.
 
-## Phase 3B2 exit gate
+## Phase 3B2B exit gate
 
-Add reward/offer/economy policy against the generated room directive, still
-disconnected from `game.js`. Require exact transaction parity, bounded combat
-settlement, dedicated RNG-secret injection through an inactive integration and
-a fresh review of the Merchant-buyback/runGoldEarned discrepancy before any
-browser hook is added. Resolve the cross-run Forge/Otter pity ownership before
-production activation.
+Add server-issued starting relic/relic/mutator/skill/elixir offers and a
+canonical build ledger against the generated room directive, still disconnected
+from `game.js`. Merchant, Camp, Forge and Pact transactions remain later work.
+Require a fresh review of the Merchant-buyback/runGoldEarned discrepancy before
+any browser hook is added. Resolve the cross-run Forge/Otter pity ownership
+before production activation.

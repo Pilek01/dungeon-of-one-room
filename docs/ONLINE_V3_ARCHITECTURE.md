@@ -185,3 +185,6 @@ Tests compare protected baseline files to commit `f98820c99066d810169e100beb23a5
 - `ONLINE_V3_PHASE3B_HOOK_PLAN.md`: maximum-eight-hook integration plan with no awaits in gameplay loops.
 - `ONLINE_V3_PHASE3B1.md`: implemented room-directive/RNG scope, generated
   canonical data, fixtures, unresolved rules and the Phase 3B2 boundary.
+- `ONLINE_V3_PHASE3B2A.md`: private reward envelopes, bounded client claims,
+  generated gold inventory/modifiers, authoritative ledger, anomaly signals,
+  fixtures, limits, and the Phase 3B2B boundary.

@@ -1,0 +1,108 @@
+{
+  "schemaVersion": 1,
+  "rulesetId": "v08-meta-1",
+  "sourceCommit": "f98820c99066d810169e100beb23a54a332734bd",
+  "sources": [
+    {
+      "file": "camp-data.js",
+      "byteLength": 2248,
+      "sha256": "30a481222fc6b1e20ca033a8a72b3da8eb2198b18f83030a5b42548825c78d2b"
+    },
+    {
+      "file": "game.js",
+      "byteLength": 1292796,
+      "sha256": "a7d436f8cdde618e7bab802322a658d2055f201950d9ae7b4598269feff3df00"
+    },
+    {
+      "file": "mutator-data.js",
+      "byteLength": 3244,
+      "sha256": "3e45b4bd282137fb324c6d452bbe248d422c208a2a802028e79263138d1be0b8"
+    }
+  ],
+  "canonicalData": {
+    "policyVersion": "v08-gold-claims-1",
+    "roomClear": {
+      "baseFormula": "2 + floor(depth / 2)",
+      "excludedRoomTypes": [
+        "crossroads",
+        "merchant"
+      ],
+      "adjustments": {
+        "treasure": -1,
+        "vault": -2,
+        "shrine": 1,
+        "cursed": 4,
+        "bossOrFinal": 10
+      },
+      "minimum": 1,
+      "maximumBaseAtDepth100": 62
+    },
+    "enemyClaims": {
+      "baseGoldByEnemyType": {
+        "slime": 2,
+        "skeleton": 3,
+        "brute": 4,
+        "skitter": 4,
+        "acolyte": 5,
+        "totem": 6,
+        "riftweaver": 7,
+        "bulwark": 9,
+        "guardian": 16,
+        "blacksmith_guardian": 20,
+        "otter": 25,
+        "warden": 35
+      },
+      "maximumEnemiesByRoom": {
+        "ambush": 9,
+        "arena": 14,
+        "boss": 5,
+        "combat": 9,
+        "crossroads": 0,
+        "cursed": 9,
+        "duel": 1,
+        "final": 5,
+        "forge": 1,
+        "horde": 9,
+        "merchant": 0,
+        "otter": 18,
+        "pact": 9,
+        "shrine": 9,
+        "treasure": 9,
+        "vault": 1
+      },
+      "maximumElitesPerRoom": 4,
+      "rewardBonusByRoom": {
+        "horde": 1,
+        "duel": 10,
+        "arena": 2
+      },
+      "duplicatePolicy": "REJECT_DUPLICATE_CLAIM_ID"
+    },
+    "bossClaims": {
+      "claimId": "enemy:warden",
+      "maximumCount": 1,
+      "requiredRoomTypes": [
+        "boss",
+        "final"
+      ]
+    },
+    "hazardClaims": {
+      "claimId": "hazard-kill",
+      "unitBaseGold": 1,
+      "sharesEnemyBudget": true
+    },
+    "telemetryBounds": {
+      "minimumElapsedMs": 100,
+      "minimumTurnCount": 0,
+      "maximumTurnCount": 100000
+    },
+    "boundedHistoryLimit": 64,
+    "maximumGoldDeltaHardCap": 10000,
+    "deferredFallbacks": [
+      "crossroads-power-empty",
+      "crossroads-mercy-avarice",
+      "arena-cache-empty",
+      "otter-crimson-empty"
+    ]
+  }
+}

@@ -5,11 +5,27 @@
   "sourceCommit": "f98820c99066d810169e100beb23a54a332734bd",
   "schemas": [
     {
+      "file": "data/chest-reward-bounds.generated.json",
+      "schemaVersion": 1
+    },
+    {
+      "file": "data/gold-modifiers.generated.json",
+      "schemaVersion": 1
+    },
+    {
+      "file": "data/gold-sources.generated.json",
+      "schemaVersion": 1
+    },
+    {
       "file": "data/golden-fixtures.manifest.json",
       "schemaVersion": 2
     },
     {
       "file": "data/room-eligibility.generated.json",
+      "schemaVersion": 1
+    },
+    {
+      "file": "data/room-reward-bounds.generated.json",
       "schemaVersion": 1
     },
     {
@@ -22,7 +38,7 @@
     },
     {
       "file": "data/source-manifest.generated.json",
-      "schemaVersion": 2
+      "schemaVersion": 3
     },
     {
       "file": "data/special-room-policy.generated.json",
@@ -41,6 +57,21 @@
       "sha256": "b1838d41712516d17d0605cafd43b16f3d41e2c99e4d78aeded021dc35c99bca"
     },
     {
+      "file": "data/chest-reward-bounds.generated.json",
+      "byteLength": 1430,
+      "sha256": "95c291f6394b87b9ae79bc38740d4d7d07ffdda254d6df3966c5b0326d645f7e"
+    },
+    {
+      "file": "data/gold-modifiers.generated.json",
+      "byteLength": 5939,
+      "sha256": "3757499ed19051ebf1e9a3f91c2571911d13392fe6a7284afc821c5cd85000c8"
+    },
+    {
+      "file": "data/gold-sources.generated.json",
+      "byteLength": 33993,
+      "sha256": "43b66acc655d009e5985b0d123d1a22170f388247630ea5a1923018f7786e8ec"
+    },
+    {
       "file": "data/golden-fixtures.manifest.json",
       "byteLength": 1159,
       "sha256": "0bb927245cbfc38c73bb868d8ca60e4154307dafcb11e121e40b199fab2046f5"
@@ -49,6 +80,11 @@
       "file": "data/room-eligibility.generated.json",
       "byteLength": 10525,
       "sha256": "1704a57d0f29702f982e2d88db286336be8f92070ff75f8b5d027d3d41bf462b"
+    },
+    {
+      "file": "data/room-reward-bounds.generated.json",
+      "byteLength": 2529,
+      "sha256": "5342b07ecbe45ab874c7659505401ece857bec73d6cc576dece571d8ca1e0ee4"
     },
     {
       "file": "data/room-types.generated.json",
@@ -62,8 +98,8 @@
     },
     {
       "file": "data/source-manifest.generated.json",
-      "byteLength": 1491,
-      "sha256": "a3aa52f6d67de16750c366963fa129e3d2d96911b938eab134742c8885234ae1"
+      "byteLength": 2847,
+      "sha256": "d046ff8ef5464abaec237d1eaca64e0697f0ac2fa8776e46fcb3a8003f4ed959"
     },
     {
       "file": "data/special-room-policy.generated.json",
@@ -77,13 +113,13 @@
     },
     {
       "file": "gold-policy.js",
-      "byteLength": 413,
-      "sha256": "0bb08cb2208a5f0de7f6a6ba3141c4d5752837920d04a8b9d9a6b85bfdb114ea"
+      "byteLength": 6295,
+      "sha256": "5aa3a647540fb5d2e13f3b912084601c09e911557f7b4c521fc4d42ece1304d4"
     },
     {
       "file": "index.js",
-      "byteLength": 1520,
-      "sha256": "9ee87238a502cadc024f195963366435140ec5ee29092a285e67957156ae275e"
+      "byteLength": 1781,
+      "sha256": "7e902092e78f331eba4e5eee42aac8641a62c90db99d3be4f762f5c1db8cc934"
     },
     {
       "file": "leaderboard-summary.js",
@@ -102,8 +138,8 @@
     },
     {
       "file": "meta-state.js",
-      "byteLength": 4689,
-      "sha256": "edf9f8aa683c938dbe4239a6181d594ff90bc65d2e07af41da4fb31f9d53322a"
+      "byteLength": 5390,
+      "sha256": "7572260b4cb29d167c5d26aa8bd61f85b5303a1a238152b79633846d7fd98d85"
     },
     {
       "file": "pact-policy.js",
@@ -112,8 +148,8 @@
     },
     {
       "file": "reward-policy.js",
-      "byteLength": 344,
-      "sha256": "ebf9cf848fdc668eb4668d478ab85d281a0dd9dfdbcb169cad258bf709b69b8d"
+      "byteLength": 18468,
+      "sha256": "724353e4e2f9449c482ea55ef35b356ab9af06c58be906c8d421ff5a412c1bdc"
     },
     {
       "file": "rng.js",
@@ -122,13 +158,13 @@
     },
     {
       "file": "room-directive.js",
-      "byteLength": 1722,
-      "sha256": "ca3c32748dafe4a17c96df5d05fcc80d0e1d9542faa45fcf42ba9b9c5542e725"
+      "byteLength": 1992,
+      "sha256": "f7055cf39ffbaff977404a9c5c8e92e606fd15e48ab7aa3cfa1261bad20c37b8"
     },
     {
       "file": "room-policy.js",
-      "byteLength": 13557,
-      "sha256": "ecd9c2ee3a88f436dd36eaea89f08d39fb6f351bed1779d96c4d19cf2f5d554a"
+      "byteLength": 14711,
+      "sha256": "1e390cef394989f1e4982564c49ddd101be61ec7bc8e384678592b38ce39ef70"
     },
     {
       "file": "score-policy.js",
@@ -139,7 +175,12 @@
       "file": "test/phase3b1-golden-fixtures.json",
       "byteLength": 13530,
       "sha256": "0664f8c7cd0c7b82b421420dc85ea5fb661e58a72cd2ef45c27640a06eb71379"
+    },
+    {
+      "file": "test/phase3b2a-golden-fixtures.json",
+      "byteLength": 13795,
+      "sha256": "e0ec300cf0da187fe034657b7c8e74b9f16b19602e6721e5f09b4b9b5db31b75"
     }
   ],
-  "rulesetHash": "sha256:8096931c55e096a51c6e2a5a84fcc7faf3d814bdaa24db6abb1dd613f00b16b5"
+  "rulesetHash": "sha256:29df5d1f7b5cb4042e1abbe77a625b7e2250fffce13e6d9ca37f41fffe07665f"
 }

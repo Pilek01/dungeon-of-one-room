@@ -1,0 +1,62 @@
+{
+  "schemaVersion": 1,
+  "rulesetId": "v08-meta-1",
+  "sourceCommit": "f98820c99066d810169e100beb23a54a332734bd",
+  "sources": [
+    {
+      "file": "camp-data.js",
+      "byteLength": 2248,
+      "sha256": "30a481222fc6b1e20ca033a8a72b3da8eb2198b18f83030a5b42548825c78d2b"
+    },
+    {
+      "file": "game.js",
+      "byteLength": 1292796,
+      "sha256": "a7d436f8cdde618e7bab802322a658d2055f201950d9ae7b4598269feff3df00"
+    },
+    {
+      "file": "loot-tables.js",
+      "byteLength": 2509,
+      "sha256": "9343a62db72aacd89d16ab0efa3c1fba0c40d08cc1e82e10795990299467e0a9"
+    }
+  ],
+  "canonicalData": {
+    "maximumChestSlotsByRoom": {
+      "arena": 1,
+      "boss": 2,
+      "combat": 2,
+      "cursed": 1,
+      "duel": 1,
+      "final": 2,
+      "forge": 0,
+      "horde": 1,
+      "merchant": 0,
+      "otter": 1,
+      "pact": 0,
+      "shrine": 1,
+      "treasure": 3,
+      "vault": 10,
+      "ambush": 1,
+      "crossroads": 1
+    },
+    "standardGoldBase": {
+      "minimum": 4,
+      "maximum": 8
+    },
+    "treasureMultiplier": 6,
+    "alchemistFallbackBase": {
+      "minimum": 2,
+      "maximum": 5
+    },
+    "avaricePotionFallbackBase": {
+      "minimum": 2,
+      "maximum": 5
+    },
+    "vaultBonusBase": 50,
+    "specialFallbackBase": {
+      "arena": 60,
+      "crossroads": 80,
+      "otter": 50
+    },
+    "slotPolicy": "opaque sequential slots; no physical coordinates; consume at most once"
+  }
+}

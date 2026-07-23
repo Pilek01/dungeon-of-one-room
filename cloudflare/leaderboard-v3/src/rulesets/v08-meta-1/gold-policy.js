@@ -1,11 +1,167 @@
+import modifiersDocument from "./data/gold-modifiers.generated.json" with { type: "json" };
+import sourcesDocument from "./data/gold-sources.generated.json" with { type: "json" };
+import rewardBoundsDocument from "./data/room-reward-bounds.generated.json" with { type: "json" };
+
+const modifiers = modifiersDocument.canonicalData;
+const sources = sourcesDocument.canonicalData;
+const rewardBounds = rewardBoundsDocument.canonicalData;
+const legalSourceIds = new Set(sources.goldSources.map((entry) => entry.sourceId));
+const legalMutators = new Set(modifiers.legalMutatorIds);
+const legalRelics = new Set([
+  ...modifiers.legalRelicIds,
+  ...modifiers.presentationOnlyFixtureRelicIds
+]);
+
 export const GOLD_POLICY_SPEC = Object.freeze({
   moduleFile: "gold-policy.js",
-  recommendedModel: "room-manifest-with-bounded-combat-attestation",
+  recommendedModel: "private-room-envelope-with-bounded-local-attestation",
   authority: Object.freeze({
-    deterministicTransactions: "SERVER_DERIVED",
-    issuedRoomRewards: "SERVER_ISSUED",
-    combatKillCounts: "BOUNDED_CLIENT_ATTESTED",
-    hitOrCritTriggeredGold: "HEURISTIC_ONLY"
+    deterministicAwards: "SERVER_DERIVED",
+    issuedLimitsAndSlots: "SERVER_ISSUED",
+    combatAndChestResults: "BOUNDED_CLIENT_ATTESTED",
+    hitCritAndTurnProcs: "HEURISTIC_ONLY"
   }),
-  implementationStatus: "not-implemented"
+  implementationStatus: "phase-3b2a-test-only"
 });
+
+function requireSafeAmount(value, code) {
+  const amount = Number(value);
+  if (!Number.isSafeInteger(amount) || amount < 0) throw new TypeError(code);
+  return amount;
+}
+
+function normalizeBuild(canonicalBuild = {}) {
+  const relics = Array.isArray(canonicalBuild.relics) ? [...canonicalBuild.relics] : [];
+  const mutators = Array.isArray(canonicalBuild.mutators) ? [...canonicalBuild.mutators] : [];
+  const pacts = Array.isArray(canonicalBuild.pacts) ? [...canonicalBuild.pacts] : [];
+  const campUpgrades = canonicalBuild.campUpgrades && typeof canonicalBuild.campUpgrades === "object"
+    ? { ...canonicalBuild.campUpgrades }
+    : {};
+  for (const relicId of relics) {
+    if (!legalRelics.has(relicId)) throw new TypeError(`CANONICAL_BUILD_RELIC_UNKNOWN:${relicId}`);
+  }
+  for (const mutatorId of mutators) {
+    if (!legalMutators.has(mutatorId)) throw new TypeError(`CANONICAL_BUILD_MUTATOR_UNKNOWN:${mutatorId}`);
+  }
+  for (const pactId of pacts) {
+    if (!modifiers.legalPactIds.includes(pactId)) throw new TypeError(`CANONICAL_BUILD_PACT_UNKNOWN:${pactId}`);
+  }
+  for (const [upgradeId, level] of Object.entries(campUpgrades)) {
+    if (!modifiers.legalCampUpgradeIds.includes(upgradeId)) {
+      throw new TypeError(`CANONICAL_BUILD_CAMP_UPGRADE_UNKNOWN:${upgradeId}`);
+    }
+    if (!Number.isSafeInteger(level) || level < 0) {
+      throw new TypeError(`CANONICAL_BUILD_CAMP_UPGRADE_INVALID:${upgradeId}`);
+    }
+  }
+  return { relics, mutators: [...new Set(mutators)], pacts: [...new Set(pacts)], campUpgrades };
+}
+
+function level(build, id, cap) {
+  return Math.min(cap, Math.max(0, Number(build.campUpgrades[id]) || 0));
+}
+
+function globalMultiplier(build) {
+  const idolCount = Math.min(
+    modifiers.maximumNormalRelicStack,
+    build.relics.filter((id) => id === "idol").length
+  );
+  const nonGreedMutators = build.mutators.filter((id) => id !== "greed").length;
+  return 1 +
+    idolCount * 0.15 +
+    (build.mutators.includes("greed") ? 0.4 : 0) +
+    nonGreedMutators * 0.2;
+}
+
+export function resolveGoldModifierV08({
+  canonicalBuild,
+  sourceId,
+  baseAmount,
+  context = {}
+}) {
+  if (!legalSourceIds.has(sourceId)) throw new TypeError(`GOLD_SOURCE_UNKNOWN:${sourceId}`);
+  const build = normalizeBuild(canonicalBuild);
+  const raw = requireSafeAmount(baseAmount, "GOLD_BASE_AMOUNT_INVALID");
+  const applyMultiplier = context.applyMultiplier !== false;
+  const multiplier = applyMultiplier
+    ? globalMultiplier(build) * (build.pacts.includes("avarice") ? 1.4 : 1)
+    : 1;
+  return {
+    amount: raw <= 0 ? 0 : Math.max(1, Math.round(raw * multiplier)),
+    baseAmount: raw,
+    multiplier,
+    canonicalBuild: build
+  };
+}
+
+export function calculateMultipliedGoldV08(input) {
+  return resolveGoldModifierV08(input).amount;
+}
+
+export function calculateEnemyGoldV08({
+  canonicalBuild,
+  enemyType,
+  elite = false,
+  rewardBonus = 0
+}) {
+  const base = rewardBounds.enemyClaims.baseGoldByEnemyType[enemyType];
+  if (!Number.isSafeInteger(base)) throw new TypeError(`ENEMY_GOLD_TYPE_UNKNOWN:${enemyType}`);
+  const build = normalizeBuild(canonicalBuild);
+  const bonus = requireSafeAmount(rewardBonus, "ENEMY_REWARD_BONUS_INVALID");
+  const bountyLevel = level(build, "bounty_contract", 5);
+  const eliteMultiplier = elite && build.mutators.includes("elitist") ? 1.6 : 1;
+  const preGrant = Math.max(
+    1,
+    Math.round((base + bonus) * (1 + bountyLevel * 0.1) * eliteMultiplier)
+  );
+  return resolveGoldModifierV08({
+    canonicalBuild: build,
+    sourceId: elite ? "elite-kill" : "enemy-kill",
+    baseAmount: preGrant
+  }).amount;
+}
+
+export function calculateChestGoldV08({
+  canonicalBuild,
+  baseAmount,
+  applyTreasureSense = true
+}) {
+  const build = normalizeBuild(canonicalBuild);
+  const raw = requireSafeAmount(baseAmount, "CHEST_GOLD_AMOUNT_INVALID");
+  const treasureLevel = applyTreasureSense ? level(build, "treasure_sense", 5) : 0;
+  const preGrant = Math.max(1, Math.round(raw * (1 + treasureLevel * 0.1)));
+  return resolveGoldModifierV08({
+    canonicalBuild: build,
+    sourceId: "chest-gold",
+    baseAmount: preGrant
+  }).amount;
+}
+
+export function assertGoldLedgerV08(state) {
+  if (!Number.isSafeInteger(state.gold) || state.gold < 0) throw new TypeError("GOLD_INVALID");
+  const ledger = state.goldLedger;
+  if (!ledger || typeof ledger !== "object") throw new TypeError("GOLD_LEDGER_INVALID");
+  for (const field of [
+    "earnedServerDerived",
+    "earnedBoundedAttested",
+    "spentServerDerived",
+    "lastDelta",
+    "roomClaimsAccepted",
+    "roomClaimsRejected",
+    "anomalyScore",
+    "maximumClaimStreak"
+  ]) {
+    if (!Number.isSafeInteger(ledger[field]) || ledger[field] < 0) {
+      throw new TypeError(`GOLD_LEDGER_INVALID:${field}`);
+    }
+  }
+  if (state.gold !== ledger.earnedServerDerived + ledger.earnedBoundedAttested - ledger.spentServerDerived) {
+    throw new TypeError("GOLD_LEDGER_TOTAL_MISMATCH");
+  }
+  if (!Array.isArray(ledger.anomalyFlags) || ledger.anomalyFlags.length > rewardBounds.boundedHistoryLimit) {
+    throw new TypeError("GOLD_LEDGER_ANOMALY_HISTORY_INVALID");
+  }
+  return state;
+}
+
+export const V08_GOLD_POLICY_DATA = Object.freeze({ modifiers, sources, rewardBounds });

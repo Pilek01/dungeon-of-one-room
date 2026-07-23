@@ -1,0 +1,1074 @@
+{
+  "schemaVersion": 1,
+  "rulesetId": "v08-meta-1",
+  "sourceCommit": "f98820c99066d810169e100beb23a54a332734bd",
+  "sources": [
+    {
+      "file": "camp-data.js",
+      "byteLength": 2248,
+      "sha256": "30a481222fc6b1e20ca033a8a72b3da8eb2198b18f83030a5b42548825c78d2b"
+    },
+    {
+      "file": "camp-runtime.js",
+      "byteLength": 30381,
+      "sha256": "302c3442e6e02442f21283b073603bb051e912ac365c55541d4a1b7afe76997a"
+    },
+    {
+      "file": "game.js",
+      "byteLength": 1292796,
+      "sha256": "a7d436f8cdde618e7bab802322a658d2055f201950d9ae7b4598269feff3df00"
+    },
+    {
+      "file": "loot-tables.js",
+      "byteLength": 2509,
+      "sha256": "9343a62db72aacd89d16ab0efa3c1fba0c40d08cc1e82e10795990299467e0a9"
+    },
+    {
+      "file": "mutator-data.js",
+      "byteLength": 3244,
+      "sha256": "3e45b4bd282137fb324c6d452bbe248d422c208a2a802028e79263138d1be0b8"
+    },
+    {
+      "file": "pact-room.js",
+      "byteLength": 5791,
+      "sha256": "d94a3d19bab8fe69bf9d3f2dac5a0555e268af7327855c5a675e53149d4355c6"
+    },
+    {
+      "file": "relic-data.js",
+      "byteLength": 9135,
+      "sha256": "fa4cdd27c3b3b9d2b61df3bc346a4123e9d3f70f58afdc16cd626411d6bdfa59"
+    }
+  ],
+  "canonicalData": {
+    "inventoryCompletenessMarkers": [
+      "function grantGold",
+      "state.player.gold = Math.max(0, Number(state.player.gold) || 0) + payout",
+      "state.player.gold -= fromRun",
+      "state.player.gold = keptGold",
+      "OBSERVER_BOT_UNLIMITED_GOLD"
+    ],
+    "grantGoldCallArguments": [
+      "1",
+      "1",
+      "100, { applyMultiplier: false }",
+      "50",
+      "50",
+      "60",
+      "80",
+      "CHAOS_ORB_GOLD_BONUS, { applyMultiplier: false }",
+      "VOID_REAPER_CRIT_KILL_GOLD",
+      "emptyPotionSlots * CROSSROADS_MERCY_AVARICE_GOLD_PER_POTION",
+      "goldBonus",
+      "randInt(2, 5)",
+      "randInt(2, 5)",
+      "randInt(2, 5)",
+      "raw",
+      "rawGold",
+      "rewardForEnemy(enemy)"
+    ],
+    "authorityClasses": {
+      "SERVER_DERIVED": 9,
+      "SERVER_ISSUED": 0,
+      "BOUNDED_CLIENT_ATTESTED": 10,
+      "HEURISTIC_ONLY": 6,
+      "CLIENT_ONLY": 1
+    },
+    "goldSources": [
+      {
+        "sourceId": "arena-cache-empty",
+        "legacySourceFile": "game.js",
+        "legacyFunctionOrConstant": "openStoredRelicChest grantGold(60)",
+        "authorityClass": "HEURISTIC_ONLY",
+        "calculationInputs": [
+          "local offer resolution",
+          "canonicalBuild"
+        ],
+        "serverKnownInputs": [
+          "directive.roomType",
+          "canonicalBuild"
+        ],
+        "clientAttestedInputs": [
+          "fallback occurred"
+        ],
+        "maximumPerRoomKnown": true,
+        "maximumPerRunKnown": true,
+        "stackingRules": "at most one special cache/chest",
+        "roundingRules": "grantGold Math.round",
+        "appliedOrder": [
+          "source base amount",
+          "source-specific bounty/elite/treasure modifier",
+          "Math.round",
+          "run additive gold multiplier",
+          "Pact of Avarice multiplier",
+          "Math.round",
+          "minimum positive grant of 1"
+        ],
+        "eligibleRoomTypes": [
+          "arena"
+        ],
+        "generatedDataRef": "room-reward-bounds.generated.json#deferredFallbacks",
+        "notes": "empty generated relic cache only; not awarded in Phase 3B2A because offer state is deferred."
+      },
+      {
+        "sourceId": "boss-kill",
+        "legacySourceFile": "game.js",
+        "legacyFunctionOrConstant": "rewardForEnemy(type=warden)",
+        "authorityClass": "BOUNDED_CLIENT_ATTESTED",
+        "calculationInputs": [
+          "warden base 35",
+          "bounty multiplier",
+          "canonicalBuild"
+        ],
+        "serverKnownInputs": [
+          "directive.roomType",
+          "canonicalBuild"
+        ],
+        "clientAttestedInputs": [
+          "boss defeated count"
+        ],
+        "maximumPerRoomKnown": true,
+        "maximumPerRunKnown": true,
+        "stackingRules": "one Warden claim in boss/final room",
+        "roundingRules": "bounty Math.round then grantGold Math.round",
+        "appliedOrder": [
+          "source base amount",
+          "source-specific bounty/elite/treasure modifier",
+          "Math.round",
+          "run additive gold multiplier",
+          "Pact of Avarice multiplier",
+          "Math.round",
+          "minimum positive grant of 1"
+        ],
+        "eligibleRoomTypes": [
+          "boss",
+          "final"
+        ],
+        "generatedDataRef": "room-reward-bounds.generated.json#bossClaims",
+        "notes": "Boss room completion attestation does not prove the local kill sequence."
+      },
+      {
+        "sourceId": "chaos-orb-gold-roll",
+        "legacySourceFile": "game.js",
+        "legacyFunctionOrConstant": "CHAOS_ORB_ROLL_INTERVAL/CHAOS_ORB_GOLD_BONUS",
+        "authorityClass": "HEURISTIC_ONLY",
+        "calculationInputs": [
+          "turn sequence",
+          "Chaos Orb roll"
+        ],
+        "serverKnownInputs": [
+          "canonicalBuild"
+        ],
+        "clientAttestedInputs": [
+          "proc count"
+        ],
+        "maximumPerRoomKnown": false,
+        "maximumPerRunKnown": false,
+        "stackingRules": "every 10 local turns; one of six outcomes",
+        "roundingRules": "applyMultiplier=false; Math.round only",
+        "appliedOrder": [
+          "base amount",
+          "Math.round",
+          "minimum positive grant of 1"
+        ],
+        "eligibleRoomTypes": [
+          "ambush",
+          "arena",
+          "boss",
+          "combat",
+          "cursed",
+          "duel",
+          "final",
+          "forge",
+          "horde",
+          "otter",
+          "pact",
+          "shrine",
+          "treasure",
+          "vault"
+        ],
+        "generatedDataRef": "gold-modifiers.generated.json#procRelics",
+        "notes": "Legacy base 20; unbounded local turn inflation prevents a safe reward claim."
+      },
+      {
+        "sourceId": "chest-alchemist-fallback",
+        "legacySourceFile": "game.js",
+        "legacyFunctionOrConstant": "openChest Alchemist health/healing branches",
+        "authorityClass": "BOUNDED_CLIENT_ATTESTED",
+        "calculationInputs": [
+          "claim slot",
+          "chest outcome",
+          "canonicalBuild"
+        ],
+        "serverKnownInputs": [
+          "directive.roomType",
+          "canonicalBuild",
+          "issued claim slots"
+        ],
+        "clientAttestedInputs": [
+          "slot ID",
+          "outcome category"
+        ],
+        "maximumPerRoomKnown": true,
+        "maximumPerRunKnown": true,
+        "stackingRules": "each issued slot can be consumed once",
+        "roundingRules": "source amount then Treasure Sense where applicable; grantGold Math.round",
+        "appliedOrder": [
+          "source base amount",
+          "source-specific bounty/elite/treasure modifier",
+          "Math.round",
+          "run additive gold multiplier",
+          "Pact of Avarice multiplier",
+          "Math.round",
+          "minimum positive grant of 1"
+        ],
+        "eligibleRoomTypes": [
+          "ambush",
+          "boss",
+          "combat",
+          "cursed",
+          "duel",
+          "final",
+          "forge",
+          "horde",
+          "pact",
+          "shrine",
+          "treasure",
+          "vault"
+        ],
+        "generatedDataRef": "chest-reward-bounds.generated.json",
+        "notes": "random 2..5"
+      },
+      {
+        "sourceId": "chest-avarice-potion-fallback",
+        "legacySourceFile": "game.js",
+        "legacyFunctionOrConstant": "openChest Pact of Avarice potion branch",
+        "authorityClass": "BOUNDED_CLIENT_ATTESTED",
+        "calculationInputs": [
+          "claim slot",
+          "chest outcome",
+          "canonicalBuild"
+        ],
+        "serverKnownInputs": [
+          "directive.roomType",
+          "canonicalBuild",
+          "issued claim slots"
+        ],
+        "clientAttestedInputs": [
+          "slot ID",
+          "outcome category"
+        ],
+        "maximumPerRoomKnown": true,
+        "maximumPerRunKnown": true,
+        "stackingRules": "each issued slot can be consumed once",
+        "roundingRules": "source amount then Treasure Sense where applicable; grantGold Math.round",
+        "appliedOrder": [
+          "source base amount",
+          "source-specific bounty/elite/treasure modifier",
+          "Math.round",
+          "run additive gold multiplier",
+          "Pact of Avarice multiplier",
+          "Math.round",
+          "minimum positive grant of 1"
+        ],
+        "eligibleRoomTypes": [
+          "ambush",
+          "boss",
+          "combat",
+          "cursed",
+          "duel",
+          "final",
+          "forge",
+          "horde",
+          "pact",
+          "shrine",
+          "treasure",
+          "vault"
+        ],
+        "generatedDataRef": "chest-reward-bounds.generated.json",
+        "notes": "random 2..5"
+      },
+      {
+        "sourceId": "chest-gold",
+        "legacySourceFile": "game.js",
+        "legacyFunctionOrConstant": "openChest outcome=gold",
+        "authorityClass": "BOUNDED_CLIENT_ATTESTED",
+        "calculationInputs": [
+          "claim slot",
+          "chest outcome",
+          "canonicalBuild"
+        ],
+        "serverKnownInputs": [
+          "directive.roomType",
+          "canonicalBuild",
+          "issued claim slots"
+        ],
+        "clientAttestedInputs": [
+          "slot ID",
+          "outcome category"
+        ],
+        "maximumPerRoomKnown": true,
+        "maximumPerRunKnown": true,
+        "stackingRules": "each issued slot can be consumed once",
+        "roundingRules": "source amount then Treasure Sense where applicable; grantGold Math.round",
+        "appliedOrder": [
+          "source base amount",
+          "source-specific bounty/elite/treasure modifier",
+          "Math.round",
+          "run additive gold multiplier",
+          "Pact of Avarice multiplier",
+          "Math.round",
+          "minimum positive grant of 1"
+        ],
+        "eligibleRoomTypes": [
+          "ambush",
+          "boss",
+          "combat",
+          "cursed",
+          "duel",
+          "final",
+          "forge",
+          "horde",
+          "pact",
+          "shrine",
+          "treasure",
+          "vault"
+        ],
+        "generatedDataRef": "chest-reward-bounds.generated.json",
+        "notes": "standard or treasure chest random 4..8"
+      },
+      {
+        "sourceId": "chest-shrine-ward-conversion",
+        "legacySourceFile": "loot-tables.js",
+        "legacyFunctionOrConstant": "rollChestOutcome trap+Shrine Ward",
+        "authorityClass": "BOUNDED_CLIENT_ATTESTED",
+        "calculationInputs": [
+          "claim slot",
+          "chest outcome",
+          "canonicalBuild"
+        ],
+        "serverKnownInputs": [
+          "directive.roomType",
+          "canonicalBuild",
+          "issued claim slots"
+        ],
+        "clientAttestedInputs": [
+          "slot ID",
+          "outcome category"
+        ],
+        "maximumPerRoomKnown": true,
+        "maximumPerRunKnown": true,
+        "stackingRules": "each issued slot can be consumed once",
+        "roundingRules": "source amount then Treasure Sense where applicable; grantGold Math.round",
+        "appliedOrder": [
+          "source base amount",
+          "source-specific bounty/elite/treasure modifier",
+          "Math.round",
+          "run additive gold multiplier",
+          "Pact of Avarice multiplier",
+          "Math.round",
+          "minimum positive grant of 1"
+        ],
+        "eligibleRoomTypes": [
+          "ambush",
+          "boss",
+          "combat",
+          "cursed",
+          "duel",
+          "final",
+          "forge",
+          "horde",
+          "pact",
+          "shrine",
+          "treasure",
+          "vault"
+        ],
+        "generatedDataRef": "chest-reward-bounds.generated.json",
+        "notes": "converted trap follows gold outcome"
+      },
+      {
+        "sourceId": "chest-stat-cap-fallback",
+        "legacySourceFile": "game.js",
+        "legacyFunctionOrConstant": "applyChestCapFallback",
+        "authorityClass": "BOUNDED_CLIENT_ATTESTED",
+        "calculationInputs": [
+          "claim slot",
+          "chest outcome",
+          "canonicalBuild"
+        ],
+        "serverKnownInputs": [
+          "directive.roomType",
+          "canonicalBuild",
+          "issued claim slots"
+        ],
+        "clientAttestedInputs": [
+          "slot ID",
+          "outcome category"
+        ],
+        "maximumPerRoomKnown": true,
+        "maximumPerRunKnown": true,
+        "stackingRules": "each issued slot can be consumed once",
+        "roundingRules": "source amount then Treasure Sense where applicable; grantGold Math.round",
+        "appliedOrder": [
+          "source base amount",
+          "source-specific bounty/elite/treasure modifier",
+          "Math.round",
+          "run additive gold multiplier",
+          "Pact of Avarice multiplier",
+          "Math.round",
+          "minimum positive grant of 1"
+        ],
+        "eligibleRoomTypes": [
+          "ambush",
+          "boss",
+          "combat",
+          "cursed",
+          "duel",
+          "final",
+          "forge",
+          "horde",
+          "pact",
+          "shrine",
+          "treasure",
+          "vault"
+        ],
+        "generatedDataRef": "chest-reward-bounds.generated.json",
+        "notes": "ATK/ARM/HP cap fallback may become gold"
+      },
+      {
+        "sourceId": "crossroads-mercy-avarice",
+        "legacySourceFile": "game.js",
+        "legacyFunctionOrConstant": "openCrossroadsMercyChest",
+        "authorityClass": "HEURISTIC_ONLY",
+        "calculationInputs": [
+          "local offer resolution",
+          "canonicalBuild"
+        ],
+        "serverKnownInputs": [
+          "directive.roomType",
+          "canonicalBuild"
+        ],
+        "clientAttestedInputs": [
+          "fallback occurred"
+        ],
+        "maximumPerRoomKnown": true,
+        "maximumPerRunKnown": true,
+        "stackingRules": "at most one special cache/chest",
+        "roundingRules": "grantGold Math.round",
+        "appliedOrder": [
+          "source base amount",
+          "source-specific bounty/elite/treasure modifier",
+          "Math.round",
+          "run additive gold multiplier",
+          "Pact of Avarice multiplier",
+          "Math.round",
+          "minimum positive grant of 1"
+        ],
+        "eligibleRoomTypes": [
+          "crossroads"
+        ],
+        "generatedDataRef": "room-reward-bounds.generated.json#deferredFallbacks",
+        "notes": "12 per empty potion slot under Avarice; not awarded in Phase 3B2A because offer state is deferred."
+      },
+      {
+        "sourceId": "crossroads-power-empty",
+        "legacySourceFile": "game.js",
+        "legacyFunctionOrConstant": "openCrossroadsPowerChest grantGold(80)",
+        "authorityClass": "HEURISTIC_ONLY",
+        "calculationInputs": [
+          "local offer resolution",
+          "canonicalBuild"
+        ],
+        "serverKnownInputs": [
+          "directive.roomType",
+          "canonicalBuild"
+        ],
+        "clientAttestedInputs": [
+          "fallback occurred"
+        ],
+        "maximumPerRoomKnown": true,
+        "maximumPerRunKnown": true,
+        "stackingRules": "at most one special cache/chest",
+        "roundingRules": "grantGold Math.round",
+        "appliedOrder": [
+          "source base amount",
+          "source-specific bounty/elite/treasure modifier",
+          "Math.round",
+          "run additive gold multiplier",
+          "Pact of Avarice multiplier",
+          "Math.round",
+          "minimum positive grant of 1"
+        ],
+        "eligibleRoomTypes": [
+          "crossroads"
+        ],
+        "generatedDataRef": "room-reward-bounds.generated.json#deferredFallbacks",
+        "notes": "empty relic draft only; not awarded in Phase 3B2A because offer state is deferred."
+      },
+      {
+        "sourceId": "debug-cheat-gold",
+        "legacySourceFile": "game.js",
+        "legacyFunctionOrConstant": "debug +100 gold / Observer Bot unlimited gold",
+        "authorityClass": "CLIENT_ONLY",
+        "calculationInputs": [
+          "local debug state"
+        ],
+        "serverKnownInputs": [],
+        "clientAttestedInputs": [
+          "none accepted online"
+        ],
+        "maximumPerRoomKnown": false,
+        "maximumPerRunKnown": false,
+        "stackingRules": "excluded from Online v3",
+        "roundingRules": "not-applicable",
+        "appliedOrder": [],
+        "eligibleRoomTypes": [],
+        "generatedDataRef": "gold-sources.generated.json",
+        "notes": "Active local diagnostic behavior, explicitly noncanonical and never claimable."
+      },
+      {
+        "sourceId": "elite-affix-direct-gold",
+        "legacySourceFile": "game.js",
+        "legacyFunctionOrConstant": "applyEliteAffix",
+        "authorityClass": "SERVER_DERIVED",
+        "calculationInputs": [],
+        "serverKnownInputs": [
+          "directive.roomType"
+        ],
+        "clientAttestedInputs": [],
+        "maximumPerRoomKnown": true,
+        "maximumPerRunKnown": true,
+        "stackingRules": "zero direct award",
+        "roundingRules": "not-applicable",
+        "appliedOrder": [],
+        "eligibleRoomTypes": [
+          "ambush",
+          "arena",
+          "boss",
+          "combat",
+          "cursed",
+          "duel",
+          "final",
+          "forge",
+          "horde",
+          "otter",
+          "pact",
+          "shrine",
+          "treasure",
+          "vault"
+        ],
+        "generatedDataRef": "gold-sources.generated.json",
+        "notes": "affixes add no independent gold; elite status is inventoried separately"
+      },
+      {
+        "sourceId": "elite-kill",
+        "legacySourceFile": "game.js",
+        "legacyFunctionOrConstant": "rewardForEnemy/MAX_ELITES_PER_ROOM",
+        "authorityClass": "BOUNDED_CLIENT_ATTESTED",
+        "calculationInputs": [
+          "enemy.type",
+          "enemy.rewardBonus",
+          "eliteGoldMult"
+        ],
+        "serverKnownInputs": [
+          "canonicalBuild"
+        ],
+        "clientAttestedInputs": [
+          "elite category",
+          "count"
+        ],
+        "maximumPerRoomKnown": true,
+        "maximumPerRunKnown": true,
+        "stackingRules": "maximum 4 elites per room",
+        "roundingRules": "elite and bounty multiplication then Math.round; grantGold rounds again",
+        "appliedOrder": [
+          "source base amount",
+          "source-specific bounty/elite/treasure modifier",
+          "Math.round",
+          "run additive gold multiplier",
+          "Pact of Avarice multiplier",
+          "Math.round",
+          "minimum positive grant of 1"
+        ],
+        "eligibleRoomTypes": [
+          "ambush",
+          "arena",
+          "boss",
+          "combat",
+          "cursed",
+          "duel",
+          "final",
+          "forge",
+          "horde",
+          "otter",
+          "pact",
+          "shrine",
+          "treasure",
+          "vault"
+        ],
+        "generatedDataRef": "room-reward-bounds.generated.json#eliteClaims",
+        "notes": "Elite affixes do not add gold independently; elite status changes the reward multiplier."
+      },
+      {
+        "sourceId": "enemy-kill",
+        "legacySourceFile": "game.js",
+        "legacyFunctionOrConstant": "rewardForEnemy/killEnemy",
+        "authorityClass": "BOUNDED_CLIENT_ATTESTED",
+        "calculationInputs": [
+          "enemy.type",
+          "enemy.rewardBonus",
+          "enemy.elite",
+          "canonicalBuild"
+        ],
+        "serverKnownInputs": [
+          "directive.roomType",
+          "canonicalBuild"
+        ],
+        "clientAttestedInputs": [
+          "enemy category",
+          "count"
+        ],
+        "maximumPerRoomKnown": true,
+        "maximumPerRunKnown": true,
+        "stackingRules": "one grant per killed enemy; aggregate count bounded by envelope",
+        "roundingRules": "source-specific multiplier rounded before grantGold",
+        "appliedOrder": [
+          "source base amount",
+          "source-specific bounty/elite/treasure modifier",
+          "Math.round",
+          "run additive gold multiplier",
+          "Pact of Avarice multiplier",
+          "Math.round",
+          "minimum positive grant of 1"
+        ],
+        "eligibleRoomTypes": [
+          "ambush",
+          "arena",
+          "boss",
+          "combat",
+          "cursed",
+          "duel",
+          "final",
+          "forge",
+          "horde",
+          "otter",
+          "pact",
+          "shrine",
+          "treasure",
+          "vault"
+        ],
+        "generatedDataRef": "room-reward-bounds.generated.json#enemyClaims",
+        "notes": "The Worker cannot prove a local kill. A modified client can claim the envelope maximum."
+      },
+      {
+        "sourceId": "extract-transfer",
+        "legacySourceFile": "game.js",
+        "legacyFunctionOrConstant": "extractRun",
+        "authorityClass": "SERVER_DERIVED",
+        "calculationInputs": [
+          "canonical run gold",
+          "extract mode"
+        ],
+        "serverKnownInputs": [
+          "gold",
+          "room completion",
+          "emergency_stash level"
+        ],
+        "clientAttestedInputs": [],
+        "maximumPerRoomKnown": true,
+        "maximumPerRunKnown": true,
+        "stackingRules": "terminates run; transfers or loses existing gold, does not earn run gold",
+        "roundingRules": "full extract uses rounded gold; emergency extract uses floor",
+        "appliedOrder": [
+          "resolve loss ratio",
+          "transfer retained amount",
+          "clear run wallet"
+        ],
+        "eligibleRoomTypes": [
+          "ambush",
+          "arena",
+          "boss",
+          "combat",
+          "cursed",
+          "duel",
+          "final",
+          "forge",
+          "horde",
+          "otter",
+          "pact",
+          "shrine",
+          "treasure",
+          "vault"
+        ],
+        "generatedDataRef": null,
+        "notes": "Inventory only. Extract and Camp ledger are deferred."
+      },
+      {
+        "sourceId": "forge-direct-gold",
+        "legacySourceFile": "game.js",
+        "legacyFunctionOrConstant": "forge-room interaction",
+        "authorityClass": "SERVER_DERIVED",
+        "calculationInputs": [],
+        "serverKnownInputs": [
+          "directive.roomType"
+        ],
+        "clientAttestedInputs": [],
+        "maximumPerRoomKnown": true,
+        "maximumPerRunKnown": true,
+        "stackingRules": "zero direct award",
+        "roundingRules": "not-applicable",
+        "appliedOrder": [],
+        "eligibleRoomTypes": [
+          "forge"
+        ],
+        "generatedDataRef": "gold-sources.generated.json",
+        "notes": "no direct gold grant; guardian and room-clear sources still apply"
+      },
+      {
+        "sourceId": "merchant-buyback",
+        "legacySourceFile": "camp-runtime.js",
+        "legacyFunctionOrConstant": "confirmMerchantBuyback",
+        "authorityClass": "SERVER_DERIVED",
+        "calculationInputs": [
+          "server-owned relic",
+          "server-issued buyback quote"
+        ],
+        "serverKnownInputs": [
+          "canonical inventory",
+          "pending server quote"
+        ],
+        "clientAttestedInputs": [],
+        "maximumPerRoomKnown": false,
+        "maximumPerRunKnown": false,
+        "stackingRules": "transactional; consumes one relic",
+        "roundingRules": "integer payout",
+        "appliedOrder": [
+          "validate quote",
+          "consume relic",
+          "add payout"
+        ],
+        "eligibleRoomTypes": [
+          "merchant"
+        ],
+        "generatedDataRef": null,
+        "notes": "Inventory only. Merchant transactions are explicitly deferred beyond Phase 3B2A."
+      },
+      {
+        "sourceId": "merchant-spend",
+        "legacySourceFile": "camp-runtime.js",
+        "legacyFunctionOrConstant": "spendMerchantUpgradeGold",
+        "authorityClass": "SERVER_DERIVED",
+        "calculationInputs": [
+          "server-issued price",
+          "canonical run wallet"
+        ],
+        "serverKnownInputs": [
+          "pending transaction",
+          "gold"
+        ],
+        "clientAttestedInputs": [],
+        "maximumPerRoomKnown": false,
+        "maximumPerRunKnown": false,
+        "stackingRules": "transactional debit; cannot make gold negative",
+        "roundingRules": "integer cost",
+        "appliedOrder": [
+          "validate purchase",
+          "debit run gold then camp gold"
+        ],
+        "eligibleRoomTypes": [
+          "merchant"
+        ],
+        "generatedDataRef": null,
+        "notes": "Sink inventory only. Not implemented in Phase 3B2A."
+      },
+      {
+        "sourceId": "otter-crimson-empty",
+        "legacySourceFile": "game.js",
+        "legacyFunctionOrConstant": "openChest otter_red grantGold(50)",
+        "authorityClass": "HEURISTIC_ONLY",
+        "calculationInputs": [
+          "local offer resolution",
+          "canonicalBuild"
+        ],
+        "serverKnownInputs": [
+          "directive.roomType",
+          "canonicalBuild"
+        ],
+        "clientAttestedInputs": [
+          "fallback occurred"
+        ],
+        "maximumPerRoomKnown": true,
+        "maximumPerRunKnown": true,
+        "stackingRules": "at most one special cache/chest",
+        "roundingRules": "grantGold Math.round",
+        "appliedOrder": [
+          "source base amount",
+          "source-specific bounty/elite/treasure modifier",
+          "Math.round",
+          "run additive gold multiplier",
+          "Pact of Avarice multiplier",
+          "Math.round",
+          "minimum positive grant of 1"
+        ],
+        "eligibleRoomTypes": [
+          "otter"
+        ],
+        "generatedDataRef": "room-reward-bounds.generated.json#deferredFallbacks",
+        "notes": "empty generated relic offer only; not awarded in Phase 3B2A because offer state is deferred."
+      },
+      {
+        "sourceId": "pact-room-direct-gold",
+        "legacySourceFile": "pact-room.js",
+        "legacyFunctionOrConstant": "pact-room interaction",
+        "authorityClass": "SERVER_DERIVED",
+        "calculationInputs": [],
+        "serverKnownInputs": [
+          "directive.roomType"
+        ],
+        "clientAttestedInputs": [],
+        "maximumPerRoomKnown": true,
+        "maximumPerRunKnown": true,
+        "stackingRules": "zero direct award",
+        "roundingRules": "not-applicable",
+        "appliedOrder": [],
+        "eligibleRoomTypes": [
+          "pact"
+        ],
+        "generatedDataRef": "gold-sources.generated.json",
+        "notes": "no direct award; Avarice is a modifier"
+      },
+      {
+        "sourceId": "room-clear",
+        "legacySourceFile": "game.js",
+        "legacyFunctionOrConstant": "checkRoomClearBonus/goldBonus",
+        "authorityClass": "SERVER_DERIVED",
+        "calculationInputs": [
+          "depth",
+          "roomType",
+          "bossRoom"
+        ],
+        "serverKnownInputs": [
+          "directive.depth",
+          "directive.roomType",
+          "canonicalBuild"
+        ],
+        "clientAttestedInputs": [],
+        "maximumPerRoomKnown": true,
+        "maximumPerRunKnown": true,
+        "stackingRules": "once per completed room",
+        "roundingRules": "integer base then grantGold rounding",
+        "appliedOrder": [
+          "source base amount",
+          "source-specific bounty/elite/treasure modifier",
+          "Math.round",
+          "run additive gold multiplier",
+          "Pact of Avarice multiplier",
+          "Math.round",
+          "minimum positive grant of 1"
+        ],
+        "eligibleRoomTypes": [
+          "ambush",
+          "arena",
+          "boss",
+          "combat",
+          "cursed",
+          "duel",
+          "final",
+          "forge",
+          "horde",
+          "otter",
+          "pact",
+          "shrine",
+          "treasure",
+          "vault"
+        ],
+        "generatedDataRef": "room-reward-bounds.generated.json#roomClear",
+        "notes": "Includes the +10 boss/final clear adjustment. Terminal victory has no separate gold grant."
+      },
+      {
+        "sourceId": "shrine-direct-gold",
+        "legacySourceFile": "game.js",
+        "legacyFunctionOrConstant": "useShrine/rollShrineOutcome",
+        "authorityClass": "SERVER_DERIVED",
+        "calculationInputs": [],
+        "serverKnownInputs": [
+          "directive.roomType"
+        ],
+        "clientAttestedInputs": [],
+        "maximumPerRoomKnown": true,
+        "maximumPerRunKnown": true,
+        "stackingRules": "zero direct award",
+        "roundingRules": "not-applicable",
+        "appliedOrder": [],
+        "eligibleRoomTypes": [
+          "shrine"
+        ],
+        "generatedDataRef": "gold-sources.generated.json",
+        "notes": "no direct gold grant in active v0.8"
+      },
+      {
+        "sourceId": "spike-kill-fallback",
+        "legacySourceFile": "game.js",
+        "legacyFunctionOrConstant": "tickEnemyBleeds/resolveEnemyHazardStep grantGold(1)",
+        "authorityClass": "BOUNDED_CLIENT_ATTESTED",
+        "calculationInputs": [
+          "hazard kill count",
+          "canonicalBuild"
+        ],
+        "serverKnownInputs": [
+          "canonicalBuild"
+        ],
+        "clientAttestedInputs": [
+          "hazard kill count"
+        ],
+        "maximumPerRoomKnown": true,
+        "maximumPerRunKnown": true,
+        "stackingRules": "shares the room enemy-count budget",
+        "roundingRules": "grantGold rounding",
+        "appliedOrder": [
+          "source base amount",
+          "source-specific bounty/elite/treasure modifier",
+          "Math.round",
+          "run additive gold multiplier",
+          "Pact of Avarice multiplier",
+          "Math.round",
+          "minimum positive grant of 1"
+        ],
+        "eligibleRoomTypes": [
+          "ambush",
+          "arena",
+          "boss",
+          "combat",
+          "cursed",
+          "duel",
+          "final",
+          "forge",
+          "horde",
+          "otter",
+          "pact",
+          "shrine",
+          "treasure",
+          "vault"
+        ],
+        "generatedDataRef": "room-reward-bounds.generated.json#hazardClaims",
+        "notes": "Legacy grants 1 instead of rewardForEnemy when spikes finish an enemy."
+      },
+      {
+        "sourceId": "terminal-victory-direct-gold",
+        "legacySourceFile": "game.js",
+        "legacyFunctionOrConstant": "triggerDepth100Victory",
+        "authorityClass": "SERVER_DERIVED",
+        "calculationInputs": [],
+        "serverKnownInputs": [
+          "directive.roomType"
+        ],
+        "clientAttestedInputs": [],
+        "maximumPerRoomKnown": true,
+        "maximumPerRunKnown": true,
+        "stackingRules": "zero direct award",
+        "roundingRules": "not-applicable",
+        "appliedOrder": [],
+        "eligibleRoomTypes": [
+          "final"
+        ],
+        "generatedDataRef": "gold-sources.generated.json",
+        "notes": "no separate terminal award; boss/enemy and room-clear sources apply"
+      },
+      {
+        "sourceId": "vault-chest-bonus",
+        "legacySourceFile": "game.js",
+        "legacyFunctionOrConstant": "openChest roomType=vault grantGold(50)",
+        "authorityClass": "BOUNDED_CLIENT_ATTESTED",
+        "calculationInputs": [
+          "claim slot",
+          "chest outcome",
+          "canonicalBuild"
+        ],
+        "serverKnownInputs": [
+          "directive.roomType",
+          "canonicalBuild",
+          "issued claim slots"
+        ],
+        "clientAttestedInputs": [
+          "slot ID",
+          "outcome category"
+        ],
+        "maximumPerRoomKnown": true,
+        "maximumPerRunKnown": true,
+        "stackingRules": "each issued slot can be consumed once",
+        "roundingRules": "source amount then Treasure Sense where applicable; grantGold Math.round",
+        "appliedOrder": [
+          "source base amount",
+          "source-specific bounty/elite/treasure modifier",
+          "Math.round",
+          "run additive gold multiplier",
+          "Pact of Avarice multiplier",
+          "Math.round",
+          "minimum positive grant of 1"
+        ],
+        "eligibleRoomTypes": [
+          "ambush",
+          "boss",
+          "combat",
+          "cursed",
+          "duel",
+          "final",
+          "forge",
+          "horde",
+          "pact",
+          "shrine",
+          "treasure",
+          "vault"
+        ],
+        "generatedDataRef": "chest-reward-bounds.generated.json",
+        "notes": "added once for each surviving opened vault chest"
+      },
+      {
+        "sourceId": "void-reaper-crit-kill",
+        "legacySourceFile": "game.js",
+        "legacyFunctionOrConstant": "VOID_REAPER_CRIT_KILL_GOLD/killEnemy",
+        "authorityClass": "HEURISTIC_ONLY",
+        "calculationInputs": [
+          "crit kill sequence",
+          "Void Reaper ownership"
+        ],
+        "serverKnownInputs": [
+          "canonicalBuild"
+        ],
+        "clientAttestedInputs": [
+          "crit kill proc count"
+        ],
+        "maximumPerRoomKnown": true,
+        "maximumPerRunKnown": true,
+        "stackingRules": "one proc per eligible crit kill",
+        "roundingRules": "grantGold Math.round",
+        "appliedOrder": [
+          "source base amount",
+          "source-specific bounty/elite/treasure modifier",
+          "Math.round",
+          "run additive gold multiplier",
+          "Pact of Avarice multiplier",
+          "Math.round",
+          "minimum positive grant of 1"
+        ],
+        "eligibleRoomTypes": [
+          "ambush",
+          "arena",
+          "boss",
+          "combat",
+          "cursed",
+          "duel",
+          "final",
+          "forge",
+          "horde",
+          "otter",
+          "pact",
+          "shrine",
+          "treasure",
+          "vault"
+        ],
+        "generatedDataRef": "gold-modifiers.generated.json#procRelics",
+        "notes": "Legacy base 10; exact crit/HP state is not proven and no gold is awarded in Phase 3B2A."
+      }
+    ]
+  }
+}

@@ -1,0 +1,268 @@
+{
+  "schemaVersion": 1,
+  "rulesetId": "v08-meta-1",
+  "sourceCommit": "f98820c99066d810169e100beb23a54a332734bd",
+  "sources": [
+    {
+      "file": "camp-data.js",
+      "byteLength": 2248,
+      "sha256": "30a481222fc6b1e20ca033a8a72b3da8eb2198b18f83030a5b42548825c78d2b"
+    },
+    {
+      "file": "game.js",
+      "byteLength": 1292796,
+      "sha256": "a7d436f8cdde618e7bab802322a658d2055f201950d9ae7b4598269feff3df00"
+    },
+    {
+      "file": "mutator-data.js",
+      "byteLength": 3244,
+      "sha256": "3e45b4bd282137fb324c6d452bbe248d422c208a2a802028e79263138d1be0b8"
+    },
+    {
+      "file": "pact-room.js",
+      "byteLength": 5791,
+      "sha256": "d94a3d19bab8fe69bf9d3f2dac5a0555e268af7327855c5a675e53149d4355c6"
+    },
+    {
+      "file": "relic-data.js",
+      "byteLength": 9135,
+      "sha256": "fa4cdd27c3b3b9d2b61df3bc346a4123e9d3f70f58afdc16cd626411d6bdfa59"
+    }
+  ],
+  "canonicalData": {
+    "maximumRelicSlots": 8,
+    "maximumNormalRelicStack": 5,
+    "legalRelicIds": [
+      "abyssalreliquary",
+      "adrenal",
+      "aegisdynamo",
+      "afterimageboots",
+      "alchemistscoil",
+      "bloodvial",
+      "borrowedtime",
+      "burnblade",
+      "cachekey",
+      "chaosorb",
+      "chronoloop",
+      "crownconcord",
+      "crownofoneroom",
+      "deadeyeprism",
+      "duelistseal",
+      "echostrike",
+      "engineofwar",
+      "executionchain",
+      "executionseal",
+      "fang",
+      "fieldrations",
+      "flask",
+      "fracturedsigil",
+      "frostamulet",
+      "gambleredge",
+      "glasscannon",
+      "gravewhisper",
+      "hazardprism",
+      "idol",
+      "ironboots",
+      "labyrinthheart",
+      "lastresort",
+      "laststandtorque",
+      "lifebloom",
+      "lucky",
+      "magnet",
+      "merchfavor",
+      "merchfavor1",
+      "merchfavor3",
+      "mirrorcarapace",
+      "momentumengine",
+      "oathofruin",
+      "perfectrhythm",
+      "phasecloak",
+      "plating",
+      "quickloader",
+      "risk",
+      "scoutlens",
+      "sharpsight",
+      "shrineward",
+      "soulharvest",
+      "stormsigil",
+      "thinbuckler",
+      "thornmail",
+      "titanheart",
+      "trapweave",
+      "vampfang",
+      "voidreaper"
+    ],
+    "presentationOnlyFixtureRelicIds": [
+      "abyssalreliquary",
+      "adrenal",
+      "aegisdynamo",
+      "afterimageboots",
+      "alchemistscoil",
+      "bloodvial",
+      "borrowedtime",
+      "burnblade",
+      "cachekey",
+      "chronoloop",
+      "crownconcord",
+      "crownofoneroom",
+      "deadeyeprism",
+      "duelistseal",
+      "echostrike",
+      "engineofwar",
+      "executionchain",
+      "executionseal",
+      "fang",
+      "fieldrations",
+      "flask",
+      "fracturedsigil",
+      "frostamulet",
+      "gambleredge",
+      "glasscannon",
+      "gravewhisper",
+      "hazardprism",
+      "ironboots",
+      "labyrinthheart",
+      "lastresort",
+      "laststandtorque",
+      "lifebloom",
+      "lucky",
+      "magnet",
+      "merchfavor",
+      "merchfavor1",
+      "merchfavor3",
+      "mirrorcarapace",
+      "momentumengine",
+      "oathofruin",
+      "perfectrhythm",
+      "phasecloak",
+      "plating",
+      "quickloader",
+      "risk",
+      "scoutlens",
+      "sharpsight",
+      "shrineward",
+      "soulharvest",
+      "stormsigil",
+      "thinbuckler",
+      "thornmail",
+      "titanheart",
+      "trapweave",
+      "vampfang"
+    ],
+    "legalMutatorIds": [
+      "alchemist",
+      "ascension",
+      "berserker",
+      "bulwark",
+      "elitist",
+      "famine",
+      "greed",
+      "hunter",
+      "momentum",
+      "resilience"
+    ],
+    "legalPactIds": [
+      "avarice"
+    ],
+    "legalCampUpgradeIds": [
+      "treasure_sense",
+      "bounty_contract"
+    ],
+    "modifiers": [
+      {
+        "id": "golden-idol",
+        "buildPath": "relics",
+        "buildId": "idol",
+        "perStackAdditive": 0.15,
+        "stackCap": 5,
+        "appliesTo": [
+          "multiplied-grant"
+        ]
+      },
+      {
+        "id": "greed",
+        "buildPath": "mutators",
+        "buildId": "greed",
+        "additive": 0.4,
+        "stackCap": 1,
+        "appliesTo": [
+          "multiplied-grant"
+        ]
+      },
+      {
+        "id": "standard-mutator-gold",
+        "buildPath": "mutators",
+        "excludes": [
+          "greed"
+        ],
+        "additivePerUnique": 0.2,
+        "stackCap": 9,
+        "appliesTo": [
+          "multiplied-grant"
+        ]
+      },
+      {
+        "id": "elitist",
+        "buildPath": "mutators",
+        "buildId": "elitist",
+        "multiplicative": 1.6,
+        "stackCap": 1,
+        "appliesTo": [
+          "elite-kill"
+        ]
+      },
+      {
+        "id": "avarice",
+        "buildPath": "pacts",
+        "buildId": "avarice",
+        "multiplicative": 1.4,
+        "stackCap": 1,
+        "appliesTo": [
+          "multiplied-grant"
+        ]
+      },
+      {
+        "id": "treasure-sense",
+        "buildPath": "campUpgrades.treasure_sense",
+        "multiplicativePerLevel": 0.1,
+        "levelCap": 5,
+        "appliesTo": [
+          "chest-base"
+        ]
+      },
+      {
+        "id": "bounty-contract",
+        "buildPath": "campUpgrades.bounty_contract",
+        "multiplicativePerLevel": 0.1,
+        "levelCap": 5,
+        "appliesTo": [
+          "enemy-base"
+        ]
+      }
+    ],
+    "roundingOrder": [
+      "source base amount",
+      "source-specific bounty/elite/treasure modifier",
+      "Math.round",
+      "run additive gold multiplier",
+      "Pact of Avarice multiplier",
+      "Math.round",
+      "minimum positive grant of 1"
+    ],
+    "procRelics": [
+      {
+        "id": "voidreaper",
+        "sourceId": "void-reaper-crit-kill",
+        "baseGold": 10,
+        "phase3b2aAuthority": "HEURISTIC_ONLY"
+      },
+      {
+        "id": "chaosorb",
+        "sourceId": "chaos-orb-gold-roll",
+        "baseGold": 20,
+        "applyMultiplier": false,
+        "phase3b2aAuthority": "HEURISTIC_ONLY"
+      }
+    ]
+  }
+}

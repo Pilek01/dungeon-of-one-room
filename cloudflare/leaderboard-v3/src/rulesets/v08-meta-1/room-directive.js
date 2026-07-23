@@ -24,8 +24,14 @@ export function assertRoomDirectiveV3(directive) {
   if (directive.roomIndex < 1 || directive.depth < 1) {
     throw new TypeError("ROOM_DIRECTIVE_INVALID:sequence");
   }
-  if (directive.rewardEnvelope !== null || directive.offerPolicyRef !== null) {
-    throw new TypeError("ROOM_DIRECTIVE_PHASE_3B1_SCOPE_VIOLATION");
+  if (typeof directive.rewardEnvelopeRef !== "string" || !directive.rewardEnvelopeRef) {
+    throw new TypeError("ROOM_DIRECTIVE_INVALID:rewardEnvelopeRef");
+  }
+  if (Object.hasOwn(directive, "rewardEnvelope")) {
+    throw new TypeError("ROOM_DIRECTIVE_PRIVATE_ENVELOPE_LEAK");
+  }
+  if (directive.offerPolicyRef !== null) {
+    throw new TypeError("ROOM_DIRECTIVE_PHASE_3B2A_SCOPE_VIOLATION");
   }
   if (typeof directive.consumed !== "boolean") {
     throw new TypeError("ROOM_DIRECTIVE_INVALID:consumed");
@@ -45,7 +51,7 @@ export function createRoomDirectiveV3(fields) {
     directiveSeed: fields.directiveSeed,
     roomNonce: fields.roomNonce,
     specialRoomPayload: fields.specialRoomPayload ?? null,
-    rewardEnvelope: null,
+    rewardEnvelopeRef: fields.rewardEnvelopeRef,
     offerPolicyRef: null,
     issuedAt: fields.issuedAt,
     consumed: false
