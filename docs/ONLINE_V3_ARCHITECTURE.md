@@ -1,6 +1,6 @@
 # Dungeon Online v3 architecture
 
-Status: Phase 2.5 Worker validated in a real local Wrangler/Miniflare runtime with persistent D1. The browser game is not integrated and `index.html` does not load Online v3.
+Status: Phase 2.5 Worker validated in a real local Wrangler/Miniflare runtime with persistent D1. Phase 3A adds only an audited, `spec-only` `v08-meta-1` skeleton and data-drift plan. The browser game is not integrated and `index.html` does not load Online v3.
 
 ## Boundary
 
@@ -41,6 +41,11 @@ Production behavior is fail-closed. A ruleset must have a non-empty matching `ru
 6. `buildLeaderboardSummary`
 
 Phase 2 contains only `test/fixtures/fixture-ruleset.js`. Its values are deterministic test data and are not v0.8 balance data. There is intentionally no production ruleset.
+
+Phase 3A also contains `src/rulesets/v08-meta-1`, but its descriptor is
+`spec-only`, its factory throws `RULESET_NOT_IMPLEMENTED`, and the active Worker
+does not import its registry. It is a versioned schema/data plan for the next
+phase, not a second executable ruleset.
 
 ## Signed checkpoint token
 
@@ -164,3 +169,10 @@ Retries stay outside gameplay/input/animation. Phase 2 implements and tests serv
 ## Baseline guard
 
 Tests compare protected baseline files to commit `f98820c99066d810169e100beb23a54a332734bd`, reject any Worker import of game/DOM/audio/HUD/renderer/Ranked v2 code, and assert that `index.html` has no Online v3 reference. Phase 2 changes no game, CSS, asset, audio, cheat, Observer Bot, or special-room implementation.
+
+## Phase 3A design references
+
+- `ONLINE_V3_RULESET_AUTHORITY_MATRIX.md`: v0.8 meta-rule inventory and honest authority class.
+- `ONLINE_V3_RULESET_DESIGN.md`: gold/directive/offer/RNG/hash/generator/fixture design.
+- `ONLINE_V3_RECENT_OPS_AUDIT.md`: measured operation-ring cost and deferred recommendation.
+- `ONLINE_V3_PHASE3B_HOOK_PLAN.md`: maximum-eight-hook integration plan with no awaits in gameplay loops.

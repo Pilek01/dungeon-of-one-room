@@ -1,0 +1,148 @@
+{
+  "schemaVersion": 1,
+  "rulesetId": "v08-meta-1",
+  "purpose": "Phase 3A drift detection only; not executable balance data",
+  "sources": [
+    {
+      "file": "game.js",
+      "byteLength": 1292796,
+      "sha256": "a7d436f8cdde618e7bab802322a658d2055f201950d9ae7b4598269feff3df00",
+      "evidenceSymbols": [
+        "chooseRoomType",
+        "grantGold",
+        "calculateScore",
+        "startRun",
+        "extractRun"
+      ]
+    },
+    {
+      "file": "camp-data.js",
+      "byteLength": 2248,
+      "sha256": "30a481222fc6b1e20ca033a8a72b3da8eb2198b18f83030a5b42548825c78d2b",
+      "evidenceSymbols": [
+        "CAMP_UPGRADES"
+      ]
+    },
+    {
+      "file": "camp-runtime.js",
+      "byteLength": 30381,
+      "sha256": "302c3442e6e02442f21283b073603bb051e912ac365c55541d4a1b7afe76997a",
+      "evidenceSymbols": [
+        "tryBuyRelicFromMerchant",
+        "tryBuyPotionFromMerchant"
+      ]
+    },
+    {
+      "file": "relic-data.js",
+      "byteLength": 9135,
+      "sha256": "fa4cdd27c3b3b9d2b61df3bc346a4123e9d3f70f58afdc16cd626411d6bdfa59",
+      "evidenceSymbols": [
+        "RELICS",
+        "WARDEN_RELIC_DROP_TABLE"
+      ]
+    },
+    {
+      "file": "relic-runtime.js",
+      "byteLength": 9127,
+      "sha256": "87e02a9a1519aa5c9c621e23fabe5400cfda8274c1aa39c50cd471478e642d97",
+      "evidenceSymbols": [
+        "getRelicReturnSummary"
+      ]
+    },
+    {
+      "file": "loot-tables.js",
+      "byteLength": 2509,
+      "sha256": "9343a62db72aacd89d16ab0efa3c1fba0c40d08cc1e82e10795990299467e0a9",
+      "evidenceSymbols": [
+        "rollChestOutcome",
+        "rollShrineOutcome"
+      ]
+    },
+    {
+      "file": "mutator-data.js",
+      "byteLength": 3244,
+      "sha256": "3e45b4bd282137fb324c6d452bbe248d422c208a2a802028e79263138d1be0b8",
+      "evidenceSymbols": [
+        "MUTATORS",
+        "getMutatorUnlockStatus"
+      ]
+    },
+    {
+      "file": "skills-data.js",
+      "byteLength": 2116,
+      "sha256": "1b49e35d643c35277b800f0cf81a875d8f844931c8ce3ad817a92e3a923e5841",
+      "evidenceSymbols": [
+        "MERCHANT_SKILL_UPGRADES"
+      ]
+    },
+    {
+      "file": "elixir-data.js",
+      "byteLength": 2325,
+      "sha256": "438c951c7d44bb74a4564bfa8f381aafc8c66d4772cff3b526d2e3f42b471f63",
+      "evidenceSymbols": [
+        "ELIXIRS"
+      ]
+    },
+    {
+      "file": "merchant-curation.js",
+      "byteLength": 827,
+      "sha256": "84dbcbb30c0909cb309154826df7c80d816fe9db90584a8af880eacfc70ceba9",
+      "evidenceSymbols": [
+        "chooseMerchantRelicOffer"
+      ]
+    },
+    {
+      "file": "forge-room.js",
+      "byteLength": 8316,
+      "sha256": "74980ae5a8e069336d161ef2c51ac4771ce602b899f8b120988f78de35b0b821",
+      "evidenceSymbols": [
+        "planForgeTemper",
+        "planForgeTransmute"
+      ]
+    },
+    {
+      "file": "pact-room.js",
+      "byteLength": 5791,
+      "sha256": "d94a3d19bab8fe69bf9d3f2dac5a0555e268af7327855c5a675e53149d4355c6",
+      "evidenceSymbols": [
+        "PACTS",
+        "choosePactOffers"
+      ]
+    },
+    {
+      "file": "pact-effects.js",
+      "byteLength": 2601,
+      "sha256": "162b707ffcb7d96cceb2a4c3140c6c7e003a329e6959034f0fff9c1e3e402118",
+      "evidenceSymbols": [
+        "applyPersistentPactEffects"
+      ]
+    },
+    {
+      "file": "room-pity.js",
+      "byteLength": 1075,
+      "sha256": "4b25c0160a9d339248a969627b7a82c93b464966b671d21c9e30f2e83c70cb76",
+      "evidenceSymbols": [
+        "FORGE_PITY_DEPTH",
+        "OTTER_PITY_DEPTH"
+      ]
+    },
+    {
+      "file": "expansion-content.js",
+      "byteLength": 3741,
+      "sha256": "56180ffa919884ea3e0dd89045063bcba6097ebd687481dc8fc2ada2f3a5a307",
+      "evidenceSymbols": [
+        "ROOM_TYPES",
+        "getRoomWeightMap"
+      ]
+    },
+    {
+      "file": "boss-campaign.js",
+      "byteLength": 8061,
+      "sha256": "ad885efec2e4bce42514c80a77a9a2cbf0f7310f396f423f5e95da16af60940d",
+      "evidenceSymbols": [
+        "BOSS_PROFILES",
+        "FINAL_BOSS_PHASE_PROFILES"
+      ]
+    }
+  ]
+}

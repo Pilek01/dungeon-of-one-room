@@ -1,0 +1,83 @@
+{
+  "manifestVersion": 1,
+  "rulesetId": "v08-meta-1",
+  "files": [
+    {
+      "file": "constants.js",
+      "byteLength": 418,
+      "sha256": "34e6556825f5b2b0f398e0cd9e9b51439b928c824d87525fba0addb31a6e574e"
+    },
+    {
+      "file": "rng.js",
+      "byteLength": 1276,
+      "sha256": "35059e9ac903072fb97069fe1e700cb2e9bedd6a12543148991dbb8495a12d04"
+    },
+    {
+      "file": "room-policy.js",
+      "byteLength": 560,
+      "sha256": "37c8067f9bbf02c927afa3141d6aafd479fc5986c8837a250ba99be10a59f632"
+    },
+    {
+      "file": "gold-policy.js",
+      "byteLength": 413,
+      "sha256": "0bb08cb2208a5f0de7f6a6ba3141c4d5752837920d04a8b9d9a6b85bfdb114ea"
+    },
+    {
+      "file": "reward-policy.js",
+      "byteLength": 344,
+      "sha256": "ebf9cf848fdc668eb4668d478ab85d281a0dd9dfdbcb169cad258bf709b69b8d"
+    },
+    {
+      "file": "merchant-policy.js",
+      "byteLength": 400,
+      "sha256": "ec0c6e71df7d290b29965b3080e91c4bba60670a7e11608c53cf58bb3c22a7cc"
+    },
+    {
+      "file": "camp-policy.js",
+      "byteLength": 282,
+      "sha256": "33f965f0e3f11fe37f330354ab6e4a679d7f3a5fef8dae33737afb69eb859516"
+    },
+    {
+      "file": "forge-policy.js",
+      "byteLength": 279,
+      "sha256": "7c4d77a1e53a002f86336cafb19c21112bb55687c2f846054a97d5b1050334ea"
+    },
+    {
+      "file": "pact-policy.js",
+      "byteLength": 243,
+      "sha256": "9ac8271fc95f65f07cdb88aba4f75da1410508fffdb87c9932c84b0085db4e9e"
+    },
+    {
+      "file": "life-policy.js",
+      "byteLength": 320,
+      "sha256": "94bf104e778bce77bb0c5beed9f794c28489e77af2ba293d65320c9b397d1c21"
+    },
+    {
+      "file": "score-policy.js",
+      "byteLength": 287,
+      "sha256": "ea1c27614f40993b61d95971c1f51eb360bba928b5560b5ab8ed3efa582dcebb"
+    },
+    {
+      "file": "leaderboard-summary.js",
+      "byteLength": 401,
+      "sha256": "18687cf9535f9d87799422d2070efb38ab2ee707d4b5b125681a9883ff7a056b"
+    },
+    {
+      "file": "test/golden-fixtures.examples.json",
+      "byteLength": 4632,
+      "sha256": "65478c53c1f44e541bf267c792a1f595c090ea70d23fd9e72e6aa1fba8eb4311"
+    },
+    {
+      "file": "data/golden-fixtures.manifest.json",
+      "byteLength": 1728,
+      "sha256": "3b68befb20174daeee3232e9acccab00adaa36461b2cb78e8411753179246b5c"
+    },
+    {
+      "file": "data/generated-source-manifest.json",
+      "byteLength": 3985,
+      "sha256": "e5b2b7507196de7cdec6554bc51d902d8d2841d0a0c699a851edd6c76ea74bc1"
+    }
+  ],
+  "status": "spec-only",
+  "rulesetHash": "sha256:2b8597149bc5422b38affd78c29cf25d95479d74cb3f04bcea18c45cd698dd7d"
+}

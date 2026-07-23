@@ -1,0 +1,43 @@
+{
+  "schemaVersion": 1,
+  "rulesetId": "v08-meta-1",
+  "status": "spec-only",
+  "requiredFixtureFields": [
+    "fixtureId",
+    "rulesetId",
+    "initialMetaState",
+    "serverRandomInputs",
+    "operation",
+    "expectedNextState",
+    "expectedOffer",
+    "expectedGoldDelta",
+    "expectedBuildDelta",
+    "expectedScoreDelta",
+    "legacySourceEvidence"
+  ],
+  "scenarios": [
+    { "fixtureId": "start-run", "status": "example" },
+    { "fixtureId": "regular-room-checkpoint", "status": "example" },
+    { "fixtureId": "boss-depth", "status": "planned" },
+    { "fixtureId": "special-room-issued", "status": "example" },
+    { "fixtureId": "relic-offer-selection", "status": "example" },
+    { "fixtureId": "illegal-relic-choice", "status": "planned" },
+    { "fixtureId": "mutator", "status": "planned" },
+    { "fixtureId": "skill-upgrade", "status": "planned" },
+    { "fixtureId": "elixir", "status": "planned" },
+    { "fixtureId": "merchant-purchase", "status": "example" },
+    { "fixtureId": "insufficient-gold", "status": "planned" },
+    { "fixtureId": "camp", "status": "planned" },
+    { "fixtureId": "forge", "status": "planned" },
+    { "fixtureId": "pact", "status": "planned" },
+    { "fixtureId": "life-lost", "status": "planned" },
+    { "fixtureId": "extract", "status": "planned" },
+    { "fixtureId": "final-victory", "status": "planned" },
+    { "fixtureId": "final-defeat", "status": "planned" },
+    { "fixtureId": "duplicate-operation", "status": "planned" },
+    { "fixtureId": "stale-offer", "status": "planned" },
+    { "fixtureId": "score-calculation", "status": "planned" },
+    { "fixtureId": "build-json", "status": "planned" }
+  ],
+  "exampleFile": "../test/golden-fixtures.examples.json"
+}

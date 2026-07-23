@@ -1,0 +1,204 @@
+[
+  {
+    "fixtureId": "start-run",
+    "rulesetId": "v08-meta-1",
+    "initialMetaState": {
+      "status": "not_started",
+      "lives": 5,
+      "campGold": 0,
+      "startDepthUnlocks": []
+    },
+    "serverRandomInputs": {
+      "purpose": "room-directive",
+      "counter": 0,
+      "bytesHex": "0001020304050607"
+    },
+    "operation": {
+      "type": "start_run",
+      "startDepth": 0
+    },
+    "expectedNextState": {
+      "status": "active",
+      "depth": 0,
+      "roomIndex": 1,
+      "lives": 5,
+      "gold": 0
+    },
+    "expectedOffer": {
+      "kind": "room_directive",
+      "roomType": "combat"
+    },
+    "expectedGoldDelta": 0,
+    "expectedBuildDelta": {},
+    "expectedScoreDelta": 0,
+    "legacySourceEvidence": [
+      "game.js:startRun",
+      "game.js:buildRoom"
+    ]
+  },
+  {
+    "fixtureId": "regular-room-checkpoint",
+    "rulesetId": "v08-meta-1",
+    "initialMetaState": {
+      "status": "active",
+      "depth": 0,
+      "roomIndex": 1,
+      "gold": 0,
+      "goldMultiplier": 1
+    },
+    "serverRandomInputs": {
+      "purpose": "room-reward",
+      "counter": 0,
+      "bytesHex": "1112131415161718"
+    },
+    "operation": {
+      "type": "checkpoint",
+      "roomResult": "cleared",
+      "boundedKillCounts": {
+        "slime": 2
+      }
+    },
+    "expectedNextState": {
+      "status": "active",
+      "depth": 1,
+      "roomIndex": 2,
+      "gold": 8
+    },
+    "expectedOffer": {
+      "kind": "room_directive",
+      "roomIndex": 2
+    },
+    "expectedGoldDelta": 8,
+    "expectedBuildDelta": {},
+    "expectedScoreDelta": 1016,
+    "legacySourceEvidence": [
+      "game.js:rewardForEnemy",
+      "game.js:checkRoomClearBonus",
+      "game.js:attemptDescend"
+    ]
+  },
+  {
+    "fixtureId": "special-room-issued",
+    "rulesetId": "v08-meta-1",
+    "initialMetaState": {
+      "status": "active",
+      "depth": 20,
+      "roomIndex": 20,
+      "forgeSeenThisGame": false,
+      "forgePityUsedThisGame": false
+    },
+    "serverRandomInputs": {
+      "purpose": "room-directive",
+      "counter": 20,
+      "bytesHex": "2122232425262728"
+    },
+    "operation": {
+      "type": "issue_next_room"
+    },
+    "expectedNextState": {
+      "status": "active",
+      "depth": 21,
+      "roomIndex": 21,
+      "forgePityUsedThisGame": true
+    },
+    "expectedOffer": {
+      "kind": "room_directive",
+      "roomType": "forge",
+      "specialRoom": true
+    },
+    "expectedGoldDelta": 0,
+    "expectedBuildDelta": {},
+    "expectedScoreDelta": 0,
+    "legacySourceEvidence": [
+      "room-pity.js:getGuaranteedCampaignRoom",
+      "game.js:chooseRoomType"
+    ]
+  },
+  {
+    "fixtureId": "relic-offer-selection",
+    "rulesetId": "v08-meta-1",
+    "initialMetaState": {
+      "status": "active",
+      "revision": 8,
+      "relics": [],
+      "offers": [
+        {
+          "offerId": "offer_relic_8",
+          "kind": "relic",
+          "choices": ["fang", "plating", "lucky"]
+        }
+      ]
+    },
+    "serverRandomInputs": {
+      "purpose": "relic-draft",
+      "counter": 0,
+      "bytesHex": "3132333435363738"
+    },
+    "operation": {
+      "type": "relic_selected",
+      "offerId": "offer_relic_8",
+      "relicId": "fang"
+    },
+    "expectedNextState": {
+      "revision": 9,
+      "relics": ["fang"],
+      "offers": []
+    },
+    "expectedOffer": null,
+    "expectedGoldDelta": 0,
+    "expectedBuildDelta": {
+      "relicsAdded": ["fang"]
+    },
+    "expectedScoreDelta": 0,
+    "legacySourceEvidence": [
+      "game.js:chooseRelic",
+      "game.js:applyRelic",
+      "relic-runtime.js"
+    ]
+  },
+  {
+    "fixtureId": "merchant-purchase",
+    "rulesetId": "v08-meta-1",
+    "initialMetaState": {
+      "status": "active",
+      "revision": 12,
+      "gold": 500,
+      "campGold": 100,
+      "offers": [
+        {
+          "offerId": "merchant_relic_12",
+          "kind": "merchant_relic",
+          "relicId": "plating",
+          "price": 300
+        }
+      ],
+      "relics": []
+    },
+    "serverRandomInputs": {
+      "purpose": "merchant-inventory",
+      "counter": 0,
+      "bytesHex": "4142434445464748"
+    },
+    "operation": {
+      "type": "merchant_purchase",
+      "offerId": "merchant_relic_12"
+    },
+    "expectedNextState": {
+      "revision": 13,
+      "gold": 200,
+      "campGold": 100,
+      "relics": ["plating"],
+      "offers": []
+    },
+    "expectedOffer": null,
+    "expectedGoldDelta": -300,
+    "expectedBuildDelta": {
+      "relicsAdded": ["plating"]
+    },
+    "expectedScoreDelta": -600,
+    "legacySourceEvidence": [
+      "camp-runtime.js:tryBuyRelicFromMerchant",
+      "camp-runtime.js:spendMerchantUpgradeGold"
+    ]
+  }
+]

@@ -1,0 +1,16 @@
+# Online v3 Phase 3B minimal hook plan
+
+This is a future plan only. Phase 3A changes no game code. No request may be awaited from input handling, `finalizeTurn`, enemy AI, animation, audio, rendering or frame loops.
+
+| # | Existing v0.8 function/surface | Hook moment | Character | Data | Offline behavior | Network-loss behavior | Smoothness risk |
+|---:|---|---|---|---|---|---|---|
+| 1 | `startRun` entry flow | Before the first room is built, from the run-start menu action | Async boundary before gameplay | player, season, version, ruleset hash, selected start depth | Start an explicitly unranked local run or keep menu pending; never silently claim verified status | Retry exact serialized start with same key | Low; menu already tolerates a transition |
+| 2 | `buildRoom` caller boundary | After start/checkpoint returns a directive, immediately before synchronous `buildRoom` | Sync adapter consuming cached directive | RoomDirectiveV3 only; no request here | Local unranked schedule | No effect; request was reconciled earlier | Low if adapter is pure and synchronous |
+| 3 | `checkRoomClearBonus` / portal reveal boundary | After local clear, enqueue proof; send only when player chooses portal/transition | Async at transition, never inside combat resolution | directive IDs, result, counts, turns, elapsed, journal digest | Continue local unranked or show ranked reconciliation before descent | Freeze only the transition, retain exact body/key, retry | Medium; portal transition needs a clear pending state |
+| 4 | Reward/relic menu (`openRelicDraftFromChoices`, `chooseRelic`) | Fetch/consume server offer at menu open/confirm | Async menu operation | offer ID, selected ID/skip | Use a clearly unranked local offer or disable verified selection | Keep menu and selection pending; exact retry | Low; menus can show a brief pending state |
+| 5 | Merchant/Camp transaction functions | On purchase/reserve/sell/upgrade/elixir confirm | Async menu transaction | offer/action ID and selected inventory ID only | Transaction applies only to local unranked state | Preserve selection and exact request until terminal response | Low; never block movement/AI because menus own focus |
+| 6 | Forge/Pact menu functions | On Temper/Transmute/Pact choice confirm | Async menu transaction | offer ID, sacrifice/choice/action | Local unranked action or unavailable verified action | Keep modal state and exact request; do not consume locally first | Low |
+| 7 | `extractRun`, `enterCampFromExtract`, `gameOver`, `triggerDepth100Victory` | At extract or terminal outcome boundary | Async finalize/reconciliation outside render/input | current token/directive, extract/life event, finalize outcome | Save local result as unverified and retry later only if protocol permits | Finalize is never discarded or rewritten; retry exact body/key | Medium; terminal screen must represent pending vs verified honestly |
+| 8 | leaderboard modal open/refresh | When user opens or refreshes leaderboard | Async read-only | season, cursor, limit, detail run ID | Show cached/local leaderboard and offline status | Retry independently; no run mutation | None |
+
+The hard sequencing rule is one unresolved mutation per run. UI intents may wait behind it locally, but the client must not send a dependent revision/token request until the previous response is reconciled.

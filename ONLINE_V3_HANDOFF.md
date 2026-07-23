@@ -1,4 +1,4 @@
-# Online v3 handoff - Phase 2.5
+# Online v3 handoff - Phase 3A
 
 Date: 2026-07-23
 
@@ -18,6 +18,41 @@ The Phase 2.5 commit subject is:
 
 ```text
 Validate Online v3 Worker against local Cloudflare runtime
+```
+
+The Phase 3A local commit subject is:
+
+```text
+Map v0.8 meta-progression for Online v3 ruleset
+```
+
+## Phase 3A outcome
+
+Phase 3A audited the active v0.8 meta sources and added:
+
+- a machine-tested authority matrix separating exact, issued, bounded,
+  heuristic and client-only rules;
+- a recommendation for a server-issued room/reward manifest with bounded
+  combat attestation;
+- a minimal RoomDirectiveV3 and server-issued offer/inventory design;
+- an HMAC-SHA-256 RNG interface with a separate planned RNG secret;
+- a fail-closed registry and `spec-only` `v08-meta-1` skeleton;
+- source-drift and canonical ruleset manifest generation with `--check`;
+- a 22-scenario golden fixture manifest and five specification examples;
+- a measured `recent_ops_json` audit;
+- an eight-hook Phase 3B plan that never awaits from input, turn, AI,
+  animation or render loops.
+
+No production policy was implemented. `createV08Meta1Ruleset()` intentionally
+throws, and `src/index.js` does not import the new registry.
+
+Detailed documents:
+
+```text
+docs/ONLINE_V3_RULESET_AUTHORITY_MATRIX.md
+docs/ONLINE_V3_RULESET_DESIGN.md
+docs/ONLINE_V3_RECENT_OPS_AUDIT.md
+docs/ONLINE_V3_PHASE3B_HOOK_PLAN.md
 ```
 
 ## Local Cloudflare runtime
@@ -233,5 +268,5 @@ contains no `/api/v3` fetch.
 - no production D1 resource or secret;
 - no push, deployment, rebase, merge, or worktree.
 
-Next step: map the real v0.8 meta rules into a versioned `RulesetV3`, still
-without integrating `game.js`.
+Next step: implement `v08-meta-1` as a pure ruleset against the complete golden
+fixture corpus, still without integrating `game.js`.

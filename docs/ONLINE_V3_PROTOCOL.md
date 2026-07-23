@@ -1,6 +1,6 @@
 # Dungeon Online v3 protocol
 
-Status: isolated Phase 2 Worker contract. No browser client is connected.
+Status: isolated Phase 2 Worker contract plus Phase 3A ruleset design. No browser client or production ruleset is connected.
 
 ```text
 base path: /api/v3
@@ -165,3 +165,8 @@ cover:
 
 This test runtime uses only the fixture ruleset. It does not establish or imply
 a production v0.8 ruleset.
+
+The Phase 3A `v08-meta-1` directory is `spec-only` and does not alter any route
+or payload above. Future production offers must be opaque, bound to
+run/revision/directive, and selected by ID; client prices and resulting totals
+remain non-authoritative.
