@@ -1,6 +1,8 @@
 # Dungeon Online v3 protocol
 
-Status: isolated Phase 2 Worker contract plus Phase 3A ruleset design. No browser client or production ruleset is connected.
+Status: isolated Phase 2 Worker contract plus a disconnected, `test-only`
+Phase 3B1 room-directive ruleset. No browser client or production ruleset is
+connected.
 
 ```text
 base path: /api/v3
@@ -166,7 +168,9 @@ cover:
 This test runtime uses only the fixture ruleset. It does not establish or imply
 a production v0.8 ruleset.
 
-The Phase 3A `v08-meta-1` directory is `spec-only` and does not alter any route
-or payload above. Future production offers must be opaque, bound to
-run/revision/directive, and selected by ID; client prices and resulting totals
-remain non-authoritative.
+The Phase 3B1 `v08-meta-1` directory implements deterministic initial state,
+room selection and `RoomDirectiveV3` consumption for isolated tests. Its
+descriptor is `test-only`, registry resolution rejects it, and neither active
+entrypoint imports it. It therefore does not alter any route or payload above.
+Future production offers must be opaque, bound to run/revision/directive, and
+selected by ID; client prices and resulting totals remain non-authoritative.

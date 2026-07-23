@@ -1,0 +1,449 @@
+{
+  "schemaVersion": 1,
+  "rulesetId": "v08-meta-1",
+  "sourceCommit": "f98820c99066d810169e100beb23a54a332734bd",
+  "sources": [
+    {
+      "file": "expansion-content.js",
+      "byteLength": 3741,
+      "sha256": "56180ffa919884ea3e0dd89045063bcba6097ebd687481dc8fc2ada2f3a5a307"
+    },
+    {
+      "file": "game.js",
+      "byteLength": 1292796,
+      "sha256": "a7d436f8cdde618e7bab802322a658d2055f201950d9ae7b4598269feff3df00"
+    },
+    {
+      "file": "pact-room.js",
+      "byteLength": 5791,
+      "sha256": "d94a3d19bab8fe69bf9d3f2dac5a0555e268af7327855c5a675e53149d4355c6"
+    },
+    {
+      "file": "room-pity.js",
+      "byteLength": 1075,
+      "sha256": "4b25c0160a9d339248a969627b7a82c93b464966b671d21c9e30f2e83c70cb76"
+    }
+  ],
+  "canonicalData": {
+    "regions": [
+      {
+        "id": "descent",
+        "label": "Descent",
+        "minDepth": 0,
+        "maxDepth": 19
+      },
+      {
+        "id": "corruption",
+        "label": "Corruption",
+        "minDepth": 20,
+        "maxDepth": 39
+      },
+      {
+        "id": "rupture",
+        "label": "Rupture",
+        "minDepth": 40,
+        "maxDepth": 59
+      },
+      {
+        "id": "collapse",
+        "label": "Collapse",
+        "minDepth": 60,
+        "maxDepth": 79
+      },
+      {
+        "id": "endgame",
+        "label": "Endgame",
+        "minDepth": 80,
+        "maxDepth": 100
+      }
+    ],
+    "regionConfigs": {
+      "descent": {
+        "roomWeights": {
+          "combat": 0.62,
+          "treasure": 0.2,
+          "shrine": 0.08,
+          "forge": 0.02,
+          "pact": 0,
+          "cursed": 0.04,
+          "merchant": 0.04
+        },
+        "vaultChance": 0.003
+      },
+      "corruption": {
+        "roomWeights": {
+          "combat": 0.44,
+          "treasure": 0.14,
+          "shrine": 0.13,
+          "forge": 0.05,
+          "pact": 0.06,
+          "cursed": 0.12,
+          "merchant": 0.06
+        },
+        "vaultChance": 0.005
+      },
+      "rupture": {
+        "roomWeights": {
+          "combat": 0.45,
+          "treasure": 0.11,
+          "shrine": 0.12,
+          "forge": 0.05,
+          "pact": 0.08,
+          "cursed": 0.13,
+          "merchant": 0.06
+        },
+        "vaultChance": 0.006
+      },
+      "collapse": {
+        "roomWeights": {
+          "combat": 0.42,
+          "treasure": 0.09,
+          "shrine": 0.15,
+          "forge": 0.06,
+          "pact": 0.1,
+          "cursed": 0.12,
+          "merchant": 0.06
+        },
+        "vaultChance": 0.007
+      },
+      "endgame": {
+        "roomWeights": {
+          "combat": 0.42,
+          "treasure": 0.08,
+          "shrine": 0.12,
+          "forge": 0.05,
+          "pact": 0.12,
+          "cursed": 0.15,
+          "merchant": 0.06
+        },
+        "vaultChance": 0.008
+      }
+    },
+    "expansionRooms": [
+      {
+        "key": "ambush",
+        "id": "ambush",
+        "label": "Ambush",
+        "category": "normal",
+        "minDepth": 15,
+        "regionWeights": {
+          "descent": 0.025,
+          "corruption": 0.045,
+          "rupture": 0.05,
+          "collapse": 0.055,
+          "endgame": 0.06
+        }
+      },
+      {
+        "key": "horde",
+        "id": "horde",
+        "label": "Horde",
+        "category": "normal",
+        "minDepth": 25,
+        "regionWeights": {
+          "descent": 0,
+          "corruption": 0.035,
+          "rupture": 0.045,
+          "collapse": 0.05,
+          "endgame": 0.055
+        }
+      },
+      {
+        "key": "duel",
+        "id": "duel",
+        "label": "Duel",
+        "category": "normal",
+        "minDepth": 35,
+        "regionWeights": {
+          "descent": 0,
+          "corruption": 0.02,
+          "rupture": 0.035,
+          "collapse": 0.045,
+          "endgame": 0.05
+        }
+      },
+      {
+        "key": "crossroads",
+        "id": "crossroads",
+        "label": "Crossroads",
+        "category": "special",
+        "minDepth": 30,
+        "regionWeights": {
+          "descent": 0,
+          "corruption": 0.018,
+          "rupture": 0.024,
+          "collapse": 0.028,
+          "endgame": 0.03
+        }
+      },
+      {
+        "key": "arena",
+        "id": "arena",
+        "label": "Blood Arena",
+        "category": "special",
+        "minDepth": 40,
+        "regionWeights": {
+          "descent": 0,
+          "corruption": 0,
+          "rupture": 0.03,
+          "collapse": 0.04,
+          "endgame": 0.05
+        }
+      }
+    ],
+    "pactProfiles": [
+      {
+        "minDepth": 0,
+        "enabled": false,
+        "weight": 0
+      },
+      {
+        "minDepth": 25,
+        "enabled": true,
+        "weight": 0.025
+      },
+      {
+        "minDepth": 40,
+        "enabled": true,
+        "weight": 0.04
+      },
+      {
+        "minDepth": 60,
+        "enabled": true,
+        "weight": 0.05
+      },
+      {
+        "minDepth": 80,
+        "enabled": true,
+        "weight": 0.06
+      }
+    ],
+    "roomEligibility": [
+      {
+        "minDepth": 15,
+        "maxDepth": 99,
+        "maxPerRun": null,
+        "cooldownDepths": null,
+        "deterministic": false,
+        "mutualExclusions": [
+          "boss",
+          "final"
+        ],
+        "id": "ambush",
+        "scheduleRule": "weighted by expansion-content region profile"
+      },
+      {
+        "minDepth": 40,
+        "maxDepth": 99,
+        "maxPerRun": null,
+        "cooldownDepths": null,
+        "deterministic": false,
+        "mutualExclusions": [
+          "boss",
+          "final"
+        ],
+        "id": "arena",
+        "scheduleRule": "weighted by expansion-content region profile"
+      },
+      {
+        "minDepth": 5,
+        "maxDepth": 95,
+        "maxPerRun": null,
+        "cooldownDepths": null,
+        "deterministic": true,
+        "mutualExclusions": [
+          "boss",
+          "final"
+        ],
+        "id": "boss",
+        "scheduleRule": "depth % 5 === 0"
+      },
+      {
+        "minDepth": null,
+        "maxDepth": null,
+        "maxPerRun": null,
+        "cooldownDepths": null,
+        "deterministic": true,
+        "mutualExclusions": [
+          "in-run-room-directive"
+        ],
+        "id": "camp",
+        "scheduleRule": "between runs only; never emitted by chooseRoomType"
+      },
+      {
+        "minDepth": 1,
+        "maxDepth": 99,
+        "maxPerRun": null,
+        "cooldownDepths": null,
+        "deterministic": false,
+        "mutualExclusions": [
+          "boss",
+          "final"
+        ],
+        "id": "combat",
+        "scheduleRule": "weighted by campaign region"
+      },
+      {
+        "minDepth": 30,
+        "maxDepth": 99,
+        "maxPerRun": null,
+        "cooldownDepths": null,
+        "deterministic": false,
+        "mutualExclusions": [
+          "boss",
+          "final"
+        ],
+        "id": "crossroads",
+        "scheduleRule": "weighted by expansion-content region profile"
+      },
+      {
+        "minDepth": 2,
+        "maxDepth": 99,
+        "maxPerRun": null,
+        "cooldownDepths": null,
+        "deterministic": false,
+        "mutualExclusions": [
+          "boss",
+          "final"
+        ],
+        "id": "cursed",
+        "scheduleRule": "weighted; replaced by treasure below minDepth"
+      },
+      {
+        "minDepth": 35,
+        "maxDepth": 99,
+        "maxPerRun": null,
+        "cooldownDepths": null,
+        "deterministic": false,
+        "mutualExclusions": [
+          "boss",
+          "final"
+        ],
+        "id": "duel",
+        "scheduleRule": "weighted by expansion-content region profile"
+      },
+      {
+        "minDepth": 100,
+        "maxDepth": 100,
+        "maxPerRun": 1,
+        "cooldownDepths": null,
+        "deterministic": true,
+        "mutualExclusions": [
+          "all-other-room-types"
+        ],
+        "id": "final",
+        "scheduleRule": "depth === 100"
+      },
+      {
+        "minDepth": 6,
+        "maxDepth": 99,
+        "maxPerRun": null,
+        "cooldownDepths": null,
+        "deterministic": false,
+        "mutualExclusions": [
+          "boss",
+          "final"
+        ],
+        "id": "forge",
+        "pityDepth": 21,
+        "scheduleRule": "weighted plus one game-scoped pity"
+      },
+      {
+        "minDepth": 25,
+        "maxDepth": 99,
+        "maxPerRun": null,
+        "cooldownDepths": null,
+        "deterministic": false,
+        "mutualExclusions": [
+          "boss",
+          "final"
+        ],
+        "id": "horde",
+        "scheduleRule": "weighted by expansion-content region profile"
+      },
+      {
+        "minDepth": 3,
+        "maxDepth": 99,
+        "maxPerRun": null,
+        "cooldownDepths": null,
+        "deterministic": false,
+        "mutualExclusions": [
+          "boss",
+          "final"
+        ],
+        "id": "merchant",
+        "guaranteedRoomIndexes": [
+          8,
+          18
+        ],
+        "scheduleRule": "weighted or guaranteed by roomIndex"
+      },
+      {
+        "minDepth": 20,
+        "maxDepth": 99,
+        "maxPerRun": 3,
+        "cooldownDepths": null,
+        "deterministic": false,
+        "mutualExclusions": [
+          "boss",
+          "final"
+        ],
+        "id": "otter",
+        "pityDepth": 41,
+        "scheduleRule": "queued after a clear by independent chance plus one game-scoped pity"
+      },
+      {
+        "minDepth": 25,
+        "maxDepth": 99,
+        "maxPerRun": null,
+        "cooldownDepths": null,
+        "deterministic": false,
+        "mutualExclusions": [
+          "boss",
+          "final"
+        ],
+        "id": "pact",
+        "scheduleRule": "depth-profile weight and canOfferPactRoom"
+      },
+      {
+        "minDepth": 1,
+        "maxDepth": 99,
+        "maxPerRun": null,
+        "cooldownDepths": null,
+        "deterministic": false,
+        "mutualExclusions": [
+          "boss",
+          "final"
+        ],
+        "id": "shrine",
+        "scheduleRule": "weighted by campaign region"
+      },
+      {
+        "minDepth": 1,
+        "maxDepth": 99,
+        "maxPerRun": null,
+        "cooldownDepths": null,
+        "deterministic": false,
+        "mutualExclusions": [
+          "boss",
+          "final"
+        ],
+        "id": "treasure",
+        "scheduleRule": "weighted by campaign region"
+      },
+      {
+        "minDepth": 6,
+        "maxDepth": 99,
+        "maxPerRun": null,
+        "cooldownDepths": null,
+        "deterministic": false,
+        "mutualExclusions": [
+          "boss",
+          "final"
+        ],
+        "id": "vault",
+        "scheduleRule": "independent region vaultChance before weighted selection"
+      }
+    ]
+  }
+}

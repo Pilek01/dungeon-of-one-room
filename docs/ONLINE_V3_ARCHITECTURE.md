@@ -1,6 +1,10 @@
 # Dungeon Online v3 architecture
 
-Status: Phase 2.5 Worker validated in a real local Wrangler/Miniflare runtime with persistent D1. Phase 3A adds only an audited, `spec-only` `v08-meta-1` skeleton and data-drift plan. The browser game is not integrated and `index.html` does not load Online v3.
+Status: Phase 2.5 Worker validated in a real local Wrangler/Miniflare runtime
+with persistent D1. Phase 3B1 adds a pure, isolated `test-only`
+`v08-meta-1` room-progression implementation and deterministic RNG. The active
+Worker still does not import it, the browser game is not integrated, and
+`index.html` does not load Online v3.
 
 ## Boundary
 
@@ -42,10 +46,13 @@ Production behavior is fail-closed. A ruleset must have a non-empty matching `ru
 
 Phase 2 contains only `test/fixtures/fixture-ruleset.js`. Its values are deterministic test data and are not v0.8 balance data. There is intentionally no production ruleset.
 
-Phase 3A also contains `src/rulesets/v08-meta-1`, but its descriptor is
-`spec-only`, its factory throws `RULESET_NOT_IMPLEMENTED`, and the active Worker
-does not import its registry. It is a versioned schema/data plan for the next
-phase, not a second executable ruleset.
+Phase 3B1 implements initial meta state, deterministic room scheduling,
+server-issued room directives and strict sequential directive consumption in
+`src/rulesets/v08-meta-1`. Its descriptor remains `test-only`, so registry
+resolution fails closed with `RULESET_NOT_RELEASED:test-only`. Isolated tests
+may call the factory directly. The active Worker and local fixture entrypoint
+do not import the registry or descriptor, so this is not a production ruleset
+or a second active HTTP behavior.
 
 ## Signed checkpoint token
 
@@ -176,3 +183,5 @@ Tests compare protected baseline files to commit `f98820c99066d810169e100beb23a5
 - `ONLINE_V3_RULESET_DESIGN.md`: gold/directive/offer/RNG/hash/generator/fixture design.
 - `ONLINE_V3_RECENT_OPS_AUDIT.md`: measured operation-ring cost and deferred recommendation.
 - `ONLINE_V3_PHASE3B_HOOK_PLAN.md`: maximum-eight-hook integration plan with no awaits in gameplay loops.
+- `ONLINE_V3_PHASE3B1.md`: implemented room-directive/RNG scope, generated
+  canonical data, fixtures, unresolved rules and the Phase 3B2 boundary.

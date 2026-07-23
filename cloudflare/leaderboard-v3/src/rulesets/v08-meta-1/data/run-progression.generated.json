@@ -1,0 +1,47 @@
+{
+  "schemaVersion": 1,
+  "rulesetId": "v08-meta-1",
+  "sourceCommit": "f98820c99066d810169e100beb23a54a332734bd",
+  "sources": [
+    {
+      "file": "game.js",
+      "byteLength": 1292796,
+      "sha256": "a7d436f8cdde618e7bab802322a658d2055f201950d9ae7b4598269feff3df00"
+    }
+  ],
+  "canonicalData": {
+    "entranceStartDepth": 0,
+    "firstPlayableDepth": 1,
+    "maxDepth": 100,
+    "terminalDepth": 100,
+    "bossInterval": 5,
+    "allowedStartDepths": [
+      0,
+      11,
+      21,
+      31,
+      41,
+      51,
+      61,
+      71,
+      81,
+      91
+    ],
+    "startDepthUnlockBossDepths": [
+      10,
+      20,
+      30,
+      40,
+      50,
+      60,
+      70,
+      80,
+      90
+    ],
+    "initialRoomIndex": 0,
+    "initialRevision": 0,
+    "initialGold": 0,
+    "initialLives": 5,
+    "depthTransition": 1
+  }
+}

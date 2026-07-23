@@ -1,0 +1,54 @@
+{
+  "schemaVersion": 2,
+  "rulesetId": "v08-meta-1",
+  "sourceCommit": "f98820c99066d810169e100beb23a54a332734bd",
+  "purpose": "Phase 3B1 canonical room progression and special-room scheduling",
+  "sources": [
+    {
+      "file": "expansion-content.js",
+      "byteLength": 3741,
+      "sha256": "56180ffa919884ea3e0dd89045063bcba6097ebd687481dc8fc2ada2f3a5a307",
+      "evidenceSymbols": [
+        "ROOM_TYPES",
+        "getRoomWeightMap"
+      ]
+    },
+    {
+      "file": "game.js",
+      "byteLength": 1292796,
+      "sha256": "a7d436f8cdde618e7bab802322a658d2055f201950d9ae7b4598269feff3df00",
+      "evidenceSymbols": [
+        "MAX_DEPTH",
+        "START_DEPTH_CHECKPOINTS",
+        "START_DEPTH_UNLOCK_BOSS_DEPTHS",
+        "MAX_LIVES",
+        "ROOM_TYPE_LABELS",
+        "CAMPAIGN_REGIONS",
+        "CAMPAIGN_REGION_CONFIGS",
+        "chooseRoomType",
+        "isBossDepth",
+        "maybeQueueOtterRoom"
+      ]
+    },
+    {
+      "file": "pact-room.js",
+      "byteLength": 5791,
+      "sha256": "d94a3d19bab8fe69bf9d3f2dac5a0555e268af7327855c5a675e53149d4355c6",
+      "evidenceSymbols": [
+        "PACT_ROOM_PROFILES",
+        "getPactRoomProfile",
+        "canOfferPactRoom"
+      ]
+    },
+    {
+      "file": "room-pity.js",
+      "byteLength": 1075,
+      "sha256": "4b25c0160a9d339248a969627b7a82c93b464966b671d21c9e30f2e83c70cb76",
+      "evidenceSymbols": [
+        "FORGE_PITY_DEPTH",
+        "OTTER_PITY_DEPTH",
+        "getGuaranteedCampaignRoom"
+      ]
+    }
+  ]
+}

@@ -35,7 +35,7 @@ export function createRulesetRegistry(descriptors = []) {
       const descriptor = byHash.get(hash);
       if (!descriptor) throw new TypeError("RULESET_HASH_UNSUPPORTED");
       if (descriptor.status !== "supported") {
-        throw new TypeError(`RULESET_NOT_ACTIVE:${descriptor.status}`);
+        throw new TypeError(`RULESET_NOT_RELEASED:${descriptor.status}`);
       }
       return descriptor.createRuleset();
     },

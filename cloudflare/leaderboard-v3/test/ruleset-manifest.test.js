@@ -1,12 +1,13 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
-import { readFile } from "node:fs/promises";
+import { readFile, readdir } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const WORKER_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const RULESET_ROOT = path.join(WORKER_ROOT, "src", "rulesets", "v08-meta-1");
+const DATA_ROOT = path.join(RULESET_ROOT, "data");
 
 function sha256(value) {
   return createHash("sha256").update(value).digest("hex");
@@ -21,36 +22,101 @@ function canonicalJson(value) {
   return JSON.stringify(value);
 }
 
-test("canonical ruleset manifest hashes every declared byte exactly", async () => {
+function hashInputFor(manifest, files = manifest.files) {
+  return {
+    manifestVersion: manifest.manifestVersion,
+    rulesetId: manifest.rulesetId,
+    status: manifest.status,
+    sourceCommit: manifest.sourceCommit,
+    schemas: [...manifest.schemas].sort((left, right) => left.file.localeCompare(right.file)),
+    files: [...files].sort((left, right) => left.file.localeCompare(right.file))
+  };
+}
+
+async function listFiles(root, relative = "") {
+  const entries = await readdir(path.join(root, relative), { withFileTypes: true });
+  const files = [];
+  for (const entry of entries) {
+    const child = path.posix.join(relative.replaceAll("\\", "/"), entry.name);
+    if (entry.isDirectory()) files.push(...await listFiles(root, child));
+    else if (child !== "data/ruleset-manifest.json") files.push(child);
+  }
+  return files.sort();
+}
+
+test("canonical ruleset manifest hashes every module and data byte exactly", async () => {
   const manifest = JSON.parse(
-    await readFile(path.join(RULESET_ROOT, "data", "ruleset-manifest.json"), "utf8")
+    await readFile(path.join(DATA_ROOT, "ruleset-manifest.json"), "utf8")
   );
   assert.equal(manifest.rulesetId, "v08-meta-1");
-  assert.equal(manifest.status, "spec-only");
-  assert.equal(manifest.manifestVersion, 1);
-  assert.ok(manifest.files.length >= 15);
+  assert.equal(manifest.status, "test-only");
+  assert.equal(manifest.manifestVersion, 2);
+  assert.equal(
+    manifest.sourceCommit,
+    "f98820c99066d810169e100beb23a54a332734bd"
+  );
 
+  const actualFiles = await listFiles(RULESET_ROOT);
+  assert.deepEqual(manifest.files.map((entry) => entry.file), actualFiles);
   for (const entry of manifest.files) {
     const bytes = await readFile(path.join(RULESET_ROOT, entry.file));
     assert.equal(entry.byteLength, bytes.byteLength, entry.file);
     assert.equal(entry.sha256, sha256(bytes), entry.file);
   }
-  const hashInput = {
-    manifestVersion: manifest.manifestVersion,
-    rulesetId: manifest.rulesetId,
-    files: manifest.files
-  };
-  assert.equal(manifest.rulesetHash, `sha256:${sha256(canonicalJson(hashInput))}`);
+  const expectedHash = `sha256:${sha256(canonicalJson(hashInputFor(manifest)))}`;
+  assert.equal(manifest.rulesetHash, expectedHash);
   assert.match(manifest.rulesetHash, /^sha256:[a-f0-9]{64}$/u);
 });
 
-test("source drift manifest references active baseline files only", async () => {
+test("ruleset hash is file-order independent and changes with any file byte", async () => {
   const manifest = JSON.parse(
-    await readFile(path.join(RULESET_ROOT, "data", "generated-source-manifest.json"), "utf8")
+    await readFile(path.join(DATA_ROOT, "ruleset-manifest.json"), "utf8")
   );
-  const files = new Set(manifest.sources.map((source) => source.file));
-  for (const required of [
-    "game.js",
+  const forward = sha256(canonicalJson(hashInputFor(manifest)));
+  const reverse = sha256(canonicalJson(hashInputFor(manifest, [...manifest.files].reverse())));
+  assert.equal(forward, reverse);
+
+  const changed = structuredClone(manifest.files);
+  changed[0].sha256 = sha256(`${changed[0].sha256}:changed`);
+  assert.notEqual(sha256(canonicalJson(hashInputFor(manifest, changed))), forward);
+});
+
+test("generated Phase 3B1 data is canonical and source-bound", async () => {
+  const names = [
+    "source-manifest.generated.json",
+    "run-progression.generated.json",
+    "room-types.generated.json",
+    "room-eligibility.generated.json",
+    "special-room-policy.generated.json"
+  ];
+  for (const name of names) {
+    const document = JSON.parse(await readFile(path.join(DATA_ROOT, name), "utf8"));
+    assert.ok(Number.isSafeInteger(document.schemaVersion), name);
+    assert.equal(document.rulesetId, "v08-meta-1", name);
+    assert.equal(
+      document.sourceCommit,
+      "f98820c99066d810169e100beb23a54a332734bd",
+      name
+    );
+    assert.ok(Array.isArray(document.sources) && document.sources.length > 0, name);
+    for (const source of document.sources) {
+      assert.doesNotMatch(source.file, /archive|archieve|pack|online-v2/iu);
+      assert.match(source.sha256, /^[a-f0-9]{64}$/u);
+      assert.ok(source.byteLength > 0);
+    }
+    assert.equal(Object.hasOwn(document, "generatedAt"), false, name);
+  }
+});
+
+test("source manifest contains only active Phase 3B1 baseline sources", async () => {
+  const manifest = JSON.parse(
+    await readFile(path.join(DATA_ROOT, "source-manifest.generated.json"), "utf8")
+  );
+  assert.deepEqual(
+    manifest.sources.map((source) => source.file),
+    ["expansion-content.js", "game.js", "pact-room.js", "room-pity.js"]
+  );
+  const forbiddenEconomySources = [
     "camp-data.js",
     "relic-data.js",
     "loot-tables.js",
@@ -59,18 +125,9 @@ test("source drift manifest references active baseline files only", async () => 
     "elixir-data.js",
     "merchant-curation.js",
     "forge-room.js",
-    "pact-room.js",
-    "pact-effects.js",
-    "room-pity.js",
-    "expansion-content.js",
-    "boss-campaign.js"
-  ]) {
-    assert.ok(files.has(required), required);
-  }
-  for (const source of manifest.sources) {
-    assert.doesNotMatch(source.file, /archive|archieve|Dungeon-v0\.8\.1-Vault-Guardian-Codex-Pack/iu);
-    assert.match(source.sha256, /^[a-f0-9]{64}$/u);
-    assert.ok(source.byteLength > 0);
-    assert.ok(source.evidenceSymbols.length > 0);
+    "pact-effects.js"
+  ];
+  for (const forbidden of forbiddenEconomySources) {
+    assert.ok(!manifest.sources.some((source) => source.file === forbidden), forbidden);
   }
 });

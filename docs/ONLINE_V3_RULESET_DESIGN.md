@@ -1,6 +1,10 @@
-# Online v3 ruleset design — Phase 3A
+# Online v3 ruleset design — Phase 3B1
 
-Status: design and schema-only skeleton for `v08-meta-1`. No production policy is implemented, no browser module is loaded, and the active Worker routes still receive only the fixture ruleset in local tests.
+Status: the room-progression slice is implemented as a pure `test-only`
+ruleset. No production policy or browser module is connected, and the active
+Worker routes still receive only the fixture ruleset in local tests. See
+`ONLINE_V3_PHASE3B1.md` for the exact implementation, fixtures and unresolved
+source rules.
 
 ## Honest authority boundary
 
@@ -66,37 +70,31 @@ The directive contains a compact encounter/reward manifest: allowed enemy types/
 
 Recommendation: Model C with bounded combat attestation. Use server-derived fixed rewards for room-clear and transactions; issue enemy/chest maxima for combat-dependent rewards. For `Void Reaper` and turn/proc rewards, either cap and mark heuristic or exclude them from verified gold until their cadence can be issued. This gives casual tamper resistance without pretending to resist a determined reverse engineer.
 
-## Minimal `RoomDirectiveV3`
+## Phase 3B1 `RoomDirectiveV3`
 
 ```js
 {
-  id,                    // unique directive ID
+  directiveId,           // unique opaque directive ID
   runId,                 // explicit run binding
   revision,              // state revision that issued it
   roomIndex,
   depth,
   roomType,
+  roomCategory,
+  directiveSeed,         // opaque seed; not the RNG secret
   roomNonce,
-  encounterProfileId,    // compact generated profile
-  rewardProfileId,       // room-clear settlement profile
-  specialRoom,           // false or a small public descriptor
-  publicData,            // bounded UI/build inputs; never secret RNG
-  expiresAt
+  specialRoomPayload,    // bounded policy descriptor or null
+  rewardEnvelope: null,  // deferred to Phase 3B2
+  offerPolicyRef: null,  // deferred to Phase 3B2
+  issuedAt,
+  consumed: false
 }
 ```
 
-`specialRoom` is either `false` or:
-
-```js
-{
-  kind,                  // merchant|forge|pact|vault|otter|shrine|crossroads|arena
-  stateId,               // server-side special-room state reference
-  offerIds,              // IDs safe to show immediately, if any
-  interactionMode        // existing client UI mode
-}
-```
-
-The directive selects normal room type, boss/final phase, guaranteed Merchant, Vault, Otter, Forge, Pact, Crossroads, Blood Arena, Shrine and other rare rooms. Physical placement and combat remain local. Phase 3A deliberately does not add a `buildRoom()` hook.
+The directive selects normal room type, boss/final phase, guaranteed Merchant,
+Vault, Otter, Forge, Pact, Crossroads, Blood Arena, Shrine and other rare
+rooms. Physical placement, actors, combat, rewards and offers remain local or
+deferred. Phase 3B1 does not add a `buildRoom()` hook.
 
 Validity rules:
 
@@ -126,23 +124,27 @@ Offer IDs must be opaque. The client sends only the offer ID and a legal selecte
 Interface:
 
 ```js
-deriveRandomBytes(secret, runId, revision, purpose, counter) -> Promise<Uint8Array(32)>
+deriveRandomBytes({ secret, rulesetId, runId, revision, purpose, counter, length })
 ```
 
-The skeleton implements only this HMAC primitive, not any production sampling policy.
+Phase 3B1 implements this primitive plus `deriveUint32`,
+`deriveIntInclusive`, `chooseIndex` and `deriveShuffleOrder`.
 
 - Algorithm: HMAC-SHA-256 through Web Crypto.
 - Domain: `dungeon-online-v3/ruleset-rng/v1`.
-- Message: length-delimited `runId`, `revision`, `purpose`, `counter`.
+- Message: length-delimited `rulesetId`, `runId`, `revision`, `purpose`,
+  `counter`, requested length and block index.
 - `purpose` is mandatory domain separation (`room-directive`, `merchant-inventory`, `relic-draft`, and so on).
 - `counter` is monotonic within a purpose/revision and persisted when more than one draw is needed.
 - Security randomness never uses `Math.random()`.
 - RNG uses a planned separate binding `RANKED_V3_RULESET_RNG_SECRET`; it must not reuse `RANKED_V3_HMAC_SECRET`, which signs checkpoint tokens.
 - Neither secret belongs in source, manifests, D1, responses or logs.
 
-The official Workers runtime exposes Web Crypto, including HMAC signing. The actual production binding and sampling helpers are deferred to Phase 3B.
+Inclusive integer sampling uses a 64-bit rejection threshold, so modulo
+reduction is unbiased. The dedicated production binding is still not wired
+into an active Worker.
 
-## Versioned skeleton and fail-closed registry
+## Versioned implementation and fail-closed registry
 
 ```text
 cloudflare/leaderboard-v3/src/rulesets/
@@ -152,6 +154,8 @@ cloudflare/leaderboard-v3/src/rulesets/
     constants.js
     rng.js
     room-policy.js
+    meta-state.js
+    room-directive.js
     gold-policy.js
     reward-policy.js
     merchant-policy.js
@@ -162,14 +166,20 @@ cloudflare/leaderboard-v3/src/rulesets/
     score-policy.js
     leaderboard-summary.js
     data/
-      generated-source-manifest.json
+      source-manifest.generated.json
+      run-progression.generated.json
+      room-types.generated.json
+      room-eligibility.generated.json
+      special-room-policy.generated.json
       golden-fixtures.manifest.json
       ruleset-manifest.json
     test/
-      golden-fixtures.examples.json
+      phase3b1-golden-fixtures.json
 ```
 
-`v08-meta-1` is `spec-only`. Calling its factory throws `RULESET_NOT_IMPLEMENTED:v08-meta-1`. The active Worker does not import the registry or this descriptor.
+`v08-meta-1` is `test-only`. Isolated tests can call its factory directly.
+Registry resolution throws `RULESET_NOT_RELEASED:test-only`. The active Worker
+does not import the registry or descriptor.
 
 The registry is keyed only by the full ruleset hash:
 
@@ -192,25 +202,35 @@ sha256(canonicalJson({
 }))
 ```
 
-The manifest file itself and `index.js` are excluded to avoid a circular hash. The registry descriptor reads the generated hash. A production release must never mutate files behind an old hash; it adds a new ruleset directory/hash instead.
+Only the manifest file itself is excluded to avoid a circular hash. `index.js`
+and every other module are included. The registry descriptor reads the
+generated hash. A production release must never mutate files behind an old
+hash; it adds a new ruleset directory/hash instead.
 
 ## Generator and active source plan
 
-`scripts/generate-online-v3-meta-rules.mjs` currently performs Phase 3A drift control:
+`scripts/generate-online-v3-meta-rules.mjs` performs Phase 3B1 extraction and
+drift control:
 
-1. Reads only active baseline sources, including `game.js`, Camp, relic, loot, mutator, skill, elixir, Merchant, Forge, Pact, pity, expansion and boss modules.
-2. Requires known evidence symbols, then records byte length and SHA-256 in `generated-source-manifest.json`.
-3. Hashes the versioned skeleton and canonical fixture/data files into `ruleset-manifest.json`.
+1. Reads only `game.js`, `room-pity.js`, `expansion-content.js` and
+   `pact-room.js` from the protected baseline.
+2. Parses the canonical progression, room, eligibility and special-room values
+   and records exact byte lengths/SHA-256 values.
+3. Writes five stable generated documents and hashes the complete versioned
+   policy/data/fixture content into `ruleset-manifest.json`.
 4. `--check` performs byte-for-byte verification and fails on source or generated-manifest drift.
 5. It reads files as data; neither the Worker nor its presentation path imports `game.js`, DOM code or rendering functions.
 
-Phase 3B should extend the generator with explicit parsers/export adapters for canonical constants. It must not execute the browser IIFE under a fake DOM. Generated data needs a schema version, stable key ordering, duplicate-ID checks, numeric range checks and golden-fixture parity.
+The generator does not execute the browser IIFE under a fake DOM. It validates
+schema versions, IDs, numeric ranges, stable ordering and generated-file parity.
 
 The audit expected a `pact-data.js`; active v0.8 has no such file. Its source of truth is `pact-room.js` plus `pact-effects.js`.
 
-## Golden fixture plan
+## Golden fixture coverage
 
-The manifest contains all 22 required scenarios:
+The executable Phase 3B1 corpus contains 25 room-progression scenarios. The
+older 22-item full-ruleset inventory below remains a future coverage plan for
+reward, economy, build, scoring and finalization phases.
 
 1. start run;
 2. regular room checkpoint;
@@ -235,15 +255,16 @@ The manifest contains all 22 required scenarios:
 21. score calculation;
 22. `build_json`.
 
-Five examples are schema/specification fixtures only. Every fixture contains:
+Every Phase 3B1 fixture contains:
 
 ```text
-fixtureId, rulesetId, initialMetaState, serverRandomInputs, operation,
-expectedNextState, expectedOffer, expectedGoldDelta, expectedBuildDelta,
-expectedScoreDelta, legacySourceEvidence
+fixtureId, sourceEvidence, initialMetaState, runId, revision, randomInputs,
+operation, expectedDirective, expectedNextState, expectedRejection,
+expectedRulesetHash
 ```
 
-Some example numeric outcomes are design targets pending Phase 3B parity review. They are not imported by the active Worker and are not proof of implemented v0.8 policy.
+The corpus is executed against the direct test-only factory. It is not imported
+by the active Worker and is not production activation evidence.
 
 ## Verification wording
 
@@ -255,8 +276,13 @@ Player explanation:
 
 > Progression, build and score were checked by the server. Combat runs locally. The system catches typical manipulation, but it is not a complete anti-cheat.
 
-No UI is changed in Phase 3A.
+No UI is changed in Phase 3B1.
 
-## Phase 3B exit gate
+## Phase 3B2 exit gate
 
-Implement `v08-meta-1` as a pure ruleset against the full golden corpus, still disconnected from `game.js`. Require data drift checks, old-hash retention, deterministic RNG fixtures, exact transaction parity, bounded combat settlement and a fresh review of the Merchant-buyback/runGoldEarned discrepancy before any browser hook is added.
+Add reward/offer/economy policy against the generated room directive, still
+disconnected from `game.js`. Require exact transaction parity, bounded combat
+settlement, dedicated RNG-secret injection through an inactive integration and
+a fresh review of the Merchant-buyback/runGoldEarned discrepancy before any
+browser hook is added. Resolve the cross-run Forge/Otter pity ownership before
+production activation.

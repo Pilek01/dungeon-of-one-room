@@ -84,27 +84,25 @@ test("authority matrix is complete, unique, and covers every audit family", asyn
   }
 });
 
-test("golden fixture manifest and examples follow the Phase 3A schema", async () => {
+test("golden fixture manifest and corpus follow the Phase 3B1 schema", async () => {
   const manifest = JSON.parse(
     await readFile(path.join(RULESET_ROOT, "data", "golden-fixtures.manifest.json"), "utf8")
   );
-  const examples = JSON.parse(
-    await readFile(path.join(RULESET_ROOT, "test", "golden-fixtures.examples.json"), "utf8")
+  const fixtures = JSON.parse(
+    await readFile(path.join(RULESET_ROOT, "test", "phase3b1-golden-fixtures.json"), "utf8")
   );
   assert.equal(manifest.rulesetId, "v08-meta-1");
-  assert.equal(manifest.status, "spec-only");
-  assert.equal(manifest.scenarios.length, 22);
-  assert.equal(new Set(manifest.scenarios.map((item) => item.fixtureId)).size, 22);
-  assert.ok(examples.length >= 5);
+  assert.equal(manifest.status, "test-only");
+  assert.equal(manifest.phase, "3B1");
+  assert.equal(manifest.scenarios.length, 25);
+  assert.equal(new Set(manifest.scenarios).size, 25);
+  assert.equal(fixtures.length, 25);
   const required = manifest.requiredFixtureFields;
-  for (const fixture of examples) {
+  for (const fixture of fixtures) {
     assert.deepEqual(Object.keys(fixture), required, fixture.fixtureId);
-    assert.equal(fixture.rulesetId, "v08-meta-1");
-    assert.ok(fixture.legacySourceEvidence.length > 0);
-    assert.equal(
-      manifest.scenarios.find((item) => item.fixtureId === fixture.fixtureId)?.status,
-      "example"
-    );
+    assert.ok(fixture.sourceEvidence.length > 0);
+    assert.ok(manifest.scenarios.includes(fixture.fixtureId));
+    assert.equal(fixture.expectedRulesetHash, "manifest.rulesetHash");
   }
 });
 

@@ -1,0 +1,157 @@
+{
+  "schemaVersion": 1,
+  "rulesetId": "v08-meta-1",
+  "sourceCommit": "f98820c99066d810169e100beb23a54a332734bd",
+  "sources": [
+    {
+      "file": "expansion-content.js",
+      "byteLength": 3741,
+      "sha256": "56180ffa919884ea3e0dd89045063bcba6097ebd687481dc8fc2ada2f3a5a307"
+    },
+    {
+      "file": "game.js",
+      "byteLength": 1292796,
+      "sha256": "a7d436f8cdde618e7bab802322a658d2055f201950d9ae7b4598269feff3df00"
+    }
+  ],
+  "canonicalData": {
+    "roomTypes": [
+      {
+        "id": "ambush",
+        "label": "Ambush",
+        "category": "normal",
+        "scheduleEligible": true,
+        "sourceMode": "generated-label-manual-versioned-category",
+        "sourceReference": "game.js:ROOM_TYPE_LABELS/buildRegularRoom"
+      },
+      {
+        "id": "arena",
+        "label": "Blood Arena",
+        "category": "special",
+        "scheduleEligible": true,
+        "sourceMode": "generated-label-manual-versioned-category",
+        "sourceReference": "game.js:ROOM_TYPE_LABELS/buildRegularRoom"
+      },
+      {
+        "id": "boss",
+        "label": "Boss",
+        "category": "boss",
+        "scheduleEligible": true,
+        "sourceMode": "generated-label-manual-versioned-category",
+        "sourceReference": "game.js:ROOM_TYPE_LABELS/buildRegularRoom"
+      },
+      {
+        "id": "camp",
+        "label": "Camp",
+        "category": "between-run",
+        "scheduleEligible": false,
+        "sourceMode": "manual-versioned-procedural-rule",
+        "sourceReference": "game.js:phase=camp/startRun"
+      },
+      {
+        "id": "combat",
+        "label": "Combat",
+        "category": "normal",
+        "scheduleEligible": true,
+        "sourceMode": "generated-label-manual-versioned-category",
+        "sourceReference": "game.js:ROOM_TYPE_LABELS/buildRegularRoom"
+      },
+      {
+        "id": "crossroads",
+        "label": "Crossroads",
+        "category": "special",
+        "scheduleEligible": true,
+        "sourceMode": "generated-label-manual-versioned-category",
+        "sourceReference": "game.js:ROOM_TYPE_LABELS/buildRegularRoom"
+      },
+      {
+        "id": "cursed",
+        "label": "Cursed",
+        "category": "normal",
+        "scheduleEligible": true,
+        "sourceMode": "generated-label-manual-versioned-category",
+        "sourceReference": "game.js:ROOM_TYPE_LABELS/buildRegularRoom"
+      },
+      {
+        "id": "duel",
+        "label": "Duel",
+        "category": "normal",
+        "scheduleEligible": true,
+        "sourceMode": "generated-label-manual-versioned-category",
+        "sourceReference": "game.js:ROOM_TYPE_LABELS/buildRegularRoom"
+      },
+      {
+        "id": "final",
+        "label": "Final",
+        "category": "final",
+        "scheduleEligible": true,
+        "sourceMode": "manual-versioned-procedural-rule",
+        "sourceReference": "game.js:isBossDepth/buildRoom/triggerDepth100Victory"
+      },
+      {
+        "id": "forge",
+        "label": "Forge",
+        "category": "special",
+        "scheduleEligible": true,
+        "sourceMode": "generated-label-manual-versioned-category",
+        "sourceReference": "game.js:ROOM_TYPE_LABELS/buildRegularRoom"
+      },
+      {
+        "id": "horde",
+        "label": "Horde",
+        "category": "normal",
+        "scheduleEligible": true,
+        "sourceMode": "generated-label-manual-versioned-category",
+        "sourceReference": "game.js:ROOM_TYPE_LABELS/buildRegularRoom"
+      },
+      {
+        "id": "merchant",
+        "label": "Merchant",
+        "category": "special",
+        "scheduleEligible": true,
+        "sourceMode": "generated-label-manual-versioned-category",
+        "sourceReference": "game.js:ROOM_TYPE_LABELS/buildRegularRoom"
+      },
+      {
+        "id": "otter",
+        "label": "Otter",
+        "category": "special",
+        "scheduleEligible": true,
+        "sourceMode": "generated-label-manual-versioned-category",
+        "sourceReference": "game.js:ROOM_TYPE_LABELS/buildRegularRoom"
+      },
+      {
+        "id": "pact",
+        "label": "Pact",
+        "category": "special",
+        "scheduleEligible": true,
+        "sourceMode": "generated-label-manual-versioned-category",
+        "sourceReference": "game.js:ROOM_TYPE_LABELS/buildRegularRoom"
+      },
+      {
+        "id": "shrine",
+        "label": "Shrine",
+        "category": "special",
+        "scheduleEligible": true,
+        "sourceMode": "generated-label-manual-versioned-category",
+        "sourceReference": "game.js:ROOM_TYPE_LABELS/buildRegularRoom"
+      },
+      {
+        "id": "treasure",
+        "label": "Treasure",
+        "category": "special",
+        "scheduleEligible": true,
+        "sourceMode": "generated-label-manual-versioned-category",
+        "sourceReference": "game.js:ROOM_TYPE_LABELS/buildRegularRoom"
+      },
+      {
+        "id": "vault",
+        "label": "Vault",
+        "category": "special",
+        "scheduleEligible": true,
+        "sourceMode": "generated-label-manual-versioned-category",
+        "sourceReference": "game.js:ROOM_TYPE_LABELS/buildRegularRoom"
+      }
+    ]
+  }
+}

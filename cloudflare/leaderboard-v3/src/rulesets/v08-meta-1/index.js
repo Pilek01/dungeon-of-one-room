@@ -1,8 +1,46 @@
 import manifest from "./data/ruleset-manifest.json" with { type: "json" };
 import { RULESET_ID, RULESET_STATUS } from "./constants.js";
+import { createInitialMetaStateV08 } from "./meta-state.js";
+import {
+  consumeRoomDirectiveV08,
+  issueNextRoomDirectiveV08
+} from "./room-policy.js";
 
-export function createV08Meta1Ruleset() {
-  throw new TypeError("RULESET_NOT_IMPLEMENTED:v08-meta-1");
+function mergeContext(options, context) {
+  return {
+    ...context,
+    secret: context?.secret ?? options.secret,
+    randomOracle: context?.randomOracle ?? options.randomOracle
+  };
+}
+
+export function createV08Meta1Ruleset(options = {}) {
+  return Object.freeze({
+    rulesetId: RULESET_ID,
+    rulesetHash: manifest.rulesetHash,
+    status: RULESET_STATUS,
+
+    createInitialMetaState(input, context) {
+      return createInitialMetaStateV08(input, context);
+    },
+
+    async createRun(input, context) {
+      const initial = createInitialMetaStateV08(input, context);
+      return issueNextRoomDirectiveV08(initial, mergeContext(options, context));
+    },
+
+    async issueRoomDirective(state, context = {}) {
+      return issueNextRoomDirectiveV08(state, mergeContext(options, context));
+    },
+
+    async consumeRoomDirective(state, operation, context = {}) {
+      return consumeRoomDirectiveV08(
+        state,
+        operation,
+        mergeContext(options, context)
+      );
+    }
+  });
 }
 
 export const V08_META_1_DESCRIPTOR = Object.freeze({

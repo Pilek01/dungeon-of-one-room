@@ -1,0 +1,91 @@
+{
+  "schemaVersion": 1,
+  "rulesetId": "v08-meta-1",
+  "sourceCommit": "f98820c99066d810169e100beb23a54a332734bd",
+  "sources": [
+    {
+      "file": "expansion-content.js",
+      "byteLength": 3741,
+      "sha256": "56180ffa919884ea3e0dd89045063bcba6097ebd687481dc8fc2ada2f3a5a307"
+    },
+    {
+      "file": "game.js",
+      "byteLength": 1292796,
+      "sha256": "a7d436f8cdde618e7bab802322a658d2055f201950d9ae7b4598269feff3df00"
+    },
+    {
+      "file": "pact-room.js",
+      "byteLength": 5791,
+      "sha256": "d94a3d19bab8fe69bf9d3f2dac5a0555e268af7327855c5a675e53149d4355c6"
+    },
+    {
+      "file": "room-pity.js",
+      "byteLength": 1075,
+      "sha256": "4b25c0160a9d339248a969627b7a82c93b464966b671d21c9e30f2e83c70cb76"
+    }
+  ],
+  "canonicalData": {
+    "priority": [
+      "final",
+      "boss",
+      "queued-otter",
+      "forge-pity",
+      "otter-pity",
+      "merchant-guarantee",
+      "vault-roll",
+      "weighted-room"
+    ],
+    "guaranteedMerchantRoomIndexes": [
+      8,
+      18
+    ],
+    "forgePityDepth": 21,
+    "otterPityDepth": 41,
+    "otter": {
+      "minDepth": 20,
+      "maxPerRun": 3,
+      "chance": 0.007,
+      "ultraChance": 0.01,
+      "ultraStartDepth": 40,
+      "disallowBossDepth": true
+    },
+    "manualVersionedRules": [
+      {
+        "ruleId": "room-category-map",
+        "sourceReference": "game.js:ROOM_TYPE_LABELS/buildRegularRoom",
+        "reason": "Categories are implicit in procedural branches rather than exported data."
+      },
+      {
+        "ruleId": "special-room-priority",
+        "sourceReference": "game.js:chooseRoomType/maybeQueueOtterRoom",
+        "reason": "Priority is encoded by procedural branch order."
+      }
+    ],
+    "unresolvedSourceRules": [
+      {
+        "ruleId": "forge-pity-game-scope",
+        "marker": "UNRESOLVED_SOURCE_RULE",
+        "sourceReference": "game.js:forgeSeenThisGame/forgePityUsedThisGame",
+        "reason": "Baseline persists pity across runs in one local game; Online v3 has no canonical cross-run game session."
+      },
+      {
+        "ruleId": "otter-pity-game-scope",
+        "marker": "UNRESOLVED_SOURCE_RULE",
+        "sourceReference": "game.js:otterSeenThisGame/otterPityUsedThisGame",
+        "reason": "Baseline persists pity across runs in one local game; Online v3 has no canonical cross-run game session."
+      }
+    ],
+    "deferredOutsidePhase3B1": [
+      {
+        "ruleId": "treasure-map-forced-vault",
+        "sourceReference": "game.js:forcedNextRoomType=VAULT",
+        "reason": "Depends on reward/economy state deferred to Phase 3B2."
+      },
+      {
+        "ruleId": "crossroads-power-exclusion",
+        "sourceReference": "game.js:isCrossroadsPowerPenaltyActive",
+        "reason": "Depends on a local build effect not implemented in Phase 3B1."
+      }
+    ]
+  }
+}

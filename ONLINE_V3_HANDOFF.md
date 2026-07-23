@@ -1,4 +1,4 @@
-# Online v3 handoff - Phase 3A
+# Online v3 handoff - Phase 3B1
 
 Date: 2026-07-23
 
@@ -26,7 +26,56 @@ The Phase 3A local commit subject is:
 Map v0.8 meta-progression for Online v3 ruleset
 ```
 
-## Phase 3A outcome
+The Phase 3B1 local commit subject is:
+
+```text
+Implement Online v3 room directives and deterministic ruleset RNG
+```
+
+## Phase 3B1 outcome
+
+Phase 3B1 implements and tests, in isolation:
+
+- deterministic generated canonical data for depth/start rules, room types,
+  eligibility, region weights and special-room priority;
+- HMAC-SHA-256 ruleset RNG with rejection-sampled bounded integers, choice and
+  shuffle helpers;
+- canonical initial meta state for entrance and unlocked checkpoint starts;
+- exact server-issued `RoomDirectiveV3` IDs, nonces and seeds;
+- sequential depth/revision consumption, boss/final priority and special-room
+  limits;
+- 25 executable golden fixtures and seeded full-run property tests;
+- manifest/source drift checks and old-hash immutability behavior.
+
+The descriptor status is `test-only`. Direct construction exists solely for
+isolated tests; registry resolution fails closed. `src/index.js` and
+`src/local-fixture-entry.js` do not import the registry or `v08-meta-1`.
+No browser client, active Worker route, D1 migration, endpoint, reward,
+economy, build, score or deployment behavior changed.
+
+The detailed implementation record is:
+
+```text
+docs/ONLINE_V3_PHASE3B1.md
+```
+
+Phase 3B1 validation:
+
+```text
+generator drift check:       PASS
+unit/fixture tests:          108 pass, 0 fail
+real runtime/D1 tests:         9 pass, 0 fail
+combined:                    117 pass, 0 fail
+headed game baseline smoke: PASS
+```
+
+The headed report confirms Classic and HD Shrine, Vault guardian, audio
+inventory/toggle, all 32 cheat-menu options, Observer Bot, saved-run Continue,
+Final Defeat, zero `/api/v3` requests in Practice, zero console errors, zero
+page errors and zero unexpected request failures. Screenshots and JSON reports
+remain ignored under `output/online-v3-baseline`.
+
+## Historical Phase 3A outcome
 
 Phase 3A audited the active v0.8 meta sources and added:
 
@@ -262,11 +311,11 @@ contains no `/api/v3` fetch.
 
 ## Still deliberately not done
 
-- no production v0.8 `RulesetV3`;
+- no supported/production v0.8 `RulesetV3` (Phase 3B1 is `test-only`);
 - no browser fetch client, retry queue, or game hooks;
 - no leaderboard UI integration;
 - no production D1 resource or secret;
 - no push, deployment, rebase, merge, or worktree.
 
-Next step: implement `v08-meta-1` as a pure ruleset against the complete golden
-fixture corpus, still without integrating `game.js`.
+Next step: Phase 3B2 reward/offer/economy policy against the generated room
+directive, still without integrating `game.js` or activating Worker routes.
