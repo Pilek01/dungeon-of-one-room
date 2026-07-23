@@ -25,7 +25,7 @@ export function createMemoryRepositories() {
     async insert(state, metadata) {
       metrics.writes += 1;
       metrics.statements.push("insert_run");
-      const startKey = `${state.season}:${metadata.startIdempotencyKey}`;
+      const startKey = metadata.startIdempotencyKey;
       if (startKeys.has(startKey) || runRows.has(state.runId)) {
         const error = new Error("START_OPERATION_CONFLICT");
         error.code = "START_OPERATION_CONFLICT";
@@ -36,10 +36,10 @@ export function createMemoryRepositories() {
       return true;
     },
 
-    async findByStartOperation(season, idempotencyKey) {
+    async findByStartOperation(idempotencyKey) {
       metrics.reads += 1;
       metrics.statements.push("read_start_operation");
-      const runId = startKeys.get(`${season}:${idempotencyKey}`);
+      const runId = startKeys.get(idempotencyKey);
       return runId ? this.peek(runId) : null;
     },
 

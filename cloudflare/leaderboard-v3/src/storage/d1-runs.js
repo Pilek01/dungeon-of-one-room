@@ -95,12 +95,12 @@ export function createD1RunRepository(db, leaderboardRepository) {
       }
     },
 
-    async findByStartOperation(season, idempotencyKey) {
+    async findByStartOperation(idempotencyKey) {
       const row = await db.prepare(`
         SELECT canonical_state_json, state_digest, recent_ops_json
         FROM ranked_runs
-        WHERE season = ? AND start_idempotency_key = ?
-      `).bind(season, idempotencyKey).first();
+        WHERE start_idempotency_key = ?
+      `).bind(idempotencyKey).first();
       return stateFromRow(row);
     },
 

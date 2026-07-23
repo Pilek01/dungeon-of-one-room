@@ -240,10 +240,7 @@ async function handleStart(request, env, options, repositories) {
     });
   } catch (cause) {
     if (cause?.code !== "START_OPERATION_CONFLICT") throw cause;
-    const existing = await repositories.runs.findByStartOperation(
-      body.season,
-      idempotencyKey
-    );
+    const existing = await repositories.runs.findByStartOperation(idempotencyKey);
     if (!existing) throw cause;
     const replay = replayOrConflict(existing, idempotencyKey, requestDigest);
     if (replay) return replay;

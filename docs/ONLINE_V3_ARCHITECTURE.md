@@ -1,6 +1,6 @@
 # Dungeon Online v3 architecture
 
-Status: Phase 2 Worker and fixture tests implemented in isolation. The browser game is not integrated and `index.html` does not load Online v3.
+Status: Phase 2.5 Worker validated in a real local Wrangler/Miniflare runtime with persistent D1. The browser game is not integrated and `index.html` does not load Online v3.
 
 ## Boundary
 
@@ -92,7 +92,35 @@ Logical D1 budget:
 | finalize | 1 | 2 in one batch |
 | leaderboard list/detail | 1 | 0 |
 
-An idempotent start retry may additionally read the row after its unique insert conflicts.
+An idempotent start retry may additionally read the row after its unique insert conflicts. `start_idempotency_key` is globally unique. The conflict lookup uses that key alone, then compares the stored canonical request digest. This makes a changed player, season, or any other request field return `409 IDEMPOTENCY_KEY_REUSED` while an exact retry returns the stored run ID and response.
+
+## Local Phase 2.5 runtime
+
+Wrangler `4.114.0` is pinned as a local dev dependency. `wrangler.local.jsonc`
+selects `src/local-fixture-entry.js`, the fixture ruleset, fixture season, and
+one local-only D1 binding with a non-production placeholder UUID. Production
+`src/index.js` remains fail-closed without a real injected ruleset.
+
+The E2E process generates an HMAC secret in memory, exposes it only to the child
+`wrangler dev` process, and persists D1 exclusively under ignored `output/`.
+The schema read from `sqlite_schema` contains the two application tables and
+leaderboard index. `_cf_METADATA` and `d1_migrations` are internal local-runtime
+bookkeeping, not additional application tables.
+
+Real HTTP/D1 tests cover all six routes, parallel start and mutation races,
+restart persistence, same/different-secret token verification, exact retries
+after discarded responses, cursor stability, and public-field boundaries.
+
+Finalization has an additional real D1 adapter fault test:
+
+- an exception before `db.batch` changes neither table;
+- a failure in the second batch statement rolls back the run update;
+- loss after a successful batch leaves both the finalized run and its single
+  leaderboard row committed.
+
+This local entrypoint and its fixture ruleset are test infrastructure only. No
+production D1 ID, secret, external service, deployment, or game connection is
+created.
 
 ## Authoritative transitions
 

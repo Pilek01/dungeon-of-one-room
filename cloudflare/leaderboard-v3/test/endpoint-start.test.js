@@ -31,6 +31,10 @@ test("start rejects reused idempotency key with different payload", async () => 
   const conflict = await harness.start({ playerName: "OtherPlayer" });
   assert.equal(conflict.response.status, 409);
   assert.equal(conflict.payload.error.code, "IDEMPOTENCY_KEY_REUSED");
+
+  const seasonConflict = await harness.start({ season: "other-season" });
+  assert.equal(seasonConflict.response.status, 409);
+  assert.equal(seasonConflict.payload.error.code, "IDEMPOTENCY_KEY_REUSED");
 });
 
 test("start fails closed without a ruleset or token secret", async () => {

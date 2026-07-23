@@ -11,6 +11,12 @@ verificationLevel: checkpoint_verified_v3
 
 Every POST requires an `Idempotency-Key` header. The key is bound to the canonical digest of method, route, and body. An exact retry returns the original status/body and `x-idempotent-replay: 1`; reuse with another body returns `409 IDEMPOTENCY_KEY_REUSED`.
 
+For start, `start_idempotency_key` has a global D1 `UNIQUE` constraint. After a
+losing or repeated insert, the Worker retrieves the row by that unique key and
+compares the stored request digest. This applies equally when the changed
+payload changes `season`: exact content replays the original `201`; any changed
+content returns `409`. Parallel identical starts create at most one run row.
+
 Authenticated mutations contain `runId`, `checkpointToken`, `roomDirectiveId`, and `roomNonce`. The token binds the stored revision, state digest, season, ruleset, directive, and nonce. The client does not submit an authoritative revision separately.
 
 ## Start
@@ -138,3 +144,24 @@ Network retry rules:
 5. Run retries outside input, combat, animation, audio, and HUD work.
 
 The server stores only a bounded operation ring and the latest journal digest. The compact journal is heuristic evidence, not an authoritative combat replay.
+
+## Local runtime conformance
+
+Phase 2.5 executes this protocol through real HTTP on a local Wrangler
+`4.114.0` process and reads the resulting rows from its persistent D1. Tests
+cover:
+
+- the six routes and their JSON/content-type/status contracts;
+- exact network-loss replay for start, checkpoint, event, and finalize;
+- one-winner optimistic concurrency for checkpoint, `reward_selected`,
+  merchant purchase, and finalize;
+- same-secret and different-secret restarts;
+- expired, other-season, other-ruleset, noncanonical, and invalid-signature
+  tokens;
+- leaderboard order, limit, cursor, tie stability, details, missing IDs, and
+  season isolation;
+- absence of canonical state, operation history, secrets, and tokens from
+  public reads and runtime logs.
+
+This test runtime uses only the fixture ruleset. It does not establish or imply
+a production v0.8 ruleset.

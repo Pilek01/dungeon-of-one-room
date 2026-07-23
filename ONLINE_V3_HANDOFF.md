@@ -1,4 +1,4 @@
-# Online v3 handoff - Phase 2
+# Online v3 handoff - Phase 2.5
 
 Date: 2026-07-23
 
@@ -6,90 +6,207 @@ Workspace: `D:\Codex workstation\Dungeon\dungeon-online-v3`
 
 Protected baseline: `f98820c99066d810169e100beb23a54a332734bd`
 
-Phase 1 commit: `0fe1423 Add Online v3 architecture and no-op boundary`
-
-## Delivered
-
-Phase 2 adds an isolated Cloudflare Worker under `cloudflare/leaderboard-v3` with:
-
-- pure domain transitions returning `{ nextState, response, storageEffects }`;
-- injected, fail-closed `RulesetV3` with six required methods;
-- fixture-only deterministic ruleset data;
-- canonical HMAC-SHA-256 checkpoint tokens using Web Crypto;
-- D1 repositories and one migration containing exactly two tables;
-- optimistic revision concurrency and atomic finalize/publication;
-- bounded in-row idempotency replay history;
-- all six `/api/v3` endpoints;
-- authoritative gold, depth, build, offer, inventory, schedule, and score transitions;
-- explicit `checkpoint_verified_v3` publication;
-- fixture endpoint, domain, token, migration, D1-budget, network-loss, idempotency, and baseline-guard tests;
-- an explicit 20-case anti-tamper matrix.
-
-No production ruleset is included. No Online v3 module is loaded by `index.html`, and no game/client integration was performed.
-
-## Validation
-
-Worker suite:
+Completed commits:
 
 ```text
-npm.cmd test
-64 tests, 64 pass, 0 fail
+0fe1423 Add Online v3 architecture and no-op boundary
+52e363e Implement isolated Online v3 Worker and fixture tests
+22633d4 Add Online v3 baseline regression smoke
 ```
 
-Payload-size diagnostics included in that suite:
+The Phase 2.5 commit subject is:
 
 ```text
-fixture checkpoint token: 614 bytes
-fixture checkpoint request: 1167 bytes
-request limit: 65536 bytes
+Validate Online v3 Worker against local Cloudflare runtime
 ```
 
-Other checks:
+## Local Cloudflare runtime
+
+Wrangler is a project-only dev dependency pinned exactly to `4.114.0`.
+`package-lock.json` records the same version. Nothing is installed globally.
+
+Local-only files:
 
 ```text
-node --check every Worker JavaScript file: pass
-node --check game.js: pass
-node tests/expansion-release.test.js: pass
-focused active soundtrack/audio contract: 1/1 pass
-node scripts/online-v3-baseline-smoke.mjs: PASS (headed)
+cloudflare/leaderboard-v3/wrangler.local.jsonc
+cloudflare/leaderboard-v3/src/local-fixture-entry.js
+cloudflare/leaderboard-v3/test-e2e/local-runtime.test.mjs
+cloudflare/leaderboard-v3/test-e2e/d1-storage-atomicity.test.mjs
 ```
 
-The headed browser artifacts remain ignored under:
+`wrangler.local.jsonc` uses:
+
+- Worker name `dungeon-online-v3-local-fixture`;
+- D1 binding `DB`;
+- database name `dungeon-online-v3-local-fixture`;
+- non-production placeholder UUID `00000000-0000-0000-0000-000000000003`;
+- fixture season `fixture-season`;
+- the fixture-only entrypoint and ruleset;
+- no production account, database ID, remote binding, or external service.
+
+The E2E runner generates a random HMAC secret in memory and passes it only in
+the child Wrangler process environment. No secret is committed or written to
+the report. Manual `npm run dev` requires a local untracked `.dev.vars` or an
+equivalent process environment value for `RANKED_V3_HMAC_SECRET`.
+
+Useful commands:
 
 ```text
-output/online-v3-baseline
+npm run d1:migrate:local
+npm run dev
+npm run test:e2e:local
+npm run validate:unit
+npm run validate
 ```
 
-The local baseline runner `scripts/online-v3-baseline-smoke.mjs` remains intentionally untracked and is not part of either implementation commit.
+All local D1 files, Wrangler state, logs, and reports are written under ignored
+`output/` or ignored `.wrangler/`. No remote command or deployment is used.
 
-`wrangler` is not installed in this workspace. No package was downloaded and no local Worker runtime or deployment was started. Migration shape is exercised with Node SQLite; Worker behavior uses injected repositories.
+Final local validation:
 
-## Security and storage contract
+```text
+npm run validate
+unit/fixture tests:       65 pass, 0 fail
+real runtime/D1 tests:     9 pass, 0 fail
+combined:                 74 pass, 0 fail
+```
 
-- Secret binding: `RANKED_V3_HMAC_SECRET`, minimum 32 UTF-8 bytes.
-- Token claims: protocol, run, revision, season, ruleset hash, state digest, directive, nonce, issue time, expiry.
-- D1 is authoritative even when a token signature is valid.
-- Normal mutation: one read plus `UPDATE ... WHERE run_id = ? AND revision = ?`.
-- Finalize: one read plus a two-statement D1 batch.
-- Losing an optimistic-concurrency race returns `409 REVISION_CONFLICT`.
-- Exact request/key replay returns the stored response, including after the original token expires.
-- Changed content under an existing key returns `409 IDEMPOTENCY_KEY_REUSED`.
-- Recent operation history is capped at 24 entries in `ranked_runs.recent_ops_json`.
-- No per-command, replay, event, or idempotency table exists.
+The machine-readable runtime report is ignored at:
 
-## Deliberate limitation
+```text
+output/online-v3-worker-e2e/local-e2e-summary.json
+```
 
-Online v3 verifies checkpoint continuity and authoritative meta progression. It does not verify combat execution.
+## Real D1 schema
 
-A modified client can fabricate a plausible compact command journal and combat outcome. The journal is a bounded heuristic signal only. The Worker therefore publishes `verification_level = "checkpoint_verified_v3"` and makes no claim of server-authoritative combat.
+`0001_initial.sql` was applied by Wrangler to persistent local D1.
 
-## Network-loss contract
+Application tables:
 
-Retry with the exact same serialized body and the same `Idempotency-Key`. If the original operation committed but its response was lost, the Worker returns the stored response and performs no second reward, charge, revision advance, finalize, or leaderboard insert. If execution never began, the first received retry performs the operation once. Browser-side retry queue implementation remains future work.
+```text
+ranked_runs
+leaderboard_entries
+```
 
-## Protected baseline
+Required index:
 
-Phase 2 changes none of:
+```text
+leaderboard_entries_season_score_created
+```
+
+Wrangler/Miniflare additionally creates internal bookkeeping tables
+`_cf_METADATA` and `d1_migrations`; these are not application data tables.
+There is no command, event, frame, replay, or idempotency table.
+
+Real schema checks cover primary keys, SQLite types, required `NOT NULL`
+columns, both table column sets, and the leaderboard index.
+
+## Runtime findings
+
+All six routes were exercised through real HTTP:
+
+```text
+POST /api/v3/runs/start              201
+POST /api/v3/runs/checkpoint         200
+POST /api/v3/runs/event              200
+POST /api/v3/runs/finalize           200
+GET  /api/v3/leaderboard             200
+GET  /api/v3/leaderboard/:runId      200
+```
+
+Rows were read back from the same persistent D1 after each lifecycle stage.
+Public GET responses contain no `canonical_state_json`, operation ring, secret,
+or checkpoint token.
+
+### Start idempotency correction
+
+`ranked_runs.start_idempotency_key` is globally `UNIQUE`. The conflict lookup
+now uses that same globally unique key instead of filtering by the new request
+season. The stored canonical request digest then decides:
+
+- same key and same payload: exact original `201` response and run ID;
+- same key and changed player or season: `409 IDEMPOTENCY_KEY_REUSED`;
+- parallel identical starts: two `201` HTTP responses representing one row and
+  one run ID, with one response marked `x-idempotent-replay: 1`.
+
+No JSON search and no third table are used.
+
+### Concurrency and finalization
+
+Real parallel requests with different idempotency keys produced:
+
+```text
+checkpoint:        200 + 409
+reward_selected:   200 + 409
+merchant_purchase: 200 + 409
+finalize:          200 + 409
+```
+
+Depth, gold, relic, purchase, revision, and leaderboard publication were each
+applied once. `recent_ops_json` stayed capped at 24 entries.
+
+The real D1 adapter fault test verifies:
+
+- controlled failure before `db.batch`: active run, zero leaderboard rows;
+- failure in the second batch statement: the run update rolls back;
+- simulated response loss after a successful batch: finalized run and exactly
+  one leaderboard row remain together.
+
+No split `finalized/no-entry` or `active/entry` state was observed.
+
+### Restart and HMAC
+
+Persistent D1 retained revision and state digest across a stopped/restarted
+Wrangler process. The run then accepted another event, checkpoint, finalize,
+and leaderboard read.
+
+The same HMAC secret after restart verifies the old token. A different secret
+returns `401 TOKEN_INVALID`. The real runtime also rejects correctly signed but
+expired, other-season, other-ruleset, and noncanonical tokens. Tokens remain
+compact base64url payload/signature pairs. Captured Wrangler logs contained no
+secret and no full issued token.
+
+### HTTP network loss
+
+For start, checkpoint, event, and finalize, the test sent a real HTTP request,
+discarded its response, then retried the exact serialized body and
+`Idempotency-Key`. Every retry returned the stored response with
+`x-idempotent-replay: 1`; no reward, charge, revision, run, or leaderboard row
+was duplicated.
+
+### Leaderboard
+
+Real HTTP coverage includes multiple finalized fixture runs, score descending
+ordering, `created_at` and run-ID tie stability, limit, cursor continuation,
+no duplicates between pages, build details, missing run ID, and empty results
+for another season.
+
+## Measured local sizes
+
+```text
+start request                         182 bytes
+checkpoint request                   1167 bytes
+event request                         832 bytes
+finalize request                      819 bytes
+checkpoint token                      614 bytes
+canonical_state_json                 1489 bytes
+recent_ops_json at 24 operations    57767 bytes
+leaderboard response, 20 rows        4356 bytes
+build-detail response                 547 bytes
+build_json                             105 bytes
+```
+
+There is no per-frame data, no per-command row, no full game save in a
+checkpoint, and no combat replay in canonical state or build details.
+
+## Baseline regression status
+
+The committed headed runner verifies HTTP boot, Classic, HD, Shrine, Vault,
+audio, HUD, cheat menu, Observer Bot, save/Continue, Final Defeat, zero
+`/api/v3` requests, zero console errors, and zero page errors. Artifacts remain
+under ignored `output/online-v3-baseline`.
+
+Phase 2.5 changes none of:
 
 ```text
 game.js
@@ -102,23 +219,19 @@ audio/**
 cheat behavior
 Observer Bot behavior
 special-room behavior
+loading screen baseline
 ```
 
-The Worker imports no game, DOM, audio, HUD, renderer, or Ranked/Online v2 module. `index.html` contains no v3 script reference.
+`index.html` still loads no Online v3 module, and the active game client still
+contains no `/api/v3` fetch.
 
-## Not done
+## Still deliberately not done
 
-- no production v0.8 ruleset or invented balance data;
-- no browser fetch client or retry queue;
-- no hooks in the game;
+- no production v0.8 `RulesetV3`;
+- no browser fetch client, retry queue, or game hooks;
 - no leaderboard UI integration;
-- no Worker runtime launch;
-- no D1 resource creation;
-- no secret creation;
-- no deploy, push, rebase, merge, or worktree.
+- no production D1 resource or secret;
+- no push, deployment, rebase, merge, or worktree.
 
-The Phase 2 commit subject is:
-
-```text
-Implement isolated Online v3 Worker and fixture tests
-```
+Next step: map the real v0.8 meta rules into a versioned `RulesetV3`, still
+without integrating `game.js`.
