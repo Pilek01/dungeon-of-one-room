@@ -35,6 +35,7 @@ export {
 } from "./starting-relic-offer.js";
 export {
   assertRegularRelicOfferV08,
+  getOtterRelicCandidatePoolV08,
   getRegularRelicCandidatePoolV08,
   issueRegularRelicOffer,
   projectPublicRegularRelicOfferV08,

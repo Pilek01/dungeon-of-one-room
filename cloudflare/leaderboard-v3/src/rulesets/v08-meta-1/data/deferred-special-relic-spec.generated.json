@@ -1,0 +1,257 @@
+{
+  "schemaVersion": 1,
+  "rulesetId": "v08-meta-1",
+  "sourceCommit": "f98820c99066d810169e100beb23a54a332734bd",
+  "sources": [
+    {
+      "file": "boss-campaign.js",
+      "byteLength": 8061,
+      "sha256": "ad885efec2e4bce42514c80a77a9a2cbf0f7310f396f423f5e95da16af60940d"
+    },
+    {
+      "file": "camp-runtime.js",
+      "byteLength": 30381,
+      "sha256": "302c3442e6e02442f21283b073603bb051e912ac365c55541d4a1b7afe76997a"
+    },
+    {
+      "file": "expansion-content.js",
+      "byteLength": 3741,
+      "sha256": "56180ffa919884ea3e0dd89045063bcba6097ebd687481dc8fc2ada2f3a5a307"
+    },
+    {
+      "file": "forge-room.js",
+      "byteLength": 8316,
+      "sha256": "74980ae5a8e069336d161ef2c51ac4771ce602b899f8b120988f78de35b0b821"
+    },
+    {
+      "file": "game.js",
+      "byteLength": 1292796,
+      "sha256": "a7d436f8cdde618e7bab802322a658d2055f201950d9ae7b4598269feff3df00"
+    },
+    {
+      "file": "loot-tables.js",
+      "byteLength": 2509,
+      "sha256": "9343a62db72aacd89d16ab0efa3c1fba0c40d08cc1e82e10795990299467e0a9"
+    },
+    {
+      "file": "merchant-curation.js",
+      "byteLength": 827,
+      "sha256": "84dbcbb30c0909cb309154826df7c80d816fe9db90584a8af880eacfc70ceba9"
+    },
+    {
+      "file": "pact-room.js",
+      "byteLength": 5791,
+      "sha256": "d94a3d19bab8fe69bf9d3f2dac5a0555e268af7327855c5a675e53149d4355c6"
+    },
+    {
+      "file": "relic-data.js",
+      "byteLength": 9135,
+      "sha256": "fa4cdd27c3b3b9d2b61df3bc346a4123e9d3f70f58afdc16cd626411d6bdfa59"
+    },
+    {
+      "file": "relic-runtime.js",
+      "byteLength": 9127,
+      "sha256": "87e02a9a1519aa5c9c621e23fabe5400cfda8274c1aa39c50cd471478e642d97"
+    },
+    {
+      "file": "room-pity.js",
+      "byteLength": 1075,
+      "sha256": "4b25c0160a9d339248a969627b7a82c93b464966b671d21c9e30f2e83c70cb76"
+    },
+    {
+      "file": "vault-room.js",
+      "byteLength": 10717,
+      "sha256": "6623bbeb423e2540657f0fe40e81a78d2b5966a237195b4e71d8be34d4a7702c"
+    }
+  ],
+  "canonicalData": {
+    "allowedStatuses": [
+      "READY_FOR_IMPLEMENTATION",
+      "BLOCKED_BY_UNRESOLVED_SOURCE",
+      "BLOCKED_BY_REPLACEMENT_POLICY",
+      "REQUIRES_TRANSACTION_PHASE",
+      "NOT_AN_ACTIVE_RELIC_SOURCE"
+    ],
+    "sourceCount": 11,
+    "sources": [
+      {
+        "sourceId": "vault-standard-chest",
+        "status": "BLOCKED_BY_UNRESOLVED_SOURCE",
+        "trigger": "Guardian defeated, surviving Vault chest opened",
+        "rewardType": "not_active_relic_source",
+        "offerChoiceCount": 0,
+        "candidatePool": [],
+        "rarityPolicy": null,
+        "fallback": "standard chest outcome plus fixed Vault gold bonus; never a relic replacement",
+        "unresolvedDependencies": "UNRESOLVED_ACTIVE_RELIC_SOURCE",
+        "sourceEvidence": [
+          "vault-room.js:isVaultChestAvailable only guards chest interaction",
+          "game.js:openChest routes Vault chests to lootTablesApi.rollChestOutcome",
+          "loot-tables.js:rollChestOutcome has no relic outcome"
+        ]
+      },
+      {
+        "sourceId": "arena-reward-cache",
+        "status": "READY_FOR_IMPLEMENTATION",
+        "trigger": "all Blood Arena waves cleared",
+        "rewardType": "special_room_reward",
+        "offerChoiceCount": "3 + extraRelicChoices",
+        "candidatePool": "canonical rare+ relics",
+        "rarityPolicy": "non-boss depth formula",
+        "fallback": "opened empty stored cache grants 60 gold",
+        "unresolvedDependencies": "READY_FOR_IMPLEMENTATION",
+        "sourceEvidence": [
+          "game.js:spawnArenaRewardChest",
+          "game.js:openStoredRelicChest",
+          "game.js:grantGold(60)"
+        ]
+      },
+      {
+        "sourceId": "crossroads-power",
+        "status": "REQUIRES_TRANSACTION_PHASE",
+        "trigger": "player confirms POWER chest and closes MERCY",
+        "rewardType": "special_room_transaction",
+        "offerChoiceCount": "3 + extraRelicChoices",
+        "candidatePool": "canonical epic/legendary/mythic relics",
+        "rarityPolicy": "non-boss depth formula with Epic+ fallback",
+        "fallback": "source-local 80 gold fallback",
+        "unresolvedDependencies": "REQUIRES_TRANSACTION_PHASE",
+        "sourceEvidence": [
+          "game.js:openCrossroadsPowerChest",
+          "game.js:CROSSROADS_POWER_HP_COST_MULTIPLIER=0.15",
+          "game.js:grantGold(80)"
+        ]
+      },
+      {
+        "sourceId": "merchant-relic-slot",
+        "status": "REQUIRES_TRANSACTION_PHASE",
+        "trigger": "Merchant inventory initialization and paid purchase",
+        "rewardType": "merchant_transaction",
+        "offerChoiceCount": 1,
+        "candidatePool": "rarity-tier pool, preferring unowned relics",
+        "rarityPolicy": {
+          "normal": 60,
+          "rare": 25,
+          "epic": 12,
+          "legendary": 3
+        },
+        "fallback": "full inventory enters Merchant swap transaction",
+        "unresolvedDependencies": "REQUIRES_TRANSACTION_PHASE",
+        "sourceEvidence": [
+          "game.js:MERCHANT_RELIC_TIERS",
+          "game.js:generateMerchantSlots",
+          "camp-runtime.js:tryBuyRelicFromMerchant"
+        ]
+      },
+      {
+        "sourceId": "merchant-reserved-relic",
+        "status": "REQUIRES_TRANSACTION_PHASE",
+        "trigger": "reserve live slot with 25 percent deposit; later pay remainder",
+        "rewardType": "merchant_transaction",
+        "offerChoiceCount": 1,
+        "candidatePool": "inherits original Merchant relic slot",
+        "rarityPolicy": "inherits original Merchant relic slot",
+        "fallback": "full inventory enters Merchant swap transaction",
+        "unresolvedDependencies": "REQUIRES_TRANSACTION_PHASE",
+        "sourceEvidence": [
+          "game.js:MERCHANT_RESERVE_DEPOSIT_RATIO=0.25",
+          "camp-runtime.js:tryReserveRelicFromMerchant",
+          "camp-runtime.js:tryBuyReservedRelicFromMerchant"
+        ]
+      },
+      {
+        "sourceId": "merchant-black-market",
+        "status": "REQUIRES_TRANSACTION_PHASE",
+        "trigger": "sacrifice an owned normal or rare relic and pay service cost",
+        "rewardType": "replacement_transaction",
+        "offerChoiceCount": 1,
+        "candidatePool": "rare output for normal sacrifice; epic output for rare sacrifice",
+        "rarityPolicy": "fixed one-tier upgrade",
+        "fallback": "core behavior is replacement",
+        "unresolvedDependencies": "REQUIRES_TRANSACTION_PHASE",
+        "sourceEvidence": [
+          "camp-runtime.js:tryUseBlackMarket",
+          "game.js:eligible normal/rare Black Market inputs"
+        ]
+      },
+      {
+        "sourceId": "forge-temper",
+        "status": "READY_FOR_IMPLEMENTATION",
+        "trigger": "cleared Forge interaction; choose Temper",
+        "rewardType": "forge_operation",
+        "offerChoiceCount": 1,
+        "candidatePool": "depth-profile rare/epic/legendary/mythic legal relics",
+        "rarityPolicy": "FORGE_PROFILES by depth",
+        "fallback": "full inventory enters relic replacement UI",
+        "unresolvedDependencies": "READY_FOR_IMPLEMENTATION",
+        "sourceEvidence": [
+          "forge-room.js:FORGE_PROFILES",
+          "forge-room.js:planForgeTemper",
+          "game.js:executeForgeTemper"
+        ]
+      },
+      {
+        "sourceId": "forge-transmute",
+        "status": "REQUIRES_TRANSACTION_PHASE",
+        "trigger": "choose owned relic sacrifice, then generate outputs",
+        "rewardType": "replacement_transaction",
+        "offerChoiceCount": 3,
+        "candidatePool": "profile-allowed legal outputs excluding sacrifice",
+        "rarityPolicy": "at or above sacrificed rarity within Forge profile",
+        "fallback": "core behavior is replacement",
+        "unresolvedDependencies": "REQUIRES_TRANSACTION_PHASE",
+        "sourceEvidence": [
+          "forge-room.js:planForgeTransmute",
+          "game.js:executeForgeTransmute",
+          "game.js:forgeTransmutePending"
+        ]
+      },
+      {
+        "sourceId": "global-replacement-rewards",
+        "status": "BLOCKED_BY_REPLACEMENT_POLICY",
+        "trigger": "legal offered relic cannot fit current canonical build",
+        "rewardType": "replacement_policy",
+        "offerChoiceCount": "depends on source",
+        "candidatePool": "owned outgoing relics plus selected incoming relic",
+        "rarityPolicy": "inherits source",
+        "fallback": "cross-source state machine affects slots, unique, legendary and mythic caps",
+        "unresolvedDependencies": "BLOCKED_BY_REPLACEMENT_POLICY",
+        "sourceEvidence": [
+          "game.js:relicSwapPending",
+          "game.js:legendarySwapPending",
+          "game.js:chooseRelic"
+        ]
+      },
+      {
+        "sourceId": "pact-room",
+        "status": "NOT_AN_ACTIVE_RELIC_SOURCE",
+        "trigger": "Pact sigil interaction",
+        "rewardType": "not_active_relic_source",
+        "offerChoiceCount": 0,
+        "candidatePool": [],
+        "rarityPolicy": null,
+        "fallback": "replace or break active pact, not a relic",
+        "unresolvedDependencies": "NOT_AN_ACTIVE_RELIC_SOURCE",
+        "sourceEvidence": [
+          "pact-room.js:PACTS",
+          "game.js:applyPactChoice mutates activePacts, not relics"
+        ]
+      },
+      {
+        "sourceId": "debug-cheat-relic-picker",
+        "status": "NOT_AN_ACTIVE_RELIC_SOURCE",
+        "trigger": "debug cheat only",
+        "rewardType": "qa_only",
+        "offerChoiceCount": "catalog picker",
+        "candidatePool": "debug catalog",
+        "rarityPolicy": "none",
+        "fallback": "debug-only",
+        "unresolvedDependencies": "NOT_AN_ACTIVE_RELIC_SOURCE",
+        "sourceEvidence": [
+          "game.js:canUseDebugCheats",
+          "game.js:tryClaimDebugCheatMerchantRelic"
+        ]
+      }
+    ]
+  }
+}

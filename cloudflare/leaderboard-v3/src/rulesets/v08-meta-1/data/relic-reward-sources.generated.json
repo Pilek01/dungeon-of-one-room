@@ -14,6 +14,16 @@
       "sha256": "302c3442e6e02442f21283b073603bb051e912ac365c55541d4a1b7afe76997a"
     },
     {
+      "file": "expansion-content.js",
+      "byteLength": 3741,
+      "sha256": "56180ffa919884ea3e0dd89045063bcba6097ebd687481dc8fc2ada2f3a5a307"
+    },
+    {
+      "file": "forge-room.js",
+      "byteLength": 8316,
+      "sha256": "74980ae5a8e069336d161ef2c51ac4771ce602b899f8b120988f78de35b0b821"
+    },
+    {
       "file": "game.js",
       "byteLength": 1292796,
       "sha256": "a7d436f8cdde618e7bab802322a658d2055f201950d9ae7b4598269feff3df00"
@@ -27,6 +37,11 @@
       "file": "merchant-curation.js",
       "byteLength": 827,
       "sha256": "84dbcbb30c0909cb309154826df7c80d816fe9db90584a8af880eacfc70ceba9"
+    },
+    {
+      "file": "pact-room.js",
+      "byteLength": 5791,
+      "sha256": "d94a3d19bab8fe69bf9d3f2dac5a0555e268af7327855c5a675e53149d4355c6"
     },
     {
       "file": "relic-data.js",

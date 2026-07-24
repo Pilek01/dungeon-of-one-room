@@ -400,10 +400,17 @@ test("run-scoped Warden pity updates once, hard-pities at three, and retries saf
   assert.equal(hard.state.relicOfferState.sourceSpecificCounters.wardenDropMissStreak, 0);
   assert.deepEqual(
     pityDocument.canonicalData.deferredProfileScoped.map((entry) => entry.pityId),
-    ["warden-first-drop-depths", "forge-room-pity", "otter-room-pity"]
+    ["warden-first-drop-depths"]
   );
   assert.ok(pityDocument.canonicalData.deferredProfileScoped.every(
     (entry) => entry.reason === "DEFERRED_PROFILE_SCOPED_PITY"
+  ));
+  assert.deepEqual(
+    pityDocument.canonicalData.deferredGameSessionScoped.map((entry) => entry.pityId),
+    ["forge-room-pity", "otter-room-pity"]
+  );
+  assert.ok(pityDocument.canonicalData.deferredGameSessionScoped.every(
+    (entry) => entry.reason === "DEFERRED_GAME_SESSION_SCOPED_PITY"
   ));
 });
 

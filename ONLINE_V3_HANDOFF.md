@@ -1,4 +1,4 @@
-# Online v3 handoff - Phase 3B2B2A
+# Online v3 handoff - Phase 3B2B2B1
 
 Date: 2026-07-24
 
@@ -49,6 +49,71 @@ The Phase 3B2B2A local commit subject is:
 ```text
 Implement Online v3 standard relic offers and rarity policy
 ```
+
+The Phase 3B2B2B1 local commit subject is:
+
+```text
+Implement Online v3 Otter relic reward policy
+```
+
+## Phase 3B2B2B1 outcome
+
+Phase 3B2B2B1 audits 12 active or suspected special relic sources and
+implements only the exact Otter Crimson-chest reward in the disconnected
+`test-only` ruleset.
+
+Vault stopped at `UNRESOLVED_ACTIVE_RELIC_SOURCE`: `vault-room.js` controls
+Guardian/chest availability, while `game.js:openChest` uses
+`lootTablesApi.rollChestOutcome`, whose active table has no relic result. No
+Vault relic slot, pool, rarity policy, RNG or synthetic test success was
+invented.
+
+Otter now receives one source-bound `RoomRewardEnvelopeV3` slot after an
+already-issued legal Otter directive. It offers up to nine unique canonical
+rare+ choices using the exact non-boss depth rarity formula and independent
+Otter RNG namespaces. It reuses `selectRegularRelic`, canonical build
+validation and the shared eight-field public choice projection. Empty pools
+fail closed; replacement-dependent full-build behavior remains deferred. The
+room scheduler and its game-session-scoped pity remain unchanged.
+
+The previous Phase 3B2B2A hash was:
+
+```text
+sha256:fdfe7524ecee5c597f4e1fa87bddef1165c23291edc82092cfa12e2cc7b244a9
+```
+
+The Phase 3B2B2B1 hash is:
+
+```text
+sha256:154cdecaf014a21fffa7a5e02953e1353d126b24f700f39efcbc2f9ea5c66003
+```
+
+The descriptor remains `test-only`; active endpoints still use the fixture
+ruleset. The browser game, client modules, D1, `recent_ops_json`, Wrangler and
+HTTP contracts are unchanged.
+
+Verification adds exactly 50 fixtures, 3000 seeded Otter offer/selection
+property cases and 250 illegal-selection immutability cases. The maximum
+public Otter payload is 2271 bytes; Vault payload is not applicable.
+
+Phase 3B2B2B1 validation:
+
+```text
+generator drift check:       PASS
+unit/fixture tests:          331 pass, 0 fail
+real runtime/D1 tests:         9 pass, 0 fail
+combined:                    340 pass, 0 fail
+headed game baseline smoke: PASS
+```
+
+Detailed record:
+
+```text
+docs/ONLINE_V3_PHASE3B2B2B1.md
+```
+
+Next recommended phase: Arena reward policy, before the transaction-heavy
+Crossroads/Merchant/Forge/replacement work.
 
 ## Phase 3B2B2A outcome
 

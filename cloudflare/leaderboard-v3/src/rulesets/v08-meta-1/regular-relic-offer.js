@@ -2,6 +2,7 @@ import catalogDocument from "./data/relic-catalog.generated.json" with { type: "
 import pityPolicyDocument from "./data/relic-pity-policy.generated.json" with { type: "json" };
 import rarityPolicyDocument from "./data/relic-rarity-policy.generated.json" with { type: "json" };
 import regularPolicyDocument from "./data/regular-relic-offer-policy.generated.json" with { type: "json" };
+import otterPolicyDocument from "./data/otter-relic-offer-policy.generated.json" with { type: "json" };
 import { assertMetaStateV08, cloneMetaStateV08 } from "./meta-state.js";
 import {
   applyRelicAcquisition,
@@ -25,6 +26,11 @@ const catalog = catalogDocument.canonicalData;
 const pityPolicy = pityPolicyDocument.canonicalData;
 const rarityPolicy = rarityPolicyDocument.canonicalData;
 const policy = regularPolicyDocument.canonicalData;
+const otterPolicy = otterPolicyDocument.canonicalData;
+const policiesBySourceId = new Map([
+  [policy.implementedSourceId, policy],
+  [otterPolicy.sourceId, otterPolicy]
+]);
 const ONE_MILLION = 1_000_000;
 const wardenPity = pityPolicy.implemented.find(
   (entry) => entry.sourceId === policy.implementedSourceId
@@ -145,6 +151,33 @@ async function rollRarity(state, context, tier, counter) {
   return "normal";
 }
 
+async function rollOtterRarity(state, context, depth, counter) {
+  const rarity = otterPolicy.rarityPolicy;
+  const depthBonus = Math.floor(depth / rarity.depthBonusDivisor);
+  const legendaryChance = rarity.legendaryBase + depthBonus * rarity.legendaryPerDepthBonus;
+  const epicChance = rarity.epicBase + depthBonus * rarity.epicPerDepthBonus;
+  const mythicChance = Math.min(
+    rarity.mythicChanceMaximum,
+    legendaryChance * rarity.mythicRelativeToLegendaryChance
+  );
+  const roll = await randomInt(
+    state,
+    context,
+    0,
+    ONE_MILLION - 1,
+    "otter-relic-offer-rarity",
+    counter
+  );
+  const threshold = (chance) => Math.round(chance * ONE_MILLION);
+  if (roll < threshold(mythicChance)) return "mythic";
+  if (roll < threshold(mythicChance + legendaryChance)) return "legendary";
+  if (roll < threshold(mythicChance + legendaryChance + epicChance)) return "epic";
+  if (roll < threshold(mythicChance + legendaryChance + epicChance + rarity.rareChance)) {
+    return "rare";
+  }
+  return "normal";
+}
+
 function candidatePool(state, tier) {
   const allowedRarities = unlockedRarities(tier);
   return catalog.relics.filter((relic) => (
@@ -158,6 +191,19 @@ export function getRegularRelicCandidatePoolV08(state, depth) {
   const tier = rarityTierForDepth(depth);
   if (!tier) return [];
   return candidatePool(state, tier).map((entry) => entry.relicId);
+}
+
+function otterCandidatePool(state) {
+  const allowedRarities = new Set(otterPolicy.allowedRarities);
+  return catalog.relics.filter((relic) => (
+    allowedRarities.has(relic.rarity) &&
+    relic.acquisitionSources.includes(otterPolicy.candidateAcquisitionSource) &&
+    canAcquireRelic(state.build, relic.relicId).allowed
+  ));
+}
+
+export function getOtterRelicCandidatePoolV08(state) {
+  return otterCandidatePool(state).map((entry) => entry.relicId);
 }
 
 async function chooseRelics(state, context, tier) {
@@ -200,6 +246,46 @@ async function chooseRelics(state, context, tier) {
   return { pool, selected };
 }
 
+async function chooseOtterRelics(state, context, depth) {
+  const pool = otterCandidatePool(state);
+  if (pool.length === 0) throw new TypeError(otterPolicy.emptyPoolBehavior);
+  const selected = [];
+  const used = new Set();
+  for (let index = 0; index < otterPolicy.offerChoiceCount; index += 1) {
+    const rarity = await rollOtterRarity(state, context, depth, index);
+    let candidates = pool.filter(
+      (entry) => entry.rarity === rarity && !used.has(entry.relicId)
+    );
+    if (candidates.length === 0) {
+      candidates = pool.filter((entry) => !used.has(entry.relicId));
+    }
+    if (candidates.length === 0) break;
+    const selectedIndex = await randomInt(
+      state,
+      context,
+      0,
+      candidates.length - 1,
+      "otter-relic-offer-candidate",
+      index
+    );
+    const selectedRelic = candidates[selectedIndex];
+    selected.push(selectedRelic);
+    used.add(selectedRelic.relicId);
+  }
+  for (let index = selected.length - 1; index > 0; index -= 1) {
+    const swapIndex = await randomInt(
+      state,
+      context,
+      0,
+      index,
+      "otter-relic-choice-order",
+      selected.length - 1 - index
+    );
+    [selected[index], selected[swapIndex]] = [selected[swapIndex], selected[index]];
+  }
+  return { pool, selected };
+}
+
 function findRewardSlot(state, request) {
   const directive = state.currentRoomDirective;
   if (!directive || typeof directive !== "object") {
@@ -220,17 +306,21 @@ function findRewardSlot(state, request) {
   if (envelope.directiveId !== directive.directiveId) {
     throw new TypeError("RELIC_REWARD_DIRECTIVE_MISMATCH");
   }
+  if (envelope.roomType !== directive.roomType) {
+    throw new TypeError("RELIC_REWARD_ROOM_TYPE_MISMATCH");
+  }
   if (envelope.consumed) throw new TypeError("RELIC_REWARD_ENVELOPE_CONSUMED");
   const slot = envelope.rewardSlots.find((entry) => entry.slotId === request.rewardSlotId);
   if (!slot) throw new TypeError("RELIC_REWARD_SLOT_UNKNOWN");
+  const sourcePolicy = policiesBySourceId.get(slot.sourceId);
+  if (!sourcePolicy) throw new TypeError("RELIC_REWARD_SOURCE_MISMATCH");
   if (
-    slot.slotType !== policy.rewardSlotType ||
-    slot.sourceType !== policy.sourceType ||
-    slot.sourceId !== policy.implementedSourceId
+    slot.slotType !== sourcePolicy.rewardSlotType ||
+    slot.sourceType !== sourcePolicy.sourceType
   ) {
     throw new TypeError("RELIC_REWARD_SOURCE_MISMATCH");
   }
-  return { directive, envelope, slot };
+  return { directive, envelope, slot, sourcePolicy };
 }
 
 function offerDigestInput(state, binding) {
@@ -268,26 +358,58 @@ export async function issueRegularRelicOffer(metaState, rawRequest = {}, context
   if (binding.slot.consumed) throw new TypeError("RELIC_REWARD_SLOT_ALREADY_CONSUMED");
   if (metaState.pendingOffer) throw new TypeError("RELIC_REWARD_PENDING_OFFER_EXISTS");
 
-  const tier = rarityTierForDepth(binding.directive.depth);
-  if (!tier) throw new TypeError("RELIC_REWARD_SOURCE_DEPTH_INVALID");
-  const drop = await rollWardenDrop(metaState, context, tier, binding.slot.slotId);
   const next = cloneMetaStateV08(metaState);
   const mutableSlot = next.currentRewardEnvelope.rewardSlots.find(
     (entry) => entry.slotId === binding.slot.slotId
   );
-  if (!drop.hit) {
-    mutableSlot.consumed = true;
-    mutableSlot.resolution = "no_drop";
-    next.relicOfferState.sourceSpecificCounters.wardenDropMissStreak =
-      drop.missStreak + 1;
-    return next;
+  let selected = [];
+  let offerIdPurpose = "relic-offer-offer-id";
+  let choiceIdPurpose = "relic-offer-choice-id";
+  if (binding.sourcePolicy === policy) {
+    const tier = rarityTierForDepth(binding.directive.depth);
+    if (!tier) throw new TypeError("RELIC_REWARD_SOURCE_DEPTH_INVALID");
+    const drop = await rollWardenDrop(metaState, context, tier, binding.slot.slotId);
+    if (!drop.hit) {
+      mutableSlot.consumed = true;
+      mutableSlot.resolution = "no_drop";
+      next.relicOfferState.sourceSpecificCounters.wardenDropMissStreak =
+        drop.missStreak + 1;
+      return next;
+    }
+    ({ selected } = await chooseRelics(metaState, context, tier));
+  } else if (binding.sourcePolicy === otterPolicy) {
+    const depth = binding.directive.depth;
+    const occurrences = Math.max(
+      0,
+      Number(metaState.specialRoomScheduleState.otterRoomsSeenThisRun) || 0
+    );
+    if (
+      binding.directive.roomType !== otterPolicy.roomType ||
+      binding.directive.roomCategory !== "special"
+    ) {
+      throw new TypeError("OTTER_RELIC_REWARD_DIRECTIVE_INVALID");
+    }
+    if (
+      depth < otterPolicy.minimumDepth ||
+      depth > otterPolicy.maximumDepth ||
+      depth % otterPolicy.excludedBossInterval === 0
+    ) {
+      throw new TypeError("OTTER_RELIC_REWARD_DEPTH_INVALID");
+    }
+    if (occurrences < 1 || occurrences > otterPolicy.maximumOccurrencesPerRun) {
+      throw new TypeError("OTTER_RELIC_REWARD_RUN_LIMIT_INVALID");
+    }
+    ({ selected } = await chooseOtterRelics(metaState, context, depth));
+    offerIdPurpose = "otter-relic-offer-id";
+    choiceIdPurpose = "otter-relic-choice-id";
+  } else {
+    throw new TypeError("RELIC_REWARD_SOURCE_MISMATCH");
   }
 
-  const { selected } = await chooseRelics(metaState, context, tier);
   const offerId = await deriveRelicOfferOpaqueIdV08(
     metaState,
     context,
-    "relic-offer-offer-id",
+    offerIdPurpose,
     0,
     "offer"
   );
@@ -297,7 +419,7 @@ export async function issueRegularRelicOffer(metaState, rawRequest = {}, context
       choiceId: await deriveRelicOfferOpaqueIdV08(
         metaState,
         context,
-        "relic-offer-choice-id",
+        choiceIdPurpose,
         index,
         "choice"
       ),
@@ -332,7 +454,9 @@ export async function issueRegularRelicOffer(metaState, rawRequest = {}, context
   next.pendingOffer = offer;
   mutableSlot.offerId = offer.offerId;
   mutableSlot.resolution = "offer_issued";
-  next.relicOfferState.sourceSpecificCounters.wardenDropMissStreak = 0;
+  if (binding.sourcePolicy === policy) {
+    next.relicOfferState.sourceSpecificCounters.wardenDropMissStreak = 0;
+  }
   next.relicOfferState.offersIssuedBySource[offer.sourceId] =
     Math.max(0, Number(next.relicOfferState.offersIssuedBySource[offer.sourceId]) || 0) + 1;
   return next;
@@ -356,6 +480,10 @@ export function assertRegularRelicOfferV08(offer) {
       throw new TypeError(`RELIC_REWARD_OFFER_INVALID:${field}`);
     }
   }
+  const offerPolicy = policiesBySourceId.get(offer.sourceId);
+  if (!offerPolicy || offer.sourceType !== offerPolicy.sourceType) {
+    throw new TypeError("RELIC_REWARD_SOURCE_MISMATCH");
+  }
   for (const field of ["issuedRevision", "expiresOnRevision"]) {
     if (!Number.isSafeInteger(offer[field]) || offer[field] < 0) {
       throw new TypeError(`RELIC_REWARD_OFFER_INVALID:${field}`);
@@ -364,7 +492,7 @@ export function assertRegularRelicOfferV08(offer) {
   if (
     !Array.isArray(offer.choices) ||
     offer.choices.length < 1 ||
-    offer.choices.length > policy.offerChoiceCount ||
+    offer.choices.length > offerPolicy.offerChoiceCount ||
     !Array.isArray(offer.publicChoices) ||
     offer.publicChoices.length !== offer.choices.length
   ) {
@@ -450,6 +578,8 @@ export async function selectRegularRelic(metaState, request = {}, context = {}) 
   }
   const choice = offer.choices.find((entry) => entry.choiceId === choiceId);
   if (!choice) throw new TypeError("RELIC_REWARD_CHOICE_UNKNOWN");
+  const offerPolicy = policiesBySourceId.get(offer.sourceId);
+  if (!offerPolicy) throw new TypeError("RELIC_REWARD_SOURCE_MISMATCH");
   const verdict = canAcquireRelic(metaState.build, choice.privateRelicId);
   if (!verdict.allowed) throw new TypeError(verdict.code);
 
@@ -457,7 +587,9 @@ export async function selectRegularRelic(metaState, request = {}, context = {}) 
   next.build = await applyRelicAcquisition(next.build, {
     relicId: choice.privateRelicId,
     acquiredRevision: next.revision,
-    acquisitionSource: "boss_drop",
+    acquisitionSource: offerPolicy === policy
+      ? "boss_drop"
+      : offerPolicy.candidateAcquisitionSource,
     sourceOfferId: offer.offerId
   }, context);
   const mutableSlot = next.currentRewardEnvelope.rewardSlots.find(
@@ -494,6 +626,7 @@ export function projectPublicRegularRelicOfferV08(offer) {
 
 export const V08_REGULAR_RELIC_OFFER_POLICY = Object.freeze({
   policy,
+  otterPolicy,
   rarityPolicy,
   pityPolicy
 });

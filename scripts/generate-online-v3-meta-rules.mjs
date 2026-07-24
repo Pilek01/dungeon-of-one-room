@@ -40,8 +40,11 @@ const SOURCE_INPUTS = Object.freeze([
       "maybeQueueOtterRoom",
       "rollRelicRarity",
       "buildRelicDraftChoices",
+      "buildOtterRoomRelicOfferIds",
+      "spawnOtterRewardChest",
       "checkRoomClearBonus",
       "openChest",
+      "openStoredRelicChest",
       "spawnArenaRewardChest",
       "openCrossroadsPowerChest",
       "generateMerchantSlots",
@@ -67,7 +70,14 @@ const SOURCE_INPUTS = Object.freeze([
   },
   {
     file: "camp-runtime.js",
-    symbols: ["state.player.gold", "Merchant buys", "spendMerchantUpgradeGold"]
+    symbols: [
+      "state.player.gold",
+      "Merchant buys",
+      "spendMerchantUpgradeGold",
+      "tryReserveRelicFromMerchant",
+      "tryBuyReservedRelicFromMerchant",
+      "tryUseBlackMarket"
+    ]
   },
   {
     file: "loot-tables.js",
@@ -110,6 +120,10 @@ const SOURCE_INPUTS = Object.freeze([
   {
     file: "vault-room.js",
     symbols: ["VAULT_ENCOUNTER_PROFILE", "isVaultChestAvailable"]
+  },
+  {
+    file: "forge-room.js",
+    symbols: ["FORGE_PROFILES", "planForgeTemper", "planForgeTransmute"]
   }
 ]);
 
@@ -130,6 +144,9 @@ const GENERATED_FILES = Object.freeze([
   "relic-rarity-policy.generated.json",
   "relic-pity-policy.generated.json",
   "regular-relic-offer-policy.generated.json",
+  "otter-relic-offer-policy.generated.json",
+  "special-relic-source-audit.generated.json",
+  "deferred-special-relic-spec.generated.json",
   "room-reward-bounds.generated.json",
   "chest-reward-bounds.generated.json"
 ]);
@@ -355,17 +372,16 @@ function buildRelicCanonicalData(records, textByFile) {
     chaosorb: "chaos-orb-gold-roll"
   };
   const acquisitionSourcesByRarity = {
-    normal: ["starting_relic", "relic_draft", "boss_drop", "merchant", "forge", "otter", "vault"],
-    rare: ["relic_draft", "boss_drop", "merchant", "forge", "otter", "vault"],
-    epic: ["relic_draft", "boss_drop", "merchant", "forge", "otter", "vault"],
-    legendary: ["relic_draft", "boss_drop", "merchant", "forge", "otter", "vault"],
+    normal: ["starting_relic", "relic_draft", "boss_drop", "merchant", "forge", "otter"],
+    rare: ["relic_draft", "boss_drop", "merchant", "forge", "otter"],
+    epic: ["relic_draft", "boss_drop", "merchant", "forge", "otter"],
+    legendary: ["relic_draft", "boss_drop", "merchant", "forge", "otter"],
     mythic: [
       "relic_draft",
       "boss_drop",
       "merchant",
       "forge",
       "otter",
-      "vault",
       "mythic_replacement_roll"
     ]
   };
@@ -566,6 +582,29 @@ function buildRegularRelicOfferCanonicalData(records, textByFile) {
     "MYTHIC_RELATIVE_TO_LEGENDARY_CHANCE"
   );
   const maximumDepth = extractNumber(gameSource, "MAX_DEPTH");
+  const otterMinimumDepth = extractNumber(gameSource, "OTTER_ROOM_MIN_DEPTH");
+  const otterMaximumPerRun = extractNumber(gameSource, "OTTER_ROOM_MAX_PER_RUN");
+  const otterOfferChoiceCount = extractNumber(gameSource, "OTTER_ROOM_RELIC_CHOICES");
+  const otterRoomChance = extractNumber(gameSource, "OTTER_ROOM_CHANCE");
+  const otterRoomChanceUltra = extractNumber(gameSource, "OTTER_ROOM_CHANCE_ULTRA");
+  const otterPityDepth = extractNumber(
+    textByFile.get("room-pity.js"),
+    "OTTER_PITY_DEPTH"
+  );
+  for (const marker of [
+    "function buildOtterRoomRelicOfferIds",
+    "function spawnOtterRewardChest",
+    "chest.type === \"otter_red\"",
+    "const fallbackGold = grantGold(50)",
+    "const depthBonus = Math.floor(state.depth / 5)",
+    "let legendaryChance = 0.02 + depthBonus * 0.008",
+    "let epicChance = 0.06 + depthBonus * 0.012",
+    "let rareChance = 0.17"
+  ]) {
+    if (!gameSource.includes(marker)) {
+      throw new Error(`SOURCE_SYMBOL_MISSING:game.js:${marker}`);
+    }
+  }
   const sourceFiles = [
     "game.js",
     "relic-data.js",
@@ -575,7 +614,10 @@ function buildRegularRelicOfferCanonicalData(records, textByFile) {
     "merchant-curation.js",
     "vault-room.js",
     "room-pity.js",
-    "camp-runtime.js"
+    "camp-runtime.js",
+    "forge-room.js",
+    "expansion-content.js",
+    "pact-room.js"
   ];
   const sources = sourceRefs(records, sourceFiles);
   const common = {
@@ -807,6 +849,444 @@ function buildRegularRelicOfferCanonicalData(records, textByFile) {
     legendaryEligible: entry.rarityWeights.legendary > 0,
     mythicEligible: entry.rarityWeights.legendary > 0
   }));
+  const publicChoiceFields = [
+    "choiceId",
+    "relicId",
+    "rarity",
+    "currentStacks",
+    "resultingStacks",
+    "slotCost",
+    "resultingSlotsUsed",
+    "resultingSlotLimit"
+  ];
+  const otterRarityPolicy = {
+    formula: "non-boss depth formula from rollRelicRarity(false)",
+    depthBonusDivisor: 5,
+    legendaryBase: 0.02,
+    legendaryPerDepthBonus: 0.008,
+    epicBase: 0.06,
+    epicPerDepthBonus: 0.012,
+    rareChance: 0.17,
+    mythicRelativeToLegendaryChance: mythicRelativeChance,
+    mythicChanceMaximum: 0.02,
+    rollOrder: ["mythic", "legendary", "epic", "rare", "normal"],
+    normalRollFallback: "all otherwise legal rare+ Otter candidates"
+  };
+  const otterOfferPolicy = {
+    offerType: "relic_reward",
+    sourceType: "otter",
+    sourceId: "otter-crimson-chest",
+    roomType: "otter",
+    rewardSlotType: "relic_offer",
+    offerChoiceCount: otterOfferChoiceCount,
+    minimumDepth: otterMinimumDepth,
+    firstEffectiveNonBossDepth: otterMinimumDepth + 1,
+    maximumDepth: maximumDepth - 1,
+    excludedBossInterval: 5,
+    maximumOccurrencesPerRun: otterMaximumPerRun,
+    allowedRarities: ["rare", "epic", "legendary", "mythic"],
+    candidateAcquisitionSource: "otter",
+    rarityPolicy: otterRarityPolicy,
+    pityPolicy: {
+      rewardOfferPity: "NONE",
+      roomScheduleRandomChance: otterRoomChance,
+      roomScheduleUltraChance: otterRoomChanceUltra,
+      roomSchedulePityDepth: otterPityDepth,
+      roomSchedulePityScope: "GAME_SESSION_SCOPED",
+      roomSchedulePityStatus: "DEFERRED_GAME_SESSION_SCOPED_PITY"
+    },
+    requestFields: ["rewardEnvelopeId", "rewardSlotId", "sourceDirectiveId"],
+    selectionRequestFields: ["offerId", "choiceId"],
+    rngPurposes: [
+      "otter-relic-offer-rarity",
+      "otter-relic-offer-candidate",
+      "otter-relic-choice-order",
+      "otter-relic-offer-id",
+      "otter-relic-choice-id"
+    ],
+    selectionPolicy: "existing selectRegularRelic; choose one canonical choice",
+    baselineSkipPolicy: "optional draft skip remains deferred with endpoint integration",
+    emptyPoolBehavior: "UNRESOLVED_EMPTY_RELIC_POOL",
+    fullPoolBehavior: "BLOCKED_BY_REPLACEMENT_POLICY",
+    staleStoredOfferFallback: "50 gold local safeguard; not implemented in this phase",
+    publicChoiceFields,
+    publicPayloadTargetBytes: 4096
+  };
+  const specialAuditFields = [
+    "sourceId",
+    "sourceCategory",
+    "legacySourceFiles",
+    "legacyFunctionOrSymbol",
+    "trigger",
+    "roomType",
+    "depthEligibility",
+    "runLimit",
+    "offerChoiceCount",
+    "candidatePool",
+    "rarityPolicy",
+    "pityPolicy",
+    "slotPolicy",
+    "selectionPolicy",
+    "emptyPoolBehavior",
+    "replacementBehavior",
+    "serverCanIssueExactly",
+    "implementedInThisPhase",
+    "deferredReason",
+    "sourceEvidence"
+  ];
+  const specialSourceAudit = [
+    {
+      sourceId: "vault-standard-chest",
+      sourceCategory: "not_active_relic_source",
+      legacySourceFiles: ["vault-room.js", "game.js", "loot-tables.js"],
+      legacyFunctionOrSymbol: "isVaultChestAvailable/openChest/rollChestOutcome",
+      trigger: "Guardian defeated, surviving Vault chest opened",
+      roomType: "vault",
+      depthEligibility: { minimum: 6, maximum: maximumDepth - 1 },
+      runLimit: "Vault schedule only; no relic reward limit exists",
+      offerChoiceCount: 0,
+      candidatePool: [],
+      rarityPolicy: null,
+      pityPolicy: { classification: "NONE" },
+      slotPolicy: "standard bounded chest claim; no relic_offer slot",
+      selectionPolicy: "none",
+      emptyPoolBehavior: "not applicable",
+      replacementBehavior: "standard chest outcome plus fixed Vault gold bonus; never a relic replacement",
+      serverCanIssueExactly: false,
+      implementedInThisPhase: false,
+      deferredReason: "UNRESOLVED_ACTIVE_RELIC_SOURCE",
+      sourceEvidence: [
+        "vault-room.js:isVaultChestAvailable only guards chest interaction",
+        "game.js:openChest routes Vault chests to lootTablesApi.rollChestOutcome",
+        "loot-tables.js:rollChestOutcome has no relic outcome"
+      ]
+    },
+    {
+      sourceId: "otter-crimson-chest",
+      sourceCategory: "special_room_reward",
+      legacySourceFiles: ["game.js", "room-pity.js", "relic-data.js", "relic-runtime.js"],
+      legacyFunctionOrSymbol: "buildOtterRoomRelicOfferIds/spawnOtterRewardChest/openChest",
+      trigger: "issued Otter directive; Crimson chest revealed after room clear",
+      roomType: "otter",
+      depthEligibility: {
+        minimum: otterMinimumDepth,
+        firstEffectiveNonBossDepth: otterMinimumDepth + 1,
+        maximum: maximumDepth - 1,
+        bossDepthsExcluded: true
+      },
+      runLimit: otterMaximumPerRun,
+      offerChoiceCount: otterOfferChoiceCount,
+      candidatePool: "canonical rare/epic/legendary/mythic relics legal for acquisitionSource=otter",
+      rarityPolicy: otterRarityPolicy,
+      pityPolicy: otterOfferPolicy.pityPolicy,
+      slotPolicy: "one RoomRewardEnvelopeV3 relic_offer slot bound to the Otter directive",
+      selectionPolicy: "existing selectRegularRelic; opaque offerId and choiceId only",
+      emptyPoolBehavior: "UNRESOLVED_EMPTY_RELIC_POOL",
+      replacementBehavior: "50 gold stale-local-offer safeguard is BLOCKED_BY_REPLACEMENT_POLICY",
+      serverCanIssueExactly: true,
+      implementedInThisPhase: true,
+      deferredReason: null,
+      sourceEvidence: [
+        "game.js:OTTER_ROOM_RELIC_CHOICES=9",
+        "game.js:buildOtterRoomRelicOfferIds filters rare+ and stores IDs",
+        "game.js:spawnOtterRewardChest reveals otter_red after clear",
+        "game.js:openChest resolves the stored Crimson choice set"
+      ]
+    },
+    {
+      sourceId: "arena-reward-cache",
+      sourceCategory: "special_room_reward",
+      legacySourceFiles: ["game.js"],
+      legacyFunctionOrSymbol: "spawnArenaRewardChest/openStoredRelicChest",
+      trigger: "all Blood Arena waves cleared",
+      roomType: "arena",
+      depthEligibility: { minimum: 1, maximum: maximumDepth - 1 },
+      runLimit: "room scheduler",
+      offerChoiceCount: "3 + extraRelicChoices",
+      candidatePool: "canonical rare+ relics",
+      rarityPolicy: "non-boss depth formula",
+      pityPolicy: { classification: "NONE" },
+      slotPolicy: "one stored arena_reward chest",
+      selectionPolicy: "choose one or skip",
+      emptyPoolBehavior: "chest is not spawned",
+      replacementBehavior: "opened empty stored cache grants 60 gold",
+      serverCanIssueExactly: true,
+      implementedInThisPhase: false,
+      deferredReason: "READY_FOR_IMPLEMENTATION",
+      sourceEvidence: [
+        "game.js:spawnArenaRewardChest",
+        "game.js:openStoredRelicChest",
+        "game.js:grantGold(60)"
+      ]
+    },
+    {
+      sourceId: "crossroads-power",
+      sourceCategory: "special_room_transaction",
+      legacySourceFiles: ["game.js"],
+      legacyFunctionOrSymbol: "armCrossroadsPowerConfirmation/openCrossroadsPowerChest",
+      trigger: "player confirms POWER chest and closes MERCY",
+      roomType: "crossroads",
+      depthEligibility: { minimum: 1, maximum: maximumDepth - 1 },
+      runLimit: "one POWER or MERCY choice per Crossroads room",
+      offerChoiceCount: "3 + extraRelicChoices",
+      candidatePool: "canonical epic/legendary/mythic relics",
+      rarityPolicy: "non-boss depth formula with Epic+ fallback",
+      pityPolicy: { classification: "NONE" },
+      slotPolicy: "transaction-bound reward slot after confirmation",
+      selectionPolicy: "choose one or skip after irreversible max-HP penalty",
+      emptyPoolBehavior: "penalty remains and 80 gold is granted",
+      replacementBehavior: "source-local 80 gold fallback",
+      serverCanIssueExactly: true,
+      implementedInThisPhase: false,
+      deferredReason: "REQUIRES_TRANSACTION_PHASE",
+      sourceEvidence: [
+        "game.js:openCrossroadsPowerChest",
+        "game.js:CROSSROADS_POWER_HP_COST_MULTIPLIER=0.15",
+        "game.js:grantGold(80)"
+      ]
+    },
+    {
+      sourceId: "merchant-relic-slot",
+      sourceCategory: "merchant_transaction",
+      legacySourceFiles: ["game.js", "merchant-curation.js", "camp-runtime.js"],
+      legacyFunctionOrSymbol: "generateMerchantSlots/chooseMerchantRelicOffer/tryBuyRelicFromMerchant",
+      trigger: "Merchant inventory initialization and paid purchase",
+      roomType: "merchant",
+      depthEligibility: { minimum: 3, maximum: maximumDepth - 1 },
+      runLimit: "one generated live relic slot per Merchant inventory",
+      offerChoiceCount: 1,
+      candidatePool: "rarity-tier pool, preferring unowned relics",
+      rarityPolicy: { normal: 60, rare: 25, epic: 12, legendary: 3 },
+      pityPolicy: { classification: "NONE" },
+      slotPolicy: "transactional inventory slot with sold state",
+      selectionPolicy: "pay canonical discounted price; swap flow when full",
+      emptyPoolBehavior: "merchantRelicSlot=null",
+      replacementBehavior: "full inventory enters Merchant swap transaction",
+      serverCanIssueExactly: true,
+      implementedInThisPhase: false,
+      deferredReason: "REQUIRES_TRANSACTION_PHASE",
+      sourceEvidence: [
+        "game.js:MERCHANT_RELIC_TIERS",
+        "game.js:generateMerchantSlots",
+        "camp-runtime.js:tryBuyRelicFromMerchant"
+      ]
+    },
+    {
+      sourceId: "merchant-reserved-relic",
+      sourceCategory: "merchant_transaction",
+      legacySourceFiles: ["game.js", "camp-runtime.js"],
+      legacyFunctionOrSymbol: "tryReserveRelicFromMerchant/tryBuyReservedRelicFromMerchant",
+      trigger: "reserve live slot with 25 percent deposit; later pay remainder",
+      roomType: "merchant",
+      depthEligibility: { minimum: 3, maximum: maximumDepth - 1 },
+      runLimit: "one persistent reservation",
+      offerChoiceCount: 1,
+      candidatePool: "inherits original Merchant relic slot",
+      rarityPolicy: "inherits original Merchant relic slot",
+      pityPolicy: { classification: "NONE" },
+      slotPolicy: "persistent reservation with deposit and remaining price",
+      selectionPolicy: "paid purchase or discard with lost deposit",
+      emptyPoolBehavior: "no reservation",
+      replacementBehavior: "full inventory enters Merchant swap transaction",
+      serverCanIssueExactly: true,
+      implementedInThisPhase: false,
+      deferredReason: "REQUIRES_TRANSACTION_PHASE",
+      sourceEvidence: [
+        "game.js:MERCHANT_RESERVE_DEPOSIT_RATIO=0.25",
+        "camp-runtime.js:tryReserveRelicFromMerchant",
+        "camp-runtime.js:tryBuyReservedRelicFromMerchant"
+      ]
+    },
+    {
+      sourceId: "merchant-black-market",
+      sourceCategory: "replacement_transaction",
+      legacySourceFiles: ["game.js", "camp-runtime.js"],
+      legacyFunctionOrSymbol: "tryUseBlackMarket",
+      trigger: "sacrifice an owned normal or rare relic and pay service cost",
+      roomType: "merchant",
+      depthEligibility: { minimum: 3, maximum: maximumDepth - 1 },
+      runLimit: "one generated Merchant service slot",
+      offerChoiceCount: 1,
+      candidatePool: "rare output for normal sacrifice; epic output for rare sacrifice",
+      rarityPolicy: "fixed one-tier upgrade",
+      pityPolicy: { classification: "NONE" },
+      slotPolicy: "atomic sacrifice, purchase, and replacement",
+      selectionPolicy: "choose owned sacrifice then transact",
+      emptyPoolBehavior: "transaction rejected and original relic retained",
+      replacementBehavior: "core behavior is replacement",
+      serverCanIssueExactly: true,
+      implementedInThisPhase: false,
+      deferredReason: "REQUIRES_TRANSACTION_PHASE",
+      sourceEvidence: [
+        "camp-runtime.js:tryUseBlackMarket",
+        "game.js:eligible normal/rare Black Market inputs"
+      ]
+    },
+    {
+      sourceId: "forge-temper",
+      sourceCategory: "forge_operation",
+      legacySourceFiles: ["game.js", "forge-room.js"],
+      legacyFunctionOrSymbol: "executeForgeTemper/planForgeTemper",
+      trigger: "cleared Forge interaction; choose Temper",
+      roomType: "forge",
+      depthEligibility: { minimum: 6, maximum: maximumDepth - 1 },
+      runLimit: "Forge used once",
+      offerChoiceCount: 1,
+      candidatePool: "depth-profile rare/epic/legendary/mythic legal relics",
+      rarityPolicy: "FORGE_PROFILES by depth",
+      pityPolicy: {
+        classification: "GAME_SESSION_SCOPED",
+        status: "DEFERRED_GAME_SESSION_SCOPED_PITY"
+      },
+      slotPolicy: "Forge operation slot, not a regular room reward",
+      selectionPolicy: "take one or decline",
+      emptyPoolBehavior: "Forge stays cold; no reward",
+      replacementBehavior: "full inventory enters relic replacement UI",
+      serverCanIssueExactly: true,
+      implementedInThisPhase: false,
+      deferredReason: "READY_FOR_IMPLEMENTATION",
+      sourceEvidence: [
+        "forge-room.js:FORGE_PROFILES",
+        "forge-room.js:planForgeTemper",
+        "game.js:executeForgeTemper"
+      ]
+    },
+    {
+      sourceId: "forge-transmute",
+      sourceCategory: "replacement_transaction",
+      legacySourceFiles: ["game.js", "forge-room.js"],
+      legacyFunctionOrSymbol: "executeForgeTransmute/planForgeTransmute",
+      trigger: "choose owned relic sacrifice, then generate outputs",
+      roomType: "forge",
+      depthEligibility: { minimum: 6, maximum: maximumDepth - 1 },
+      runLimit: "Forge used once",
+      offerChoiceCount: 3,
+      candidatePool: "profile-allowed legal outputs excluding sacrifice",
+      rarityPolicy: "at or above sacrificed rarity within Forge profile",
+      pityPolicy: { classification: "NONE" },
+      slotPolicy: "atomic sacrifice and replacement operation",
+      selectionPolicy: "choose sacrifice, then one canonical output",
+      emptyPoolBehavior: "operation rejected; original relic retained",
+      replacementBehavior: "core behavior is replacement",
+      serverCanIssueExactly: true,
+      implementedInThisPhase: false,
+      deferredReason: "REQUIRES_TRANSACTION_PHASE",
+      sourceEvidence: [
+        "forge-room.js:planForgeTransmute",
+        "game.js:executeForgeTransmute",
+        "game.js:forgeTransmutePending"
+      ]
+    },
+    {
+      sourceId: "global-replacement-rewards",
+      sourceCategory: "replacement_policy",
+      legacySourceFiles: ["game.js", "camp-runtime.js"],
+      legacyFunctionOrSymbol: "chooseRelic/relicSwapPending/legendarySwapPending",
+      trigger: "legal offered relic cannot fit current canonical build",
+      roomType: "multiple",
+      depthEligibility: { minimum: 1, maximum: maximumDepth },
+      runLimit: "per offered reward",
+      offerChoiceCount: "depends on source",
+      candidatePool: "owned outgoing relics plus selected incoming relic",
+      rarityPolicy: "inherits source",
+      pityPolicy: { classification: "NONE" },
+      slotPolicy: "must retain original reward slot until replacement settles",
+      selectionPolicy: "select outgoing relic or keep current build",
+      emptyPoolBehavior: "keep current build",
+      replacementBehavior: "cross-source state machine affects slots, unique, legendary and mythic caps",
+      serverCanIssueExactly: true,
+      implementedInThisPhase: false,
+      deferredReason: "BLOCKED_BY_REPLACEMENT_POLICY",
+      sourceEvidence: [
+        "game.js:relicSwapPending",
+        "game.js:legendarySwapPending",
+        "game.js:chooseRelic"
+      ]
+    },
+    {
+      sourceId: "pact-room",
+      sourceCategory: "not_active_relic_source",
+      legacySourceFiles: ["pact-room.js", "game.js"],
+      legacyFunctionOrSymbol: "getPactOfferDefs/applyPactChoice",
+      trigger: "Pact sigil interaction",
+      roomType: "pact",
+      depthEligibility: { minimum: 1, maximum: maximumDepth - 1 },
+      runLimit: "Pact schedule",
+      offerChoiceCount: 0,
+      candidatePool: [],
+      rarityPolicy: null,
+      pityPolicy: { classification: "NONE" },
+      slotPolicy: "pact offer, not relic offer",
+      selectionPolicy: "select a pact",
+      emptyPoolBehavior: "silent Pact chamber",
+      replacementBehavior: "replace or break active pact, not a relic",
+      serverCanIssueExactly: false,
+      implementedInThisPhase: false,
+      deferredReason: "NOT_AN_ACTIVE_RELIC_SOURCE",
+      sourceEvidence: [
+        "pact-room.js:PACTS",
+        "game.js:applyPactChoice mutates activePacts, not relics"
+      ]
+    },
+    {
+      sourceId: "debug-cheat-relic-picker",
+      sourceCategory: "qa_only",
+      legacySourceFiles: ["game.js"],
+      legacyFunctionOrSymbol: "tryClaimDebugCheatMerchantRelic/tryDebugAddRelicBySlot",
+      trigger: "debug cheat only",
+      roomType: "debug",
+      depthEligibility: { minimum: 0, maximum: maximumDepth },
+      runLimit: "debug-only",
+      offerChoiceCount: "catalog picker",
+      candidatePool: "debug catalog",
+      rarityPolicy: "none",
+      pityPolicy: { classification: "NONE" },
+      slotPolicy: "none",
+      selectionPolicy: "direct debug mutation",
+      emptyPoolBehavior: "debug rejection",
+      replacementBehavior: "debug-only",
+      serverCanIssueExactly: false,
+      implementedInThisPhase: false,
+      deferredReason: "NOT_AN_ACTIVE_RELIC_SOURCE",
+      sourceEvidence: [
+        "game.js:canUseDebugCheats",
+        "game.js:tryClaimDebugCheatMerchantRelic"
+      ]
+    }
+  ];
+  for (const source of specialSourceAudit) {
+    if (Object.keys(source).join(",") !== specialAuditFields.join(",")) {
+      throw new Error(`SPECIAL_RELIC_SOURCE_SCHEMA_MISMATCH:${source.sourceId}`);
+    }
+  }
+  const deferredStatusValues = [
+    "READY_FOR_IMPLEMENTATION",
+    "BLOCKED_BY_UNRESOLVED_SOURCE",
+    "BLOCKED_BY_REPLACEMENT_POLICY",
+    "REQUIRES_TRANSACTION_PHASE",
+    "NOT_AN_ACTIVE_RELIC_SOURCE"
+  ];
+  const deferredSpecs = specialSourceAudit
+    .filter((source) => !source.implementedInThisPhase)
+    .map((source) => ({
+      sourceId: source.sourceId,
+      status: source.deferredReason === "UNRESOLVED_ACTIVE_RELIC_SOURCE"
+        ? "BLOCKED_BY_UNRESOLVED_SOURCE"
+        : source.deferredReason,
+      trigger: source.trigger,
+      rewardType: source.sourceCategory,
+      offerChoiceCount: source.offerChoiceCount,
+      candidatePool: source.candidatePool,
+      rarityPolicy: source.rarityPolicy,
+      fallback: source.replacementBehavior,
+      unresolvedDependencies: source.deferredReason,
+      sourceEvidence: source.sourceEvidence
+    }));
+  for (const spec of deferredSpecs) {
+    if (!deferredStatusValues.includes(spec.status)) {
+      throw new Error(`SPECIAL_RELIC_DEFERRED_STATUS_INVALID:${spec.sourceId}:${spec.status}`);
+    }
+  }
   return new Map([
     ["relic-reward-sources.generated.json", {
       ...common,
@@ -856,18 +1336,20 @@ function buildRegularRelicOfferCanonicalData(records, textByFile) {
             legacyState: "wardenFirstDropDepths",
             storageKey: "dungeonOneRoomWardenFirstDropDepths",
             reason: "DEFERRED_PROFILE_SCOPED_PITY"
-          },
+          }
+        ],
+        deferredGameSessionScoped: [
           {
             pityId: "forge-room-pity",
             legacyState: "forgeSeenThisGame/forgePityUsedThisGame",
             storageKey: "game save state",
-            reason: "DEFERRED_PROFILE_SCOPED_PITY"
+            reason: "DEFERRED_GAME_SESSION_SCOPED_PITY"
           },
           {
             pityId: "otter-room-pity",
             legacyState: "otterSeenThisGame/otterPityUsedThisGame",
             storageKey: "game save state",
-            reason: "DEFERRED_PROFILE_SCOPED_PITY"
+            reason: "DEFERRED_GAME_SESSION_SCOPED_PITY"
           }
         ]
       }
@@ -896,17 +1378,34 @@ function buildRegularRelicOfferCanonicalData(records, textByFile) {
         ],
         emptyPoolBehavior: "UNRESOLVED_EMPTY_RELIC_POOL",
         fullPoolBehavior: "DEFERRED_REPLACEMENT_REWARD",
-        publicChoiceFields: [
-          "choiceId",
-          "relicId",
-          "rarity",
-          "currentStacks",
-          "resultingStacks",
-          "slotCost",
-          "resultingSlotsUsed",
-          "resultingSlotLimit"
-        ],
+        publicChoiceFields,
         publicPayloadTargetBytes: 2048
+      }
+    }],
+    ["otter-relic-offer-policy.generated.json", {
+      ...common,
+      canonicalData: otterOfferPolicy
+    }],
+    ["special-relic-source-audit.generated.json", {
+      ...common,
+      canonicalData: {
+        auditFields: specialAuditFields,
+        sourceCount: specialSourceAudit.length,
+        implementedSourceIds: specialSourceAudit
+          .filter((source) => source.implementedInThisPhase)
+          .map((source) => source.sourceId),
+        unresolvedSourceIds: specialSourceAudit
+          .filter((source) => source.deferredReason === "UNRESOLVED_ACTIVE_RELIC_SOURCE")
+          .map((source) => source.sourceId),
+        sources: specialSourceAudit
+      }
+    }],
+    ["deferred-special-relic-spec.generated.json", {
+      ...common,
+      canonicalData: {
+        allowedStatuses: deferredStatusValues,
+        sourceCount: deferredSpecs.length,
+        sources: deferredSpecs
       }
     }]
   ]);
@@ -1796,7 +2295,7 @@ function buildCanonicalData(records, textByFile) {
     schemaVersion: 3,
     rulesetId: RULESET_ID,
     sourceCommit,
-    purpose: "Phase 3B1 room progression, Phase 3B2A gold, Phase 3B2B1 starting relics, and Phase 3B2B2A standard relic offers",
+    purpose: "Phase 3B1 room progression, Phase 3B2A gold, Phase 3B2B1 starting relics, Phase 3B2B2A standard relic offers, and Phase 3B2B2B1 Otter relic rewards",
     sources: records
   };
   const relicData = buildRelicCanonicalData(records, textByFile);

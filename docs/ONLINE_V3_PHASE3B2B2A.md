@@ -168,3 +168,8 @@ Forge, replacement rewards, mutator/skill/elixir offers, Camp, lives, score,
 leaderboard, relic effect activation, Worker endpoints, client/game
 integration, push, or deployment. The next planned phase is 3B2B2B for
 special relic sources.
+
+Phase 3B2B2B1 subsequently audited these deferred entries. It proved that the
+active Vault chest is not a relic source and therefore left it unresolved,
+while implementing only the exact Otter Crimson-chest reward policy. See
+`docs/ONLINE_V3_PHASE3B2B2B1.md`.

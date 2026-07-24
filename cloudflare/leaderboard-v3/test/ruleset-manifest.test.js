@@ -117,7 +117,7 @@ test("generated Phase 3B1, 3B2A and 3B2B1 data is canonical and source-bound", a
   }
 });
 
-test("source manifest contains only active Phase 3B1/3B2A/3B2B1/3B2B2A baseline sources", async () => {
+test("source manifest contains only active through Phase 3B2B2B1 baseline sources", async () => {
   const manifest = JSON.parse(
     await readFile(path.join(DATA_ROOT, "source-manifest.generated.json"), "utf8")
   );
@@ -128,6 +128,7 @@ test("source manifest contains only active Phase 3B1/3B2A/3B2B1/3B2B2A baseline 
       "camp-data.js",
       "camp-runtime.js",
       "expansion-content.js",
+      "forge-room.js",
       "game.js",
       "loot-tables.js",
       "merchant-curation.js",
@@ -142,7 +143,6 @@ test("source manifest contains only active Phase 3B1/3B2A/3B2B1/3B2B2A baseline 
   const forbiddenDeferredSources = [
     "skills-data.js",
     "elixir-data.js",
-    "forge-room.js",
     "pact-effects.js"
   ];
   for (const forbidden of forbiddenDeferredSources) {

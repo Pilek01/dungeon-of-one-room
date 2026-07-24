@@ -1,4 +1,5 @@
 import chestBoundsDocument from "./data/chest-reward-bounds.generated.json" with { type: "json" };
+import otterRelicOfferPolicyDocument from "./data/otter-relic-offer-policy.generated.json" with { type: "json" };
 import regularRelicOfferPolicyDocument from "./data/regular-relic-offer-policy.generated.json" with { type: "json" };
 import rewardBoundsDocument from "./data/room-reward-bounds.generated.json" with { type: "json" };
 import {
@@ -10,6 +11,7 @@ import {
 import { assertCanonicalRelicBuildDigestV08 } from "./relic-policy.js";
 
 const chestBounds = chestBoundsDocument.canonicalData;
+const otterRelicOfferPolicy = otterRelicOfferPolicyDocument.canonicalData;
 const regularRelicOfferPolicy = regularRelicOfferPolicyDocument.canonicalData;
 const rewardBounds = rewardBoundsDocument.canonicalData;
 const HISTORY_LIMIT = rewardBounds.boundedHistoryLimit;
@@ -19,7 +21,7 @@ export const REWARD_POLICY_SPEC = Object.freeze({
   authority: "SERVER_ISSUED",
   claimPolicyVersion: rewardBounds.policyVersion,
   selectionBinding: "runId+rulesetHash+revision+roomDirectiveId+roomNonce+envelopeId",
-  implementationStatus: "phase-3b2b2a-test-only",
+  implementationStatus: "phase-3b2b2b1-test-only",
   deferred: Object.freeze([
     "mutator-offers",
     "skill-offers",
@@ -120,20 +122,33 @@ function claimSlots(roomType) {
 }
 
 function relicOfferSlots(directive, envelopeId) {
+  let sourcePolicy = null;
+  let offerPolicyRef = null;
   if (
-    directive.roomCategory !== "boss" ||
-    directive.depth < regularRelicOfferPolicy.minimumDepth ||
-    directive.depth > regularRelicOfferPolicy.maximumDepth ||
-    directive.depth % regularRelicOfferPolicy.bossInterval !== 0
+    directive.roomCategory === "boss" &&
+    directive.depth >= regularRelicOfferPolicy.minimumDepth &&
+    directive.depth <= regularRelicOfferPolicy.maximumDepth &&
+    directive.depth % regularRelicOfferPolicy.bossInterval === 0
   ) {
-    return [];
+    sourcePolicy = regularRelicOfferPolicy;
+    offerPolicyRef = "regular-relic-offer-policy.generated.json";
+  } else if (
+    directive.roomCategory === "special" &&
+    directive.roomType === otterRelicOfferPolicy.roomType &&
+    directive.depth >= otterRelicOfferPolicy.minimumDepth &&
+    directive.depth <= otterRelicOfferPolicy.maximumDepth &&
+    directive.depth % otterRelicOfferPolicy.excludedBossInterval !== 0
+  ) {
+    sourcePolicy = otterRelicOfferPolicy;
+    offerPolicyRef = "otter-relic-offer-policy.generated.json";
   }
+  if (!sourcePolicy) return [];
   return [{
     slotId: `relic_slot_${envelopeId.slice(-16)}`,
-    slotType: regularRelicOfferPolicy.rewardSlotType,
-    sourceType: regularRelicOfferPolicy.sourceType,
-    sourceId: regularRelicOfferPolicy.implementedSourceId,
-    offerPolicyRef: "regular-relic-offer-policy.generated.json",
+    slotType: sourcePolicy.rewardSlotType,
+    sourceType: sourcePolicy.sourceType,
+    sourceId: sourcePolicy.implementedSourceId || sourcePolicy.sourceId,
+    offerPolicyRef,
     consumed: false,
     offerId: null,
     resolution: null

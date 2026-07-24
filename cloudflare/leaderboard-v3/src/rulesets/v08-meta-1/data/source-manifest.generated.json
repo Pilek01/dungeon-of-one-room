@@ -2,7 +2,7 @@
   "schemaVersion": 3,
   "rulesetId": "v08-meta-1",
   "sourceCommit": "f98820c99066d810169e100beb23a54a332734bd",
-  "purpose": "Phase 3B1 room progression, Phase 3B2A gold, Phase 3B2B1 starting relics, and Phase 3B2B2A standard relic offers",
+  "purpose": "Phase 3B1 room progression, Phase 3B2A gold, Phase 3B2B1 starting relics, Phase 3B2B2A standard relic offers, and Phase 3B2B2B1 Otter relic rewards",
   "sources": [
     {
       "file": "boss-campaign.js",
@@ -29,7 +29,10 @@
       "evidenceSymbols": [
         "state.player.gold",
         "Merchant buys",
-        "spendMerchantUpgradeGold"
+        "spendMerchantUpgradeGold",
+        "tryReserveRelicFromMerchant",
+        "tryBuyReservedRelicFromMerchant",
+        "tryUseBlackMarket"
       ]
     },
     {
@@ -39,6 +42,16 @@
       "evidenceSymbols": [
         "ROOM_TYPES",
         "getRoomWeightMap"
+      ]
+    },
+    {
+      "file": "forge-room.js",
+      "byteLength": 8316,
+      "sha256": "74980ae5a8e069336d161ef2c51ac4771ce602b899f8b120988f78de35b0b821",
+      "evidenceSymbols": [
+        "FORGE_PROFILES",
+        "planForgeTemper",
+        "planForgeTransmute"
       ]
     },
     {
@@ -64,8 +77,11 @@
         "maybeQueueOtterRoom",
         "rollRelicRarity",
         "buildRelicDraftChoices",
+        "buildOtterRoomRelicOfferIds",
+        "spawnOtterRewardChest",
         "checkRoomClearBonus",
         "openChest",
+        "openStoredRelicChest",
         "spawnArenaRewardChest",
         "openCrossroadsPowerChest",
         "generateMerchantSlots",

@@ -1,6 +1,6 @@
 # Online v3 v0.8 meta-progression authority matrix
 
-Status: Phase 3B2B2A standard relic-offer implementation; ruleset
+Status: Phase 3B2B2B1 special relic-source implementation; ruleset
 `v08-meta-1` remains test-only and disconnected from production endpoints.
 
 The classification describes what Online v3 can honestly validate while combat remains local. “Exact” means derivable from canonical server state plus accepted operations; it does not mean the server observed combat. Scenario overrides are QA-only and are excluded from ranked ruleset generation.
@@ -144,6 +144,22 @@ authorities:
 | Warden run pity | `SERVER_DERIVED` | Serialized run miss streak, +0.15 per miss, 0.95 cap and guaranteed fourth attempt |
 | Common public relic choice | `SERVER_DERIVED` | Eight allowlisted display/result fields shared by starting and regular offers; private map and digest excluded |
 
-The browser client, active Worker endpoint, special relic sources, persistent
+The browser client, active Worker endpoint, other special relic sources, persistent
 first-drop pity, Merchant, and relic effect activation remain outside this
 implementation.
+
+## Phase 3B2B2B1 implemented authority additions
+
+| Feature | Authority | Implemented validation and storage |
+|---|---|---|
+| Otter reward slot | `SERVER_ISSUED` | One slot only for a legal, current, unconsumed Otter directive/envelope at a non-boss depth 20-99 and occurrence 1-3 |
+| Otter candidate pool | `SERVER_DERIVED` | Canonical rare+ `otter` source pool filtered through ownership, stack, unique, exclusion, legendary/mythic and slot rules |
+| Otter rarity and RNG | `SERVER_DERIVED` | Exact non-boss depth formula, up to nine unique choices and Otter-only RNG namespaces |
+| Otter selection | `SERVER_DERIVED` | Existing opaque `selectRegularRelic` path, canonical build source `otter`, one-time slot consumption and bounded receipt |
+| Vault relic source | unresolved | No active baseline relic outcome; no relic slot, policy, RNG or offer invented |
+
+Otter room chance and depth-41 pity remain owned by the Phase 3B1 scheduler.
+The saved `otterSeenThisGame`/`otterPityUsedThisGame` state is
+`GAME_SESSION_SCOPED` and deferred. Arena, Crossroads, Merchant, Forge and
+replacement operations retain their generated deferred status. The browser
+client, active endpoints, D1 and production ruleset remain unchanged.
