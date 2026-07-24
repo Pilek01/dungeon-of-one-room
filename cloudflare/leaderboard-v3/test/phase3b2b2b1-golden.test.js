@@ -52,11 +52,13 @@ const requiredFixtureFields = [
   "expectedRulesetHash"
 ];
 const allowedDeferredStatuses = new Set([
+  "IMPLEMENTED",
+  "NOT_AN_ACTIVE_RELIC_SOURCE",
   "READY_FOR_IMPLEMENTATION",
-  "BLOCKED_BY_UNRESOLVED_SOURCE",
-  "BLOCKED_BY_REPLACEMENT_POLICY",
   "REQUIRES_TRANSACTION_PHASE",
-  "NOT_AN_ACTIVE_RELIC_SOURCE"
+  "BLOCKED_BY_REPLACEMENT_POLICY",
+  "UNRESOLVED_ACTIVE_RELIC_SOURCE",
+  "NOT_PRODUCTION_SOURCE"
 ]);
 
 function deterministicOracle(seed, controls = {}, purposeLog = []) {
@@ -189,7 +191,7 @@ test("special relic audit is complete and uses the required exact schema", () =>
   const audit = auditDocument.canonicalData;
   assert.equal(audit.sourceCount, 12);
   assert.deepEqual(audit.implementedSourceIds, ["otter-crimson-chest"]);
-  assert.deepEqual(audit.unresolvedSourceIds, ["vault-standard-chest"]);
+  assert.deepEqual(audit.unresolvedSourceIds, []);
   for (const source of audit.sources) {
     assert.deepEqual(Object.keys(source), audit.auditFields);
     assert.ok(source.sourceEvidence.length > 0);
@@ -224,11 +226,11 @@ test("deferred source specification is executable and status-complete", () => {
   }
 });
 
-test("Vault is proven unresolved and receives no relic offer slot", async () => {
+test("Vault is proven not to be an active relic source and receives no relic offer slot", async () => {
   const vault = auditDocument.canonicalData.sources.find(
     (entry) => entry.sourceId === "vault-standard-chest"
   );
-  assert.equal(vault.deferredReason, "UNRESOLVED_ACTIVE_RELIC_SOURCE");
+  assert.equal(vault.deferredReason, "NOT_AN_ACTIVE_RELIC_SOURCE");
   assert.equal(vault.serverCanIssueExactly, false);
   assert.equal(vault.offerChoiceCount, 0);
   const prepared = await otterState({ runId: "vault_no_slot" });
@@ -464,7 +466,7 @@ for (const fixture of fixtures) {
         (entry) => entry.sourceId === "vault-standard-chest"
       );
       assert.equal(vault.implementedInThisPhase, false);
-      assert.equal(vault.deferredReason, "UNRESOLVED_ACTIVE_RELIC_SOURCE");
+      assert.equal(vault.deferredReason, "NOT_AN_ACTIVE_RELIC_SOURCE");
     } else {
       const otter = auditDocument.canonicalData.sources.find(
         (entry) => entry.sourceId === "otter-crimson-chest"

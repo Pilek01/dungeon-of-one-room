@@ -156,7 +156,8 @@ implementation.
 | Otter candidate pool | `SERVER_DERIVED` | Canonical rare+ `otter` source pool filtered through ownership, stack, unique, exclusion, legendary/mythic and slot rules |
 | Otter rarity and RNG | `SERVER_DERIVED` | Exact non-boss depth formula, up to nine unique choices and Otter-only RNG namespaces |
 | Otter selection | `SERVER_DERIVED` | Existing opaque `selectRegularRelic` path, canonical build source `otter`, one-time slot consumption and bounded receipt |
-| Vault relic source | unresolved | No active baseline relic outcome; no relic slot, policy, RNG or offer invented |
+| Vault relic source | `NOT_AN_ACTIVE_RELIC_SOURCE` | Complete active chest outcome and relic-draft call graphs contain no Vault relic path; generator requires explicit review on future drift |
+| Arena relic source | `BLOCKED_BY_REPLACEMENT_POLICY` | Active two-wave rare+ cache is exact in baseline, but choice count depends on noncanonical Ascension state and full-slot selection enters deferred global replacement |
 
 Otter room chance and depth-41 pity remain owned by the Phase 3B1 scheduler.
 The saved `otterSeenThisGame`/`otterPityUsedThisGame` state is

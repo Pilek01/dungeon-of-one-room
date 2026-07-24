@@ -91,9 +91,7 @@
     "implementedSourceIds": [
       "otter-crimson-chest"
     ],
-    "unresolvedSourceIds": [
-      "vault-standard-chest"
-    ],
+    "unresolvedSourceIds": [],
     "sources": [
       {
         "sourceId": "vault-standard-chest",
@@ -123,11 +121,11 @@
         "replacementBehavior": "standard chest outcome plus fixed Vault gold bonus; never a relic replacement",
         "serverCanIssueExactly": false,
         "implementedInThisPhase": false,
-        "deferredReason": "UNRESOLVED_ACTIVE_RELIC_SOURCE",
+        "deferredReason": "NOT_AN_ACTIVE_RELIC_SOURCE",
         "sourceEvidence": [
           "vault-room.js:isVaultChestAvailable only guards chest interaction",
           "game.js:openChest routes Vault chests to lootTablesApi.rollChestOutcome",
-          "loot-tables.js:rollChestOutcome has no relic outcome"
+          "loot-tables.js:rollChestOutcome has exactly health/healing/attack/armor/potion/map_fragment/gold/trap outcomes"
         ]
       },
       {
@@ -202,27 +200,31 @@
         "trigger": "all Blood Arena waves cleared",
         "roomType": "arena",
         "depthEligibility": {
-          "minimum": 1,
-          "maximum": 99
+          "minimum": 40,
+          "maximum": 99,
+          "bossDepthsExcluded": true
         },
-        "runLimit": "room scheduler",
+        "runLimit": "no explicit per-run cap; eligible non-boss rooms use the room scheduler",
         "offerChoiceCount": "3 + extraRelicChoices",
-        "candidatePool": "canonical rare+ relics",
-        "rarityPolicy": "non-boss depth formula",
+        "candidatePool": "baseline rare/epic/legendary/mythic draft-eligible relics; slot capacity is resolved only after selection",
+        "rarityPolicy": "non-boss depth formula with rare+ filter and whole-pool fallback",
         "pityPolicy": {
           "classification": "NONE"
         },
         "slotPolicy": "one stored arena_reward chest",
         "selectionPolicy": "choose one or skip",
-        "emptyPoolBehavior": "chest is not spawned",
-        "replacementBehavior": "opened empty stored cache grants 60 gold",
-        "serverCanIssueExactly": true,
+        "emptyPoolBehavior": "chest is not spawned; a stale opened empty stored cache grants 60 gold",
+        "replacementBehavior": "full-slot legal draft selections enter global relicSwapPending/legendarySwapPending flow",
+        "serverCanIssueExactly": false,
         "implementedInThisPhase": false,
-        "deferredReason": "READY_FOR_IMPLEMENTATION",
+        "deferredReason": "BLOCKED_BY_REPLACEMENT_POLICY",
         "sourceEvidence": [
-          "game.js:spawnArenaRewardChest",
-          "game.js:openStoredRelicChest",
-          "game.js:grantGold(60)"
+          "expansion-content.js:ROOM_TYPES.arena.minDepth=40",
+          "game.js:ARENA_WAVE_COUNT=2 and checkRoomClearBonus",
+          "game.js:spawnArenaRewardChest stores 3 + extraRelicChoices rare+ IDs",
+          "game.js:openStoredRelicChest grants 60 gold only for an empty stored cache",
+          "game.js:chooseRelic enters global replacement state when acquisition cannot fit",
+          "meta-state.js has no canonical extraRelicChoices or mutator state"
         ]
       },
       {
@@ -527,7 +529,7 @@
         "replacementBehavior": "debug-only",
         "serverCanIssueExactly": false,
         "implementedInThisPhase": false,
-        "deferredReason": "NOT_AN_ACTIVE_RELIC_SOURCE",
+        "deferredReason": "NOT_PRODUCTION_SOURCE",
         "sourceEvidence": [
           "game.js:canUseDebugCheats",
           "game.js:tryClaimDebugCheatMerchantRelic"

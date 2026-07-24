@@ -147,6 +147,7 @@ const GENERATED_FILES = Object.freeze([
   "otter-relic-offer-policy.generated.json",
   "special-relic-source-audit.generated.json",
   "deferred-special-relic-spec.generated.json",
+  "vault-arena-relic-classification.generated.json",
   "room-reward-bounds.generated.json",
   "chest-reward-bounds.generated.json"
 ]);
@@ -225,6 +226,119 @@ function extractBalancedBlock(text, marker, open = "{", close = "}") {
     }
   }
   throw new Error(`SOURCE_PARSE_FAILED:${marker}:close`);
+}
+
+function functionsContaining(text, needle) {
+  const matches = [...text.matchAll(/function\s+([a-zA-Z0-9_]+)\s*\(/gu)];
+  const names = [];
+  for (const [index, match] of matches.entries()) {
+    const end = matches[index + 1]?.index ?? text.length;
+    if (match[1] !== needle.slice(0, -1) && text.slice(match.index, end).includes(needle)) {
+      names.push(match[1]);
+    }
+  }
+  return names.sort((left, right) => left.localeCompare(right));
+}
+
+function extractFunctionSlice(text, functionName) {
+  const matches = [...text.matchAll(/function\s+([a-zA-Z0-9_]+)\s*\(/gu)];
+  const index = matches.findIndex((match) => match[1] === functionName);
+  if (index < 0) throw new Error(`SOURCE_PARSE_FAILED:function ${functionName}`);
+  return text.slice(matches[index].index, matches[index + 1]?.index ?? text.length);
+}
+
+function assertVaultArenaRelicClassification(textByFile) {
+  const gameSource = textByFile.get("game.js");
+  const lootSource = textByFile.get("loot-tables.js");
+  const vaultSource = textByFile.get("vault-room.js");
+  const expansionSource = textByFile.get("expansion-content.js");
+  const metaStateSourcePath = path.join(RULESET_ROOT, "meta-state.js");
+
+  const outcomeIds = new Set(["trap"]);
+  for (const match of lootSource.matchAll(/outcome\s*=\s*"([^"]+)"/gu)) {
+    outcomeIds.add(match[1]);
+  }
+  const expectedOutcomeIds = [
+    "armor",
+    "attack",
+    "gold",
+    "healing",
+    "health",
+    "map_fragment",
+    "potion",
+    "trap"
+  ];
+  const actualOutcomeIds = [...outcomeIds].sort((left, right) => left.localeCompare(right));
+  if (canonicalJson(actualOutcomeIds) !== canonicalJson(expectedOutcomeIds)) {
+    throw new Error(`VAULT_RELIC_SOURCE_REVIEW_REQUIRED:CHEST_OUTCOMES:${actualOutcomeIds.join(",")}`);
+  }
+  if (/\brelic\b/iu.test(lootSource) || /\brelic\b/iu.test(vaultSource)) {
+    throw new Error("VAULT_RELIC_SOURCE_REVIEW_REQUIRED:VAULT_OR_LOOT_MODULE_RELIC_REFERENCE");
+  }
+
+  const relicDraftBuilders = functionsContaining(gameSource, "buildRelicDraftChoices(");
+  const expectedRelicDraftBuilders = [
+    "buildOtterRoomRelicOfferIds",
+    "openCrossroadsPowerChest",
+    "openRelicDraft",
+    "spawnArenaRewardChest"
+  ];
+  if (canonicalJson(relicDraftBuilders) !== canonicalJson(expectedRelicDraftBuilders)) {
+    throw new Error(
+      `VAULT_RELIC_SOURCE_REVIEW_REQUIRED:RELIC_DRAFT_BUILDERS:${relicDraftBuilders.join(",")}`
+    );
+  }
+  const storedRelicChestCallers = functionsContaining(gameSource, "openStoredRelicChest(");
+  if (canonicalJson(storedRelicChestCallers) !== canonicalJson(["openChest"])) {
+    throw new Error(
+      `VAULT_RELIC_SOURCE_REVIEW_REQUIRED:STORED_RELIC_CHEST_CALLERS:${storedRelicChestCallers.join(",")}`
+    );
+  }
+  const openChest = extractFunctionSlice(gameSource, "openChest");
+  if (
+    !openChest.includes('chest.type === "arena_reward"') ||
+    !openChest.includes('chest.type === "otter_red"') ||
+    !openChest.includes("lootTablesApi.rollChestOutcome") ||
+    /chest\.type\s*===\s*"vault"/u.test(openChest)
+  ) {
+    throw new Error("VAULT_RELIC_SOURCE_REVIEW_REQUIRED:OPEN_CHEST_DISPATCH");
+  }
+
+  const arenaDefinition = extractBalancedBlock(expansionSource, "arena: Object.freeze");
+  const arenaMinimumDepth = Number(requireMatch(
+    arenaDefinition,
+    /minDepth:\s*(\d+)/u,
+    "arena:minDepth"
+  )[1]);
+  const arenaWaveCount = extractNumber(gameSource, "ARENA_WAVE_COUNT");
+  const spawnArenaRewardChest = extractBalancedBlock(gameSource, "function spawnArenaRewardChest");
+  const checkRoomClearBonus = extractBalancedBlock(gameSource, "function checkRoomClearBonus");
+  const buildRelicDraftChoices = extractFunctionSlice(gameSource, "buildRelicDraftChoices");
+  const chooseRelic = extractFunctionSlice(gameSource, "chooseRelic");
+  if (
+    arenaMinimumDepth !== 40 ||
+    arenaWaveCount !== 2 ||
+    !spawnArenaRewardChest.includes('new Set(["rare", "epic", "legendary", "mythic"])') ||
+    !spawnArenaRewardChest.includes("3 + (state.runMods.extraRelicChoices || 0)") ||
+    !spawnArenaRewardChest.includes('type: "arena_reward"') ||
+    !checkRoomClearBonus.includes("spawnArenaRewardChest()")
+  ) {
+    throw new Error("ARENA_RELIC_SOURCE_REVIEW_REQUIRED:ACTIVE_REWARD_CONTRACT");
+  }
+  if (
+    buildRelicDraftChoices.includes("canAcquireRelic") ||
+    !chooseRelic.includes("relicSwapPending")
+  ) {
+    throw new Error("ARENA_RELIC_SOURCE_REVIEW_REQUIRED:REPLACEMENT_CONTRACT");
+  }
+  return {
+    chestOutcomeIds: expectedOutcomeIds,
+    relicDraftBuilders: expectedRelicDraftBuilders,
+    arenaMinimumDepth,
+    arenaWaveCount,
+    canonicalMetaStateExtraRelicChoices: false,
+    canonicalMetaStatePath: path.relative(REPO_ROOT, metaStateSourcePath).replaceAll("\\", "/")
+  };
 }
 
 function parseNumericMap(body) {
@@ -568,6 +682,7 @@ function parseWardenRelicDropTable(source) {
 function buildRegularRelicOfferCanonicalData(records, textByFile) {
   const gameSource = textByFile.get("game.js");
   const relicDataSource = textByFile.get("relic-data.js");
+  const vaultArenaGuard = assertVaultArenaRelicClassification(textByFile);
   const wardenDropTable = parseWardenRelicDropTable(relicDataSource);
   const pityBonusPerMiss = extractNumber(
     relicDataSource,
@@ -954,11 +1069,11 @@ function buildRegularRelicOfferCanonicalData(records, textByFile) {
       replacementBehavior: "standard chest outcome plus fixed Vault gold bonus; never a relic replacement",
       serverCanIssueExactly: false,
       implementedInThisPhase: false,
-      deferredReason: "UNRESOLVED_ACTIVE_RELIC_SOURCE",
+      deferredReason: "NOT_AN_ACTIVE_RELIC_SOURCE",
       sourceEvidence: [
         "vault-room.js:isVaultChestAvailable only guards chest interaction",
         "game.js:openChest routes Vault chests to lootTablesApi.rollChestOutcome",
-        "loot-tables.js:rollChestOutcome has no relic outcome"
+        "loot-tables.js:rollChestOutcome has exactly health/healing/attack/armor/potion/map_fragment/gold/trap outcomes"
       ]
     },
     {
@@ -1000,23 +1115,26 @@ function buildRegularRelicOfferCanonicalData(records, textByFile) {
       legacyFunctionOrSymbol: "spawnArenaRewardChest/openStoredRelicChest",
       trigger: "all Blood Arena waves cleared",
       roomType: "arena",
-      depthEligibility: { minimum: 1, maximum: maximumDepth - 1 },
-      runLimit: "room scheduler",
+      depthEligibility: { minimum: 40, maximum: maximumDepth - 1, bossDepthsExcluded: true },
+      runLimit: "no explicit per-run cap; eligible non-boss rooms use the room scheduler",
       offerChoiceCount: "3 + extraRelicChoices",
-      candidatePool: "canonical rare+ relics",
-      rarityPolicy: "non-boss depth formula",
+      candidatePool: "baseline rare/epic/legendary/mythic draft-eligible relics; slot capacity is resolved only after selection",
+      rarityPolicy: "non-boss depth formula with rare+ filter and whole-pool fallback",
       pityPolicy: { classification: "NONE" },
       slotPolicy: "one stored arena_reward chest",
       selectionPolicy: "choose one or skip",
-      emptyPoolBehavior: "chest is not spawned",
-      replacementBehavior: "opened empty stored cache grants 60 gold",
-      serverCanIssueExactly: true,
+      emptyPoolBehavior: "chest is not spawned; a stale opened empty stored cache grants 60 gold",
+      replacementBehavior: "full-slot legal draft selections enter global relicSwapPending/legendarySwapPending flow",
+      serverCanIssueExactly: false,
       implementedInThisPhase: false,
-      deferredReason: "READY_FOR_IMPLEMENTATION",
+      deferredReason: "BLOCKED_BY_REPLACEMENT_POLICY",
       sourceEvidence: [
-        "game.js:spawnArenaRewardChest",
-        "game.js:openStoredRelicChest",
-        "game.js:grantGold(60)"
+        "expansion-content.js:ROOM_TYPES.arena.minDepth=40",
+        "game.js:ARENA_WAVE_COUNT=2 and checkRoomClearBonus",
+        "game.js:spawnArenaRewardChest stores 3 + extraRelicChoices rare+ IDs",
+        "game.js:openStoredRelicChest grants 60 gold only for an empty stored cache",
+        "game.js:chooseRelic enters global replacement state when acquisition cannot fit",
+        "meta-state.js has no canonical extraRelicChoices or mutator state"
       ]
     },
     {
@@ -1247,7 +1365,7 @@ function buildRegularRelicOfferCanonicalData(records, textByFile) {
       replacementBehavior: "debug-only",
       serverCanIssueExactly: false,
       implementedInThisPhase: false,
-      deferredReason: "NOT_AN_ACTIVE_RELIC_SOURCE",
+      deferredReason: "NOT_PRODUCTION_SOURCE",
       sourceEvidence: [
         "game.js:canUseDebugCheats",
         "game.js:tryClaimDebugCheatMerchantRelic"
@@ -1260,19 +1378,19 @@ function buildRegularRelicOfferCanonicalData(records, textByFile) {
     }
   }
   const deferredStatusValues = [
+    "IMPLEMENTED",
+    "NOT_AN_ACTIVE_RELIC_SOURCE",
     "READY_FOR_IMPLEMENTATION",
-    "BLOCKED_BY_UNRESOLVED_SOURCE",
-    "BLOCKED_BY_REPLACEMENT_POLICY",
     "REQUIRES_TRANSACTION_PHASE",
-    "NOT_AN_ACTIVE_RELIC_SOURCE"
+    "BLOCKED_BY_REPLACEMENT_POLICY",
+    "UNRESOLVED_ACTIVE_RELIC_SOURCE",
+    "NOT_PRODUCTION_SOURCE"
   ];
   const deferredSpecs = specialSourceAudit
     .filter((source) => !source.implementedInThisPhase)
     .map((source) => ({
       sourceId: source.sourceId,
-      status: source.deferredReason === "UNRESOLVED_ACTIVE_RELIC_SOURCE"
-        ? "BLOCKED_BY_UNRESOLVED_SOURCE"
-        : source.deferredReason,
+      status: source.deferredReason,
       trigger: source.trigger,
       rewardType: source.sourceCategory,
       offerChoiceCount: source.offerChoiceCount,
@@ -1287,6 +1405,99 @@ function buildRegularRelicOfferCanonicalData(records, textByFile) {
       throw new Error(`SPECIAL_RELIC_DEFERRED_STATUS_INVALID:${spec.sourceId}:${spec.status}`);
     }
   }
+  const vaultArenaClassification = {
+    phase: "3B2B2B2",
+    vault: {
+      sourceId: "vault-standard-chest",
+      classification: "NOT_AN_ACTIVE_RELIC_SOURCE",
+      activeChestOutcomeIds: vaultArenaGuard.chestOutcomeIds,
+      activeRelicDraftBuilders: vaultArenaGuard.relicDraftBuilders,
+      relicOfferChoiceCount: 0,
+      relicRewardSlotRequired: false,
+      futureChangePolicy: "generator fails with VAULT_RELIC_SOURCE_REVIEW_REQUIRED until a new explicit policy is added",
+      sourceEvidence: [
+        "vault-room.js only controls Guardian lifecycle, chest locks, threat state, and hazards",
+        "game.js:openChest sends ordinary surviving Vault chests through lootTablesApi.rollChestOutcome",
+        "loot-tables.js has no relic outcome or relic reference",
+        "game.js has no Vault-specific relic draft builder or stored relic chest dispatch"
+      ]
+    },
+    arena: {
+      sourceId: "arena-reward-cache",
+      classification: "BLOCKED_BY_REPLACEMENT_POLICY",
+      legacySourceFiles: ["expansion-content.js", "game.js", "relic-data.js", "relic-runtime.js"],
+      legacyFunctionOrSymbol: "ROOM_TYPES.arena/ARENA_WAVE_COUNT/checkRoomClearBonus/spawnArenaRewardChest/openStoredRelicChest/chooseRelic",
+      trigger: "issued non-boss Blood Arena room reaches zero enemies after its second wave",
+      roomType: "arena",
+      minimumDepth: vaultArenaGuard.arenaMinimumDepth,
+      maximumDepth: maximumDepth - 1,
+      runLimit: "no explicit per-run cap; every scheduler-selected eligible Arena can reward once",
+      completionCondition: `all ${vaultArenaGuard.arenaWaveCount} waves cleared; no enemies remain`,
+      rewardMoment: "checkRoomClearBonus calls spawnArenaRewardChest immediately after the final wave clear",
+      rewardSlotType: "relic_offer",
+      offerChoiceCount: "3 + extraRelicChoices (3 normally; 4 with Ascension)",
+      candidatePool: "all baseline draft-eligible rare/epic/legendary/mythic relics; no duplicate IDs in one offer",
+      allowedRarities: ["rare", "epic", "legendary", "mythic"],
+      rarityWeights: {
+        mythic: "min(0.02, (0.02 + floor(depth / 5) * 0.008) * 0.1)",
+        legendary: "0.02 + floor(depth / 5) * 0.008",
+        epic: "0.06 + floor(depth / 5) * 0.012",
+        rare: 0.17,
+        fallback: "if rolled rarity has no candidate, choose from the whole remaining rare+ pool"
+      },
+      depthScaling: "legendary and epic chances increase once per five depths; mythic derives from legendary and is capped at 0.02",
+      pityPolicy: {
+        rewardOfferPity: "NONE",
+        roomSchedulePity: "NONE",
+        scope: "RUN_SCOPED_NOT_APPLICABLE"
+      },
+      sourceRestrictions: [
+        "non-boss Arena room only",
+        "rare+ draft filter",
+        "mythic excluded when already owned",
+        "owned unique relics excluded",
+        "normal stacks at cap excluded"
+      ],
+      slotPolicy: "one stored arena_reward chest per Arena state via rewardSpawned",
+      selectionRequired: false,
+      emptyPoolBehavior: "no reward chest is spawned; opening a stale empty stored cache grants baseline 60 gold",
+      fullSlotsBehavior: "offered relic may enter the global replacement UI after selection",
+      replacementBehavior: "BLOCKED_BY_REPLACEMENT_POLICY",
+      serverCanIssueExactly: false,
+      exactIssuanceBlockers: [
+        "canonical Online v3 meta-state has no extraRelicChoices or mutator state",
+        "baseline draft eligibility does not filter slot capacity before offering",
+        "global relicSwapPending/legendarySwapPending settlement is outside this phase"
+      ],
+      boundedClientAttestationRequired: {
+        required: true,
+        trusted: [
+          "Worker-issued Arena RoomDirectiveV3",
+          "Worker-issued RoomRewardEnvelopeV3 and one-time reward slot",
+          "runId, revision, nonce, directive binding, rulesetHash, canonical build digest"
+        ],
+        boundedOnly: [
+          "Arena completion after two waves",
+          "turn count, elapsed time, compact room proof, command journal digest"
+        ],
+        neverAuthoritativeFromClient: [
+          "combat trace, positions, AI, damage, HP, exact kills outside envelope bounds",
+          "relicId, rarity, candidate pool, choice count, stack count, foreign reward slot ID"
+        ]
+      },
+      sourceEvidence: [
+        "expansion-content.js:ROOM_TYPES.arena",
+        "game.js:ARENA_WAVE_COUNT=2",
+        "game.js:checkRoomClearBonus",
+        "game.js:spawnArenaRewardChest",
+        "game.js:buildRelicDraftChoices and rollRelicRarity(false)",
+        "game.js:openStoredRelicChest",
+        "game.js:chooseRelic replacement state",
+        "game.js:applyMutatorsToRun/applyMutatorMidRun ascension",
+        "cloudflare/leaderboard-v3/src/rulesets/v08-meta-1/meta-state.js"
+      ]
+    }
+  };
   return new Map([
     ["relic-reward-sources.generated.json", {
       ...common,
@@ -1407,6 +1618,10 @@ function buildRegularRelicOfferCanonicalData(records, textByFile) {
         sourceCount: deferredSpecs.length,
         sources: deferredSpecs
       }
+    }],
+    ["vault-arena-relic-classification.generated.json", {
+      ...common,
+      canonicalData: vaultArenaClassification
     }]
   ]);
 }
@@ -2295,7 +2510,7 @@ function buildCanonicalData(records, textByFile) {
     schemaVersion: 3,
     rulesetId: RULESET_ID,
     sourceCommit,
-    purpose: "Phase 3B1 room progression, Phase 3B2A gold, Phase 3B2B1 starting relics, Phase 3B2B2A standard relic offers, and Phase 3B2B2B1 Otter relic rewards",
+    purpose: "Phase 3B1 room progression, Phase 3B2A gold, Phase 3B2B1 starting relics, Phase 3B2B2A standard relic offers, Phase 3B2B2B1 Otter relic rewards, and Phase 3B2B2B2 Vault/Arena source classifications",
     sources: records
   };
   const relicData = buildRelicCanonicalData(records, textByFile);

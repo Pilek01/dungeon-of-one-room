@@ -190,6 +190,6 @@ test("property: 250 illegal Otter selections cannot mutate run or build state", 
   }
 });
 
-test("property: Vault deliberately has no synthetic 3000-offer property run", () => {
-  assert.ok(true, "UNRESOLVED_ACTIVE_RELIC_SOURCE");
+test("property: Vault deliberately has no synthetic offer property run", () => {
+  assert.ok(true, "NOT_AN_ACTIVE_RELIC_SOURCE");
 });

@@ -66,44 +66,49 @@
   ],
   "canonicalData": {
     "allowedStatuses": [
+      "IMPLEMENTED",
+      "NOT_AN_ACTIVE_RELIC_SOURCE",
       "READY_FOR_IMPLEMENTATION",
-      "BLOCKED_BY_UNRESOLVED_SOURCE",
-      "BLOCKED_BY_REPLACEMENT_POLICY",
       "REQUIRES_TRANSACTION_PHASE",
-      "NOT_AN_ACTIVE_RELIC_SOURCE"
+      "BLOCKED_BY_REPLACEMENT_POLICY",
+      "UNRESOLVED_ACTIVE_RELIC_SOURCE",
+      "NOT_PRODUCTION_SOURCE"
     ],
     "sourceCount": 11,
     "sources": [
       {
         "sourceId": "vault-standard-chest",
-        "status": "BLOCKED_BY_UNRESOLVED_SOURCE",
+        "status": "NOT_AN_ACTIVE_RELIC_SOURCE",
         "trigger": "Guardian defeated, surviving Vault chest opened",
         "rewardType": "not_active_relic_source",
         "offerChoiceCount": 0,
         "candidatePool": [],
         "rarityPolicy": null,
         "fallback": "standard chest outcome plus fixed Vault gold bonus; never a relic replacement",
-        "unresolvedDependencies": "UNRESOLVED_ACTIVE_RELIC_SOURCE",
+        "unresolvedDependencies": "NOT_AN_ACTIVE_RELIC_SOURCE",
         "sourceEvidence": [
           "vault-room.js:isVaultChestAvailable only guards chest interaction",
           "game.js:openChest routes Vault chests to lootTablesApi.rollChestOutcome",
-          "loot-tables.js:rollChestOutcome has no relic outcome"
+          "loot-tables.js:rollChestOutcome has exactly health/healing/attack/armor/potion/map_fragment/gold/trap outcomes"
         ]
       },
       {
         "sourceId": "arena-reward-cache",
-        "status": "READY_FOR_IMPLEMENTATION",
+        "status": "BLOCKED_BY_REPLACEMENT_POLICY",
         "trigger": "all Blood Arena waves cleared",
         "rewardType": "special_room_reward",
         "offerChoiceCount": "3 + extraRelicChoices",
-        "candidatePool": "canonical rare+ relics",
-        "rarityPolicy": "non-boss depth formula",
-        "fallback": "opened empty stored cache grants 60 gold",
-        "unresolvedDependencies": "READY_FOR_IMPLEMENTATION",
+        "candidatePool": "baseline rare/epic/legendary/mythic draft-eligible relics; slot capacity is resolved only after selection",
+        "rarityPolicy": "non-boss depth formula with rare+ filter and whole-pool fallback",
+        "fallback": "full-slot legal draft selections enter global relicSwapPending/legendarySwapPending flow",
+        "unresolvedDependencies": "BLOCKED_BY_REPLACEMENT_POLICY",
         "sourceEvidence": [
-          "game.js:spawnArenaRewardChest",
-          "game.js:openStoredRelicChest",
-          "game.js:grantGold(60)"
+          "expansion-content.js:ROOM_TYPES.arena.minDepth=40",
+          "game.js:ARENA_WAVE_COUNT=2 and checkRoomClearBonus",
+          "game.js:spawnArenaRewardChest stores 3 + extraRelicChoices rare+ IDs",
+          "game.js:openStoredRelicChest grants 60 gold only for an empty stored cache",
+          "game.js:chooseRelic enters global replacement state when acquisition cannot fit",
+          "meta-state.js has no canonical extraRelicChoices or mutator state"
         ]
       },
       {
@@ -239,14 +244,14 @@
       },
       {
         "sourceId": "debug-cheat-relic-picker",
-        "status": "NOT_AN_ACTIVE_RELIC_SOURCE",
+        "status": "NOT_PRODUCTION_SOURCE",
         "trigger": "debug cheat only",
         "rewardType": "qa_only",
         "offerChoiceCount": "catalog picker",
         "candidatePool": "debug catalog",
         "rarityPolicy": "none",
         "fallback": "debug-only",
-        "unresolvedDependencies": "NOT_AN_ACTIVE_RELIC_SOURCE",
+        "unresolvedDependencies": "NOT_PRODUCTION_SOURCE",
         "sourceEvidence": [
           "game.js:canUseDebugCheats",
           "game.js:tryClaimDebugCheatMerchantRelic"

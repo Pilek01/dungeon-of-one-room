@@ -91,6 +91,10 @@
     {
       "file": "data/starting-relic-policy.generated.json",
       "schemaVersion": 1
+    },
+    {
+      "file": "data/vault-arena-relic-classification.generated.json",
+      "schemaVersion": 1
     }
   ],
   "files": [
@@ -111,8 +115,8 @@
     },
     {
       "file": "data/deferred-special-relic-spec.generated.json",
-      "byteLength": 9743,
-      "sha256": "ad6fb944f1d8bd87c5f09e6d948b7b07c9af0387503bd920390e3e1576889f42"
+      "byteLength": 10371,
+      "sha256": "dd43495e56162b9e2267d14ef230b5e0bdefda94d2feb9fc25399ee04b7861c6"
     },
     {
       "file": "data/gold-modifiers.generated.json",
@@ -196,13 +200,13 @@
     },
     {
       "file": "data/source-manifest.generated.json",
-      "byteLength": 5070,
-      "sha256": "007165bcd95e6d1cc5cc4fb1d4617e58e7e4f5aea89c6ae31e773d9aac5f1e03"
+      "byteLength": 5120,
+      "sha256": "89e846605b3e663a4dfe29130b16627ae4d5f61d5a7eb29a120a690866641461"
     },
     {
       "file": "data/special-relic-source-audit.generated.json",
-      "byteLength": 19781,
-      "sha256": "883fb5cecff43be656578c7fd66c09183d8ca19ac91eacc5682d87234586b59c"
+      "byteLength": 20470,
+      "sha256": "921bf2f9a579ab6c0c036abbba32c7caa72263a87a31ca5e0fc61224e1f6a29d"
     },
     {
       "file": "data/special-room-policy.generated.json",
@@ -213,6 +217,11 @@
       "file": "data/starting-relic-policy.generated.json",
       "byteLength": 1431,
       "sha256": "7fac71736a4b252c9ed0a0f958a595b38ccddd70c002889c8da5bba79fb90fac"
+    },
+    {
+      "file": "data/vault-arena-relic-classification.generated.json",
+      "byteLength": 7129,
+      "sha256": "50000814a019376e3b2565b3affaf6d6aa8985bed51543aec6ee5177075e5c41"
     },
     {
       "file": "forge-policy.js",
@@ -323,7 +332,12 @@
       "file": "test/phase3b2b2b1-golden-fixtures.json",
       "byteLength": 23607,
       "sha256": "97f1e3ceb054efc082cc4960ea3a49adc150531b8db450e21bd36e021b17359c"
+    },
+    {
+      "file": "test/phase3b2b2b2-classification-fixtures.json",
+      "byteLength": 3898,
+      "sha256": "bac2a270c11493d9e512435498ae3a4154651abd2c0a0355e0f5a446801f7f0d"
     }
   ],
-  "rulesetHash": "sha256:154cdecaf014a21fffa7a5e02953e1353d126b24f700f39efcbc2f9ea5c66003"
+  "rulesetHash": "sha256:ea3412fcc8a7456105b7243774538677a423f65bf16c8c977227d5cde8b08a7b"
 }

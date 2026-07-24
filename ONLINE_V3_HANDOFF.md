@@ -1,4 +1,4 @@
-# Online v3 handoff - Phase 3B2B2B1
+# Online v3 handoff - Phase 3B2B2B2
 
 Date: 2026-07-24
 
@@ -55,6 +55,45 @@ The Phase 3B2B2B1 local commit subject is:
 ```text
 Implement Online v3 Otter relic reward policy
 ```
+
+The Phase 3B2B2B2 local commit subject is:
+
+```text
+Resolve Online v3 Vault and Arena relic source classifications
+```
+
+## Phase 3B2B2B2 outcome
+
+Phase 3B2B2B2 is classification-only. A complete mechanical call-graph and
+outcome audit resolves Vault as `NOT_AN_ACTIVE_RELIC_SOURCE` and adds a
+generator guard that requires an explicit new policy if the baseline ever
+gains a Vault relic path.
+
+Arena is confirmed as an active relic source after two waves, at eligible
+non-boss depths 40-99. It remains `BLOCKED_BY_REPLACEMENT_POLICY`: its offer
+count is `3 + extraRelicChoices`, but canonical Online v3 state has no
+Ascension/mutator field, and baseline selection can enter the global
+replacement state after offering a candidate that does not fit. No Arena
+policy, slot, RNG, public payload, synthetic offer fixture, or property run
+was added.
+
+The ruleset remains disconnected and `test-only`. Active Worker endpoints,
+fixture ruleset, D1, `recent_ops`, Wrangler, HTTP contracts, browser game and
+client modules are unchanged. This phase adds 14 honest classification
+fixtures. The exact record is:
+
+```text
+previous hash: sha256:154cdecaf014a21fffa7a5e02953e1353d126b24f700f39efcbc2f9ea5c66003
+current hash:  sha256:ea3412fcc8a7456105b7243774538677a423f65bf16c8c977227d5cde8b08a7b
+```
+
+```text
+docs/ONLINE_V3_PHASE3B2B2B2.md
+```
+
+Next recommended phase: canonical mutator/run-mod state and the global
+replacement transaction contract. Do not begin Arena issuance until both are
+available.
 
 ## Phase 3B2B2B1 outcome
 

@@ -170,12 +170,15 @@ cover:
 This test runtime uses only the fixture ruleset. It does not establish or imply
 a production v0.8 ruleset.
 
-The Phase 3B2B2B1 `v08-meta-1` directory implements deterministic initial state,
+The Phase 3B2B2B2 `v08-meta-1` directory implements deterministic initial state,
 mandatory opaque starting-relic selection, a canonical relic build ledger,
 room selection, `RoomDirectiveV3` consumption, standard Warden relic offers,
 an Otter Crimson-chest relic offer, exact source-specific rarity rules, and
-run-scoped Warden drop pity for isolated tests. Vault remains explicitly
-unresolved because the active baseline Vault chest has no relic outcome. Its
+run-scoped Warden drop pity for isolated tests. Vault is conclusively
+`NOT_AN_ACTIVE_RELIC_SOURCE` because the active baseline Vault chest has no
+relic outcome. Arena is active but `BLOCKED_BY_REPLACEMENT_POLICY` because its
+choice count depends on noncanonical Ascension state and full-slot selection
+enters the deferred global replacement flow. Its
 descriptor is `test-only`, registry resolution rejects it, and neither active
 entrypoint imports it. It therefore does not alter any route or payload above.
 Starting and regular offers are bound to canonical state and selected only by
