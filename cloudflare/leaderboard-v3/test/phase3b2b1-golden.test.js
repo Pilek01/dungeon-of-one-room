@@ -190,7 +190,9 @@ const runners = {
       "expiresOnRevision",
       "consumed",
       "consumedChoiceId",
-      "consumedAtRevision"
+      "consumedAtRevision",
+      "selectionPending",
+      "selectedChoiceId"
     ]);
     assertStartingRelicOfferV08(state.pendingOffer);
     assert.equal(state.rulesetHash, manifest.rulesetHash);

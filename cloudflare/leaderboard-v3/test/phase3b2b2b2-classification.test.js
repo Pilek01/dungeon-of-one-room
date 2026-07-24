@@ -84,15 +84,15 @@ test("Vault active outcome and relic-offer call graphs are closed and guarded", 
   assert.match(generatorSource, /OPEN_CHEST_DISPATCH/u);
 });
 
-test("Arena is active but BLOCKED_BY_REPLACEMENT_POLICY", () => {
+test("Arena global replacement is resolved but replacement reward fallback remains blocked", () => {
   const arena = source("arena-reward-cache");
   assert.equal(arena.sourceCategory, "special_room_reward");
-  assert.equal(arena.deferredReason, "BLOCKED_BY_REPLACEMENT_POLICY");
+  assert.equal(arena.deferredReason, "BLOCKED_BY_REPLACEMENT_REWARD_POLICY");
   assert.equal(arena.serverCanIssueExactly, false);
-  assert.equal(deferred("arena-reward-cache").status, "BLOCKED_BY_REPLACEMENT_POLICY");
+  assert.equal(deferred("arena-reward-cache").status, "BLOCKED_BY_REPLACEMENT_REWARD_POLICY");
   assert.equal(
     classificationDocument.canonicalData.arena.classification,
-    "BLOCKED_BY_REPLACEMENT_POLICY"
+    "BLOCKED_BY_REPLACEMENT_REWARD_POLICY"
   );
 });
 
@@ -104,7 +104,7 @@ test("Arena lifecycle, eligibility, rarity, count and fallback evidence stays ex
   assert.equal(classification.offerChoiceCount, "3 + extraRelicChoices (3 normally; 4 with Ascension)");
   assert.deepEqual(classification.allowedRarities, ["rare", "epic", "legendary", "mythic"]);
   assert.equal(classification.pityPolicy.rewardOfferPity, "NONE");
-  assert.equal(classification.replacementBehavior, "BLOCKED_BY_REPLACEMENT_POLICY");
+  assert.equal(classification.replacementBehavior, "CANONICAL_GLOBAL_REPLACEMENT_TRANSACTION");
   assert.match(expansionSource, /arena:\s*Object\.freeze\(\{[\s\S]*?minDepth:\s*40/u);
   assert.match(gameSource, /const ARENA_WAVE_COUNT = 2;/u);
   assert.match(functionSlice(gameSource, "spawnArenaRewardChest"), /3 \+ \(state\.runMods\.extraRelicChoices \|\| 0\)/u);
@@ -119,7 +119,8 @@ test("Arena exact issuance blockers are present and no synthetic policy exists",
     {
       canonicalRunModifierState: "RESOLVED",
       extraRelicChoicesProjection: "RESOLVED",
-      replacementContract: "OPEN"
+      globalRelicReplacementTransaction: "RESOLVED",
+      replacementRewardFallback: "OPEN"
     }
   );
   const draft = functionSlice(gameSource, "buildRelicDraftChoices");

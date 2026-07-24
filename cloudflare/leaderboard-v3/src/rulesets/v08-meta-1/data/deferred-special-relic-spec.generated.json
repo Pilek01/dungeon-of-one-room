@@ -71,10 +71,11 @@
       "READY_FOR_IMPLEMENTATION",
       "REQUIRES_TRANSACTION_PHASE",
       "BLOCKED_BY_REPLACEMENT_POLICY",
+      "BLOCKED_BY_REPLACEMENT_REWARD_POLICY",
       "UNRESOLVED_ACTIVE_RELIC_SOURCE",
       "NOT_PRODUCTION_SOURCE"
     ],
-    "sourceCount": 11,
+    "sourceCount": 10,
     "sources": [
       {
         "sourceId": "vault-standard-chest",
@@ -94,21 +95,21 @@
       },
       {
         "sourceId": "arena-reward-cache",
-        "status": "BLOCKED_BY_REPLACEMENT_POLICY",
+        "status": "BLOCKED_BY_REPLACEMENT_REWARD_POLICY",
         "trigger": "all Blood Arena waves cleared",
         "rewardType": "special_room_reward",
         "offerChoiceCount": "3 + extraRelicChoices",
         "candidatePool": "baseline rare/epic/legendary/mythic draft-eligible relics; slot capacity is resolved only after selection",
         "rarityPolicy": "non-boss depth formula with rare+ filter and whole-pool fallback",
         "fallback": "full-slot legal draft selections enter global relicSwapPending/legendarySwapPending flow",
-        "unresolvedDependencies": "BLOCKED_BY_REPLACEMENT_POLICY",
+        "unresolvedDependencies": "BLOCKED_BY_REPLACEMENT_REWARD_POLICY",
         "sourceEvidence": [
           "expansion-content.js:ROOM_TYPES.arena.minDepth=40",
           "game.js:ARENA_WAVE_COUNT=2 and checkRoomClearBonus",
           "game.js:spawnArenaRewardChest stores 3 + extraRelicChoices rare+ IDs",
           "game.js:openStoredRelicChest grants 60 gold only for an empty stored cache",
           "game.js:chooseRelic enters global replacement state when acquisition cannot fit",
-          "Phase 3B2C1 resolves canonical extraRelicChoices while replacement remains open"
+          "Phase 3B2C2 resolves canonical global replacement while the empty stored-cache fallback remains open"
         ]
       },
       {
@@ -209,22 +210,6 @@
           "forge-room.js:planForgeTransmute",
           "game.js:executeForgeTransmute",
           "game.js:forgeTransmutePending"
-        ]
-      },
-      {
-        "sourceId": "global-replacement-rewards",
-        "status": "BLOCKED_BY_REPLACEMENT_POLICY",
-        "trigger": "legal offered relic cannot fit current canonical build",
-        "rewardType": "replacement_policy",
-        "offerChoiceCount": "depends on source",
-        "candidatePool": "owned outgoing relics plus selected incoming relic",
-        "rarityPolicy": "inherits source",
-        "fallback": "cross-source state machine affects slots, unique, legendary and mythic caps",
-        "unresolvedDependencies": "BLOCKED_BY_REPLACEMENT_POLICY",
-        "sourceEvidence": [
-          "game.js:relicSwapPending",
-          "game.js:legendarySwapPending",
-          "game.js:chooseRelic"
         ]
       },
       {

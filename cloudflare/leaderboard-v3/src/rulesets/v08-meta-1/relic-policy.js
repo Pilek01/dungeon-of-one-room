@@ -159,6 +159,23 @@ export function previewRelicAcquisitionV08(build, relicId) {
   };
 }
 
+export function previewRelicIncomingV08(build, relicId) {
+  const policy = requireRelic(relicId);
+  const relics = Array.isArray(build?.relics) ? build.relics : [];
+  const existing = relics.find((entry) => entry.relicId === relicId);
+  const summary = summarizeRelics(relics);
+  const incomingBonus = existing ? 0 : policy.bonusRelicSlots;
+  return {
+    relicId: policy.relicId,
+    rarity: policy.rarity,
+    currentStacks: existing?.stacks || 0,
+    resultingStacks: (existing?.stacks || 0) + 1,
+    slotCost: policy.slotCost,
+    resultingSlotsUsed: summary.relicSlotsUsed + policy.slotCost,
+    resultingSlotLimit: slotPolicy.baseRelicSlots + summary.relicSlotBonus + incomingBonus
+  };
+}
+
 export async function computeRelicBuildDigestV08(build, cryptoProvider = globalThis.crypto) {
   assertCanonicalRelicBuildV08(build);
   return sha256(buildDigestInput(build), cryptoProvider);
@@ -205,6 +222,64 @@ export async function applyRelicAcquisition(build, acquisition, context = {}) {
     ...summary
   });
   next.buildDigest = await sha256(buildDigestInput(next), context.cryptoProvider);
+  return next;
+}
+
+export async function applyRelicReplacementBuildV08(
+  build,
+  removals,
+  acquisition,
+  context = {}
+) {
+  if (!Array.isArray(removals) || removals.length < 1) {
+    throw new TypeError("RELIC_REPLACEMENT_REMOVALS_REQUIRED");
+  }
+  const next = structuredClone(build);
+  for (const removal of removals) {
+    const relicId = String(removal?.relicId || "");
+    const stacks = Number(removal?.stacks);
+    if (!Number.isSafeInteger(stacks) || stacks < 1) {
+      throw new TypeError("RELIC_REPLACEMENT_REMOVAL_STACKS_INVALID");
+    }
+    const entryIndex = next.relics.findIndex((entry) => entry.relicId === relicId);
+    if (entryIndex < 0 || next.relics[entryIndex].stacks < stacks) {
+      throw new TypeError("RELIC_REPLACEMENT_TARGET_CHANGED");
+    }
+    next.relics[entryIndex].stacks -= stacks;
+    if (next.relics[entryIndex].stacks === 0) next.relics.splice(entryIndex, 1);
+  }
+  const relicId = String(acquisition?.relicId || "");
+  const policy = requireRelic(relicId);
+  const incomingStacks = Number(acquisition?.stacks ?? 1);
+  if (!Number.isSafeInteger(incomingStacks) || incomingStacks !== 1) {
+    throw new TypeError("RELIC_REPLACEMENT_INCOMING_STACKS_INVALID");
+  }
+  if (!Number.isSafeInteger(acquisition.acquiredRevision) || acquisition.acquiredRevision < 0) {
+    throw new TypeError("RELIC_ACQUIRED_REVISION_INVALID");
+  }
+  const acquisitionSource = String(acquisition.acquisitionSource || "").trim();
+  const sourceOfferId = String(acquisition.sourceOfferId || "").trim();
+  if (!acquisitionSource) throw new TypeError("RELIC_ACQUISITION_SOURCE_REQUIRED");
+  if (!sourceOfferId) throw new TypeError("RELIC_SOURCE_OFFER_REQUIRED");
+  const existing = next.relics.find((entry) => entry.relicId === relicId);
+  if (existing) {
+    existing.stacks += incomingStacks;
+  } else {
+    next.relics.push({
+      relicId: policy.relicId,
+      stacks: incomingStacks,
+      acquiredRevision: acquisition.acquiredRevision,
+      acquisitionSource,
+      sourceOfferId
+    });
+  }
+  const summary = summarizeRelics(next.relics);
+  Object.assign(next, {
+    relicSlotBase: slotPolicy.baseRelicSlots,
+    ...summary
+  });
+  next.buildDigest = await sha256(buildDigestInput(next), context.cryptoProvider);
+  assertCanonicalRelicBuildV08(next);
   return next;
 }
 
@@ -255,6 +330,19 @@ export function assertCanonicalRelicBuildV08(build) {
     : slotPolicy.maximumLegendaryRelics;
   if (legendaryCount > legendaryLimit) {
     throw new TypeError("RELIC_BUILD_LEGENDARY_LIMIT_EXCEEDED");
+  }
+  for (const entry of build.relics) {
+    const policy = requireRelic(entry.relicId);
+    const conflict = build.relics.find(
+      (candidate) =>
+        candidate.relicId !== entry.relicId &&
+        policy.mutuallyExclusiveWith.includes(candidate.relicId)
+    );
+    if (conflict) {
+      throw new TypeError(
+        `RELIC_BUILD_MUTUAL_EXCLUSION:${entry.relicId}:${conflict.relicId}`
+      );
+    }
   }
   if (summary.relicSlotsUsed > summary.relicSlotLimit) {
     throw new TypeError("RELIC_BUILD_SLOT_LIMIT_EXCEEDED");

@@ -89,7 +89,8 @@
     ],
     "sourceCount": 12,
     "implementedSourceIds": [
-      "otter-crimson-chest"
+      "otter-crimson-chest",
+      "global-replacement-rewards"
     ],
     "unresolvedSourceIds": [],
     "sources": [
@@ -179,7 +180,7 @@
         "slotPolicy": "one RoomRewardEnvelopeV3 relic_offer slot bound to the Otter directive",
         "selectionPolicy": "existing selectRegularRelic; opaque offerId and choiceId only",
         "emptyPoolBehavior": "UNRESOLVED_EMPTY_RELIC_POOL",
-        "replacementBehavior": "50 gold stale-local-offer safeguard is BLOCKED_BY_REPLACEMENT_POLICY",
+        "replacementBehavior": "canonical global replacement; 50 gold stale-local-offer safeguard is BLOCKED_BY_REPLACEMENT_REWARD_POLICY",
         "serverCanIssueExactly": true,
         "implementedInThisPhase": true,
         "deferredReason": null,
@@ -217,14 +218,14 @@
         "replacementBehavior": "full-slot legal draft selections enter global relicSwapPending/legendarySwapPending flow",
         "serverCanIssueExactly": false,
         "implementedInThisPhase": false,
-        "deferredReason": "BLOCKED_BY_REPLACEMENT_POLICY",
+        "deferredReason": "BLOCKED_BY_REPLACEMENT_REWARD_POLICY",
         "sourceEvidence": [
           "expansion-content.js:ROOM_TYPES.arena.minDepth=40",
           "game.js:ARENA_WAVE_COUNT=2 and checkRoomClearBonus",
           "game.js:spawnArenaRewardChest stores 3 + extraRelicChoices rare+ IDs",
           "game.js:openStoredRelicChest grants 60 gold only for an empty stored cache",
           "game.js:chooseRelic enters global replacement state when acquisition cannot fit",
-          "Phase 3B2C1 resolves canonical extraRelicChoices while replacement remains open"
+          "Phase 3B2C2 resolves canonical global replacement while the empty stored-cache fallback remains open"
         ]
       },
       {
@@ -462,8 +463,8 @@
         "emptyPoolBehavior": "keep current build",
         "replacementBehavior": "cross-source state machine affects slots, unique, legendary and mythic caps",
         "serverCanIssueExactly": true,
-        "implementedInThisPhase": false,
-        "deferredReason": "BLOCKED_BY_REPLACEMENT_POLICY",
+        "implementedInThisPhase": true,
+        "deferredReason": null,
         "sourceEvidence": [
           "game.js:relicSwapPending",
           "game.js:legendarySwapPending",

@@ -1026,8 +1026,8 @@ function buildRegularRelicOfferCanonicalData(records, textByFile) {
     selectionPolicy: "existing selectRegularRelic; choose one canonical choice",
     baselineSkipPolicy: "optional draft skip remains deferred with endpoint integration",
     emptyPoolBehavior: "UNRESOLVED_EMPTY_RELIC_POOL",
-    fullPoolBehavior: "BLOCKED_BY_REPLACEMENT_POLICY",
-    staleStoredOfferFallback: "50 gold local safeguard; not implemented in this phase",
+    fullPoolBehavior: "CANONICAL_REPLACEMENT_TRANSACTION",
+    staleStoredOfferFallback: "50 gold local safeguard; BLOCKED_BY_REPLACEMENT_REWARD_POLICY",
     publicChoiceFields,
     publicPayloadTargetBytes: 4096
   };
@@ -1101,7 +1101,7 @@ function buildRegularRelicOfferCanonicalData(records, textByFile) {
       slotPolicy: "one RoomRewardEnvelopeV3 relic_offer slot bound to the Otter directive",
       selectionPolicy: "existing selectRegularRelic; opaque offerId and choiceId only",
       emptyPoolBehavior: "UNRESOLVED_EMPTY_RELIC_POOL",
-      replacementBehavior: "50 gold stale-local-offer safeguard is BLOCKED_BY_REPLACEMENT_POLICY",
+      replacementBehavior: "canonical global replacement; 50 gold stale-local-offer safeguard is BLOCKED_BY_REPLACEMENT_REWARD_POLICY",
       serverCanIssueExactly: true,
       implementedInThisPhase: true,
       deferredReason: null,
@@ -1131,14 +1131,14 @@ function buildRegularRelicOfferCanonicalData(records, textByFile) {
       replacementBehavior: "full-slot legal draft selections enter global relicSwapPending/legendarySwapPending flow",
       serverCanIssueExactly: false,
       implementedInThisPhase: false,
-      deferredReason: "BLOCKED_BY_REPLACEMENT_POLICY",
+      deferredReason: "BLOCKED_BY_REPLACEMENT_REWARD_POLICY",
       sourceEvidence: [
         "expansion-content.js:ROOM_TYPES.arena.minDepth=40",
         "game.js:ARENA_WAVE_COUNT=2 and checkRoomClearBonus",
         "game.js:spawnArenaRewardChest stores 3 + extraRelicChoices rare+ IDs",
         "game.js:openStoredRelicChest grants 60 gold only for an empty stored cache",
         "game.js:chooseRelic enters global replacement state when acquisition cannot fit",
-        "Phase 3B2C1 resolves canonical extraRelicChoices while replacement remains open"
+        "Phase 3B2C2 resolves canonical global replacement while the empty stored-cache fallback remains open"
       ]
     },
     {
@@ -1317,8 +1317,8 @@ function buildRegularRelicOfferCanonicalData(records, textByFile) {
       emptyPoolBehavior: "keep current build",
       replacementBehavior: "cross-source state machine affects slots, unique, legendary and mythic caps",
       serverCanIssueExactly: true,
-      implementedInThisPhase: false,
-      deferredReason: "BLOCKED_BY_REPLACEMENT_POLICY",
+      implementedInThisPhase: true,
+      deferredReason: null,
       sourceEvidence: [
         "game.js:relicSwapPending",
         "game.js:legendarySwapPending",
@@ -1387,6 +1387,7 @@ function buildRegularRelicOfferCanonicalData(records, textByFile) {
     "READY_FOR_IMPLEMENTATION",
     "REQUIRES_TRANSACTION_PHASE",
     "BLOCKED_BY_REPLACEMENT_POLICY",
+    "BLOCKED_BY_REPLACEMENT_REWARD_POLICY",
     "UNRESOLVED_ACTIVE_RELIC_SOURCE",
     "NOT_PRODUCTION_SOURCE"
   ];
@@ -1428,7 +1429,7 @@ function buildRegularRelicOfferCanonicalData(records, textByFile) {
     },
     arena: {
       sourceId: "arena-reward-cache",
-      classification: "BLOCKED_BY_REPLACEMENT_POLICY",
+      classification: "BLOCKED_BY_REPLACEMENT_REWARD_POLICY",
       legacySourceFiles: ["expansion-content.js", "game.js", "relic-data.js", "relic-runtime.js"],
       legacyFunctionOrSymbol: "ROOM_TYPES.arena/ARENA_WAVE_COUNT/checkRoomClearBonus/spawnArenaRewardChest/openStoredRelicChest/chooseRelic",
       trigger: "issued non-boss Blood Arena room reaches zero enemies after its second wave",
@@ -1466,16 +1467,16 @@ function buildRegularRelicOfferCanonicalData(records, textByFile) {
       selectionRequired: false,
       emptyPoolBehavior: "no reward chest is spawned; opening a stale empty stored cache grants baseline 60 gold",
       fullSlotsBehavior: "offered relic may enter the global replacement UI after selection",
-      replacementBehavior: "BLOCKED_BY_REPLACEMENT_POLICY",
+      replacementBehavior: "CANONICAL_GLOBAL_REPLACEMENT_TRANSACTION",
       dependencyStatus: {
         canonicalRunModifierState: "RESOLVED",
         extraRelicChoicesProjection: "RESOLVED",
-        replacementContract: "OPEN"
+        globalRelicReplacementTransaction: "RESOLVED",
+        replacementRewardFallback: "OPEN"
       },
       serverCanIssueExactly: false,
       exactIssuanceBlockers: [
-        "baseline draft eligibility does not filter slot capacity before offering",
-        "global relicSwapPending/legendarySwapPending settlement is outside this phase"
+        "empty pool and stale empty stored-cache 60 gold replacement reward fallback remains outside this phase"
       ],
       boundedClientAttestationRequired: {
         required: true,
@@ -1596,7 +1597,7 @@ function buildRegularRelicOfferCanonicalData(records, textByFile) {
           "relic-offer-choice-id"
         ],
         emptyPoolBehavior: "UNRESOLVED_EMPTY_RELIC_POOL",
-        fullPoolBehavior: "DEFERRED_REPLACEMENT_REWARD",
+        fullPoolBehavior: "CANONICAL_REPLACEMENT_TRANSACTION",
         publicChoiceFields,
         publicPayloadTargetBytes: 2048
       }
@@ -2732,7 +2733,7 @@ function buildCanonicalData(records, textByFile) {
     schemaVersion: 3,
     rulesetId: RULESET_ID,
     sourceCommit,
-    purpose: "Phase 3B1 room progression, Phase 3B2A gold, Phase 3B2B1 starting relics, Phase 3B2B2A standard relic offers, Phase 3B2B2B1 Otter relic rewards, Phase 3B2B2B2 Vault/Arena source classifications, and Phase 3B2C1 canonical run modifiers",
+    purpose: "Phase 3B1 room progression, Phase 3B2A gold, Phase 3B2B1 starting relics, Phase 3B2B2A standard relic offers, Phase 3B2B2B1 Otter relic rewards, Phase 3B2B2B2 Vault/Arena source classifications, Phase 3B2C1 canonical run modifiers, and Phase 3B2C2 canonical relic replacement transactions",
     sources: records
   };
   const relicData = buildRelicCanonicalData(records, textByFile);

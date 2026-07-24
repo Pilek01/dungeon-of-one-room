@@ -7,7 +7,6 @@ import { assertMetaStateV08, cloneMetaStateV08 } from "./meta-state.js";
 import {
   applyRelicAcquisition,
   assertCanonicalRelicBuildDigestV08,
-  canAcquireRelic,
   projectPublicBuild
 } from "./relic-policy.js";
 import {
@@ -19,6 +18,11 @@ import {
   findRelicOfferReceiptV08,
   projectPublicRelicChoiceV08
 } from "./relic-offer-common.js";
+import {
+  createPendingRelicTransactionV08,
+  evaluateRelicAcquisition,
+  isRelicDraftEligibleV08
+} from "./relic-replacement.js";
 import { assertRoomRewardEnvelopeV3 } from "./reward-policy.js";
 import { deriveIntInclusive } from "./rng.js";
 import {
@@ -187,7 +191,7 @@ function candidatePool(state, tier) {
   return catalog.relics.filter((relic) => (
     allowedRarities.has(relic.rarity) &&
     relic.acquisitionSources.includes("boss_drop") &&
-    canAcquireRelic(state.build, relic.relicId).allowed
+    isRelicDraftEligibleV08(state.build, relic.relicId)
   ));
 }
 
@@ -202,7 +206,7 @@ function otterCandidatePool(state) {
   return catalog.relics.filter((relic) => (
     allowedRarities.has(relic.rarity) &&
     relic.acquisitionSources.includes(otterPolicy.candidateAcquisitionSource) &&
-    canAcquireRelic(state.build, relic.relicId).allowed
+    isRelicDraftEligibleV08(state.build, relic.relicId)
   ));
 }
 
@@ -456,7 +460,9 @@ export async function issueRegularRelicOffer(metaState, rawRequest = {}, context
     expiresOnRevision: metaState.revision,
     consumed: false,
     consumedChoiceId: null,
-    consumedAtRevision: null
+    consumedAtRevision: null,
+    selectionPending: false,
+    selectedChoiceId: null
   };
   assertRegularRelicOfferV08(offer);
   next.pendingOffer = offer;
@@ -548,6 +554,16 @@ export function assertRegularRelicOfferV08(offer) {
   } else if (offer.consumedChoiceId !== null || offer.consumedAtRevision !== null) {
     throw new TypeError("RELIC_REWARD_OFFER_UNCONSUMED_FIELDS_INVALID");
   }
+  if (typeof offer.selectionPending !== "boolean") {
+    throw new TypeError("RELIC_REWARD_OFFER_SELECTION_PENDING_INVALID");
+  }
+  if (
+    offer.selectionPending && !choiceIds.has(offer.selectedChoiceId) ||
+    !offer.selectionPending && !offer.consumed && offer.selectedChoiceId !== null ||
+    offer.consumed && offer.selectedChoiceId !== offer.consumedChoiceId
+  ) {
+    throw new TypeError("RELIC_REWARD_OFFER_SELECTED_CHOICE_INVALID");
+  }
   return offer;
 }
 
@@ -556,6 +572,14 @@ export async function selectRegularRelic(metaState, request = {}, context = {}) 
   await assertCanonicalRelicBuildDigestV08(metaState.build, context.cryptoProvider);
   await assertCanonicalRunModifierDigestV08(metaState.runModifiers, context.cryptoProvider);
   const { offerId, choiceId } = assertRelicSelectionRequestV08(request);
+  if (metaState.pendingRelicTransaction) {
+    const incoming = metaState.pendingRelicTransaction.incoming;
+    if (incoming.sourceOfferId !== offerId) throw new TypeError("RELIC_REWARD_OFFER_UNKNOWN");
+    if (incoming.sourceChoiceId !== choiceId) {
+      throw new TypeError("RELIC_REWARD_OFFER_SELECTION_ALREADY_PENDING");
+    }
+    return cloneMetaStateV08(metaState);
+  }
   const receipt = findRelicOfferReceiptV08(metaState, offerId);
   if (receipt) {
     if (receipt.choiceId !== choiceId) {
@@ -593,16 +617,40 @@ export async function selectRegularRelic(metaState, request = {}, context = {}) 
   if (!choice) throw new TypeError("RELIC_REWARD_CHOICE_UNKNOWN");
   const offerPolicy = policiesBySourceId.get(offer.sourceId);
   if (!offerPolicy) throw new TypeError("RELIC_REWARD_SOURCE_MISMATCH");
-  const verdict = canAcquireRelic(metaState.build, choice.privateRelicId);
-  if (!verdict.allowed) throw new TypeError(verdict.code);
+  const acquisitionSource = offerPolicy === policy
+    ? "boss_drop"
+    : offerPolicy.candidateAcquisitionSource;
+  const acquisition = {
+    incomingRelicId: choice.privateRelicId,
+    incomingStacks: 1,
+    acquisitionSource,
+    sourceOfferId: offer.offerId,
+    sourceChoiceId: choice.choiceId,
+    sourceRewardSlotId: offer.rewardSlotId
+  };
+  const decision = await evaluateRelicAcquisition(metaState, acquisition, context);
+  if (decision.decision === "REJECT") throw new TypeError(decision.code);
+  if (decision.decision === "REQUIRE_REPLACEMENT") {
+    const pending = cloneMetaStateV08(metaState);
+    pending.pendingOffer.selectionPending = true;
+    pending.pendingOffer.selectedChoiceId = choice.choiceId;
+    const mutableSlot = pending.currentRewardEnvelope.rewardSlots.find(
+      (entry) => entry.slotId === offer.rewardSlotId
+    );
+    mutableSlot.resolution = "selection_pending";
+    pending.pendingRelicTransaction = await createPendingRelicTransactionV08(
+      pending,
+      decision,
+      context
+    );
+    return pending;
+  }
 
   const next = cloneMetaStateV08(metaState);
   next.build = await applyRelicAcquisition(next.build, {
     relicId: choice.privateRelicId,
     acquiredRevision: next.revision,
-    acquisitionSource: offerPolicy === policy
-      ? "boss_drop"
-      : offerPolicy.candidateAcquisitionSource,
+    acquisitionSource,
     sourceOfferId: offer.offerId
   }, context);
   const mutableSlot = next.currentRewardEnvelope.rewardSlots.find(
@@ -618,6 +666,7 @@ export async function selectRegularRelic(metaState, request = {}, context = {}) 
     publicBuild: projectPublicBuild(next.build),
     offer: {
       ...offer,
+      selectedChoiceId: choiceId,
       consumed: true,
       consumedChoiceId: choiceId,
       consumedAtRevision: next.revision

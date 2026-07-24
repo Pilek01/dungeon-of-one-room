@@ -1,5 +1,5 @@
 import { deriveRandomBytes } from "./rng.js";
-import { previewRelicAcquisitionV08 } from "./relic-policy.js";
+import { previewRelicIncomingV08 } from "./relic-policy.js";
 
 export const RELIC_OFFER_HISTORY_LIMIT = 64;
 
@@ -54,7 +54,7 @@ export function projectPublicRelicChoiceV08(build, choice) {
   const choiceId = String(choice.choiceId || "").trim();
   const relicId = String(choice.privateRelicId || "").trim();
   if (!choiceId) throw new TypeError("RELIC_OFFER_CHOICE_ID_INVALID");
-  const preview = previewRelicAcquisitionV08(build, relicId);
+  const preview = previewRelicIncomingV08(build, relicId);
   return {
     choiceId,
     relicId: preview.relicId,

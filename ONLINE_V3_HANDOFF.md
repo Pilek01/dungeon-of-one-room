@@ -1,4 +1,4 @@
-# Online v3 handoff - Phase 3B2B2B2
+# Online v3 handoff - Phase 3B2C2
 
 Date: 2026-07-24
 
@@ -61,6 +61,73 @@ The Phase 3B2B2B2 local commit subject is:
 ```text
 Resolve Online v3 Vault and Arena relic source classifications
 ```
+
+The Phase 3B2C1 local commit subject is:
+
+```text
+Implement Online v3 canonical run modifiers and derived effects
+```
+
+The Phase 3B2C2 local commit subject is:
+
+```text
+Implement Online v3 canonical relic replacement transactions
+```
+
+## Phase 3B2C2 outcome
+
+Phase 3B2C2 completes the production-v0.8 replacement audit and adds one
+server-derived acquisition evaluator with `ACQUIRE_DIRECT`,
+`REQUIRE_REPLACEMENT`, and `REJECT` results. The canonical pending transaction
+binds run, ruleset hash, revision, build digest, source offer, source choice,
+reward slot, immutable incoming relic and opaque candidate IDs.
+
+Every candidate is a complete final-build simulation. Normal stack targets
+lose one stack while unique targets are removed completely. Incoming Abyssal
+Reliquary applies its +2 slot bonus before its cost. Removing Abyssal or Crown
+Concord is filtered when the lower resulting slot/legendary limit would make
+the build invalid. The legacy multi-step Abyssal mythic shift is represented
+as one atomic removal bundle, preserving all complete baseline outcomes
+without exposing partial-loss intermediate saves.
+
+Starting, Warden and Otter selection use the shared evaluator. A replacement
+selection locks the incoming offer choice and reward slot until an opaque
+commit or confirmed baseline cancel. Commit/cancel consume the offer and slot
+once, store a bounded receipt and support exact retry and JSON restart
+determinism. Starting remains direct-only because a valid starting build is
+empty.
+
+Arena dependencies are now:
+
+- canonical run modifiers: `RESOLVED`;
+- `extraRelicChoices`: `RESOLVED`;
+- global relic replacement transaction: `RESOLVED`;
+- replacement reward fallback for an empty/stale stored cache: `OPEN`.
+
+Arena is therefore ready for normal legal pools and full-slot settlement, but
+not for its empty-pool behavior. No Arena offer is implemented in this phase.
+Merchant, Forge, Crossroads, Vault, endpoint, D1, client and game integration
+also remain untouched.
+
+Phase 3B2C2 adds 60 schema-complete golden fixtures and a 5000-case seeded
+property run. The largest complete public projection is 14484 bytes for the
+10-slot composite Abyssal case; all legal bundles are retained rather than
+truncated to the preferred 8 KiB target.
+
+```text
+previous hash: sha256:b4d227a665bd9f059e79b69b4db21a202b826313787af0d6c6cd39ae737cad5a
+current hash:  sha256:f4a24a19d229eed1b2d43b4e7b4d7385c2dae7ebf611153f286d6e3bd6cac0f1
+```
+
+Detailed record:
+
+```text
+docs/ONLINE_V3_PHASE3B2C2.md
+```
+
+Next recommended phase: implement the Arena relic offer and its explicit
+replacement-reward fallback policy, without activating the ruleset until that
+separate phase passes.
 
 ## Phase 3B2B2B2 outcome
 

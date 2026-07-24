@@ -57,6 +57,7 @@ const allowedDeferredStatuses = new Set([
   "READY_FOR_IMPLEMENTATION",
   "REQUIRES_TRANSACTION_PHASE",
   "BLOCKED_BY_REPLACEMENT_POLICY",
+  "BLOCKED_BY_REPLACEMENT_REWARD_POLICY",
   "UNRESOLVED_ACTIVE_RELIC_SOURCE",
   "NOT_PRODUCTION_SOURCE"
 ]);
@@ -190,7 +191,10 @@ test("Phase 3B2B2B1 golden corpus has exactly 50 complete fixtures", () => {
 test("special relic audit is complete and uses the required exact schema", () => {
   const audit = auditDocument.canonicalData;
   assert.equal(audit.sourceCount, 12);
-  assert.deepEqual(audit.implementedSourceIds, ["otter-crimson-chest"]);
+  assert.deepEqual(
+    audit.implementedSourceIds,
+    ["otter-crimson-chest", "global-replacement-rewards"]
+  );
   assert.deepEqual(audit.unresolvedSourceIds, []);
   for (const source of audit.sources) {
     assert.deepEqual(Object.keys(source), audit.auditFields);
@@ -217,7 +221,7 @@ test("special relic audit is complete and uses the required exact schema", () =>
 test("deferred source specification is executable and status-complete", () => {
   const deferred = deferredDocument.canonicalData;
   assert.deepEqual(new Set(deferred.allowedStatuses), allowedDeferredStatuses);
-  assert.equal(deferred.sourceCount, 11);
+  assert.equal(deferred.sourceCount, 10);
   for (const source of deferred.sources) {
     assert.ok(allowedDeferredStatuses.has(source.status), source.sourceId);
     assert.ok(source.trigger);
@@ -397,7 +401,7 @@ test("Otter selection uses opaque IDs, preserves economy fields and remains idem
   );
 });
 
-test("Otter empty pool fails closed and replacement-dependent full builds stay explicit", async () => {
+test("Otter full builds retain replacement-eligible choices after Phase 3B2C2", async () => {
   const build = await buildWith([
     "abyssalreliquary",
     "ironboots",
@@ -410,15 +414,18 @@ test("Otter empty pool fails closed and replacement-dependent full builds stay e
     "thornmail",
     "vampfang"
   ]);
-  assert.deepEqual(getOtterRelicCandidatePoolV08({ build }), []);
+  assert.ok(getOtterRelicCandidatePoolV08({ build }).length > 0);
   const result = await otterState({ runId: "otter_empty", build });
-  const before = structuredClone(result.state);
-  await assert.rejects(
-    issueRegularRelicOffer(result.state, issueRequest(result.state), result.resolvedContext),
-    /UNRESOLVED_EMPTY_RELIC_POOL/u
+  const issuedState = await issueRegularRelicOffer(
+    result.state,
+    issueRequest(result.state),
+    result.resolvedContext
   );
-  assert.deepEqual(result.state, before);
-  assert.equal(otterPolicyDocument.canonicalData.fullPoolBehavior, "BLOCKED_BY_REPLACEMENT_POLICY");
+  assert.ok(issuedState.pendingOffer);
+  assert.equal(
+    otterPolicyDocument.canonicalData.fullPoolBehavior,
+    "CANONICAL_REPLACEMENT_TRANSACTION"
+  );
 });
 
 test("Otter RNG purposes are isolated and public payload contains only the safe projection", async () => {

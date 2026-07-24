@@ -16,6 +16,11 @@ import {
   projectPublicRegularRelicOfferV08,
   selectRegularRelic
 } from "./regular-relic-offer.js";
+import {
+  cancelRelicReplacement,
+  commitRelicReplacement,
+  projectPublicRelicReplacement
+} from "./relic-replacement.js";
 export {
   applyRelicAcquisition,
   assertCanonicalRelicBuildDigestV08,
@@ -25,8 +30,19 @@ export {
   getRelicSlotLimit,
   getRelicStackLimit,
   previewRelicAcquisitionV08,
+  previewRelicIncomingV08,
   projectPublicBuild
 } from "./relic-policy.js";
+export {
+  RELIC_REPLACEMENT_POLICY_VERSION,
+  assertPendingRelicTransactionV08,
+  cancelRelicReplacement,
+  commitRelicReplacement,
+  createPendingRelicTransactionV08,
+  evaluateRelicAcquisition,
+  isRelicDraftEligibleV08,
+  projectPublicRelicReplacement
+} from "./relic-replacement.js";
 export {
   assertStartingRelicOfferV08,
   issueStartingRelicOfferV08,
@@ -68,6 +84,7 @@ export function createV08Meta1Ruleset(options = {}) {
     async selectStartingRelic(state, request, context = {}) {
       const mergedContext = mergeContext(options, context);
       const selected = await selectStartingRelic(state, request, mergedContext);
+      if (selected.pendingRelicTransaction) return selected;
       if (selected.currentRoomDirective) return selected;
       return issueNextRoomDirectiveV08(selected, mergedContext);
     },
@@ -94,6 +111,26 @@ export function createV08Meta1Ruleset(options = {}) {
 
     projectPublicRegularRelicOffer(offer) {
       return projectPublicRegularRelicOfferV08(offer);
+    },
+
+    async commitRelicReplacement(state, request, context = {}) {
+      return commitRelicReplacement(
+        state,
+        request,
+        mergeContext(options, context)
+      );
+    },
+
+    async cancelRelicReplacement(state, request, context = {}) {
+      return cancelRelicReplacement(
+        state,
+        request,
+        mergeContext(options, context)
+      );
+    },
+
+    projectPublicRelicReplacement(state) {
+      return projectPublicRelicReplacement(state);
     },
 
     async issueRoomDirective(state, context = {}) {

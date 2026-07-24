@@ -13,6 +13,7 @@ import {
   assertCanonicalRunModifierLedgerV08,
   createEmptyRunModifierLedgerV08
 } from "./run-modifiers.js";
+import { assertPendingRelicTransactionV08 } from "./relic-replacement.js";
 
 const progression = progressionDocument.canonicalData;
 
@@ -118,6 +119,8 @@ export function createInitialMetaStateV08(input = {}, context = {}) {
     runModifiers: createEmptyRunModifierLedgerV08(),
     pendingOffer: null,
     offerSettlementHistory: [],
+    pendingRelicTransaction: null,
+    relicReplacementHistory: [],
     relicOfferState: createRelicOfferState(),
     pendingInventory: null,
     specialRoomScheduleState: createScheduleState(input.specialRoomHistory),
@@ -170,6 +173,13 @@ export function assertMetaStateV08(state) {
   assertGoldLedgerV08(state);
   if (!Array.isArray(state.offerSettlementHistory) || state.offerSettlementHistory.length > 64) {
     throw new TypeError("META_STATE_INVALID:offerSettlementHistory");
+  }
+  assertPendingRelicTransactionV08(state.pendingRelicTransaction);
+  if (
+    !Array.isArray(state.relicReplacementHistory) ||
+    state.relicReplacementHistory.length > 64
+  ) {
+    throw new TypeError("META_STATE_INVALID:relicReplacementHistory");
   }
   if (
     state.pendingOffer !== null &&

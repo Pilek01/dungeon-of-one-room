@@ -92,7 +92,7 @@
       "relic-offer-choice-id"
     ],
     "emptyPoolBehavior": "UNRESOLVED_EMPTY_RELIC_POOL",
-    "fullPoolBehavior": "DEFERRED_REPLACEMENT_REWARD",
+    "fullPoolBehavior": "CANONICAL_REPLACEMENT_TRANSACTION",
     "publicChoiceFields": [
       "choiceId",
       "relicId",

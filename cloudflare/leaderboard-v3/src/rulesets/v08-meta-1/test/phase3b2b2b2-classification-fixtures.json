@@ -37,63 +37,63 @@
   {
     "fixtureId": "arena-active-room-eligibility",
     "sourceId": "arena-reward-cache",
-    "expectedClassification": "BLOCKED_BY_REPLACEMENT_POLICY",
+    "expectedClassification": "BLOCKED_BY_REPLACEMENT_REWARD_POLICY",
     "evidence": "expansion-content.js:ROOM_TYPES.arena",
     "expected": "minimum depth 40, non-boss through 99"
   },
   {
     "fixtureId": "arena-two-wave-completion",
     "sourceId": "arena-reward-cache",
-    "expectedClassification": "BLOCKED_BY_REPLACEMENT_POLICY",
+    "expectedClassification": "BLOCKED_BY_REPLACEMENT_REWARD_POLICY",
     "evidence": "game.js:ARENA_WAVE_COUNT/checkRoomClearBonus",
     "expected": "reward after wave 2 clear"
   },
   {
     "fixtureId": "arena-stored-relic-cache",
     "sourceId": "arena-reward-cache",
-    "expectedClassification": "BLOCKED_BY_REPLACEMENT_POLICY",
+    "expectedClassification": "BLOCKED_BY_REPLACEMENT_REWARD_POLICY",
     "evidence": "game.js:spawnArenaRewardChest/openStoredRelicChest",
     "expected": "arena_reward with stored rare+ relic IDs"
   },
   {
     "fixtureId": "arena-choice-count-dependency",
     "sourceId": "arena-reward-cache",
-    "expectedClassification": "BLOCKED_BY_REPLACEMENT_POLICY",
+    "expectedClassification": "BLOCKED_BY_REPLACEMENT_REWARD_POLICY",
     "evidence": "game.js:spawnArenaRewardChest/applyMutatorsToRun",
     "expected": "3 + extraRelicChoices; Ascension adds one"
   },
   {
     "fixtureId": "arena-run-modifier-dependency-resolved",
     "sourceId": "arena-reward-cache",
-    "expectedClassification": "BLOCKED_BY_REPLACEMENT_POLICY",
+    "expectedClassification": "BLOCKED_BY_REPLACEMENT_REWARD_POLICY",
     "evidence": "cloudflare/leaderboard-v3/src/rulesets/v08-meta-1/meta-state.js",
     "expected": "canonical extraRelicChoices resolved; replacement contract open"
   },
   {
     "fixtureId": "arena-no-reward-pity",
     "sourceId": "arena-reward-cache",
-    "expectedClassification": "BLOCKED_BY_REPLACEMENT_POLICY",
+    "expectedClassification": "BLOCKED_BY_REPLACEMENT_REWARD_POLICY",
     "evidence": "game.js:spawnArenaRewardChest",
     "expected": "NONE"
   },
   {
     "fixtureId": "arena-empty-pool",
     "sourceId": "arena-reward-cache",
-    "expectedClassification": "BLOCKED_BY_REPLACEMENT_POLICY",
+    "expectedClassification": "BLOCKED_BY_REPLACEMENT_REWARD_POLICY",
     "evidence": "game.js:spawnArenaRewardChest/openStoredRelicChest",
     "expected": "no chest spawn; stale empty cache grants 60 gold"
   },
   {
     "fixtureId": "arena-full-slots-replacement",
     "sourceId": "arena-reward-cache",
-    "expectedClassification": "BLOCKED_BY_REPLACEMENT_POLICY",
+    "expectedClassification": "BLOCKED_BY_REPLACEMENT_REWARD_POLICY",
     "evidence": "game.js:buildRelicDraftChoices/chooseRelic",
     "expected": "draft ignores slot capacity; selection can enter global replacement"
   },
   {
     "fixtureId": "arena-no-synthetic-policy-or-slot",
     "sourceId": "arena-reward-cache",
-    "expectedClassification": "BLOCKED_BY_REPLACEMENT_POLICY",
+    "expectedClassification": "BLOCKED_BY_REPLACEMENT_REWARD_POLICY",
     "evidence": "v08-meta-1 reward-policy and generated data",
     "expected": "no Arena policy module and no Arena relic_offer slot"
   }

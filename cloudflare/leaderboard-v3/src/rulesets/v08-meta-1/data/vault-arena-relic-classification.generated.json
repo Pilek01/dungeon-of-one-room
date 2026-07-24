@@ -97,7 +97,7 @@
     },
     "arena": {
       "sourceId": "arena-reward-cache",
-      "classification": "BLOCKED_BY_REPLACEMENT_POLICY",
+      "classification": "BLOCKED_BY_REPLACEMENT_REWARD_POLICY",
       "legacySourceFiles": [
         "expansion-content.js",
         "game.js",
@@ -145,16 +145,16 @@
       "selectionRequired": false,
       "emptyPoolBehavior": "no reward chest is spawned; opening a stale empty stored cache grants baseline 60 gold",
       "fullSlotsBehavior": "offered relic may enter the global replacement UI after selection",
-      "replacementBehavior": "BLOCKED_BY_REPLACEMENT_POLICY",
+      "replacementBehavior": "CANONICAL_GLOBAL_REPLACEMENT_TRANSACTION",
       "dependencyStatus": {
         "canonicalRunModifierState": "RESOLVED",
         "extraRelicChoicesProjection": "RESOLVED",
-        "replacementContract": "OPEN"
+        "globalRelicReplacementTransaction": "RESOLVED",
+        "replacementRewardFallback": "OPEN"
       },
       "serverCanIssueExactly": false,
       "exactIssuanceBlockers": [
-        "baseline draft eligibility does not filter slot capacity before offering",
-        "global relicSwapPending/legendarySwapPending settlement is outside this phase"
+        "empty pool and stale empty stored-cache 60 gold replacement reward fallback remains outside this phase"
       ],
       "boundedClientAttestationRequired": {
         "required": true,

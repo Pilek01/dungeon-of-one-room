@@ -129,8 +129,8 @@
     "selectionPolicy": "existing selectRegularRelic; choose one canonical choice",
     "baselineSkipPolicy": "optional draft skip remains deferred with endpoint integration",
     "emptyPoolBehavior": "UNRESOLVED_EMPTY_RELIC_POOL",
-    "fullPoolBehavior": "BLOCKED_BY_REPLACEMENT_POLICY",
-    "staleStoredOfferFallback": "50 gold local safeguard; not implemented in this phase",
+    "fullPoolBehavior": "CANONICAL_REPLACEMENT_TRANSACTION",
+    "staleStoredOfferFallback": "50 gold local safeguard; BLOCKED_BY_REPLACEMENT_REWARD_POLICY",
     "publicChoiceFields": [
       "choiceId",
       "relicId",

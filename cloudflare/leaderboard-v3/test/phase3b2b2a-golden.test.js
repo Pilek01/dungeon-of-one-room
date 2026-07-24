@@ -246,7 +246,9 @@ test("regular offer has the exact binding contract and one-time reward slot", as
     "expiresOnRevision",
     "consumed",
     "consumedChoiceId",
-    "consumedAtRevision"
+    "consumedAtRevision",
+    "selectionPending",
+    "selectedChoiceId"
   ]);
   const slot = result.state.currentRewardEnvelope.rewardSlots[0];
   assert.equal(slot.offerId, offer.offerId);
@@ -429,9 +431,11 @@ test("candidate filtering enforces canonical build, caps, slots, mutual exclusio
     "idol",
     "thornmail"
   ]);
-  assert.deepEqual(getRegularRelicCandidatePoolV08({ build: fullBuild }, 25), [
-    "abyssalreliquary"
-  ]);
+  const fullPool = getRegularRelicCandidatePoolV08({ build: fullBuild }, 25);
+  assert.ok(fullPool.length > 1);
+  assert.equal(fullPool.includes("ironboots"), false);
+  assert.equal(fullPool.includes("abyssalreliquary"), true);
+  assert.equal(fullPool.includes("risk"), true);
   const bonusBuild = await buildWith([
     "abyssalreliquary",
     "ironboots",
@@ -458,7 +462,7 @@ test("candidate filtering enforces canonical build, caps, slots, mutual exclusio
   );
 });
 
-test("empty pool fails closed and a smaller pool emits fewer choices without replacement synthesis", async () => {
+test("full builds retain baseline draft-eligible choices for canonical replacement", async () => {
   const fullBonusBuild = await buildWith([
     "abyssalreliquary",
     "ironboots",
@@ -471,16 +475,27 @@ test("empty pool fails closed and a smaller pool emits fewer choices without rep
     "thornmail",
     "vampfang"
   ]);
-  assert.deepEqual(getRegularRelicCandidatePoolV08({ build: fullBonusBuild }, 25), []);
+  assert.ok(getRegularRelicCandidatePoolV08({ build: fullBonusBuild }, 25).length > 0);
   const result = await roomState({
     runId: "empty_pool",
     build: fullBonusBuild,
     controls: { dropRoll: 0 }
   });
-  await assert.rejects(
-    issueRegularRelicOffer(result.state, issueRequest(result.state), result.resolvedContext),
-    /UNRESOLVED_EMPTY_RELIC_POOL/u
+  const fullBonusIssued = await issueRegularRelicOffer(
+    result.state,
+    issueRequest(result.state),
+    result.resolvedContext
   );
+  assert.ok(fullBonusIssued.pendingOffer);
+  const fullBonusSelected = await selectRegularRelic(
+    fullBonusIssued,
+    {
+      offerId: fullBonusIssued.pendingOffer.offerId,
+      choiceId: fullBonusIssued.pendingOffer.choices[0].choiceId
+    },
+    result.resolvedContext
+  );
+  assert.ok(fullBonusSelected.pendingRelicTransaction);
 
   const fullBuild = await buildWith([
     "ironboots",
@@ -497,8 +512,8 @@ test("empty pool fails closed and a smaller pool emits fewer choices without rep
     build: fullBuild,
     controls: { dropRoll: 0, rarityRolls: [0, 0, 0] }
   });
-  assert.equal(smaller.state.pendingOffer.choices.length, 1);
-  assert.equal(smaller.state.pendingOffer.choices[0].privateRelicId, "abyssalreliquary");
+  assert.ok(smaller.state.pendingOffer.choices.length >= 1);
+  assert.ok(smaller.state.pendingOffer.choices.length <= 3);
 });
 
 test("selection is strict, bound, idempotent and consumes exactly one slot", async () => {

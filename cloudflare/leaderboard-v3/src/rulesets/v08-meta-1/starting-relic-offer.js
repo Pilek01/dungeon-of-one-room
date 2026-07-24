@@ -15,6 +15,10 @@ import {
   findRelicOfferReceiptV08,
   projectPublicRelicChoiceV08
 } from "./relic-offer-common.js";
+import {
+  createPendingRelicTransactionV08,
+  evaluateRelicAcquisition
+} from "./relic-replacement.js";
 
 const policy = startingPolicyDocument.canonicalData;
 
@@ -64,7 +68,9 @@ export async function issueStartingRelicOfferV08(state, context = {}) {
     expiresOnRevision: state.revision,
     consumed: false,
     consumedChoiceId: null,
-    consumedAtRevision: null
+    consumedAtRevision: null,
+    selectionPending: false,
+    selectedChoiceId: null
   };
   assertStartingRelicOfferV08(offer);
   const next = cloneMetaStateV08(state);
@@ -130,6 +136,16 @@ export function assertStartingRelicOfferV08(offer) {
   } else if (offer.consumedChoiceId !== null || offer.consumedAtRevision !== null) {
     throw new TypeError("STARTING_RELIC_OFFER_UNCONSUMED_FIELDS_INVALID");
   }
+  if (typeof offer.selectionPending !== "boolean") {
+    throw new TypeError("STARTING_RELIC_OFFER_SELECTION_PENDING_INVALID");
+  }
+  if (
+    offer.selectionPending && !choiceIds.has(offer.selectedChoiceId) ||
+    !offer.selectionPending && !offer.consumed && offer.selectedChoiceId !== null ||
+    offer.consumed && offer.selectedChoiceId !== offer.consumedChoiceId
+  ) {
+    throw new TypeError("STARTING_RELIC_OFFER_SELECTED_CHOICE_INVALID");
+  }
   return offer;
 }
 
@@ -139,6 +155,14 @@ export async function selectStartingRelic(metaState, request = {}, context = {})
   const { offerId, choiceId } = assertRelicSelectionRequestV08(request, {
     allowBindingFields: true
   });
+  if (metaState.pendingRelicTransaction) {
+    const incoming = metaState.pendingRelicTransaction.incoming;
+    if (incoming.sourceOfferId !== offerId) throw new TypeError("STARTING_RELIC_OFFER_UNKNOWN");
+    if (incoming.sourceChoiceId !== choiceId) {
+      throw new TypeError("STARTING_RELIC_OFFER_SELECTION_ALREADY_PENDING");
+    }
+    return cloneMetaStateV08(metaState);
+  }
   const receipt = findRelicOfferReceiptV08(metaState, offerId);
   if (receipt) {
     if (request.runId && request.runId !== metaState.runId) {
@@ -174,6 +198,28 @@ export async function selectStartingRelic(metaState, request = {}, context = {})
     throw new TypeError("STARTING_RELIC_PRIVATE_CHOICE_INVALID");
   }
 
+  const acquisition = {
+    incomingRelicId: choice.privateRelicId,
+    incomingStacks: 1,
+    acquisitionSource: "starting_relic",
+    sourceOfferId: offer.offerId,
+    sourceChoiceId: choice.choiceId,
+    sourceRewardSlotId: null
+  };
+  const decision = await evaluateRelicAcquisition(metaState, acquisition, context);
+  if (decision.decision === "REJECT") throw new TypeError(decision.code);
+  if (decision.decision === "REQUIRE_REPLACEMENT") {
+    const pending = cloneMetaStateV08(metaState);
+    pending.pendingOffer.selectionPending = true;
+    pending.pendingOffer.selectedChoiceId = choice.choiceId;
+    pending.pendingRelicTransaction = await createPendingRelicTransactionV08(
+      pending,
+      decision,
+      context
+    );
+    return pending;
+  }
+
   const next = cloneMetaStateV08(metaState);
   next.build = await applyRelicAcquisition(next.build, {
     relicId: choice.privateRelicId,
@@ -192,6 +238,7 @@ export async function selectStartingRelic(metaState, request = {}, context = {})
     publicBuild: projectPublicBuild(next.build),
     offer: {
       ...offer,
+      selectedChoiceId: choiceId,
       consumed: true,
       consumedChoiceId: choiceId,
       consumedAtRevision: next.revision
