@@ -1,4 +1,4 @@
-# Online v3 handoff - Phase 3B2B1
+# Online v3 handoff - Phase 3B2B2A
 
 Date: 2026-07-24
 
@@ -43,6 +43,73 @@ The Phase 3B2B1 local commit subject is:
 ```text
 Implement Online v3 starting relic offer and canonical build ledger
 ```
+
+The Phase 3B2B2A local commit subject is:
+
+```text
+Implement Online v3 standard relic offers and rarity policy
+```
+
+## Phase 3B2B2A outcome
+
+Phase 3B2B2A adds an exact 12-source v0.8 relic-reward inventory, a common
+safe public choice projection for starting and regular offers, and the
+server-issued standard Warden relic flow.
+
+Standard boss reward envelopes now contain one private, one-time relic-offer
+slot. Ordinary and Vault chest tables contain no relic outcome in the active
+baseline, so no chest relic slot was invented. Vault, Arena, Crossroads,
+Otter, Forge, Merchant, and replacement sources retain explicit deferred
+reasons for Phase 3B2B2B.
+
+The Warden policy reproduces the exact depth-tier drop and rarity weights,
+mythic pre-roll, three-choice behavior, no-duplicate candidate selection, and
+the verifiable run-scoped miss streak. The persistent first-drop flag and
+Forge/Otter room pity remain deferred. Empty legal pools fail closed instead
+of synthesizing a replacement reward.
+
+Regular issuance and selection are bound to run, ruleset, revision, room
+directive, `RoomRewardEnvelopeV3`, reward slot, source, and canonical build
+digest. Exact retries are idempotent; forged, stale, foreign, mismatched, or
+already-consumed operations fail closed. The public three-choice payload is
+1141 bytes and excludes the private choice map and state digest.
+
+The previous Phase 3B2B1 hash was:
+
+```text
+sha256:ca964ec0ce54dd9ea550e4814fb4cc151a699da01d1970637e30cd25c64bf800
+```
+
+The Phase 3B2B2A hash is:
+
+```text
+sha256:fdfe7524ecee5c597f4e1fa87bddef1165c23291edc82092cfa12e2cc7b244a9
+```
+
+The descriptor remains `test-only`; neither hash was activated. Active Worker
+routes, fixture ruleset, D1 schema, `recent_ops_json`, Wrangler configuration,
+browser game, CSS, assets, and audio are unchanged.
+
+Verification adds exactly 58 golden fixtures, 5,000 seeded Warden-offer
+property cases, and 250 illegal-selection immutability cases.
+
+Phase 3B2B2A validation:
+
+```text
+generator drift check:       PASS
+unit/fixture tests:          265 pass, 0 fail
+real runtime/D1 tests:         9 pass, 0 fail
+combined:                    274 pass, 0 fail
+headed game baseline smoke: PASS
+```
+
+Detailed record:
+
+```text
+docs/ONLINE_V3_PHASE3B2B2A.md
+```
+
+Next planned phase: 3B2B2B special relic sources.
 
 ## Phase 3B2B1 outcome
 

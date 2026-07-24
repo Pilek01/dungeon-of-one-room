@@ -37,7 +37,16 @@ const SOURCE_INPUTS = Object.freeze([
       "CAMPAIGN_REGION_CONFIGS",
       "chooseRoomType",
       "isBossDepth",
-      "maybeQueueOtterRoom"
+      "maybeQueueOtterRoom",
+      "rollRelicRarity",
+      "buildRelicDraftChoices",
+      "checkRoomClearBonus",
+      "openChest",
+      "spawnArenaRewardChest",
+      "openCrossroadsPowerChest",
+      "generateMerchantSlots",
+      "executeForgeTemper",
+      "executeForgeTransmute"
     ]
   },
   {
@@ -70,11 +79,25 @@ const SOURCE_INPUTS = Object.freeze([
   },
   {
     file: "relic-data.js",
-    symbols: ["RELICS", "Golden Idol", "Void Reaper", "Chaos Orb"]
+    symbols: [
+      "RELICS",
+      "WARDEN_RELIC_DROP_TABLE",
+      "WARDEN_RELIC_PITY_BONUS_PER_MISS",
+      "WARDEN_RELIC_HARD_PITY_AFTER_MISSES",
+      "Golden Idol",
+      "Void Reaper",
+      "Chaos Orb"
+    ]
   },
   {
     file: "relic-runtime.js",
-    symbols: ["getRelicStackCount", "isNormalRelicStackAtCap", "getRelicInventoryGroups"]
+    symbols: [
+      "getRelicStackCount",
+      "isNormalRelicStackAtCap",
+      "getRelicInventoryGroups",
+      "getWardenRelicDropRoll",
+      "shouldForceWardenFirstDrop"
+    ]
   },
   {
     file: "merchant-curation.js",
@@ -83,6 +106,10 @@ const SOURCE_INPUTS = Object.freeze([
   {
     file: "boss-campaign.js",
     symbols: ["BOSS_PROFILES"]
+  },
+  {
+    file: "vault-room.js",
+    symbols: ["VAULT_ENCOUNTER_PROFILE", "isVaultChestAvailable"]
   }
 ]);
 
@@ -99,6 +126,10 @@ const GENERATED_FILES = Object.freeze([
   "relic-slot-policy.generated.json",
   "starting-relic-policy.generated.json",
   "relic-build-metadata.generated.json",
+  "relic-reward-sources.generated.json",
+  "relic-rarity-policy.generated.json",
+  "relic-pity-policy.generated.json",
+  "regular-relic-offer-policy.generated.json",
   "room-reward-bounds.generated.json",
   "chest-reward-bounds.generated.json"
 ]);
@@ -491,6 +522,391 @@ function buildRelicCanonicalData(records, textByFile) {
           "totalRelicStacks",
           "buildDigest"
         ]
+      }
+    }]
+  ]);
+}
+
+function parseWardenRelicDropTable(source) {
+  const block = extractBalancedBlock(source, "const WARDEN_RELIC_DROP_TABLE", "[", "]");
+  const entries = [];
+  const pattern = /\{\s*minDepth:\s*(\d+),\s*dropChance:\s*([0-9.]+),\s*rarityWeights:\s*\{\s*normal:\s*([0-9.]+),\s*rare:\s*([0-9.]+),\s*epic:\s*([0-9.]+),\s*legendary:\s*([0-9.]+)\s*\}\s*\}/gu;
+  for (const match of block.matchAll(pattern)) {
+    entries.push({
+      minDepth: Number(match[1]),
+      dropChance: Number(match[2]),
+      rarityWeights: {
+        normal: Number(match[3]),
+        rare: Number(match[4]),
+        epic: Number(match[5]),
+        legendary: Number(match[6])
+      }
+    });
+  }
+  if (entries.length !== 5) {
+    throw new Error(`SOURCE_PARSE_FAILED:WARDEN_RELIC_DROP_TABLE:${entries.length}`);
+  }
+  return entries;
+}
+
+function buildRegularRelicOfferCanonicalData(records, textByFile) {
+  const gameSource = textByFile.get("game.js");
+  const relicDataSource = textByFile.get("relic-data.js");
+  const wardenDropTable = parseWardenRelicDropTable(relicDataSource);
+  const pityBonusPerMiss = extractNumber(
+    relicDataSource,
+    "WARDEN_RELIC_PITY_BONUS_PER_MISS"
+  );
+  const hardPityAfterMisses = extractNumber(
+    relicDataSource,
+    "WARDEN_RELIC_HARD_PITY_AFTER_MISSES"
+  );
+  const mythicRelativeChance = extractNumber(
+    gameSource,
+    "MYTHIC_RELATIVE_TO_LEGENDARY_CHANCE"
+  );
+  const maximumDepth = extractNumber(gameSource, "MAX_DEPTH");
+  const sourceFiles = [
+    "game.js",
+    "relic-data.js",
+    "relic-runtime.js",
+    "loot-tables.js",
+    "boss-campaign.js",
+    "merchant-curation.js",
+    "vault-room.js",
+    "room-pity.js",
+    "camp-runtime.js"
+  ];
+  const sources = sourceRefs(records, sourceFiles);
+  const common = {
+    schemaVersion: 1,
+    rulesetId: RULESET_ID,
+    sourceCommit: BASELINE_COMMIT,
+    sources
+  };
+  const inventoryFields = [
+    "sourceId",
+    "legacySourceFile",
+    "legacyFunctionOrSymbol",
+    "sourceCategory",
+    "roomTypes",
+    "depthRange",
+    "offerChoiceCount",
+    "allowedRarities",
+    "rarityWeights",
+    "pityStateUsed",
+    "specialRestrictions",
+    "rewardSlotRequired",
+    "implementedIn3B2B2A",
+    "deferredReason"
+  ];
+  const sourceInventory = [
+    {
+      sourceId: "starting-fixed",
+      legacySourceFile: "game.js",
+      legacyFunctionOrSymbol: "openStartingRelicDraft",
+      sourceCategory: "starting",
+      roomTypes: [],
+      depthRange: { minimum: 0, maximum: 0 },
+      offerChoiceCount: 3,
+      allowedRarities: ["normal"],
+      rarityWeights: null,
+      pityStateUsed: [],
+      specialRestrictions: ["fixed fang/plating/lucky order", "mandatory selection"],
+      rewardSlotRequired: false,
+      implementedIn3B2B2A: false,
+      deferredReason: "EXISTING_PHASE_3B2B1"
+    },
+    {
+      sourceId: "standard-chest",
+      legacySourceFile: "loot-tables.js",
+      legacyFunctionOrSymbol: "rollChestOutcome/openChest",
+      sourceCategory: "standard_chest",
+      roomTypes: ["combat", "treasure", "shrine", "cursed", "boss"],
+      depthRange: { minimum: 1, maximum: maximumDepth },
+      offerChoiceCount: 0,
+      allowedRarities: [],
+      rarityWeights: null,
+      pityStateUsed: [],
+      specialRestrictions: ["health/healing/attack/armor/potion/map_fragment/gold/trap only"],
+      rewardSlotRequired: false,
+      implementedIn3B2B2A: false,
+      deferredReason: "NO_RELIC_REWARD_IN_BASELINE"
+    },
+    {
+      sourceId: "warden-standard-drop",
+      legacySourceFile: "game.js",
+      legacyFunctionOrSymbol: "checkRoomClearBonus/openRelicDraft(true)",
+      sourceCategory: "standard_boss_reward",
+      roomTypes: ["boss"],
+      depthRange: { minimum: 5, maximum: maximumDepth - 5 },
+      offerChoiceCount: 3,
+      allowedRarities: ["normal", "rare", "epic", "legendary", "mythic"],
+      rarityWeights: "depth-tiered WARDEN_RELIC_DROP_TABLE plus mythic relative roll",
+      pityStateUsed: ["warden-run-drop-miss-streak"],
+      specialRestrictions: ["boss depth", "final depth excluded", "profile first-drop guarantee deferred"],
+      rewardSlotRequired: true,
+      implementedIn3B2B2A: true,
+      deferredReason: null
+    },
+    {
+      sourceId: "arena-reward-cache",
+      legacySourceFile: "game.js",
+      legacyFunctionOrSymbol: "spawnArenaRewardChest/openStoredRelicChest",
+      sourceCategory: "special_room_reward",
+      roomTypes: ["arena"],
+      depthRange: { minimum: 1, maximum: maximumDepth },
+      offerChoiceCount: 3,
+      allowedRarities: ["rare", "epic", "legendary", "mythic"],
+      rarityWeights: "non-boss depth formula",
+      pityStateUsed: [],
+      specialRestrictions: ["three-wave Arena", "60 gold empty replacement"],
+      rewardSlotRequired: true,
+      implementedIn3B2B2A: false,
+      deferredReason: "SPECIAL_SOURCE_POLICY_PHASE_3B2B2B"
+    },
+    {
+      sourceId: "crossroads-power",
+      legacySourceFile: "game.js",
+      legacyFunctionOrSymbol: "openCrossroadsPowerChest",
+      sourceCategory: "special_room_reward",
+      roomTypes: ["crossroads"],
+      depthRange: { minimum: 1, maximum: maximumDepth },
+      offerChoiceCount: 3,
+      allowedRarities: ["epic", "legendary", "mythic"],
+      rarityWeights: "non-boss depth formula",
+      pityStateUsed: [],
+      specialRestrictions: ["15 percent max HP cost", "80 gold empty replacement"],
+      rewardSlotRequired: true,
+      implementedIn3B2B2A: false,
+      deferredReason: "CROSSROADS_SPECIFIC_POLICY_PHASE_3B2B2B"
+    },
+    {
+      sourceId: "otter-crimson-chest",
+      legacySourceFile: "game.js",
+      legacyFunctionOrSymbol: "buildOtterRoomRelicOfferIds/spawnOtterRewardChest",
+      sourceCategory: "special_room_reward",
+      roomTypes: ["otter"],
+      depthRange: { minimum: 1, maximum: maximumDepth },
+      offerChoiceCount: 9,
+      allowedRarities: ["rare", "epic", "legendary", "mythic"],
+      rarityWeights: "non-boss depth formula",
+      pityStateUsed: ["otter-room-pity"],
+      specialRestrictions: ["Crimson chest", "50 gold empty replacement"],
+      rewardSlotRequired: true,
+      implementedIn3B2B2A: false,
+      deferredReason: "OTTER_SPECIFIC_POLICY_PHASE_3B2B2B"
+    },
+    {
+      sourceId: "forge-temper",
+      legacySourceFile: "game.js",
+      legacyFunctionOrSymbol: "executeForgeTemper",
+      sourceCategory: "special_room_reward",
+      roomTypes: ["forge"],
+      depthRange: { minimum: 6, maximum: maximumDepth },
+      offerChoiceCount: 1,
+      allowedRarities: ["rare", "epic", "legendary", "mythic"],
+      rarityWeights: "forge profile",
+      pityStateUsed: ["forge-room-pity"],
+      specialRestrictions: ["Blacksmith Guardian", "temper profile"],
+      rewardSlotRequired: true,
+      implementedIn3B2B2A: false,
+      deferredReason: "FORGE_SPECIFIC_POLICY_PHASE_3B2B2B"
+    },
+    {
+      sourceId: "forge-transmute",
+      legacySourceFile: "game.js",
+      legacyFunctionOrSymbol: "executeForgeTransmute",
+      sourceCategory: "replacement_reward",
+      roomTypes: ["forge"],
+      depthRange: { minimum: 6, maximum: maximumDepth },
+      offerChoiceCount: 3,
+      allowedRarities: ["normal", "rare", "epic", "legendary", "mythic"],
+      rarityWeights: "forge transmute profile",
+      pityStateUsed: [],
+      specialRestrictions: ["sacrifice required", "replacement transaction"],
+      rewardSlotRequired: true,
+      implementedIn3B2B2A: false,
+      deferredReason: "REPLACEMENT_REWARD_PHASE_3B2B2B"
+    },
+    {
+      sourceId: "merchant-relic-slot",
+      legacySourceFile: "game.js",
+      legacyFunctionOrSymbol: "generateMerchantSlots",
+      sourceCategory: "merchant",
+      roomTypes: ["merchant"],
+      depthRange: { minimum: 3, maximum: maximumDepth },
+      offerChoiceCount: 1,
+      allowedRarities: ["normal", "rare", "epic", "legendary"],
+      rarityWeights: { normal: 60, rare: 25, epic: 12, legendary: 3 },
+      pityStateUsed: [],
+      specialRestrictions: ["gold price", "reservation and swap flows"],
+      rewardSlotRequired: false,
+      implementedIn3B2B2A: false,
+      deferredReason: "MERCHANT_POLICY_PHASE_3B2B2B"
+    },
+    {
+      sourceId: "merchant-reserved-relic",
+      legacySourceFile: "camp-runtime.js",
+      legacyFunctionOrSymbol: "tryReserveRelicFromMerchant/tryBuyReservedRelicFromMerchant",
+      sourceCategory: "merchant",
+      roomTypes: ["merchant"],
+      depthRange: { minimum: 3, maximum: maximumDepth },
+      offerChoiceCount: 1,
+      allowedRarities: ["normal", "rare", "epic", "legendary"],
+      rarityWeights: "inherits merchant relic slot",
+      pityStateUsed: [],
+      specialRestrictions: ["persistent reservation", "deposit", "remaining price"],
+      rewardSlotRequired: false,
+      implementedIn3B2B2A: false,
+      deferredReason: "MERCHANT_POLICY_PHASE_3B2B2B"
+    },
+    {
+      sourceId: "merchant-black-market",
+      legacySourceFile: "camp-runtime.js",
+      legacyFunctionOrSymbol: "tryUseBlackMarket",
+      sourceCategory: "replacement_reward",
+      roomTypes: ["merchant"],
+      depthRange: { minimum: 3, maximum: maximumDepth },
+      offerChoiceCount: 1,
+      allowedRarities: ["rare", "epic"],
+      rarityWeights: "upgrade tier fixed by sacrificed rarity",
+      pityStateUsed: [],
+      specialRestrictions: ["sacrifice normal or rare relic", "replacement transaction"],
+      rewardSlotRequired: false,
+      implementedIn3B2B2A: false,
+      deferredReason: "MERCHANT_REPLACEMENT_POLICY_PHASE_3B2B2B"
+    },
+    {
+      sourceId: "vault-standard-chest",
+      legacySourceFile: "vault-room.js",
+      legacyFunctionOrSymbol: "isVaultChestAvailable/openChest",
+      sourceCategory: "special_room_reward",
+      roomTypes: ["vault"],
+      depthRange: { minimum: 1, maximum: maximumDepth },
+      offerChoiceCount: 0,
+      allowedRarities: [],
+      rarityWeights: null,
+      pityStateUsed: [],
+      specialRestrictions: ["Guardian lock", "standard chest outcome plus 50 gold"],
+      rewardSlotRequired: false,
+      implementedIn3B2B2A: false,
+      deferredReason: "NO_RELIC_REWARD_IN_BASELINE;VAULT_POLICY_PHASE_3B2B2B"
+    }
+  ];
+  for (const source of sourceInventory) {
+    if (Object.keys(source).join(",") !== inventoryFields.join(",")) {
+      throw new Error(`RELIC_REWARD_SOURCE_SCHEMA_MISMATCH:${source.sourceId}`);
+    }
+  }
+  const rarityTiers = wardenDropTable.map((entry, index) => ({
+    minDepth: entry.minDepth,
+    maxDepth: index === 0 ? maximumDepth - 5 : wardenDropTable[index - 1].minDepth - 1,
+    dropChance: entry.dropChance,
+    rarityWeights: entry.rarityWeights,
+    legendaryEligible: entry.rarityWeights.legendary > 0,
+    mythicEligible: entry.rarityWeights.legendary > 0
+  }));
+  return new Map([
+    ["relic-reward-sources.generated.json", {
+      ...common,
+      canonicalData: {
+        inventoryFields,
+        inventoryCount: sourceInventory.length,
+        implementedSourceIds: sourceInventory
+          .filter((entry) => entry.implementedIn3B2B2A)
+          .map((entry) => entry.sourceId),
+        deferredSourceIds: sourceInventory
+          .filter((entry) => !entry.implementedIn3B2B2A && entry.deferredReason !== "EXISTING_PHASE_3B2B1")
+          .map((entry) => entry.sourceId),
+        sources: sourceInventory
+      }
+    }],
+    ["relic-rarity-policy.generated.json", {
+      ...common,
+      canonicalData: {
+        implementedSourceId: "warden-standard-drop",
+        rarityOrder: ["normal", "rare", "epic", "legendary"],
+        rarityTiers,
+        mythicRelativeToLegendaryChance: mythicRelativeChance,
+        mythicChanceMaximum: 0.02,
+        mythicRollOrder: "mythic pre-roll, normalize remainder, then cumulative rarity weights",
+        choiceRarityRollPolicy: "one rarity roll per choice",
+        unavailableRarityFallback: "all otherwise legal unlocked rarities for this source",
+        rounding: "integer RNG over one million canonical units"
+      }
+    }],
+    ["relic-pity-policy.generated.json", {
+      ...common,
+      canonicalData: {
+        implemented: [{
+          pityId: "warden-run-drop-miss-streak",
+          sourceId: "warden-standard-drop",
+          scope: "run",
+          statePath: "relicOfferState.sourceSpecificCounters.wardenDropMissStreak",
+          bonusPerMiss: pityBonusPerMiss,
+          hardPityAfterMisses,
+          chanceCapBeforeHardPity: 0.95,
+          updateEvent: "reward slot issue attempt",
+          retryPolicy: "no increment for a slot with an existing resolution"
+        }],
+        deferredProfileScoped: [
+          {
+            pityId: "warden-first-drop-depths",
+            legacyState: "wardenFirstDropDepths",
+            storageKey: "dungeonOneRoomWardenFirstDropDepths",
+            reason: "DEFERRED_PROFILE_SCOPED_PITY"
+          },
+          {
+            pityId: "forge-room-pity",
+            legacyState: "forgeSeenThisGame/forgePityUsedThisGame",
+            storageKey: "game save state",
+            reason: "DEFERRED_PROFILE_SCOPED_PITY"
+          },
+          {
+            pityId: "otter-room-pity",
+            legacyState: "otterSeenThisGame/otterPityUsedThisGame",
+            storageKey: "game save state",
+            reason: "DEFERRED_PROFILE_SCOPED_PITY"
+          }
+        ]
+      }
+    }],
+    ["regular-relic-offer-policy.generated.json", {
+      ...common,
+      canonicalData: {
+        offerType: "relic_reward",
+        implementedSourceId: "warden-standard-drop",
+        sourceType: "boss_reward",
+        rewardSlotType: "relic_offer",
+        offerChoiceCount: 3,
+        minimumDepth: 5,
+        maximumDepth: maximumDepth - 5,
+        bossInterval: 5,
+        finalDepthExcluded: true,
+        requestFields: ["rewardEnvelopeId", "rewardSlotId", "sourceDirectiveId"],
+        selectionRequestFields: ["offerId", "choiceId"],
+        rngPurposes: [
+          "relic-offer-drop",
+          "relic-offer-rarity",
+          "relic-offer-candidate",
+          "relic-offer-choice-order",
+          "relic-offer-offer-id",
+          "relic-offer-choice-id"
+        ],
+        emptyPoolBehavior: "UNRESOLVED_EMPTY_RELIC_POOL",
+        fullPoolBehavior: "DEFERRED_REPLACEMENT_REWARD",
+        publicChoiceFields: [
+          "choiceId",
+          "relicId",
+          "rarity",
+          "currentStacks",
+          "resultingStacks",
+          "slotCost",
+          "resultingSlotsUsed",
+          "resultingSlotLimit"
+        ],
+        publicPayloadTargetBytes: 2048
       }
     }]
   ]);
@@ -1380,10 +1796,11 @@ function buildCanonicalData(records, textByFile) {
     schemaVersion: 3,
     rulesetId: RULESET_ID,
     sourceCommit,
-    purpose: "Phase 3B1 room progression, Phase 3B2A gold, and Phase 3B2B1 relic/starting-offer source inventory",
+    purpose: "Phase 3B1 room progression, Phase 3B2A gold, Phase 3B2B1 starting relics, and Phase 3B2B2A standard relic offers",
     sources: records
   };
   const relicData = buildRelicCanonicalData(records, textByFile);
+  const regularRelicOfferData = buildRegularRelicOfferCanonicalData(records, textByFile);
   return new Map([
     ["source-manifest.generated.json", sourceManifest],
     ["run-progression.generated.json", runProgression],
@@ -1394,7 +1811,8 @@ function buildCanonicalData(records, textByFile) {
     ["gold-modifiers.generated.json", goldModifiersData],
     ["room-reward-bounds.generated.json", roomRewardBoundsData],
     ["chest-reward-bounds.generated.json", chestRewardBoundsData],
-    ...relicData
+    ...relicData,
+    ...regularRelicOfferData
   ]);
 }
 

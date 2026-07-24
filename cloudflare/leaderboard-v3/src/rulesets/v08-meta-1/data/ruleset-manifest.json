@@ -21,11 +21,27 @@
       "schemaVersion": 2
     },
     {
+      "file": "data/regular-relic-offer-policy.generated.json",
+      "schemaVersion": 1
+    },
+    {
       "file": "data/relic-build-metadata.generated.json",
       "schemaVersion": 1
     },
     {
       "file": "data/relic-catalog.generated.json",
+      "schemaVersion": 1
+    },
+    {
+      "file": "data/relic-pity-policy.generated.json",
+      "schemaVersion": 1
+    },
+    {
+      "file": "data/relic-rarity-policy.generated.json",
+      "schemaVersion": 1
+    },
+    {
+      "file": "data/relic-reward-sources.generated.json",
       "schemaVersion": 1
     },
     {
@@ -97,6 +113,11 @@
       "sha256": "0bb927245cbfc38c73bb868d8ca60e4154307dafcb11e121e40b199fab2046f5"
     },
     {
+      "file": "data/regular-relic-offer-policy.generated.json",
+      "byteLength": 2573,
+      "sha256": "3d56a1ddd9c01428245e9f2a38e598d8f06013fe2e9849add8e313ffa4a6199e"
+    },
+    {
       "file": "data/relic-build-metadata.generated.json",
       "byteLength": 1682,
       "sha256": "d6bc2d6d05f76b33e61e68afa712f40f7fe7b8444e7da5aa776ba1008f774431"
@@ -105,6 +126,21 @@
       "file": "data/relic-catalog.generated.json",
       "byteLength": 69314,
       "sha256": "41b37ae0af03d2ec187762580b2c67d64754a7d81b596ee5ea9adb1e1c571f50"
+    },
+    {
+      "file": "data/relic-pity-policy.generated.json",
+      "byteLength": 2707,
+      "sha256": "7e4f84e6dfe27a153393e4a0e86d64feddd167724f7dde4e4b5d51e861bfcd51"
+    },
+    {
+      "file": "data/relic-rarity-policy.generated.json",
+      "byteLength": 3584,
+      "sha256": "57f316856066f5de9845097746c6011a4703687616fe1e6b8ff4d647c127dee3"
+    },
+    {
+      "file": "data/relic-reward-sources.generated.json",
+      "byteLength": 12351,
+      "sha256": "7390e4d56782fb3ad85f673d56feb9b2fc19be1d235b8ac1d785a07281f05f8e"
     },
     {
       "file": "data/relic-slot-policy.generated.json",
@@ -138,8 +174,8 @@
     },
     {
       "file": "data/source-manifest.generated.json",
-      "byteLength": 3802,
-      "sha256": "aab0da48729f4d42b2ac853e8307024d57cdd6d6db98096d07eaa14542e7beef"
+      "byteLength": 4549,
+      "sha256": "49e12a84b55623bebe213505669a809da64aec2eb32ca78263fb41d13cadc1a8"
     },
     {
       "file": "data/special-room-policy.generated.json",
@@ -163,8 +199,8 @@
     },
     {
       "file": "index.js",
-      "byteLength": 2759,
-      "sha256": "d166e7ab465713058f057b36665024bc89f3e9595be565b01b71fd01c491a24e"
+      "byteLength": 3589,
+      "sha256": "a59dec7341638f21104689d24350da0a15fd6a6bab9d081919e1fac8148fda56"
     },
     {
       "file": "leaderboard-summary.js",
@@ -183,8 +219,8 @@
     },
     {
       "file": "meta-state.js",
-      "byteLength": 5818,
-      "sha256": "5396cd4b5e580fbbf9ac926eebcc9f12d2ebebf8194be8bbcd92ebb3dac77eb5"
+      "byteLength": 7021,
+      "sha256": "fc1bf27e99135e7212d54660fd89189853c10ddce86af8cec4772773ebf6fde0"
     },
     {
       "file": "pact-policy.js",
@@ -192,14 +228,24 @@
       "sha256": "9ac8271fc95f65f07cdb88aba4f75da1410508fffdb87c9932c84b0085db4e9e"
     },
     {
+      "file": "regular-relic-offer.js",
+      "byteLength": 17376,
+      "sha256": "b0c55eed17ccb7d470ece0a5939274913ac3547fd38035ed00782702d148d54c"
+    },
+    {
+      "file": "relic-offer-common.js",
+      "byteLength": 4319,
+      "sha256": "33f527fdcf716df6a1056a82d7a9c03dc7c07ace06b4a8b3b6419a8fe749f355"
+    },
+    {
       "file": "relic-policy.js",
-      "byteLength": 9519,
-      "sha256": "4d26edfaeaf04c305934e223b0bb31e85e676b0e38d04f60233ff5dfdf5b4cbf"
+      "byteLength": 10608,
+      "sha256": "177a0977b5a591d742459f6ad15837fcbdd208b186831486e8d8dbf6620a1879"
     },
     {
       "file": "reward-policy.js",
-      "byteLength": 18621,
-      "sha256": "011dfcefa292d486d206d29e952238e3ee558875e2f68cc0aee462fbf46cd485"
+      "byteLength": 20476,
+      "sha256": "fe834f008e7ab258fb7063e851c7f125dee1311996aa7309351ff58a905dbf9c"
     },
     {
       "file": "rng.js",
@@ -223,8 +269,8 @@
     },
     {
       "file": "starting-relic-offer.js",
-      "byteLength": 9244,
-      "sha256": "355b4d88c8093d0215db4974eab348dfc110f9073d2907f95e271aba0f28ba95"
+      "byteLength": 8089,
+      "sha256": "8181f8ae0fe0a099268f69d45825cfe06d6b754b2b30b0933789aadfc528f821"
     },
     {
       "file": "test/phase3b1-golden-fixtures.json",
@@ -240,7 +286,12 @@
       "file": "test/phase3b2b1-golden-fixtures.json",
       "byteLength": 12268,
       "sha256": "f0685ed02e3f434f80632dc567deff85859141488cbfc5533b6ce7d8b747630a"
+    },
+    {
+      "file": "test/phase3b2b2a-golden-fixtures.json",
+      "byteLength": 29699,
+      "sha256": "3a55dc95054aef706144f77abe587175e82cf798de1346c8b8c43625b9149386"
     }
   ],
-  "rulesetHash": "sha256:ca964ec0ce54dd9ea550e4814fb4cc151a699da01d1970637e30cd25c64bf800"
+  "rulesetHash": "sha256:fdfe7524ecee5c597f4e1fa87bddef1165c23291edc82092cfa12e2cc7b244a9"
 }

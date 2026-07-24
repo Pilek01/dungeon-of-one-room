@@ -1,4 +1,5 @@
 import chestBoundsDocument from "./data/chest-reward-bounds.generated.json" with { type: "json" };
+import regularRelicOfferPolicyDocument from "./data/regular-relic-offer-policy.generated.json" with { type: "json" };
 import rewardBoundsDocument from "./data/room-reward-bounds.generated.json" with { type: "json" };
 import {
   calculateChestGoldV08,
@@ -9,6 +10,7 @@ import {
 import { assertCanonicalRelicBuildDigestV08 } from "./relic-policy.js";
 
 const chestBounds = chestBoundsDocument.canonicalData;
+const regularRelicOfferPolicy = regularRelicOfferPolicyDocument.canonicalData;
 const rewardBounds = rewardBoundsDocument.canonicalData;
 const HISTORY_LIMIT = rewardBounds.boundedHistoryLimit;
 
@@ -17,10 +19,8 @@ export const REWARD_POLICY_SPEC = Object.freeze({
   authority: "SERVER_ISSUED",
   claimPolicyVersion: rewardBounds.policyVersion,
   selectionBinding: "runId+rulesetHash+revision+roomDirectiveId+roomNonce+envelopeId",
-  implementationStatus: "phase-3b2a-test-only",
+  implementationStatus: "phase-3b2b2a-test-only",
   deferred: Object.freeze([
-    "relic-offers",
-    "starting-relic",
     "mutator-offers",
     "skill-offers",
     "elixir-offers",
@@ -119,6 +119,27 @@ function claimSlots(roomType) {
   }));
 }
 
+function relicOfferSlots(directive, envelopeId) {
+  if (
+    directive.roomCategory !== "boss" ||
+    directive.depth < regularRelicOfferPolicy.minimumDepth ||
+    directive.depth > regularRelicOfferPolicy.maximumDepth ||
+    directive.depth % regularRelicOfferPolicy.bossInterval !== 0
+  ) {
+    return [];
+  }
+  return [{
+    slotId: `relic_slot_${envelopeId.slice(-16)}`,
+    slotType: regularRelicOfferPolicy.rewardSlotType,
+    sourceType: regularRelicOfferPolicy.sourceType,
+    sourceId: regularRelicOfferPolicy.implementedSourceId,
+    offerPolicyRef: "regular-relic-offer-policy.generated.json",
+    consumed: false,
+    offerId: null,
+    resolution: null
+  }];
+}
+
 function maximumGoldDeltaForEnvelope(build, depth, roomType, claims, slots) {
   const fixed = calculateMultipliedGoldV08({
     canonicalBuild: build,
@@ -175,6 +196,7 @@ export async function createRoomRewardEnvelopeV3({
   });
   const boundedClaims = claimDefinitions(directive.roomType);
   const slots = claimSlots(directive.roomType);
+  const rewardSlots = relicOfferSlots(directive, envelopeId);
   const envelope = {
     envelopeId,
     runId: state.runId,
@@ -193,6 +215,7 @@ export async function createRoomRewardEnvelopeV3({
     }],
     boundedClaims,
     claimSlots: slots,
+    rewardSlots,
     maximumGoldDelta: maximumGoldDeltaForEnvelope(
       state.build,
       directive.depth,
@@ -228,8 +251,29 @@ export function assertRoomRewardEnvelopeV3(envelope) {
       throw new TypeError(`REWARD_ENVELOPE_INVALID:${field}`);
     }
   }
-  if (!Array.isArray(envelope.fixedAwards) || !Array.isArray(envelope.boundedClaims) || !Array.isArray(envelope.claimSlots)) {
+  if (
+    !Array.isArray(envelope.fixedAwards) ||
+    !Array.isArray(envelope.boundedClaims) ||
+    !Array.isArray(envelope.claimSlots) ||
+    !Array.isArray(envelope.rewardSlots)
+  ) {
     throw new TypeError("REWARD_ENVELOPE_INVALID:collections");
+  }
+  const rewardSlotIds = new Set();
+  for (const slot of envelope.rewardSlots) {
+    if (!slot || typeof slot !== "object") throw new TypeError("REWARD_SLOT_INVALID");
+    for (const field of ["slotId", "slotType", "sourceType", "sourceId", "offerPolicyRef"]) {
+      if (!String(slot[field] || "").trim()) throw new TypeError(`REWARD_SLOT_INVALID:${field}`);
+    }
+    if (rewardSlotIds.has(slot.slotId)) throw new TypeError("REWARD_SLOT_DUPLICATE");
+    rewardSlotIds.add(slot.slotId);
+    if (typeof slot.consumed !== "boolean") throw new TypeError("REWARD_SLOT_INVALID:consumed");
+    if (slot.offerId !== null && !String(slot.offerId || "").trim()) {
+      throw new TypeError("REWARD_SLOT_INVALID:offerId");
+    }
+    if (slot.resolution !== null && !["offer_issued", "no_drop"].includes(slot.resolution)) {
+      throw new TypeError("REWARD_SLOT_INVALID:resolution");
+    }
   }
   if (typeof envelope.consumed !== "boolean") throw new TypeError("REWARD_ENVELOPE_INVALID:consumed");
   return envelope;

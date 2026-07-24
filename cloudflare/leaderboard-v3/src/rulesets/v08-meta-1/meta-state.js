@@ -71,6 +71,17 @@ function createScheduleState(history = {}) {
   };
 }
 
+function createRelicOfferState() {
+  return {
+    offersIssuedBySource: {},
+    rarityMissStreaks: {},
+    sourceSpecificCounters: {
+      wardenDropMissStreak: 0
+    },
+    firstDropFlags: {}
+  };
+}
+
 export function createInitialMetaStateV08(input = {}, context = {}) {
   const runId = requireText(context.runId ?? input.runId, "RUN_ID_REQUIRED");
   const season = requireText(context.season ?? input.season, "SEASON_REQUIRED");
@@ -102,6 +113,7 @@ export function createInitialMetaStateV08(input = {}, context = {}) {
     build: createEmptyRelicBuildV08(),
     pendingOffer: null,
     offerSettlementHistory: [],
+    relicOfferState: createRelicOfferState(),
     pendingInventory: null,
     specialRoomScheduleState: createScheduleState(input.specialRoomHistory),
     statistics: {
@@ -152,6 +164,33 @@ export function assertMetaStateV08(state) {
   assertGoldLedgerV08(state);
   if (!Array.isArray(state.offerSettlementHistory) || state.offerSettlementHistory.length > 64) {
     throw new TypeError("META_STATE_INVALID:offerSettlementHistory");
+  }
+  if (
+    state.pendingOffer !== null &&
+    !["starting_relic", "relic_reward"].includes(state.pendingOffer?.offerType)
+  ) {
+    throw new TypeError("META_STATE_INVALID:pendingOffer");
+  }
+  if (!state.relicOfferState || typeof state.relicOfferState !== "object") {
+    throw new TypeError("META_STATE_INVALID:relicOfferState");
+  }
+  for (const field of [
+    "offersIssuedBySource",
+    "rarityMissStreaks",
+    "sourceSpecificCounters",
+    "firstDropFlags"
+  ]) {
+    if (
+      !state.relicOfferState[field] ||
+      typeof state.relicOfferState[field] !== "object" ||
+      Array.isArray(state.relicOfferState[field])
+    ) {
+      throw new TypeError(`META_STATE_INVALID:relicOfferState.${field}`);
+    }
+  }
+  const missStreak = state.relicOfferState.sourceSpecificCounters.wardenDropMissStreak;
+  if (!Number.isSafeInteger(missStreak) || missStreak < 0) {
+    throw new TypeError("META_STATE_INVALID:relicOfferState.wardenDropMissStreak");
   }
   if (state.status === "awaiting_starting_relic" && state.currentRoomDirective) {
     throw new TypeError("META_STATE_STARTING_RELIC_ROOM_DIRECTIVE_FORBIDDEN");

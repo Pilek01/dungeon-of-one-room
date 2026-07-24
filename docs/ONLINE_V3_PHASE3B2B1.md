@@ -135,7 +135,10 @@ The private offer has:
   sourceType,
   sourceId,
   choices: [{ choiceId, privateRelicId }],
-  publicChoices: [{ choiceId }],
+  publicChoices: [{
+    choiceId, relicId, rarity, currentStacks, resultingStacks, slotCost,
+    resultingSlotsUsed, resultingSlotLimit
+  }],
   issuedStateDigest,
   expiresOnRevision,
   consumed,
@@ -146,8 +149,10 @@ The private offer has:
 
 Offer and choice IDs are deterministic HMAC-derived opaque values with
 separate RNG purposes. The same run/revision/secret survives retry and Worker
-restart exactly; another run receives different IDs. Public projection never
-includes `privateRelicId` or the private `choices` collection.
+restart exactly; another run receives different IDs. Phase 3B2B2A replaces
+the original ID-only projection with the common safe eight-field relic choice
+projection. It still never includes `privateRelicId`, the private `choices`
+collection, or `issuedStateDigest`.
 
 `selectStartingRelic(metaState, { offerId, choiceId }, context)` is a pure
 transition. It validates offer/run/ruleset/revision/choice binding, applies

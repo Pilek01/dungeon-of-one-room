@@ -11,6 +11,11 @@ import {
   projectPublicStartingRelicOfferV08,
   selectStartingRelic
 } from "./starting-relic-offer.js";
+import {
+  issueRegularRelicOffer,
+  projectPublicRegularRelicOfferV08,
+  selectRegularRelic
+} from "./regular-relic-offer.js";
 export {
   applyRelicAcquisition,
   assertCanonicalRelicBuildDigestV08,
@@ -19,6 +24,7 @@ export {
   getRelicSlotCost,
   getRelicSlotLimit,
   getRelicStackLimit,
+  previewRelicAcquisitionV08,
   projectPublicBuild
 } from "./relic-policy.js";
 export {
@@ -27,6 +33,13 @@ export {
   projectPublicStartingRelicOfferV08,
   selectStartingRelic
 } from "./starting-relic-offer.js";
+export {
+  assertRegularRelicOfferV08,
+  getRegularRelicCandidatePoolV08,
+  issueRegularRelicOffer,
+  projectPublicRegularRelicOfferV08,
+  selectRegularRelic
+} from "./regular-relic-offer.js";
 
 function mergeContext(options, context) {
   return {
@@ -60,6 +73,26 @@ export function createV08Meta1Ruleset(options = {}) {
 
     projectPublicStartingRelicOffer(offer) {
       return projectPublicStartingRelicOfferV08(offer);
+    },
+
+    async issueRegularRelicOffer(state, request, context = {}) {
+      return issueRegularRelicOffer(
+        state,
+        request,
+        mergeContext(options, context)
+      );
+    },
+
+    async selectRegularRelic(state, request, context = {}) {
+      return selectRegularRelic(
+        state,
+        request,
+        mergeContext(options, context)
+      );
+    },
+
+    projectPublicRegularRelicOffer(offer) {
+      return projectPublicRegularRelicOfferV08(offer);
     },
 
     async issueRoomDirective(state, context = {}) {

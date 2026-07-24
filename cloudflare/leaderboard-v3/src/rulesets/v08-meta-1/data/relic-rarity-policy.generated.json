@@ -1,0 +1,134 @@
+{
+  "schemaVersion": 1,
+  "rulesetId": "v08-meta-1",
+  "sourceCommit": "f98820c99066d810169e100beb23a54a332734bd",
+  "sources": [
+    {
+      "file": "boss-campaign.js",
+      "byteLength": 8061,
+      "sha256": "ad885efec2e4bce42514c80a77a9a2cbf0f7310f396f423f5e95da16af60940d"
+    },
+    {
+      "file": "camp-runtime.js",
+      "byteLength": 30381,
+      "sha256": "302c3442e6e02442f21283b073603bb051e912ac365c55541d4a1b7afe76997a"
+    },
+    {
+      "file": "game.js",
+      "byteLength": 1292796,
+      "sha256": "a7d436f8cdde618e7bab802322a658d2055f201950d9ae7b4598269feff3df00"
+    },
+    {
+      "file": "loot-tables.js",
+      "byteLength": 2509,
+      "sha256": "9343a62db72aacd89d16ab0efa3c1fba0c40d08cc1e82e10795990299467e0a9"
+    },
+    {
+      "file": "merchant-curation.js",
+      "byteLength": 827,
+      "sha256": "84dbcbb30c0909cb309154826df7c80d816fe9db90584a8af880eacfc70ceba9"
+    },
+    {
+      "file": "relic-data.js",
+      "byteLength": 9135,
+      "sha256": "fa4cdd27c3b3b9d2b61df3bc346a4123e9d3f70f58afdc16cd626411d6bdfa59"
+    },
+    {
+      "file": "relic-runtime.js",
+      "byteLength": 9127,
+      "sha256": "87e02a9a1519aa5c9c621e23fabe5400cfda8274c1aa39c50cd471478e642d97"
+    },
+    {
+      "file": "room-pity.js",
+      "byteLength": 1075,
+      "sha256": "4b25c0160a9d339248a969627b7a82c93b464966b671d21c9e30f2e83c70cb76"
+    },
+    {
+      "file": "vault-room.js",
+      "byteLength": 10717,
+      "sha256": "6623bbeb423e2540657f0fe40e81a78d2b5966a237195b4e71d8be34d4a7702c"
+    }
+  ],
+  "canonicalData": {
+    "implementedSourceId": "warden-standard-drop",
+    "rarityOrder": [
+      "normal",
+      "rare",
+      "epic",
+      "legendary"
+    ],
+    "rarityTiers": [
+      {
+        "minDepth": 25,
+        "maxDepth": 95,
+        "dropChance": 0.6,
+        "rarityWeights": {
+          "normal": 0.35,
+          "rare": 0.3,
+          "epic": 0.22,
+          "legendary": 0.13
+        },
+        "legendaryEligible": true,
+        "mythicEligible": true
+      },
+      {
+        "minDepth": 20,
+        "maxDepth": 24,
+        "dropChance": 0.6,
+        "rarityWeights": {
+          "normal": 0.45,
+          "rare": 0.3,
+          "epic": 0.2,
+          "legendary": 0.05
+        },
+        "legendaryEligible": true,
+        "mythicEligible": true
+      },
+      {
+        "minDepth": 15,
+        "maxDepth": 19,
+        "dropChance": 0.55,
+        "rarityWeights": {
+          "normal": 0.45,
+          "rare": 0.25,
+          "epic": 0.2,
+          "legendary": 0.1
+        },
+        "legendaryEligible": true,
+        "mythicEligible": true
+      },
+      {
+        "minDepth": 10,
+        "maxDepth": 14,
+        "dropChance": 0.5,
+        "rarityWeights": {
+          "normal": 0.55,
+          "rare": 0.3,
+          "epic": 0.15,
+          "legendary": 0
+        },
+        "legendaryEligible": false,
+        "mythicEligible": false
+      },
+      {
+        "minDepth": 5,
+        "maxDepth": 9,
+        "dropChance": 0.45,
+        "rarityWeights": {
+          "normal": 0.75,
+          "rare": 0.25,
+          "epic": 0,
+          "legendary": 0
+        },
+        "legendaryEligible": false,
+        "mythicEligible": false
+      }
+    ],
+    "mythicRelativeToLegendaryChance": 0.05,
+    "mythicChanceMaximum": 0.02,
+    "mythicRollOrder": "mythic pre-roll, normalize remainder, then cumulative rarity weights",
+    "choiceRarityRollPolicy": "one rarity roll per choice",
+    "unavailableRarityFallback": "all otherwise legal unlocked rarities for this source",
+    "rounding": "integer RNG over one million canonical units"
+  }
+}

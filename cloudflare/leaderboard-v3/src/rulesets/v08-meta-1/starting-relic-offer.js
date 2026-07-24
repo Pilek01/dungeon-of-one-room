@@ -6,53 +6,17 @@ import {
   assertCanonicalRelicBuildDigestV08,
   projectPublicBuild
 } from "./relic-policy.js";
-import { deriveRandomBytes } from "./rng.js";
+import {
+  appendRelicOfferReceiptV08,
+  assertPublicRelicChoiceV08,
+  assertRelicSelectionRequestV08,
+  computeRelicOfferStateDigestV08,
+  deriveRelicOfferOpaqueIdV08,
+  findRelicOfferReceiptV08,
+  projectPublicRelicChoiceV08
+} from "./relic-offer-common.js";
 
 const policy = startingPolicyDocument.canonicalData;
-const HISTORY_LIMIT = 64;
-
-function canonicalJson(value) {
-  if (Array.isArray(value)) return `[${value.map(canonicalJson).join(",")}]`;
-  if (value && typeof value === "object") {
-    return `{${Object.keys(value).sort().map(
-      (key) => `${JSON.stringify(key)}:${canonicalJson(value[key])}`
-    ).join(",")}}`;
-  }
-  return JSON.stringify(value);
-}
-
-async function sha256(value, cryptoProvider = globalThis.crypto) {
-  if (!cryptoProvider?.subtle) throw new TypeError("CRYPTO_PROVIDER_REQUIRED");
-  const digest = await cryptoProvider.subtle.digest(
-    "SHA-256",
-    new TextEncoder().encode(canonicalJson(value))
-  );
-  return `sha256:${Array.from(
-    new Uint8Array(digest),
-    (byte) => byte.toString(16).padStart(2, "0")
-  ).join("")}`;
-}
-
-function bytesToHex(bytes) {
-  return Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("");
-}
-
-async function opaqueId(state, context, purpose, counter, prefix) {
-  const derive = context.randomOracle?.deriveRandomBytes
-    ? context.randomOracle.deriveRandomBytes.bind(context.randomOracle)
-    : deriveRandomBytes;
-  const bytes = await derive({
-    secret: context.secret,
-    rulesetId: state.rulesetId,
-    runId: state.runId,
-    revision: state.revision,
-    purpose,
-    counter,
-    length: 16,
-    cryptoProvider: context.cryptoProvider
-  });
-  return `${prefix}_${bytesToHex(bytes)}`;
-}
 
 export async function issueStartingRelicOfferV08(state, context = {}) {
   assertMetaStateV08(state);
@@ -60,11 +24,23 @@ export async function issueStartingRelicOfferV08(state, context = {}) {
   if (state.status !== "awaiting_starting_relic") throw new TypeError("STARTING_RELIC_STATUS_INVALID");
   if (state.currentRoomDirective) throw new TypeError("STARTING_RELIC_ROOM_ALREADY_ISSUED");
   if (state.pendingOffer) return cloneMetaStateV08(state);
-  const offerId = await opaqueId(state, context, "starting-relic/offer-id", 0, "offer");
+  const offerId = await deriveRelicOfferOpaqueIdV08(
+    state,
+    context,
+    "starting-relic/offer-id",
+    0,
+    "offer"
+  );
   const choices = [];
   for (let index = 0; index < policy.startingRelicIds.length; index += 1) {
     choices.push({
-      choiceId: await opaqueId(state, context, "starting-relic/choice-id", index, "choice"),
+      choiceId: await deriveRelicOfferOpaqueIdV08(
+        state,
+        context,
+        "starting-relic/choice-id",
+        index,
+        "choice"
+      ),
       privateRelicId: policy.startingRelicIds[index]
     });
   }
@@ -77,8 +53,8 @@ export async function issueStartingRelicOfferV08(state, context = {}) {
     sourceType: policy.sourceType,
     sourceId: policy.sourceId,
     choices,
-    publicChoices: choices.map(({ choiceId }) => ({ choiceId })),
-    issuedStateDigest: await sha256({
+    publicChoices: choices.map((choice) => projectPublicRelicChoiceV08(state.build, choice)),
+    issuedStateDigest: await computeRelicOfferStateDigestV08({
       runId: state.runId,
       rulesetHash: state.rulesetHash,
       revision: state.revision,
@@ -94,10 +70,6 @@ export async function issueStartingRelicOfferV08(state, context = {}) {
   const next = cloneMetaStateV08(state);
   next.pendingOffer = offer;
   return next;
-}
-
-function findReceipt(state, offerId) {
-  return (state.offerSettlementHistory || []).find((entry) => entry.offerId === offerId) || null;
 }
 
 export function assertStartingRelicOfferV08(offer) {
@@ -139,11 +111,8 @@ export function assertStartingRelicOfferV08(offer) {
     if (choice.privateRelicId !== policy.startingRelicIds[index]) {
       throw new TypeError("STARTING_RELIC_PRIVATE_CHOICE_INVALID");
     }
-    if (
-      !publicChoice ||
-      Object.keys(publicChoice).length !== 1 ||
-      publicChoice.choiceId !== choice.choiceId
-    ) {
+    assertPublicRelicChoiceV08(publicChoice);
+    if (publicChoice.choiceId !== choice.choiceId || publicChoice.relicId !== choice.privateRelicId) {
       throw new TypeError("STARTING_RELIC_PUBLIC_CHOICE_INVALID");
     }
     choiceIds.add(choice.choiceId);
@@ -167,9 +136,10 @@ export function assertStartingRelicOfferV08(offer) {
 export async function selectStartingRelic(metaState, request = {}, context = {}) {
   assertMetaStateV08(metaState);
   await assertCanonicalRelicBuildDigestV08(metaState.build, context.cryptoProvider);
-  const offerId = String(request.offerId || "");
-  const choiceId = String(request.choiceId || "");
-  const receipt = findReceipt(metaState, offerId);
+  const { offerId, choiceId } = assertRelicSelectionRequestV08(request, {
+    allowBindingFields: true
+  });
+  const receipt = findRelicOfferReceiptV08(metaState, offerId);
   if (receipt) {
     if (request.runId && request.runId !== metaState.runId) {
       throw new TypeError("STARTING_RELIC_OFFER_RUN_MISMATCH");
@@ -214,22 +184,19 @@ export async function selectStartingRelic(metaState, request = {}, context = {})
   next.revision += 1;
   next.status = "active";
   next.pendingOffer = null;
-  next.offerSettlementHistory = [
-    ...(next.offerSettlementHistory || []),
-    {
-      offerId,
-      choiceId,
-      relicId: choice.privateRelicId,
-      consumedAtRevision: next.revision,
-      publicBuild: projectPublicBuild(next.build),
-      offer: {
-        ...offer,
-        consumed: true,
-        consumedChoiceId: choiceId,
-        consumedAtRevision: next.revision
-      }
+  appendRelicOfferReceiptV08(next, {
+    offerId,
+    choiceId,
+    relicId: choice.privateRelicId,
+    consumedAtRevision: next.revision,
+    publicBuild: projectPublicBuild(next.build),
+    offer: {
+      ...offer,
+      consumed: true,
+      consumedChoiceId: choiceId,
+      consumedAtRevision: next.revision
     }
-  ].slice(-HISTORY_LIMIT);
+  });
   next.updatedAt = next.startedAt + next.revision;
   return next;
 }
@@ -238,6 +205,7 @@ export function projectPublicStartingRelicOfferV08(offer) {
   assertStartingRelicOfferV08(offer);
   const {
     choices: _privateChoices,
+    issuedStateDigest: _privateDigest,
     ...publicOffer
   } = offer;
   return structuredClone(publicOffer);

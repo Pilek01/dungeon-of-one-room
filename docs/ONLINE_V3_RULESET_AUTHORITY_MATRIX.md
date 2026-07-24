@@ -1,6 +1,7 @@
 # Online v3 v0.8 meta-progression authority matrix
 
-Status: Phase 3B2A gold/reward-envelope implementation, ruleset `v08-meta-1` remains test-only and disconnected from production endpoints.
+Status: Phase 3B2B2A standard relic-offer implementation; ruleset
+`v08-meta-1` remains test-only and disconnected from production endpoints.
 
 The classification describes what Online v3 can honestly validate while combat remains local. “Exact” means derivable from canonical server state plus accepted operations; it does not mean the server observed combat. Scenario overrides are QA-only and are excluded from ranked ruleset generation.
 
@@ -128,7 +129,7 @@ The JSONL block is the machine-readable source used by the completeness test. Ev
 
 This matrix intentionally separates deterministic state transitions from the truth of local combat. The recommended server surface owns schedules, offers, inventories, prices, persistent progression, score and publication. It accepts only bounded combat summaries and treats proc timing, HP, enemy behavior, actual death and full combat legality as heuristic or client-only evidence.
 
-## Phase 3B2B1 implemented authority additions
+## Phase 3B2B2A implemented authority additions
 
 The isolated test-only ruleset now implements three previously planned
 authorities:
@@ -138,6 +139,11 @@ authorities:
 | Starting relic offer | `SERVER_ISSUED` | Fixed v0.8 set, opaque offer/choice IDs, run/ruleset/revision binding, mandatory one-time choice, bounded consumed receipt |
 | Relic inventory and slot policy | `SERVER_DERIVED` | Generated 58-entry catalog, stack/unique/legendary/mythic/capacity checks, canonical grouped ledger |
 | Public relic build | `SERVER_DERIVED` | Canonical digest and allowlisted projection without acquisition source/revision/private offer ID |
+| Standard Warden relic offer | `SERVER_ISSUED` | One-time `RoomRewardEnvelopeV3` slot, deterministic opaque IDs, canonical candidate map and bounded receipt |
+| Warden rarity policy | `SERVER_DERIVED` | Exact depth-tier drop/rarity weights, mythic pre-roll, legal-candidate fallback and no duplicate choices |
+| Warden run pity | `SERVER_DERIVED` | Serialized run miss streak, +0.15 per miss, 0.95 cap and guaranteed fourth attempt |
+| Common public relic choice | `SERVER_DERIVED` | Eight allowlisted display/result fields shared by starting and regular offers; private map and digest excluded |
 
-The browser client, active Worker endpoint, regular relic drops, rarity/pity,
-Merchant, and relic effect activation remain outside this implementation.
+The browser client, active Worker endpoint, special relic sources, persistent
+first-drop pity, Merchant, and relic effect activation remain outside this
+implementation.

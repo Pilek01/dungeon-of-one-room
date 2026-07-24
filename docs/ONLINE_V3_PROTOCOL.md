@@ -1,7 +1,7 @@
 # Dungeon Online v3 protocol
 
 Status: isolated Phase 2 Worker contract plus a disconnected, `test-only`
-Phase 3B2B1 ruleset. No browser client or production ruleset is connected.
+Phase 3B2B2A ruleset. No browser client or production ruleset is connected.
 
 ```text
 base path: /api/v3
@@ -35,7 +35,7 @@ Authenticated mutations contain `runId`, `checkpointToken`, `roomDirectiveId`, a
 ```
 
 The active Phase 2 fixture returns a first room directive. The disconnected
-Phase 3B2B1 ruleset instead begins with a private starting-relic offer and no
+Phase 3B2B2A ruleset instead begins with a private starting-relic offer and no
 room directive; a valid opaque starting choice is required before the first
 directive can be issued. No production endpoint exposes that flow yet.
 
@@ -170,11 +170,14 @@ cover:
 This test runtime uses only the fixture ruleset. It does not establish or imply
 a production v0.8 ruleset.
 
-The Phase 3B2B1 `v08-meta-1` directory implements deterministic initial state,
+The Phase 3B2B2A `v08-meta-1` directory implements deterministic initial state,
 mandatory opaque starting-relic selection, a canonical relic build ledger,
-room selection and `RoomDirectiveV3` consumption for isolated tests. Its
+room selection, `RoomDirectiveV3` consumption, standard Warden relic offers,
+exact rarity rules, and run-scoped Warden drop pity for isolated tests. Its
 descriptor is `test-only`, registry resolution rejects it, and neither active
 entrypoint imports it. It therefore does not alter any route or payload above.
-The test-only starting offer is opaque, bound to run/ruleset/revision, and
-selected by ID. Future non-starting offers and endpoint integration remain
-deferred; client prices and resulting totals remain non-authoritative.
+Starting and regular offers are bound to canonical state and selected only by
+opaque `offerId`/`choiceId`. The shared public choice projection exposes the
+canonical relic result while private choice maps and state digests remain
+server-only. Special sources and endpoint integration remain deferred; client
+rarity, stacks, costs, capacity, and resulting totals remain non-authoritative.

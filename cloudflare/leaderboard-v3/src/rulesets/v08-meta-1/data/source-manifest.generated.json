@@ -2,7 +2,7 @@
   "schemaVersion": 3,
   "rulesetId": "v08-meta-1",
   "sourceCommit": "f98820c99066d810169e100beb23a54a332734bd",
-  "purpose": "Phase 3B1 room progression, Phase 3B2A gold, and Phase 3B2B1 relic/starting-offer source inventory",
+  "purpose": "Phase 3B1 room progression, Phase 3B2A gold, Phase 3B2B1 starting relics, and Phase 3B2B2A standard relic offers",
   "sources": [
     {
       "file": "boss-campaign.js",
@@ -61,7 +61,16 @@
         "CAMPAIGN_REGION_CONFIGS",
         "chooseRoomType",
         "isBossDepth",
-        "maybeQueueOtterRoom"
+        "maybeQueueOtterRoom",
+        "rollRelicRarity",
+        "buildRelicDraftChoices",
+        "checkRoomClearBonus",
+        "openChest",
+        "spawnArenaRewardChest",
+        "openCrossroadsPowerChest",
+        "generateMerchantSlots",
+        "executeForgeTemper",
+        "executeForgeTransmute"
       ]
     },
     {
@@ -108,6 +117,9 @@
       "sha256": "fa4cdd27c3b3b9d2b61df3bc346a4123e9d3f70f58afdc16cd626411d6bdfa59",
       "evidenceSymbols": [
         "RELICS",
+        "WARDEN_RELIC_DROP_TABLE",
+        "WARDEN_RELIC_PITY_BONUS_PER_MISS",
+        "WARDEN_RELIC_HARD_PITY_AFTER_MISSES",
         "Golden Idol",
         "Void Reaper",
         "Chaos Orb"
@@ -120,7 +132,9 @@
       "evidenceSymbols": [
         "getRelicStackCount",
         "isNormalRelicStackAtCap",
-        "getRelicInventoryGroups"
+        "getRelicInventoryGroups",
+        "getWardenRelicDropRoll",
+        "shouldForceWardenFirstDrop"
       ]
     },
     {
@@ -131,6 +145,15 @@
         "FORGE_PITY_DEPTH",
         "OTTER_PITY_DEPTH",
         "getGuaranteedCampaignRoom"
+      ]
+    },
+    {
+      "file": "vault-room.js",
+      "byteLength": 10717,
+      "sha256": "6623bbeb423e2540657f0fe40e81a78d2b5966a237195b4e71d8be34d4a7702c",
+      "evidenceSymbols": [
+        "VAULT_ENCOUNTER_PROFILE",
+        "isVaultChestAvailable"
       ]
     }
   ]

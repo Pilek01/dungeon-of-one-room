@@ -123,6 +123,15 @@ export function canAcquireRelic(build, relicId) {
   if (policy.legendary && legendaryCount >= legendaryLimit) {
     return { allowed: false, code: "RELIC_LEGENDARY_LIMIT_REACHED" };
   }
+  const mutuallyExclusiveRelic = relics.find((entry) =>
+    policy.mutuallyExclusiveWith.includes(entry.relicId)
+  );
+  if (mutuallyExclusiveRelic) {
+    return {
+      allowed: false,
+      code: `RELIC_MUTUALLY_EXCLUSIVE:${relicId}:${mutuallyExclusiveRelic.relicId}`
+    };
+  }
   const summary = summarizeRelics(relics);
   const incomingBonus = existing ? 0 : policy.bonusRelicSlots;
   const nextLimit = slotPolicy.baseRelicSlots + summary.relicSlotBonus + incomingBonus;
@@ -130,6 +139,25 @@ export function canAcquireRelic(build, relicId) {
     return { allowed: false, code: "RELIC_SLOTS_FULL" };
   }
   return { allowed: true, code: null };
+}
+
+export function previewRelicAcquisitionV08(build, relicId) {
+  const policy = requireRelic(relicId);
+  const relics = Array.isArray(build?.relics) ? build.relics : [];
+  const existing = relics.find((entry) => entry.relicId === relicId);
+  const verdict = canAcquireRelic(build, relicId);
+  if (!verdict.allowed) throw new TypeError(verdict.code);
+  const summary = summarizeRelics(relics);
+  const incomingBonus = existing ? 0 : policy.bonusRelicSlots;
+  return {
+    relicId: policy.relicId,
+    rarity: policy.rarity,
+    currentStacks: existing?.stacks || 0,
+    resultingStacks: (existing?.stacks || 0) + 1,
+    slotCost: policy.slotCost,
+    resultingSlotsUsed: summary.relicSlotsUsed + policy.slotCost,
+    resultingSlotLimit: slotPolicy.baseRelicSlots + summary.relicSlotBonus + incomingBonus
+  };
 }
 
 export async function computeRelicBuildDigestV08(build, cryptoProvider = globalThis.crypto) {
