@@ -59,7 +59,7 @@ async function issued(seed, build) {
         sourceOfferId: `fixture_${relicId}`
       });
     }
-    for (const field of ["mutators", "pacts", "campUpgrades", "skillTiers", "elixirs"]) {
+    for (const field of ["pacts", "campUpgrades", "skillTiers", "elixirs"]) {
       canonicalBuild[field] = structuredClone(build[field] ?? canonicalBuild[field]);
     }
     initial.build = canonicalBuild;
@@ -131,7 +131,6 @@ test("ledger, gold, build modifiers, and fake client build preserve invariants",
   const plain = await issued(4);
   const modified = await issued(4, {
     relics: ["idol"],
-    mutators: [],
     pacts: [],
     campUpgrades: {},
     skillTiers: {},

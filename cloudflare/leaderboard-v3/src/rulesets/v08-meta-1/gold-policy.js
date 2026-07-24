@@ -1,12 +1,15 @@
 import modifiersDocument from "./data/gold-modifiers.generated.json" with { type: "json" };
 import sourcesDocument from "./data/gold-sources.generated.json" with { type: "json" };
 import rewardBoundsDocument from "./data/room-reward-bounds.generated.json" with { type: "json" };
+import {
+  createEmptyRunModifierLedgerV08,
+  deriveRunModifierEffects
+} from "./run-modifiers.js";
 
 const modifiers = modifiersDocument.canonicalData;
 const sources = sourcesDocument.canonicalData;
 const rewardBounds = rewardBoundsDocument.canonicalData;
 const legalSourceIds = new Set(sources.goldSources.map((entry) => entry.sourceId));
-const legalMutators = new Set(modifiers.legalMutatorIds);
 const legalRelics = new Set([
   ...modifiers.legalRelicIds,
   ...modifiers.presentationOnlyFixtureRelicIds
@@ -49,14 +52,10 @@ function normalizeBuild(canonicalBuild = {}) {
         return { relicId, stacks };
       })
     : [];
-  const mutators = Array.isArray(canonicalBuild.mutators) ? [...canonicalBuild.mutators] : [];
   const pacts = Array.isArray(canonicalBuild.pacts) ? [...canonicalBuild.pacts] : [];
   const campUpgrades = canonicalBuild.campUpgrades && typeof canonicalBuild.campUpgrades === "object"
     ? { ...canonicalBuild.campUpgrades }
     : {};
-  for (const mutatorId of mutators) {
-    if (!legalMutators.has(mutatorId)) throw new TypeError(`CANONICAL_BUILD_MUTATOR_UNKNOWN:${mutatorId}`);
-  }
   for (const pactId of pacts) {
     if (!modifiers.legalPactIds.includes(pactId)) throw new TypeError(`CANONICAL_BUILD_PACT_UNKNOWN:${pactId}`);
   }
@@ -68,43 +67,46 @@ function normalizeBuild(canonicalBuild = {}) {
       throw new TypeError(`CANONICAL_BUILD_CAMP_UPGRADE_INVALID:${upgradeId}`);
     }
   }
-  return { relics, mutators: [...new Set(mutators)], pacts: [...new Set(pacts)], campUpgrades };
+  return { relics, pacts: [...new Set(pacts)], campUpgrades };
 }
 
 function level(build, id, cap) {
   return Math.min(cap, Math.max(0, Number(build.campUpgrades[id]) || 0));
 }
 
-function globalMultiplier(build) {
+function globalMultiplier(build, runModifierEffects) {
   const idolCount = Math.min(
     goldenIdolStackCap,
     build.relics.find((entry) => entry.relicId === "idol")?.stacks || 0
   );
-  const nonGreedMutators = build.mutators.filter((id) => id !== "greed").length;
   return 1 +
     idolCount * 0.15 +
-    (build.mutators.includes("greed") ? 0.4 : 0) +
-    nonGreedMutators * 0.2;
+    runModifierEffects.goldMultiplierAdditive;
 }
 
 export function resolveGoldModifierV08({
   canonicalBuild,
+  canonicalRunModifiers,
   sourceId,
   baseAmount,
   context = {}
 }) {
   if (!legalSourceIds.has(sourceId)) throw new TypeError(`GOLD_SOURCE_UNKNOWN:${sourceId}`);
   const build = normalizeBuild(canonicalBuild);
+  const runModifierEffects = deriveRunModifierEffects(
+    canonicalRunModifiers ?? createEmptyRunModifierLedgerV08()
+  );
   const raw = requireSafeAmount(baseAmount, "GOLD_BASE_AMOUNT_INVALID");
   const applyMultiplier = context.applyMultiplier !== false;
   const multiplier = applyMultiplier
-    ? globalMultiplier(build) * (build.pacts.includes("avarice") ? 1.4 : 1)
+    ? globalMultiplier(build, runModifierEffects) * (build.pacts.includes("avarice") ? 1.4 : 1)
     : 1;
   return {
     amount: raw <= 0 ? 0 : Math.max(1, Math.round(raw * multiplier)),
     baseAmount: raw,
     multiplier,
-    canonicalBuild: build
+    canonicalBuild: build,
+    runModifierEffects
   };
 }
 
@@ -114,6 +116,7 @@ export function calculateMultipliedGoldV08(input) {
 
 export function calculateEnemyGoldV08({
   canonicalBuild,
+  canonicalRunModifiers,
   enemyType,
   elite = false,
   rewardBonus = 0
@@ -121,15 +124,19 @@ export function calculateEnemyGoldV08({
   const base = rewardBounds.enemyClaims.baseGoldByEnemyType[enemyType];
   if (!Number.isSafeInteger(base)) throw new TypeError(`ENEMY_GOLD_TYPE_UNKNOWN:${enemyType}`);
   const build = normalizeBuild(canonicalBuild);
+  const runModifierEffects = deriveRunModifierEffects(
+    canonicalRunModifiers ?? createEmptyRunModifierLedgerV08()
+  );
   const bonus = requireSafeAmount(rewardBonus, "ENEMY_REWARD_BONUS_INVALID");
   const bountyLevel = level(build, "bounty_contract", 5);
-  const eliteMultiplier = elite && build.mutators.includes("elitist") ? 1.6 : 1;
+  const eliteMultiplier = elite ? runModifierEffects.eliteGoldMultiplier : 1;
   const preGrant = Math.max(
     1,
     Math.round((base + bonus) * (1 + bountyLevel * 0.1) * eliteMultiplier)
   );
   return resolveGoldModifierV08({
     canonicalBuild: build,
+    canonicalRunModifiers,
     sourceId: elite ? "elite-kill" : "enemy-kill",
     baseAmount: preGrant
   }).amount;
@@ -137,6 +144,7 @@ export function calculateEnemyGoldV08({
 
 export function calculateChestGoldV08({
   canonicalBuild,
+  canonicalRunModifiers,
   baseAmount,
   applyTreasureSense = true
 }) {
@@ -146,6 +154,7 @@ export function calculateChestGoldV08({
   const preGrant = Math.max(1, Math.round(raw * (1 + treasureLevel * 0.1)));
   return resolveGoldModifierV08({
     canonicalBuild: build,
+    canonicalRunModifiers,
     sourceId: "chest-gold",
     baseAmount: preGrant
   }).amount;

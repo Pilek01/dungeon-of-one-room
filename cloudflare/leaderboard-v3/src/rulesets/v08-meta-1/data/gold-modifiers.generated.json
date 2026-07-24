@@ -180,33 +180,17 @@
         ]
       },
       {
-        "id": "greed",
-        "buildPath": "mutators",
-        "buildId": "greed",
-        "additive": 0.4,
-        "stackCap": 1,
+        "id": "run-modifier-global-gold",
+        "effectPath": "goldMultiplierAdditive",
+        "generatedDataRef": "run-modifier-effects.generated.json",
         "appliesTo": [
           "multiplied-grant"
         ]
       },
       {
-        "id": "standard-mutator-gold",
-        "buildPath": "mutators",
-        "excludes": [
-          "greed"
-        ],
-        "additivePerUnique": 0.2,
-        "stackCap": 9,
-        "appliesTo": [
-          "multiplied-grant"
-        ]
-      },
-      {
-        "id": "elitist",
-        "buildPath": "mutators",
-        "buildId": "elitist",
-        "multiplicative": 1.6,
-        "stackCap": 1,
+        "id": "run-modifier-elite-gold",
+        "effectPath": "eliteGoldMultiplier",
+        "generatedDataRef": "run-modifier-effects.generated.json",
         "appliesTo": [
           "elite-kill"
         ]

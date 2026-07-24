@@ -71,11 +71,11 @@ gains a Vault relic path.
 
 Arena is confirmed as an active relic source after two waves, at eligible
 non-boss depths 40-99. It remains `BLOCKED_BY_REPLACEMENT_POLICY`: its offer
-count is `3 + extraRelicChoices`, but canonical Online v3 state has no
-Ascension/mutator field, and baseline selection can enter the global
-replacement state after offering a candidate that does not fit. No Arena
-policy, slot, RNG, public payload, synthetic offer fixture, or property run
-was added.
+count is `3 + extraRelicChoices`, and baseline selection can enter the global
+replacement state after offering a candidate that does not fit. Phase 3B2C1
+now resolves the canonical Ascension/run-modifier dependency, but the
+replacement contract remains open. No Arena policy, slot, RNG, public payload,
+or replacement flow was added.
 
 The ruleset remains disconnected and `test-only`. Active Worker endpoints,
 fixture ruleset, D1, `recent_ops`, Wrangler, HTTP contracts, browser game and
@@ -86,6 +86,43 @@ fixtures. The exact record is:
 previous hash: sha256:154cdecaf014a21fffa7a5e02953e1353d126b24f700f39efcbc2f9ea5c66003
 current hash:  sha256:ea3412fcc8a7456105b7243774538677a423f65bf16c8c977227d5cde8b08a7b
 ```
+
+## Phase 3B2C1 outcome
+
+Phase 3B2C1 inventories all ten active baseline mutators and adds four
+source-bound generated documents: catalog, effects, selection policy, and
+metadata/scope classification. The canonical v08 meta-state now owns a compact
+`runModifiers` ledger with sorted active entries, active count, SHA-256 digest,
+and derived-effects version.
+
+`applyCanonicalRunModifierSelection` is a pure, fail-closed transition for
+`TRUSTED_RULESET_DOMAIN` only. It is not exposed through the active Worker.
+Unknown IDs and activation sources, duplicate non-stackable IDs, removals,
+replacement, and more than three active modifiers are rejected. Profile
+unlocks remain `DEFERRED_PROFILE_UNLOCK_VALIDATION`; profile and game-session
+state are not imported.
+
+`deriveRunModifierEffects` is now the only mutator effect projector used by
+gold and regular relic offer policies. Gold no longer reads
+`canonicalBuild.mutators`. Ascension projects `extraRelicChoices = 1`: Warden
+and the future Arena adapter therefore use four choices instead of three.
+Starting remains fixed at three and Otter remains fixed at nine.
+
+Arena remains `BLOCKED_BY_REPLACEMENT_POLICY`. Canonical run-mod state and
+`extraRelicChoices` are `RESOLVED`; the replacement contract is `OPEN`.
+
+Phase 3B2C1 includes 40 executable golden fixtures and a 5000-case seeded
+property run. The ruleset remains disconnected and `test-only`; game files,
+active endpoints, fixture ruleset, D1, `recent_ops`, Wrangler, and HTTP
+contracts remain unchanged.
+
+```text
+previous hash: sha256:ea3412fcc8a7456105b7243774538677a423f65bf16c8c977227d5cde8b08a7b
+current hash:  sha256:b4d227a665bd9f059e79b69b4db21a202b826313787af0d6c6cd39ae737cad5a
+```
+
+Next step: Phase 3B2C2 — global canonical relic replacement transaction
+contract, still without `game.js` integration or ruleset activation.
 
 ```text
 docs/ONLINE_V3_PHASE3B2B2B2.md

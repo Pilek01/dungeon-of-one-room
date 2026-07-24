@@ -113,8 +113,15 @@ test("Arena lifecycle, eligibility, rarity, count and fallback evidence stays ex
 });
 
 test("Arena exact issuance blockers are present and no synthetic policy exists", async () => {
-  assert.doesNotMatch(metaStateSource, /extraRelicChoices/u);
-  assert.doesNotMatch(metaStateSource, /\bmutators?\b/iu);
+  assert.match(metaStateSource, /runModifiers:\s*createEmptyRunModifierLedgerV08/u);
+  assert.deepEqual(
+    classificationDocument.canonicalData.arena.dependencyStatus,
+    {
+      canonicalRunModifierState: "RESOLVED",
+      extraRelicChoicesProjection: "RESOLVED",
+      replacementContract: "OPEN"
+    }
+  );
   const draft = functionSlice(gameSource, "buildRelicDraftChoices");
   const choose = functionSlice(gameSource, "chooseRelic");
   assert.doesNotMatch(draft, /canAcquireRelic|slotLimit|MAX_RELICS/u);

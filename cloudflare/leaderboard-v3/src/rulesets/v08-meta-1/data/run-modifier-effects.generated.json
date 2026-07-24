@@ -1,0 +1,242 @@
+{
+  "schemaVersion": 1,
+  "rulesetId": "v08-meta-1",
+  "sourceCommit": "f98820c99066d810169e100beb23a54a332734bd",
+  "sources": [
+    {
+      "file": "game.js",
+      "byteLength": 1292796,
+      "sha256": "a7d436f8cdde618e7bab802322a658d2055f201950d9ae7b4598269feff3df00"
+    },
+    {
+      "file": "mutator-data.js",
+      "byteLength": 3244,
+      "sha256": "3e45b4bd282137fb324c6d452bbe248d422c208a2a802028e79263138d1be0b8"
+    }
+  ],
+  "canonicalData": {
+    "effectsVersion": "v08-run-modifier-effects-1",
+    "compositionOrder": [
+      "alchemist",
+      "ascension",
+      "berserker",
+      "bulwark",
+      "elitist",
+      "famine",
+      "greed",
+      "hunter",
+      "momentum",
+      "resilience"
+    ],
+    "modifiers": [
+      {
+        "modifierId": "alchemist",
+        "effectIds": [
+          "gold.globalAdditive",
+          "potion.healMultiplier",
+          "potion.maximumSlotsAdditive",
+          "potion.startingPotionsAdditive",
+          "reward.chestHealingDisabled"
+        ],
+        "effects": {
+          "potion": {
+            "maximumSlotsAdditive": 2,
+            "startingPotionsAdditive": 2,
+            "healMultiplier": 1.3
+          },
+          "reward": {
+            "chestHealingDisabled": true
+          },
+          "gold": {
+            "globalAdditive": 0.2
+          }
+        }
+      },
+      {
+        "modifierId": "ascension",
+        "effectIds": [
+          "enemy.attackMultiplierPerThreeMaximumDepths",
+          "enemy.depthStep",
+          "gold.globalAdditive",
+          "relicOffer.extraRelicChoices"
+        ],
+        "effects": {
+          "relicOffer": {
+            "extraRelicChoices": 1
+          },
+          "enemy": {
+            "attackMultiplierPerThreeMaximumDepths": 0.03,
+            "depthStep": 3
+          },
+          "gold": {
+            "globalAdditive": 0.2
+          }
+        }
+      },
+      {
+        "modifierId": "berserker",
+        "effectIds": [
+          "gold.globalAdditive",
+          "playerStart.attackMultiplier",
+          "playerStart.maximumHpMultiplier"
+        ],
+        "effects": {
+          "playerStart": {
+            "attackMultiplier": 1.25,
+            "maximumHpMultiplier": 0.75
+          },
+          "gold": {
+            "globalAdditive": 0.2
+          }
+        }
+      },
+      {
+        "modifierId": "bulwark",
+        "effectIds": [
+          "gold.globalAdditive",
+          "playerStart.armorMultiplier",
+          "playerStart.attackMultiplier"
+        ],
+        "effects": {
+          "playerStart": {
+            "armorMultiplier": 1.3,
+            "attackMultiplier": 0.8
+          },
+          "gold": {
+            "globalAdditive": 0.2
+          }
+        }
+      },
+      {
+        "modifierId": "elitist",
+        "effectIds": [
+          "enemy.eliteChanceAdditive",
+          "enemy.eliteHpMultiplier",
+          "gold.eliteRewardMultiplier",
+          "gold.globalAdditive"
+        ],
+        "effects": {
+          "enemy": {
+            "eliteChanceAdditive": 0.3,
+            "eliteHpMultiplier": 1.25
+          },
+          "gold": {
+            "globalAdditive": 0.2,
+            "eliteRewardMultiplier": 1.6
+          }
+        }
+      },
+      {
+        "modifierId": "famine",
+        "effectIds": [
+          "gold.globalAdditive",
+          "playerStart.maximumHpMultiplier",
+          "potion.healMultiplier",
+          "potion.maximumSlotsAdditive",
+          "potion.minimumMaximumSlots"
+        ],
+        "effects": {
+          "playerStart": {
+            "maximumHpMultiplier": 1.3
+          },
+          "potion": {
+            "maximumSlotsAdditive": -3,
+            "minimumMaximumSlots": 1,
+            "healMultiplier": 0.5
+          },
+          "gold": {
+            "globalAdditive": 0.2
+          }
+        }
+      },
+      {
+        "modifierId": "greed",
+        "effectIds": [
+          "economy.shopCostMultiplier",
+          "enemy.hpMultiplier",
+          "gold.globalAdditive",
+          "roomGeneration.extraEnemiesAdditive"
+        ],
+        "effects": {
+          "gold": {
+            "globalAdditive": 0.4
+          },
+          "roomGeneration": {
+            "extraEnemiesAdditive": 2
+          },
+          "enemy": {
+            "hpMultiplier": 1.2
+          },
+          "economy": {
+            "shopCostMultiplier": 1.25
+          }
+        }
+      },
+      {
+        "modifierId": "hunter",
+        "effectIds": [
+          "enemy.damageMultiplier",
+          "gold.globalAdditive",
+          "playerStart.critChanceAdditive"
+        ],
+        "effects": {
+          "playerStart": {
+            "critChanceAdditive": 0.2
+          },
+          "enemy": {
+            "damageMultiplier": 1.25
+          },
+          "gold": {
+            "globalAdditive": 0.2
+          }
+        }
+      },
+      {
+        "modifierId": "momentum",
+        "effectIds": [
+          "enemy.damageMultiplier",
+          "gold.globalAdditive",
+          "playerDynamic.attackPerMaximumDepthFraction",
+          "playerDynamic.rounding"
+        ],
+        "effects": {
+          "playerDynamic": {
+            "attackPerMaximumDepthFraction": 0.005,
+            "rounding": "round"
+          },
+          "enemy": {
+            "damageMultiplier": 1.15
+          },
+          "gold": {
+            "globalAdditive": 0.2
+          }
+        }
+      },
+      {
+        "modifierId": "resilience",
+        "effectIds": [
+          "enemy.damageMultiplier",
+          "gold.globalAdditive",
+          "roomEntry.barrierMaximumHpFraction"
+        ],
+        "effects": {
+          "roomEntry": {
+            "barrierMaximumHpFraction": 0.2
+          },
+          "enemy": {
+            "damageMultiplier": 1.2
+          },
+          "gold": {
+            "globalAdditive": 0.2
+          }
+        }
+      }
+    ],
+    "baselineDefaults": {
+      "extraRelicChoices": 0,
+      "goldMultiplierAdditive": 0,
+      "eliteGoldMultiplier": 1,
+      "scoreMultiplier": 1
+    }
+  }
+}

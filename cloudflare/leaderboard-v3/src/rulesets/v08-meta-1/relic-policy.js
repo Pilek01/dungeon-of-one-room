@@ -77,7 +77,6 @@ export function createEmptyRelicBuildV08() {
     uniqueRelicCount: 0,
     totalRelicStacks: 0,
     buildDigest: "sha256:939e68a3048e9671285fd4fd2fde751111e3d8a7c27541272f3628d556a44ba7",
-    mutators: [],
     pacts: [],
     campUpgrades: {},
     skillTiers: {},
@@ -212,6 +211,9 @@ export async function applyRelicAcquisition(build, acquisition, context = {}) {
 export function assertCanonicalRelicBuildV08(build) {
   if (!build || typeof build !== "object" || !Array.isArray(build.relics)) {
     throw new TypeError("RELIC_BUILD_INVALID");
+  }
+  if (Object.hasOwn(build, "mutators")) {
+    throw new TypeError("RELIC_BUILD_MUTATORS_FORBIDDEN");
   }
   const seen = new Set();
   for (const entry of build.relics) {

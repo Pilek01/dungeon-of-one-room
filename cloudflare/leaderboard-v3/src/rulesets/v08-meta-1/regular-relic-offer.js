@@ -21,6 +21,10 @@ import {
 } from "./relic-offer-common.js";
 import { assertRoomRewardEnvelopeV3 } from "./reward-policy.js";
 import { deriveIntInclusive } from "./rng.js";
+import {
+  assertCanonicalRunModifierDigestV08,
+  deriveRunModifierEffects
+} from "./run-modifiers.js";
 
 const catalog = catalogDocument.canonicalData;
 const pityPolicy = pityPolicyDocument.canonicalData;
@@ -211,7 +215,9 @@ async function chooseRelics(state, context, tier) {
   if (pool.length === 0) throw new TypeError(policy.emptyPoolBehavior);
   const selected = [];
   const used = new Set();
-  for (let index = 0; index < policy.offerChoiceCount; index += 1) {
+  const offerChoiceCount = policy.offerChoiceCount +
+    deriveRunModifierEffects(state.runModifiers).extraRelicChoices;
+  for (let index = 0; index < offerChoiceCount; index += 1) {
     const rarity = await rollRarity(state, context, tier, index);
     let candidates = pool.filter(
       (entry) => entry.rarity === rarity && !used.has(entry.relicId)
@@ -333,13 +339,15 @@ function offerDigestInput(state, binding) {
     rewardSlotId: binding.slot.slotId,
     sourceType: binding.slot.sourceType,
     sourceId: binding.slot.sourceId,
-    buildDigest: state.build.buildDigest
+    buildDigest: state.build.buildDigest,
+    modifierDigest: state.runModifiers.modifierDigest
   };
 }
 
 export async function issueRegularRelicOffer(metaState, rawRequest = {}, context = {}) {
   assertMetaStateV08(metaState);
   await assertCanonicalRelicBuildDigestV08(metaState.build, context.cryptoProvider);
+  await assertCanonicalRunModifierDigestV08(metaState.runModifiers, context.cryptoProvider);
   if (metaState.status !== "active") throw new TypeError("RUN_NOT_ACTIVE");
   const request = requireIssueRequest(rawRequest);
   const binding = findRewardSlot(metaState, request);
@@ -492,7 +500,11 @@ export function assertRegularRelicOfferV08(offer) {
   if (
     !Array.isArray(offer.choices) ||
     offer.choices.length < 1 ||
-    offer.choices.length > offerPolicy.offerChoiceCount ||
+    offer.choices.length > (
+      offerPolicy === policy
+        ? offerPolicy.offerChoiceCount + 1
+        : offerPolicy.offerChoiceCount
+    ) ||
     !Array.isArray(offer.publicChoices) ||
     offer.publicChoices.length !== offer.choices.length
   ) {
@@ -542,6 +554,7 @@ export function assertRegularRelicOfferV08(offer) {
 export async function selectRegularRelic(metaState, request = {}, context = {}) {
   assertMetaStateV08(metaState);
   await assertCanonicalRelicBuildDigestV08(metaState.build, context.cryptoProvider);
+  await assertCanonicalRunModifierDigestV08(metaState.runModifiers, context.cryptoProvider);
   const { offerId, choiceId } = assertRelicSelectionRequestV08(request);
   const receipt = findRelicOfferReceiptV08(metaState, offerId);
   if (receipt) {

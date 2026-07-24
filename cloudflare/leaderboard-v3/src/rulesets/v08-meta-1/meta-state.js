@@ -9,6 +9,10 @@ import {
   assertCanonicalRelicBuildV08,
   createEmptyRelicBuildV08
 } from "./relic-policy.js";
+import {
+  assertCanonicalRunModifierLedgerV08,
+  createEmptyRunModifierLedgerV08
+} from "./run-modifiers.js";
 
 const progression = progressionDocument.canonicalData;
 
@@ -111,6 +115,7 @@ export function createInitialMetaStateV08(input = {}, context = {}) {
     rewardSettlementHistory: [],
     lives: progression.initialLives,
     build: createEmptyRelicBuildV08(),
+    runModifiers: createEmptyRunModifierLedgerV08(),
     pendingOffer: null,
     offerSettlementHistory: [],
     relicOfferState: createRelicOfferState(),
@@ -161,6 +166,7 @@ export function assertMetaStateV08(state) {
   requireText(state.season, "META_STATE_INVALID:season");
   if (!state.build || typeof state.build !== "object") throw new TypeError("META_STATE_INVALID:build");
   assertCanonicalRelicBuildV08(state.build);
+  assertCanonicalRunModifierLedgerV08(state.runModifiers);
   assertGoldLedgerV08(state);
   if (!Array.isArray(state.offerSettlementHistory) || state.offerSettlementHistory.length > 64) {
     throw new TypeError("META_STATE_INVALID:offerSettlementHistory");

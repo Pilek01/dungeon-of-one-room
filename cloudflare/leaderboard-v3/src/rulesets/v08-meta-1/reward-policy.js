@@ -9,6 +9,7 @@ import {
   resolveGoldModifierV08
 } from "./gold-policy.js";
 import { assertCanonicalRelicBuildDigestV08 } from "./relic-policy.js";
+import { assertCanonicalRunModifierDigestV08 } from "./run-modifiers.js";
 
 const chestBounds = chestBoundsDocument.canonicalData;
 const otterRelicOfferPolicy = otterRelicOfferPolicyDocument.canonicalData;
@@ -155,9 +156,10 @@ function relicOfferSlots(directive, envelopeId) {
   }];
 }
 
-function maximumGoldDeltaForEnvelope(build, depth, roomType, claims, slots) {
+function maximumGoldDeltaForEnvelope(build, runModifiers, depth, roomType, claims, slots) {
   const fixed = calculateMultipliedGoldV08({
     canonicalBuild: build,
+    canonicalRunModifiers: runModifiers,
     sourceId: "room-clear",
     baseAmount: roomClearBase(depth, roomType)
   });
@@ -169,6 +171,7 @@ function maximumGoldDeltaForEnvelope(build, depth, roomType, claims, slots) {
       enemyMaximum,
       calculateEnemyGoldV08({
         canonicalBuild: build,
+        canonicalRunModifiers: runModifiers,
         enemyType,
         elite: kind === "elite",
         rewardBonus: rewardBounds.enemyClaims.rewardBonusByRoom[roomType] || 0
@@ -181,11 +184,13 @@ function maximumGoldDeltaForEnvelope(build, depth, roomType, claims, slots) {
       : chestBounds.standardGoldBase.maximum;
     return sum + calculateChestGoldV08({
       canonicalBuild: build,
+      canonicalRunModifiers: runModifiers,
       baseAmount: base,
       applyTreasureSense: true
     }) + (slot.slotType === "vault-chest"
       ? calculateMultipliedGoldV08({
           canonicalBuild: build,
+          canonicalRunModifiers: runModifiers,
           sourceId: "vault-chest-bonus",
           baseAmount: chestBounds.vaultBonusBase
         })
@@ -203,8 +208,10 @@ export async function createRoomRewardEnvelopeV3({
   envelopeId,
   cryptoProvider
 }) {
+  await assertCanonicalRunModifierDigestV08(state.runModifiers, cryptoProvider);
   const buildModifier = resolveGoldModifierV08({
     canonicalBuild: state.build,
+    canonicalRunModifiers: state.runModifiers,
     sourceId: "room-clear",
     baseAmount: roomClearBase(directive.depth, directive.roomType),
     context: { roomType: directive.roomType }
@@ -233,6 +240,7 @@ export async function createRoomRewardEnvelopeV3({
     rewardSlots,
     maximumGoldDelta: maximumGoldDeltaForEnvelope(
       state.build,
+      state.runModifiers,
       directive.depth,
       directive.roomType,
       boundedClaims,
@@ -247,7 +255,8 @@ export async function createRoomRewardEnvelopeV3({
       depth: directive.depth,
       roomType: directive.roomType,
       gold: state.gold,
-      build: state.build
+      build: state.build,
+      runModifiers: state.runModifiers
     }, cryptoProvider)
   };
   assertRoomRewardEnvelopeV3(envelope);
@@ -368,6 +377,7 @@ function calculateClaimAmount(state, envelope, claim, slotById) {
       }
       amount += calculateChestGoldV08({
         canonicalBuild: state.build,
+        canonicalRunModifiers: state.runModifiers,
         baseAmount,
         applyTreasureSense: true
       });
@@ -375,6 +385,7 @@ function calculateClaimAmount(state, envelope, claim, slotById) {
     if (slot.slotType === "vault-chest") {
       amount += calculateMultipliedGoldV08({
         canonicalBuild: state.build,
+        canonicalRunModifiers: state.runModifiers,
         sourceId: "vault-chest-bonus",
         baseAmount: chestBounds.vaultBonusBase
       });
@@ -394,6 +405,7 @@ function calculateClaimAmount(state, envelope, claim, slotById) {
   if (claim.claimType === "hazard") {
     const unit = calculateMultipliedGoldV08({
       canonicalBuild: state.build,
+      canonicalRunModifiers: state.runModifiers,
       sourceId: "spike-kill-fallback",
       baseAmount: 1
     });
@@ -405,6 +417,7 @@ function calculateClaimAmount(state, envelope, claim, slotById) {
   const [kind, enemyType] = claim.claimId.split(":");
   const unit = calculateEnemyGoldV08({
     canonicalBuild: state.build,
+    canonicalRunModifiers: state.runModifiers,
     enemyType,
     elite: kind === "elite",
     rewardBonus: rewardBounds.enemyClaims.rewardBonusByRoom[envelope.roomType] || 0
@@ -414,6 +427,7 @@ function calculateClaimAmount(state, envelope, claim, slotById) {
 
 export async function settleRoomRewardEnvelopeV3(state, request, context = {}) {
   await assertCanonicalRelicBuildDigestV08(state.build, context.cryptoProvider);
+  await assertCanonicalRunModifierDigestV08(state.runModifiers, context.cryptoProvider);
   const envelope = assertRoomRewardEnvelopeV3(state.currentRewardEnvelope);
   const digest = await sha256(requestDigestInput(request), context.cryptoProvider);
   const previous = (state.rewardSettlementHistory || []).find(

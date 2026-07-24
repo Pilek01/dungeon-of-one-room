@@ -108,6 +108,11 @@ baseline behavior. Implementing replacement or mutator state would cross the
 explicit phase boundary. Arena therefore remains active but
 `BLOCKED_BY_REPLACEMENT_POLICY`.
 
+Phase 3B2C1 follow-up: canonical `runModifiers` and the derived
+`extraRelicChoices` projection now resolve blocker 1. Arena remains
+`BLOCKED_BY_REPLACEMENT_POLICY` because blocker 2, the global replacement
+transaction contract, is still open.
+
 ## Deferred inventory
 
 | Source | Status |

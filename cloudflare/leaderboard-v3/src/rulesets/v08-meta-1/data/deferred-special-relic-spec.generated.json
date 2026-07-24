@@ -108,7 +108,7 @@
           "game.js:spawnArenaRewardChest stores 3 + extraRelicChoices rare+ IDs",
           "game.js:openStoredRelicChest grants 60 gold only for an empty stored cache",
           "game.js:chooseRelic enters global replacement state when acquisition cannot fit",
-          "meta-state.js has no canonical extraRelicChoices or mutator state"
+          "Phase 3B2C1 resolves canonical extraRelicChoices while replacement remains open"
         ]
       },
       {

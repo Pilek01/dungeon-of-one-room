@@ -1,0 +1,146 @@
+{
+  "schemaVersion": 1,
+  "rulesetId": "v08-meta-1",
+  "sourceCommit": "f98820c99066d810169e100beb23a54a332734bd",
+  "sources": [
+    {
+      "file": "game.js",
+      "byteLength": 1292796,
+      "sha256": "a7d436f8cdde618e7bab802322a658d2055f201950d9ae7b4598269feff3df00"
+    },
+    {
+      "file": "mutator-data.js",
+      "byteLength": 3244,
+      "sha256": "3e45b4bd282137fb324c6d452bbe248d422c208a2a802028e79263138d1be0b8"
+    }
+  ],
+  "canonicalData": {
+    "activeBaselineModifierIds": [
+      "alchemist",
+      "ascension",
+      "berserker",
+      "bulwark",
+      "elitist",
+      "famine",
+      "greed",
+      "hunter",
+      "momentum",
+      "resilience"
+    ],
+    "profileUnlockState": "DEFERRED_PROFILE_STATE",
+    "gameSessionState": "DEFERRED_GAME_SESSION_STATE",
+    "clientUnlockClaims": "UNTRUSTED",
+    "scopeRows": [
+      {
+        "modifierId": "alchemist",
+        "unlockScope": "PROFILE_SCOPED",
+        "selectionScope": "RUN_SCOPED",
+        "runtimeScope": "RUN_SCOPED",
+        "serverRepresentation": "CANONICAL_ACTIVE_LEDGER",
+        "deferredDependency": "DEFERRED_PROFILE_UNLOCK_VALIDATION"
+      },
+      {
+        "modifierId": "ascension",
+        "unlockScope": "PROFILE_SCOPED",
+        "selectionScope": "RUN_SCOPED",
+        "runtimeScope": "RUN_SCOPED",
+        "serverRepresentation": "CANONICAL_ACTIVE_LEDGER",
+        "deferredDependency": "DEFERRED_PROFILE_UNLOCK_VALIDATION"
+      },
+      {
+        "modifierId": "berserker",
+        "unlockScope": "PROFILE_SCOPED",
+        "selectionScope": "RUN_SCOPED",
+        "runtimeScope": "RUN_SCOPED",
+        "serverRepresentation": "CANONICAL_ACTIVE_LEDGER",
+        "deferredDependency": "DEFERRED_PROFILE_UNLOCK_VALIDATION"
+      },
+      {
+        "modifierId": "bulwark",
+        "unlockScope": "PROFILE_SCOPED",
+        "selectionScope": "RUN_SCOPED",
+        "runtimeScope": "RUN_SCOPED",
+        "serverRepresentation": "CANONICAL_ACTIVE_LEDGER",
+        "deferredDependency": "DEFERRED_PROFILE_UNLOCK_VALIDATION"
+      },
+      {
+        "modifierId": "elitist",
+        "unlockScope": "PROFILE_SCOPED",
+        "selectionScope": "RUN_SCOPED",
+        "runtimeScope": "RUN_SCOPED",
+        "serverRepresentation": "CANONICAL_ACTIVE_LEDGER",
+        "deferredDependency": "DEFERRED_PROFILE_UNLOCK_VALIDATION"
+      },
+      {
+        "modifierId": "famine",
+        "unlockScope": "PROFILE_SCOPED",
+        "selectionScope": "RUN_SCOPED",
+        "runtimeScope": "RUN_SCOPED",
+        "serverRepresentation": "CANONICAL_ACTIVE_LEDGER",
+        "deferredDependency": "DEFERRED_PROFILE_UNLOCK_VALIDATION"
+      },
+      {
+        "modifierId": "greed",
+        "unlockScope": "PROFILE_SCOPED",
+        "selectionScope": "RUN_SCOPED",
+        "runtimeScope": "RUN_SCOPED",
+        "serverRepresentation": "CANONICAL_ACTIVE_LEDGER",
+        "deferredDependency": "DEFERRED_PROFILE_UNLOCK_VALIDATION"
+      },
+      {
+        "modifierId": "hunter",
+        "unlockScope": "PROFILE_SCOPED",
+        "selectionScope": "RUN_SCOPED",
+        "runtimeScope": "RUN_SCOPED",
+        "serverRepresentation": "CANONICAL_ACTIVE_LEDGER",
+        "deferredDependency": "DEFERRED_PROFILE_UNLOCK_VALIDATION"
+      },
+      {
+        "modifierId": "momentum",
+        "unlockScope": "PROFILE_SCOPED",
+        "selectionScope": "RUN_SCOPED",
+        "runtimeScope": "RUN_SCOPED",
+        "serverRepresentation": "CANONICAL_ACTIVE_LEDGER",
+        "deferredDependency": "DEFERRED_PROFILE_UNLOCK_VALIDATION"
+      },
+      {
+        "modifierId": "resilience",
+        "unlockScope": "PROFILE_SCOPED_WITH_GAME_SESSION_EVIDENCE",
+        "selectionScope": "RUN_SCOPED",
+        "runtimeScope": "RUN_SCOPED",
+        "serverRepresentation": "CANONICAL_ACTIVE_LEDGER",
+        "deferredDependency": "DEFERRED_PROFILE_UNLOCK_VALIDATION"
+      }
+    ],
+    "legacyRunModFields": [
+      "campGoldBonus",
+      "chestHealPenalty",
+      "eliteChance",
+      "eliteGoldMult",
+      "eliteHpBonus",
+      "eliteHpMult",
+      "enemyAtkMult",
+      "enemyAtkPerDepth",
+      "enemyDamageBonus",
+      "enemyDamageMult",
+      "enemyDoubleMoveChance",
+      "enemyHpBonus",
+      "enemyHpMult",
+      "extraEnemies",
+      "extraRelicChoices",
+      "extraSpikeMult",
+      "goldMultiplier",
+      "momentumAtkBonus",
+      "momentumBaseAtk",
+      "noMerchants",
+      "potionHealMult",
+      "shopCostMult"
+    ],
+    "selectableOtherRunModifierIds": [],
+    "notes": [
+      "All ten active baseline selections are non-stackable mutators.",
+      "No active baseline mutual-exclusion pair exists.",
+      "Legacy runMods fields are derived runtime effects or non-mutator state, not additional selectable IDs."
+    ]
+  }
+}

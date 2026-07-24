@@ -85,7 +85,7 @@ const SOURCE_INPUTS = Object.freeze([
   },
   {
     file: "mutator-data.js",
-    symbols: ["greed", "elitist", "MUTATORS"]
+    symbols: ["MUTATORS", "getMutatorUnlockStatus"]
   },
   {
     file: "relic-data.js",
@@ -135,6 +135,10 @@ const GENERATED_FILES = Object.freeze([
   "special-room-policy.generated.json",
   "gold-sources.generated.json",
   "gold-modifiers.generated.json",
+  "run-modifier-catalog.generated.json",
+  "run-modifier-effects.generated.json",
+  "run-modifier-selection-policy.generated.json",
+  "run-modifier-metadata.generated.json",
   "relic-catalog.generated.json",
   "relic-stack-policy.generated.json",
   "relic-slot-policy.generated.json",
@@ -1134,7 +1138,7 @@ function buildRegularRelicOfferCanonicalData(records, textByFile) {
         "game.js:spawnArenaRewardChest stores 3 + extraRelicChoices rare+ IDs",
         "game.js:openStoredRelicChest grants 60 gold only for an empty stored cache",
         "game.js:chooseRelic enters global replacement state when acquisition cannot fit",
-        "meta-state.js has no canonical extraRelicChoices or mutator state"
+        "Phase 3B2C1 resolves canonical extraRelicChoices while replacement remains open"
       ]
     },
     {
@@ -1463,9 +1467,13 @@ function buildRegularRelicOfferCanonicalData(records, textByFile) {
       emptyPoolBehavior: "no reward chest is spawned; opening a stale empty stored cache grants baseline 60 gold",
       fullSlotsBehavior: "offered relic may enter the global replacement UI after selection",
       replacementBehavior: "BLOCKED_BY_REPLACEMENT_POLICY",
+      dependencyStatus: {
+        canonicalRunModifierState: "RESOLVED",
+        extraRelicChoicesProjection: "RESOLVED",
+        replacementContract: "OPEN"
+      },
       serverCanIssueExactly: false,
       exactIssuanceBlockers: [
-        "canonical Online v3 meta-state has no extraRelicChoices or mutator state",
         "baseline draft eligibility does not filter slot capacity before offering",
         "global relicSwapPending/legendarySwapPending settlement is outside this phase"
       ],
@@ -1690,6 +1698,221 @@ function goldSourceEntry({
     generatedDataRef,
     notes
   };
+}
+
+function buildRunModifierCanonicalData(records, textByFile) {
+  const gameSource = textByFile.get("game.js");
+  const mutatorSource = textByFile.get("mutator-data.js");
+  const sourceFiles = ["mutator-data.js", "game.js"];
+  const catalogIds = Array.from(
+    mutatorSource.matchAll(/\bid:\s*"([a-z_]+)"/gu),
+    (match) => match[1]
+  );
+  const activeReadIds = Array.from(new Set(Array.from(
+    gameSource.matchAll(/isMutatorActive\("([a-z_]+)"\)/gu),
+    (match) => match[1]
+  ))).sort();
+  const unlocks = {
+    berserker: { metric: "totalKills", threshold: 200 },
+    bulwark: { metric: "depthHighscore", threshold: 15 },
+    alchemist: { metric: "totalMerchantPots", threshold: 25 },
+    greed: { metric: "totalGoldEarned", threshold: 12000 },
+    hunter: { metric: "eliteKills", threshold: 90 },
+    resilience: { metric: "shieldUsesThisGame", threshold: 60 },
+    momentum: { metric: "depthHighscore", threshold: 20 },
+    famine: { metric: "potionFreeExtract", threshold: 1 },
+    elitist: { metric: "eliteKills", threshold: 250 },
+    ascension: { metric: "depthHighscore", threshold: 30 }
+  };
+  const effectsById = {
+    berserker: {
+      playerStart: { attackMultiplier: 1.25, maximumHpMultiplier: 0.75 },
+      gold: { globalAdditive: 0.2 }
+    },
+    bulwark: {
+      playerStart: { armorMultiplier: 1.3, attackMultiplier: 0.8 },
+      gold: { globalAdditive: 0.2 }
+    },
+    alchemist: {
+      potion: { maximumSlotsAdditive: 2, startingPotionsAdditive: 2, healMultiplier: 1.3 },
+      reward: { chestHealingDisabled: true },
+      gold: { globalAdditive: 0.2 }
+    },
+    greed: {
+      gold: { globalAdditive: 0.4 },
+      roomGeneration: { extraEnemiesAdditive: 2 },
+      enemy: { hpMultiplier: 1.2 },
+      economy: { shopCostMultiplier: 1.25 }
+    },
+    hunter: {
+      playerStart: { critChanceAdditive: 0.2 },
+      enemy: { damageMultiplier: 1.25 },
+      gold: { globalAdditive: 0.2 }
+    },
+    resilience: {
+      roomEntry: { barrierMaximumHpFraction: 0.2 },
+      enemy: { damageMultiplier: 1.2 },
+      gold: { globalAdditive: 0.2 }
+    },
+    momentum: {
+      playerDynamic: { attackPerMaximumDepthFraction: 0.005, rounding: "round" },
+      enemy: { damageMultiplier: 1.15 },
+      gold: { globalAdditive: 0.2 }
+    },
+    famine: {
+      playerStart: { maximumHpMultiplier: 1.3 },
+      potion: { maximumSlotsAdditive: -3, minimumMaximumSlots: 1, healMultiplier: 0.5 },
+      gold: { globalAdditive: 0.2 }
+    },
+    elitist: {
+      enemy: { eliteChanceAdditive: 0.3, eliteHpMultiplier: 1.25 },
+      gold: { globalAdditive: 0.2, eliteRewardMultiplier: 1.6 }
+    },
+    ascension: {
+      relicOffer: { extraRelicChoices: 1 },
+      enemy: { attackMultiplierPerThreeMaximumDepths: 0.03, depthStep: 3 },
+      gold: { globalAdditive: 0.2 }
+    }
+  };
+  const displayNames = Object.fromEntries(Array.from(
+    mutatorSource.matchAll(/\bid:\s*"([a-z_]+)"[\s\S]*?\bname:\s*"([^"]+)"/gu),
+    (match) => [match[1], match[2]]
+  ));
+  const expectedIds = Object.keys(effectsById).sort();
+  const parsedIds = [...new Set(catalogIds)].sort();
+  if (canonicalJson(parsedIds) !== canonicalJson(expectedIds)) {
+    throw new Error("RUN_MODIFIER_CATALOG_INCOMPLETE");
+  }
+  if (activeReadIds.some((id) => !effectsById[id])) {
+    throw new Error("RUN_MODIFIER_POLICY_REFERENCE_UNKNOWN");
+  }
+  if (expectedIds.some((id) => Object.keys(effectsById[id] || {}).length === 0)) {
+    throw new Error("RUN_MODIFIER_EFFECT_UNCLASSIFIED");
+  }
+  const catalog = expectedIds.map((modifierId) => ({
+    modifierId,
+    displayName: displayNames[modifierId],
+    modifierKind: "MUTATOR",
+    legacySourceFiles: sourceFiles,
+    legacyFunctionOrSymbol: [
+      "MUTATORS",
+      "getMutatorUnlockStatus",
+      "isMutatorActive",
+      "applyMutatorsToRun",
+      "applyMutatorMidRun"
+    ],
+    scope: "RUN_SCOPED",
+    unlockSource: unlocks[modifierId],
+    selectionMoment: ["BETWEEN_RUNS", "CAMP_MID_RUN_ACTIVATION"],
+    stackable: false,
+    maximumStacks: 1,
+    mutuallyExclusiveWith: [],
+    gameplayEffects: effectsById[modifierId],
+    goldEffects: effectsById[modifierId].gold || {},
+    rewardEffects: effectsById[modifierId].reward || {},
+    relicOfferEffects: effectsById[modifierId].relicOffer || {},
+    roomGenerationEffects: effectsById[modifierId].roomGeneration || {},
+    enemyEffects: effectsById[modifierId].enemy || {},
+    scoreEffects: { scoreMultiplier: 1, directEffect: false },
+    leaderboardMetadata: ["modifierId", "stacks"],
+    profileDependency: "DEFERRED_PROFILE_UNLOCK_VALIDATION",
+    serverCanRepresentExactly: true,
+    implementedInThisPhase: true,
+    deferredReason: "DEFERRED_PROFILE_STATE",
+    sourceEvidence: [
+      "mutator-data.js:MUTATORS",
+      "mutator-data.js:getMutatorUnlockStatus",
+      "game.js:applyMutatorsToRun",
+      "game.js:applyMutatorMidRun"
+    ]
+  }));
+  const effectsVersion = "v08-run-modifier-effects-1";
+  const selectionPolicy = {
+    policyVersion: "v08-run-modifier-selection-1",
+    maximumActiveModifiers: 3,
+    canonicalOrdering: "modifierId-ascending",
+    duplicatePolicy: "REJECT",
+    replacementPolicy: "REJECT_REMOVAL_OR_REPLACEMENT",
+    midRunPolicy: "ALLOW_TRUSTED_ADDITIONS_ONLY",
+    trustedAuthority: "TRUSTED_RULESET_DOMAIN",
+    trustedActivationSources: ["server-issued-mid-run", "server-issued-run-start"],
+    unlockValidation: "DEFERRED_PROFILE_UNLOCK_VALIDATION",
+    derivedEffectsVersion: effectsVersion
+  };
+  const emptyLedgerDigest = `sha256:${sha256(canonicalJson({
+    active: [],
+    activeCount: 0,
+    derivedEffectsVersion: effectsVersion
+  }))}`;
+  const common = {
+    schemaVersion: 1,
+    rulesetId: RULESET_ID,
+    sourceCommit: BASELINE_COMMIT,
+    sources: sourceRefs(records, sourceFiles)
+  };
+  return new Map([
+    ["run-modifier-catalog.generated.json", {
+      ...common,
+      canonicalData: { modifierIds: expectedIds, modifiers: catalog }
+    }],
+    ["run-modifier-effects.generated.json", {
+      ...common,
+      canonicalData: {
+        effectsVersion,
+        compositionOrder: expectedIds,
+        modifiers: expectedIds.map((modifierId) => ({
+          modifierId,
+          effectIds: Object.entries(effectsById[modifierId]).flatMap(
+            ([domain, values]) => Object.keys(values).map((name) => `${domain}.${name}`)
+          ).sort(),
+          effects: effectsById[modifierId]
+        })),
+        baselineDefaults: {
+          extraRelicChoices: 0,
+          goldMultiplierAdditive: 0,
+          eliteGoldMultiplier: 1,
+          scoreMultiplier: 1
+        }
+      }
+    }],
+    ["run-modifier-selection-policy.generated.json", {
+      ...common,
+      canonicalData: { ...selectionPolicy, emptyLedgerDigest }
+    }],
+    ["run-modifier-metadata.generated.json", {
+      ...common,
+      canonicalData: {
+        activeBaselineModifierIds: activeReadIds,
+        profileUnlockState: "DEFERRED_PROFILE_STATE",
+        gameSessionState: "DEFERRED_GAME_SESSION_STATE",
+        clientUnlockClaims: "UNTRUSTED",
+        scopeRows: catalog.map((entry) => ({
+          modifierId: entry.modifierId,
+          unlockScope: entry.modifierId === "resilience"
+            ? "PROFILE_SCOPED_WITH_GAME_SESSION_EVIDENCE"
+            : "PROFILE_SCOPED",
+          selectionScope: "RUN_SCOPED",
+          runtimeScope: "RUN_SCOPED",
+          serverRepresentation: "CANONICAL_ACTIVE_LEDGER",
+          deferredDependency: "DEFERRED_PROFILE_UNLOCK_VALIDATION"
+        })),
+        legacyRunModFields: [
+          "campGoldBonus", "chestHealPenalty", "eliteChance", "eliteGoldMult",
+          "eliteHpBonus", "eliteHpMult", "enemyAtkMult", "enemyAtkPerDepth",
+          "enemyDamageBonus", "enemyDamageMult", "enemyDoubleMoveChance",
+          "enemyHpBonus", "enemyHpMult", "extraEnemies", "extraRelicChoices",
+          "extraSpikeMult", "goldMultiplier", "momentumAtkBonus",
+          "momentumBaseAtk", "noMerchants", "potionHealMult", "shopCostMult"
+        ],
+        selectableOtherRunModifierIds: [],
+        notes: [
+          "All ten active baseline selections are non-stackable mutators.",
+          "No active baseline mutual-exclusion pair exists.",
+          "Legacy runMods fields are derived runtime effects or non-mutator state, not additional selectable IDs."
+        ]
+      }
+    }]
+  ]);
 }
 
 function buildCanonicalData(records, textByFile) {
@@ -2398,9 +2621,8 @@ function buildCanonicalData(records, textByFile) {
       legalCampUpgradeIds: ["treasure_sense", "bounty_contract"],
       modifiers: [
         { id: "golden-idol", buildPath: "relics", buildId: "idol", perStackAdditive: goldenIdolBonus, stackCap: 1, appliesTo: ["multiplied-grant"] },
-        { id: "greed", buildPath: "mutators", buildId: "greed", additive: 0.4, stackCap: 1, appliesTo: ["multiplied-grant"] },
-        { id: "standard-mutator-gold", buildPath: "mutators", excludes: ["greed"], additivePerUnique: 0.2, stackCap: mutatorIds.length - 1, appliesTo: ["multiplied-grant"] },
-        { id: "elitist", buildPath: "mutators", buildId: "elitist", multiplicative: 1.6, stackCap: 1, appliesTo: ["elite-kill"] },
+        { id: "run-modifier-global-gold", effectPath: "goldMultiplierAdditive", generatedDataRef: "run-modifier-effects.generated.json", appliesTo: ["multiplied-grant"] },
+        { id: "run-modifier-elite-gold", effectPath: "eliteGoldMultiplier", generatedDataRef: "run-modifier-effects.generated.json", appliesTo: ["elite-kill"] },
         { id: "avarice", buildPath: "pacts", buildId: "avarice", multiplicative: 1.4, stackCap: 1, appliesTo: ["multiplied-grant"] },
         { id: "treasure-sense", buildPath: "campUpgrades.treasure_sense", multiplicativePerLevel: 0.1, levelCap: campUpgradeCaps.treasure_sense, appliesTo: ["chest-base"] },
         { id: "bounty-contract", buildPath: "campUpgrades.bounty_contract", multiplicativePerLevel: 0.1, levelCap: campUpgradeCaps.bounty_contract, appliesTo: ["enemy-base"] }
@@ -2510,7 +2732,7 @@ function buildCanonicalData(records, textByFile) {
     schemaVersion: 3,
     rulesetId: RULESET_ID,
     sourceCommit,
-    purpose: "Phase 3B1 room progression, Phase 3B2A gold, Phase 3B2B1 starting relics, Phase 3B2B2A standard relic offers, Phase 3B2B2B1 Otter relic rewards, and Phase 3B2B2B2 Vault/Arena source classifications",
+    purpose: "Phase 3B1 room progression, Phase 3B2A gold, Phase 3B2B1 starting relics, Phase 3B2B2A standard relic offers, Phase 3B2B2B1 Otter relic rewards, Phase 3B2B2B2 Vault/Arena source classifications, and Phase 3B2C1 canonical run modifiers",
     sources: records
   };
   const relicData = buildRelicCanonicalData(records, textByFile);
@@ -2525,6 +2747,7 @@ function buildCanonicalData(records, textByFile) {
     ["gold-modifiers.generated.json", goldModifiersData],
     ["room-reward-bounds.generated.json", roomRewardBoundsData],
     ["chest-reward-bounds.generated.json", chestRewardBoundsData],
+    ...buildRunModifierCanonicalData(records, textByFile),
     ...relicData,
     ...regularRelicOfferData
   ]);

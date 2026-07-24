@@ -1,0 +1,698 @@
+{
+  "schemaVersion": 1,
+  "rulesetId": "v08-meta-1",
+  "sourceCommit": "f98820c99066d810169e100beb23a54a332734bd",
+  "sources": [
+    {
+      "file": "game.js",
+      "byteLength": 1292796,
+      "sha256": "a7d436f8cdde618e7bab802322a658d2055f201950d9ae7b4598269feff3df00"
+    },
+    {
+      "file": "mutator-data.js",
+      "byteLength": 3244,
+      "sha256": "3e45b4bd282137fb324c6d452bbe248d422c208a2a802028e79263138d1be0b8"
+    }
+  ],
+  "canonicalData": {
+    "modifierIds": [
+      "alchemist",
+      "ascension",
+      "berserker",
+      "bulwark",
+      "elitist",
+      "famine",
+      "greed",
+      "hunter",
+      "momentum",
+      "resilience"
+    ],
+    "modifiers": [
+      {
+        "modifierId": "alchemist",
+        "displayName": "Alchemist",
+        "modifierKind": "MUTATOR",
+        "legacySourceFiles": [
+          "mutator-data.js",
+          "game.js"
+        ],
+        "legacyFunctionOrSymbol": [
+          "MUTATORS",
+          "getMutatorUnlockStatus",
+          "isMutatorActive",
+          "applyMutatorsToRun",
+          "applyMutatorMidRun"
+        ],
+        "scope": "RUN_SCOPED",
+        "unlockSource": {
+          "metric": "totalMerchantPots",
+          "threshold": 25
+        },
+        "selectionMoment": [
+          "BETWEEN_RUNS",
+          "CAMP_MID_RUN_ACTIVATION"
+        ],
+        "stackable": false,
+        "maximumStacks": 1,
+        "mutuallyExclusiveWith": [],
+        "gameplayEffects": {
+          "potion": {
+            "maximumSlotsAdditive": 2,
+            "startingPotionsAdditive": 2,
+            "healMultiplier": 1.3
+          },
+          "reward": {
+            "chestHealingDisabled": true
+          },
+          "gold": {
+            "globalAdditive": 0.2
+          }
+        },
+        "goldEffects": {
+          "globalAdditive": 0.2
+        },
+        "rewardEffects": {
+          "chestHealingDisabled": true
+        },
+        "relicOfferEffects": {},
+        "roomGenerationEffects": {},
+        "enemyEffects": {},
+        "scoreEffects": {
+          "scoreMultiplier": 1,
+          "directEffect": false
+        },
+        "leaderboardMetadata": [
+          "modifierId",
+          "stacks"
+        ],
+        "profileDependency": "DEFERRED_PROFILE_UNLOCK_VALIDATION",
+        "serverCanRepresentExactly": true,
+        "implementedInThisPhase": true,
+        "deferredReason": "DEFERRED_PROFILE_STATE",
+        "sourceEvidence": [
+          "mutator-data.js:MUTATORS",
+          "mutator-data.js:getMutatorUnlockStatus",
+          "game.js:applyMutatorsToRun",
+          "game.js:applyMutatorMidRun"
+        ]
+      },
+      {
+        "modifierId": "ascension",
+        "displayName": "Ascension",
+        "modifierKind": "MUTATOR",
+        "legacySourceFiles": [
+          "mutator-data.js",
+          "game.js"
+        ],
+        "legacyFunctionOrSymbol": [
+          "MUTATORS",
+          "getMutatorUnlockStatus",
+          "isMutatorActive",
+          "applyMutatorsToRun",
+          "applyMutatorMidRun"
+        ],
+        "scope": "RUN_SCOPED",
+        "unlockSource": {
+          "metric": "depthHighscore",
+          "threshold": 30
+        },
+        "selectionMoment": [
+          "BETWEEN_RUNS",
+          "CAMP_MID_RUN_ACTIVATION"
+        ],
+        "stackable": false,
+        "maximumStacks": 1,
+        "mutuallyExclusiveWith": [],
+        "gameplayEffects": {
+          "relicOffer": {
+            "extraRelicChoices": 1
+          },
+          "enemy": {
+            "attackMultiplierPerThreeMaximumDepths": 0.03,
+            "depthStep": 3
+          },
+          "gold": {
+            "globalAdditive": 0.2
+          }
+        },
+        "goldEffects": {
+          "globalAdditive": 0.2
+        },
+        "rewardEffects": {},
+        "relicOfferEffects": {
+          "extraRelicChoices": 1
+        },
+        "roomGenerationEffects": {},
+        "enemyEffects": {
+          "attackMultiplierPerThreeMaximumDepths": 0.03,
+          "depthStep": 3
+        },
+        "scoreEffects": {
+          "scoreMultiplier": 1,
+          "directEffect": false
+        },
+        "leaderboardMetadata": [
+          "modifierId",
+          "stacks"
+        ],
+        "profileDependency": "DEFERRED_PROFILE_UNLOCK_VALIDATION",
+        "serverCanRepresentExactly": true,
+        "implementedInThisPhase": true,
+        "deferredReason": "DEFERRED_PROFILE_STATE",
+        "sourceEvidence": [
+          "mutator-data.js:MUTATORS",
+          "mutator-data.js:getMutatorUnlockStatus",
+          "game.js:applyMutatorsToRun",
+          "game.js:applyMutatorMidRun"
+        ]
+      },
+      {
+        "modifierId": "berserker",
+        "displayName": "Berserker",
+        "modifierKind": "MUTATOR",
+        "legacySourceFiles": [
+          "mutator-data.js",
+          "game.js"
+        ],
+        "legacyFunctionOrSymbol": [
+          "MUTATORS",
+          "getMutatorUnlockStatus",
+          "isMutatorActive",
+          "applyMutatorsToRun",
+          "applyMutatorMidRun"
+        ],
+        "scope": "RUN_SCOPED",
+        "unlockSource": {
+          "metric": "totalKills",
+          "threshold": 200
+        },
+        "selectionMoment": [
+          "BETWEEN_RUNS",
+          "CAMP_MID_RUN_ACTIVATION"
+        ],
+        "stackable": false,
+        "maximumStacks": 1,
+        "mutuallyExclusiveWith": [],
+        "gameplayEffects": {
+          "playerStart": {
+            "attackMultiplier": 1.25,
+            "maximumHpMultiplier": 0.75
+          },
+          "gold": {
+            "globalAdditive": 0.2
+          }
+        },
+        "goldEffects": {
+          "globalAdditive": 0.2
+        },
+        "rewardEffects": {},
+        "relicOfferEffects": {},
+        "roomGenerationEffects": {},
+        "enemyEffects": {},
+        "scoreEffects": {
+          "scoreMultiplier": 1,
+          "directEffect": false
+        },
+        "leaderboardMetadata": [
+          "modifierId",
+          "stacks"
+        ],
+        "profileDependency": "DEFERRED_PROFILE_UNLOCK_VALIDATION",
+        "serverCanRepresentExactly": true,
+        "implementedInThisPhase": true,
+        "deferredReason": "DEFERRED_PROFILE_STATE",
+        "sourceEvidence": [
+          "mutator-data.js:MUTATORS",
+          "mutator-data.js:getMutatorUnlockStatus",
+          "game.js:applyMutatorsToRun",
+          "game.js:applyMutatorMidRun"
+        ]
+      },
+      {
+        "modifierId": "bulwark",
+        "displayName": "Bulwark",
+        "modifierKind": "MUTATOR",
+        "legacySourceFiles": [
+          "mutator-data.js",
+          "game.js"
+        ],
+        "legacyFunctionOrSymbol": [
+          "MUTATORS",
+          "getMutatorUnlockStatus",
+          "isMutatorActive",
+          "applyMutatorsToRun",
+          "applyMutatorMidRun"
+        ],
+        "scope": "RUN_SCOPED",
+        "unlockSource": {
+          "metric": "depthHighscore",
+          "threshold": 15
+        },
+        "selectionMoment": [
+          "BETWEEN_RUNS",
+          "CAMP_MID_RUN_ACTIVATION"
+        ],
+        "stackable": false,
+        "maximumStacks": 1,
+        "mutuallyExclusiveWith": [],
+        "gameplayEffects": {
+          "playerStart": {
+            "armorMultiplier": 1.3,
+            "attackMultiplier": 0.8
+          },
+          "gold": {
+            "globalAdditive": 0.2
+          }
+        },
+        "goldEffects": {
+          "globalAdditive": 0.2
+        },
+        "rewardEffects": {},
+        "relicOfferEffects": {},
+        "roomGenerationEffects": {},
+        "enemyEffects": {},
+        "scoreEffects": {
+          "scoreMultiplier": 1,
+          "directEffect": false
+        },
+        "leaderboardMetadata": [
+          "modifierId",
+          "stacks"
+        ],
+        "profileDependency": "DEFERRED_PROFILE_UNLOCK_VALIDATION",
+        "serverCanRepresentExactly": true,
+        "implementedInThisPhase": true,
+        "deferredReason": "DEFERRED_PROFILE_STATE",
+        "sourceEvidence": [
+          "mutator-data.js:MUTATORS",
+          "mutator-data.js:getMutatorUnlockStatus",
+          "game.js:applyMutatorsToRun",
+          "game.js:applyMutatorMidRun"
+        ]
+      },
+      {
+        "modifierId": "elitist",
+        "displayName": "Elitist",
+        "modifierKind": "MUTATOR",
+        "legacySourceFiles": [
+          "mutator-data.js",
+          "game.js"
+        ],
+        "legacyFunctionOrSymbol": [
+          "MUTATORS",
+          "getMutatorUnlockStatus",
+          "isMutatorActive",
+          "applyMutatorsToRun",
+          "applyMutatorMidRun"
+        ],
+        "scope": "RUN_SCOPED",
+        "unlockSource": {
+          "metric": "eliteKills",
+          "threshold": 250
+        },
+        "selectionMoment": [
+          "BETWEEN_RUNS",
+          "CAMP_MID_RUN_ACTIVATION"
+        ],
+        "stackable": false,
+        "maximumStacks": 1,
+        "mutuallyExclusiveWith": [],
+        "gameplayEffects": {
+          "enemy": {
+            "eliteChanceAdditive": 0.3,
+            "eliteHpMultiplier": 1.25
+          },
+          "gold": {
+            "globalAdditive": 0.2,
+            "eliteRewardMultiplier": 1.6
+          }
+        },
+        "goldEffects": {
+          "globalAdditive": 0.2,
+          "eliteRewardMultiplier": 1.6
+        },
+        "rewardEffects": {},
+        "relicOfferEffects": {},
+        "roomGenerationEffects": {},
+        "enemyEffects": {
+          "eliteChanceAdditive": 0.3,
+          "eliteHpMultiplier": 1.25
+        },
+        "scoreEffects": {
+          "scoreMultiplier": 1,
+          "directEffect": false
+        },
+        "leaderboardMetadata": [
+          "modifierId",
+          "stacks"
+        ],
+        "profileDependency": "DEFERRED_PROFILE_UNLOCK_VALIDATION",
+        "serverCanRepresentExactly": true,
+        "implementedInThisPhase": true,
+        "deferredReason": "DEFERRED_PROFILE_STATE",
+        "sourceEvidence": [
+          "mutator-data.js:MUTATORS",
+          "mutator-data.js:getMutatorUnlockStatus",
+          "game.js:applyMutatorsToRun",
+          "game.js:applyMutatorMidRun"
+        ]
+      },
+      {
+        "modifierId": "famine",
+        "displayName": "Famine",
+        "modifierKind": "MUTATOR",
+        "legacySourceFiles": [
+          "mutator-data.js",
+          "game.js"
+        ],
+        "legacyFunctionOrSymbol": [
+          "MUTATORS",
+          "getMutatorUnlockStatus",
+          "isMutatorActive",
+          "applyMutatorsToRun",
+          "applyMutatorMidRun"
+        ],
+        "scope": "RUN_SCOPED",
+        "unlockSource": {
+          "metric": "potionFreeExtract",
+          "threshold": 1
+        },
+        "selectionMoment": [
+          "BETWEEN_RUNS",
+          "CAMP_MID_RUN_ACTIVATION"
+        ],
+        "stackable": false,
+        "maximumStacks": 1,
+        "mutuallyExclusiveWith": [],
+        "gameplayEffects": {
+          "playerStart": {
+            "maximumHpMultiplier": 1.3
+          },
+          "potion": {
+            "maximumSlotsAdditive": -3,
+            "minimumMaximumSlots": 1,
+            "healMultiplier": 0.5
+          },
+          "gold": {
+            "globalAdditive": 0.2
+          }
+        },
+        "goldEffects": {
+          "globalAdditive": 0.2
+        },
+        "rewardEffects": {},
+        "relicOfferEffects": {},
+        "roomGenerationEffects": {},
+        "enemyEffects": {},
+        "scoreEffects": {
+          "scoreMultiplier": 1,
+          "directEffect": false
+        },
+        "leaderboardMetadata": [
+          "modifierId",
+          "stacks"
+        ],
+        "profileDependency": "DEFERRED_PROFILE_UNLOCK_VALIDATION",
+        "serverCanRepresentExactly": true,
+        "implementedInThisPhase": true,
+        "deferredReason": "DEFERRED_PROFILE_STATE",
+        "sourceEvidence": [
+          "mutator-data.js:MUTATORS",
+          "mutator-data.js:getMutatorUnlockStatus",
+          "game.js:applyMutatorsToRun",
+          "game.js:applyMutatorMidRun"
+        ]
+      },
+      {
+        "modifierId": "greed",
+        "displayName": "Greed",
+        "modifierKind": "MUTATOR",
+        "legacySourceFiles": [
+          "mutator-data.js",
+          "game.js"
+        ],
+        "legacyFunctionOrSymbol": [
+          "MUTATORS",
+          "getMutatorUnlockStatus",
+          "isMutatorActive",
+          "applyMutatorsToRun",
+          "applyMutatorMidRun"
+        ],
+        "scope": "RUN_SCOPED",
+        "unlockSource": {
+          "metric": "totalGoldEarned",
+          "threshold": 12000
+        },
+        "selectionMoment": [
+          "BETWEEN_RUNS",
+          "CAMP_MID_RUN_ACTIVATION"
+        ],
+        "stackable": false,
+        "maximumStacks": 1,
+        "mutuallyExclusiveWith": [],
+        "gameplayEffects": {
+          "gold": {
+            "globalAdditive": 0.4
+          },
+          "roomGeneration": {
+            "extraEnemiesAdditive": 2
+          },
+          "enemy": {
+            "hpMultiplier": 1.2
+          },
+          "economy": {
+            "shopCostMultiplier": 1.25
+          }
+        },
+        "goldEffects": {
+          "globalAdditive": 0.4
+        },
+        "rewardEffects": {},
+        "relicOfferEffects": {},
+        "roomGenerationEffects": {
+          "extraEnemiesAdditive": 2
+        },
+        "enemyEffects": {
+          "hpMultiplier": 1.2
+        },
+        "scoreEffects": {
+          "scoreMultiplier": 1,
+          "directEffect": false
+        },
+        "leaderboardMetadata": [
+          "modifierId",
+          "stacks"
+        ],
+        "profileDependency": "DEFERRED_PROFILE_UNLOCK_VALIDATION",
+        "serverCanRepresentExactly": true,
+        "implementedInThisPhase": true,
+        "deferredReason": "DEFERRED_PROFILE_STATE",
+        "sourceEvidence": [
+          "mutator-data.js:MUTATORS",
+          "mutator-data.js:getMutatorUnlockStatus",
+          "game.js:applyMutatorsToRun",
+          "game.js:applyMutatorMidRun"
+        ]
+      },
+      {
+        "modifierId": "hunter",
+        "displayName": "Hunter",
+        "modifierKind": "MUTATOR",
+        "legacySourceFiles": [
+          "mutator-data.js",
+          "game.js"
+        ],
+        "legacyFunctionOrSymbol": [
+          "MUTATORS",
+          "getMutatorUnlockStatus",
+          "isMutatorActive",
+          "applyMutatorsToRun",
+          "applyMutatorMidRun"
+        ],
+        "scope": "RUN_SCOPED",
+        "unlockSource": {
+          "metric": "eliteKills",
+          "threshold": 90
+        },
+        "selectionMoment": [
+          "BETWEEN_RUNS",
+          "CAMP_MID_RUN_ACTIVATION"
+        ],
+        "stackable": false,
+        "maximumStacks": 1,
+        "mutuallyExclusiveWith": [],
+        "gameplayEffects": {
+          "playerStart": {
+            "critChanceAdditive": 0.2
+          },
+          "enemy": {
+            "damageMultiplier": 1.25
+          },
+          "gold": {
+            "globalAdditive": 0.2
+          }
+        },
+        "goldEffects": {
+          "globalAdditive": 0.2
+        },
+        "rewardEffects": {},
+        "relicOfferEffects": {},
+        "roomGenerationEffects": {},
+        "enemyEffects": {
+          "damageMultiplier": 1.25
+        },
+        "scoreEffects": {
+          "scoreMultiplier": 1,
+          "directEffect": false
+        },
+        "leaderboardMetadata": [
+          "modifierId",
+          "stacks"
+        ],
+        "profileDependency": "DEFERRED_PROFILE_UNLOCK_VALIDATION",
+        "serverCanRepresentExactly": true,
+        "implementedInThisPhase": true,
+        "deferredReason": "DEFERRED_PROFILE_STATE",
+        "sourceEvidence": [
+          "mutator-data.js:MUTATORS",
+          "mutator-data.js:getMutatorUnlockStatus",
+          "game.js:applyMutatorsToRun",
+          "game.js:applyMutatorMidRun"
+        ]
+      },
+      {
+        "modifierId": "momentum",
+        "displayName": "Momentum",
+        "modifierKind": "MUTATOR",
+        "legacySourceFiles": [
+          "mutator-data.js",
+          "game.js"
+        ],
+        "legacyFunctionOrSymbol": [
+          "MUTATORS",
+          "getMutatorUnlockStatus",
+          "isMutatorActive",
+          "applyMutatorsToRun",
+          "applyMutatorMidRun"
+        ],
+        "scope": "RUN_SCOPED",
+        "unlockSource": {
+          "metric": "depthHighscore",
+          "threshold": 20
+        },
+        "selectionMoment": [
+          "BETWEEN_RUNS",
+          "CAMP_MID_RUN_ACTIVATION"
+        ],
+        "stackable": false,
+        "maximumStacks": 1,
+        "mutuallyExclusiveWith": [],
+        "gameplayEffects": {
+          "playerDynamic": {
+            "attackPerMaximumDepthFraction": 0.005,
+            "rounding": "round"
+          },
+          "enemy": {
+            "damageMultiplier": 1.15
+          },
+          "gold": {
+            "globalAdditive": 0.2
+          }
+        },
+        "goldEffects": {
+          "globalAdditive": 0.2
+        },
+        "rewardEffects": {},
+        "relicOfferEffects": {},
+        "roomGenerationEffects": {},
+        "enemyEffects": {
+          "damageMultiplier": 1.15
+        },
+        "scoreEffects": {
+          "scoreMultiplier": 1,
+          "directEffect": false
+        },
+        "leaderboardMetadata": [
+          "modifierId",
+          "stacks"
+        ],
+        "profileDependency": "DEFERRED_PROFILE_UNLOCK_VALIDATION",
+        "serverCanRepresentExactly": true,
+        "implementedInThisPhase": true,
+        "deferredReason": "DEFERRED_PROFILE_STATE",
+        "sourceEvidence": [
+          "mutator-data.js:MUTATORS",
+          "mutator-data.js:getMutatorUnlockStatus",
+          "game.js:applyMutatorsToRun",
+          "game.js:applyMutatorMidRun"
+        ]
+      },
+      {
+        "modifierId": "resilience",
+        "displayName": "Resilience",
+        "modifierKind": "MUTATOR",
+        "legacySourceFiles": [
+          "mutator-data.js",
+          "game.js"
+        ],
+        "legacyFunctionOrSymbol": [
+          "MUTATORS",
+          "getMutatorUnlockStatus",
+          "isMutatorActive",
+          "applyMutatorsToRun",
+          "applyMutatorMidRun"
+        ],
+        "scope": "RUN_SCOPED",
+        "unlockSource": {
+          "metric": "shieldUsesThisGame",
+          "threshold": 60
+        },
+        "selectionMoment": [
+          "BETWEEN_RUNS",
+          "CAMP_MID_RUN_ACTIVATION"
+        ],
+        "stackable": false,
+        "maximumStacks": 1,
+        "mutuallyExclusiveWith": [],
+        "gameplayEffects": {
+          "roomEntry": {
+            "barrierMaximumHpFraction": 0.2
+          },
+          "enemy": {
+            "damageMultiplier": 1.2
+          },
+          "gold": {
+            "globalAdditive": 0.2
+          }
+        },
+        "goldEffects": {
+          "globalAdditive": 0.2
+        },
+        "rewardEffects": {},
+        "relicOfferEffects": {},
+        "roomGenerationEffects": {},
+        "enemyEffects": {
+          "damageMultiplier": 1.2
+        },
+        "scoreEffects": {
+          "scoreMultiplier": 1,
+          "directEffect": false
+        },
+        "leaderboardMetadata": [
+          "modifierId",
+          "stacks"
+        ],
+        "profileDependency": "DEFERRED_PROFILE_UNLOCK_VALIDATION",
+        "serverCanRepresentExactly": true,
+        "implementedInThisPhase": true,
+        "deferredReason": "DEFERRED_PROFILE_STATE",
+        "sourceEvidence": [
+          "mutator-data.js:MUTATORS",
+          "mutator-data.js:getMutatorUnlockStatus",
+          "game.js:applyMutatorsToRun",
+          "game.js:applyMutatorMidRun"
+        ]
+      }
+    ]
+  }
+}

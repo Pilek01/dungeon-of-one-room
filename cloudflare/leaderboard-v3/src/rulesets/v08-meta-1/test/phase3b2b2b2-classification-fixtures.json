@@ -63,11 +63,11 @@
     "expected": "3 + extraRelicChoices; Ascension adds one"
   },
   {
-    "fixtureId": "arena-canonical-state-gap",
+    "fixtureId": "arena-run-modifier-dependency-resolved",
     "sourceId": "arena-reward-cache",
     "expectedClassification": "BLOCKED_BY_REPLACEMENT_POLICY",
     "evidence": "cloudflare/leaderboard-v3/src/rulesets/v08-meta-1/meta-state.js",
-    "expected": "no canonical extraRelicChoices or mutator state"
+    "expected": "canonical extraRelicChoices resolved; replacement contract open"
   },
   {
     "fixtureId": "arena-no-reward-pity",

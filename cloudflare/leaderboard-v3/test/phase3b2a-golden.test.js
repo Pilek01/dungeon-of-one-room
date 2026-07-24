@@ -20,6 +20,9 @@ import {
   applyRelicAcquisition,
   createEmptyRelicBuildV08
 } from "../src/rulesets/v08-meta-1/relic-policy.js";
+import {
+  applyCanonicalRunModifierSelection
+} from "../src/rulesets/v08-meta-1/run-modifiers.js";
 
 const WORKER_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const fixtures = JSON.parse(await readFile(
@@ -76,7 +79,7 @@ function context(runId = "run_phase3b2a") {
 
 async function issuedState(options = {}) {
   const resolvedContext = context(options.runId);
-  const state = createInitialMetaStateV08(
+  let state = createInitialMetaStateV08(
     { runId: resolvedContext.runId, season: resolvedContext.season },
     resolvedContext
   );
@@ -95,10 +98,18 @@ async function issuedState(options = {}) {
         sourceOfferId: `fixture_${relicId}`
       });
     }
-    for (const field of ["mutators", "pacts", "campUpgrades", "skillTiers", "elixirs"]) {
+    for (const field of ["pacts", "campUpgrades", "skillTiers", "elixirs"]) {
       build[field] = structuredClone(options.build[field] ?? build[field]);
     }
     state.build = build;
+  }
+  if (options.modifierIds) {
+    state = await applyCanonicalRunModifierSelection(state, {
+      modifierIds: options.modifierIds,
+      activationSource: "server-issued-run-start"
+    }, {
+      authority: "TRUSTED_RULESET_DOMAIN"
+    });
   }
   return issueNextRoomDirectiveV08(state, resolvedContext);
 }
@@ -326,7 +337,7 @@ const runners = Object.fromEntries(fixtures.map((fixture) => [
       case "rounding": {
         const { result } = await settleWithClaims(
           [{ claimType: "enemy", claimId: "enemy:brute", count: 1 }],
-          { build: { relics: ["idol"], mutators: [], pacts: [], campUpgrades: {}, skillTiers: {}, elixirs: [] } }
+          { build: { relics: ["idol"], pacts: [], campUpgrades: {}, skillTiers: {}, elixirs: [] } }
         );
         assert.equal(result.authoritativeGoldDelta, 7);
         return;
@@ -345,7 +356,6 @@ const runners = Object.fromEntries(fixtures.map((fixture) => [
         const { result } = await settleWithClaims([], {
           build: {
             relics: ["idol"],
-            mutators: [],
             pacts: [],
             campUpgrades: {},
             skillTiers: {},
@@ -424,12 +434,12 @@ const runners = Object.fromEntries(fixtures.map((fixture) => [
           depth: 89,
           build: {
             relics: ["idol"],
-            mutators: ["berserker", "bulwark", "alchemist", "greed", "hunter", "resilience", "momentum", "famine", "elitist", "ascension"],
             pacts: ["avarice"],
             campUpgrades: { treasure_sense: 5, bounty_contract: 5 },
             skillTiers: {},
             elixirs: []
-          }
+          },
+          modifierIds: ["greed", "elitist", "ascension"]
         });
         assert.ok(state.currentRewardEnvelope.maximumGoldDelta <= 10_000);
         assert.ok(state.currentRewardEnvelope.maximumGoldDelta > 0);

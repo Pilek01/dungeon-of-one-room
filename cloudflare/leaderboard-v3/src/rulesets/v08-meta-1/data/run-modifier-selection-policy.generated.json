@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "rulesetId": "v08-meta-1",
+  "sourceCommit": "f98820c99066d810169e100beb23a54a332734bd",
+  "sources": [
+    {
+      "file": "game.js",
+      "byteLength": 1292796,
+      "sha256": "a7d436f8cdde618e7bab802322a658d2055f201950d9ae7b4598269feff3df00"
+    },
+    {
+      "file": "mutator-data.js",
+      "byteLength": 3244,
+      "sha256": "3e45b4bd282137fb324c6d452bbe248d422c208a2a802028e79263138d1be0b8"
+    }
+  ],
+  "canonicalData": {
+    "policyVersion": "v08-run-modifier-selection-1",
+    "maximumActiveModifiers": 3,
+    "canonicalOrdering": "modifierId-ascending",
+    "duplicatePolicy": "REJECT",
+    "replacementPolicy": "REJECT_REMOVAL_OR_REPLACEMENT",
+    "midRunPolicy": "ALLOW_TRUSTED_ADDITIONS_ONLY",
+    "trustedAuthority": "TRUSTED_RULESET_DOMAIN",
+    "trustedActivationSources": [
+      "server-issued-mid-run",
+      "server-issued-run-start"
+    ],
+    "unlockValidation": "DEFERRED_PROFILE_UNLOCK_VALIDATION",
+    "derivedEffectsVersion": "v08-run-modifier-effects-1",
+    "emptyLedgerDigest": "sha256:23ffdc5abeaa4936196dc0c63ea7a7bca385f7a53044cf3d0b782c526f0c9d1b"
+  }
+}
