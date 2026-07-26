@@ -1,0 +1,69 @@
+{
+  "schemaVersion": 1,
+  "rulesetId": "v08-meta-1",
+  "sourceCommit": "f98820c99066d810169e100beb23a54a332734bd",
+  "sources": [
+    {
+      "file": "game.js",
+      "byteLength": 1292796,
+      "sha256": "a7d436f8cdde618e7bab802322a658d2055f201950d9ae7b4598269feff3df00"
+    },
+    {
+      "file": "relic-data.js",
+      "byteLength": 9135,
+      "sha256": "fa4cdd27c3b3b9d2b61df3bc346a4123e9d3f70f58afdc16cd626411d6bdfa59"
+    },
+    {
+      "file": "relic-runtime.js",
+      "byteLength": 9127,
+      "sha256": "87e02a9a1519aa5c9c621e23fabe5400cfda8274c1aa39c50cd471478e642d97"
+    }
+  ],
+  "canonicalData": {
+    "policyVersion": "v08-crossroads-transaction-1",
+    "implementationStatus": "m1-disconnected-test-only",
+    "trigger": "Crossroads room exposes mutually exclusive POWER and MERCY chests",
+    "power": {
+      "requiresConfirmation": true,
+      "maxHpCostMultiplier": 0.15,
+      "minimumMaxHpCost": 1,
+      "durationTurns": 100,
+      "eligibleRarities": [
+        "epic",
+        "legendary",
+        "mythic"
+      ],
+      "baseChoiceCount": 3,
+      "extraChoiceSource": "canonical run modifier extraRelicChoices",
+      "emptyPoolFallback": {
+        "baseGold": 80,
+        "sourceId": "crossroads-power-empty",
+        "applyGoldModifiers": true
+      },
+      "cancelAfterConfirmation": "penalty remains and no relic is acquired"
+    },
+    "mercy": {
+      "requiresConfirmation": false,
+      "heal": "to canonical maximum HP",
+      "cooldowns": "reset every canonical skill cooldown",
+      "potions": "refill every empty slot",
+      "avarice": {
+        "suppressPotionRefill": true,
+        "baseGoldPerEmptySlot": 12,
+        "sourceId": "crossroads-mercy-avarice",
+        "applyGoldModifiers": true
+      }
+    },
+    "mutualExclusion": "committing either source choice consumes the Crossroads source once",
+    "rngPurposes": [
+      "crossroads/power-rarity",
+      "crossroads/power-candidate"
+    ],
+    "replacementPolicy": "POWER reuses canonical acquisition/replacement; fallback only for zero canonical choices",
+    "sourceEvidence": [
+      "game.js:armCrossroadsPowerConfirmation/openCrossroadsPowerChest",
+      "game.js:openCrossroadsMercyChest/closeOtherCrossroadsChest",
+      "game.js:CROSSROADS_POWER_HP_COST_MULTIPLIER/CROSSROADS_POWER_DURATION_TURNS"
+    ]
+  }
+}

@@ -59,9 +59,17 @@
 - Forge verification: targeted 9/9; combined targeted 36/36; fast 39/39;
   phase 574/574; baseline 3/3 plus headed smoke PASS; 24 golden cases and
   128 property seeds.
-- Current M1 ruleset hash after Forge:
-  `sha256:6fe5f6a89103e08dfbea650eaf423e56748ae2f0aab85dfbb9c336e0042f30e8`.
-- Next M1 block: canonical Crossroads transactions.
+- Canonical Crossroads transactions are complete. POWER preserves confirmation,
+  the rounded 15% max-HP cost for 100 turns, Epic+ RNG order, replacement,
+  skip, exact penalty restoration, and modified base-80 empty-pool fallback.
+  MERCY heals, resets cooldowns, refills potions, or applies the canonical
+  Pact of Avarice gold conversion. Either choice consumes the room once.
+- Crossroads verification: targeted 11/11; combined targeted 47/47; fast 50/50;
+  phase 585/585; baseline 3/3 plus headed smoke PASS; 24 golden cases and
+  128 property seeds.
+- Current M1 ruleset hash after Crossroads:
+  `sha256:3656426308f31f45d52108c61e2b9ea8432db25012515adebeeabd3769f5186e`.
+- Next M1 block: canonical Camp and Pact transactions.
 
 ## Verification
 

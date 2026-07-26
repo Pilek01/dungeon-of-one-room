@@ -95,3 +95,33 @@ Online v3 exposes only opaque final Forge choices. Temper reuses canonical
 acquisition/replacement. Transmute commits removal and acquisition on one
 immutable clone, so neither half can persist by itself and the client cannot
 report the target, rarity, RNG result, stacks, cost, or final build.
+
+## Crossroads
+
+Source evidence:
+
+- `game.js:buildCrossroadsRoom` creates mutually exclusive POWER and MERCY
+  chests. `closeOtherCrossroadsChest` closes the unchosen chest.
+- `game.js:armCrossroadsPowerConfirmation` requires a second interaction for
+  POWER. MERCY is applied immediately without the extra confirmation.
+- `game.js:openCrossroadsPowerChest` deducts
+  `max(1, round(maxHp * 0.15))`, clamps current HP to the reduced maximum, and
+  records the exact penalty until canonical turn + 100.
+- POWER uses three plus canonical `extraRelicChoices`, filters to
+  epic/legendary/mythic, and preserves `buildRelicDraftChoices` RNG order:
+  non-boss rarity roll, then uniform candidate, falling back to the complete
+  remaining eligible pool when the rolled rarity is absent.
+- POWER cost is applied before its relic offer. Declining the offer retains the
+  penalty. If the canonical pool is empty, the penalty remains and base 80
+  gold is granted through the existing canonical gold modifiers and ledger.
+- `restoreExpiredCrossroadsPowerPenalty` restores the exact recorded max-HP
+  penalty at expiry and clears the active Crossroads penalty state.
+- `game.js:openCrossroadsMercyChest` heals to max HP, resets every skill
+  cooldown, and fills every empty potion slot.
+- With Pact of Avarice, MERCY does not refill potions. Each empty slot becomes
+  base 12 gold through the existing canonical gold modifier and ledger.
+
+The server issues opaque POWER result/replacement, POWER skip/fallback, and
+MERCY choices. Committing any choice consumes the room source once. The client
+cannot provide HP, duration, rarity, target, result, potion count, cooldowns,
+gold, price, or final state.

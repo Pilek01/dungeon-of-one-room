@@ -142,6 +142,7 @@ const GENERATED_FILES = Object.freeze([
   "meta-transaction-policy.generated.json",
   "merchant-transaction-policy.generated.json",
   "forge-transaction-policy.generated.json",
+  "crossroads-transaction-policy.generated.json",
   "run-modifier-catalog.generated.json",
   "run-modifier-effects.generated.json",
   "run-modifier-selection-policy.generated.json",
@@ -3076,6 +3077,72 @@ function buildCanonicalData(records, textByFile) {
       ]
     }
   };
+  for (const marker of [
+    "const CROSSROADS_POWER_HP_COST_MULTIPLIER = 0.15;",
+    "const CROSSROADS_POWER_DURATION_TURNS = 100;",
+    "function armCrossroadsPowerConfirmation(chest)",
+    "function openCrossroadsPowerChest(chest)",
+    "function openCrossroadsMercyChest(chest)",
+    "const fallbackGold = grantGold(80);",
+    "emptyPotionSlots * CROSSROADS_MERCY_AVARICE_GOLD_PER_POTION"
+  ]) {
+    if (!merchantSource.includes(marker)) {
+      throw new Error(`SOURCE_SYMBOL_MISSING:game.js:${marker}`);
+    }
+  }
+  const crossroadsTransactionPolicyData = {
+    schemaVersion: 1,
+    rulesetId: RULESET_ID,
+    sourceCommit,
+    sources: sourceRefs(records, [
+      "game.js",
+      "relic-data.js",
+      "relic-runtime.js"
+    ]),
+    canonicalData: {
+      policyVersion: "v08-crossroads-transaction-1",
+      implementationStatus: "m1-disconnected-test-only",
+      trigger: "Crossroads room exposes mutually exclusive POWER and MERCY chests",
+      power: {
+        requiresConfirmation: true,
+        maxHpCostMultiplier: 0.15,
+        minimumMaxHpCost: 1,
+        durationTurns: 100,
+        eligibleRarities: ["epic", "legendary", "mythic"],
+        baseChoiceCount: 3,
+        extraChoiceSource: "canonical run modifier extraRelicChoices",
+        emptyPoolFallback: {
+          baseGold: 80,
+          sourceId: "crossroads-power-empty",
+          applyGoldModifiers: true
+        },
+        cancelAfterConfirmation: "penalty remains and no relic is acquired"
+      },
+      mercy: {
+        requiresConfirmation: false,
+        heal: "to canonical maximum HP",
+        cooldowns: "reset every canonical skill cooldown",
+        potions: "refill every empty slot",
+        avarice: {
+          suppressPotionRefill: true,
+          baseGoldPerEmptySlot: 12,
+          sourceId: "crossroads-mercy-avarice",
+          applyGoldModifiers: true
+        }
+      },
+      mutualExclusion: "committing either source choice consumes the Crossroads source once",
+      rngPurposes: [
+        "crossroads/power-rarity",
+        "crossroads/power-candidate"
+      ],
+      replacementPolicy: "POWER reuses canonical acquisition/replacement; fallback only for zero canonical choices",
+      sourceEvidence: [
+        "game.js:armCrossroadsPowerConfirmation/openCrossroadsPowerChest",
+        "game.js:openCrossroadsMercyChest/closeOtherCrossroadsChest",
+        "game.js:CROSSROADS_POWER_HP_COST_MULTIPLIER/CROSSROADS_POWER_DURATION_TURNS"
+      ]
+    }
+  };
   const sourceManifest = {
     schemaVersion: 3,
     rulesetId: RULESET_ID,
@@ -3192,6 +3259,7 @@ function buildCanonicalData(records, textByFile) {
     ["meta-transaction-policy.generated.json", metaTransactionPolicyData],
     ["merchant-transaction-policy.generated.json", merchantTransactionPolicyData],
     ["forge-transaction-policy.generated.json", forgeTransactionPolicyData],
+    ["crossroads-transaction-policy.generated.json", crossroadsTransactionPolicyData],
     ["room-reward-bounds.generated.json", roomRewardBoundsData],
     ["chest-reward-bounds.generated.json", chestRewardBoundsData],
     ["relic-reward-fallback-policy.generated.json", relicRewardFallbackPolicy],

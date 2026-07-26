@@ -91,7 +91,10 @@ export function createEmptyRelicBuildV08() {
       combatBoostAttack: 0,
       combatBoostArmor: 0,
       hasSecondChance: false,
-      highestUnlockedDepth: 0
+      highestUnlockedDepth: 0,
+      turn: 0,
+      crossroadsPowerMaxHpPenalty: 0,
+      crossroadsPowerExpireTurn: -1
     },
     merchant: {
       potionsBought: 0,
@@ -407,11 +410,19 @@ export function assertCanonicalRelicBuildV08(build) {
     "combatBoostTurns",
     "combatBoostAttack",
     "combatBoostArmor",
-    "highestUnlockedDepth"
+    "highestUnlockedDepth",
+    "turn",
+    "crossroadsPowerMaxHpPenalty"
   ]) {
     if (!Number.isSafeInteger(build.resources[field]) || build.resources[field] < 0) {
       throw new TypeError(`RELIC_BUILD_RESOURCES_INVALID:${field}`);
     }
+  }
+  if (
+    !Number.isSafeInteger(build.resources.crossroadsPowerExpireTurn) ||
+    build.resources.crossroadsPowerExpireTurn < -1
+  ) {
+    throw new TypeError("RELIC_BUILD_RESOURCES_INVALID:crossroadsPowerExpireTurn");
   }
   if (
     build.resources.potions > build.resources.maxPotions ||

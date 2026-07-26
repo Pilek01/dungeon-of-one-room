@@ -13,6 +13,10 @@
       "schemaVersion": 1
     },
     {
+      "file": "data/crossroads-transaction-policy.generated.json",
+      "schemaVersion": 1
+    },
+    {
       "file": "data/deferred-special-relic-spec.generated.json",
       "schemaVersion": 1
     },
@@ -145,6 +149,11 @@
       "sha256": "b1838d41712516d17d0605cafd43b16f3d41e2c99e4d78aeded021dc35c99bca"
     },
     {
+      "file": "crossroads-policy.js",
+      "byteLength": 13295,
+      "sha256": "ee3d0e0e6f5b58d05698b3eb0c33c7c1a3f62612d3c2449bc75d39e4eb36728c"
+    },
+    {
       "file": "data/arena-relic-offer-policy.generated.json",
       "byteLength": 5024,
       "sha256": "b03d357d7ae4859a97ad362d58f076846b13cc4ba4edfa3f83aa23040844b8b1"
@@ -153,6 +162,11 @@
       "file": "data/chest-reward-bounds.generated.json",
       "byteLength": 1430,
       "sha256": "95c291f6394b87b9ae79bc38740d4d7d07ffdda254d6df3966c5b0326d645f7e"
+    },
+    {
+      "file": "data/crossroads-transaction-policy.generated.json",
+      "byteLength": 2322,
+      "sha256": "ee3ccbef0d9710f4dec888a887742c9132349fea67af5e705cfd760ce13c94d3"
     },
     {
       "file": "data/deferred-special-relic-spec.generated.json",
@@ -316,8 +330,8 @@
     },
     {
       "file": "index.js",
-      "byteLength": 7701,
-      "sha256": "e737eb4b97df27a013df066535a8a6831f5cd0f7f6e84103be0eb46875aad1c3"
+      "byteLength": 8489,
+      "sha256": "5228fe12be4f1acb600313ff304a20478629331774e93d0bb753fa7d7db56ff5"
     },
     {
       "file": "leaderboard-summary.js",
@@ -361,8 +375,8 @@
     },
     {
       "file": "relic-policy.js",
-      "byteLength": 16400,
-      "sha256": "4f8c72df7736c5a2a79290a08f75b23e8a3cfb2290b43e0ecdd6474ac70105d2"
+      "byteLength": 16761,
+      "sha256": "4515598b97baa187834863839211b97e061a9ae905a1a34f67fe483eb710acc6"
     },
     {
       "file": "relic-replacement.js",
@@ -408,6 +422,11 @@
       "file": "starting-relic-offer.js",
       "byteLength": 9881,
       "sha256": "994726515d11e47f5b011caaac85e8340a685d4a1bf4cbe69f9d4fade92b6c9c"
+    },
+    {
+      "file": "test/m1-crossroads-golden-fixtures.json",
+      "byteLength": 1832,
+      "sha256": "9b9ea2c8f29ae6491ac7e8cc5c409b179ebba1070c1c75bf08df14a89a5f73a1"
     },
     {
       "file": "test/m1-forge-golden-fixtures.json",
@@ -475,5 +494,5 @@
       "sha256": "e06c85319b457817a0fa313302d0136eb746738719ab9cc6db73eacc8d62b489"
     }
   ],
-  "rulesetHash": "sha256:6fe5f6a89103e08dfbea650eaf423e56748ae2f0aab85dfbb9c336e0042f30e8"
+  "rulesetHash": "sha256:3656426308f31f45d52108c61e2b9ea8432db25012515adebeeabd3769f5186e"
 }

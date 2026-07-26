@@ -35,6 +35,10 @@ import {
   issueForgeTemperOfferV08,
   issueForgeTransmuteOfferV08
 } from "./forge-policy.js";
+import {
+  commitCrossroadsTransactionV08,
+  issueCrossroadsOfferV08
+} from "./crossroads-policy.js";
 import { projectPublicMetaTransactionOfferV08 } from "./meta-transaction.js";
 export {
   applyRelicAcquisition,
@@ -112,6 +116,13 @@ export {
   issueForgeTemperOfferV08,
   issueForgeTransmuteOfferV08
 } from "./forge-policy.js";
+export {
+  CROSSROADS_POLICY_SPEC,
+  V08_CROSSROADS_TRANSACTION_POLICY,
+  advanceCrossroadsTurnsV08,
+  commitCrossroadsTransactionV08,
+  issueCrossroadsOfferV08
+} from "./crossroads-policy.js";
 
 function mergeContext(options, context) {
   return {
@@ -242,6 +253,25 @@ export function createV08Meta1Ruleset(options = {}) {
     },
 
     projectPublicForgeOffer(state) {
+      return projectPublicMetaTransactionOfferV08(state?.pendingInventory);
+    },
+
+    async issueCrossroadsOffer(state, context = {}) {
+      return issueCrossroadsOfferV08(
+        state,
+        mergeContext(options, context)
+      );
+    },
+
+    async commitCrossroadsTransaction(state, request, context = {}) {
+      return commitCrossroadsTransactionV08(
+        state,
+        request,
+        mergeContext(options, context)
+      );
+    },
+
+    projectPublicCrossroadsOffer(state) {
       return projectPublicMetaTransactionOfferV08(state?.pendingInventory);
     },
 
