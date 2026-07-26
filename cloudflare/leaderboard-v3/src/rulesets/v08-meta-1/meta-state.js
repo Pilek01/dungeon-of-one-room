@@ -132,6 +132,7 @@ export function createInitialMetaStateV08(input = {}, context = {}) {
     relicOfferState: createRelicOfferState(),
     pendingInventory: null,
     metaTransactionReceipts: [],
+    metaSourceConsumptions: [],
     specialRoomScheduleState: createScheduleState(input.specialRoomHistory),
     statistics: {
       roomsIssued: 0,
@@ -183,6 +184,12 @@ export function assertMetaStateV08(state) {
   assertGoldLedgerV08(state);
   assertPendingMetaTransactionOfferV08(state.pendingInventory);
   assertMetaTransactionReceiptsV08(state.metaTransactionReceipts);
+  if (
+    !Array.isArray(state.metaSourceConsumptions) ||
+    state.metaSourceConsumptions.length > 64
+  ) {
+    throw new TypeError("META_STATE_INVALID:metaSourceConsumptions");
+  }
   if (!Array.isArray(state.offerSettlementHistory) || state.offerSettlementHistory.length > 64) {
     throw new TypeError("META_STATE_INVALID:offerSettlementHistory");
   }

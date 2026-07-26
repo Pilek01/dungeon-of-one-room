@@ -51,7 +51,17 @@
 - Merchant verification: targeted 9/9; combined targeted 27/27; fast 30/30;
   phase 565/565; baseline 3/3 plus headed smoke PASS; 24 golden cases and
   128 property seeds.
-- Next M1 block: canonical Forge Temper and Transmute transactions.
+- Canonical Forge Temper and Transmute transactions are complete. Temper uses
+  the baseline uniform first pick and canonical replacement; Transmute binds
+  one owned stack and up to three server-derived legal results, then removes
+  and acquires atomically. Both preserve baseline zero cost, cancel, empty-pool,
+  and Forge-consumption timing.
+- Forge verification: targeted 9/9; combined targeted 36/36; fast 39/39;
+  phase 574/574; baseline 3/3 plus headed smoke PASS; 24 golden cases and
+  128 property seeds.
+- Current M1 ruleset hash after Forge:
+  `sha256:6fe5f6a89103e08dfbea650eaf423e56748ae2f0aab85dfbb9c336e0042f30e8`.
+- Next M1 block: canonical Crossroads transactions.
 
 ## Verification
 

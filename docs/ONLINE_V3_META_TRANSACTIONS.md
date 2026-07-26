@@ -57,3 +57,41 @@ Canonical RNG order is isolated into relic rarity, relic candidate, extra-life
 roll, service choice, and per-target black-market result purposes. Cancel/leave
 consumes no purchase and closes the Merchant offer. Exact retry cannot spend,
 sell, reserve, replace, or grant twice.
+
+## Forge Temper and Transmute
+
+Source evidence:
+
+- `game.js:openForgeRoom` and `executeForgeTemper`: the Forge is available only
+  after the Blacksmith Guardian is cleared and the room Forge is still unused.
+  Temper has no gold cost.
+- `forge-room.js:FORGE_PROFILES`: Depth 0 uses rare/epic, Depth 20 adds
+  legendary, and Depth 40 uses epic/legendary/mythic with the exact active
+  profile weights retained in the generated policy.
+- `forge-room.js:chooseForgeDraft`: the first (and only) Temper result is
+  selected uniformly from the complete eligible profile pool; its rarity
+  weights are not consulted for index zero.
+- `game.js:isRelicEligibleForDraft`: Temper excludes an owned unique relic, a
+  normal stack already at cap, and a second mythic. Slot and legendary
+  pressure flows through the existing canonical replacement policy.
+- `game.js:executeForgeTemper`: an empty pool leaves the Forge unused. A
+  non-empty offer consumes the Forge when opened; declining loses the offered
+  relic and does not reopen the Forge.
+- `game.js:executeForgeTransmute` and
+  `forge-room.js:planForgeTransmute`: the target is one owned relic stack and
+  up to three unique results are generated. Each result first rolls a profile
+  rarity at or above the sacrificed rarity, then selects uniformly from that
+  rarity; an empty preferred tier falls back to the full legal profile pool.
+- `game.js:canForgeTransmuteTakeRelic`: result legality is evaluated against
+  the prospective build without the sacrificed relic, excluding the source
+  relic itself and enforcing duplicate, legendary, mythic, slot, and stack
+  limits.
+- `game.js:chooseRelic` in the `forgeTransmutePending` branch: the source stack
+  is removed only when a result is chosen; failed acquisition restores it.
+  Skipping retains the source stack while the already-opened Forge remains
+  consumed.
+
+Online v3 exposes only opaque final Forge choices. Temper reuses canonical
+acquisition/replacement. Transmute commits removal and acquisition on one
+immutable clone, so neither half can persist by itself and the client cannot
+report the target, rarity, RNG result, stacks, cost, or final build.

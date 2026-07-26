@@ -141,6 +141,7 @@ const GENERATED_FILES = Object.freeze([
   "gold-modifiers.generated.json",
   "meta-transaction-policy.generated.json",
   "merchant-transaction-policy.generated.json",
+  "forge-transaction-policy.generated.json",
   "run-modifier-catalog.generated.json",
   "run-modifier-effects.generated.json",
   "run-modifier-selection-policy.generated.json",
@@ -2985,6 +2986,96 @@ function buildCanonicalData(records, textByFile) {
       ]
     }
   };
+  const forgeSource = textByFile.get("forge-room.js");
+  for (const marker of [
+    "function planForgeTemper(options = {})",
+    "function planForgeTransmute(options = {})",
+    "if (i === 0)",
+    "const targetCount = Math.max(1, Math.floor(Number(options.count) || 3));",
+    "const usedIds = new Set([String(sacrificedRelic?.id || \"\")]);"
+  ]) {
+    if (!forgeSource.includes(marker)) {
+      throw new Error(`SOURCE_SYMBOL_MISSING:forge-room.js:${marker}`);
+    }
+  }
+  for (const marker of [
+    "function executeForgeTemper()",
+    "function executeForgeTransmute(relicIndex)",
+    "state.forge.used = true;",
+    "state.forgeTransmutePending = { sacrificedRelicId };"
+  ]) {
+    if (!merchantSource.includes(marker)) {
+      throw new Error(`SOURCE_SYMBOL_MISSING:game.js:${marker}`);
+    }
+  }
+  const forgeTransactionPolicyData = {
+    schemaVersion: 1,
+    rulesetId: RULESET_ID,
+    sourceCommit,
+    sources: sourceRefs(records, [
+      "game.js",
+      "forge-room.js",
+      "relic-data.js",
+      "relic-runtime.js"
+    ]),
+    canonicalData: {
+      policyVersion: "v08-forge-transaction-1",
+      implementationStatus: "m1-disconnected-test-only",
+      trigger: "cleared Forge room after Blacksmith Guardian; interact with unused Forge",
+      cost: { amount: 0, currency: "run_gold" },
+      profiles: [
+        {
+          minDepth: 0,
+          label: "Tempered",
+          choiceCount: 1,
+          rarityWeights: { rare: 0.72, epic: 0.28 },
+          allowedRarities: ["rare", "epic"]
+        },
+        {
+          minDepth: 20,
+          label: "Masterwork",
+          choiceCount: 1,
+          rarityWeights: { rare: 0.25, epic: 0.55, legendary: 0.20 },
+          allowedRarities: ["rare", "epic", "legendary"]
+        },
+        {
+          minDepth: 40,
+          label: "Mythforged",
+          choiceCount: 1,
+          rarityWeights: { epic: 0.58, legendary: 0.39, mythic: 0.03 },
+          allowedRarities: ["epic", "legendary", "mythic"]
+        }
+      ],
+      temper: {
+        selection: "uniform first choice from full legal profile pool",
+        outputCount: 1,
+        consumption: "Forge consumed when a non-empty offer opens",
+        cancel: "offered relic is lost; Forge remains consumed",
+        emptyPool: "no reward and Forge remains unused"
+      },
+      transmute: {
+        outputCount: 3,
+        target: "one canonical owned relic stack",
+        rarity: "weighted allowed rarity at or above sacrificed rarity",
+        fallback: "full legal allowed-rarity pool when preferred rarity is empty",
+        uniqueOutputs: true,
+        consumption: "Forge consumed when at least one output opens",
+        cancel: "sacrificed relic retained; Forge remains consumed",
+        atomicCommit: "remove one source stack and acquire one canonical result"
+      },
+      rngPurposes: [
+        "forge/temper-candidate",
+        "forge/transmute-rarity",
+        "forge/transmute-candidate"
+      ],
+      replacementPolicy: "Temper reuses canonical acquisition/replacement; Transmute validates final build after atomic sacrifice",
+      sourceEvidence: [
+        "forge-room.js:FORGE_PROFILES/planForgeTemper/planForgeTransmute",
+        "game.js:executeForgeTemper/executeForgeTransmute",
+        "game.js:chooseRelic forgeTransmutePending branch"
+      ]
+    }
+  };
   const sourceManifest = {
     schemaVersion: 3,
     rulesetId: RULESET_ID,
@@ -3100,6 +3191,7 @@ function buildCanonicalData(records, textByFile) {
     ["gold-modifiers.generated.json", goldModifiersData],
     ["meta-transaction-policy.generated.json", metaTransactionPolicyData],
     ["merchant-transaction-policy.generated.json", merchantTransactionPolicyData],
+    ["forge-transaction-policy.generated.json", forgeTransactionPolicyData],
     ["room-reward-bounds.generated.json", roomRewardBoundsData],
     ["chest-reward-bounds.generated.json", chestRewardBoundsData],
     ["relic-reward-fallback-policy.generated.json", relicRewardFallbackPolicy],

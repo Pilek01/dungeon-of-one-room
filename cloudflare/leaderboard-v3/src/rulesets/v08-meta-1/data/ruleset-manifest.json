@@ -17,6 +17,10 @@
       "schemaVersion": 1
     },
     {
+      "file": "data/forge-transaction-policy.generated.json",
+      "schemaVersion": 1
+    },
+    {
       "file": "data/gold-modifiers.generated.json",
       "schemaVersion": 1
     },
@@ -154,6 +158,11 @@
       "file": "data/deferred-special-relic-spec.generated.json",
       "byteLength": 9771,
       "sha256": "f35f7e3deb4abc2b6cf75341e8a1022304f765d3a3a96c3d9cdd2adf21672c6b"
+    },
+    {
+      "file": "data/forge-transaction-policy.generated.json",
+      "byteLength": 3227,
+      "sha256": "53504a75ab08087bc983ed3fc1d01c9722ca33758908e3b9538808e26521022b"
     },
     {
       "file": "data/gold-modifiers.generated.json",
@@ -297,8 +306,8 @@
     },
     {
       "file": "forge-policy.js",
-      "byteLength": 279,
-      "sha256": "7c4d77a1e53a002f86336cafb19c21112bb55687c2f846054a97d5b1050334ea"
+      "byteLength": 13199,
+      "sha256": "085393d5dddcf4b2fab24ad811c6cf8f70da36ab5e378419a6da52fcb0c7c380"
     },
     {
       "file": "gold-policy.js",
@@ -307,8 +316,8 @@
     },
     {
       "file": "index.js",
-      "byteLength": 6681,
-      "sha256": "a817649332cdb9fa8f52678e1e78e7d5941b071feeb47df8860f61cc5c6a2390"
+      "byteLength": 7701,
+      "sha256": "e737eb4b97df27a013df066535a8a6831f5cd0f7f6e84103be0eb46875aad1c3"
     },
     {
       "file": "leaderboard-summary.js",
@@ -327,13 +336,13 @@
     },
     {
       "file": "meta-state.js",
-      "byteLength": 8230,
-      "sha256": "c2a30e443a7594570f4c602eccf01365d6556929b3b3dffaf35b5d8fd34ada5f"
+      "byteLength": 8446,
+      "sha256": "a1dd63003302cea7df123c2c8893f0345d7d7db5d58198b7bea711e45151b531"
     },
     {
       "file": "meta-transaction.js",
-      "byteLength": 16783,
-      "sha256": "0f62f2fc6f494098fa27c68e4530c7a3a344707cc31c3c01aafe6093a2974f8b"
+      "byteLength": 17900,
+      "sha256": "58bd608daeeaf444b327b5974952bbd4a2086f13f751d7317af24a96a079cc48"
     },
     {
       "file": "pact-policy.js",
@@ -401,6 +410,11 @@
       "sha256": "994726515d11e47f5b011caaac85e8340a685d4a1bf4cbe69f9d4fade92b6c9c"
     },
     {
+      "file": "test/m1-forge-golden-fixtures.json",
+      "byteLength": 1973,
+      "sha256": "0b9128fbb841e41a53b4f9aae54f7ce1171cc7dfccb29ce19826b26d6743d7b7"
+    },
+    {
       "file": "test/m1-merchant-golden-fixtures.json",
       "byteLength": 1791,
       "sha256": "51f022541d89dd239089ff6b0dc131903041a86b7a2239d1f4d63fd8952710a0"
@@ -461,5 +475,5 @@
       "sha256": "e06c85319b457817a0fa313302d0136eb746738719ab9cc6db73eacc8d62b489"
     }
   ],
-  "rulesetHash": "sha256:8fb21bce446035192a4c7d2061cb69d5263fd6c681e9d606a02ad7ba4e452eab"
+  "rulesetHash": "sha256:6fe5f6a89103e08dfbea650eaf423e56748ae2f0aab85dfbb9c336e0042f30e8"
 }

@@ -30,6 +30,11 @@ import {
   commitMerchantTransactionV08,
   issueMerchantInventoryV08
 } from "./merchant-policy.js";
+import {
+  commitForgeTransactionV08,
+  issueForgeTemperOfferV08,
+  issueForgeTransmuteOfferV08
+} from "./forge-policy.js";
 import { projectPublicMetaTransactionOfferV08 } from "./meta-transaction.js";
 export {
   applyRelicAcquisition,
@@ -87,6 +92,8 @@ export {
   awardCanonicalGoldV08,
   commitMetaTransactionV08,
   computeMetaTransactionStateDigestV08,
+  consumeCanonicalMetaSourceV08,
+  isCanonicalMetaSourceConsumedV08,
   issueMetaTransactionOfferV08,
   preflightMetaTransactionV08,
   projectPublicMetaTransactionOfferV08,
@@ -98,6 +105,13 @@ export {
   commitMerchantTransactionV08,
   issueMerchantInventoryV08
 } from "./merchant-policy.js";
+export {
+  FORGE_POLICY_SPEC,
+  V08_FORGE_TRANSACTION_POLICY,
+  commitForgeTransactionV08,
+  issueForgeTemperOfferV08,
+  issueForgeTransmuteOfferV08
+} from "./forge-policy.js";
 
 function mergeContext(options, context) {
   return {
@@ -202,6 +216,32 @@ export function createV08Meta1Ruleset(options = {}) {
     },
 
     projectPublicMerchantInventory(state) {
+      return projectPublicMetaTransactionOfferV08(state?.pendingInventory);
+    },
+
+    async issueForgeTemperOffer(state, context = {}) {
+      return issueForgeTemperOfferV08(
+        state,
+        mergeContext(options, context)
+      );
+    },
+
+    async issueForgeTransmuteOffer(state, context = {}) {
+      return issueForgeTransmuteOfferV08(
+        state,
+        mergeContext(options, context)
+      );
+    },
+
+    async commitForgeTransaction(state, request, context = {}) {
+      return commitForgeTransactionV08(
+        state,
+        request,
+        mergeContext(options, context)
+      );
+    },
+
+    projectPublicForgeOffer(state) {
       return projectPublicMetaTransactionOfferV08(state?.pendingInventory);
     },
 

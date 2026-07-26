@@ -45,7 +45,8 @@ function bindingInput(state) {
         }
       : null,
     pendingRelicOfferId: state.pendingOffer?.offerId ?? null,
-    pendingRelicTransactionId: state.pendingRelicTransaction?.transactionId ?? null
+    pendingRelicTransactionId: state.pendingRelicTransaction?.transactionId ?? null,
+    metaSourceConsumptions: state.metaSourceConsumptions ?? []
   };
 }
 
@@ -344,6 +345,40 @@ export function awardCanonicalGoldV08(state, amount, currency = "run_gold") {
   }
   assertGoldLedgerV08(state);
   return { total: award, currency };
+}
+
+export function consumeCanonicalMetaSourceV08(
+  state,
+  sourceType,
+  sourceId,
+  sourceInstanceId
+) {
+  const type = requireText(sourceType, "META_SOURCE_TYPE_REQUIRED");
+  const id = requireText(sourceId, "META_SOURCE_ID_REQUIRED");
+  const instanceId = requireText(sourceInstanceId, "META_SOURCE_INSTANCE_REQUIRED");
+  const entries = Array.isArray(state.metaSourceConsumptions)
+    ? state.metaSourceConsumptions
+    : [];
+  if (entries.some((entry) => entry.sourceInstanceId === instanceId)) {
+    throw new TypeError("META_SOURCE_ALREADY_CONSUMED");
+  }
+  state.metaSourceConsumptions = [
+    ...entries,
+    {
+      sourceType: type,
+      sourceId: id,
+      sourceInstanceId: instanceId,
+      consumedRevision: state.revision
+    }
+  ].slice(-64);
+  return state;
+}
+
+export function isCanonicalMetaSourceConsumedV08(state, sourceInstanceId) {
+  const instanceId = requireText(sourceInstanceId, "META_SOURCE_INSTANCE_REQUIRED");
+  return (state.metaSourceConsumptions || []).some(
+    (entry) => entry.sourceInstanceId === instanceId
+  );
 }
 
 function validateEvaluatorResult(result, metaState) {
