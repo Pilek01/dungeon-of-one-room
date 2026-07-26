@@ -135,6 +135,7 @@ const GENERATED_FILES = Object.freeze([
   "special-room-policy.generated.json",
   "gold-sources.generated.json",
   "gold-modifiers.generated.json",
+  "meta-transaction-policy.generated.json",
   "run-modifier-catalog.generated.json",
   "run-modifier-effects.generated.json",
   "run-modifier-selection-policy.generated.json",
@@ -2805,11 +2806,63 @@ function buildCanonicalData(records, textByFile) {
       slotPolicy: "opaque sequential slots; no physical coordinates; consume at most once"
     }
   };
+  const metaTransactionPolicyData = {
+    schemaVersion: 1,
+    rulesetId: RULESET_ID,
+    sourceCommit,
+    sources: sourceRefs(records, [
+      "game.js",
+      "camp-data.js",
+      "camp-runtime.js",
+      "forge-room.js",
+      "pact-room.js"
+    ]),
+    canonicalData: {
+      policyVersion: "v08-meta-transaction-1",
+      authority: "SERVER_ISSUED_AND_DERIVED",
+      bindingFields: [
+        "runId",
+        "rulesetHash",
+        "revision",
+        "stateDigest",
+        "buildDigest",
+        "sourceInstanceId",
+        "offerId",
+        "transactionId",
+        "choiceId"
+      ],
+      requestFields: ["transactionId", "choiceId"],
+      receiptHistoryLimit: 64,
+      exactRetry: "RETURN_CURRENT_CANONICAL_STATE_WITHOUT_REAPPLY",
+      conflictingRetry: "REJECT_PAYLOAD_MISMATCH",
+      mutationModel: "IMMUTABLE_CLONE_EVALUATE_ATOMIC_COMMIT",
+      canonicalLedgers: [
+        "goldLedger",
+        "build",
+        "pendingInventory",
+        "offerSettlementHistory",
+        "rewardSettlementHistory",
+        "relicReplacementHistory",
+        "relicFallbackHistory"
+      ],
+      clientUntrustedFields: [
+        "price",
+        "amount",
+        "gold",
+        "target",
+        "rarity",
+        "stacks",
+        "rngResult",
+        "resultingBuild",
+        "resultingState"
+      ]
+    }
+  };
   const sourceManifest = {
     schemaVersion: 3,
     rulesetId: RULESET_ID,
     sourceCommit,
-    purpose: "Phase 3B1 room progression, Phase 3B2A gold, Phase 3B2B1 starting relics, Phase 3B2B2A standard relic offers, Phase 3B2B2B1 Otter relic rewards, Phase 3B2B2B2 Vault/Arena source classifications, Phase 3B2C1 canonical run modifiers, Phase 3B2C2 canonical relic replacement transactions, and Phase 3B2C3A canonical relic reward fallbacks",
+    purpose: "Online v3 test-only canonical room, gold, relic, replacement, fallback, run modifier, Arena, and Milestone M1 meta-transaction policies",
     sources: records
   };
   const fallbackSource = textByFile.get("game.js");
@@ -2918,6 +2971,7 @@ function buildCanonicalData(records, textByFile) {
     ["special-room-policy.generated.json", specialRoomPolicyData],
     ["gold-sources.generated.json", goldSourcesData],
     ["gold-modifiers.generated.json", goldModifiersData],
+    ["meta-transaction-policy.generated.json", metaTransactionPolicyData],
     ["room-reward-bounds.generated.json", roomRewardBoundsData],
     ["chest-reward-bounds.generated.json", chestRewardBoundsData],
     ["relic-reward-fallback-policy.generated.json", relicRewardFallbackPolicy],

@@ -73,6 +73,19 @@ export {
   projectPublicRegularRelicOfferV08,
   selectRegularRelic
 } from "./regular-relic-offer.js";
+export {
+  META_TRANSACTION_POLICY_VERSION,
+  META_TRANSACTION_RECEIPT_LIMIT,
+  assertMetaTransactionReceiptsV08,
+  assertPendingMetaTransactionOfferV08,
+  awardCanonicalGoldV08,
+  commitMetaTransactionV08,
+  computeMetaTransactionStateDigestV08,
+  issueMetaTransactionOfferV08,
+  preflightMetaTransactionV08,
+  projectPublicMetaTransactionOfferV08,
+  spendCanonicalGoldV08
+} from "./meta-transaction.js";
 
 function mergeContext(options, context) {
   return {

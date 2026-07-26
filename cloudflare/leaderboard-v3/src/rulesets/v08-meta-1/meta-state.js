@@ -14,6 +14,10 @@ import {
   createEmptyRunModifierLedgerV08
 } from "./run-modifiers.js";
 import { assertPendingRelicTransactionV08 } from "./relic-replacement.js";
+import {
+  assertMetaTransactionReceiptsV08,
+  assertPendingMetaTransactionOfferV08
+} from "./meta-transaction.js";
 
 const progression = progressionDocument.canonicalData;
 
@@ -56,7 +60,9 @@ function createGoldLedger() {
     roomClaimsRejected: 0,
     anomalyScore: 0,
     anomalyFlags: [],
-    maximumClaimStreak: 0
+    maximumClaimStreak: 0,
+    campEarnedServerDerived: 0,
+    campSpentServerDerived: 0
   };
 }
 
@@ -112,6 +118,7 @@ export function createInitialMetaStateV08(input = {}, context = {}) {
     consumedDirectiveNonces: [],
     consumedDirectiveHistoryLimit: CONSUMED_DIRECTIVE_HISTORY_LIMIT,
     gold: progression.initialGold,
+    campGold: 0,
     goldLedger: createGoldLedger(),
     rewardSettlementHistory: [],
     lives: progression.initialLives,
@@ -124,6 +131,7 @@ export function createInitialMetaStateV08(input = {}, context = {}) {
     relicFallbackHistory: [],
     relicOfferState: createRelicOfferState(),
     pendingInventory: null,
+    metaTransactionReceipts: [],
     specialRoomScheduleState: createScheduleState(input.specialRoomHistory),
     statistics: {
       roomsIssued: 0,
@@ -159,6 +167,7 @@ export function assertMetaStateV08(state) {
     ["depth", 0],
     ["roomIndex", 0],
     ["gold", 0],
+    ["campGold", 0],
     ["lives", 0],
     ["elapsedMs", 0]
   ]) {
@@ -172,6 +181,8 @@ export function assertMetaStateV08(state) {
   assertCanonicalRelicBuildV08(state.build);
   assertCanonicalRunModifierLedgerV08(state.runModifiers);
   assertGoldLedgerV08(state);
+  assertPendingMetaTransactionOfferV08(state.pendingInventory);
+  assertMetaTransactionReceiptsV08(state.metaTransactionReceipts);
   if (!Array.isArray(state.offerSettlementHistory) || state.offerSettlementHistory.length > 64) {
     throw new TypeError("META_STATE_INVALID:offerSettlementHistory");
   }

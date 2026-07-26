@@ -1,0 +1,14 @@
+[
+  { "fixtureId": "core-run-gold-spend", "expected": "COMMIT_ONCE" },
+  { "fixtureId": "core-run-then-camp-spend", "expected": "RUN_GOLD_FIRST" },
+  { "fixtureId": "core-camp-gold-award", "expected": "ONE_GOLD_LEDGER" },
+  { "fixtureId": "core-multi-choice-offer", "expected": "REMAINING_CHOICES_REBOUND" },
+  { "fixtureId": "core-exact-retry", "expected": "NO_REAPPLY" },
+  { "fixtureId": "core-conflicting-retry", "expected": "REJECT" },
+  { "fixtureId": "core-stale-binding", "expected": "REJECT" },
+  { "fixtureId": "core-fake-client-fields", "expected": "REJECT" },
+  { "fixtureId": "core-insufficient-gold", "expected": "ROLLBACK" },
+  { "fixtureId": "core-evaluator-failure", "expected": "ROLLBACK" },
+  { "fixtureId": "core-restart-determinism", "expected": "IDENTICAL" },
+  { "fixtureId": "core-receipt-bound", "expected": "MAX_64" }
+]

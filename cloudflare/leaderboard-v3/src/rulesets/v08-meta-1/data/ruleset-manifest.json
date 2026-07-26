@@ -29,6 +29,10 @@
       "schemaVersion": 2
     },
     {
+      "file": "data/meta-transaction-policy.generated.json",
+      "schemaVersion": 1
+    },
+    {
       "file": "data/otter-relic-offer-policy.generated.json",
       "schemaVersion": 1
     },
@@ -163,6 +167,11 @@
       "sha256": "0bb927245cbfc38c73bb868d8ca60e4154307dafcb11e121e40b199fab2046f5"
     },
     {
+      "file": "data/meta-transaction-policy.generated.json",
+      "byteLength": 1926,
+      "sha256": "11d5179259a590b6e1c1db6555fa6b35ba331a56a0150bd0a738dfce38f249e5"
+    },
+    {
       "file": "data/otter-relic-offer-policy.generated.json",
       "byteLength": 4420,
       "sha256": "86843ae91b1c09073dd66702c932378c84a4f2bdba0320498275c7f21203440a"
@@ -254,8 +263,8 @@
     },
     {
       "file": "data/source-manifest.generated.json",
-      "byteLength": 5256,
-      "sha256": "66036799f8dc488967e8124c2cec12de5e414e33d5988e89e34c2eba966b26e2"
+      "byteLength": 5056,
+      "sha256": "c89e1012692e0cc10cd8fc6776901fad73dccb20b0ff0e551a1625f655eda8af"
     },
     {
       "file": "data/special-relic-source-audit.generated.json",
@@ -284,13 +293,13 @@
     },
     {
       "file": "gold-policy.js",
-      "byteLength": 7012,
-      "sha256": "b68caa252f0df9e34f6391929a63ce202a7be19eea153402ab7f8e08ba90551e"
+      "byteLength": 7563,
+      "sha256": "9dc823d305792f3cd7464aaaa2b42c26bcd43a0de863971619ed98e727214a0a"
     },
     {
       "file": "index.js",
-      "byteLength": 5420,
-      "sha256": "786565ddfe0eaa665e49e2c4d471a2fbb41a580d5f4d44b44703cba5e8c1b4a2"
+      "byteLength": 5826,
+      "sha256": "d4fb5488c6357b28e33a10ecc7930235811e4bc22a364781cbd7d1256a439f15"
     },
     {
       "file": "leaderboard-summary.js",
@@ -309,8 +318,13 @@
     },
     {
       "file": "meta-state.js",
-      "byteLength": 7849,
-      "sha256": "63e724331d89a6b85b2b28f152dda76c4f1e926dd70fe09635f141589cc11806"
+      "byteLength": 8230,
+      "sha256": "c2a30e443a7594570f4c602eccf01365d6556929b3b3dffaf35b5d8fd34ada5f"
+    },
+    {
+      "file": "meta-transaction.js",
+      "byteLength": 16706,
+      "sha256": "8d8c0f2aaa3329bb2fe3349665c9509dd4d57e5af7b69df6aa05c6cf5dd7ca2e"
     },
     {
       "file": "pact-policy.js",
@@ -378,6 +392,11 @@
       "sha256": "994726515d11e47f5b011caaac85e8340a685d4a1bf4cbe69f9d4fade92b6c9c"
     },
     {
+      "file": "test/m1-meta-transaction-core-golden-fixtures.json",
+      "byteLength": 846,
+      "sha256": "c323960a9eda385595ab2175ddb770f327dcff756fe964e8a90e040e16c867d8"
+    },
+    {
       "file": "test/phase3b1-golden-fixtures.json",
       "byteLength": 13530,
       "sha256": "0664f8c7cd0c7b82b421420dc85ea5fb661e58a72cd2ef45c27640a06eb71379"
@@ -428,5 +447,5 @@
       "sha256": "e06c85319b457817a0fa313302d0136eb746738719ab9cc6db73eacc8d62b489"
     }
   ],
-  "rulesetHash": "sha256:f462e632fda9a687e848a1445052360bcc78f13d2388e0d5208a7478e0a9a8e3"
+  "rulesetHash": "sha256:58cb8868556314bb871570f7f0063650afd9385e2894b39daebcffb2cceabc9b"
 }

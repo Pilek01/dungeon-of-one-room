@@ -162,6 +162,8 @@ export function calculateChestGoldV08({
 
 export function assertGoldLedgerV08(state) {
   if (!Number.isSafeInteger(state.gold) || state.gold < 0) throw new TypeError("GOLD_INVALID");
+  const campGold = state.campGold ?? 0;
+  if (!Number.isSafeInteger(campGold) || campGold < 0) throw new TypeError("CAMP_GOLD_INVALID");
   const ledger = state.goldLedger;
   if (!ledger || typeof ledger !== "object") throw new TypeError("GOLD_LEDGER_INVALID");
   for (const field of [
@@ -178,8 +180,20 @@ export function assertGoldLedgerV08(state) {
       throw new TypeError(`GOLD_LEDGER_INVALID:${field}`);
     }
   }
+  for (const field of ["campEarnedServerDerived", "campSpentServerDerived"]) {
+    const value = ledger[field] ?? 0;
+    if (!Number.isSafeInteger(value) || value < 0) {
+      throw new TypeError(`GOLD_LEDGER_INVALID:${field}`);
+    }
+  }
   if (state.gold !== ledger.earnedServerDerived + ledger.earnedBoundedAttested - ledger.spentServerDerived) {
     throw new TypeError("GOLD_LEDGER_TOTAL_MISMATCH");
+  }
+  if (
+    campGold !==
+    (ledger.campEarnedServerDerived ?? 0) - (ledger.campSpentServerDerived ?? 0)
+  ) {
+    throw new TypeError("CAMP_GOLD_LEDGER_TOTAL_MISMATCH");
   }
   if (!Array.isArray(ledger.anomalyFlags) || ledger.anomalyFlags.length > rewardBounds.boundedHistoryLimit) {
     throw new TypeError("GOLD_LEDGER_ANOMALY_HISTORY_INVALID");

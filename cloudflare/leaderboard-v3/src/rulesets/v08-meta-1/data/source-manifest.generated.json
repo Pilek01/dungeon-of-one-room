@@ -2,7 +2,7 @@
   "schemaVersion": 3,
   "rulesetId": "v08-meta-1",
   "sourceCommit": "f98820c99066d810169e100beb23a54a332734bd",
-  "purpose": "Phase 3B1 room progression, Phase 3B2A gold, Phase 3B2B1 starting relics, Phase 3B2B2A standard relic offers, Phase 3B2B2B1 Otter relic rewards, Phase 3B2B2B2 Vault/Arena source classifications, Phase 3B2C1 canonical run modifiers, Phase 3B2C2 canonical relic replacement transactions, and Phase 3B2C3A canonical relic reward fallbacks",
+  "purpose": "Online v3 test-only canonical room, gold, relic, replacement, fallback, run modifier, Arena, and Milestone M1 meta-transaction policies",
   "sources": [
     {
       "file": "boss-campaign.js",
