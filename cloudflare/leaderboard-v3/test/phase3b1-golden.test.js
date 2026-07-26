@@ -4,7 +4,10 @@ import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { createRulesetRegistry } from "../src/rulesets/registry.js";
+import {
+  RULESET_RELEASE_STATES,
+  createRulesetRegistry
+} from "../src/rulesets/registry.js";
 import {
   V08_META_1_DESCRIPTOR,
   createV08Meta1Ruleset
@@ -346,13 +349,13 @@ const runners = {
       {
         rulesetId: "old",
         rulesetHash: oldHash,
-        status: "supported",
+        status: RULESET_RELEASE_STATES.PRODUCTION_RELEASED,
         createRuleset: () => ({ version: "old" })
       },
       {
         rulesetId: "next",
         rulesetHash: nextHash,
-        status: "supported",
+        status: RULESET_RELEASE_STATES.PRODUCTION_RELEASED,
         createRuleset: () => ({ version: "next" })
       }
     ]);

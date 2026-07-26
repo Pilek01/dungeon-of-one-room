@@ -53,5 +53,19 @@ they remain exact-replay compatible on read and are deterministically converted
 to v2 on the next successful run mutation. Unknown versions and malformed
 legacy records fail closed; old data is never silently reinterpreted.
 
-Local release-candidate activation, endpoint dispatch and real Wrangler/D1
-lifecycle coverage are not yet complete.
+## Local release candidate
+
+Release state is deliberately outside the canonical ruleset directory, so
+promotion does not change domain inputs or the ruleset hash. The pure ruleset
+manifest remains `test-only`; `V08_META_1_LOCAL_RELEASE_DESCRIPTOR` marks the
+exact ID/hash pair as `local-release-candidate` only for `test` and `local`
+environments. The registry distinguishes fixture-test, test-only,
+local-release-candidate, production-released and deprecated descriptors.
+
+Resolution requires an exact ruleset ID, exact hash, environment and lifecycle.
+Unknown IDs/hashes, mismatched ID/hash pairs, deprecated hashes, fixture use in
+a ranked lifecycle and production use of the local candidate all fail closed.
+Production activation remains unavailable.
+
+Endpoint dispatch and real-ruleset Wrangler/D1 lifecycle coverage are not yet
+complete.

@@ -3,7 +3,13 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { createRulesetRegistry } from "../src/rulesets/registry.js";
+import {
+  RULESET_RELEASE_STATES,
+  createRulesetRegistry
+} from "../src/rulesets/registry.js";
+import {
+  V08_META_1_LOCAL_RELEASE_DESCRIPTOR
+} from "../src/rulesets/releases.js";
 import {
   V08_META_1_DESCRIPTOR,
   createV08Meta1Ruleset
@@ -27,11 +33,19 @@ const VECTOR_INPUT = Object.freeze({
   counter: 3
 });
 
-function descriptor(hash, marker, status = "supported") {
+function descriptor(
+  hash,
+  marker,
+  status = RULESET_RELEASE_STATES.PRODUCTION_RELEASED,
+  options = {}
+) {
   return {
-    rulesetId: marker,
+    rulesetId: options.rulesetId || marker,
     rulesetHash: hash,
     status,
+    ...(options.allowedEnvironments
+      ? { allowedEnvironments: options.allowedEnvironments }
+      : {}),
     createRuleset: () => ({ marker })
   };
 }
@@ -65,6 +79,116 @@ test("v08-meta-1 is recognized as test-only but cannot activate through registry
   const direct = createV08Meta1Ruleset({ secret: VECTOR_SECRET });
   assert.equal(direct.status, "test-only");
   assert.equal(direct.rulesetHash, V08_META_1_DESCRIPTOR.rulesetHash);
+});
+
+test("v08-meta-1 local release candidate resolves only for exact local binding", () => {
+  const registry = createRulesetRegistry([V08_META_1_LOCAL_RELEASE_DESCRIPTOR]);
+  const binding = {
+    rulesetId: "v08-meta-1",
+    rulesetHash: V08_META_1_DESCRIPTOR.rulesetHash,
+    environment: "local",
+    lifecycle: "ranked"
+  };
+  const resolved = registry.resolve(binding);
+  assert.equal(resolved.rulesetId, "v08-meta-1");
+  assert.equal(resolved.rulesetHash, V08_META_1_DESCRIPTOR.rulesetHash);
+  assert.equal(
+    registry.describe(binding)?.status,
+    RULESET_RELEASE_STATES.LOCAL_RELEASE_CANDIDATE
+  );
+  assert.throws(
+    () => registry.resolve({ ...binding, environment: "production" }),
+    /RULESET_PRODUCTION_UNAVAILABLE/u
+  );
+  assert.throws(
+    () => registry.resolve({ ...binding, rulesetId: "v08-meta-other" }),
+    /RULESET_ID_UNSUPPORTED/u
+  );
+  const otherIdSameHash = {
+    ...V08_META_1_LOCAL_RELEASE_DESCRIPTOR,
+    rulesetId: "v08-meta-other",
+    rulesetHash: `sha256:${"9".repeat(64)}`
+  };
+  const mismatched = createRulesetRegistry([
+    V08_META_1_LOCAL_RELEASE_DESCRIPTOR,
+    otherIdSameHash
+  ]);
+  assert.throws(
+    () => mismatched.resolve({
+      ...binding,
+      rulesetId: "v08-meta-other"
+    }),
+    /RULESET_ID_HASH_MISMATCH/u
+  );
+});
+
+test("registry separates fixture, test-only, local, production, and deprecated states", () => {
+  const fixtureHash = `sha256:${"3".repeat(64)}`;
+  const testHash = `sha256:${"4".repeat(64)}`;
+  const localHash = `sha256:${"5".repeat(64)}`;
+  const productionHash = `sha256:${"6".repeat(64)}`;
+  const deprecatedHash = `sha256:${"7".repeat(64)}`;
+  const registry = createRulesetRegistry([
+    descriptor(fixtureHash, "fixture", RULESET_RELEASE_STATES.FIXTURE_TEST),
+    descriptor(testHash, "test", RULESET_RELEASE_STATES.TEST_ONLY),
+    descriptor(localHash, "local", RULESET_RELEASE_STATES.LOCAL_RELEASE_CANDIDATE),
+    descriptor(productionHash, "production", RULESET_RELEASE_STATES.PRODUCTION_RELEASED),
+    descriptor(deprecatedHash, "deprecated", RULESET_RELEASE_STATES.DEPRECATED)
+  ]);
+  assert.equal(
+    registry.resolve({
+      rulesetId: "fixture",
+      rulesetHash: fixtureHash,
+      environment: "test",
+      lifecycle: "fixture"
+    }).marker,
+    "fixture"
+  );
+  assert.throws(
+    () => registry.resolve({
+      rulesetId: "fixture",
+      rulesetHash: fixtureHash,
+      environment: "test",
+      lifecycle: "ranked"
+    }),
+    /FIXTURE_RULESET_RANKED_FORBIDDEN/u
+  );
+  assert.throws(
+    () => registry.resolve({
+      rulesetId: "test",
+      rulesetHash: testHash,
+      environment: "local",
+      lifecycle: "ranked"
+    }),
+    /RULESET_NOT_RELEASED:test-only/u
+  );
+  assert.equal(
+    registry.resolve({
+      rulesetId: "local",
+      rulesetHash: localHash,
+      environment: "local",
+      lifecycle: "ranked"
+    }).marker,
+    "local"
+  );
+  assert.equal(
+    registry.resolve({
+      rulesetId: "production",
+      rulesetHash: productionHash,
+      environment: "production",
+      lifecycle: "ranked"
+    }).marker,
+    "production"
+  );
+  assert.throws(
+    () => registry.resolve({
+      rulesetId: "deprecated",
+      rulesetHash: deprecatedHash,
+      environment: "test",
+      lifecycle: "fixture"
+    }),
+    /RULESET_DEPRECATED/u
+  );
 });
 
 test("ruleset RNG matches deterministic HMAC-SHA-256 fixture vectors", async () => {
