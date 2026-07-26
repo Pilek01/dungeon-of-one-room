@@ -133,6 +133,7 @@ export function createInitialMetaStateV08(input = {}, context = {}) {
     pendingInventory: null,
     metaTransactionReceipts: [],
     metaSourceConsumptions: [],
+    campSession: null,
     specialRoomScheduleState: createScheduleState(input.specialRoomHistory),
     statistics: {
       roomsIssued: 0,
@@ -189,6 +190,19 @@ export function assertMetaStateV08(state) {
     state.metaSourceConsumptions.length > 64
   ) {
     throw new TypeError("META_STATE_INVALID:metaSourceConsumptions");
+  }
+  if (
+    state.campSession !== null &&
+    (
+      typeof state.campSession !== "object" ||
+      typeof state.campSession.sessionId !== "string" ||
+      !state.campSession.sessionId ||
+      state.campSession.active !== true ||
+      !Number.isFinite(state.campSession.shopCostMultiplier) ||
+      state.campSession.shopCostMultiplier < 0
+    )
+  ) {
+    throw new TypeError("META_STATE_INVALID:campSession");
   }
   if (!Array.isArray(state.offerSettlementHistory) || state.offerSettlementHistory.length > 64) {
     throw new TypeError("META_STATE_INVALID:offerSettlementHistory");

@@ -36,6 +36,17 @@
       ]
     },
     {
+      "file": "elixir-data.js",
+      "byteLength": 2325,
+      "sha256": "438c951c7d44bb74a4564bfa8f381aafc8c66d4772cff3b526d2e3f42b471f63",
+      "evidenceSymbols": [
+        "ELIXIR_STACK_MAX",
+        "ELIXIR_DURATION_TURNS",
+        "ELIXIR_DISCARD_REFUND_RATIO",
+        "ELIXIRS"
+      ]
+    },
+    {
       "file": "expansion-content.js",
       "byteLength": 3741,
       "sha256": "56180ffa919884ea3e0dd89045063bcba6097ebd687481dc8fc2ada2f3a5a307",

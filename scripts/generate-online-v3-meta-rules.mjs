@@ -69,6 +69,15 @@ const SOURCE_INPUTS = Object.freeze([
     symbols: ["treasure_sense", "bounty_contract", "CAMP_UPGRADES"]
   },
   {
+    file: "elixir-data.js",
+    symbols: [
+      "ELIXIR_STACK_MAX",
+      "ELIXIR_DURATION_TURNS",
+      "ELIXIR_DISCARD_REFUND_RATIO",
+      "ELIXIRS"
+    ]
+  },
+  {
     file: "camp-runtime.js",
     symbols: [
       "state.player.gold",
@@ -143,6 +152,8 @@ const GENERATED_FILES = Object.freeze([
   "merchant-transaction-policy.generated.json",
   "forge-transaction-policy.generated.json",
   "crossroads-transaction-policy.generated.json",
+  "camp-transaction-policy.generated.json",
+  "pact-transaction-policy.generated.json",
   "run-modifier-catalog.generated.json",
   "run-modifier-effects.generated.json",
   "run-modifier-selection-policy.generated.json",
@@ -3143,6 +3154,139 @@ function buildCanonicalData(records, textByFile) {
       ]
     }
   };
+  const campSource = textByFile.get("camp-data.js");
+  const elixirSource = textByFile.get("elixir-data.js");
+  const pactTransactionSource = textByFile.get("pact-room.js");
+  for (const marker of [
+    "function buyCampUpgrade(index)",
+    "function buyOrRefillElixir(elixirId)",
+    "function discardElixirLoadout()",
+    "function sellCampRelicAtIndex(index)",
+    "state.campVisitShopCostMult = Number(state.runMods?.shopCostMult) || 1;"
+  ]) {
+    if (!merchantSource.includes(marker)) {
+      throw new Error(`SOURCE_SYMBOL_MISSING:game.js:${marker}`);
+    }
+  }
+  for (const marker of ["baseCost: 30", "costGrowth: 1.4", "max: 20"]) {
+    if (!campSource.includes(marker)) {
+      throw new Error(`SOURCE_SYMBOL_MISSING:camp-data.js:${marker}`);
+    }
+  }
+  for (const marker of [
+    "const ELIXIR_STACK_MAX = 5;",
+    "const ELIXIR_DURATION_TURNS = 5;",
+    "const ELIXIR_DISCARD_REFUND_RATIO = 0.5;"
+  ]) {
+    if (!elixirSource.includes(marker)) {
+      throw new Error(`SOURCE_SYMBOL_MISSING:elixir-data.js:${marker}`);
+    }
+  }
+  const campTransactionPolicyData = {
+    schemaVersion: 1,
+    rulesetId: RULESET_ID,
+    sourceCommit,
+    sources: sourceRefs(records, [
+      "game.js",
+      "camp-data.js",
+      "elixir-data.js",
+      "relic-data.js",
+      "relic-runtime.js"
+    ]),
+    canonicalData: {
+      policyVersion: "v08-camp-transaction-1",
+      implementationStatus: "m1-disconnected-test-only",
+      currency: "camp_gold",
+      visitMultiplier: "freeze canonical run shopCostMult on Camp entry",
+      upgrades: [
+        { id: "vitality", baseCost: 30, costGrowth: 1.4, max: 20 },
+        { id: "blade", baseCost: 30, costGrowth: 1.4, max: 15 },
+        { id: "satchel", baseCost: 15, costGrowth: 1.4, max: 6 },
+        { id: "guard", baseCost: 30, costGrowth: 1.4, max: 15 },
+        { id: "auto_potion", baseCost: 600, costGrowth: 1.4, max: 1 },
+        { id: "potion_strength", baseCost: 80, costGrowth: 1.4, max: 5 },
+        { id: "crit_chance", baseCost: 100, costGrowth: 1.4, max: 4 },
+        { id: "treasure_sense", baseCost: 80, costGrowth: 1.4, max: 5 },
+        { id: "emergency_stash", baseCost: 120, costGrowth: 1.4, max: 3 },
+        { id: "bounty_contract", baseCost: 70, costGrowth: 1.4, max: 5 }
+      ],
+      elixirs: [
+        { id: "iron_1", tier: 1, unlockDepth: 0, cost: 75 },
+        { id: "fury_1", tier: 1, unlockDepth: 0, cost: 75 },
+        { id: "focus_1", tier: 1, unlockDepth: 0, cost: 75 },
+        { id: "iron_2", tier: 2, unlockDepth: 20, cost: 200 },
+        { id: "fury_2", tier: 2, unlockDepth: 20, cost: 200 },
+        { id: "focus_2", tier: 2, unlockDepth: 20, cost: 200 },
+        { id: "iron_3", tier: 3, unlockDepth: 40, cost: 500 },
+        { id: "fury_3", tier: 3, unlockDepth: 40, cost: 500 },
+        { id: "focus_3", tier: 3, unlockDepth: 40, cost: 500 }
+      ],
+      elixirStackMaximum: 5,
+      elixirDurationTurns: 5,
+      elixirRefillCost: "ceil(baseCost * missingCharges / 5)",
+      elixirDiscardRefundRatio: 0.5,
+      relicReturnValues: {
+        normal: 50,
+        rare: 100,
+        epic: 200,
+        legendary: 400,
+        mythic: 800
+      },
+      relicSale: "two-step UI confirmation; transaction consumes one canonical stack",
+      sourceEvidence: [
+        "camp-data.js:CAMP_UPGRADES",
+        "game.js:getCampUpgradeCost/buyCampUpgrade",
+        "elixir-data.js:ELIXIRS/ELIXIR_STACK_MAX/ELIXIR_DISCARD_REFUND_RATIO",
+        "game.js:buyOrRefillElixir/discardElixirLoadout/sellCampRelicAtIndex"
+      ]
+    }
+  };
+  for (const marker of [
+    "function choosePactOffers(options = {})",
+    "const count = Math.max(1, Math.floor(Number(options.count) || 2));",
+    "if (depth < pact.minDepth) return false;",
+    "if (active.has(pact.id)) return false;"
+  ]) {
+    if (!pactTransactionSource.includes(marker)) {
+      throw new Error(`SOURCE_SYMBOL_MISSING:pact-room.js:${marker}`);
+    }
+  }
+  const pactTransactionPolicyData = {
+    schemaVersion: 1,
+    rulesetId: RULESET_ID,
+    sourceCommit,
+    sources: sourceRefs(records, ["game.js", "pact-room.js"]),
+    canonicalData: {
+      policyVersion: "v08-pact-transaction-1",
+      implementationStatus: "m1-disconnected-test-only",
+      trigger: "cleared eligible Pact room; interact with unused sigil",
+      offerCount: 2,
+      selection: "uniform without replacement from depth-eligible non-active pacts",
+      maximumActivePacts: 1,
+      pacts: [
+        { id: "hunger", minDepth: 25 },
+        { id: "precision", minDepth: 25 },
+        { id: "velocity", minDepth: 25 },
+        { id: "avarice", minDepth: 30 },
+        { id: "iron", minDepth: 25 },
+        { id: "blood", minDepth: 30 },
+        { id: "ruin", minDepth: 35 },
+        { id: "silence", minDepth: 35 },
+        { id: "cinders", minDepth: 40 },
+        { id: "hunt", minDepth: 45 },
+        { id: "chains", minDepth: 40 }
+      ],
+      apply: "selected pact replaces the current pact and consumes the room",
+      break: "available only with a current pact; clears it and consumes the room",
+      leave: "available only without a current pact; closes prompt without consuming the room",
+      cost: { amount: 0, currency: "none" },
+      rngPurposes: ["pact/candidate"],
+      sourceEvidence: [
+        "pact-room.js:PACTS/choosePactOffers/isPactValid",
+        "game.js:openPactRoom/applyPactChoice/breakCurrentPact/closePactPrompt"
+      ]
+    }
+  };
   const sourceManifest = {
     schemaVersion: 3,
     rulesetId: RULESET_ID,
@@ -3260,6 +3404,8 @@ function buildCanonicalData(records, textByFile) {
     ["merchant-transaction-policy.generated.json", merchantTransactionPolicyData],
     ["forge-transaction-policy.generated.json", forgeTransactionPolicyData],
     ["crossroads-transaction-policy.generated.json", crossroadsTransactionPolicyData],
+    ["camp-transaction-policy.generated.json", campTransactionPolicyData],
+    ["pact-transaction-policy.generated.json", pactTransactionPolicyData],
     ["room-reward-bounds.generated.json", roomRewardBoundsData],
     ["chest-reward-bounds.generated.json", chestRewardBoundsData],
     ["relic-reward-fallback-policy.generated.json", relicRewardFallbackPolicy],

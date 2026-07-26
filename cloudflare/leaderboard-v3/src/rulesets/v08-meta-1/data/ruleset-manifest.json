@@ -9,6 +9,10 @@
       "schemaVersion": 1
     },
     {
+      "file": "data/camp-transaction-policy.generated.json",
+      "schemaVersion": 1
+    },
+    {
       "file": "data/chest-reward-bounds.generated.json",
       "schemaVersion": 1
     },
@@ -46,6 +50,10 @@
     },
     {
       "file": "data/otter-relic-offer-policy.generated.json",
+      "schemaVersion": 1
+    },
+    {
+      "file": "data/pact-transaction-policy.generated.json",
       "schemaVersion": 1
     },
     {
@@ -140,8 +148,8 @@
   "files": [
     {
       "file": "camp-policy.js",
-      "byteLength": 282,
-      "sha256": "33f965f0e3f11fe37f330354ab6e4a679d7f3a5fef8dae33737afb69eb859516"
+      "byteLength": 13829,
+      "sha256": "15c9c19283ccb15a1c9f2fdc064e0dd6023fba6da6903ac2eecab8c3335ba294"
     },
     {
       "file": "constants.js",
@@ -157,6 +165,11 @@
       "file": "data/arena-relic-offer-policy.generated.json",
       "byteLength": 5024,
       "sha256": "b03d357d7ae4859a97ad362d58f076846b13cc4ba4edfa3f83aa23040844b8b1"
+    },
+    {
+      "file": "data/camp-transaction-policy.generated.json",
+      "byteLength": 3934,
+      "sha256": "d3bb3d4ad556c3d461ba185ba135725652ec3b924e83547e70eb4484843f0b39"
     },
     {
       "file": "data/chest-reward-bounds.generated.json",
@@ -207,6 +220,11 @@
       "file": "data/otter-relic-offer-policy.generated.json",
       "byteLength": 4420,
       "sha256": "86843ae91b1c09073dd66702c932378c84a4f2bdba0320498275c7f21203440a"
+    },
+    {
+      "file": "data/pact-transaction-policy.generated.json",
+      "byteLength": 2040,
+      "sha256": "a531c282841da59e6e8726407b2e3b18759f9e41bcd90133635c1a64c6ddc5f3"
     },
     {
       "file": "data/regular-relic-offer-policy.generated.json",
@@ -295,8 +313,8 @@
     },
     {
       "file": "data/source-manifest.generated.json",
-      "byteLength": 5306,
-      "sha256": "d30261bb7a9b4ce9a11a5238f5d057e9eac246cde8f6d6887f831e5f2b43d2ea"
+      "byteLength": 5614,
+      "sha256": "fa5504353a5d9047c2b24bf6ba828f14a8f579b8ab77345435bd4902956d7ed6"
     },
     {
       "file": "data/special-relic-source-audit.generated.json",
@@ -330,8 +348,8 @@
     },
     {
       "file": "index.js",
-      "byteLength": 8489,
-      "sha256": "5228fe12be4f1acb600313ff304a20478629331774e93d0bb753fa7d7db56ff5"
+      "byteLength": 10110,
+      "sha256": "11aeaf8e62b2d5ec229977f3e8e790f57e28d1ae11a0dcc0638cd058e4e276b9"
     },
     {
       "file": "leaderboard-summary.js",
@@ -350,18 +368,18 @@
     },
     {
       "file": "meta-state.js",
-      "byteLength": 8446,
-      "sha256": "a1dd63003302cea7df123c2c8893f0345d7d7db5d58198b7bea711e45151b531"
+      "byteLength": 8887,
+      "sha256": "a53d2e75a78e75c5e60c47cf1f03a232f0974709305f7aa5e65ad983b6a2bffe"
     },
     {
       "file": "meta-transaction.js",
-      "byteLength": 17900,
-      "sha256": "58bd608daeeaf444b327b5974952bbd4a2086f13f751d7317af24a96a079cc48"
+      "byteLength": 17944,
+      "sha256": "ef685c6980ed3848b4cad3125131fff0fba6bbaffc20b46237d181785c5c4612"
     },
     {
       "file": "pact-policy.js",
-      "byteLength": 243,
-      "sha256": "9ac8271fc95f65f07cdb88aba4f75da1410508fffdb87c9932c84b0085db4e9e"
+      "byteLength": 6216,
+      "sha256": "d7a0485b0f411b78a0a33dc0019b8a10c3e8b9ea3a89a3dae8a09fbefd160266"
     },
     {
       "file": "regular-relic-offer.js",
@@ -422,6 +440,11 @@
       "file": "starting-relic-offer.js",
       "byteLength": 9881,
       "sha256": "994726515d11e47f5b011caaac85e8340a685d4a1bf4cbe69f9d4fade92b6c9c"
+    },
+    {
+      "file": "test/m1-camp-pact-golden-fixtures.json",
+      "byteLength": 2877,
+      "sha256": "37eb197aec20a4f506c2aaaa6894a021af03e8566c4e91224cd1d68031cf1222"
     },
     {
       "file": "test/m1-crossroads-golden-fixtures.json",
@@ -494,5 +517,5 @@
       "sha256": "e06c85319b457817a0fa313302d0136eb746738719ab9cc6db73eacc8d62b489"
     }
   ],
-  "rulesetHash": "sha256:3656426308f31f45d52108c61e2b9ea8432db25012515adebeeabd3769f5186e"
+  "rulesetHash": "sha256:2fcc9df6032f7966ff0ede0e723dc1f0f3b0b28cc0d77533caaeb7ae886a8594"
 }

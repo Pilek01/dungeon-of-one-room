@@ -39,6 +39,15 @@ import {
   commitCrossroadsTransactionV08,
   issueCrossroadsOfferV08
 } from "./crossroads-policy.js";
+import {
+  beginCampSessionV08,
+  commitCampTransactionV08,
+  issueCampTransactionsV08
+} from "./camp-policy.js";
+import {
+  commitPactTransactionV08,
+  issuePactOfferV08
+} from "./pact-policy.js";
 import { projectPublicMetaTransactionOfferV08 } from "./meta-transaction.js";
 export {
   applyRelicAcquisition,
@@ -123,6 +132,20 @@ export {
   commitCrossroadsTransactionV08,
   issueCrossroadsOfferV08
 } from "./crossroads-policy.js";
+export {
+  CAMP_POLICY_SPEC,
+  V08_CAMP_TRANSACTION_POLICY,
+  beginCampSessionV08,
+  closeCampSessionV08,
+  commitCampTransactionV08,
+  issueCampTransactionsV08
+} from "./camp-policy.js";
+export {
+  PACT_POLICY_SPEC,
+  V08_PACT_TRANSACTION_POLICY,
+  commitPactTransactionV08,
+  issuePactOfferV08
+} from "./pact-policy.js";
 
 function mergeContext(options, context) {
   return {
@@ -272,6 +295,51 @@ export function createV08Meta1Ruleset(options = {}) {
     },
 
     projectPublicCrossroadsOffer(state) {
+      return projectPublicMetaTransactionOfferV08(state?.pendingInventory);
+    },
+
+    async beginCampSession(state, context = {}) {
+      return beginCampSessionV08(
+        state,
+        mergeContext(options, context)
+      );
+    },
+
+    async issueCampTransactions(state, context = {}) {
+      return issueCampTransactionsV08(
+        state,
+        mergeContext(options, context)
+      );
+    },
+
+    async commitCampTransaction(state, request, context = {}) {
+      return commitCampTransactionV08(
+        state,
+        request,
+        mergeContext(options, context)
+      );
+    },
+
+    projectPublicCampTransactions(state) {
+      return projectPublicMetaTransactionOfferV08(state?.pendingInventory);
+    },
+
+    async issuePactOffer(state, context = {}) {
+      return issuePactOfferV08(
+        state,
+        mergeContext(options, context)
+      );
+    },
+
+    async commitPactTransaction(state, request, context = {}) {
+      return commitPactTransactionV08(
+        state,
+        request,
+        mergeContext(options, context)
+      );
+    },
+
+    projectPublicPactOffer(state) {
       return projectPublicMetaTransactionOfferV08(state?.pendingInventory);
     },
 

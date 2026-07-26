@@ -46,7 +46,8 @@ function bindingInput(state) {
       : null,
     pendingRelicOfferId: state.pendingOffer?.offerId ?? null,
     pendingRelicTransactionId: state.pendingRelicTransaction?.transactionId ?? null,
-    metaSourceConsumptions: state.metaSourceConsumptions ?? []
+    metaSourceConsumptions: state.metaSourceConsumptions ?? [],
+    campSession: state.campSession ?? null
   };
 }
 

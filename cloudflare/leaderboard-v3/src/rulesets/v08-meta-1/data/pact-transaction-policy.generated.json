@@ -1,0 +1,85 @@
+{
+  "schemaVersion": 1,
+  "rulesetId": "v08-meta-1",
+  "sourceCommit": "f98820c99066d810169e100beb23a54a332734bd",
+  "sources": [
+    {
+      "file": "game.js",
+      "byteLength": 1292796,
+      "sha256": "a7d436f8cdde618e7bab802322a658d2055f201950d9ae7b4598269feff3df00"
+    },
+    {
+      "file": "pact-room.js",
+      "byteLength": 5791,
+      "sha256": "d94a3d19bab8fe69bf9d3f2dac5a0555e268af7327855c5a675e53149d4355c6"
+    }
+  ],
+  "canonicalData": {
+    "policyVersion": "v08-pact-transaction-1",
+    "implementationStatus": "m1-disconnected-test-only",
+    "trigger": "cleared eligible Pact room; interact with unused sigil",
+    "offerCount": 2,
+    "selection": "uniform without replacement from depth-eligible non-active pacts",
+    "maximumActivePacts": 1,
+    "pacts": [
+      {
+        "id": "hunger",
+        "minDepth": 25
+      },
+      {
+        "id": "precision",
+        "minDepth": 25
+      },
+      {
+        "id": "velocity",
+        "minDepth": 25
+      },
+      {
+        "id": "avarice",
+        "minDepth": 30
+      },
+      {
+        "id": "iron",
+        "minDepth": 25
+      },
+      {
+        "id": "blood",
+        "minDepth": 30
+      },
+      {
+        "id": "ruin",
+        "minDepth": 35
+      },
+      {
+        "id": "silence",
+        "minDepth": 35
+      },
+      {
+        "id": "cinders",
+        "minDepth": 40
+      },
+      {
+        "id": "hunt",
+        "minDepth": 45
+      },
+      {
+        "id": "chains",
+        "minDepth": 40
+      }
+    ],
+    "apply": "selected pact replaces the current pact and consumes the room",
+    "break": "available only with a current pact; clears it and consumes the room",
+    "leave": "available only without a current pact; closes prompt without consuming the room",
+    "cost": {
+      "amount": 0,
+      "currency": "none"
+    },
+    "rngPurposes": [
+      "pact/candidate"
+    ],
+    "sourceEvidence": [
+      "pact-room.js:PACTS/choosePactOffers/isPactValid",
+      "game.js:openPactRoom/applyPactChoice/breakCurrentPact/closePactPrompt"
+    ]
+  }
+}

@@ -127,6 +127,7 @@ test("source manifest contains only active baseline and M1 evidence sources", as
       "boss-campaign.js",
       "camp-data.js",
       "camp-runtime.js",
+      "elixir-data.js",
       "expansion-content.js",
       "forge-room.js",
       "game.js",
@@ -141,10 +142,7 @@ test("source manifest contains only active baseline and M1 evidence sources", as
       "vault-room.js"
     ]
   );
-  const forbiddenDeferredSources = [
-    "elixir-data.js",
-    "pact-effects.js"
-  ];
+  const forbiddenDeferredSources = ["pact-effects.js"];
   for (const forbidden of forbiddenDeferredSources) {
     assert.ok(!manifest.sources.some((source) => source.file === forbidden), forbidden);
   }

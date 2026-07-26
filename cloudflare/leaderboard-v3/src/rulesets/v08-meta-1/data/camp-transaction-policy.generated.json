@@ -1,0 +1,174 @@
+{
+  "schemaVersion": 1,
+  "rulesetId": "v08-meta-1",
+  "sourceCommit": "f98820c99066d810169e100beb23a54a332734bd",
+  "sources": [
+    {
+      "file": "camp-data.js",
+      "byteLength": 2248,
+      "sha256": "30a481222fc6b1e20ca033a8a72b3da8eb2198b18f83030a5b42548825c78d2b"
+    },
+    {
+      "file": "elixir-data.js",
+      "byteLength": 2325,
+      "sha256": "438c951c7d44bb74a4564bfa8f381aafc8c66d4772cff3b526d2e3f42b471f63"
+    },
+    {
+      "file": "game.js",
+      "byteLength": 1292796,
+      "sha256": "a7d436f8cdde618e7bab802322a658d2055f201950d9ae7b4598269feff3df00"
+    },
+    {
+      "file": "relic-data.js",
+      "byteLength": 9135,
+      "sha256": "fa4cdd27c3b3b9d2b61df3bc346a4123e9d3f70f58afdc16cd626411d6bdfa59"
+    },
+    {
+      "file": "relic-runtime.js",
+      "byteLength": 9127,
+      "sha256": "87e02a9a1519aa5c9c621e23fabe5400cfda8274c1aa39c50cd471478e642d97"
+    }
+  ],
+  "canonicalData": {
+    "policyVersion": "v08-camp-transaction-1",
+    "implementationStatus": "m1-disconnected-test-only",
+    "currency": "camp_gold",
+    "visitMultiplier": "freeze canonical run shopCostMult on Camp entry",
+    "upgrades": [
+      {
+        "id": "vitality",
+        "baseCost": 30,
+        "costGrowth": 1.4,
+        "max": 20
+      },
+      {
+        "id": "blade",
+        "baseCost": 30,
+        "costGrowth": 1.4,
+        "max": 15
+      },
+      {
+        "id": "satchel",
+        "baseCost": 15,
+        "costGrowth": 1.4,
+        "max": 6
+      },
+      {
+        "id": "guard",
+        "baseCost": 30,
+        "costGrowth": 1.4,
+        "max": 15
+      },
+      {
+        "id": "auto_potion",
+        "baseCost": 600,
+        "costGrowth": 1.4,
+        "max": 1
+      },
+      {
+        "id": "potion_strength",
+        "baseCost": 80,
+        "costGrowth": 1.4,
+        "max": 5
+      },
+      {
+        "id": "crit_chance",
+        "baseCost": 100,
+        "costGrowth": 1.4,
+        "max": 4
+      },
+      {
+        "id": "treasure_sense",
+        "baseCost": 80,
+        "costGrowth": 1.4,
+        "max": 5
+      },
+      {
+        "id": "emergency_stash",
+        "baseCost": 120,
+        "costGrowth": 1.4,
+        "max": 3
+      },
+      {
+        "id": "bounty_contract",
+        "baseCost": 70,
+        "costGrowth": 1.4,
+        "max": 5
+      }
+    ],
+    "elixirs": [
+      {
+        "id": "iron_1",
+        "tier": 1,
+        "unlockDepth": 0,
+        "cost": 75
+      },
+      {
+        "id": "fury_1",
+        "tier": 1,
+        "unlockDepth": 0,
+        "cost": 75
+      },
+      {
+        "id": "focus_1",
+        "tier": 1,
+        "unlockDepth": 0,
+        "cost": 75
+      },
+      {
+        "id": "iron_2",
+        "tier": 2,
+        "unlockDepth": 20,
+        "cost": 200
+      },
+      {
+        "id": "fury_2",
+        "tier": 2,
+        "unlockDepth": 20,
+        "cost": 200
+      },
+      {
+        "id": "focus_2",
+        "tier": 2,
+        "unlockDepth": 20,
+        "cost": 200
+      },
+      {
+        "id": "iron_3",
+        "tier": 3,
+        "unlockDepth": 40,
+        "cost": 500
+      },
+      {
+        "id": "fury_3",
+        "tier": 3,
+        "unlockDepth": 40,
+        "cost": 500
+      },
+      {
+        "id": "focus_3",
+        "tier": 3,
+        "unlockDepth": 40,
+        "cost": 500
+      }
+    ],
+    "elixirStackMaximum": 5,
+    "elixirDurationTurns": 5,
+    "elixirRefillCost": "ceil(baseCost * missingCharges / 5)",
+    "elixirDiscardRefundRatio": 0.5,
+    "relicReturnValues": {
+      "normal": 50,
+      "rare": 100,
+      "epic": 200,
+      "legendary": 400,
+      "mythic": 800
+    },
+    "relicSale": "two-step UI confirmation; transaction consumes one canonical stack",
+    "sourceEvidence": [
+      "camp-data.js:CAMP_UPGRADES",
+      "game.js:getCampUpgradeCost/buyCampUpgrade",
+      "elixir-data.js:ELIXIRS/ELIXIR_STACK_MAX/ELIXIR_DISCARD_REFUND_RATIO",
+      "game.js:buyOrRefillElixir/discardElixirLoadout/sellCampRelicAtIndex"
+    ]
+  }
+}

@@ -67,9 +67,19 @@
 - Crossroads verification: targeted 11/11; combined targeted 47/47; fast 50/50;
   phase 585/585; baseline 3/3 plus headed smoke PASS; 24 golden cases and
   128 property seeds.
-- Current M1 ruleset hash after Crossroads:
-  `sha256:3656426308f31f45d52108c61e2b9ea8432db25012515adebeeabd3769f5186e`.
-- Next M1 block: canonical Camp and Pact transactions.
+- Canonical Camp transactions are complete for the active baseline purchases:
+  ten upgrades with frozen visit multiplier, elixir buy/refill/discard, and
+  confirmed one-stack relic sales, all through the existing camp-gold ledger.
+- Canonical Pact transactions are complete for two uniform depth-eligible
+  offers, apply/replace, break-with-current, and leave-without-current. Apply,
+  replace, and break consume the room; leave keeps it reusable.
+- Camp/Pact verification: targeted 12/12; combined targeted 59/59; fast 62/62;
+  phase 597/597; baseline 3/3 plus headed smoke PASS; 32 golden cases and
+  128 Camp plus 128 Pact property seeds.
+- Current M1 ruleset hash after Camp/Pact:
+  `sha256:2fcc9df6032f7966ff0ede0e723dc1f0f3b0b28cc0d77533caaeb7ae886a8594`.
+- Next: run the mandatory M1 final phase/baseline/full gates and WIP parity
+  checks. Do not start another milestone.
 
 ## Verification
 

@@ -125,3 +125,56 @@ The server issues opaque POWER result/replacement, POWER skip/fallback, and
 MERCY choices. Committing any choice consumes the room source once. The client
 cannot provide HP, duration, rarity, target, result, potion count, cooldowns,
 gold, price, or final state.
+
+## Camp
+
+Source evidence:
+
+- `game.js:enterCampFromExtract` freezes the canonical run
+  `shopCostMult` as the Camp visit multiplier. It is stored in a server-issued
+  Camp session and cannot come from a purchase request.
+- `camp-data.js:CAMP_UPGRADES` defines the ten active upgrades, exact base
+  costs, 1.4 growth, and maximum levels.
+- `game.js:getCampUpgradeCost` first rounds
+  `baseCost * costGrowth ** currentLevel`, then rounds the product with the
+  frozen visit multiplier. All active upgrades spend camp gold.
+- `game.js:buyCampUpgrade` spends only after affordability/max validation and
+  increments exactly one level. Vitality and Satchel update current Camp
+  resource previews; the canonical upgrade levels remain the effect source.
+- `elixir-data.js:ELIXIRS` defines the nine active tier 1/2/3 choices, Depth
+  Highscore gates 0/20/40, base costs 75/200/500, five charges, and five-turn
+  runtime duration.
+- `game.js:buyOrRefillElixir` permits one carried type, buys five charges, and
+  refills with `ceil(baseCost * missing / 5)`.
+- `game.js:discardElixirLoadout` returns
+  `floor(baseCost * 0.5 * charges / 5)` camp gold and clears the loadout.
+- `game.js:sellCampRelicAtIndex` requires two UI confirmations, consumes one
+  exact carried relic copy, and awards the canonical rarity return value as
+  camp gold.
+
+Every Camp offer is regenerated from the canonical session, build, balances,
+levels, unlocks, elixir loadout, and relic stacks. The request contains only an
+opaque choice; price, currency, level, charges, refund, sale target, reward,
+and final state are server authority.
+
+## Pact
+
+Source evidence:
+
+- `pact-room.js:PACT_ROOM_PROFILES` enables Pact rooms at Depth 25 and keeps the
+  active room weights 0.025/0.04/0.05/0.06 across the depth profiles.
+- `pact-room.js:PACTS` defines eleven active pacts and exact minimum depths:
+  Hunger/Precision/Velocity/Iron 25, Avarice/Blood 30, Ruin/Silence 35,
+  Cinders/Chains 40, and Hunt 45.
+- `pact-room.js:choosePactOffers` selects two uniformly without replacement
+  from depth-eligible pacts, excluding the currently active pact.
+- `game.js:applyPactChoice` removes an existing pact before applying the
+  selected pact, preserves a maximum of one active pact, and consumes the room.
+- `game.js:breakCurrentPact` is available only with an active pact, clears it,
+  and consumes the room.
+- `game.js:closePactPrompt` leaves an empty-pact room untouched and reusable;
+  it does not invent or consume a pact choice.
+
+Apply, replace, and break are zero-gold atomic transactions. Leave is offered
+only without a current pact and does not consume the room source. The client
+cannot report pact ID, depth eligibility, cost, result, or final build.
