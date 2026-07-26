@@ -10,7 +10,9 @@ import {
   finalizeRun
 } from "./domain/transitions.js";
 import {
-  appendRecentOperation,
+  appendVersionedRecentOperation,
+  createCompactOperationRecord,
+  createRecentOperationsV2,
   resolveIdempotentReplay
 } from "./domain/idempotency.js";
 import {
@@ -109,26 +111,40 @@ function validateMutationEnvelope(body) {
   };
 }
 
-function operationRecord({
+async function operationRecord({
   idempotencyKey,
+  operationType,
   requestDigest,
+  responseKind,
   responseStatus,
   responseBody,
+  runId,
+  rulesetId,
+  rulesetHash,
+  revisionBefore,
   resultingRevision,
+  stateDigest,
   createdAt
 }) {
-  return {
-    idempotencyKey,
+  return createCompactOperationRecord({
+    operationId: idempotencyKey,
+    operationType,
     requestDigest,
+    responseKind,
+    runId,
+    rulesetId,
+    rulesetHash,
+    revisionBefore,
+    revisionAfter: resultingRevision,
     responseStatus,
     responseBody,
-    resultingRevision,
+    stateDigest,
     createdAt
-  };
+  });
 }
 
-function replayOrConflict(state, idempotencyKey, requestDigest) {
-  const resolution = resolveIdempotentReplay(
+async function replayOrConflict(state, idempotencyKey, requestDigest) {
+  const resolution = await resolveIdempotentReplay(
     state.recentOps,
     idempotencyKey,
     requestDigest
@@ -222,12 +238,21 @@ async function handleStart(request, env, options, repositories) {
     checkpointToken,
     metaState: publicMetaState(state)
   };
-  const recentOps = appendRecentOperation([], operationRecord({
+  const recentOps = await appendVersionedRecentOperation(
+    createRecentOperationsV2(),
+    await operationRecord({
     idempotencyKey,
+    operationType: "start",
     requestDigest,
+    responseKind: "start",
     responseStatus: 201,
     responseBody,
+    runId: state.runId,
+    rulesetId: ruleset.rulesetId || "",
+    rulesetHash: state.rulesetHash,
+    revisionBefore: state.revision,
     resultingRevision: state.revision,
+    stateDigest,
     createdAt: now
   }), RECENT_OPS_LIMIT);
 
@@ -242,9 +267,13 @@ async function handleStart(request, env, options, repositories) {
     if (cause?.code !== "START_OPERATION_CONFLICT") throw cause;
     const existing = await repositories.runs.findByStartOperation(idempotencyKey);
     if (!existing) throw cause;
-    const replay = replayOrConflict(existing, idempotencyKey, requestDigest);
+    const replay = await replayOrConflict(existing, idempotencyKey, requestDigest);
     if (replay) return replay;
-    throw cause;
+    throw new HttpError(
+      409,
+      "IDEMPOTENCY_WINDOW_EXPIRED",
+      "The original start response is outside retained retry history."
+    );
   }
   return jsonResponse(responseBody, 201);
 }
@@ -263,7 +292,7 @@ async function loadMutationContext(request, env, options, repositories, path) {
   const secret = requireSecret(env);
   const now = options.now();
   const tokenPayload = await verifyMutationToken(body, state, secret, now);
-  const replay = replayOrConflict(state, idempotencyKey, requestDigest);
+  const replay = await replayOrConflict(state, idempotencyKey, requestDigest);
   if (replay) return { replay };
   enforceCurrentToken(tokenPayload, state, now);
   return {
@@ -298,14 +327,22 @@ async function persistMutation(context, transition, repositories, options = {}) 
     ...(checkpointToken ? { checkpointToken } : {}),
     metaState: publicMetaState(nextState)
   };
-  const recentOps = appendRecentOperation(
+  const operationType = options.operationType || "mutation";
+  const recentOps = await appendVersionedRecentOperation(
     context.state.recentOps,
-    operationRecord({
+    await operationRecord({
       idempotencyKey: context.idempotencyKey,
+      operationType,
       requestDigest: context.requestDigest,
+      responseKind: options.responseKind || operationType,
       responseStatus: 200,
       responseBody,
+      runId: nextState.runId,
+      rulesetId: context.ruleset.rulesetId || "",
+      rulesetHash: nextState.rulesetHash,
+      revisionBefore: context.state.revision,
       resultingRevision: nextState.revision,
+      stateDigest,
       createdAt: context.now
     }),
     RECENT_OPS_LIMIT
@@ -353,7 +390,10 @@ async function handleCheckpoint(request, env, options, repositories) {
     nextRoomDirectiveId: randomIdentifier("directive", options.randomUUID),
     nextRoomNonce: randomIdentifier("nonce", options.randomUUID)
   }, context.ruleset);
-  return persistMutation(context, transition, repositories);
+  return persistMutation(context, transition, repositories, {
+    operationType: "checkpoint",
+    responseKind: "checkpoint"
+  });
 }
 
 async function handleEvent(request, env, options, repositories) {
@@ -370,7 +410,10 @@ async function handleEvent(request, env, options, repositories) {
     stateDigest: undefined,
     recentOps: undefined
   }, context.body, context.ruleset);
-  return persistMutation(context, transition, repositories);
+  return persistMutation(context, transition, repositories, {
+    operationType: "event",
+    responseKind: context.body.type
+  });
 }
 
 async function handleFinalize(request, env, options, repositories) {
@@ -394,6 +437,8 @@ async function handleFinalize(request, env, options, repositories) {
     (effect) => effect.type === "insert_leaderboard"
   );
   return persistMutation(context, transition, repositories, {
+    operationType: "finalize",
+    responseKind: "finalize",
     leaderboardEntry: leaderboardEffect.entry
   });
 }

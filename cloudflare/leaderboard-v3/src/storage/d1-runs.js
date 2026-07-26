@@ -1,5 +1,6 @@
 import { canonicalJson } from "../security/canonical-json.js";
 import { stateForDigest } from "../domain/run-state.js";
+import { assertStoredRecentOperations } from "../domain/idempotency.js";
 
 function changes(result) {
   return Number(result?.meta?.changes ?? result?.changes ?? 0);
@@ -7,10 +8,11 @@ function changes(result) {
 
 function stateFromRow(row) {
   if (!row) return null;
+  const recentOps = assertStoredRecentOperations(JSON.parse(row.recent_ops_json));
   return {
     ...JSON.parse(row.canonical_state_json),
     stateDigest: row.state_digest,
-    recentOps: JSON.parse(row.recent_ops_json)
+    recentOps
   };
 }
 

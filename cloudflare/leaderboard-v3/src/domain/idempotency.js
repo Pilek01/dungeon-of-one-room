@@ -147,6 +147,26 @@ function assertCompactStore(store) {
   return store;
 }
 
+function assertLegacyStore(store) {
+  if (!Array.isArray(store)) throw new TypeError("RECENT_OPS_FORMAT_UNSUPPORTED");
+  for (const operation of store) {
+    if (
+      !operation ||
+      typeof operation !== "object" ||
+      typeof operation.idempotencyKey !== "string" ||
+      !operation.idempotencyKey ||
+      typeof operation.requestDigest !== "string" ||
+      !operation.requestDigest ||
+      !isObject(operation.responseBody) ||
+      !Number.isSafeInteger(operation.responseStatus) ||
+      !Number.isSafeInteger(operation.resultingRevision)
+    ) {
+      throw new TypeError("RECENT_OPS_LEGACY_RECORD_INVALID");
+    }
+  }
+  return store;
+}
+
 function projectionAt(store, targetIndex) {
   assertCompactStore(store);
   if (targetIndex < 0 || targetIndex >= store.records.length) {
@@ -217,6 +237,51 @@ export function createRecentOperationsV2() {
   };
 }
 
+function inferLegacyOperationType(responseBody) {
+  if (responseBody.acceptedBoundary === "run_started") return "start";
+  if (responseBody.acceptedBoundary === "room_cleared") return "checkpoint";
+  if (responseBody.acceptedEvent) return "event";
+  if (responseBody.outcome) return "finalize";
+  return "legacy";
+}
+
+export async function migrateLegacyRecentOperations(recentOps, limit) {
+  const legacy = assertLegacyStore(recentOps);
+  const boundedLimit = Math.max(1, Math.floor(Number(limit) || 1));
+  let compact = createRecentOperationsV2();
+  for (const operation of legacy.slice(-boundedLimit)) {
+    const responseBody = operation.responseBody;
+    const operationType = inferLegacyOperationType(responseBody);
+    const revisionAfter = operation.resultingRevision;
+    const compactRecord = await createCompactOperationRecord({
+      operationId: operation.idempotencyKey,
+      operationType,
+      requestDigest: operation.requestDigest,
+      responseKind: operationType,
+      runId: responseBody.runId,
+      rulesetId: responseBody.metaState?.rulesetId || "",
+      rulesetHash: responseBody.metaState?.rulesetHash,
+      revisionBefore: operationType === "start"
+        ? revisionAfter
+        : Math.max(0, revisionAfter - 1),
+      revisionAfter,
+      responseStatus: operation.responseStatus,
+      responseBody,
+      stateDigest: "legacy:v1-not-persisted",
+      createdAt: Number.isSafeInteger(operation.createdAt) ? operation.createdAt : 0
+    });
+    compact = appendCompactRecentOperation(compact, compactRecord, boundedLimit);
+  }
+  return compact;
+}
+
+export async function appendVersionedRecentOperation(recentOps, record, limit) {
+  const compact = Array.isArray(recentOps)
+    ? await migrateLegacyRecentOperations(recentOps, limit)
+    : assertCompactStore(recentOps);
+  return appendCompactRecentOperation(compact, record, limit);
+}
+
 export function appendCompactRecentOperation(recentOps, inputRecord, limit) {
   const boundedLimit = Math.max(1, Math.floor(Number(limit) || 1));
   const store = assertCompactStore(recentOps);
@@ -282,14 +347,34 @@ export function recentOperationsByteLength(recentOps) {
   return new TextEncoder().encode(JSON.stringify(recentOps)).byteLength;
 }
 
+export function assertStoredRecentOperations(recentOps) {
+  return Array.isArray(recentOps)
+    ? assertLegacyStore(recentOps)
+    : assertCompactStore(recentOps);
+}
+
+export function recentOperationCount(recentOps) {
+  const store = assertStoredRecentOperations(recentOps);
+  return Array.isArray(store) ? store.length : store.records.length;
+}
+
 export function findRecentOperation(recentOps, idempotencyKey) {
+  if (!Array.isArray(recentOps)) return null;
   const key = String(idempotencyKey || "");
   return (Array.isArray(recentOps) ? recentOps : []).find(
     (operation) => operation?.idempotencyKey === key
   ) || null;
 }
 
-export function resolveIdempotentReplay(recentOps, idempotencyKey, requestDigest) {
+export async function resolveIdempotentReplay(recentOps, idempotencyKey, requestDigest) {
+  if (!Array.isArray(recentOps)) {
+    return resolveCompactIdempotentReplay(
+      recentOps,
+      idempotencyKey,
+      requestDigest
+    );
+  }
+  assertLegacyStore(recentOps);
   const operation = findRecentOperation(recentOps, idempotencyKey);
   if (!operation) return { kind: "miss" };
   if (operation.requestDigest !== requestDigest) {

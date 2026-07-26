@@ -756,7 +756,9 @@ describe("Online v3 local Wrangler runtime and persistent D1", {
     assert.equal(stored.status, "finalized");
     assert.equal(Number(stored.revision), 4);
     assert.equal(await leaderboardCount(started.payload.runId), 1);
-    assert(JSON.parse(stored.recent_ops_json).length <= 24);
+    const storedRecentOps = JSON.parse(stored.recent_ops_json);
+    assert.equal(storedRecentOps.version, 2);
+    assert(storedRecentOps.records.length <= 12);
     report.concurrency = {
       checkpoint: checkpointResults.map((result) => result.status).sort(),
       reward: rewardResults.map((result) => result.status).sort(),
@@ -1074,12 +1076,12 @@ describe("Online v3 local Wrangler runtime and persistent D1", {
       SELECT
         length(canonical_state_json) AS canonical_bytes,
         length(recent_ops_json) AS recent_ops_bytes,
-        json_array_length(recent_ops_json) AS recent_ops_count
+        json_array_length(json_extract(recent_ops_json, '$.records')) AS recent_ops_count
       FROM ranked_runs
       WHERE run_id = ${sqlText(started.payload.runId)}
     `))[0];
-    assert.equal(Number(record.recent_ops_count), 24);
-    assert(Number(record.recent_ops_bytes) < 64 * 1024);
+    assert.equal(Number(record.recent_ops_count), 12);
+    assert(Number(record.recent_ops_bytes) < 32 * 1024);
     assert.equal(
       JSON.stringify(await checkpointBody(session)).includes("fullSave"),
       false
@@ -1119,7 +1121,7 @@ describe("Online v3 local Wrangler runtime and persistent D1", {
       finalizeRequestBytes: jsonBytes(finalizeRequest),
       tokenBytes,
       canonicalStateBytes: Number(record.canonical_bytes),
-      recentOpsBytesAt24: Number(record.recent_ops_bytes),
+      recentOpsBytesAt12: Number(record.recent_ops_bytes),
       recentOpsCount: Number(record.recent_ops_count),
       leaderboard20ResponseBytes: leaderboard20.responseBytes,
       buildDetailResponseBytes: detail.responseBytes,

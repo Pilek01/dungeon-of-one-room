@@ -73,7 +73,8 @@ test("canonical state and recent ops do not contain a combat replay", async () =
   const stored = harness.repositories.snapshotRun(checkpointed.runId);
   assert.equal("commands" in stored, false);
   assert.equal("combatReplay" in stored, false);
-  assert(stored.recentOps.length <= 24);
+  assert.equal(stored.recentOps.version, 2);
+  assert(stored.recentOps.records.length <= 12);
   assert(stored.journalDigest);
 });
 

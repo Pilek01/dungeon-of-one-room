@@ -59,5 +59,33 @@ test("recent operation ring remains bounded", async () => {
     assert.equal(result.response.status, 200);
     session = result.payload;
   }
-  assert.equal(harness.repositories.snapshotRun(session.runId).recentOps.length, 24);
+  const recentOps = harness.repositories.snapshotRun(session.runId).recentOps;
+  assert.equal(recentOps.version, 2);
+  assert.equal(recentOps.records.length, 12);
+});
+
+test("retry outside the retained mutation window returns documented revision conflict", async () => {
+  const harness = createHarness();
+  const started = (await harness.start()).payload;
+  let session = started;
+  for (let index = 0; index < 13; index += 1) {
+    session = (await harness.event(
+      session,
+      "extract",
+      {},
+      `event-expiry-${String(index).padStart(4, "0")}`
+    )).payload;
+  }
+  const expired = await harness.start({}, "start-fixture-0001");
+  assert.equal(expired.response.status, 409);
+  assert.equal(expired.payload.error.code, "IDEMPOTENCY_WINDOW_EXPIRED");
+
+  const oldMutation = await harness.event(
+    started,
+    "extract",
+    {},
+    "event-expiry-0000"
+  );
+  assert.equal(oldMutation.response.status, 409);
+  assert.equal(oldMutation.payload.error.code, "REVISION_CONFLICT");
 });
