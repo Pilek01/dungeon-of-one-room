@@ -1,6 +1,7 @@
 # Online v3 M2 — Runtime and compact idempotency
 
-Status: implementation in progress. No client integration or deployment.
+Status: partially implemented locally; endpoint integration is blocked. No
+client integration or deployment.
 
 ## Compact operation history
 
@@ -67,5 +68,48 @@ Unknown IDs/hashes, mismatched ID/hash pairs, deprecated hashes, fixture use in
 a ranked lifecycle and production use of the local candidate all fail closed.
 Production activation remains unavailable.
 
-Endpoint dispatch and real-ruleset Wrangler/D1 lifecycle coverage are not yet
-complete.
+## Endpoint integration blocker
+
+M2.4 cannot be implemented without changing or inventing an HTTP boundary:
+
+- `v08-meta-1` starts in `awaiting_starting_relic`, issues a mandatory opaque
+  starting offer and deliberately has no room directive until the choice is
+  committed;
+- the current start orchestration immediately dereferences
+  `state.roomDirective.id` and `state.roomDirective.roomNonce` when signing its
+  checkpoint token;
+- every current event request requires `roomDirectiveId` and `roomNonce`;
+- the documented protocol explicitly says that no endpoint exposes the
+  pre-room starting-relic flow;
+- there is no canonical directive ID or nonce for the starting offer, and the
+  current event allowlist has no separate pre-room offer boundary.
+
+Using the offer ID as a synthetic directive, auto-selecting a starting relic,
+making the mutation envelope optional, or adding an unreviewed pre-room route
+would change the existing HTTP/token contract. `CURRENT.md` requires that
+contract to remain unchanged and explicitly says to stop if it is insufficient.
+M2.4 is therefore blocked rather than guessed.
+
+M2.5 depends on M2.4. The existing fixture Wrangler/D1 lifecycle still proves
+compact v2 persistence, exact retries, restart, concurrency and atomic
+finalization, but it is not evidence for a real-ruleset lifecycle. The required
+real Merchant, Forge, Crossroads, Camp and Pact HTTP scenarios remain blocked
+with endpoint dispatch.
+
+The M3 scoring/lives/outcome policies also remain unimplemented, but they are
+not the M2.4 stop cause because `CURRENT.md` permits the current explicitly
+provisional finalization behavior.
+
+Final verification of the implemented partial milestone is phase 612/612,
+baseline guard 3/3 plus headed smoke, and full 624/624 including the existing
+fixture Wrangler/D1 lifecycle 9/9. These passing fixture tests do not remove
+the real-ruleset M2.5 blocker.
+
+## Deployment blockers
+
+- define and approve a canonical authenticated pre-room offer boundary while
+  preserving or explicitly versioning the HTTP/token contract;
+- map every supported opaque real-ruleset transaction to explicit event
+  operations, including Crossroads and the two Forge modes;
+- complete the real-ruleset Wrangler/D1 lifecycle suite;
+- retain local-only release state until a separate production release task.

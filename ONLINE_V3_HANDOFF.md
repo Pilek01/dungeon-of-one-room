@@ -8,7 +8,8 @@
 - Protected baseline: f98820c99066d810169e100beb23a54a332734bd
 - Pre-Arena ruleset hash: sha256:7c60b9af6bdf309c860c2daa2534a3d527d1469433921bc8db3766a654cb40f9
 - Phase 3B2C3B ruleset hash: sha256:f462e632fda9a687e848a1445052360bcc78f13d2388e0d5208a7478e0a9a8e3
-- v08-meta-1 remains disconnected and test-only.
+- v08-meta-1 has a registry-only local release-candidate descriptor; its pure
+  canonical manifest remains test-only.
 - Active endpoints still use the fixture ruleset.
 - Online v3 is not loaded by index.html.
 - Preserve unrelated Vault Guardian pack deletions outside staging and commits.
@@ -88,6 +89,39 @@
   normalized initial/final path delta 0, staged count 0, and M1 commit count 0.
 - Recommended next milestone: Phase 3B2C4 exact compact idempotency-response
   reconstruction. It remains unstarted and requires a fresh task.
+
+## Milestone M2 partial result
+
+- Commit `e267999` implements compact `recent_ops` v2 reconstruction with one
+  immutable base projection, deterministic patches, exact historical tokens,
+  semantic response equality and result-digest verification.
+- Commit `7f52493` persists v2 in the existing D1 JSON column, reads legacy v1
+  full-response arrays exactly and migrates them deterministically on the next
+  successful write. The retained history is 12 operations; no migration or new
+  table is required.
+- Commit `3898db7` adds a fail-closed local release-candidate descriptor for the
+  exact `v08-meta-1` ID/hash. Fixture, test-only, local candidate, production
+  and deprecated states are distinct; production remains unavailable.
+- Ordinary local D1 history measured 27,554 B at 12 operations. A repeated
+  14,484 B replacement fixture measured 175,291 B in legacy v1 versus
+  29,573 B in compact v2.
+- The ruleset hash remains
+  `sha256:2fcc9df6032f7966ff0ede0e723dc1f0f3b0b28cc0d77533caaeb7ae886a8594`.
+- M2.4 is blocked: the mandatory starting-relic offer exists before any room
+  directive, while the unchanged token/event contract requires a directive ID
+  and nonce for every authenticated mutation. There is no canonical pre-room
+  boundary in the existing HTTP contract.
+- M2.5 real-ruleset Wrangler/D1 lifecycle coverage depends on M2.4 and remains
+  blocked. Existing fixture HTTP/D1 compact persistence, retry, restart,
+  concurrency and atomic-finalize coverage passes 9/9.
+- Final partial-M2 verification: phase 612/612 PASS; baseline guard 3/3 and
+  headed smoke PASS; full 624/624 PASS including local fixture Wrangler/D1
+  9/9; `git diff --check` PASS.
+- No game, Online v3 client, production resource, deployment configuration or
+  protected Vault Guardian path is part of the M2 commits.
+- Recommended next work is a narrowly scoped M2 unblock design for the
+  authenticated pre-room offer boundary. Do not start M3 before M2 endpoint
+  dispatch and real-ruleset lifecycle coverage are complete.
 
 ## Verification
 
