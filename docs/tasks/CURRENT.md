@@ -1,5 +1,7 @@
 # Current task — Milestone M1
 
+Status: completed locally; disconnected and test-only.
+
 ## Task name
 
 Online v3 Meta Transactions
@@ -93,3 +95,17 @@ Full logs belong in ignored `output/verification/`.
 6. Optional documentation-only milestone handoff commit
 
 Stage only explicit owned files for each commit.
+
+## Completion
+
+- Five implementation commits completed the shared core, Merchant, Forge,
+  Crossroads, and Camp/Pact blocks.
+- Final ruleset hash:
+  `sha256:2fcc9df6032f7966ff0ede0e723dc1f0f3b0b28cc0d77533caaeb7ae886a8594`.
+- Final verification: phase 597/597 PASS; baseline guard 3/3 PASS; headed
+  baseline smoke PASS; full 609/609 PASS including local Wrangler/D1 E2E 9/9;
+  `git diff --check` PASS.
+- The 172 protected Vault Guardian deletions match the initial normalized path
+  snapshot exactly and remain unstaged and absent from all M1 commits.
+- Do not activate, integrate, deploy, push, rebase, merge, or start the next
+  milestone from this task.

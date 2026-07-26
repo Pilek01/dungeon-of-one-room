@@ -32,9 +32,9 @@
 - No unresolved Arena source evidence or blockers.
 - No client, game, endpoint, D1, recent_ops, protocol, Wrangler, activation, push, or deployment change.
 
-## Next work
+## Milestone M1
 
-- Milestone M1 - Meta Transactions is active.
+- Milestone M1 - Meta Transactions is complete locally.
 - Commit `75c06c6` implements the shared immutable atomic transaction core.
 - The core binds canonical source/offer/choice/transaction IDs to run,
   ruleset hash, revision, state digest, and build digest.
@@ -78,12 +78,20 @@
   128 Camp plus 128 Pact property seeds.
 - Current M1 ruleset hash after Camp/Pact:
   `sha256:2fcc9df6032f7966ff0ede0e723dc1f0f3b0b28cc0d77533caaeb7ae886a8594`.
-- Next: run the mandatory M1 final phase/baseline/full gates and WIP parity
-  checks. Do not start another milestone.
+- Final verification: phase 597/597 PASS; baseline guard 3/3 PASS; headed
+  baseline smoke PASS; full 609/609 PASS including local Wrangler/D1 E2E 9/9;
+  `git diff --check` PASS.
+- M1 changed 34 owned paths and zero forbidden game, client, endpoint, D1,
+  `recent_ops`, protocol, Wrangler, migration, fixture-activation, or
+  deployment paths.
+- The protected Vault Guardian WIP remains exactly 172 deleted paths with
+  normalized initial/final path delta 0, staged count 0, and M1 commit count 0.
+- Recommended next milestone: Phase 3B2C4 exact compact idempotency-response
+  reconstruction. It remains unstarted and requires a fresh task.
 
 ## Verification
 
 - npm run verify:fast
 - npm run verify:phase
 - npm run verify:baseline
-- npm run verify:full only when a future CURRENT.md explicitly requires it
+- npm run verify:full
