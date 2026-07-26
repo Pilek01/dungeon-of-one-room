@@ -91,7 +91,7 @@
       "relic-offer-offer-id",
       "relic-offer-choice-id"
     ],
-    "emptyPoolBehavior": "UNRESOLVED_EMPTY_RELIC_POOL",
+    "emptyPoolBehavior": "NO_REWARD; canonical reward slot consumed once",
     "fullPoolBehavior": "CANONICAL_REPLACEMENT_TRANSACTION",
     "publicChoiceFields": [
       "choiceId",

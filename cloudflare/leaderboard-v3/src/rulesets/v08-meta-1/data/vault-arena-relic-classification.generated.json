@@ -65,7 +65,7 @@
     }
   ],
   "canonicalData": {
-    "phase": "3B2B2B2",
+    "phase": "3B2C3A",
     "vault": {
       "sourceId": "vault-standard-chest",
       "classification": "NOT_AN_ACTIVE_RELIC_SOURCE",
@@ -97,7 +97,7 @@
     },
     "arena": {
       "sourceId": "arena-reward-cache",
-      "classification": "BLOCKED_BY_REPLACEMENT_REWARD_POLICY",
+      "classification": "READY_FOR_IMPLEMENTATION",
       "legacySourceFiles": [
         "expansion-content.js",
         "game.js",
@@ -143,19 +143,20 @@
       ],
       "slotPolicy": "one stored arena_reward chest per Arena state via rewardSpawned",
       "selectionRequired": false,
-      "emptyPoolBehavior": "no reward chest is spawned; opening a stale empty stored cache grants baseline 60 gold",
+      "emptyPoolBehavior": "pre-spawn empty pool gives NO_REWARD; canonical stored reward empty grants 60 base gold; stale client/cache binding is rejected",
       "fullSlotsBehavior": "offered relic may enter the global replacement UI after selection",
       "replacementBehavior": "CANONICAL_GLOBAL_REPLACEMENT_TRANSACTION",
       "dependencyStatus": {
         "canonicalRunModifierState": "RESOLVED",
         "extraRelicChoicesProjection": "RESOLVED",
         "globalRelicReplacementTransaction": "RESOLVED",
-        "replacementRewardFallback": "OPEN"
+        "emptyPoolPolicy": "RESOLVED",
+        "staleRewardPolicy": "RESOLVED",
+        "noLegalReplacementFallback": "RESOLVED",
+        "replacementRewardFallback": "RESOLVED"
       },
-      "serverCanIssueExactly": false,
-      "exactIssuanceBlockers": [
-        "empty pool and stale empty stored-cache 60 gold replacement reward fallback remains outside this phase"
-      ],
+      "serverCanIssueExactly": true,
+      "exactIssuanceBlockers": [],
       "boundedClientAttestationRequired": {
         "required": true,
         "trusted": [

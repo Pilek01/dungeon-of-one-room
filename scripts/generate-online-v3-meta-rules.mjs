@@ -152,6 +152,7 @@ const GENERATED_FILES = Object.freeze([
   "special-relic-source-audit.generated.json",
   "deferred-special-relic-spec.generated.json",
   "vault-arena-relic-classification.generated.json",
+  "relic-reward-fallback-policy.generated.json",
   "room-reward-bounds.generated.json",
   "chest-reward-bounds.generated.json"
 ]);
@@ -1025,9 +1026,9 @@ function buildRegularRelicOfferCanonicalData(records, textByFile) {
     ],
     selectionPolicy: "existing selectRegularRelic; choose one canonical choice",
     baselineSkipPolicy: "optional draft skip remains deferred with endpoint integration",
-    emptyPoolBehavior: "UNRESOLVED_EMPTY_RELIC_POOL",
+    emptyPoolBehavior: "NO_REWARD; canonical reward slot consumed once",
     fullPoolBehavior: "CANONICAL_REPLACEMENT_TRANSACTION",
-    staleStoredOfferFallback: "50 gold local safeguard; BLOCKED_BY_REPLACEMENT_REWARD_POLICY",
+    staleStoredOfferFallback: "canonical stored reward empty: 50 base gold; stale client/cache binding: REJECT with ONLINE_V3_SECURITY_DIVERGENCE",
     publicChoiceFields,
     publicPayloadTargetBytes: 4096
   };
@@ -1100,8 +1101,8 @@ function buildRegularRelicOfferCanonicalData(records, textByFile) {
       pityPolicy: otterOfferPolicy.pityPolicy,
       slotPolicy: "one RoomRewardEnvelopeV3 relic_offer slot bound to the Otter directive",
       selectionPolicy: "existing selectRegularRelic; opaque offerId and choiceId only",
-      emptyPoolBehavior: "UNRESOLVED_EMPTY_RELIC_POOL",
-      replacementBehavior: "canonical global replacement; 50 gold stale-local-offer safeguard is BLOCKED_BY_REPLACEMENT_REWARD_POLICY",
+      emptyPoolBehavior: "NO_REWARD before offer/chest creation; canonical slot consumed once",
+      replacementBehavior: "canonical global replacement; canonical stored reward empty grants 50 base gold; stale client cache is rejected",
       serverCanIssueExactly: true,
       implementedInThisPhase: true,
       deferredReason: null,
@@ -1127,18 +1128,18 @@ function buildRegularRelicOfferCanonicalData(records, textByFile) {
       pityPolicy: { classification: "NONE" },
       slotPolicy: "one stored arena_reward chest",
       selectionPolicy: "choose one or skip",
-      emptyPoolBehavior: "chest is not spawned; a stale opened empty stored cache grants 60 gold",
-      replacementBehavior: "full-slot legal draft selections enter global relicSwapPending/legendarySwapPending flow",
-      serverCanIssueExactly: false,
+      emptyPoolBehavior: "pre-spawn empty pool gives NO_REWARD; canonical stored reward empty grants 60 base gold; stale client cache is rejected",
+      replacementBehavior: "full-slot legal selections use canonical replacement; cancel discards incoming; no legal replacement rejects without fallback",
+      serverCanIssueExactly: true,
       implementedInThisPhase: false,
-      deferredReason: "BLOCKED_BY_REPLACEMENT_REWARD_POLICY",
+      deferredReason: "READY_FOR_IMPLEMENTATION",
       sourceEvidence: [
         "expansion-content.js:ROOM_TYPES.arena.minDepth=40",
         "game.js:ARENA_WAVE_COUNT=2 and checkRoomClearBonus",
         "game.js:spawnArenaRewardChest stores 3 + extraRelicChoices rare+ IDs",
         "game.js:openStoredRelicChest grants 60 gold only for an empty stored cache",
         "game.js:chooseRelic enters global replacement state when acquisition cannot fit",
-        "Phase 3B2C2 resolves canonical global replacement while the empty stored-cache fallback remains open"
+        "Phase 3B2C3A resolves empty-pool, canonical stored-empty, stale-state, cancellation, and no-legal-replacement behavior"
       ]
     },
     {
@@ -1411,7 +1412,7 @@ function buildRegularRelicOfferCanonicalData(records, textByFile) {
     }
   }
   const vaultArenaClassification = {
-    phase: "3B2B2B2",
+    phase: "3B2C3A",
     vault: {
       sourceId: "vault-standard-chest",
       classification: "NOT_AN_ACTIVE_RELIC_SOURCE",
@@ -1429,7 +1430,7 @@ function buildRegularRelicOfferCanonicalData(records, textByFile) {
     },
     arena: {
       sourceId: "arena-reward-cache",
-      classification: "BLOCKED_BY_REPLACEMENT_REWARD_POLICY",
+      classification: "READY_FOR_IMPLEMENTATION",
       legacySourceFiles: ["expansion-content.js", "game.js", "relic-data.js", "relic-runtime.js"],
       legacyFunctionOrSymbol: "ROOM_TYPES.arena/ARENA_WAVE_COUNT/checkRoomClearBonus/spawnArenaRewardChest/openStoredRelicChest/chooseRelic",
       trigger: "issued non-boss Blood Arena room reaches zero enemies after its second wave",
@@ -1465,19 +1466,20 @@ function buildRegularRelicOfferCanonicalData(records, textByFile) {
       ],
       slotPolicy: "one stored arena_reward chest per Arena state via rewardSpawned",
       selectionRequired: false,
-      emptyPoolBehavior: "no reward chest is spawned; opening a stale empty stored cache grants baseline 60 gold",
+      emptyPoolBehavior: "pre-spawn empty pool gives NO_REWARD; canonical stored reward empty grants 60 base gold; stale client/cache binding is rejected",
       fullSlotsBehavior: "offered relic may enter the global replacement UI after selection",
       replacementBehavior: "CANONICAL_GLOBAL_REPLACEMENT_TRANSACTION",
       dependencyStatus: {
         canonicalRunModifierState: "RESOLVED",
         extraRelicChoicesProjection: "RESOLVED",
         globalRelicReplacementTransaction: "RESOLVED",
-        replacementRewardFallback: "OPEN"
+        emptyPoolPolicy: "RESOLVED",
+        staleRewardPolicy: "RESOLVED",
+        noLegalReplacementFallback: "RESOLVED",
+        replacementRewardFallback: "RESOLVED"
       },
-      serverCanIssueExactly: false,
-      exactIssuanceBlockers: [
-        "empty pool and stale empty stored-cache 60 gold replacement reward fallback remains outside this phase"
-      ],
+      serverCanIssueExactly: true,
+      exactIssuanceBlockers: [],
       boundedClientAttestationRequired: {
         required: true,
         trusted: [
@@ -1596,7 +1598,7 @@ function buildRegularRelicOfferCanonicalData(records, textByFile) {
           "relic-offer-offer-id",
           "relic-offer-choice-id"
         ],
-        emptyPoolBehavior: "UNRESOLVED_EMPTY_RELIC_POOL",
+        emptyPoolBehavior: "NO_REWARD; canonical reward slot consumed once",
         fullPoolBehavior: "CANONICAL_REPLACEMENT_TRANSACTION",
         publicChoiceFields,
         publicPayloadTargetBytes: 2048
@@ -2413,18 +2415,31 @@ function buildCanonicalData(records, textByFile) {
       sourceId,
       legacySourceFile: "game.js",
       legacyFunctionOrConstant: symbol,
-      authorityClass: "HEURISTIC_ONLY",
-      calculationInputs: ["local offer resolution", "canonicalBuild"],
-      serverKnownInputs: ["directive.roomType", "canonicalBuild"],
-      clientAttestedInputs: ["fallback occurred"],
+      authorityClass: ["arena-cache-empty", "otter-crimson-empty"].includes(sourceId)
+        ? "SERVER_DERIVED"
+        : "HEURISTIC_ONLY",
+      calculationInputs: ["canonical reward slot", "canonical offer resolution", "canonicalBuild"],
+      serverKnownInputs: [
+        "directive.roomType",
+        "canonicalBuild",
+        "canonical reward slot",
+        "canonical stored choices"
+      ],
+      clientAttestedInputs: ["arena-cache-empty", "otter-crimson-empty"].includes(sourceId)
+        ? []
+        : ["fallback occurred"],
       maximumPerRoomKnown: true,
       maximumPerRunKnown: true,
       stackingRules: "at most one special cache/chest",
       roundingRules: "grantGold Math.round",
       appliedOrder: grantOrder,
       eligibleRoomTypes,
-      generatedDataRef: "room-reward-bounds.generated.json#deferredFallbacks",
-      notes: `${notes}; not awarded in Phase 3B2A because offer state is deferred.`
+      generatedDataRef: ["arena-cache-empty", "otter-crimson-empty"].includes(sourceId)
+        ? "relic-reward-fallback-policy.generated.json"
+        : "room-reward-bounds.generated.json#deferredFallbacks",
+      notes: ["arena-cache-empty", "otter-crimson-empty"].includes(sourceId)
+        ? `${notes}; server-derived in Phase 3B2C3A only from a canonical stored reward.`
+        : `${notes}; not awarded in Phase 3B2A because offer state is deferred.`
     })),
     goldSourceEntry({
       sourceId: "void-reaper-crit-kill",
@@ -2733,8 +2748,97 @@ function buildCanonicalData(records, textByFile) {
     schemaVersion: 3,
     rulesetId: RULESET_ID,
     sourceCommit,
-    purpose: "Phase 3B1 room progression, Phase 3B2A gold, Phase 3B2B1 starting relics, Phase 3B2B2A standard relic offers, Phase 3B2B2B1 Otter relic rewards, Phase 3B2B2B2 Vault/Arena source classifications, Phase 3B2C1 canonical run modifiers, and Phase 3B2C2 canonical relic replacement transactions",
+    purpose: "Phase 3B1 room progression, Phase 3B2A gold, Phase 3B2B1 starting relics, Phase 3B2B2A standard relic offers, Phase 3B2B2B1 Otter relic rewards, Phase 3B2B2B2 Vault/Arena source classifications, Phase 3B2C1 canonical run modifiers, Phase 3B2C2 canonical relic replacement transactions, and Phase 3B2C3A canonical relic reward fallbacks",
     sources: records
+  };
+  const fallbackSource = textByFile.get("game.js");
+  for (const marker of [
+    "if (choices.length === 0) return;",
+    "if (choices.length <= 0) return false;",
+    "const fallbackGold = grantGold(60);",
+    "const fallbackGold = grantGold(50);",
+    "const scaled = applyMultiplier",
+    "state.runMods.goldMultiplier * getPactGoldGainMultiplier()"
+  ]) {
+    if (!fallbackSource.includes(marker)) {
+      throw new Error(`SOURCE_SYMBOL_MISSING:game.js:${marker}`);
+    }
+  }
+  const relicRewardFallbackPolicy = {
+    schemaVersion: 1,
+    rulesetId: RULESET_ID,
+    sourceCommit,
+    sources: sourceRefs(records, ["game.js", "relic-data.js", "relic-runtime.js"]),
+    canonicalData: {
+      policyVersion: "v08-relic-reward-fallback-1",
+      securityDivergence: "ONLINE_V3_SECURITY_DIVERGENCE",
+      historyLimit: 64,
+      sources: [
+        {
+          sourceType: "regular_relic",
+          sourceId: "warden-standard-drop",
+          availabilityMode: "pre_offer",
+          emptyCandidatePoolOutcome: "NO_REWARD",
+          storedRewardEmptyPolicyId: null
+        },
+        {
+          sourceType: "regular_relic",
+          sourceId: "otter-crimson-chest",
+          availabilityMode: "pre_offer",
+          emptyCandidatePoolOutcome: "NO_REWARD",
+          storedRewardEmptyPolicyId: "OTTER_CRIMSON_STORED_EMPTY_GOLD_V08"
+        },
+        {
+          sourceType: "stored_relic_chest",
+          sourceId: "otter-crimson-chest",
+          availabilityMode: "stored_reward",
+          emptyCandidatePoolOutcome: "NO_REWARD",
+          storedRewardEmptyPolicyId: "OTTER_CRIMSON_STORED_EMPTY_GOLD_V08"
+        },
+        {
+          sourceType: "stored_relic_chest",
+          sourceId: "arena-reward-cache",
+          availabilityMode: "future_arena_spec",
+          emptyCandidatePoolOutcome: "NO_REWARD",
+          storedRewardEmptyPolicyId: "ARENA_STORED_CACHE_EMPTY_GOLD_V08"
+        }
+      ],
+      fallbackPolicies: [
+        {
+          fallbackPolicyId: "ARENA_STORED_CACHE_EMPTY_GOLD_V08",
+          sourceType: "stored_relic_chest",
+          sourceId: "arena-reward-cache",
+          reason: "STORED_REWARD_EMPTY",
+          awardType: "GOLD",
+          goldSourceId: "arena-cache-empty",
+          baseAmount: 60,
+          applyGoldModifiers: true,
+          consumesRewardSlot: true,
+          consumesOffer: true,
+          consumesTransaction: true
+        },
+        {
+          fallbackPolicyId: "OTTER_CRIMSON_STORED_EMPTY_GOLD_V08",
+          sourceType: "stored_relic_chest",
+          sourceId: "otter-crimson-chest",
+          reason: "STORED_REWARD_EMPTY",
+          awardType: "GOLD",
+          goldSourceId: "otter-crimson-empty",
+          baseAmount: 50,
+          applyGoldModifiers: true,
+          consumesRewardSlot: true,
+          consumesOffer: true,
+          consumesTransaction: true
+        }
+      ],
+      rejectedReasons: [
+        "STORED_REWARD_STALE",
+        "OFFER_EXPIRED",
+        "SOURCE_UNAVAILABLE",
+        "NO_LEGAL_REPLACEMENT"
+      ],
+      noRewardReason: "EMPTY_CANDIDATE_POOL"
+    }
   };
   const relicData = buildRelicCanonicalData(records, textByFile);
   const regularRelicOfferData = buildRegularRelicOfferCanonicalData(records, textByFile);
@@ -2748,6 +2852,7 @@ function buildCanonicalData(records, textByFile) {
     ["gold-modifiers.generated.json", goldModifiersData],
     ["room-reward-bounds.generated.json", roomRewardBoundsData],
     ["chest-reward-bounds.generated.json", chestRewardBoundsData],
+    ["relic-reward-fallback-policy.generated.json", relicRewardFallbackPolicy],
     ...buildRunModifierCanonicalData(records, textByFile),
     ...relicData,
     ...regularRelicOfferData

@@ -84,15 +84,15 @@ test("Vault active outcome and relic-offer call graphs are closed and guarded", 
   assert.match(generatorSource, /OPEN_CHEST_DISPATCH/u);
 });
 
-test("Arena global replacement is resolved but replacement reward fallback remains blocked", () => {
+test("Arena dependencies are resolved without implementing its offer", () => {
   const arena = source("arena-reward-cache");
   assert.equal(arena.sourceCategory, "special_room_reward");
-  assert.equal(arena.deferredReason, "BLOCKED_BY_REPLACEMENT_REWARD_POLICY");
-  assert.equal(arena.serverCanIssueExactly, false);
-  assert.equal(deferred("arena-reward-cache").status, "BLOCKED_BY_REPLACEMENT_REWARD_POLICY");
+  assert.equal(arena.deferredReason, "READY_FOR_IMPLEMENTATION");
+  assert.equal(arena.serverCanIssueExactly, true);
+  assert.equal(deferred("arena-reward-cache").status, "READY_FOR_IMPLEMENTATION");
   assert.equal(
     classificationDocument.canonicalData.arena.classification,
-    "BLOCKED_BY_REPLACEMENT_REWARD_POLICY"
+    "READY_FOR_IMPLEMENTATION"
   );
 });
 
@@ -112,7 +112,7 @@ test("Arena lifecycle, eligibility, rarity, count and fallback evidence stays ex
   assert.match(functionSlice(gameSource, "openStoredRelicChest"), /grantGold\(60\)/u);
 });
 
-test("Arena exact issuance blockers are present and no synthetic policy exists", async () => {
+test("Arena fallback dependencies are resolved and no Arena offer policy exists", async () => {
   assert.match(metaStateSource, /runModifiers:\s*createEmptyRunModifierLedgerV08/u);
   assert.deepEqual(
     classificationDocument.canonicalData.arena.dependencyStatus,
@@ -120,9 +120,13 @@ test("Arena exact issuance blockers are present and no synthetic policy exists",
       canonicalRunModifierState: "RESOLVED",
       extraRelicChoicesProjection: "RESOLVED",
       globalRelicReplacementTransaction: "RESOLVED",
-      replacementRewardFallback: "OPEN"
+      emptyPoolPolicy: "RESOLVED",
+      staleRewardPolicy: "RESOLVED",
+      noLegalReplacementFallback: "RESOLVED",
+      replacementRewardFallback: "RESOLVED"
     }
   );
+  assert.deepEqual(classificationDocument.canonicalData.arena.exactIssuanceBlockers, []);
   const draft = functionSlice(gameSource, "buildRelicDraftChoices");
   const choose = functionSlice(gameSource, "chooseRelic");
   assert.doesNotMatch(draft, /canAcquireRelic|slotLimit|MAX_RELICS/u);

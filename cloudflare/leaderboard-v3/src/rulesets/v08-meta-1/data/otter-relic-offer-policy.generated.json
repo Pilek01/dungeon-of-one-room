@@ -128,9 +128,9 @@
     ],
     "selectionPolicy": "existing selectRegularRelic; choose one canonical choice",
     "baselineSkipPolicy": "optional draft skip remains deferred with endpoint integration",
-    "emptyPoolBehavior": "UNRESOLVED_EMPTY_RELIC_POOL",
+    "emptyPoolBehavior": "NO_REWARD; canonical reward slot consumed once",
     "fullPoolBehavior": "CANONICAL_REPLACEMENT_TRANSACTION",
-    "staleStoredOfferFallback": "50 gold local safeguard; BLOCKED_BY_REPLACEMENT_REWARD_POLICY",
+    "staleStoredOfferFallback": "canonical stored reward empty: 50 base gold; stale client/cache binding: REJECT with ONLINE_V3_SECURITY_DIVERGENCE",
     "publicChoiceFields": [
       "choiceId",
       "relicId",

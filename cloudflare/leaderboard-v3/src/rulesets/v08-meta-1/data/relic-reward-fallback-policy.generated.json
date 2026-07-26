@@ -1,0 +1,92 @@
+{
+  "schemaVersion": 1,
+  "rulesetId": "v08-meta-1",
+  "sourceCommit": "f98820c99066d810169e100beb23a54a332734bd",
+  "sources": [
+    {
+      "file": "game.js",
+      "byteLength": 1292796,
+      "sha256": "a7d436f8cdde618e7bab802322a658d2055f201950d9ae7b4598269feff3df00"
+    },
+    {
+      "file": "relic-data.js",
+      "byteLength": 9135,
+      "sha256": "fa4cdd27c3b3b9d2b61df3bc346a4123e9d3f70f58afdc16cd626411d6bdfa59"
+    },
+    {
+      "file": "relic-runtime.js",
+      "byteLength": 9127,
+      "sha256": "87e02a9a1519aa5c9c621e23fabe5400cfda8274c1aa39c50cd471478e642d97"
+    }
+  ],
+  "canonicalData": {
+    "policyVersion": "v08-relic-reward-fallback-1",
+    "securityDivergence": "ONLINE_V3_SECURITY_DIVERGENCE",
+    "historyLimit": 64,
+    "sources": [
+      {
+        "sourceType": "regular_relic",
+        "sourceId": "warden-standard-drop",
+        "availabilityMode": "pre_offer",
+        "emptyCandidatePoolOutcome": "NO_REWARD",
+        "storedRewardEmptyPolicyId": null
+      },
+      {
+        "sourceType": "regular_relic",
+        "sourceId": "otter-crimson-chest",
+        "availabilityMode": "pre_offer",
+        "emptyCandidatePoolOutcome": "NO_REWARD",
+        "storedRewardEmptyPolicyId": "OTTER_CRIMSON_STORED_EMPTY_GOLD_V08"
+      },
+      {
+        "sourceType": "stored_relic_chest",
+        "sourceId": "otter-crimson-chest",
+        "availabilityMode": "stored_reward",
+        "emptyCandidatePoolOutcome": "NO_REWARD",
+        "storedRewardEmptyPolicyId": "OTTER_CRIMSON_STORED_EMPTY_GOLD_V08"
+      },
+      {
+        "sourceType": "stored_relic_chest",
+        "sourceId": "arena-reward-cache",
+        "availabilityMode": "future_arena_spec",
+        "emptyCandidatePoolOutcome": "NO_REWARD",
+        "storedRewardEmptyPolicyId": "ARENA_STORED_CACHE_EMPTY_GOLD_V08"
+      }
+    ],
+    "fallbackPolicies": [
+      {
+        "fallbackPolicyId": "ARENA_STORED_CACHE_EMPTY_GOLD_V08",
+        "sourceType": "stored_relic_chest",
+        "sourceId": "arena-reward-cache",
+        "reason": "STORED_REWARD_EMPTY",
+        "awardType": "GOLD",
+        "goldSourceId": "arena-cache-empty",
+        "baseAmount": 60,
+        "applyGoldModifiers": true,
+        "consumesRewardSlot": true,
+        "consumesOffer": true,
+        "consumesTransaction": true
+      },
+      {
+        "fallbackPolicyId": "OTTER_CRIMSON_STORED_EMPTY_GOLD_V08",
+        "sourceType": "stored_relic_chest",
+        "sourceId": "otter-crimson-chest",
+        "reason": "STORED_REWARD_EMPTY",
+        "awardType": "GOLD",
+        "goldSourceId": "otter-crimson-empty",
+        "baseAmount": 50,
+        "applyGoldModifiers": true,
+        "consumesRewardSlot": true,
+        "consumesOffer": true,
+        "consumesTransaction": true
+      }
+    ],
+    "rejectedReasons": [
+      "STORED_REWARD_STALE",
+      "OFFER_EXPIRED",
+      "SOURCE_UNAVAILABLE",
+      "NO_LEGAL_REPLACEMENT"
+    ],
+    "noRewardReason": "EMPTY_CANDIDATE_POOL"
+  }
+}

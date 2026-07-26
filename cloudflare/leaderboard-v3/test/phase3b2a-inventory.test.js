@@ -102,10 +102,13 @@ test("deferred offers and transactions are inventory-only", () => {
     "merchant-buyback",
     "merchant-spend",
     "crossroads-power-empty",
-    "crossroads-mercy-avarice",
-    "arena-cache-empty",
-    "otter-crimson-empty"
+    "crossroads-mercy-avarice"
   ]) {
     assert.match(byId.get(id).notes, /deferred|not implemented|Inventory only/iu);
+  }
+  for (const id of ["arena-cache-empty", "otter-crimson-empty"]) {
+    assert.equal(byId.get(id).authorityClass, "SERVER_DERIVED");
+    assert.deepEqual(byId.get(id).clientAttestedInputs, []);
+    assert.match(byId.get(id).notes, /Phase 3B2C3A|canonical stored reward/iu);
   }
 });

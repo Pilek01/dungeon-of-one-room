@@ -150,6 +150,8 @@ function relicOfferSlots(directive, envelopeId) {
     sourceType: sourcePolicy.sourceType,
     sourceId: sourcePolicy.implementedSourceId || sourcePolicy.sourceId,
     offerPolicyRef,
+    availabilityMode: "pre_offer",
+    canonicalStoredChoiceIds: null,
     consumed: false,
     offerId: null,
     resolution: null
@@ -295,8 +297,30 @@ export function assertRoomRewardEnvelopeV3(envelope) {
     if (slot.offerId !== null && !String(slot.offerId || "").trim()) {
       throw new TypeError("REWARD_SLOT_INVALID:offerId");
     }
-    if (slot.resolution !== null && !["offer_issued", "no_drop"].includes(slot.resolution)) {
+    if (
+      slot.resolution !== null &&
+      ![
+        "offer_issued",
+        "no_drop",
+        "selection_pending",
+        "replacement_committed",
+        "replacement_cancelled",
+        "fallback_awarded",
+        "no_reward"
+      ].includes(slot.resolution)
+    ) {
       throw new TypeError("REWARD_SLOT_INVALID:resolution");
+    }
+    if (
+      !["pre_offer", "stored_reward", "future_arena_spec"].includes(slot.availabilityMode)
+    ) {
+      throw new TypeError("REWARD_SLOT_INVALID:availabilityMode");
+    }
+    if (
+      slot.availabilityMode === "stored_reward" &&
+      !Array.isArray(slot.canonicalStoredChoiceIds)
+    ) {
+      throw new TypeError("REWARD_SLOT_INVALID:canonicalStoredChoiceIds");
     }
   }
   if (typeof envelope.consumed !== "boolean") throw new TypeError("REWARD_ENVELOPE_INVALID:consumed");

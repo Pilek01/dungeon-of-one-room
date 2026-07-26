@@ -67,10 +67,10 @@
       "rewardForEnemy(enemy)"
     ],
     "authorityClasses": {
-      "SERVER_DERIVED": 9,
+      "SERVER_DERIVED": 11,
       "SERVER_ISSUED": 0,
       "BOUNDED_CLIENT_ATTESTED": 10,
-      "HEURISTIC_ONLY": 6,
+      "HEURISTIC_ONLY": 4,
       "CLIENT_ONLY": 1
     },
     "goldSources": [
@@ -78,18 +78,19 @@
         "sourceId": "arena-cache-empty",
         "legacySourceFile": "game.js",
         "legacyFunctionOrConstant": "openStoredRelicChest grantGold(60)",
-        "authorityClass": "HEURISTIC_ONLY",
+        "authorityClass": "SERVER_DERIVED",
         "calculationInputs": [
-          "local offer resolution",
+          "canonical reward slot",
+          "canonical offer resolution",
           "canonicalBuild"
         ],
         "serverKnownInputs": [
           "directive.roomType",
-          "canonicalBuild"
+          "canonicalBuild",
+          "canonical reward slot",
+          "canonical stored choices"
         ],
-        "clientAttestedInputs": [
-          "fallback occurred"
-        ],
+        "clientAttestedInputs": [],
         "maximumPerRoomKnown": true,
         "maximumPerRunKnown": true,
         "stackingRules": "at most one special cache/chest",
@@ -106,8 +107,8 @@
         "eligibleRoomTypes": [
           "arena"
         ],
-        "generatedDataRef": "room-reward-bounds.generated.json#deferredFallbacks",
-        "notes": "empty generated relic cache only; not awarded in Phase 3B2A because offer state is deferred."
+        "generatedDataRef": "relic-reward-fallback-policy.generated.json",
+        "notes": "empty generated relic cache only; server-derived in Phase 3B2C3A only from a canonical stored reward."
       },
       {
         "sourceId": "boss-kill",
@@ -440,12 +441,15 @@
         "legacyFunctionOrConstant": "openCrossroadsMercyChest",
         "authorityClass": "HEURISTIC_ONLY",
         "calculationInputs": [
-          "local offer resolution",
+          "canonical reward slot",
+          "canonical offer resolution",
           "canonicalBuild"
         ],
         "serverKnownInputs": [
           "directive.roomType",
-          "canonicalBuild"
+          "canonicalBuild",
+          "canonical reward slot",
+          "canonical stored choices"
         ],
         "clientAttestedInputs": [
           "fallback occurred"
@@ -475,12 +479,15 @@
         "legacyFunctionOrConstant": "openCrossroadsPowerChest grantGold(80)",
         "authorityClass": "HEURISTIC_ONLY",
         "calculationInputs": [
-          "local offer resolution",
+          "canonical reward slot",
+          "canonical offer resolution",
           "canonicalBuild"
         ],
         "serverKnownInputs": [
           "directive.roomType",
-          "canonicalBuild"
+          "canonicalBuild",
+          "canonical reward slot",
+          "canonical stored choices"
         ],
         "clientAttestedInputs": [
           "fallback occurred"
@@ -784,18 +791,19 @@
         "sourceId": "otter-crimson-empty",
         "legacySourceFile": "game.js",
         "legacyFunctionOrConstant": "openChest otter_red grantGold(50)",
-        "authorityClass": "HEURISTIC_ONLY",
+        "authorityClass": "SERVER_DERIVED",
         "calculationInputs": [
-          "local offer resolution",
+          "canonical reward slot",
+          "canonical offer resolution",
           "canonicalBuild"
         ],
         "serverKnownInputs": [
           "directive.roomType",
-          "canonicalBuild"
+          "canonicalBuild",
+          "canonical reward slot",
+          "canonical stored choices"
         ],
-        "clientAttestedInputs": [
-          "fallback occurred"
-        ],
+        "clientAttestedInputs": [],
         "maximumPerRoomKnown": true,
         "maximumPerRunKnown": true,
         "stackingRules": "at most one special cache/chest",
@@ -812,8 +820,8 @@
         "eligibleRoomTypes": [
           "otter"
         ],
-        "generatedDataRef": "room-reward-bounds.generated.json#deferredFallbacks",
-        "notes": "empty generated relic offer only; not awarded in Phase 3B2A because offer state is deferred."
+        "generatedDataRef": "relic-reward-fallback-policy.generated.json",
+        "notes": "empty generated relic offer only; server-derived in Phase 3B2C3A only from a canonical stored reward."
       },
       {
         "sourceId": "pact-room-direct-gold",

@@ -21,6 +21,11 @@ import {
   commitRelicReplacement,
   projectPublicRelicReplacement
 } from "./relic-replacement.js";
+import {
+  commitRelicRewardFallback,
+  resolveRelicFallback,
+  resolveRelicRewardAvailability
+} from "./relic-reward-fallback.js";
 export {
   applyRelicAcquisition,
   assertCanonicalRelicBuildDigestV08,
@@ -43,6 +48,16 @@ export {
   isRelicDraftEligibleV08,
   projectPublicRelicReplacement
 } from "./relic-replacement.js";
+export {
+  RELIC_REWARD_FALLBACK_HISTORY_LIMIT,
+  RELIC_REWARD_FALLBACK_POLICY_VERSION,
+  V08_RELIC_REWARD_FALLBACK_POLICY,
+  assertRelicFallbackHistoryV08,
+  commitRelicRewardFallback,
+  projectPublicRelicFallbackReceiptV08,
+  resolveRelicFallback,
+  resolveRelicRewardAvailability
+} from "./relic-reward-fallback.js";
 export {
   assertStartingRelicOfferV08,
   issueStartingRelicOfferV08,
@@ -131,6 +146,18 @@ export function createV08Meta1Ruleset(options = {}) {
 
     projectPublicRelicReplacement(state) {
       return projectPublicRelicReplacement(state);
+    },
+
+    resolveRelicRewardAvailability(state, trustedInput) {
+      return resolveRelicRewardAvailability(state, trustedInput);
+    },
+
+    async commitRelicRewardFallback(state, request, context = {}) {
+      return commitRelicRewardFallback(
+        state,
+        request,
+        mergeContext(options, context)
+      );
     },
 
     async issueRoomDirective(state, context = {}) {

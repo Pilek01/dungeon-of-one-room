@@ -216,7 +216,7 @@ export function getOtterRelicCandidatePoolV08(state) {
 
 async function chooseRelics(state, context, tier) {
   const pool = candidatePool(state, tier);
-  if (pool.length === 0) throw new TypeError(policy.emptyPoolBehavior);
+  if (pool.length === 0) return { pool, selected: [] };
   const selected = [];
   const used = new Set();
   const offerChoiceCount = policy.offerChoiceCount +
@@ -258,7 +258,7 @@ async function chooseRelics(state, context, tier) {
 
 async function chooseOtterRelics(state, context, depth) {
   const pool = otterCandidatePool(state);
-  if (pool.length === 0) throw new TypeError(otterPolicy.emptyPoolBehavior);
+  if (pool.length === 0) return { pool, selected: [] };
   const selected = [];
   const used = new Set();
   for (let index = 0; index < otterPolicy.offerChoiceCount; index += 1) {
@@ -364,7 +364,10 @@ export async function issueRegularRelicOffer(metaState, rawRequest = {}, context
     }
     throw new TypeError("RELIC_REWARD_SLOT_ALREADY_ISSUED");
   }
-  if (binding.slot.consumed && binding.slot.resolution === "no_drop") {
+  if (
+    binding.slot.consumed &&
+    ["no_drop", "no_reward"].includes(binding.slot.resolution)
+  ) {
     return cloneMetaStateV08(metaState);
   }
   if (binding.slot.consumed) throw new TypeError("RELIC_REWARD_SLOT_ALREADY_CONSUMED");
@@ -416,6 +419,14 @@ export async function issueRegularRelicOffer(metaState, rawRequest = {}, context
     choiceIdPurpose = "otter-relic-choice-id";
   } else {
     throw new TypeError("RELIC_REWARD_SOURCE_MISMATCH");
+  }
+  if (selected.length === 0) {
+    mutableSlot.consumed = true;
+    mutableSlot.resolution = "no_reward";
+    if (binding.sourcePolicy === policy) {
+      next.relicOfferState.sourceSpecificCounters.wardenDropMissStreak = 0;
+    }
+    return next;
   }
 
   const offerId = await deriveRelicOfferOpaqueIdV08(

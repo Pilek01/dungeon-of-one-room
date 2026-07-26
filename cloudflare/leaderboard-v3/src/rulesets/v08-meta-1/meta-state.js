@@ -121,6 +121,7 @@ export function createInitialMetaStateV08(input = {}, context = {}) {
     offerSettlementHistory: [],
     pendingRelicTransaction: null,
     relicReplacementHistory: [],
+    relicFallbackHistory: [],
     relicOfferState: createRelicOfferState(),
     pendingInventory: null,
     specialRoomScheduleState: createScheduleState(input.specialRoomHistory),
@@ -180,6 +181,12 @@ export function assertMetaStateV08(state) {
     state.relicReplacementHistory.length > 64
   ) {
     throw new TypeError("META_STATE_INVALID:relicReplacementHistory");
+  }
+  if (
+    !Array.isArray(state.relicFallbackHistory) ||
+    state.relicFallbackHistory.length > 64
+  ) {
+    throw new TypeError("META_STATE_INVALID:relicFallbackHistory");
   }
   if (
     state.pendingOffer !== null &&

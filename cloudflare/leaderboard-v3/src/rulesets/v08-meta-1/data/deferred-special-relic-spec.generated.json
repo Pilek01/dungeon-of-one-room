@@ -95,21 +95,21 @@
       },
       {
         "sourceId": "arena-reward-cache",
-        "status": "BLOCKED_BY_REPLACEMENT_REWARD_POLICY",
+        "status": "READY_FOR_IMPLEMENTATION",
         "trigger": "all Blood Arena waves cleared",
         "rewardType": "special_room_reward",
         "offerChoiceCount": "3 + extraRelicChoices",
         "candidatePool": "baseline rare/epic/legendary/mythic draft-eligible relics; slot capacity is resolved only after selection",
         "rarityPolicy": "non-boss depth formula with rare+ filter and whole-pool fallback",
-        "fallback": "full-slot legal draft selections enter global relicSwapPending/legendarySwapPending flow",
-        "unresolvedDependencies": "BLOCKED_BY_REPLACEMENT_REWARD_POLICY",
+        "fallback": "full-slot legal selections use canonical replacement; cancel discards incoming; no legal replacement rejects without fallback",
+        "unresolvedDependencies": "READY_FOR_IMPLEMENTATION",
         "sourceEvidence": [
           "expansion-content.js:ROOM_TYPES.arena.minDepth=40",
           "game.js:ARENA_WAVE_COUNT=2 and checkRoomClearBonus",
           "game.js:spawnArenaRewardChest stores 3 + extraRelicChoices rare+ IDs",
           "game.js:openStoredRelicChest grants 60 gold only for an empty stored cache",
           "game.js:chooseRelic enters global replacement state when acquisition cannot fit",
-          "Phase 3B2C2 resolves canonical global replacement while the empty stored-cache fallback remains open"
+          "Phase 3B2C3A resolves empty-pool, canonical stored-empty, stale-state, cancellation, and no-legal-replacement behavior"
         ]
       },
       {

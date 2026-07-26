@@ -1,0 +1,115 @@
+export const PHASE3B2C3A_FIXTURE_FIELDS = Object.freeze([
+  "fixtureId",
+  "legacySourceEvidence",
+  "sourceType",
+  "initialMetaState",
+  "rewardEnvelope",
+  "rewardSlot",
+  "offerState",
+  "replacementState",
+  "fallbackReason",
+  "request",
+  "expectedResolution",
+  "expectedGold",
+  "expectedLedger",
+  "expectedSlotState",
+  "expectedOfferState",
+  "expectedTransactionState",
+  "expectedError",
+  "expectedRulesetHash"
+]);
+
+const definitions = [
+  ["warden-empty-pool", "regular_relic", "EMPTY_CANDIDATE_POOL", "NO_REWARD", null],
+  ["otter-empty-pool", "regular_relic", "EMPTY_CANDIDATE_POOL", "NO_REWARD", null],
+  ["arena-spec-empty-pool", "stored_relic_chest", "EMPTY_CANDIDATE_POOL", "NO_REWARD", null],
+  ["empty-before-offer", "regular_relic", "EMPTY_CANDIDATE_POOL", "NO_REWARD", null],
+  ["stored-reward-empty", "stored_relic_chest", "STORED_REWARD_EMPTY", "AWARD_FALLBACK", null],
+  ["no-canonical-candidates", "regular_relic", "EMPTY_CANDIDATE_POOL", "NO_REWARD", null],
+  ["full-slots-not-empty", "regular_relic", null, "ISSUE_RELIC_OFFER", null],
+  ["stale-revision", "regular_relic", "OFFER_EXPIRED", "REJECT", "OFFER_EXPIRED"],
+  ["stale-directive", "regular_relic", "STORED_REWARD_STALE", "REJECT", "RELIC_REWARD_DIRECTIVE_MISMATCH"],
+  ["stale-envelope", "regular_relic", "STORED_REWARD_STALE", "REJECT", "RELIC_REWARD_ENVELOPE_ID_MISMATCH"],
+  ["stale-reward-slot", "regular_relic", "STORED_REWARD_STALE", "REJECT", "RELIC_REWARD_SLOT_UNKNOWN"],
+  ["stale-offer", "regular_relic", "OFFER_EXPIRED", "REJECT", "OFFER_EXPIRED"],
+  ["stale-transaction", "relic_replacement", "OFFER_EXPIRED", "REJECT", "OFFER_EXPIRED"],
+  ["client-empty-choices", "stored_relic_chest", "STORED_REWARD_STALE", "REJECT", "RELIC_REWARD_FALLBACK_REQUEST_UNKNOWN_FIELD:choices"],
+  ["client-old-cache", "stored_relic_chest", "STORED_REWARD_STALE", "REJECT", "RELIC_REWARD_FALLBACK_REQUEST_UNKNOWN_FIELD:cache"],
+  ["different-run", "stored_relic_chest", "STORED_REWARD_STALE", "REJECT", "RELIC_REWARD_BINDING_MISMATCH"],
+  ["different-ruleset", "stored_relic_chest", "STORED_REWARD_STALE", "REJECT", "RULESET_HASH_MISMATCH"],
+  ["legal-arena-fallback", "stored_relic_chest", "STORED_REWARD_EMPTY", "AWARD_FALLBACK", null],
+  ["exact-arena-amount", "stored_relic_chest", "STORED_REWARD_EMPTY", "AWARD_FALLBACK", null],
+  ["gold-modifier-applied", "stored_relic_chest", "STORED_REWARD_EMPTY", "AWARD_FALLBACK", null],
+  ["fallback-slot-consumed", "stored_relic_chest", "STORED_REWARD_EMPTY", "AWARD_FALLBACK", null],
+  ["fallback-offer-consumed", "stored_relic_chest", "STORED_REWARD_EMPTY", "AWARD_FALLBACK", null],
+  ["fallback-transaction-consumed", "stored_relic_chest", "STORED_REWARD_EMPTY", "AWARD_FALLBACK", null],
+  ["fallback-exact-retry", "stored_relic_chest", "STORED_REWARD_EMPTY", "AWARD_FALLBACK", null],
+  ["fallback-id-mismatch", "stored_relic_chest", "STORED_REWARD_EMPTY", "REJECT", "RELIC_REWARD_FALLBACK_IDEMPOTENCY_PAYLOAD_MISMATCH"],
+  ["duplicate-fallback", "stored_relic_chest", "STORED_REWARD_EMPTY", "REJECT", "RELIC_REWARD_SLOT_ALREADY_CONSUMED"],
+  ["stale-fallback-request", "stored_relic_chest", "OFFER_EXPIRED", "REJECT", "OFFER_EXPIRED"],
+  ["fake-amount", "stored_relic_chest", "STORED_REWARD_EMPTY", "REJECT", "RELIC_REWARD_FALLBACK_REQUEST_UNKNOWN_FIELD:amount"],
+  ["fake-reason", "stored_relic_chest", "STORED_REWARD_EMPTY", "REJECT", "RELIC_REWARD_FALLBACK_REQUEST_UNKNOWN_FIELD:reason"],
+  ["fake-source-id", "stored_relic_chest", "SOURCE_UNAVAILABLE", "REJECT", "RELIC_REWARD_SOURCE_MISMATCH"],
+  ["legal-no-reward", "regular_relic", "EMPTY_CANDIDATE_POOL", "NO_REWARD", null],
+  ["no-reward-slot-consumed", "regular_relic", "EMPTY_CANDIDATE_POOL", "NO_REWARD", null],
+  ["no-reward-exact-retry", "regular_relic", "EMPTY_CANDIDATE_POOL", "NO_REWARD", null],
+  ["no-reward-reclaim", "regular_relic", "EMPTY_CANDIDATE_POOL", "REJECT", "RELIC_REWARD_SLOT_ALREADY_CONSUMED"],
+  ["no-legal-candidates", "relic_replacement", "NO_LEGAL_REPLACEMENT", "REJECT", "NO_LEGAL_REPLACEMENT"],
+  ["full-slots-legal-replacement", "relic_replacement", null, "REQUIRE_REPLACEMENT", null],
+  ["full-slots-no-replacement", "relic_replacement", "NO_LEGAL_REPLACEMENT", "REJECT", "NO_LEGAL_REPLACEMENT"],
+  ["replacement-cancel", "relic_replacement", "REWARD_CANCELLED", "NO_REWARD", null],
+  ["return-to-offer", "relic_replacement", "NO_LEGAL_REPLACEMENT", "REJECT", "NO_LEGAL_REPLACEMENT"],
+  ["reward-lost-on-cancel", "relic_replacement", "REWARD_CANCELLED", "NO_REWARD", null],
+  ["failure-before-ledger", "stored_relic_chest", "STORED_REWARD_STALE", "REJECT", "RELIC_REWARD_SOURCE_MISMATCH"],
+  ["failure-after-simulated-award", "stored_relic_chest", "STORED_REWARD_EMPTY", "REJECT", "SIMULATED_FAILURE"],
+  ["failure-before-slot", "stored_relic_chest", "STORED_REWARD_STALE", "REJECT", "RELIC_REWARD_SLOT_UNKNOWN"],
+  ["failure-after-simulated-slot", "stored_relic_chest", "STORED_REWARD_EMPTY", "REJECT", "SIMULATED_FAILURE"],
+  ["final-state-consistent", "stored_relic_chest", "STORED_REWARD_EMPTY", "AWARD_FALLBACK", null],
+  ["fallback-build-unchanged", "stored_relic_chest", "STORED_REWARD_EMPTY", "AWARD_FALLBACK", null],
+  ["fallback-meta-invariants", "stored_relic_chest", "STORED_REWARD_EMPTY", "AWARD_FALLBACK", null],
+  ["pending-fallback-round-trip", "stored_relic_chest", "STORED_REWARD_EMPTY", "AWARD_FALLBACK", null],
+  ["completed-fallback-round-trip", "stored_relic_chest", "STORED_REWARD_EMPTY", "AWARD_FALLBACK", null],
+  ["fallback-restart-determinism", "stored_relic_chest", "STORED_REWARD_EMPTY", "AWARD_FALLBACK", null],
+  ["bounded-fallback-receipts", "stored_relic_chest", "STORED_REWARD_EMPTY", "AWARD_FALLBACK", null],
+  ["fallback-state-digest", "stored_relic_chest", "STORED_REWARD_EMPTY", "AWARD_FALLBACK", null],
+  ["arena-empty-policy-resolved", "stored_relic_chest", "EMPTY_CANDIDATE_POOL", "NO_REWARD", null],
+  ["arena-stale-policy-resolved", "stored_relic_chest", "STORED_REWARD_STALE", "REJECT", "OFFER_EXPIRED"],
+  ["arena-no-replacement-resolved", "relic_replacement", "NO_LEGAL_REPLACEMENT", "REJECT", "NO_LEGAL_REPLACEMENT"],
+  ["otter-stored-empty-amount", "stored_relic_chest", "STORED_REWARD_EMPTY", "AWARD_FALLBACK", null],
+  ["warden-no-fallback-gold", "regular_relic", "EMPTY_CANDIDATE_POOL", "NO_REWARD", null],
+  ["stale-security-divergence", "stored_relic_chest", "STORED_REWARD_STALE", "REJECT", "STORED_REWARD_STALE"],
+  ["receipt-anomaly-empty", "stored_relic_chest", "STORED_REWARD_EMPTY", "AWARD_FALLBACK", null],
+  ["client-gold-total-rejected", "stored_relic_chest", "STORED_REWARD_EMPTY", "REJECT", "RELIC_REWARD_FALLBACK_REQUEST_UNKNOWN_FIELD:goldTotal"]
+];
+
+function fixture(definition) {
+  const [fixtureId, sourceType, fallbackReason, expectedResolution, expectedError] = definition;
+  return {
+    fixtureId,
+    legacySourceEvidence: [
+      "game.js:openStoredRelicChest/openChest/openRelicDraft/spawnArenaRewardChest/chooseRelic"
+    ],
+    sourceType,
+    initialMetaState: { fixtureState: fixtureId },
+    rewardEnvelope: { envelopeId: `envelope_${fixtureId}` },
+    rewardSlot: { slotId: `slot_${fixtureId}` },
+    offerState: null,
+    replacementState: null,
+    fallbackReason,
+    request: { fixtureRequest: fixtureId },
+    expectedResolution,
+    expectedGold: expectedResolution === "AWARD_FALLBACK" ? "SERVER_DERIVED" : 0,
+    expectedLedger: expectedResolution === "AWARD_FALLBACK" ? "earnedServerDerived" : "unchanged",
+    expectedSlotState: ["AWARD_FALLBACK", "NO_REWARD"].includes(expectedResolution)
+      ? "consumed"
+      : "unchanged",
+    expectedOfferState: expectedResolution === "AWARD_FALLBACK" ? "consumed_if_present" : "unchanged",
+    expectedTransactionState: expectedResolution === "AWARD_FALLBACK"
+      ? "consumed_if_present"
+      : "unchanged",
+    expectedError,
+    expectedRulesetHash: "manifest.rulesetHash"
+  };
+}
+
+export default Object.freeze(definitions.map(fixture));

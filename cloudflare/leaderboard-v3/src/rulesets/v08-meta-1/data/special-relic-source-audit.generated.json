@@ -179,8 +179,8 @@
         },
         "slotPolicy": "one RoomRewardEnvelopeV3 relic_offer slot bound to the Otter directive",
         "selectionPolicy": "existing selectRegularRelic; opaque offerId and choiceId only",
-        "emptyPoolBehavior": "UNRESOLVED_EMPTY_RELIC_POOL",
-        "replacementBehavior": "canonical global replacement; 50 gold stale-local-offer safeguard is BLOCKED_BY_REPLACEMENT_REWARD_POLICY",
+        "emptyPoolBehavior": "NO_REWARD before offer/chest creation; canonical slot consumed once",
+        "replacementBehavior": "canonical global replacement; canonical stored reward empty grants 50 base gold; stale client cache is rejected",
         "serverCanIssueExactly": true,
         "implementedInThisPhase": true,
         "deferredReason": null,
@@ -214,18 +214,18 @@
         },
         "slotPolicy": "one stored arena_reward chest",
         "selectionPolicy": "choose one or skip",
-        "emptyPoolBehavior": "chest is not spawned; a stale opened empty stored cache grants 60 gold",
-        "replacementBehavior": "full-slot legal draft selections enter global relicSwapPending/legendarySwapPending flow",
-        "serverCanIssueExactly": false,
+        "emptyPoolBehavior": "pre-spawn empty pool gives NO_REWARD; canonical stored reward empty grants 60 base gold; stale client cache is rejected",
+        "replacementBehavior": "full-slot legal selections use canonical replacement; cancel discards incoming; no legal replacement rejects without fallback",
+        "serverCanIssueExactly": true,
         "implementedInThisPhase": false,
-        "deferredReason": "BLOCKED_BY_REPLACEMENT_REWARD_POLICY",
+        "deferredReason": "READY_FOR_IMPLEMENTATION",
         "sourceEvidence": [
           "expansion-content.js:ROOM_TYPES.arena.minDepth=40",
           "game.js:ARENA_WAVE_COUNT=2 and checkRoomClearBonus",
           "game.js:spawnArenaRewardChest stores 3 + extraRelicChoices rare+ IDs",
           "game.js:openStoredRelicChest grants 60 gold only for an empty stored cache",
           "game.js:chooseRelic enters global replacement state when acquisition cannot fit",
-          "Phase 3B2C2 resolves canonical global replacement while the empty stored-cache fallback remains open"
+          "Phase 3B2C3A resolves empty-pool, canonical stored-empty, stale-state, cancellation, and no-legal-replacement behavior"
         ]
       },
       {
