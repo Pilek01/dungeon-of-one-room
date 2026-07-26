@@ -4,7 +4,7 @@ import { base64UrlDecode, base64UrlEncode } from "./digests.js";
 
 const encoder = new TextEncoder();
 const decoder = new TextDecoder();
-const TOKEN_FIELDS = Object.freeze([
+const CHECKPOINT_TOKEN_FIELDS = Object.freeze([
   "protocolVersion",
   "runId",
   "revision",
@@ -16,6 +16,34 @@ const TOKEN_FIELDS = Object.freeze([
   "issuedAt",
   "expiresAt"
 ]);
+const BOUNDARY_TOKEN_VERSION = 2;
+const BOUNDARY_KINDS = Object.freeze({
+  RUN_BOOTSTRAP: "run_bootstrap",
+  ROOM_CHECKPOINT: "room_checkpoint"
+});
+const BOUNDARY_COMMON_FIELDS = Object.freeze([
+  "tokenVersion",
+  "boundaryKind",
+  "runId",
+  "rulesetId",
+  "rulesetHash",
+  "revision",
+  "stateDigest",
+  "issuedAt",
+  "expiresAt"
+]);
+const BOUNDARY_KIND_FIELDS = Object.freeze({
+  [BOUNDARY_KINDS.RUN_BOOTSTRAP]: Object.freeze([
+    ...BOUNDARY_COMMON_FIELDS,
+    "startingOfferId",
+    "bootstrapNonce"
+  ]),
+  [BOUNDARY_KINDS.ROOM_CHECKPOINT]: Object.freeze([
+    ...BOUNDARY_COMMON_FIELDS,
+    "roomDirectiveId",
+    "roomNonce"
+  ])
+});
 
 async function importHmacKey(secret) {
   const value = String(secret || "");
@@ -31,12 +59,27 @@ async function importHmacKey(secret) {
   );
 }
 
-function requireTokenPayload(payload) {
+function hasExactFields(payload, fields) {
+  return (
+    payload &&
+    typeof payload === "object" &&
+    !Array.isArray(payload) &&
+    Object.keys(payload).sort().join("\n") === [...fields].sort().join("\n")
+  );
+}
+
+function requireTimestamps(payload, label) {
+  if (!Number.isSafeInteger(payload.issuedAt) || !Number.isSafeInteger(payload.expiresAt)) {
+    throw new TypeError(`${label} timestamps are invalid.`);
+  }
+  if (payload.expiresAt <= payload.issuedAt) {
+    throw new TypeError(`${label} expiration is invalid.`);
+  }
+}
+
+function requireCheckpointTokenPayload(payload) {
   if (
-    !payload ||
-    typeof payload !== "object" ||
-    Array.isArray(payload) ||
-    Object.keys(payload).sort().join("\n") !== [...TOKEN_FIELDS].sort().join("\n")
+    !hasExactFields(payload, CHECKPOINT_TOKEN_FIELDS)
   ) {
     throw new TypeError("Checkpoint token fields are invalid.");
   }
@@ -57,22 +100,46 @@ function requireTokenPayload(payload) {
   if (!Number.isSafeInteger(payload.revision) || payload.revision < 0) {
     throw new TypeError("Checkpoint token revision is invalid.");
   }
-  if (!Number.isSafeInteger(payload.issuedAt) || !Number.isSafeInteger(payload.expiresAt)) {
-    throw new TypeError("Checkpoint token timestamps are invalid.");
-  }
-  if (payload.expiresAt <= payload.issuedAt) {
-    throw new TypeError("Checkpoint token expiration is invalid.");
-  }
+  requireTimestamps(payload, "Checkpoint token");
   return payload;
 }
 
-export function decodeCheckpointToken(token) {
+function requireBoundaryTokenPayload(payload) {
+  const fields = BOUNDARY_KIND_FIELDS[payload?.boundaryKind];
+  if (payload?.tokenVersion !== BOUNDARY_TOKEN_VERSION || !fields) {
+    throw new TypeError("Boundary token version or kind is invalid.");
+  }
+  if (!hasExactFields(payload, fields)) {
+    throw new TypeError("Boundary token fields are invalid.");
+  }
+  for (const field of [
+    "boundaryKind",
+    "runId",
+    "rulesetId",
+    "rulesetHash",
+    "stateDigest",
+    ...(payload.boundaryKind === BOUNDARY_KINDS.RUN_BOOTSTRAP
+      ? ["startingOfferId", "bootstrapNonce"]
+      : ["roomDirectiveId", "roomNonce"])
+  ]) {
+    if (typeof payload[field] !== "string" || !payload[field]) {
+      throw new TypeError(`Boundary token requires ${field}.`);
+    }
+  }
+  if (!Number.isSafeInteger(payload.revision) || payload.revision < 0) {
+    throw new TypeError("Boundary token revision is invalid.");
+  }
+  requireTimestamps(payload, "Boundary token");
+  return payload;
+}
+
+function decodeToken(token, requirePayload) {
   const parts = String(token || "").split(".");
   if (parts.length !== 2 || !parts[0] || !parts[1]) {
-    throw new TypeError("Checkpoint token format is invalid.");
+    throw new TypeError("Boundary token format is invalid.");
   }
   const payloadText = decoder.decode(base64UrlDecode(parts[0]));
-  const payload = requireTokenPayload(assertCanonicalJson(payloadText));
+  const payload = requirePayload(assertCanonicalJson(payloadText));
   return {
     payload,
     payloadSegment: parts[0],
@@ -80,16 +147,31 @@ export function decodeCheckpointToken(token) {
   };
 }
 
-export async function signCheckpointToken(payload, secret) {
-  const canonicalPayload = canonicalJson(requireTokenPayload({ ...payload }));
+export function decodeCheckpointToken(token) {
+  return decodeToken(token, requireCheckpointTokenPayload);
+}
+
+export function decodeBoundaryToken(token) {
+  return decodeToken(token, requireBoundaryTokenPayload);
+}
+
+async function signToken(payload, secret, requirePayload) {
+  const canonicalPayload = canonicalJson(requirePayload({ ...payload }));
   const payloadSegment = base64UrlEncode(encoder.encode(canonicalPayload));
   const key = await importHmacKey(secret);
   const signature = await crypto.subtle.sign("HMAC", key, encoder.encode(payloadSegment));
   return `${payloadSegment}.${base64UrlEncode(signature)}`;
 }
 
-export async function verifyCheckpointToken(token, secret, expected = {}) {
-  const decoded = decodeCheckpointToken(token);
+export async function signCheckpointToken(payload, secret) {
+  return signToken(payload, secret, requireCheckpointTokenPayload);
+}
+
+export async function signBoundaryToken(payload, secret) {
+  return signToken(payload, secret, requireBoundaryTokenPayload);
+}
+
+async function verifySignedToken(decoded, secret, label) {
   const key = await importHmacKey(secret);
   const signature = base64UrlDecode(decoded.signatureSegment);
   const validSignature = await crypto.subtle.verify(
@@ -98,9 +180,16 @@ export async function verifyCheckpointToken(token, secret, expected = {}) {
     signature,
     encoder.encode(decoded.payloadSegment)
   );
-  if (!validSignature) throw new TypeError("Checkpoint token signature is invalid.");
+  if (!validSignature) throw new TypeError(`${label} signature is invalid.`);
+  return decoded.payload;
+}
 
-  const payload = decoded.payload;
+export async function verifyCheckpointToken(token, secret, expected = {}) {
+  const payload = await verifySignedToken(
+    decodeCheckpointToken(token),
+    secret,
+    "Checkpoint token"
+  );
   const now = Number.isSafeInteger(expected.now) ? expected.now : Date.now();
   if (payload.protocolVersion !== (expected.protocolVersion || PROTOCOL_VERSION)) {
     throw new TypeError("Checkpoint token protocol does not match.");
@@ -124,3 +213,42 @@ export async function verifyCheckpointToken(token, secret, expected = {}) {
   }
   return payload;
 }
+
+export async function verifyBoundaryToken(token, secret, expected = {}) {
+  const payload = await verifySignedToken(
+    decodeBoundaryToken(token),
+    secret,
+    "Boundary token"
+  );
+  const now = Number.isSafeInteger(expected.now) ? expected.now : Date.now();
+  if (!expected.allowExpired && payload.expiresAt <= now) {
+    throw new TypeError("Boundary token is expired.");
+  }
+  if (expected.boundaryKind && payload.boundaryKind !== expected.boundaryKind) {
+    throw new TypeError(
+      `TOKEN_BOUNDARY_KIND_MISMATCH:${expected.boundaryKind}:${payload.boundaryKind}`
+    );
+  }
+  const equalityChecks = {
+    runId: expected.runId,
+    rulesetId: expected.rulesetId,
+    rulesetHash: expected.rulesetHash,
+    revision: expected.revision,
+    stateDigest: expected.stateDigest,
+    startingOfferId: expected.startingOfferId,
+    bootstrapNonce: expected.bootstrapNonce,
+    roomDirectiveId: expected.roomDirectiveId,
+    roomNonce: expected.roomNonce
+  };
+  for (const [field, expectedValue] of Object.entries(equalityChecks)) {
+    if (expectedValue !== undefined && payload[field] !== expectedValue) {
+      throw new TypeError(`Boundary token ${field} does not match.`);
+    }
+  }
+  return payload;
+}
+
+export {
+  BOUNDARY_KINDS,
+  BOUNDARY_TOKEN_VERSION
+};
