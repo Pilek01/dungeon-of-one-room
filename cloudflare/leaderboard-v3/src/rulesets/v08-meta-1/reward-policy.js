@@ -1,3 +1,4 @@
+import arenaRelicOfferPolicyDocument from "./data/arena-relic-offer-policy.generated.json" with { type: "json" };
 import chestBoundsDocument from "./data/chest-reward-bounds.generated.json" with { type: "json" };
 import otterRelicOfferPolicyDocument from "./data/otter-relic-offer-policy.generated.json" with { type: "json" };
 import regularRelicOfferPolicyDocument from "./data/regular-relic-offer-policy.generated.json" with { type: "json" };
@@ -11,6 +12,7 @@ import {
 import { assertCanonicalRelicBuildDigestV08 } from "./relic-policy.js";
 import { assertCanonicalRunModifierDigestV08 } from "./run-modifiers.js";
 
+const arenaRelicOfferPolicy = arenaRelicOfferPolicyDocument.canonicalData;
 const chestBounds = chestBoundsDocument.canonicalData;
 const otterRelicOfferPolicy = otterRelicOfferPolicyDocument.canonicalData;
 const regularRelicOfferPolicy = regularRelicOfferPolicyDocument.canonicalData;
@@ -22,7 +24,7 @@ export const REWARD_POLICY_SPEC = Object.freeze({
   authority: "SERVER_ISSUED",
   claimPolicyVersion: rewardBounds.policyVersion,
   selectionBinding: "runId+rulesetHash+revision+roomDirectiveId+roomNonce+envelopeId",
-  implementationStatus: "phase-3b2b2b1-test-only",
+  implementationStatus: "phase-3b2c3b-test-only",
   deferred: Object.freeze([
     "mutator-offers",
     "skill-offers",
@@ -142,6 +144,15 @@ function relicOfferSlots(directive, envelopeId) {
   ) {
     sourcePolicy = otterRelicOfferPolicy;
     offerPolicyRef = "otter-relic-offer-policy.generated.json";
+  } else if (
+    directive.roomCategory === arenaRelicOfferPolicy.roomCategory &&
+    directive.roomType === arenaRelicOfferPolicy.roomType &&
+    directive.depth >= arenaRelicOfferPolicy.minimumDepth &&
+    directive.depth <= arenaRelicOfferPolicy.maximumDepth &&
+    directive.depth % arenaRelicOfferPolicy.excludedBossInterval !== 0
+  ) {
+    sourcePolicy = arenaRelicOfferPolicy;
+    offerPolicyRef = "arena-relic-offer-policy.generated.json";
   }
   if (!sourcePolicy) return [];
   return [{

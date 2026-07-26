@@ -149,6 +149,7 @@ const GENERATED_FILES = Object.freeze([
   "relic-pity-policy.generated.json",
   "regular-relic-offer-policy.generated.json",
   "otter-relic-offer-policy.generated.json",
+  "arena-relic-offer-policy.generated.json",
   "special-relic-source-audit.generated.json",
   "deferred-special-relic-spec.generated.json",
   "vault-arena-relic-classification.generated.json",
@@ -1032,6 +1033,62 @@ function buildRegularRelicOfferCanonicalData(records, textByFile) {
     publicChoiceFields,
     publicPayloadTargetBytes: 4096
   };
+  const arenaOfferPolicy = {
+    offerType: "relic_reward",
+    sourceType: "arena",
+    sourceId: "arena-reward-cache",
+    roomType: "arena",
+    roomCategory: "special",
+    rewardSlotType: "relic_offer",
+    offerChoiceCount: 3,
+    extraChoiceEffect: "extraRelicChoices",
+    minimumDepth: vaultArenaGuard.arenaMinimumDepth,
+    firstEffectiveNonBossDepth: vaultArenaGuard.arenaMinimumDepth + 1,
+    maximumDepth: maximumDepth - 1,
+    excludedBossInterval: 5,
+    waveCount: vaultArenaGuard.arenaWaveCount,
+    allowedRarities: ["rare", "epic", "legendary", "mythic"],
+    candidateAcquisitionSource: "relic_draft",
+    rarityPolicy: {
+      ...otterRarityPolicy,
+      normalRollFallback: "all otherwise legal rare+ Arena candidates"
+    },
+    pityPolicy: {
+      rewardOfferPity: "NONE",
+      roomSchedulePity: "NONE",
+      scope: "RUN_SCOPED_NOT_APPLICABLE"
+    },
+    requestFields: ["rewardEnvelopeId", "rewardSlotId", "sourceDirectiveId"],
+    selectionRequestFields: ["offerId", "choiceId"],
+    rngPurposes: [
+      "arena-relic-offer-rarity",
+      "arena-relic-offer-candidate",
+      "arena-relic-choice-order",
+      "arena-relic-offer-id",
+      "arena-relic-choice-id"
+    ],
+    selectionPolicy: "existing selectRegularRelic; choose one canonical choice",
+    baselineSkipPolicy: "optional draft skip remains deferred with endpoint integration",
+    emptyPoolBehavior: "NO_REWARD before stored reward creation",
+    storedEmptyFallback: {
+      fallbackPolicyId: "ARENA_STORED_CACHE_EMPTY_GOLD_V08",
+      baseGold: 60,
+      condition: "existing canonical stored Arena reward with zero canonical choices"
+    },
+    fullPoolBehavior: "CANONICAL_REPLACEMENT_TRANSACTION",
+    staleStoredOfferFallback: "stale client/cache binding: REJECT with ONLINE_V3_SECURITY_DIVERGENCE",
+    sourceEvidence: [
+      "expansion-content.js:ROOM_TYPES.arena.minDepth=40",
+      "game.js:ARENA_WAVE_COUNT=2 and checkRoomClearBonus",
+      "game.js:spawnArenaRewardChest stores 3 + extraRelicChoices rare+ IDs",
+      "game.js:buildRelicDraftChoices and rollRelicRarity(false)",
+      "game.js:openStoredRelicChest grants 60 gold only for an empty stored cache",
+      "game.js:chooseRelic enters the canonical replacement flow when acquisition cannot fit"
+    ],
+    implementationStatus: "phase-3b2c3b-disconnected-test-only",
+    publicChoiceFields,
+    publicPayloadTargetBytes: 2048
+  };
   const specialAuditFields = [
     "sourceId",
     "sourceCategory",
@@ -1607,6 +1664,10 @@ function buildRegularRelicOfferCanonicalData(records, textByFile) {
     ["otter-relic-offer-policy.generated.json", {
       ...common,
       canonicalData: otterOfferPolicy
+    }],
+    ["arena-relic-offer-policy.generated.json", {
+      ...common,
+      canonicalData: arenaOfferPolicy
     }],
     ["special-relic-source-audit.generated.json", {
       ...common,
@@ -2794,6 +2855,13 @@ function buildCanonicalData(records, textByFile) {
           availabilityMode: "stored_reward",
           emptyCandidatePoolOutcome: "NO_REWARD",
           storedRewardEmptyPolicyId: "OTTER_CRIMSON_STORED_EMPTY_GOLD_V08"
+        },
+        {
+          sourceType: "arena",
+          sourceId: "arena-reward-cache",
+          availabilityMode: "pre_offer",
+          emptyCandidatePoolOutcome: "NO_REWARD",
+          storedRewardEmptyPolicyId: "ARENA_STORED_CACHE_EMPTY_GOLD_V08"
         },
         {
           sourceType: "stored_relic_chest",

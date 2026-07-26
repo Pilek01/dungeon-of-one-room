@@ -112,7 +112,7 @@ test("Arena lifecycle, eligibility, rarity, count and fallback evidence stays ex
   assert.match(functionSlice(gameSource, "openStoredRelicChest"), /grantGold\(60\)/u);
 });
 
-test("Arena fallback dependencies are resolved and no Arena offer policy exists", async () => {
+test("Arena fallback dependencies remain resolved after the disconnected test-only policy is added", async () => {
   assert.match(metaStateSource, /runModifiers:\s*createEmptyRunModifierLedgerV08/u);
   assert.deepEqual(
     classificationDocument.canonicalData.arena.dependencyStatus,
@@ -132,9 +132,17 @@ test("Arena fallback dependencies are resolved and no Arena offer policy exists"
   assert.doesNotMatch(draft, /canAcquireRelic|slotLimit|MAX_RELICS/u);
   assert.match(choose, /relicSwapPending/u);
   const files = await readdir(path.join(RULESET_ROOT, "data"));
-  assert.equal(files.includes("arena-relic-offer-policy.generated.json"), false);
+  assert.equal(files.includes("arena-relic-offer-policy.generated.json"), true);
+  const arenaPolicy = JSON.parse(await readFile(
+    path.join(RULESET_ROOT, "data", "arena-relic-offer-policy.generated.json"),
+    "utf8"
+  ));
+  assert.equal(
+    arenaPolicy.canonicalData.implementationStatus,
+    "phase-3b2c3b-disconnected-test-only"
+  );
   const rewardPolicy = await readFile(path.join(RULESET_ROOT, "reward-policy.js"), "utf8");
-  assert.doesNotMatch(rewardPolicy, /arenaRelicOfferPolicy|arena-relic-offer-policy/u);
+  assert.match(rewardPolicy, /arenaRelicOfferPolicy|arena-relic-offer-policy/u);
 });
 
 for (const fixture of fixtures) {

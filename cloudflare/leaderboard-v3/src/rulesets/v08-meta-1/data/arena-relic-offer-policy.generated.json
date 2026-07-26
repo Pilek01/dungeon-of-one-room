@@ -1,0 +1,159 @@
+{
+  "schemaVersion": 1,
+  "rulesetId": "v08-meta-1",
+  "sourceCommit": "f98820c99066d810169e100beb23a54a332734bd",
+  "sources": [
+    {
+      "file": "boss-campaign.js",
+      "byteLength": 8061,
+      "sha256": "ad885efec2e4bce42514c80a77a9a2cbf0f7310f396f423f5e95da16af60940d"
+    },
+    {
+      "file": "camp-runtime.js",
+      "byteLength": 30381,
+      "sha256": "302c3442e6e02442f21283b073603bb051e912ac365c55541d4a1b7afe76997a"
+    },
+    {
+      "file": "expansion-content.js",
+      "byteLength": 3741,
+      "sha256": "56180ffa919884ea3e0dd89045063bcba6097ebd687481dc8fc2ada2f3a5a307"
+    },
+    {
+      "file": "forge-room.js",
+      "byteLength": 8316,
+      "sha256": "74980ae5a8e069336d161ef2c51ac4771ce602b899f8b120988f78de35b0b821"
+    },
+    {
+      "file": "game.js",
+      "byteLength": 1292796,
+      "sha256": "a7d436f8cdde618e7bab802322a658d2055f201950d9ae7b4598269feff3df00"
+    },
+    {
+      "file": "loot-tables.js",
+      "byteLength": 2509,
+      "sha256": "9343a62db72aacd89d16ab0efa3c1fba0c40d08cc1e82e10795990299467e0a9"
+    },
+    {
+      "file": "merchant-curation.js",
+      "byteLength": 827,
+      "sha256": "84dbcbb30c0909cb309154826df7c80d816fe9db90584a8af880eacfc70ceba9"
+    },
+    {
+      "file": "pact-room.js",
+      "byteLength": 5791,
+      "sha256": "d94a3d19bab8fe69bf9d3f2dac5a0555e268af7327855c5a675e53149d4355c6"
+    },
+    {
+      "file": "relic-data.js",
+      "byteLength": 9135,
+      "sha256": "fa4cdd27c3b3b9d2b61df3bc346a4123e9d3f70f58afdc16cd626411d6bdfa59"
+    },
+    {
+      "file": "relic-runtime.js",
+      "byteLength": 9127,
+      "sha256": "87e02a9a1519aa5c9c621e23fabe5400cfda8274c1aa39c50cd471478e642d97"
+    },
+    {
+      "file": "room-pity.js",
+      "byteLength": 1075,
+      "sha256": "4b25c0160a9d339248a969627b7a82c93b464966b671d21c9e30f2e83c70cb76"
+    },
+    {
+      "file": "vault-room.js",
+      "byteLength": 10717,
+      "sha256": "6623bbeb423e2540657f0fe40e81a78d2b5966a237195b4e71d8be34d4a7702c"
+    }
+  ],
+  "canonicalData": {
+    "offerType": "relic_reward",
+    "sourceType": "arena",
+    "sourceId": "arena-reward-cache",
+    "roomType": "arena",
+    "roomCategory": "special",
+    "rewardSlotType": "relic_offer",
+    "offerChoiceCount": 3,
+    "extraChoiceEffect": "extraRelicChoices",
+    "minimumDepth": 40,
+    "firstEffectiveNonBossDepth": 41,
+    "maximumDepth": 99,
+    "excludedBossInterval": 5,
+    "waveCount": 2,
+    "allowedRarities": [
+      "rare",
+      "epic",
+      "legendary",
+      "mythic"
+    ],
+    "candidateAcquisitionSource": "relic_draft",
+    "rarityPolicy": {
+      "formula": "non-boss depth formula from rollRelicRarity(false)",
+      "depthBonusDivisor": 5,
+      "legendaryBase": 0.02,
+      "legendaryPerDepthBonus": 0.008,
+      "epicBase": 0.06,
+      "epicPerDepthBonus": 0.012,
+      "rareChance": 0.17,
+      "mythicRelativeToLegendaryChance": 0.05,
+      "mythicChanceMaximum": 0.02,
+      "rollOrder": [
+        "mythic",
+        "legendary",
+        "epic",
+        "rare",
+        "normal"
+      ],
+      "normalRollFallback": "all otherwise legal rare+ Arena candidates"
+    },
+    "pityPolicy": {
+      "rewardOfferPity": "NONE",
+      "roomSchedulePity": "NONE",
+      "scope": "RUN_SCOPED_NOT_APPLICABLE"
+    },
+    "requestFields": [
+      "rewardEnvelopeId",
+      "rewardSlotId",
+      "sourceDirectiveId"
+    ],
+    "selectionRequestFields": [
+      "offerId",
+      "choiceId"
+    ],
+    "rngPurposes": [
+      "arena-relic-offer-rarity",
+      "arena-relic-offer-candidate",
+      "arena-relic-choice-order",
+      "arena-relic-offer-id",
+      "arena-relic-choice-id"
+    ],
+    "selectionPolicy": "existing selectRegularRelic; choose one canonical choice",
+    "baselineSkipPolicy": "optional draft skip remains deferred with endpoint integration",
+    "emptyPoolBehavior": "NO_REWARD before stored reward creation",
+    "storedEmptyFallback": {
+      "fallbackPolicyId": "ARENA_STORED_CACHE_EMPTY_GOLD_V08",
+      "baseGold": 60,
+      "condition": "existing canonical stored Arena reward with zero canonical choices"
+    },
+    "fullPoolBehavior": "CANONICAL_REPLACEMENT_TRANSACTION",
+    "staleStoredOfferFallback": "stale client/cache binding: REJECT with ONLINE_V3_SECURITY_DIVERGENCE",
+    "sourceEvidence": [
+      "expansion-content.js:ROOM_TYPES.arena.minDepth=40",
+      "game.js:ARENA_WAVE_COUNT=2 and checkRoomClearBonus",
+      "game.js:spawnArenaRewardChest stores 3 + extraRelicChoices rare+ IDs",
+      "game.js:buildRelicDraftChoices and rollRelicRarity(false)",
+      "game.js:openStoredRelicChest grants 60 gold only for an empty stored cache",
+      "game.js:chooseRelic enters the canonical replacement flow when acquisition cannot fit"
+    ],
+    "implementationStatus": "phase-3b2c3b-disconnected-test-only",
+    "publicChoiceFields": [
+      "choiceId",
+      "relicId",
+      "rarity",
+      "currentStacks",
+      "resultingStacks",
+      "slotCost",
+      "resultingSlotsUsed",
+      "resultingSlotLimit"
+    ],
+    "publicPayloadTargetBytes": 2048
+  }
+}

@@ -1,0 +1,722 @@
+[
+    {
+        "fixtureId":  "arena-01-normal-depth-41-mythic",
+        "sourceType":  "arena",
+        "sourceId":  "arena-reward-cache",
+        "sourceEvidence":  [
+                               "expansion-content.js:ROOM_TYPES.arena.minDepth=40",
+                               "game.js:ARENA_WAVE_COUNT=2 and checkRoomClearBonus",
+                               "game.js:spawnArenaRewardChest/buildRelicDraftChoices/rollRelicRarity(false)"
+                           ],
+        "depth":  41,
+        "ascension":  false,
+        "rarityTarget":  "mythic",
+        "candidateSeed":  0,
+        "expectedChoiceCount":  3,
+        "expectedOutcome":  "OFFER_ISSUED",
+        "expectedFallback":  "NONE",
+        "expectedRulesetHash":  "manifest.rulesetHash"
+    },
+    {
+        "fixtureId":  "arena-02-normal-depth-42-legendary",
+        "sourceType":  "arena",
+        "sourceId":  "arena-reward-cache",
+        "sourceEvidence":  [
+                               "expansion-content.js:ROOM_TYPES.arena.minDepth=40",
+                               "game.js:ARENA_WAVE_COUNT=2 and checkRoomClearBonus",
+                               "game.js:spawnArenaRewardChest/buildRelicDraftChoices/rollRelicRarity(false)"
+                           ],
+        "depth":  42,
+        "ascension":  false,
+        "rarityTarget":  "legendary",
+        "candidateSeed":  1,
+        "expectedChoiceCount":  3,
+        "expectedOutcome":  "OFFER_ISSUED",
+        "expectedFallback":  "NONE",
+        "expectedRulesetHash":  "manifest.rulesetHash"
+    },
+    {
+        "fixtureId":  "arena-03-normal-depth-43-epic",
+        "sourceType":  "arena",
+        "sourceId":  "arena-reward-cache",
+        "sourceEvidence":  [
+                               "expansion-content.js:ROOM_TYPES.arena.minDepth=40",
+                               "game.js:ARENA_WAVE_COUNT=2 and checkRoomClearBonus",
+                               "game.js:spawnArenaRewardChest/buildRelicDraftChoices/rollRelicRarity(false)"
+                           ],
+        "depth":  43,
+        "ascension":  false,
+        "rarityTarget":  "epic",
+        "candidateSeed":  2,
+        "expectedChoiceCount":  3,
+        "expectedOutcome":  "OFFER_ISSUED",
+        "expectedFallback":  "NONE",
+        "expectedRulesetHash":  "manifest.rulesetHash"
+    },
+    {
+        "fixtureId":  "arena-04-normal-depth-44-rare",
+        "sourceType":  "arena",
+        "sourceId":  "arena-reward-cache",
+        "sourceEvidence":  [
+                               "expansion-content.js:ROOM_TYPES.arena.minDepth=40",
+                               "game.js:ARENA_WAVE_COUNT=2 and checkRoomClearBonus",
+                               "game.js:spawnArenaRewardChest/buildRelicDraftChoices/rollRelicRarity(false)"
+                           ],
+        "depth":  44,
+        "ascension":  false,
+        "rarityTarget":  "rare",
+        "candidateSeed":  3,
+        "expectedChoiceCount":  3,
+        "expectedOutcome":  "OFFER_ISSUED",
+        "expectedFallback":  "NONE",
+        "expectedRulesetHash":  "manifest.rulesetHash"
+    },
+    {
+        "fixtureId":  "arena-05-normal-depth-46-normal",
+        "sourceType":  "arena",
+        "sourceId":  "arena-reward-cache",
+        "sourceEvidence":  [
+                               "expansion-content.js:ROOM_TYPES.arena.minDepth=40",
+                               "game.js:ARENA_WAVE_COUNT=2 and checkRoomClearBonus",
+                               "game.js:spawnArenaRewardChest/buildRelicDraftChoices/rollRelicRarity(false)"
+                           ],
+        "depth":  46,
+        "ascension":  false,
+        "rarityTarget":  "normal",
+        "candidateSeed":  4,
+        "expectedChoiceCount":  3,
+        "expectedOutcome":  "OFFER_ISSUED",
+        "expectedFallback":  "WHOLE_POOL",
+        "expectedRulesetHash":  "manifest.rulesetHash"
+    },
+    {
+        "fixtureId":  "arena-06-normal-depth-47-mythic",
+        "sourceType":  "arena",
+        "sourceId":  "arena-reward-cache",
+        "sourceEvidence":  [
+                               "expansion-content.js:ROOM_TYPES.arena.minDepth=40",
+                               "game.js:ARENA_WAVE_COUNT=2 and checkRoomClearBonus",
+                               "game.js:spawnArenaRewardChest/buildRelicDraftChoices/rollRelicRarity(false)"
+                           ],
+        "depth":  47,
+        "ascension":  false,
+        "rarityTarget":  "mythic",
+        "candidateSeed":  5,
+        "expectedChoiceCount":  3,
+        "expectedOutcome":  "OFFER_ISSUED",
+        "expectedFallback":  "NONE",
+        "expectedRulesetHash":  "manifest.rulesetHash"
+    },
+    {
+        "fixtureId":  "arena-07-normal-depth-48-legendary",
+        "sourceType":  "arena",
+        "sourceId":  "arena-reward-cache",
+        "sourceEvidence":  [
+                               "expansion-content.js:ROOM_TYPES.arena.minDepth=40",
+                               "game.js:ARENA_WAVE_COUNT=2 and checkRoomClearBonus",
+                               "game.js:spawnArenaRewardChest/buildRelicDraftChoices/rollRelicRarity(false)"
+                           ],
+        "depth":  48,
+        "ascension":  false,
+        "rarityTarget":  "legendary",
+        "candidateSeed":  6,
+        "expectedChoiceCount":  3,
+        "expectedOutcome":  "OFFER_ISSUED",
+        "expectedFallback":  "NONE",
+        "expectedRulesetHash":  "manifest.rulesetHash"
+    },
+    {
+        "fixtureId":  "arena-08-normal-depth-49-epic",
+        "sourceType":  "arena",
+        "sourceId":  "arena-reward-cache",
+        "sourceEvidence":  [
+                               "expansion-content.js:ROOM_TYPES.arena.minDepth=40",
+                               "game.js:ARENA_WAVE_COUNT=2 and checkRoomClearBonus",
+                               "game.js:spawnArenaRewardChest/buildRelicDraftChoices/rollRelicRarity(false)"
+                           ],
+        "depth":  49,
+        "ascension":  false,
+        "rarityTarget":  "epic",
+        "candidateSeed":  7,
+        "expectedChoiceCount":  3,
+        "expectedOutcome":  "OFFER_ISSUED",
+        "expectedFallback":  "NONE",
+        "expectedRulesetHash":  "manifest.rulesetHash"
+    },
+    {
+        "fixtureId":  "arena-09-normal-depth-51-rare",
+        "sourceType":  "arena",
+        "sourceId":  "arena-reward-cache",
+        "sourceEvidence":  [
+                               "expansion-content.js:ROOM_TYPES.arena.minDepth=40",
+                               "game.js:ARENA_WAVE_COUNT=2 and checkRoomClearBonus",
+                               "game.js:spawnArenaRewardChest/buildRelicDraftChoices/rollRelicRarity(false)"
+                           ],
+        "depth":  51,
+        "ascension":  false,
+        "rarityTarget":  "rare",
+        "candidateSeed":  8,
+        "expectedChoiceCount":  3,
+        "expectedOutcome":  "OFFER_ISSUED",
+        "expectedFallback":  "NONE",
+        "expectedRulesetHash":  "manifest.rulesetHash"
+    },
+    {
+        "fixtureId":  "arena-10-normal-depth-52-normal",
+        "sourceType":  "arena",
+        "sourceId":  "arena-reward-cache",
+        "sourceEvidence":  [
+                               "expansion-content.js:ROOM_TYPES.arena.minDepth=40",
+                               "game.js:ARENA_WAVE_COUNT=2 and checkRoomClearBonus",
+                               "game.js:spawnArenaRewardChest/buildRelicDraftChoices/rollRelicRarity(false)"
+                           ],
+        "depth":  52,
+        "ascension":  false,
+        "rarityTarget":  "normal",
+        "candidateSeed":  9,
+        "expectedChoiceCount":  3,
+        "expectedOutcome":  "OFFER_ISSUED",
+        "expectedFallback":  "WHOLE_POOL",
+        "expectedRulesetHash":  "manifest.rulesetHash"
+    },
+    {
+        "fixtureId":  "arena-11-normal-depth-53-mythic",
+        "sourceType":  "arena",
+        "sourceId":  "arena-reward-cache",
+        "sourceEvidence":  [
+                               "expansion-content.js:ROOM_TYPES.arena.minDepth=40",
+                               "game.js:ARENA_WAVE_COUNT=2 and checkRoomClearBonus",
+                               "game.js:spawnArenaRewardChest/buildRelicDraftChoices/rollRelicRarity(false)"
+                           ],
+        "depth":  53,
+        "ascension":  false,
+        "rarityTarget":  "mythic",
+        "candidateSeed":  10,
+        "expectedChoiceCount":  3,
+        "expectedOutcome":  "OFFER_ISSUED",
+        "expectedFallback":  "NONE",
+        "expectedRulesetHash":  "manifest.rulesetHash"
+    },
+    {
+        "fixtureId":  "arena-12-normal-depth-54-legendary",
+        "sourceType":  "arena",
+        "sourceId":  "arena-reward-cache",
+        "sourceEvidence":  [
+                               "expansion-content.js:ROOM_TYPES.arena.minDepth=40",
+                               "game.js:ARENA_WAVE_COUNT=2 and checkRoomClearBonus",
+                               "game.js:spawnArenaRewardChest/buildRelicDraftChoices/rollRelicRarity(false)"
+                           ],
+        "depth":  54,
+        "ascension":  false,
+        "rarityTarget":  "legendary",
+        "candidateSeed":  11,
+        "expectedChoiceCount":  3,
+        "expectedOutcome":  "OFFER_ISSUED",
+        "expectedFallback":  "NONE",
+        "expectedRulesetHash":  "manifest.rulesetHash"
+    },
+    {
+        "fixtureId":  "arena-13-normal-depth-56-epic",
+        "sourceType":  "arena",
+        "sourceId":  "arena-reward-cache",
+        "sourceEvidence":  [
+                               "expansion-content.js:ROOM_TYPES.arena.minDepth=40",
+                               "game.js:ARENA_WAVE_COUNT=2 and checkRoomClearBonus",
+                               "game.js:spawnArenaRewardChest/buildRelicDraftChoices/rollRelicRarity(false)"
+                           ],
+        "depth":  56,
+        "ascension":  false,
+        "rarityTarget":  "epic",
+        "candidateSeed":  12,
+        "expectedChoiceCount":  3,
+        "expectedOutcome":  "OFFER_ISSUED",
+        "expectedFallback":  "NONE",
+        "expectedRulesetHash":  "manifest.rulesetHash"
+    },
+    {
+        "fixtureId":  "arena-14-normal-depth-57-rare",
+        "sourceType":  "arena",
+        "sourceId":  "arena-reward-cache",
+        "sourceEvidence":  [
+                               "expansion-content.js:ROOM_TYPES.arena.minDepth=40",
+                               "game.js:ARENA_WAVE_COUNT=2 and checkRoomClearBonus",
+                               "game.js:spawnArenaRewardChest/buildRelicDraftChoices/rollRelicRarity(false)"
+                           ],
+        "depth":  57,
+        "ascension":  false,
+        "rarityTarget":  "rare",
+        "candidateSeed":  13,
+        "expectedChoiceCount":  3,
+        "expectedOutcome":  "OFFER_ISSUED",
+        "expectedFallback":  "NONE",
+        "expectedRulesetHash":  "manifest.rulesetHash"
+    },
+    {
+        "fixtureId":  "arena-15-normal-depth-58-normal",
+        "sourceType":  "arena",
+        "sourceId":  "arena-reward-cache",
+        "sourceEvidence":  [
+                               "expansion-content.js:ROOM_TYPES.arena.minDepth=40",
+                               "game.js:ARENA_WAVE_COUNT=2 and checkRoomClearBonus",
+                               "game.js:spawnArenaRewardChest/buildRelicDraftChoices/rollRelicRarity(false)"
+                           ],
+        "depth":  58,
+        "ascension":  false,
+        "rarityTarget":  "normal",
+        "candidateSeed":  14,
+        "expectedChoiceCount":  3,
+        "expectedOutcome":  "OFFER_ISSUED",
+        "expectedFallback":  "WHOLE_POOL",
+        "expectedRulesetHash":  "manifest.rulesetHash"
+    },
+    {
+        "fixtureId":  "arena-16-normal-depth-59-mythic",
+        "sourceType":  "arena",
+        "sourceId":  "arena-reward-cache",
+        "sourceEvidence":  [
+                               "expansion-content.js:ROOM_TYPES.arena.minDepth=40",
+                               "game.js:ARENA_WAVE_COUNT=2 and checkRoomClearBonus",
+                               "game.js:spawnArenaRewardChest/buildRelicDraftChoices/rollRelicRarity(false)"
+                           ],
+        "depth":  59,
+        "ascension":  false,
+        "rarityTarget":  "mythic",
+        "candidateSeed":  15,
+        "expectedChoiceCount":  3,
+        "expectedOutcome":  "OFFER_ISSUED",
+        "expectedFallback":  "NONE",
+        "expectedRulesetHash":  "manifest.rulesetHash"
+    },
+    {
+        "fixtureId":  "arena-17-normal-depth-61-legendary",
+        "sourceType":  "arena",
+        "sourceId":  "arena-reward-cache",
+        "sourceEvidence":  [
+                               "expansion-content.js:ROOM_TYPES.arena.minDepth=40",
+                               "game.js:ARENA_WAVE_COUNT=2 and checkRoomClearBonus",
+                               "game.js:spawnArenaRewardChest/buildRelicDraftChoices/rollRelicRarity(false)"
+                           ],
+        "depth":  61,
+        "ascension":  false,
+        "rarityTarget":  "legendary",
+        "candidateSeed":  16,
+        "expectedChoiceCount":  3,
+        "expectedOutcome":  "OFFER_ISSUED",
+        "expectedFallback":  "NONE",
+        "expectedRulesetHash":  "manifest.rulesetHash"
+    },
+    {
+        "fixtureId":  "arena-18-normal-depth-62-epic",
+        "sourceType":  "arena",
+        "sourceId":  "arena-reward-cache",
+        "sourceEvidence":  [
+                               "expansion-content.js:ROOM_TYPES.arena.minDepth=40",
+                               "game.js:ARENA_WAVE_COUNT=2 and checkRoomClearBonus",
+                               "game.js:spawnArenaRewardChest/buildRelicDraftChoices/rollRelicRarity(false)"
+                           ],
+        "depth":  62,
+        "ascension":  false,
+        "rarityTarget":  "epic",
+        "candidateSeed":  17,
+        "expectedChoiceCount":  3,
+        "expectedOutcome":  "OFFER_ISSUED",
+        "expectedFallback":  "NONE",
+        "expectedRulesetHash":  "manifest.rulesetHash"
+    },
+    {
+        "fixtureId":  "arena-19-normal-depth-63-rare",
+        "sourceType":  "arena",
+        "sourceId":  "arena-reward-cache",
+        "sourceEvidence":  [
+                               "expansion-content.js:ROOM_TYPES.arena.minDepth=40",
+                               "game.js:ARENA_WAVE_COUNT=2 and checkRoomClearBonus",
+                               "game.js:spawnArenaRewardChest/buildRelicDraftChoices/rollRelicRarity(false)"
+                           ],
+        "depth":  63,
+        "ascension":  false,
+        "rarityTarget":  "rare",
+        "candidateSeed":  18,
+        "expectedChoiceCount":  3,
+        "expectedOutcome":  "OFFER_ISSUED",
+        "expectedFallback":  "NONE",
+        "expectedRulesetHash":  "manifest.rulesetHash"
+    },
+    {
+        "fixtureId":  "arena-20-normal-depth-64-normal",
+        "sourceType":  "arena",
+        "sourceId":  "arena-reward-cache",
+        "sourceEvidence":  [
+                               "expansion-content.js:ROOM_TYPES.arena.minDepth=40",
+                               "game.js:ARENA_WAVE_COUNT=2 and checkRoomClearBonus",
+                               "game.js:spawnArenaRewardChest/buildRelicDraftChoices/rollRelicRarity(false)"
+                           ],
+        "depth":  64,
+        "ascension":  false,
+        "rarityTarget":  "normal",
+        "candidateSeed":  19,
+        "expectedChoiceCount":  3,
+        "expectedOutcome":  "OFFER_ISSUED",
+        "expectedFallback":  "WHOLE_POOL",
+        "expectedRulesetHash":  "manifest.rulesetHash"
+    },
+    {
+        "fixtureId":  "arena-21-ascension-depth-41-mythic",
+        "sourceType":  "arena",
+        "sourceId":  "arena-reward-cache",
+        "sourceEvidence":  [
+                               "expansion-content.js:ROOM_TYPES.arena.minDepth=40",
+                               "game.js:ARENA_WAVE_COUNT=2 and checkRoomClearBonus",
+                               "game.js:spawnArenaRewardChest/buildRelicDraftChoices/rollRelicRarity(false)"
+                           ],
+        "depth":  41,
+        "ascension":  true,
+        "rarityTarget":  "mythic",
+        "candidateSeed":  20,
+        "expectedChoiceCount":  4,
+        "expectedOutcome":  "OFFER_ISSUED",
+        "expectedFallback":  "NONE",
+        "expectedRulesetHash":  "manifest.rulesetHash"
+    },
+    {
+        "fixtureId":  "arena-22-ascension-depth-42-legendary",
+        "sourceType":  "arena",
+        "sourceId":  "arena-reward-cache",
+        "sourceEvidence":  [
+                               "expansion-content.js:ROOM_TYPES.arena.minDepth=40",
+                               "game.js:ARENA_WAVE_COUNT=2 and checkRoomClearBonus",
+                               "game.js:spawnArenaRewardChest/buildRelicDraftChoices/rollRelicRarity(false)"
+                           ],
+        "depth":  42,
+        "ascension":  true,
+        "rarityTarget":  "legendary",
+        "candidateSeed":  21,
+        "expectedChoiceCount":  4,
+        "expectedOutcome":  "OFFER_ISSUED",
+        "expectedFallback":  "NONE",
+        "expectedRulesetHash":  "manifest.rulesetHash"
+    },
+    {
+        "fixtureId":  "arena-23-ascension-depth-43-epic",
+        "sourceType":  "arena",
+        "sourceId":  "arena-reward-cache",
+        "sourceEvidence":  [
+                               "expansion-content.js:ROOM_TYPES.arena.minDepth=40",
+                               "game.js:ARENA_WAVE_COUNT=2 and checkRoomClearBonus",
+                               "game.js:spawnArenaRewardChest/buildRelicDraftChoices/rollRelicRarity(false)"
+                           ],
+        "depth":  43,
+        "ascension":  true,
+        "rarityTarget":  "epic",
+        "candidateSeed":  22,
+        "expectedChoiceCount":  4,
+        "expectedOutcome":  "OFFER_ISSUED",
+        "expectedFallback":  "NONE",
+        "expectedRulesetHash":  "manifest.rulesetHash"
+    },
+    {
+        "fixtureId":  "arena-24-ascension-depth-44-rare",
+        "sourceType":  "arena",
+        "sourceId":  "arena-reward-cache",
+        "sourceEvidence":  [
+                               "expansion-content.js:ROOM_TYPES.arena.minDepth=40",
+                               "game.js:ARENA_WAVE_COUNT=2 and checkRoomClearBonus",
+                               "game.js:spawnArenaRewardChest/buildRelicDraftChoices/rollRelicRarity(false)"
+                           ],
+        "depth":  44,
+        "ascension":  true,
+        "rarityTarget":  "rare",
+        "candidateSeed":  23,
+        "expectedChoiceCount":  4,
+        "expectedOutcome":  "OFFER_ISSUED",
+        "expectedFallback":  "NONE",
+        "expectedRulesetHash":  "manifest.rulesetHash"
+    },
+    {
+        "fixtureId":  "arena-25-ascension-depth-46-normal",
+        "sourceType":  "arena",
+        "sourceId":  "arena-reward-cache",
+        "sourceEvidence":  [
+                               "expansion-content.js:ROOM_TYPES.arena.minDepth=40",
+                               "game.js:ARENA_WAVE_COUNT=2 and checkRoomClearBonus",
+                               "game.js:spawnArenaRewardChest/buildRelicDraftChoices/rollRelicRarity(false)"
+                           ],
+        "depth":  46,
+        "ascension":  true,
+        "rarityTarget":  "normal",
+        "candidateSeed":  24,
+        "expectedChoiceCount":  4,
+        "expectedOutcome":  "OFFER_ISSUED",
+        "expectedFallback":  "WHOLE_POOL",
+        "expectedRulesetHash":  "manifest.rulesetHash"
+    },
+    {
+        "fixtureId":  "arena-26-ascension-depth-47-mythic",
+        "sourceType":  "arena",
+        "sourceId":  "arena-reward-cache",
+        "sourceEvidence":  [
+                               "expansion-content.js:ROOM_TYPES.arena.minDepth=40",
+                               "game.js:ARENA_WAVE_COUNT=2 and checkRoomClearBonus",
+                               "game.js:spawnArenaRewardChest/buildRelicDraftChoices/rollRelicRarity(false)"
+                           ],
+        "depth":  47,
+        "ascension":  true,
+        "rarityTarget":  "mythic",
+        "candidateSeed":  25,
+        "expectedChoiceCount":  4,
+        "expectedOutcome":  "OFFER_ISSUED",
+        "expectedFallback":  "NONE",
+        "expectedRulesetHash":  "manifest.rulesetHash"
+    },
+    {
+        "fixtureId":  "arena-27-ascension-depth-48-legendary",
+        "sourceType":  "arena",
+        "sourceId":  "arena-reward-cache",
+        "sourceEvidence":  [
+                               "expansion-content.js:ROOM_TYPES.arena.minDepth=40",
+                               "game.js:ARENA_WAVE_COUNT=2 and checkRoomClearBonus",
+                               "game.js:spawnArenaRewardChest/buildRelicDraftChoices/rollRelicRarity(false)"
+                           ],
+        "depth":  48,
+        "ascension":  true,
+        "rarityTarget":  "legendary",
+        "candidateSeed":  26,
+        "expectedChoiceCount":  4,
+        "expectedOutcome":  "OFFER_ISSUED",
+        "expectedFallback":  "NONE",
+        "expectedRulesetHash":  "manifest.rulesetHash"
+    },
+    {
+        "fixtureId":  "arena-28-ascension-depth-49-epic",
+        "sourceType":  "arena",
+        "sourceId":  "arena-reward-cache",
+        "sourceEvidence":  [
+                               "expansion-content.js:ROOM_TYPES.arena.minDepth=40",
+                               "game.js:ARENA_WAVE_COUNT=2 and checkRoomClearBonus",
+                               "game.js:spawnArenaRewardChest/buildRelicDraftChoices/rollRelicRarity(false)"
+                           ],
+        "depth":  49,
+        "ascension":  true,
+        "rarityTarget":  "epic",
+        "candidateSeed":  27,
+        "expectedChoiceCount":  4,
+        "expectedOutcome":  "OFFER_ISSUED",
+        "expectedFallback":  "NONE",
+        "expectedRulesetHash":  "manifest.rulesetHash"
+    },
+    {
+        "fixtureId":  "arena-29-ascension-depth-51-rare",
+        "sourceType":  "arena",
+        "sourceId":  "arena-reward-cache",
+        "sourceEvidence":  [
+                               "expansion-content.js:ROOM_TYPES.arena.minDepth=40",
+                               "game.js:ARENA_WAVE_COUNT=2 and checkRoomClearBonus",
+                               "game.js:spawnArenaRewardChest/buildRelicDraftChoices/rollRelicRarity(false)"
+                           ],
+        "depth":  51,
+        "ascension":  true,
+        "rarityTarget":  "rare",
+        "candidateSeed":  28,
+        "expectedChoiceCount":  4,
+        "expectedOutcome":  "OFFER_ISSUED",
+        "expectedFallback":  "NONE",
+        "expectedRulesetHash":  "manifest.rulesetHash"
+    },
+    {
+        "fixtureId":  "arena-30-ascension-depth-52-normal",
+        "sourceType":  "arena",
+        "sourceId":  "arena-reward-cache",
+        "sourceEvidence":  [
+                               "expansion-content.js:ROOM_TYPES.arena.minDepth=40",
+                               "game.js:ARENA_WAVE_COUNT=2 and checkRoomClearBonus",
+                               "game.js:spawnArenaRewardChest/buildRelicDraftChoices/rollRelicRarity(false)"
+                           ],
+        "depth":  52,
+        "ascension":  true,
+        "rarityTarget":  "normal",
+        "candidateSeed":  29,
+        "expectedChoiceCount":  4,
+        "expectedOutcome":  "OFFER_ISSUED",
+        "expectedFallback":  "WHOLE_POOL",
+        "expectedRulesetHash":  "manifest.rulesetHash"
+    },
+    {
+        "fixtureId":  "arena-31-ascension-depth-53-mythic",
+        "sourceType":  "arena",
+        "sourceId":  "arena-reward-cache",
+        "sourceEvidence":  [
+                               "expansion-content.js:ROOM_TYPES.arena.minDepth=40",
+                               "game.js:ARENA_WAVE_COUNT=2 and checkRoomClearBonus",
+                               "game.js:spawnArenaRewardChest/buildRelicDraftChoices/rollRelicRarity(false)"
+                           ],
+        "depth":  53,
+        "ascension":  true,
+        "rarityTarget":  "mythic",
+        "candidateSeed":  30,
+        "expectedChoiceCount":  4,
+        "expectedOutcome":  "OFFER_ISSUED",
+        "expectedFallback":  "NONE",
+        "expectedRulesetHash":  "manifest.rulesetHash"
+    },
+    {
+        "fixtureId":  "arena-32-ascension-depth-54-legendary",
+        "sourceType":  "arena",
+        "sourceId":  "arena-reward-cache",
+        "sourceEvidence":  [
+                               "expansion-content.js:ROOM_TYPES.arena.minDepth=40",
+                               "game.js:ARENA_WAVE_COUNT=2 and checkRoomClearBonus",
+                               "game.js:spawnArenaRewardChest/buildRelicDraftChoices/rollRelicRarity(false)"
+                           ],
+        "depth":  54,
+        "ascension":  true,
+        "rarityTarget":  "legendary",
+        "candidateSeed":  31,
+        "expectedChoiceCount":  4,
+        "expectedOutcome":  "OFFER_ISSUED",
+        "expectedFallback":  "NONE",
+        "expectedRulesetHash":  "manifest.rulesetHash"
+    },
+    {
+        "fixtureId":  "arena-33-ascension-depth-56-epic",
+        "sourceType":  "arena",
+        "sourceId":  "arena-reward-cache",
+        "sourceEvidence":  [
+                               "expansion-content.js:ROOM_TYPES.arena.minDepth=40",
+                               "game.js:ARENA_WAVE_COUNT=2 and checkRoomClearBonus",
+                               "game.js:spawnArenaRewardChest/buildRelicDraftChoices/rollRelicRarity(false)"
+                           ],
+        "depth":  56,
+        "ascension":  true,
+        "rarityTarget":  "epic",
+        "candidateSeed":  32,
+        "expectedChoiceCount":  4,
+        "expectedOutcome":  "OFFER_ISSUED",
+        "expectedFallback":  "NONE",
+        "expectedRulesetHash":  "manifest.rulesetHash"
+    },
+    {
+        "fixtureId":  "arena-34-ascension-depth-57-rare",
+        "sourceType":  "arena",
+        "sourceId":  "arena-reward-cache",
+        "sourceEvidence":  [
+                               "expansion-content.js:ROOM_TYPES.arena.minDepth=40",
+                               "game.js:ARENA_WAVE_COUNT=2 and checkRoomClearBonus",
+                               "game.js:spawnArenaRewardChest/buildRelicDraftChoices/rollRelicRarity(false)"
+                           ],
+        "depth":  57,
+        "ascension":  true,
+        "rarityTarget":  "rare",
+        "candidateSeed":  33,
+        "expectedChoiceCount":  4,
+        "expectedOutcome":  "OFFER_ISSUED",
+        "expectedFallback":  "NONE",
+        "expectedRulesetHash":  "manifest.rulesetHash"
+    },
+    {
+        "fixtureId":  "arena-35-ascension-depth-58-normal",
+        "sourceType":  "arena",
+        "sourceId":  "arena-reward-cache",
+        "sourceEvidence":  [
+                               "expansion-content.js:ROOM_TYPES.arena.minDepth=40",
+                               "game.js:ARENA_WAVE_COUNT=2 and checkRoomClearBonus",
+                               "game.js:spawnArenaRewardChest/buildRelicDraftChoices/rollRelicRarity(false)"
+                           ],
+        "depth":  58,
+        "ascension":  true,
+        "rarityTarget":  "normal",
+        "candidateSeed":  34,
+        "expectedChoiceCount":  4,
+        "expectedOutcome":  "OFFER_ISSUED",
+        "expectedFallback":  "WHOLE_POOL",
+        "expectedRulesetHash":  "manifest.rulesetHash"
+    },
+    {
+        "fixtureId":  "arena-36-ascension-depth-59-mythic",
+        "sourceType":  "arena",
+        "sourceId":  "arena-reward-cache",
+        "sourceEvidence":  [
+                               "expansion-content.js:ROOM_TYPES.arena.minDepth=40",
+                               "game.js:ARENA_WAVE_COUNT=2 and checkRoomClearBonus",
+                               "game.js:spawnArenaRewardChest/buildRelicDraftChoices/rollRelicRarity(false)"
+                           ],
+        "depth":  59,
+        "ascension":  true,
+        "rarityTarget":  "mythic",
+        "candidateSeed":  35,
+        "expectedChoiceCount":  4,
+        "expectedOutcome":  "OFFER_ISSUED",
+        "expectedFallback":  "NONE",
+        "expectedRulesetHash":  "manifest.rulesetHash"
+    },
+    {
+        "fixtureId":  "arena-37-ascension-depth-61-legendary",
+        "sourceType":  "arena",
+        "sourceId":  "arena-reward-cache",
+        "sourceEvidence":  [
+                               "expansion-content.js:ROOM_TYPES.arena.minDepth=40",
+                               "game.js:ARENA_WAVE_COUNT=2 and checkRoomClearBonus",
+                               "game.js:spawnArenaRewardChest/buildRelicDraftChoices/rollRelicRarity(false)"
+                           ],
+        "depth":  61,
+        "ascension":  true,
+        "rarityTarget":  "legendary",
+        "candidateSeed":  36,
+        "expectedChoiceCount":  4,
+        "expectedOutcome":  "OFFER_ISSUED",
+        "expectedFallback":  "NONE",
+        "expectedRulesetHash":  "manifest.rulesetHash"
+    },
+    {
+        "fixtureId":  "arena-38-ascension-depth-62-epic",
+        "sourceType":  "arena",
+        "sourceId":  "arena-reward-cache",
+        "sourceEvidence":  [
+                               "expansion-content.js:ROOM_TYPES.arena.minDepth=40",
+                               "game.js:ARENA_WAVE_COUNT=2 and checkRoomClearBonus",
+                               "game.js:spawnArenaRewardChest/buildRelicDraftChoices/rollRelicRarity(false)"
+                           ],
+        "depth":  62,
+        "ascension":  true,
+        "rarityTarget":  "epic",
+        "candidateSeed":  37,
+        "expectedChoiceCount":  4,
+        "expectedOutcome":  "OFFER_ISSUED",
+        "expectedFallback":  "NONE",
+        "expectedRulesetHash":  "manifest.rulesetHash"
+    },
+    {
+        "fixtureId":  "arena-39-ascension-depth-63-rare",
+        "sourceType":  "arena",
+        "sourceId":  "arena-reward-cache",
+        "sourceEvidence":  [
+                               "expansion-content.js:ROOM_TYPES.arena.minDepth=40",
+                               "game.js:ARENA_WAVE_COUNT=2 and checkRoomClearBonus",
+                               "game.js:spawnArenaRewardChest/buildRelicDraftChoices/rollRelicRarity(false)"
+                           ],
+        "depth":  63,
+        "ascension":  true,
+        "rarityTarget":  "rare",
+        "candidateSeed":  38,
+        "expectedChoiceCount":  4,
+        "expectedOutcome":  "OFFER_ISSUED",
+        "expectedFallback":  "NONE",
+        "expectedRulesetHash":  "manifest.rulesetHash"
+    },
+    {
+        "fixtureId":  "arena-40-ascension-depth-64-normal",
+        "sourceType":  "arena",
+        "sourceId":  "arena-reward-cache",
+        "sourceEvidence":  [
+                               "expansion-content.js:ROOM_TYPES.arena.minDepth=40",
+                               "game.js:ARENA_WAVE_COUNT=2 and checkRoomClearBonus",
+                               "game.js:spawnArenaRewardChest/buildRelicDraftChoices/rollRelicRarity(false)"
+                           ],
+        "depth":  64,
+        "ascension":  true,
+        "rarityTarget":  "normal",
+        "candidateSeed":  39,
+        "expectedChoiceCount":  4,
+        "expectedOutcome":  "OFFER_ISSUED",
+        "expectedFallback":  "WHOLE_POOL",
+        "expectedRulesetHash":  "manifest.rulesetHash"
+    }
+]

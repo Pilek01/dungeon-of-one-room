@@ -6,6 +6,7 @@ import {
   computeRelicOfferStateDigestV08
 } from "./relic-offer-common.js";
 import {
+  getArenaRelicCandidatePoolV08,
   getOtterRelicCandidatePoolV08,
   getRegularRelicCandidatePoolV08
 } from "./regular-relic-offer.js";
@@ -108,6 +109,9 @@ function candidateCount(metaState, binding) {
   }
   if (binding.slot.sourceId === "otter-crimson-chest") {
     return getOtterRelicCandidatePoolV08(metaState).length;
+  }
+  if (binding.slot.sourceId === "arena-reward-cache") {
+    return getArenaRelicCandidatePoolV08(metaState).length;
   }
   return 0;
 }
