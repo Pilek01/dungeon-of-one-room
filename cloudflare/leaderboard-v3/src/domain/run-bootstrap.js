@@ -144,3 +144,140 @@ export function bootstrapTokenPayloadForState(state, stateDigest, now) {
     expiresAt: now + TOKEN_TTL_MS
   };
 }
+
+function normalizeStartingRelicSelection(request) {
+  if (!request || typeof request !== "object" || Array.isArray(request)) {
+    throw new TypeError("STARTING_RELIC_SELECTION_INVALID");
+  }
+  if (Object.keys(request).sort().join(",") !== "choiceId,offerId") {
+    throw new TypeError("STARTING_RELIC_SELECTION_FIELDS_INVALID");
+  }
+  return {
+    offerId: requireText(request.offerId, "STARTING_RELIC_OFFER_ID_REQUIRED"),
+    choiceId: requireText(request.choiceId, "STARTING_RELIC_CHOICE_ID_REQUIRED")
+  };
+}
+
+function assertFirstRoomDirective(state) {
+  const directive = state?.currentRoomDirective;
+  if (!directive || typeof directive !== "object") {
+    throw new TypeError("FIRST_ROOM_DIRECTIVE_REQUIRED");
+  }
+  if (
+    directive.runId !== state.runId ||
+    directive.revision !== state.revision ||
+    !String(directive.directiveId || "") ||
+    !String(directive.roomNonce || "")
+  ) {
+    throw new TypeError("FIRST_ROOM_DIRECTIVE_BINDING_INVALID");
+  }
+  return directive;
+}
+
+function selectionResponse(state, replayed) {
+  return {
+    acceptedBoundary: "starting_relic_selected",
+    replayed,
+    selectedOfferId: state.bootstrapBoundary.startingOfferId,
+    selectedChoiceId: state.bootstrapBoundary.selectedChoiceId,
+    firstRoomDirective: structuredClone(assertFirstRoomDirective(state))
+  };
+}
+
+export async function selectAuthenticatedStartingRelic(
+  state,
+  rawRequest,
+  context
+) {
+  const request = normalizeStartingRelicSelection(rawRequest);
+  const ruleset = assertBootstrapRuleset(context?.ruleset, {
+    rulesetId: state?.rulesetId,
+    rulesetHash: state?.rulesetHash
+  });
+  if (state?.bootstrapBoundary?.status === "completed") {
+    if (
+      request.offerId !== state.bootstrapBoundary.startingOfferId ||
+      request.choiceId !== state.bootstrapBoundary.selectedChoiceId
+    ) {
+      throw new TypeError("STARTING_RELIC_BOOTSTRAP_ALREADY_COMPLETED_CONFLICT");
+    }
+    return {
+      nextState: structuredClone(state),
+      response: selectionResponse(state, true),
+      storageEffects: []
+    };
+  }
+  assertAwaitingRunBootstrap(state);
+  if (request.offerId !== state.bootstrapBoundary.startingOfferId) {
+    throw new TypeError("STARTING_RELIC_OFFER_UNKNOWN");
+  }
+  const before = structuredClone(state);
+  const selected = await ruleset.selectStartingRelic(
+    structuredClone(state),
+    request,
+    {
+      runId: state.runId,
+      rulesetHash: state.rulesetHash,
+      secret: context.secret,
+      cryptoProvider: context.cryptoProvider,
+      randomOracle: context.randomOracle
+    }
+  );
+  if (
+    selected.runId !== state.runId ||
+    selected.rulesetId !== state.rulesetId ||
+    selected.rulesetHash !== state.rulesetHash
+  ) {
+    throw new TypeError("STARTING_RELIC_TRANSITION_BINDING_CHANGED");
+  }
+  if (
+    selected.status !== "active" ||
+    selected.revision !== state.revision + 1 ||
+    selected.pendingOffer !== null
+  ) {
+    throw new TypeError("STARTING_RELIC_TRANSITION_INVALID");
+  }
+  assertFirstRoomDirective(selected);
+  if (JSON.stringify(state) !== JSON.stringify(before)) {
+    throw new TypeError("STARTING_RELIC_TRANSITION_MUTATED_INPUT");
+  }
+  const nextState = {
+    ...selected,
+    bootstrapBoundary: {
+      ...state.bootstrapBoundary,
+      status: "completed",
+      selectedChoiceId: request.choiceId,
+      completedRevision: selected.revision,
+      firstRoomDirectiveId: selected.currentRoomDirective.directiveId,
+      firstRoomNonce: selected.currentRoomDirective.roomNonce
+    }
+  };
+  return {
+    nextState,
+    response: selectionResponse(nextState, false),
+    storageEffects: [{
+      type: "update_run",
+      expectedRevision: state.revision
+    }]
+  };
+}
+
+export function roomTokenPayloadForState(state, stateDigest, now) {
+  const directive = assertFirstRoomDirective(state);
+  if (state.status !== "active") {
+    throw new TypeError("ROOM_TOKEN_RUN_NOT_ACTIVE");
+  }
+  return {
+    tokenVersion: 2,
+    boundaryKind: "room_checkpoint",
+    runId: state.runId,
+    rulesetId: state.rulesetId,
+    rulesetHash: state.rulesetHash,
+    revision: state.revision,
+    stateDigest: requireText(stateDigest, "STATE_DIGEST_REQUIRED"),
+    roomDirectiveId: directive.directiveId,
+    roomNonce: directive.roomNonce,
+    issuedAt: requireTimestamp(now, "TOKEN_ISSUED_AT_INVALID"),
+    expiresAt: now + TOKEN_TTL_MS
+  };
+}
