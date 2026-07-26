@@ -114,6 +114,10 @@ const SOURCE_INPUTS = Object.freeze([
     symbols: ["chooseMerchantRelicOffer"]
   },
   {
+    file: "skills-data.js",
+    symbols: ["MAX_SKILL_TIER", "MERCHANT_SKILL_UPGRADES"]
+  },
+  {
     file: "boss-campaign.js",
     symbols: ["BOSS_PROFILES"]
   },
@@ -136,6 +140,7 @@ const GENERATED_FILES = Object.freeze([
   "gold-sources.generated.json",
   "gold-modifiers.generated.json",
   "meta-transaction-policy.generated.json",
+  "merchant-transaction-policy.generated.json",
   "run-modifier-catalog.generated.json",
   "run-modifier-effects.generated.json",
   "run-modifier-selection-policy.generated.json",
@@ -2858,6 +2863,128 @@ function buildCanonicalData(records, textByFile) {
       ]
     }
   };
+  const merchantSource = textByFile.get("game.js");
+  const merchantRuntimeSource = textByFile.get("camp-runtime.js");
+  const merchantSkillsSource = textByFile.get("skills-data.js");
+  for (const marker of [
+    "const MERCHANT_RESERVE_DEPOSIT_RATIO = 0.25;",
+    "const MERCHANT_BUYBACK_RATIO = 0.5;",
+    "if (state.lives < MAX_LIVES && Math.random() < 0.10)",
+    "const base = Math.min(50, 10 * (bought + 1));"
+  ]) {
+    if (!merchantSource.includes(marker)) {
+      throw new Error(`SOURCE_SYMBOL_MISSING:game.js:${marker}`);
+    }
+  }
+  for (const marker of [
+    "function tryBuyRelicFromMerchant()",
+    "function tryReserveRelicFromMerchant()",
+    "function tryBuyReservedRelicFromMerchant()",
+    "function tryUseBlackMarket(relicId)",
+    "function trySellRelicToMerchant(relicId)"
+  ]) {
+    if (!merchantRuntimeSource.includes(marker)) {
+      throw new Error(`SOURCE_SYMBOL_MISSING:camp-runtime.js:${marker}`);
+    }
+  }
+  if (!merchantSkillsSource.includes("const MERCHANT_SKILL_UPGRADES =")) {
+    throw new Error("SOURCE_SYMBOL_MISSING:skills-data.js:MERCHANT_SKILL_UPGRADES");
+  }
+  const merchantTransactionPolicyData = {
+    schemaVersion: 1,
+    rulesetId: RULESET_ID,
+    sourceCommit,
+    sources: sourceRefs(records, [
+      "game.js",
+      "camp-runtime.js",
+      "merchant-curation.js",
+      "relic-data.js",
+      "relic-runtime.js",
+      "skills-data.js"
+    ]),
+    canonicalData: {
+      policyVersion: "v08-merchant-transaction-1",
+      implementationStatus: "m1-disconnected-test-only",
+      trigger: "cleared merchant room; player interacts with Merchant",
+      relicTiers: [
+        { rarity: "normal", weight: 60, price: 300 },
+        { rarity: "rare", weight: 25, price: 600 },
+        { rarity: "epic", weight: 12, price: 1000 },
+        { rarity: "legendary", weight: 3, price: 2000 }
+      ],
+      relicReturnValues: [
+        { rarity: "normal", value: 50 },
+        { rarity: "rare", value: 100 },
+        { rarity: "epic", value: 200 },
+        { rarity: "legendary", value: 400 },
+        { rarity: "mythic", value: 800 }
+      ],
+      reservationDepositRatio: 0.25,
+      reservationDepositRefundable: false,
+      buybackRatio: 0.5,
+      maximumLives: 5,
+      maximumSecondChancePurchases: 5,
+      maximumSkillTier: 3,
+      legendarySkillRequiredDepth: 20,
+      skillUpgrades: {
+        dash: [
+          { tier: 1, cost: 400 },
+          { tier: 2, cost: 800 },
+          { tier: 3, cost: 1600 }
+        ],
+        aoe: [
+          { tier: 1, cost: 600 },
+          { tier: 2, cost: 1200 },
+          { tier: 3, cost: 2400 }
+        ],
+        shield: [
+          { tier: 1, cost: 300 },
+          { tier: 2, cost: 600 },
+          { tier: 3, cost: 1200 }
+        ]
+      },
+      services: [
+        { id: "fullheal", baseCost: 150 },
+        { id: "combatboost", baseCost: 200 },
+        { id: "secondchance", baseCost: 800 },
+        { id: "blackmarket", baseCost: 0 }
+      ],
+      extraLifeService: { id: "onelife", baseCost: 2000, chance: 0.1 },
+      potionPrice: {
+        sequence: [10, 20, 30, 40, 50],
+        cap: 50,
+        avariceMultiplier: 2
+      },
+      merchantFavorDiscounts: {
+        merchfavor1: 0.15,
+        merchfavor: 0.30,
+        merchfavor3: 0.45
+      },
+      rngPurposes: [
+        "merchant/relic-rarity",
+        "merchant/relic-candidate",
+        "merchant/service-life",
+        "merchant/service-choice",
+        "merchant/black-market-result"
+      ],
+      consumption: {
+        relicSlot: "purchase or reservation",
+        serviceSlot: "successful service",
+        reservationDeposit: "on reservation; never refunded",
+        buyback: "one canonical relic stack",
+        blackMarket: "target removed only with atomic replacement"
+      },
+      replacementPolicy: "canonical evaluateRelicAcquisition and replacement build",
+      sourceEvidence: [
+        "game.js:MERCHANT_RELIC_TIERS/generateMerchantSlots",
+        "game.js:merchantPotionCost/merchantSkillUpgradeCost",
+        "camp-runtime.js:spendMerchantUpgradeGold",
+        "camp-runtime.js:tryBuyRelicFromMerchant/tryBuyReservedRelicFromMerchant",
+        "camp-runtime.js:tryUseBlackMarket/trySellRelicToMerchant",
+        "skills-data.js:MERCHANT_SKILL_UPGRADES"
+      ]
+    }
+  };
   const sourceManifest = {
     schemaVersion: 3,
     rulesetId: RULESET_ID,
@@ -2972,6 +3099,7 @@ function buildCanonicalData(records, textByFile) {
     ["gold-sources.generated.json", goldSourcesData],
     ["gold-modifiers.generated.json", goldModifiersData],
     ["meta-transaction-policy.generated.json", metaTransactionPolicyData],
+    ["merchant-transaction-policy.generated.json", merchantTransactionPolicyData],
     ["room-reward-bounds.generated.json", roomRewardBoundsData],
     ["chest-reward-bounds.generated.json", chestRewardBoundsData],
     ["relic-reward-fallback-policy.generated.json", relicRewardFallbackPolicy],

@@ -34,9 +34,24 @@
 
 ## Next work
 
-- Phase 3B2C4 - compact idempotency response reconstruction.
-- Transactional Merchant, Forge, and Crossroads sources remain deferred.
-- Do not start the next phase automatically.
+- Milestone M1 - Meta Transactions is active.
+- Commit `75c06c6` implements the shared immutable atomic transaction core.
+- The core binds canonical source/offer/choice/transaction IDs to run,
+  ruleset hash, revision, state digest, and build digest.
+- It provides exact retry, conflicting-retry rejection, bounded receipts,
+  rollback, restart determinism, one existing gold ledger for run/camp
+  balances, and canonical offer rebinding after multi-slot purchases.
+- Core verification: targeted 9/9; fast 21/21; phase 556/556; baseline 3/3
+  plus headed smoke PASS; 12 golden cases and 256 property seeds.
+- Current M1 ruleset hash after the core commit:
+  `sha256:58cb8868556314bb871570f7f0063650afd9385e2894b39daebcffb2cceabc9b`.
+- Canonical Merchant transactions are complete: inventory, prices, purchases,
+  sold/locked state, relic replacement/reservation, buyback, services, and
+  exact retry all derive from server-issued opaque choices.
+- Merchant verification: targeted 9/9; combined targeted 27/27; fast 30/30;
+  phase 565/565; baseline 3/3 plus headed smoke PASS; 24 golden cases and
+  128 property seeds.
+- Next M1 block: canonical Forge Temper and Transmute transactions.
 
 ## Verification
 

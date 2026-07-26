@@ -60,6 +60,7 @@ function normalizeChoiceSpec(choice, index) {
   return {
     kind: requireText(choice.kind, `META_TRANSACTION_CHOICE_KIND_REQUIRED:${index}`),
     label: requireText(choice.label, `META_TRANSACTION_CHOICE_LABEL_REQUIRED:${index}`),
+    status: choice.status === "locked" ? "locked" : "available",
     publicData: structuredClone(choice.publicData ?? {}),
     privateData: structuredClone(choice.privateData ?? {})
   };
@@ -159,7 +160,7 @@ export async function issueMetaTransactionOfferV08(metaState, rawSpec, context =
       label: choice.label,
       publicData: choice.publicData,
       privateData: choice.privateData,
-      status: "available"
+      status: choice.status
     });
   }
   const next = structuredClone(metaState);
@@ -474,7 +475,7 @@ export function assertPendingMetaTransactionOfferV08(offer) {
     }
     transactions.add(choice.transactionId);
     choices.add(choice.choiceId);
-    if (!["available", "sold"].includes(choice.status)) {
+    if (!["available", "locked", "sold"].includes(choice.status)) {
       throw new TypeError("META_TRANSACTION_CHOICE_STATUS_INVALID");
     }
   }

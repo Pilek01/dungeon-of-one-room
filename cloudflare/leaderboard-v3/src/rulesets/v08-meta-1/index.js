@@ -26,8 +26,14 @@ import {
   resolveRelicFallback,
   resolveRelicRewardAvailability
 } from "./relic-reward-fallback.js";
+import {
+  commitMerchantTransactionV08,
+  issueMerchantInventoryV08
+} from "./merchant-policy.js";
+import { projectPublicMetaTransactionOfferV08 } from "./meta-transaction.js";
 export {
   applyRelicAcquisition,
+  applyRelicRemovalV08,
   assertCanonicalRelicBuildDigestV08,
   canAcquireRelic,
   computeRelicBuildDigestV08,
@@ -86,6 +92,12 @@ export {
   projectPublicMetaTransactionOfferV08,
   spendCanonicalGoldV08
 } from "./meta-transaction.js";
+export {
+  MERCHANT_POLICY_SPEC,
+  V08_MERCHANT_TRANSACTION_POLICY,
+  commitMerchantTransactionV08,
+  issueMerchantInventoryV08
+} from "./merchant-policy.js";
 
 function mergeContext(options, context) {
   return {
@@ -172,6 +184,25 @@ export function createV08Meta1Ruleset(options = {}) {
         request,
         mergeContext(options, context)
       );
+    },
+
+    async issueMerchantInventory(state, context = {}) {
+      return issueMerchantInventoryV08(
+        state,
+        mergeContext(options, context)
+      );
+    },
+
+    async commitMerchantTransaction(state, request, context = {}) {
+      return commitMerchantTransactionV08(
+        state,
+        request,
+        mergeContext(options, context)
+      );
+    },
+
+    projectPublicMerchantInventory(state) {
+      return projectPublicMetaTransactionOfferV08(state?.pendingInventory);
     },
 
     async issueRoomDirective(state, context = {}) {

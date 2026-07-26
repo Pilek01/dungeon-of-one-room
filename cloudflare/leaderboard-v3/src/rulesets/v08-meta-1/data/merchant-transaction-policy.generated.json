@@ -1,0 +1,199 @@
+{
+  "schemaVersion": 1,
+  "rulesetId": "v08-meta-1",
+  "sourceCommit": "f98820c99066d810169e100beb23a54a332734bd",
+  "sources": [
+    {
+      "file": "camp-runtime.js",
+      "byteLength": 30381,
+      "sha256": "302c3442e6e02442f21283b073603bb051e912ac365c55541d4a1b7afe76997a"
+    },
+    {
+      "file": "game.js",
+      "byteLength": 1292796,
+      "sha256": "a7d436f8cdde618e7bab802322a658d2055f201950d9ae7b4598269feff3df00"
+    },
+    {
+      "file": "merchant-curation.js",
+      "byteLength": 827,
+      "sha256": "84dbcbb30c0909cb309154826df7c80d816fe9db90584a8af880eacfc70ceba9"
+    },
+    {
+      "file": "relic-data.js",
+      "byteLength": 9135,
+      "sha256": "fa4cdd27c3b3b9d2b61df3bc346a4123e9d3f70f58afdc16cd626411d6bdfa59"
+    },
+    {
+      "file": "relic-runtime.js",
+      "byteLength": 9127,
+      "sha256": "87e02a9a1519aa5c9c621e23fabe5400cfda8274c1aa39c50cd471478e642d97"
+    },
+    {
+      "file": "skills-data.js",
+      "byteLength": 2116,
+      "sha256": "1b49e35d643c35277b800f0cf81a875d8f844931c8ce3ad817a92e3a923e5841"
+    }
+  ],
+  "canonicalData": {
+    "policyVersion": "v08-merchant-transaction-1",
+    "implementationStatus": "m1-disconnected-test-only",
+    "trigger": "cleared merchant room; player interacts with Merchant",
+    "relicTiers": [
+      {
+        "rarity": "normal",
+        "weight": 60,
+        "price": 300
+      },
+      {
+        "rarity": "rare",
+        "weight": 25,
+        "price": 600
+      },
+      {
+        "rarity": "epic",
+        "weight": 12,
+        "price": 1000
+      },
+      {
+        "rarity": "legendary",
+        "weight": 3,
+        "price": 2000
+      }
+    ],
+    "relicReturnValues": [
+      {
+        "rarity": "normal",
+        "value": 50
+      },
+      {
+        "rarity": "rare",
+        "value": 100
+      },
+      {
+        "rarity": "epic",
+        "value": 200
+      },
+      {
+        "rarity": "legendary",
+        "value": 400
+      },
+      {
+        "rarity": "mythic",
+        "value": 800
+      }
+    ],
+    "reservationDepositRatio": 0.25,
+    "reservationDepositRefundable": false,
+    "buybackRatio": 0.5,
+    "maximumLives": 5,
+    "maximumSecondChancePurchases": 5,
+    "maximumSkillTier": 3,
+    "legendarySkillRequiredDepth": 20,
+    "skillUpgrades": {
+      "dash": [
+        {
+          "tier": 1,
+          "cost": 400
+        },
+        {
+          "tier": 2,
+          "cost": 800
+        },
+        {
+          "tier": 3,
+          "cost": 1600
+        }
+      ],
+      "aoe": [
+        {
+          "tier": 1,
+          "cost": 600
+        },
+        {
+          "tier": 2,
+          "cost": 1200
+        },
+        {
+          "tier": 3,
+          "cost": 2400
+        }
+      ],
+      "shield": [
+        {
+          "tier": 1,
+          "cost": 300
+        },
+        {
+          "tier": 2,
+          "cost": 600
+        },
+        {
+          "tier": 3,
+          "cost": 1200
+        }
+      ]
+    },
+    "services": [
+      {
+        "id": "fullheal",
+        "baseCost": 150
+      },
+      {
+        "id": "combatboost",
+        "baseCost": 200
+      },
+      {
+        "id": "secondchance",
+        "baseCost": 800
+      },
+      {
+        "id": "blackmarket",
+        "baseCost": 0
+      }
+    ],
+    "extraLifeService": {
+      "id": "onelife",
+      "baseCost": 2000,
+      "chance": 0.1
+    },
+    "potionPrice": {
+      "sequence": [
+        10,
+        20,
+        30,
+        40,
+        50
+      ],
+      "cap": 50,
+      "avariceMultiplier": 2
+    },
+    "merchantFavorDiscounts": {
+      "merchfavor1": 0.15,
+      "merchfavor": 0.3,
+      "merchfavor3": 0.45
+    },
+    "rngPurposes": [
+      "merchant/relic-rarity",
+      "merchant/relic-candidate",
+      "merchant/service-life",
+      "merchant/service-choice",
+      "merchant/black-market-result"
+    ],
+    "consumption": {
+      "relicSlot": "purchase or reservation",
+      "serviceSlot": "successful service",
+      "reservationDeposit": "on reservation; never refunded",
+      "buyback": "one canonical relic stack",
+      "blackMarket": "target removed only with atomic replacement"
+    },
+    "replacementPolicy": "canonical evaluateRelicAcquisition and replacement build",
+    "sourceEvidence": [
+      "game.js:MERCHANT_RELIC_TIERS/generateMerchantSlots",
+      "game.js:merchantPotionCost/merchantSkillUpgradeCost",
+      "camp-runtime.js:spendMerchantUpgradeGold",
+      "camp-runtime.js:tryBuyRelicFromMerchant/tryBuyReservedRelicFromMerchant",
+      "camp-runtime.js:tryUseBlackMarket/trySellRelicToMerchant",
+      "skills-data.js:MERCHANT_SKILL_UPGRADES"
+    ]
+  }
+}

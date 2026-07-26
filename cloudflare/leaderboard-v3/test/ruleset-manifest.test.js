@@ -117,7 +117,7 @@ test("generated Phase 3B1, 3B2A and 3B2B1 data is canonical and source-bound", a
   }
 });
 
-test("source manifest contains only active through Phase 3B2B2B1 baseline sources", async () => {
+test("source manifest contains only active baseline and M1 evidence sources", async () => {
   const manifest = JSON.parse(
     await readFile(path.join(DATA_ROOT, "source-manifest.generated.json"), "utf8")
   );
@@ -137,11 +137,11 @@ test("source manifest contains only active through Phase 3B2B2B1 baseline source
       "relic-data.js",
       "relic-runtime.js",
       "room-pity.js",
+      "skills-data.js",
       "vault-room.js"
     ]
   );
   const forbiddenDeferredSources = [
-    "skills-data.js",
     "elixir-data.js",
     "pact-effects.js"
   ];

@@ -80,7 +80,24 @@ export function createEmptyRelicBuildV08() {
     pacts: [],
     campUpgrades: {},
     skillTiers: {},
-    elixirs: []
+    elixirs: [],
+    resources: {
+      potions: 3,
+      maxPotions: 3,
+      hp: 100,
+      maxHp: 100,
+      skillCooldowns: { dash: 0, aoe: 0, shield: 0 },
+      combatBoostTurns: 0,
+      combatBoostAttack: 0,
+      combatBoostArmor: 0,
+      hasSecondChance: false,
+      highestUnlockedDepth: 0
+    },
+    merchant: {
+      potionsBought: 0,
+      secondChancePurchases: 0,
+      reservedRelic: null
+    }
   };
 }
 
@@ -283,6 +300,29 @@ export async function applyRelicReplacementBuildV08(
   return next;
 }
 
+export async function applyRelicRemovalV08(build, removal, context = {}) {
+  const relicId = String(removal?.relicId || "");
+  const stacks = Number(removal?.stacks ?? 1);
+  if (!Number.isSafeInteger(stacks) || stacks < 1) {
+    throw new TypeError("RELIC_REMOVAL_STACKS_INVALID");
+  }
+  const next = structuredClone(build);
+  const index = next.relics.findIndex((entry) => entry.relicId === relicId);
+  if (index < 0 || next.relics[index].stacks < stacks) {
+    throw new TypeError("RELIC_REMOVAL_TARGET_CHANGED");
+  }
+  next.relics[index].stacks -= stacks;
+  if (next.relics[index].stacks === 0) next.relics.splice(index, 1);
+  const summary = summarizeRelics(next.relics);
+  Object.assign(next, {
+    relicSlotBase: slotPolicy.baseRelicSlots,
+    ...summary
+  });
+  next.buildDigest = await sha256(buildDigestInput(next), context.cryptoProvider);
+  assertCanonicalRelicBuildV08(next);
+  return next;
+}
+
 export function assertCanonicalRelicBuildV08(build) {
   if (!build || typeof build !== "object" || !Array.isArray(build.relics)) {
     throw new TypeError("RELIC_BUILD_INVALID");
@@ -355,6 +395,37 @@ export function assertCanonicalRelicBuildV08(build) {
   }
   if (!/^sha256:[a-f0-9]{64}$/u.test(build.buildDigest)) {
     throw new TypeError("RELIC_BUILD_DIGEST_INVALID");
+  }
+  if (!build.resources || typeof build.resources !== "object") {
+    throw new TypeError("RELIC_BUILD_RESOURCES_INVALID");
+  }
+  for (const field of [
+    "potions",
+    "maxPotions",
+    "hp",
+    "maxHp",
+    "combatBoostTurns",
+    "combatBoostAttack",
+    "combatBoostArmor",
+    "highestUnlockedDepth"
+  ]) {
+    if (!Number.isSafeInteger(build.resources[field]) || build.resources[field] < 0) {
+      throw new TypeError(`RELIC_BUILD_RESOURCES_INVALID:${field}`);
+    }
+  }
+  if (
+    build.resources.potions > build.resources.maxPotions ||
+    build.resources.hp > build.resources.maxHp
+  ) {
+    throw new TypeError("RELIC_BUILD_RESOURCES_BOUNDS_INVALID");
+  }
+  if (!build.merchant || typeof build.merchant !== "object") {
+    throw new TypeError("RELIC_BUILD_MERCHANT_INVALID");
+  }
+  for (const field of ["potionsBought", "secondChancePurchases"]) {
+    if (!Number.isSafeInteger(build.merchant[field]) || build.merchant[field] < 0) {
+      throw new TypeError(`RELIC_BUILD_MERCHANT_INVALID:${field}`);
+    }
   }
   return build;
 }

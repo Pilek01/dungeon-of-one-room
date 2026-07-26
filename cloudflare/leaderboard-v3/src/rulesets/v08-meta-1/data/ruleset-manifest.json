@@ -29,6 +29,10 @@
       "schemaVersion": 2
     },
     {
+      "file": "data/merchant-transaction-policy.generated.json",
+      "schemaVersion": 1
+    },
+    {
       "file": "data/meta-transaction-policy.generated.json",
       "schemaVersion": 1
     },
@@ -167,6 +171,11 @@
       "sha256": "0bb927245cbfc38c73bb868d8ca60e4154307dafcb11e121e40b199fab2046f5"
     },
     {
+      "file": "data/merchant-transaction-policy.generated.json",
+      "byteLength": 4568,
+      "sha256": "3330c6551511e2647051dac8df55cde896305616b80fde909090f9a50fd94b22"
+    },
+    {
       "file": "data/meta-transaction-policy.generated.json",
       "byteLength": 1926,
       "sha256": "11d5179259a590b6e1c1db6555fa6b35ba331a56a0150bd0a738dfce38f249e5"
@@ -263,8 +272,8 @@
     },
     {
       "file": "data/source-manifest.generated.json",
-      "byteLength": 5056,
-      "sha256": "c89e1012692e0cc10cd8fc6776901fad73dccb20b0ff0e551a1625f655eda8af"
+      "byteLength": 5306,
+      "sha256": "d30261bb7a9b4ce9a11a5238f5d057e9eac246cde8f6d6887f831e5f2b43d2ea"
     },
     {
       "file": "data/special-relic-source-audit.generated.json",
@@ -298,8 +307,8 @@
     },
     {
       "file": "index.js",
-      "byteLength": 5826,
-      "sha256": "d4fb5488c6357b28e33a10ecc7930235811e4bc22a364781cbd7d1256a439f15"
+      "byteLength": 6681,
+      "sha256": "a817649332cdb9fa8f52678e1e78e7d5941b071feeb47df8860f61cc5c6a2390"
     },
     {
       "file": "leaderboard-summary.js",
@@ -313,8 +322,8 @@
     },
     {
       "file": "merchant-policy.js",
-      "byteLength": 400,
-      "sha256": "ec0c6e71df7d290b29965b3080e91c4bba60670a7e11608c53cf58bb3c22a7cc"
+      "byteLength": 21035,
+      "sha256": "9673e6ff9d5479fabacdeea8a09028203cda64b88492d8bae4fbe5f52e6ec986"
     },
     {
       "file": "meta-state.js",
@@ -323,8 +332,8 @@
     },
     {
       "file": "meta-transaction.js",
-      "byteLength": 16706,
-      "sha256": "8d8c0f2aaa3329bb2fe3349665c9509dd4d57e5af7b69df6aa05c6cf5dd7ca2e"
+      "byteLength": 16783,
+      "sha256": "0f62f2fc6f494098fa27c68e4530c7a3a344707cc31c3c01aafe6093a2974f8b"
     },
     {
       "file": "pact-policy.js",
@@ -343,8 +352,8 @@
     },
     {
       "file": "relic-policy.js",
-      "byteLength": 14073,
-      "sha256": "14e61714120212b8928ff98eb39a809aab70ee0560e5f1b308a181ab6cda15e0"
+      "byteLength": 16400,
+      "sha256": "4f8c72df7736c5a2a79290a08f75b23e8a3cfb2290b43e0ecdd6474ac70105d2"
     },
     {
       "file": "relic-replacement.js",
@@ -390,6 +399,11 @@
       "file": "starting-relic-offer.js",
       "byteLength": 9881,
       "sha256": "994726515d11e47f5b011caaac85e8340a685d4a1bf4cbe69f9d4fade92b6c9c"
+    },
+    {
+      "file": "test/m1-merchant-golden-fixtures.json",
+      "byteLength": 1791,
+      "sha256": "51f022541d89dd239089ff6b0dc131903041a86b7a2239d1f4d63fd8952710a0"
     },
     {
       "file": "test/m1-meta-transaction-core-golden-fixtures.json",
@@ -447,5 +461,5 @@
       "sha256": "e06c85319b457817a0fa313302d0136eb746738719ab9cc6db73eacc8d62b489"
     }
   ],
-  "rulesetHash": "sha256:58cb8868556314bb871570f7f0063650afd9385e2894b39daebcffb2cceabc9b"
+  "rulesetHash": "sha256:8fb21bce446035192a4c7d2061cb69d5263fd6c681e9d606a02ad7ba4e452eab"
 }

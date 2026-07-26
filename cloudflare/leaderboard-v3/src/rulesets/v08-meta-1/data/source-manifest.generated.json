@@ -163,6 +163,15 @@
       ]
     },
     {
+      "file": "skills-data.js",
+      "byteLength": 2116,
+      "sha256": "1b49e35d643c35277b800f0cf81a875d8f844931c8ce3ad817a92e3a923e5841",
+      "evidenceSymbols": [
+        "MAX_SKILL_TIER",
+        "MERCHANT_SKILL_UPGRADES"
+      ]
+    },
+    {
       "file": "vault-room.js",
       "byteLength": 10717,
       "sha256": "6623bbeb423e2540657f0fe40e81a78d2b5966a237195b4e71d8be34d4a7702c",
