@@ -143,6 +143,10 @@ function validateRegisteredStartBody(body) {
     profileCredential: requireRecoveryCredential(
       body.profileCredential,
       "profileCredential"
+    ),
+    recoveryCredential: requireRecoveryCredential(
+      body.recoveryCredential,
+      "recoveryCredential"
     )
   };
 }
@@ -200,6 +204,9 @@ async function operationRecord({
   stateDigest,
   createdAt
 }) {
+  const retainedResponseBody = structuredClone(responseBody);
+  delete retainedResponseBody.recoveryCredential;
+  delete retainedResponseBody.profileCredential;
   return createCompactOperationRecord({
     operationId: idempotencyKey,
     operationType,
@@ -211,7 +218,7 @@ async function operationRecord({
     revisionBefore,
     revisionAfter: resultingRevision,
     responseStatus,
-    responseBody,
+    responseBody: retainedResponseBody,
     stateDigest,
     createdAt
   });
@@ -672,6 +679,105 @@ async function handleProfileCamp(request, env, options, repositories) {
   return jsonResponse(responseBody, 200);
 }
 
+function validateResumeBody(body) {
+  const allowed = [
+    "operationId",
+    "runId",
+    "recoveryCredential",
+    "clientProtocolVersion",
+    "lastKnownRevision"
+  ];
+  if (Object.keys(body).some((field) => !allowed.includes(field))) {
+    throw new HttpError(400, "RESUME_REQUEST_FIELDS_INVALID", "Resume request fields are invalid.");
+  }
+  const lastKnownRevision = Number(body.lastKnownRevision);
+  if (!Number.isSafeInteger(lastKnownRevision) || lastKnownRevision < 0) {
+    throw new HttpError(400, "RESUME_REVISION_INVALID", "Resume revision is invalid.");
+  }
+  let recoveryCredential;
+  try {
+    recoveryCredential = requireRecoveryCredential(body.recoveryCredential);
+  } catch {
+    throw new HttpError(400, "RECOVERY_CREDENTIAL_INVALID", "Recovery credential is invalid.");
+  }
+  return {
+    operationId: requireString(body.operationId, "operationId", {
+      maximum: 96,
+      pattern: /^op_[a-f0-9]{32}$/u
+    }),
+    runId: validateRegisteredRunId(body.runId),
+    recoveryCredential,
+    clientProtocolVersion: requireString(body.clientProtocolVersion, "clientProtocolVersion", { maximum: 64 }),
+    lastKnownRevision
+  };
+}
+
+async function handleRegisteredResume(request, env, options, repositories) {
+  const idempotencyKey = requireIdempotencyKey(request);
+  const body = validateResumeBody(await readJsonRequest(request));
+  if (body.operationId !== idempotencyKey) {
+    throw new HttpError(400, "RESUME_OPERATION_ID_MISMATCH", "Resume operation identity is inconsistent.");
+  }
+  if (body.clientProtocolVersion !== PROTOCOL_VERSION) {
+    throw new HttpError(409, "PROTOCOL_VERSION_MISMATCH", "Client protocol version is unsupported.");
+  }
+  const recovery = await repositories.runs.getRecovery(body.runId);
+  if (!recovery) throw new HttpError(404, "RUN_NOT_FOUND", "Run not found.");
+  const state = recovery.state;
+  const expectedVerifier = await createCredentialVerifier(
+    body.recoveryCredential,
+    `ranked-run-recovery-v1:${state.runId}:${state.rulesetHash}`
+  );
+  if (!recovery.recoveryVerifier || !timingSafeVerifierEqual(
+    recovery.recoveryVerifier,
+    expectedVerifier
+  )) {
+    throw new HttpError(401, "RECOVERY_UNAUTHORIZED", "Run recovery credential is invalid.");
+  }
+  const now = options.now();
+  if (state.expiresAt <= now || ["expired", "abandoned"].includes(state.status)) {
+    throw new HttpError(410, "RUN_RECOVERY_UNAVAILABLE", "Run recovery retention has ended.");
+  }
+  const ruleset = resolveRegisteredRuleset(options, state);
+  const secret = requireSecret(env);
+  const stateDigest = state.stateDigest || await canonicalDigest(stateForDigest(state));
+  let tokenField = null;
+  let token = null;
+  if (state.status === "awaiting_starting_relic") {
+    tokenField = "bootstrapToken";
+    token = await signBoundaryToken(
+      bootstrapTokenPayloadForState(state, stateDigest, now),
+      secret
+    );
+  } else if (state.status === "active") {
+    tokenField = "checkpointToken";
+    token = await signBoundaryToken(
+      roomTokenPayloadForState(state, stateDigest, now),
+      secret
+    );
+  } else if (["victory", "defeat", "extraction"].includes(state.status)) {
+    tokenField = "checkpointToken";
+    token = await signBoundaryToken(
+      terminalTokenPayloadForState(state, stateDigest, now),
+      secret
+    );
+  } else if (state.status !== "finalized") {
+    throw new HttpError(409, "RUN_RECOVERY_STATE_UNSUPPORTED", "Run cannot be resumed from this state.");
+  }
+  const responseBody = {
+    ok: true,
+    protocolVersion: PROTOCOL_VERSION,
+    acceptedBoundary: "run_resumed",
+    runId: state.runId,
+    revision: state.revision,
+    publicStateDigest: stateDigest,
+    ...(tokenField ? { [tokenField]: token } : {}),
+    metaState: publicRulesetMetaState(state, ruleset),
+    ...(state.status === "finalized" ? { leaderboardEntryId: state.runId } : {})
+  };
+  return jsonResponse(responseBody, 200, { "cache-control": "no-store" });
+}
+
 async function handleRegisteredStart(request, env, options, repositories) {
   const idempotencyKey = requireIdempotencyKey(request);
   const body = validateRegisteredStartBody(await readJsonRequest(request));
@@ -684,11 +790,16 @@ async function handleRegisteredStart(request, env, options, repositories) {
   });
   const now = options.now();
   const profileAccess = await loadRankedProfile(body, repositories, now);
+  const runId = randomIdentifier("run", options.randomUUID);
+  const recoveryVerifier = await createCredentialVerifier(
+    body.recoveryCredential,
+    `ranked-run-recovery-v1:${runId}:${body.rulesetHash}`
+  );
   const transition = await createAuthenticatedRunBootstrap(body, {
     ruleset,
     secret,
     now,
-    runId: randomIdentifier("run", options.randomUUID),
+    runId,
     bootstrapNonce: randomIdentifier("bootstrap", options.randomUUID),
     profileId: body.profileId,
     profileState: profileAccess.existing?.state || null
@@ -760,7 +871,9 @@ async function handleRegisteredStart(request, env, options, repositories) {
       stateDigest,
       recentOps,
       startIdempotencyKey: idempotencyKey,
-      startRequestDigest: requestDigest
+      startRequestDigest: requestDigest,
+      recoveryVerifier,
+      recoveryIssuedAt: now
     });
   } catch (cause) {
     if (cause?.code !== "START_OPERATION_CONFLICT") throw cause;
@@ -1174,6 +1287,12 @@ export function createWorker(workerOptions = {}) {
       try {
         const url = new URL(request.url);
         const repositories = resolveRepositories(env, options);
+        if (request.method === "POST" && url.pathname === "/api/v3/runs/resume") {
+          if (!options.rulesetRegistry) {
+            throw new HttpError(404, "ROUTE_NOT_FOUND", "Route not found.");
+          }
+          return await handleRegisteredResume(request, env, options, repositories);
+        }
         if (request.method === "POST" && url.pathname === "/api/v3/profiles/camp") {
           if (!options.rulesetRegistry) {
             throw new HttpError(404, "ROUTE_NOT_FOUND", "Route not found.");

@@ -112,10 +112,12 @@ test("M4 structured logging redacts all token and digest fields", () => {
   assert.deepEqual(
     transportApi.redact({
       checkpointToken: "secret",
+      recoveryCredential: "private",
       nested: { publicStateDigest: "digest", safe: "visible" }
     }),
     {
       checkpointToken: "[redacted]",
+      recoveryCredential: "[redacted]",
       nested: { publicStateDigest: "[redacted]", safe: "visible" }
     }
   );

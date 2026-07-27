@@ -1,4 +1,4 @@
-import { canonicalDigest } from "./digests.js";
+import { base64UrlEncode, canonicalDigest } from "./digests.js";
 
 const CREDENTIAL_PATTERN = /^[A-Za-z0-9_-]{43,128}$/u;
 
@@ -8,6 +8,12 @@ export function requireRecoveryCredential(value, field = "recoveryCredential") {
     throw new TypeError(`CREDENTIAL_INVALID:${field}`);
   }
   return credential;
+}
+
+export function createRecoveryCredential(cryptoProvider = crypto) {
+  const bytes = new Uint8Array(32);
+  cryptoProvider.getRandomValues(bytes);
+  return base64UrlEncode(bytes);
 }
 
 export async function createCredentialVerifier(credential, purpose) {

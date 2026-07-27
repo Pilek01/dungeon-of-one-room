@@ -22,10 +22,14 @@ export function createMemoryRepositories() {
   };
 
   function storeRun(state, metadata) {
+    const current = runRows.get(state.runId);
     runRows.set(state.runId, {
       state: clone(state),
       stateDigest: metadata.stateDigest,
-      recentOps: clone(metadata.recentOps)
+      recentOps: clone(metadata.recentOps),
+      recoveryVerifier: metadata.recoveryVerifier ?? current?.recoveryVerifier ?? null,
+      recoveryIssuedAt: metadata.recoveryIssuedAt ?? current?.recoveryIssuedAt ?? null,
+      lastAccessedAt: metadata.recoveryIssuedAt ?? current?.lastAccessedAt ?? null
     });
   }
 
@@ -64,6 +68,19 @@ export function createMemoryRepositories() {
         ...clone(row.state),
         stateDigest: row.stateDigest,
         recentOps: clone(row.recentOps)
+      };
+    },
+
+    async getRecovery(runId) {
+      metrics.reads += 1;
+      metrics.statements.push("read_run_recovery");
+      const row = runRows.get(runId);
+      if (!row) return null;
+      return {
+        state: this.peek(runId),
+        recoveryVerifier: row.recoveryVerifier,
+        recoveryIssuedAt: row.recoveryIssuedAt,
+        lastAccessedAt: row.lastAccessedAt
       };
     },
 

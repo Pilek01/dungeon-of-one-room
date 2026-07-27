@@ -58,7 +58,8 @@ function createHarness() {
       rulesetHash: manifest.rulesetHash,
       clientInstallIdHash: "install_0123456789abcdef",
       profileId: PROFILE_ID,
-      profileCredential: PROFILE_CREDENTIAL
+      profileCredential: PROFILE_CREDENTIAL,
+      recoveryCredential: "rrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrr"
     }, operationId);
   }
 

@@ -48,6 +48,7 @@ test("M4 Ranked start persists exact pending action before sending", async () =>
             runId: "run_a1",
             revision: 0,
             bootstrapToken: "bootstrap-secret",
+            recoveryCredential: "rrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrr",
             metaState: meta("awaiting_starting_relic", 0)
           }
         };

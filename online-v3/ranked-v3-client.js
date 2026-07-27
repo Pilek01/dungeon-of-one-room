@@ -144,6 +144,9 @@
     async function start(input) {
       const operationId = input.operationId || transport.createOperationId();
       const profile = ensureProfileIdentity(store, options);
+      const recoveryCredential = base64Url(
+        (options.cryptoProvider || globalThis.crypto).getRandomValues(new Uint8Array(32))
+      );
       const body = {
         playerName: String(input.playerName || "Anonymous"),
         season: String(input.season || "local-m4"),
@@ -152,7 +155,8 @@
         rulesetHash: protocol.RULESET_HASH,
         clientInstallIdHash: String(input.clientInstallIdHash),
         profileId: profile.profileId,
-        profileCredential: profile.profileCredential
+        profileCredential: profile.profileCredential,
+        recoveryCredential
       };
       persist({
         schemaVersion: 1,
@@ -170,6 +174,14 @@
         rulesetId: protocol.RULESET_ID,
         rulesetHash: protocol.RULESET_HASH
       });
+      const recoveryRecord = {
+        runId: validated.metaState.runId,
+        recoveryCredential,
+        rulesetId: protocol.RULESET_ID,
+        rulesetHash: protocol.RULESET_HASH
+      };
+      store.saveRecovery?.(recoveryRecord);
+      options.recoveryRecord = recoveryRecord;
       persist({
         ...snapshot,
         runId: validated.metaState.runId,
@@ -286,6 +298,40 @@
       return clone(result.payload);
     }
 
+    async function resumeCanonical(input = {}, operationId = transport.createOperationId()) {
+      const recovery = store.loadRecovery?.() || options.recoveryRecord;
+      if (!recovery?.runId || !recovery?.recoveryCredential) {
+        throw new TypeError("RANKED_RECOVERY_CREDENTIAL_MISSING");
+      }
+      const current = snapshot;
+      const body = {
+        operationId,
+        runId: String(input.runId || recovery.runId),
+        recoveryCredential: String(input.recoveryCredential || recovery.recoveryCredential),
+        clientProtocolVersion: protocol.PROTOCOL_VERSION,
+        lastKnownRevision: Math.max(0, Number(input.lastKnownRevision ?? current?.revision) || 0)
+      };
+      const result = await transport.request(protocol.ENDPOINTS.resume, { operationId, body });
+      const validated = protocol.validateMutationResponse(result.payload, {
+        runId: body.runId,
+        rulesetId: protocol.RULESET_ID,
+        rulesetHash: protocol.RULESET_HASH
+      });
+      persist({
+        schemaVersion: 1,
+        mode: "ranked",
+        runId: validated.metaState.runId,
+        revision: validated.metaState.revision,
+        rulesetId: protocol.RULESET_ID,
+        rulesetHash: protocol.RULESET_HASH,
+        token: validated.token,
+        publicState: clone(validated.metaState),
+        pendingOperation: null,
+        lastAcknowledgedOperationId: operationId
+      });
+      return clone(result.payload);
+    }
+
     async function retryPending() {
       const pending = requireSnapshot().pendingOperation;
       if (!pending) throw new TypeError("RANKED_PENDING_OPERATION_MISSING");
@@ -323,6 +369,7 @@
       checkpoint,
       finalize,
       camp,
+      resumeCanonical,
       retryPending,
       getSnapshot: () => clone(snapshot),
       clear: () => {

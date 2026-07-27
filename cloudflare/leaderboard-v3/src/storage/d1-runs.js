@@ -56,9 +56,10 @@ export function createD1RunRepository(db, leaderboardRepository, profileReposito
             room_nonce, gold, lives, canonical_state_json, state_digest,
             journal_digest, recent_ops_json, anomaly_score, started_at,
             updated_at, expires_at, finalized_at, outcome,
-            start_idempotency_key, start_request_digest
+            start_idempotency_key, start_request_digest, recovery_verifier,
+            recovery_issued_at, last_accessed_at
           ) VALUES (
-            ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+            ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
           )
         `).bind(
           state.runId,
@@ -87,7 +88,10 @@ export function createD1RunRepository(db, leaderboardRepository, profileReposito
           state.finalizedAt,
           state.outcome,
           metadata.startIdempotencyKey,
-          metadata.startRequestDigest
+          metadata.startRequestDigest,
+          metadata.recoveryVerifier,
+          metadata.recoveryIssuedAt,
+          metadata.recoveryIssuedAt
         ).run();
         return true;
       } catch (cause) {
@@ -116,6 +120,22 @@ export function createD1RunRepository(db, leaderboardRepository, profileReposito
         WHERE run_id = ?
       `).bind(runId).first();
       return stateFromRow(row);
+    },
+
+    async getRecovery(runId) {
+      const row = await db.prepare(`
+        SELECT canonical_state_json, state_digest, recent_ops_json,
+               recovery_verifier, recovery_issued_at, last_accessed_at
+        FROM ranked_runs
+        WHERE run_id = ?
+      `).bind(runId).first();
+      const state = stateFromRow(row);
+      return state ? {
+        state,
+        recoveryVerifier: row.recovery_verifier,
+        recoveryIssuedAt: row.recovery_issued_at,
+        lastAccessedAt: row.last_accessed_at
+      } : null;
     },
 
     async updateConditional(state, expectedRevision, metadata) {

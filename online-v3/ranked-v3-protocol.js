@@ -22,7 +22,6 @@
     event: Object.freeze({ method: "POST", path: `${API_PREFIX}/runs/event` }),
     finalize: Object.freeze({ method: "POST", path: `${API_PREFIX}/runs/finalize` }),
     resume: Object.freeze({ method: "POST", path: `${API_PREFIX}/runs/resume` }),
-    abandon: Object.freeze({ method: "POST", path: `${API_PREFIX}/runs/abandon` }),
     camp: Object.freeze({ method: "POST", path: `${API_PREFIX}/profiles/camp` }),
     leaderboard: Object.freeze({ method: "GET", path: `${API_PREFIX}/leaderboard` }),
     detail: Object.freeze({ method: "GET", path: `${API_PREFIX}/leaderboard/:runId` })

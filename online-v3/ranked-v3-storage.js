@@ -14,7 +14,8 @@
     installationId: `${STORAGE_PREFIX}:installationIdV2`,
     leaderboardCache: `${STORAGE_PREFIX}:leaderboardCacheV2`,
     profile: `${STORAGE_PREFIX}:profileV1`,
-    writerLease: `${STORAGE_PREFIX}:writerLeaseV1`
+    writerLease: `${STORAGE_PREFIX}:writerLeaseV1`,
+    recovery: `${STORAGE_PREFIX}:recoveryV1`
   });
 
   function isOwnedKey(key) {
@@ -53,6 +54,15 @@
       },
       saveProfile(profile) {
         storage.setItem(STORAGE_KEYS.profile, serialize(profile));
+      },
+      loadRecovery() {
+        return deserialize(storage.getItem(STORAGE_KEYS.recovery), null);
+      },
+      saveRecovery(recovery) {
+        storage.setItem(STORAGE_KEYS.recovery, serialize(recovery));
+      },
+      clearRecovery() {
+        storage.removeItem(STORAGE_KEYS.recovery);
       },
       loadWriterLease() {
         return deserialize(storage.getItem(STORAGE_KEYS.writerLease), null);

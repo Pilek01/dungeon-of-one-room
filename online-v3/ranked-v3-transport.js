@@ -38,7 +38,7 @@
     if (!value || typeof value !== "object") return value;
     return Object.fromEntries(Object.entries(value).map(([key, entry]) => [
       key,
-      /token|authorization|digest/iu.test(key) ? "[redacted]" : redact(entry)
+      /token|authorization|digest|credential/iu.test(key) ? "[redacted]" : redact(entry)
     ]));
   }
 

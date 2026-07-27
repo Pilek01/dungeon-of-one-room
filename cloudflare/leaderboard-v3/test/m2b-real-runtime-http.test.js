@@ -61,6 +61,7 @@ function createRealHarness(options = {}) {
       clientInstallIdHash: "install_0123456789abcdef",
       profileId: "profile_0123456789abcdef0123456789abcdef",
       profileCredential: "ppppppppppppppppppppppppppppppppppppppppppp",
+      recoveryCredential: "rrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrr",
       ...overrides
     };
   }
