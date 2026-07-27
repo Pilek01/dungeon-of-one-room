@@ -483,7 +483,7 @@ describe("Online v3 local Wrangler runtime and persistent D1", {
     );
   }, { timeout: 30_000 });
 
-  test("migration exposes exactly the two application tables and required index", {
+  test("migrations expose exactly the three application tables and required index", {
     timeout: 30_000
   }, async () => {
     const schema = await d1Query(`
@@ -500,6 +500,7 @@ describe("Online v3 local Wrangler runtime and persistent D1", {
       .map((entry) => entry.name);
     assert.deepEqual(applicationTables, [
       "leaderboard_entries",
+      "ranked_profiles",
       "ranked_runs"
     ]);
     assert.equal(
