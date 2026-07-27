@@ -14,9 +14,10 @@ import {
   verifyBoundaryToken
 } from "../src/security/checkpoint-token.js";
 import { TEST_SECRET } from "./fixtures/harness.js";
+import manifest from "../src/rulesets/v08-meta-1/data/ruleset-manifest.json" with { type: "json" };
 
 const NOW = 1_800_000_000_000;
-const RULESET_HASH = "sha256:2fcc9df6032f7966ff0ede0e723dc1f0f3b0b28cc0d77533caaeb7ae886a8594";
+const RULESET_HASH = manifest.rulesetHash;
 
 async function setup(seed = 0, ruleset = createV08Meta1Ruleset({ secret: TEST_SECRET })) {
   const transition = await createAuthenticatedRunBootstrap({

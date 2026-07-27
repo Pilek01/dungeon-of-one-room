@@ -36,7 +36,7 @@ const WRANGLER = path.join(
   "bin",
   "wrangler.js"
 );
-const CONFIG = path.join(WORKER_ROOT, "wrangler.local.jsonc");
+const CONFIG = path.join(WORKER_ROOT, "wrangler.fixture.jsonc");
 const DATABASE = "dungeon-online-v3-local-fixture";
 const FIXTURE_SEASON = "fixture-season";
 const OTHER_SEASON = "fixture-season-other";

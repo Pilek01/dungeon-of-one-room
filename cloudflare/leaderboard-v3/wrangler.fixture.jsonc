@@ -1,0 +1,25 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "dungeon-online-v3-local-fixture",
+  "main": "src/local-fixture-entry.js",
+  "compatibility_date": "2026-07-23",
+  "compatibility_flags": [
+    "nodejs_compat"
+  ],
+  "vars": {
+    "ONLINE_V3_LOCAL_FIXTURE": "1",
+    "ONLINE_V3_FIXTURE_SEASON": "fixture-season"
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "dungeon-online-v3-local-fixture",
+      "database_id": "00000000-0000-0000-0000-000000000003",
+      "migrations_dir": "migrations"
+    }
+  ],
+  "observability": {
+    "enabled": true,
+    "head_sampling_rate": 1
+  }
+}

@@ -1,6 +1,8 @@
 import modifiersDocument from "./data/gold-modifiers.generated.json" with { type: "json" };
 import sourcesDocument from "./data/gold-sources.generated.json" with { type: "json" };
 import rewardBoundsDocument from "./data/room-reward-bounds.generated.json" with { type: "json" };
+import pactPolicyDocument from "./data/pact-transaction-policy.generated.json" with { type: "json" };
+import campPolicyDocument from "./data/camp-transaction-policy.generated.json" with { type: "json" };
 import {
   createEmptyRunModifierLedgerV08,
   deriveRunModifierEffects
@@ -9,11 +11,15 @@ import {
 const modifiers = modifiersDocument.canonicalData;
 const sources = sourcesDocument.canonicalData;
 const rewardBounds = rewardBoundsDocument.canonicalData;
+const pactPolicy = pactPolicyDocument.canonicalData;
+const campPolicy = campPolicyDocument.canonicalData;
 const legalSourceIds = new Set(sources.goldSources.map((entry) => entry.sourceId));
 const legalRelics = new Set([
   ...modifiers.legalRelicIds,
   ...modifiers.presentationOnlyFixtureRelicIds
 ]);
+const legalPacts = new Set(pactPolicy.pacts.map((entry) => entry.id));
+const legalCampUpgrades = new Set(campPolicy.upgrades.map((entry) => entry.id));
 const goldenIdolStackCap = modifiers.modifiers.find(
   (entry) => entry.id === "golden-idol"
 )?.stackCap;
@@ -57,10 +63,10 @@ function normalizeBuild(canonicalBuild = {}) {
     ? { ...canonicalBuild.campUpgrades }
     : {};
   for (const pactId of pacts) {
-    if (!modifiers.legalPactIds.includes(pactId)) throw new TypeError(`CANONICAL_BUILD_PACT_UNKNOWN:${pactId}`);
+    if (!legalPacts.has(pactId)) throw new TypeError(`CANONICAL_BUILD_PACT_UNKNOWN:${pactId}`);
   }
   for (const [upgradeId, level] of Object.entries(campUpgrades)) {
-    if (!modifiers.legalCampUpgradeIds.includes(upgradeId)) {
+    if (!legalCampUpgrades.has(upgradeId)) {
       throw new TypeError(`CANONICAL_BUILD_CAMP_UPGRADE_UNKNOWN:${upgradeId}`);
     }
     if (!Number.isSafeInteger(level) || level < 0) {

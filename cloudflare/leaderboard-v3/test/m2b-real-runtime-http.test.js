@@ -10,21 +10,26 @@ import {
   signBoundaryToken
 } from "../src/security/checkpoint-token.js";
 import { TEST_SECRET } from "./fixtures/harness.js";
+import manifest from "../src/rulesets/v08-meta-1/data/ruleset-manifest.json" with { type: "json" };
 
 const RULESET_ID = "v08-meta-1";
-const RULESET_HASH = "sha256:2fcc9df6032f7966ff0ede0e723dc1f0f3b0b28cc0d77533caaeb7ae886a8594";
+const RULESET_HASH = manifest.rulesetHash;
 
 function createRealHarness(options = {}) {
   const repositories = options.repositories || createMemoryRepositories();
   const registry = options.registry || createRulesetRegistry([
     V08_META_1_LOCAL_RELEASE_DESCRIPTOR
   ]);
+  const causes = [];
   let now = 1_800_000_000_000;
   let sequence = 1;
   const worker = createWorker({
     rulesetRegistry: registry,
     rulesetEnvironment: options.environment || "local",
     repositories,
+    onError(cause) {
+      causes.push(cause);
+    },
     now: () => now,
     randomUUID() {
       const suffix = String(sequence).padStart(12, "0");
@@ -94,6 +99,18 @@ function createRealHarness(options = {}) {
     }, key);
   }
 
+  async function event(session, type, payload, key) {
+    const directive = session.metaState.currentRoomDirective;
+    return call("/api/v3/runs/event", {
+      runId: session.runId,
+      checkpointToken: session.checkpointToken,
+      roomDirectiveId: directive.directiveId,
+      roomNonce: directive.roomNonce,
+      type,
+      payload
+    }, key);
+  }
+
   return {
     repositories,
     registry,
@@ -104,6 +121,10 @@ function createRealHarness(options = {}) {
     startBody,
     select,
     checkpoint,
+    event,
+    lastCause() {
+      return causes.at(-1) || null;
+    },
     advance(ms) {
       now += ms;
     }
@@ -273,4 +294,211 @@ test("real finalize remains explicit and fail closed until M3 canonical policy",
   assert.equal(result.payload.error.code, "REAL_RULESET_FINALIZATION_REQUIRES_M3");
   assert.equal(harness.repositories.leaderboardCount(), 0);
   assert.equal(harness.repositories.snapshotRun(selected.runId).status, "active");
+});
+
+test("real HTTP lifecycle reaches canonical relic and meta transaction systems", async () => {
+  const harness = createRealHarness();
+  const started = (await harness.start("lifecycle-start")).payload;
+  let session = (await harness.select(started, 0, "lifecycle-select")).payload;
+  let sequence = 0;
+  const covered = new Set();
+
+  async function event(type, payload) {
+    sequence += 1;
+    const result = await harness.event(
+      session,
+      type,
+      payload,
+      `lifecycle-event-${sequence}`
+    );
+    assert.equal(
+      result.response.status,
+      200,
+      `${type}:${result.payload?.error?.code || "unknown"}`
+    );
+    session = result.payload;
+  }
+
+  async function handleRelicSlot() {
+    const slot = session.metaState.currentRewardEnvelope?.rewardSlots?.find(
+      (entry) => !entry.consumed
+    );
+    if (!slot || session.metaState.relicOffer || session.metaState.relicReplacement) {
+      return;
+    }
+    await event("issue_relic_offer", { rewardSlotId: slot.slotId });
+    const offer = session.metaState.relicOffer;
+    if (!offer) return;
+    covered.add("relic_reward");
+    await event("select_relic", {
+      offerId: offer.offerId,
+      choiceId: offer.publicChoices[0].choiceId
+    });
+    const replacement = session.metaState.relicReplacement;
+    if (replacement) {
+      await event("commit_relic_replacement", {
+        transactionId: replacement.transactionId,
+        replacementChoiceId: replacement.choices[0].replacementChoiceId
+      });
+      covered.add("replacement");
+    }
+  }
+
+  async function handleMetaRoom(roomType) {
+    if (roomType === "merchant" && !covered.has("merchant")) {
+      await event("open_meta_offer", {});
+      const offer = session.metaState.metaTransactionOffer;
+      const choice = offer?.choices.find(
+        (entry) => entry.status === "available" && /leave/iu.test(entry.kind)
+      ) || offer?.choices.find((entry) => entry.status === "available");
+      if (choice) {
+        await event("commit_meta_transaction", {
+          transactionId: choice.transactionId,
+          choiceId: choice.choiceId
+        });
+        covered.add("merchant");
+      }
+    } else if (roomType === "forge") {
+      const mode = !covered.has("forge_temper") ? "temper" : "transmute";
+      if (
+        mode === "transmute" &&
+        session.metaState.build.relics.length === 0
+      ) {
+        return;
+      }
+      await event("open_meta_offer", { mode });
+      const offer = session.metaState.metaTransactionOffer;
+      const wanted = offer?.choices.find(
+        (entry) =>
+          entry.status === "available" &&
+          entry.kind.includes(mode)
+      ) || offer?.choices.find((entry) => entry.status === "available");
+      if (wanted) {
+        await event("commit_meta_transaction", {
+          transactionId: wanted.transactionId,
+          choiceId: wanted.choiceId
+        });
+        covered.add(`forge_${mode}`);
+      }
+    } else if (roomType === "crossroads" && !covered.has("crossroads")) {
+      await event("open_meta_offer", {});
+      const offer = session.metaState.metaTransactionOffer;
+      const choice = offer?.choices.find(
+        (entry) => entry.status === "available" && entry.kind === "crossroads_mercy"
+      ) || offer?.choices.find((entry) => entry.status === "available");
+      if (choice) {
+        await event("commit_meta_transaction", {
+          transactionId: choice.transactionId,
+          choiceId: choice.choiceId
+        });
+        covered.add("crossroads");
+      }
+    } else if (roomType === "pact" && !covered.has("pact")) {
+      await event("open_meta_offer", {});
+      const offer = session.metaState.metaTransactionOffer;
+      const choice = offer?.choices.find(
+        (entry) => entry.status === "available"
+      );
+      if (choice) {
+        await event("commit_meta_transaction", {
+          transactionId: choice.transactionId,
+          choiceId: choice.choiceId
+        });
+        covered.add("pact");
+      }
+    }
+  }
+
+  lifecycleRuns:
+  for (let attempt = 0; attempt < 4; attempt += 1) {
+    if (attempt > 0) {
+      const nextStarted = (
+        await harness.start(`lifecycle-start-${attempt}`)
+      ).payload;
+      session = (
+        await harness.select(
+          nextStarted,
+          attempt % 3,
+          `lifecycle-select-${attempt}`
+        )
+      ).payload;
+    }
+    for (let room = 0; room < 90; room += 1) {
+      await handleRelicSlot();
+      await handleMetaRoom(session.metaState.currentRoomDirective.roomType);
+      if (
+        ["merchant", "forge_temper", "forge_transmute", "crossroads", "pact"]
+          .every((name) => covered.has(name)) &&
+        covered.has("relic_reward")
+      ) {
+        break lifecycleRuns;
+      }
+      const tokenPayload = decodeBoundaryToken(session.checkpointToken).payload;
+      const stored = harness.repositories.snapshotRun(session.runId);
+      assert.equal(
+        tokenPayload.stateDigest,
+        stored.stateDigest,
+        `digest-${attempt}-${room}`
+      );
+      assert.equal(
+        tokenPayload.revision,
+        stored.revision,
+        `revision-${attempt}-${room}`
+      );
+      assert.equal(
+        tokenPayload.roomDirectiveId,
+        stored.currentRoomDirective.directiveId,
+        `directive-${attempt}-${room}`
+      );
+      assert.equal(
+        tokenPayload.roomNonce,
+        stored.currentRoomDirective.roomNonce,
+        `nonce-${attempt}-${room}`
+      );
+      const checkpointed = await harness.checkpoint(
+        session,
+        `lifecycle-checkpoint-${attempt}-${room}`
+      );
+      assert.equal(
+        checkpointed.response.status,
+        200,
+        [
+          checkpointed.payload?.error?.code || `checkpoint-${attempt}-${room}`,
+          `type=${session.metaState.currentRoomDirective.roomType}`,
+          `token=${Boolean(session.checkpointToken)}`,
+          `cause=${harness.lastCause()?.message || "none"}`
+        ].join(":")
+      );
+      session = checkpointed.payload;
+      if (session.metaState.status !== "active") break;
+    }
+  }
+
+  await event("begin_camp_session", {});
+  await event("open_camp_offer", {});
+  const campOffer = session.metaState.metaTransactionOffer;
+  const campChoice = campOffer?.choices.find(
+    (entry) => entry.status === "available" && entry.kind === "camp_relic_sale"
+  );
+  if (campChoice) {
+    await event("commit_meta_transaction", {
+      transactionId: campChoice.transactionId,
+      choiceId: campChoice.choiceId
+    });
+    covered.add("camp");
+  }
+
+  for (const system of [
+    "relic_reward",
+    "replacement",
+    "merchant",
+    "forge_temper",
+    "forge_transmute",
+    "crossroads",
+    "pact",
+    "camp"
+  ]) {
+    assert(covered.has(system), `real lifecycle did not reach ${system}`);
+  }
+  assert(session.metaState.revision >= 2);
 });

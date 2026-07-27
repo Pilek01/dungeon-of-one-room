@@ -74,6 +74,7 @@ export function publicRulesetMetaState(state, ruleset) {
     campGold: state.campGold,
     lives: state.lives,
     build: structuredClone(state.build),
+    statistics: structuredClone(state.statistics),
     startingRelicOffer:
       state.status === "awaiting_starting_relic"
         ? publicPendingOffer(state, ruleset)
@@ -239,7 +240,7 @@ export async function applyRulesetEvent(state, body, ruleset, context = {}) {
     case "commit_relic_replacement": {
       const request = exactPayload(
         body.payload,
-        ["transactionId", "removeRelicIds"],
+        ["transactionId", "replacementChoiceId"],
         "RELIC_REPLACEMENT_PAYLOAD_INVALID"
       );
       nextState = await ruleset.commitRelicReplacement(
@@ -258,6 +259,33 @@ export async function applyRulesetEvent(state, body, ruleset, context = {}) {
       nextState = await ruleset.cancelRelicReplacement(
         structuredClone(state),
         request,
+        rulesetContext
+      );
+      break;
+    }
+    case "commit_relic_fallback": {
+      const request = exactPayload(
+        body.payload,
+        ["rewardSlotId"],
+        "RELIC_FALLBACK_PAYLOAD_INVALID"
+      );
+      const slot = state.currentRewardEnvelope?.rewardSlots?.find(
+        (entry) => entry.slotId === request.rewardSlotId
+      );
+      if (!slot) throw new TypeError("RELIC_REWARD_SLOT_UNKNOWN");
+      nextState = await ruleset.commitRelicRewardFallback(
+        structuredClone(state),
+        {
+          sourceType: slot.sourceType,
+          sourceId: slot.sourceId,
+          sourceDirectiveId: state.currentRoomDirective?.directiveId,
+          rewardEnvelopeId: state.currentRewardEnvelope?.envelopeId,
+          rewardSlotId: slot.slotId,
+          acquisitionContext:
+            slot.availabilityMode === "stored_reward"
+              ? "stored_reward"
+              : "pre_offer"
+        },
         rulesetContext
       );
       break;

@@ -877,6 +877,7 @@ export function createWorker(workerOptions = {}) {
     rulesetRegistry: workerOptions.rulesetRegistry,
     rulesetEnvironment: workerOptions.rulesetEnvironment || "test",
     repositories: workerOptions.repositories,
+    onError: workerOptions.onError,
     now: workerOptions.now || (() => Date.now()),
     randomUUID: workerOptions.randomUUID || (() => crypto.randomUUID())
   };
@@ -919,6 +920,7 @@ export function createWorker(workerOptions = {}) {
         }
         throw new HttpError(404, "ROUTE_NOT_FOUND", "Route not found.");
       } catch (cause) {
+        options.onError?.(cause);
         return errorResponse(errorFromCause(cause), traceId);
       }
     }

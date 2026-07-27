@@ -78,7 +78,10 @@ export function assertPublicRelicChoiceV08(choice) {
     "resultingSlotsUsed",
     "resultingSlotLimit"
   ];
-  if (!choice || Object.keys(choice).join(",") !== fields.join(",")) {
+  if (
+    !choice ||
+    Object.keys(choice).sort().join(",") !== fields.sort().join(",")
+  ) {
     throw new TypeError("RELIC_OFFER_PUBLIC_CHOICE_INVALID");
   }
   for (const field of ["choiceId", "relicId", "rarity"]) {

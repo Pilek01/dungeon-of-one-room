@@ -343,8 +343,8 @@
     },
     {
       "file": "gold-policy.js",
-      "byteLength": 7563,
-      "sha256": "9dc823d305792f3cd7464aaaa2b42c26bcd43a0de863971619ed98e727214a0a"
+      "byteLength": 7991,
+      "sha256": "41858843a2220591967244777a98c9f1f4c76b25b32e82606468ac88c9c54bda"
     },
     {
       "file": "index.js",
@@ -388,8 +388,8 @@
     },
     {
       "file": "relic-offer-common.js",
-      "byteLength": 4313,
-      "sha256": "6a410b167957e1f721bc315fd3946192a9d6150237d36d8f80d32651ec2ab401"
+      "byteLength": 4339,
+      "sha256": "9bb31cb7d9b0d79a36bdd2ecff5eb8931675e25995c4b6d9a67fc2b8a80dc758"
     },
     {
       "file": "relic-policy.js",
@@ -517,5 +517,5 @@
       "sha256": "e06c85319b457817a0fa313302d0136eb746738719ab9cc6db73eacc8d62b489"
     }
   ],
-  "rulesetHash": "sha256:2fcc9df6032f7966ff0ede0e723dc1f0f3b0b28cc0d77533caaeb7ae886a8594"
+  "rulesetHash": "sha256:58528474cf072fbeddfc68a29c1eda00414996cd8fb4ea2871e0b954a1f95276"
 }

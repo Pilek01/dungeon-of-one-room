@@ -62,7 +62,9 @@ export function errorFromCause(cause) {
   if (/token is expired/iu.test(message)) {
     return new HttpError(401, "TOKEN_EXPIRED", "Checkpoint token is expired.");
   }
-  if (/Checkpoint token|Boundary token|TOKEN_BOUNDARY_KIND_MISMATCH|base64url|canonical/iu.test(message)) {
+  if (
+    /Checkpoint token|Boundary token|TOKEN_BOUNDARY_KIND_MISMATCH|base64url|JSON serialization is not canonical/iu.test(message)
+  ) {
     return new HttpError(401, "TOKEN_INVALID", "Checkpoint token is invalid.");
   }
   if (
