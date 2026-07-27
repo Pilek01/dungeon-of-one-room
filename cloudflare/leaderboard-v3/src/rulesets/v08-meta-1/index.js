@@ -51,6 +51,11 @@ import {
 import { projectPublicMetaTransactionOfferV08 } from "./meta-transaction.js";
 import { applyFatalEventV08 } from "./life-policy.js";
 import { requestExtractionV08 } from "./outcome-policy.js";
+import { deriveFinalScoreV08 } from "./score-policy.js";
+import {
+  buildFinalProjectionsV08,
+  deriveFinalDurationV08
+} from "./leaderboard-summary.js";
 export {
   applyRelicAcquisition,
   applyRelicRemovalV08,
@@ -161,6 +166,18 @@ export {
   assertTerminalEligibilityV08,
   requestExtractionV08
 } from "./outcome-policy.js";
+export {
+  SCORE_POLICY_SPEC,
+  SCORE_VERSION_V08,
+  acceptedRunGoldEarnedV08,
+  deriveFinalScoreV08
+} from "./score-policy.js";
+export {
+  DURATION_POLICY_VERSION,
+  LEADERBOARD_SUMMARY_SPEC,
+  buildFinalProjectionsV08,
+  deriveFinalDurationV08
+} from "./leaderboard-summary.js";
 
 function mergeContext(options, context) {
   return {
@@ -390,6 +407,18 @@ export function createV08Meta1Ruleset(options = {}) {
 
     requestExtraction(state, request) {
       return requestExtractionV08(state, request);
+    },
+
+    computeFinalScore(state) {
+      return deriveFinalScoreV08(state);
+    },
+
+    buildFinalProjections(state, final) {
+      return buildFinalProjectionsV08(state, final);
+    },
+
+    deriveFinalDuration(state, finalizedAt) {
+      return deriveFinalDurationV08(state, finalizedAt);
     },
 
     async settleRoomRewardEnvelope(state, request, context = {}) {

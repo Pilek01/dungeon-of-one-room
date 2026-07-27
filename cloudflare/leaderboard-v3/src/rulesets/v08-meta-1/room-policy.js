@@ -433,6 +433,8 @@ export async function consumeRoomDirectiveV08(state, operation = {}, context = {
   next.consumedDirectiveNonces = appendBounded(next.consumedDirectiveNonces, directive.roomNonce);
   next.statistics.roomsCompleted += 1;
   if (directive.roomCategory === "boss") next.statistics.bossRoomsCompleted += 1;
+  if (directive.roomCategory === "final") next.statistics.finalRoomsCompleted =
+    Math.max(0, Number(next.statistics.finalRoomsCompleted) || 0) + 1;
   if (Number.isSafeInteger(context.elapsedMs) && context.elapsedMs >= next.elapsedMs) {
     next.elapsedMs = context.elapsedMs;
   }

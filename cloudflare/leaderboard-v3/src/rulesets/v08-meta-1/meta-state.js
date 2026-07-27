@@ -148,7 +148,8 @@ export function createInitialMetaStateV08(input = {}, context = {}) {
       bossRoomsIssued: 0,
       bossRoomsCompleted: 0,
       specialRoomsIssued: 0,
-      finalRoomsIssued: 0
+      finalRoomsIssued: 0,
+      finalRoomsCompleted: 0
     },
     startedAt,
     updatedAt: startedAt,

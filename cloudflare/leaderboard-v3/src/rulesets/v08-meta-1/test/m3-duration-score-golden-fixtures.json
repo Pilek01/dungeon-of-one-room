@@ -1,0 +1,14 @@
+[
+  {"fixtureId":"score-zero","depth":0,"gold":0,"score":0},
+  {"fixtureId":"score-depth-one","depth":1,"gold":0,"score":1000},
+  {"fixtureId":"score-before-boss","depth":4,"gold":0,"score":4000},
+  {"fixtureId":"score-first-boss","depth":5,"gold":0,"score":7500},
+  {"fixtureId":"score-gold","depth":5,"gold":123,"score":7746},
+  {"fixtureId":"score-depth-99","depth":99,"gold":0,"score":146500},
+  {"fixtureId":"score-victory","depth":100,"gold":0,"score":150000},
+  {"fixtureId":"score-victory-gold","depth":100,"gold":1000,"score":152000},
+  {"fixtureId":"duration-zero","elapsed":0},
+  {"fixtureId":"duration-one-ms","elapsed":1},
+  {"fixtureId":"duration-token-window-independent","elapsed":900001},
+  {"fixtureId":"duration-run-ttl","elapsed":86400000}
+]

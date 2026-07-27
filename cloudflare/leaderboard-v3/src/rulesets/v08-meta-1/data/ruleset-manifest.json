@@ -357,13 +357,13 @@
     },
     {
       "file": "index.js",
-      "byteLength": 11099,
-      "sha256": "8f9186af81330877fd6650ba34959c068bde039ac839a0f93d13d7cf0ad5540b"
+      "byteLength": 11828,
+      "sha256": "ff4b47ccc619573903c62b39bfdfa289fa7484fa66ba0cbb1ee88edf159e0676"
     },
     {
       "file": "leaderboard-summary.js",
-      "byteLength": 401,
-      "sha256": "18687cf9535f9d87799422d2070efb38ab2ee707d4b5b125681a9883ff7a056b"
+      "byteLength": 4828,
+      "sha256": "f2b2429cfa9742c5d78639c93000dac7742e9777db872ee1f0b0310c46257c8e"
     },
     {
       "file": "life-policy.js",
@@ -377,8 +377,8 @@
     },
     {
       "file": "meta-state.js",
-      "byteLength": 9212,
-      "sha256": "b816b4f9b4badccdf67726927d03f3815f5f72c6f8906c524bb185cec17b444e"
+      "byteLength": 9242,
+      "sha256": "523fb663b29750a09d98c3daa6db91519f109321fd36a2073b4f36a676f1ffc4"
     },
     {
       "file": "meta-transaction.js",
@@ -437,8 +437,8 @@
     },
     {
       "file": "room-policy.js",
-      "byteLength": 15071,
-      "sha256": "a8d98e4aca520980376aabf6435a92bd868bcbb364dd920c5185a9923f8c49b4"
+      "byteLength": 15222,
+      "sha256": "1169b579b11411514cf53648c9fbbb3ea3b3985b898ec1812052f7661fd249c3"
     },
     {
       "file": "run-modifiers.js",
@@ -447,8 +447,8 @@
     },
     {
       "file": "score-policy.js",
-      "byteLength": 287,
-      "sha256": "ea1c27614f40993b61d95971c1f51eb360bba928b5560b5ab8ed3efa582dcebb"
+      "byteLength": 2091,
+      "sha256": "ba561a0838ee8291d620491e9e36ca4538383a52cdb45a99e2ae65366704e9b7"
     },
     {
       "file": "starting-relic-offer.js",
@@ -479,6 +479,11 @@
       "file": "test/m1-meta-transaction-core-golden-fixtures.json",
       "byteLength": 846,
       "sha256": "c323960a9eda385595ab2175ddb770f327dcff756fe964e8a90e040e16c867d8"
+    },
+    {
+      "file": "test/m3-duration-score-golden-fixtures.json",
+      "byteLength": 762,
+      "sha256": "a18d53674855cb34bbf40d8f768e48bcfe2b8ca9dc26cabfd2f8468470b1c5b3"
     },
     {
       "file": "test/m3-lives-outcome-golden-fixtures.json",
@@ -536,5 +541,5 @@
       "sha256": "e06c85319b457817a0fa313302d0136eb746738719ab9cc6db73eacc8d62b489"
     }
   ],
-  "rulesetHash": "sha256:40ef3c318688204cc2038d1e0d473c7f0dcbdcb7360cd03839f94c8eb30d2f38"
+  "rulesetHash": "sha256:6800125fcb42ff932b7db1a668739fe936364587d61eb1bace84751f9f668df4"
 }
