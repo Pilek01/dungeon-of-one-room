@@ -1,0 +1,26 @@
+name = "dungeon-online-v3-production"
+main = "src/production-ruleset-entry.js"
+compatibility_date = "2026-07-23"
+compatibility_flags = ["nodejs_compat"]
+workers_dev = false
+
+[[d1_databases]]
+binding = "DB"
+database_name = "dungeon-online-v3-production"
+database_id = "REPLACE_WITH_D1_DATABASE_ID"
+migrations_dir = "migrations"
+
+[[ratelimits]]
+name = "RANKED_V3_ABUSE_CONTROL"
+namespace_id = "950001"
+
+  [ratelimits.simple]
+  limit = 10
+  period = 60
+
+[triggers]
+crons = ["*/15 * * * *"]
+
+[observability]
+enabled = true
+head_sampling_rate = 1

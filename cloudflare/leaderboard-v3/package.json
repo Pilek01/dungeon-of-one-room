@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "check": "node --check src/index.js && node --check src/local-fixture-entry.js && node --check src/local-ruleset-entry.js && node --check test-e2e/local-runtime.test.mjs && node --check test-e2e/real-ruleset-runtime.test.mjs && node --check test-e2e/d1-storage-atomicity.test.mjs",
+    "check": "node --check src/index.js && node --check src/local-fixture-entry.js && node --check src/local-ruleset-entry.js && node --check src/production-ruleset-entry.js && node --check test-e2e/local-runtime.test.mjs && node --check test-e2e/real-ruleset-runtime.test.mjs && node --check test-e2e/d1-storage-atomicity.test.mjs",
     "test": "node --test --test-concurrency=1 test/*.test.js",
     "d1:migrate:local": "wrangler d1 migrations apply dungeon-online-v3-local --local --config wrangler.local.jsonc --persist-to ../../output/online-v3-worker-local/state",
     "dev": "wrangler dev --local --config wrangler.local.jsonc --persist-to ../../output/online-v3-worker-local/state --port 8793",

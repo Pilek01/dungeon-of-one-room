@@ -96,13 +96,23 @@ function recordMetric(env, options, name, value = 1, dimension = "") {
   });
 }
 
-function enforceAbuseControlGate(env, options) {
+async function enforceAbuseControlGate(env, options, actorKey) {
   if (options.rulesetEnvironment !== "production") return;
-  if (!env?.[ABUSE_CONTROL_BINDING]) {
+  const limiter = env?.[ABUSE_CONTROL_BINDING];
+  if (!limiter || typeof limiter.limit !== "function") {
     throw new HttpError(
       503,
       "ABUSE_CONTROL_REQUIRED",
       "Production Ranked start requires configured edge abuse control."
+    );
+  }
+  const result = await limiter.limit({ key: `ranked-start:${actorKey}` });
+  if (!result?.success) {
+    recordMetric(env, options, "rejected_starts", 1, "edge_rate_limit");
+    throw new HttpError(
+      429,
+      "START_RATE_LIMITED",
+      "Too many Ranked starts. Try again shortly."
     );
   }
 }
@@ -919,7 +929,7 @@ async function handleRegisteredStart(request, env, options, repositories) {
   const idempotencyKey = requireIdempotencyKey(request);
   const body = validateRegisteredStartBody(await readJsonRequest(request));
   enforceSupportedProtocol(body);
-  enforceAbuseControlGate(env, options);
+  await enforceAbuseControlGate(env, options, body.profileId);
   const ruleset = resolveRegisteredRuleset(options, body);
   const secret = requireSecret(env);
   const requestDigest = await canonicalDigest({
@@ -1431,6 +1441,7 @@ async function handleLeaderboardDetail(runId, repositories, env, options) {
 }
 
 function handleAvailability(url, options) {
+  const activation = options.productionActivation;
   const requestedVersion = String(url.searchParams.get("clientProtocolVersion") || "");
   const compatible = !requestedVersion || requestedVersion === PROTOCOL_VERSION;
   return jsonResponse({
@@ -1443,10 +1454,13 @@ function handleAvailability(url, options) {
       endpoints: Object.keys(REGISTERED_MUTATION_FIELDS)
     },
     compatible,
-    availability: options.rulesetEnvironment === "production"
+    availability: activation
+      ? "active"
+      : options.rulesetEnvironment === "production"
       ? "production_gated"
       : "test_only",
-    productionActivated: false
+    productionActivated: Boolean(activation),
+    ...(activation || {})
   }, compatible ? 200 : 409, { "cache-control": "no-store" });
 }
 
@@ -1459,7 +1473,10 @@ export function createWorker(workerOptions = {}) {
     metrics: workerOptions.metrics,
     onError: workerOptions.onError,
     now: workerOptions.now || (() => Date.now()),
-    randomUUID: workerOptions.randomUUID || (() => crypto.randomUUID())
+    randomUUID: workerOptions.randomUUID || (() => crypto.randomUUID()),
+    productionActivation: workerOptions.productionActivation
+      ? Object.freeze({ ...workerOptions.productionActivation })
+      : null
   };
   return {
     async fetch(request, env) {

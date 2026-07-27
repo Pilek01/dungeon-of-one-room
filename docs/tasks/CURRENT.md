@@ -1,3 +1,77 @@
+# Production release ? Online v3
+
+## Active status
+
+`AUTHORIZED_FOR_PRODUCTION_RELEASE` on the existing Cloudflare Pages project
+`dungeon-of-one-room` and production branch `main`.
+
+This task supersedes the earlier documentation-only M5 boundary below. It is
+one production release phase, not the start of another gameplay milestone.
+
+Authorized infrastructure:
+
+- existing Pages project `dungeon-of-one-room`;
+- one private Online v3 Worker behind a Pages service binding;
+- one new Free-plan D1 database named `dungeon-online-v3-production`;
+- the minimum required Worker secret and rate-limit binding;
+- exact ruleset `v08-meta-1` at its currently tested hash.
+
+Authorized code and documentation paths:
+
+- `cloudflare/leaderboard-v3/src/index.js`;
+- `cloudflare/leaderboard-v3/src/production-ruleset-entry.js`;
+- `cloudflare/leaderboard-v3/src/rulesets/releases.js`;
+- `cloudflare/leaderboard-v3/test/production-release.test.js`;
+- `cloudflare/leaderboard-v3/test/r2-retention-abuse.test.js`;
+- `cloudflare/leaderboard-v3/package.json`;
+- `cloudflare/leaderboard-v3/wrangler.production.toml`;
+- `functions/api/v3/[[path]].js`;
+- `scripts/build-pages-v3.mjs`;
+- `tests/online-v3-production-pages.test.js`;
+- `package.json`;
+- `wrangler.jsonc`;
+- `config.js`;
+- `game.js` only for the exact `Practice (Offline)` menu label;
+- `online-v3/ranked-v3-ui.js` only for the exact `Ranked (Online)` label;
+- `ONLINE_V3_HANDOFF.md`;
+- `progress.md`;
+- this file.
+
+Required release boundaries:
+
+- Practice stays local and performs zero `/api/v3` requests;
+- Ranked alone uses same-origin `/api/v3/*`;
+- combat remains locally authoritative and gameplay is identical between modes;
+- R1-P0-001 remains `ACCEPTED_PRODUCT_LIMITATION`;
+- old v2 and older D1 databases remain untouched and disconnected;
+- exactly 172 Vault Guardian deletions remain unstaged and unchanged;
+- no staging project, Access policy, paid-plan dependency, canary, or soak;
+- no further milestone begins after production verification.
+
+Required gates before remote mutation:
+
+- `npm run verify:phase`;
+- `npm run verify:baseline`;
+- `npm run verify:full`;
+- `git diff --check`;
+- threat-matrix rerun;
+- unchanged protected-WIP fingerprint.
+
+Required remote sequence:
+
+1. preserve the current successful Pages deployment and binding snapshot;
+2. create and migrate the new D1 database;
+3. deploy the private Worker with D1, secret, rate limit, cleanup schedule and
+   exact production ruleset;
+4. push required commits to `main` when an exact repository remote is
+   discoverable;
+5. deploy the existing Pages project with the same-origin proxy;
+6. run production Practice and Ranked lifecycle smoke through the first
+   checkpoint, resume and leaderboard;
+7. rollback Pages and deactivate the production ruleset on serious failure.
+
+---
+
 # Milestone R2 — Online v3 Reliability & Security Remediation
 
 ## Status
