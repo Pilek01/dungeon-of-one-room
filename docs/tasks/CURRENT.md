@@ -1,679 +1,638 @@
-# Milestone M4 — Online v3 Client Integration
+# Milestone R2 — Online v3 Reliability & Security Remediation
 
 ## Status
 
-Complete locally.
+Complete locally — `READY_FOR_M5_PLANNING`.
 
 Implementation commits:
 
-- `4cd353b` — isolated Online v3 client transport;
-- `7a43dcc` — Ranked bootstrap and canonical directives;
-- `a6c648c` — canonical rewards and meta-transactions;
-- `4c76ccb` — canonical lives and terminal run flow;
-- `1fa8e4b` — leaderboard and public build details;
-- `d7eaf33` — real local Worker/D1 headed lifecycle coverage.
+- `9f0cd8a` — R1 review and trust decision;
+- `71a4e15` — Camp/extraction/profile lifecycle;
+- `f69b4e6` — authenticated resume;
+- `2d4dcf8` — error/abandon/resync flows;
+- `60ef67c` — single-writer browser coordination;
+- `e9299e5` — retention and abuse safeguards;
+- `24d29e7` — protocol and cursor hardening;
+- `972e2ea` — remediation lifecycle coverage and threat rerun.
 
-Final verification is run against the documentation commit at the end of M4.
+R1-P0-001 is `ACCEPTED_PRODUCT_LIMITATION`. No P1 remains. Deferred M5 items
+have explicit production gates in `docs/ONLINE_V3_R2.md` and
+`docs/ONLINE_V3_R2_REVIEW.md`.
 
-Do not begin staging, production activation or deployment automatically.
+Do not begin M5 staging, production activation or deployment automatically.
 
 ## Objective
 
-Integrate the completed Online v3 backend and real `v08-meta-1` ruleset with the browser game while preserving the original v0.8 Practice experience.
+Resolve the actionable P1 and release-relevant P2 findings from:
 
-M4 must implement:
+`docs/ONLINE_V3_R1_REVIEW.md`
 
-- an isolated Online v3 browser client;
-- Ranked run start and authenticated bootstrap;
-- starting relic selection;
-- canonical room directives and checkpoints;
-- canonical rewards and meta-transactions;
-- canonical lives and terminal states;
-- atomic finalization;
-- leaderboard and build-detail UI;
-- deterministic retry, reconnect and network-loss handling;
-- headed end-to-end coverage for a complete Ranked lifecycle.
+while preserving the deliberately chosen Online v3 product model:
+
+- Practice remains fully local and offline;
+- Ranked uses server-controlled canonical meta-progression;
+- combat simulation remains local;
+- Practice and Ranked use the same gameplay mechanics;
+- no per-turn combat networking is introduced;
+- no server-authoritative combat engine is created;
+- no UI renaming or visible trust-level branding is introduced.
 
 Required end state:
 
-> Practice remains behaviorally identical to v0.8 and performs zero Online v3 requests, while Ranked can complete a full canonical run lifecycle against the local Worker through the real `v08-meta-1` ruleset.
+> Online v3 closes the Camp lifecycle, recovery, client reliability, multi-tab, retention and protocol gaps identified by R1 and is ready for a separate M5 staging plan.
 
-M4 is a client-integration milestone.
-
-It may modify explicitly authorized game-facing files, but it must not redesign or replace the existing game engine.
+This milestone does not deploy anything.
 
 ---
 
-## Starting state
+# Product decision — accepted R1-P0 boundary
 
-Expected repository state includes M3 commits:
+## Accepted limitation
 
-- `d7a0071` — canonical lives and outcome state;
-- `ee2de2c` — canonical duration and scoring;
-- `6b01106` — atomic real-ruleset finalization;
-- `61a0f89` — canonical leaderboard publication;
-- `d042f53` — finalization Wrangler/D1 lifecycle;
-- `7802927` — M3 documentation and handoff.
+R1 finding:
 
-Current ruleset hash:
+`R1-P0-001 — public Ranked results do not prove gameplay`
 
-`sha256:08f023da2700e76e862d7adec7045dc8aa6e931b5c97976d955182aa19f2cebb`
+is accepted as a deliberate product limitation.
 
-Current backend capabilities:
+Online v3 is a small browser-game Ranked mode, not a tournament-grade competitive platform.
 
-- authenticated `run_bootstrap` token;
-- authenticated `room_checkpoint` token;
-- authenticated `run_terminal` token;
-- real `v08-meta-1` local runtime;
-- starting relic offer;
-- deterministic room directives;
-- canonical reward envelopes;
-- relic offers and replacement;
-- Warden, Otter and Arena rewards;
-- Merchant;
-- Forge Temper and Transmute;
-- Crossroads;
-- Camp;
-- Pact;
-- canonical lives;
-- victory, defeat and extraction;
-- canonical duration and scoring;
-- atomic finalization;
-- immutable leaderboard publication;
-- compact idempotency v2;
-- exact retry, restart and concurrency protection.
+The product objective is to prevent or substantially reduce easy manipulation of:
 
-Production activation remains blocked.
+- score;
+- depth;
+- gold;
+- lives;
+- outcome;
+- rewards;
+- purchases;
+- replacements;
+- finalization;
+- duplicate leaderboard publication.
 
-There are exactly 172 unrelated protected Vault Guardian deletions in the working tree.
+The product does not require cryptographic proof that every local combat turn was genuinely played.
 
-They must remain:
+## Required behavior
 
-- unstaged;
-- unmodified;
-- outside every M4 commit;
-- identical in path set and content fingerprint.
+Keep the existing player-facing names:
 
-Before any implementation, record:
+```text
+Ranked (Online)
+Practice (Offline)
 
-- the exact set of 172 paths;
-- their fingerprint;
-- staged protected-path count;
-- current HEAD;
-- current ruleset hash.
+Do not add player-facing labels such as:
 
----
+checkpoint verified;
+client trusted;
+honor leaderboard;
+noncompetitive;
+unverified combat.
 
-## Required context
+Do not change gameplay mechanics between Practice and Ranked.
+
+Internally document that Ranked provides:
+
+canonical server-controlled meta-state;
+bounded client-attested room completion;
+protection against straightforward request/state manipulation;
+no guarantee against a deliberately modified combat client.
+Explicitly out of scope
+
+Do not implement:
+
+server-authoritative combat;
+deterministic server combat replay;
+per-turn requests;
+command-proof verification;
+anti-tamper obfuscation presented as security;
+invasive anti-cheat software;
+gameplay differences between Practice and Ranked.
+
+Do not continue reporting R1-P0-001 as an implementation defect during R2 unless new code exceeds or contradicts this accepted model.
+
+It must remain recorded as:
+
+ACCEPTED_PRODUCT_LIMITATION
+
+in internal architecture and release documentation.
+
+Heuristics
+
+Optional anomaly/timing telemetry may be retained or improved only when:
+
+it does not change ordinary gameplay;
+it does not falsely claim proof of combat;
+it is monitoring-only by default;
+hard rejection is limited to mathematically or protocol-impossible input.
+
+Do not build a large heuristic anti-cheat system in R2.
+
+Starting repository state
+
+Expected starting point:
+
+branch: main;
+HEAD:
+3991c153711530c63a2b47974fb663db514a3147;
+ruleset:
+v08-meta-1;
+ruleset hash:
+sha256:d1f28d957244002da574180c5c9a7040d4d18deba1551a24e6597712d971b231;
+v08-meta-1 remains local/test-only;
+production activation remains blocked;
+Practice performs zero /api/v3 requests;
+real Ranked local lifecycle is implemented;
+R1 review exists as an untracked file:
+docs/ONLINE_V3_R1_REVIEW.md;
+no staging or deployment has occurred.
+
+There are exactly 172 unrelated protected Vault Guardian deletions.
+
+Before work begins, record:
+
+exact protected path set;
+protected fingerprint;
+staged protected path count;
+current HEAD;
+current ruleset hash;
+working-tree changes outside protected WIP.
+
+The protected WIP must remain:
+
+unchanged;
+unstaged;
+outside all R2 commits;
+identical in path set and fingerprint.
+Required context
 
 Read:
 
-1. `AGENTS.md`;
-2. `ONLINE_V3_HANDOFF.md`;
-3. `cloudflare/leaderboard-v3/AGENTS.md`;
-4. this file;
-5. existing Online v3 client modules, even if currently inactive;
-6. game boot and mode-selection code;
-7. current loading screen and leaderboard inventory from previous Online versions;
-8. active v0.8 room-generation and reward UI code;
-9. current Worker HTTP contracts;
-10. token kinds and compact retry semantics;
-11. `docs/ONLINE_V3_M2B.md`;
-12. `docs/ONLINE_V3_M3.md`;
-13. baseline smoke runner;
-14. existing browser/headed test harness.
+AGENTS.md;
+ONLINE_V3_HANDOFF.md;
+cloudflare/leaderboard-v3/AGENTS.md;
+this file;
+docs/ONLINE_V3_R1_REVIEW.md;
+docs/ONLINE_V3_M2B.md;
+docs/ONLINE_V3_M3.md;
+docs/ONLINE_V3_M4.md;
+active v0.8 Camp/extraction/profile source code;
+current Worker/D1 routes and storage;
+client recovery, state machine and local storage code;
+compact idempotency v2;
+leaderboard cursor implementation;
+real Wrangler/D1 and headed browser harnesses.
 
-Do not use Ranked v2 logic as a source of authority.
+Do not use Ranked v2 as authority.
 
-Ranked v2 UI assets or presentation components may be reused only after auditing that they do not carry stale v2 state or protocol behavior.
+Workstream 0 — Preserve R1 review and trust decision
 
----
+Add the existing review document to version control without modifying its findings:
 
-# Core architecture boundary
+docs/ONLINE_V3_R1_REVIEW.md
 
-## Practice
+Create a short architectural decision record, for example:
 
-Practice remains the untouched local v0.8 game.
+docs/ONLINE_V3_RANKED_TRUST_MODEL.md
 
-Practice must:
+It must document:
 
-- generate rooms locally;
-- generate rewards locally;
-- use the existing local save/Continue behavior;
-- use existing local lives and finalization behavior;
-- perform zero `/api/v3` requests;
-- not instantiate the Online v3 transport;
-- not require Worker availability;
-- remain playable offline.
+accepted local-combat boundary;
+canonical server-controlled systems;
+bounded client-attested systems;
+threats Online v3 mitigates;
+threats Online v3 intentionally does not fully solve;
+why per-turn server authority is rejected for this project;
+requirement that Practice and Ranked gameplay remain identical;
+player-facing names remain unchanged;
+production documentation must not claim cheat-proof gameplay.
 
-## Ranked
+Do not rewrite R1 to hide the accepted P0.
 
-Ranked uses canonical Online v3 meta-progression.
+Reclassify it in the decision record as:
 
-Ranked must obtain from the Worker:
+ACCEPTED_PRODUCT_LIMITATION
 
-- starting offer;
-- room directives;
-- reward offers;
-- transaction choices;
-- lives;
-- terminal eligibility;
-- score;
-- final summary;
-- leaderboard result.
+not:
 
-Ranked combat remains locally simulated according to the existing authority classification.
+FIXED
 
-Do not introduce requests during:
+Workstream 1 — Correct Camp and extraction lifecycle
+Problem
 
-- movement;
-- attacks;
-- enemy AI;
-- turn animation;
-- VFX;
-- audio playback;
-- rendering;
-- hover/tooltips;
-- ordinary UI repaint.
+R1 confirmed that Camp is currently offered after ordinary Ranked room clears, while active v0.8 source evidence binds Camp entry to extraction.
 
-Network operations are allowed only at explicit meta-boundaries.
+Current behavior must not remain.
 
-## No second game engine
+Required audit
 
-Do not fork or duplicate the gameplay engine.
+Before implementation, confirm from active v0.8 source:
 
-Practice and Ranked should share existing presentation and combat code.
+exact extraction trigger;
+when Camp opens;
+whether Camp is before or after finalization;
+how Camp Gold is earned;
+whether Camp upgrades persist between runs;
+which upgrades affect the next run;
+whether Camp state is profile-scoped;
+whether Practice stores Camp state locally;
+exact ordering of extraction, Camp state mutation and next run.
 
-Add a narrow Ranked adapter around meta-progression boundaries.
+Document the source evidence.
 
-Avoid large conditional branches spread throughout `game.js`.
+Required outcome
 
-Prefer isolated modules and a small number of explicit hooks.
+Camp must never be offered after an ordinary Ranked room.
 
----
+Ranked Camp must follow the same gameplay lifecycle as Practice.
 
-# Workstream 1 — Client architecture and transport
+Acceptable implementation outcomes:
 
-## Goal
+Outcome A — canonical anonymous Ranked profile
 
-Create an isolated, testable Online v3 client layer.
+If Camp is confirmed as persistent cross-run meta-progression, R2 is authorized to implement a minimal anonymous Ranked profile boundary.
 
-Preferred structure may resemble:
+It must:
 
-```text
-online-v3/
-  client/
-  runtime/
-  adapters/
-  ui/
-Use the existing repository conventions where possible.
-Transport responsibilities
-Implement one transport abstraction responsible for:
-Worker base URL;
-request serialization;
-operation IDs;
-request digests where client-side generation is required;
-timeouts;
-abort handling;
-HTTP error parsing;
-exact retry;
-conflicting retry display;
-bounded retry policy;
-offline detection;
-reconnect;
-structured logging;
-redaction of tokens and secrets.
-Do not scatter raw fetch() calls throughout gameplay code.
-Token handling
-Support and distinguish:
-run_bootstrap;
-room_checkpoint;
-run_terminal.
-The client must never reinterpret one token kind as another.
-Token values may be held only in Ranked runtime state.
-Do not store signed tokens in:
-global debug logs;
-leaderboard display;
-DOM data attributes;
-local analytics;
-crash messages shown to players.
-Operation identity
-A logical user action must retain the same operationId across retry.
-Examples:
-selecting starting relic;
-resolving room checkpoint;
-selecting reward;
-committing replacement;
-Merchant purchase;
-Forge action;
-finalization.
-A retry must not create a new logical operation ID.
-A genuinely new user choice must use a new operation ID.
-Workstream 2 — Ranked session state
-Implement an explicit client-side Ranked session state machine.
-Conceptually:
-IDLE
-→ STARTING_RUN
-→ AWAITING_STARTING_RELIC
-→ ENTERING_ROOM
-→ ROOM_ACTIVE
-→ RESOLVING_ROOM
-→ AWAITING_REWARD_OR_TRANSACTION
-→ ENTERING_NEXT_ROOM
-→ TERMINAL_PENDING
-→ FINALIZING
-→ FINALIZED
-Add explicit states for:
-retrying;
-reconnect required;
-unrecoverable protocol error;
-abandoned local session.
-Use names matching project conventions.
-The UI must derive allowed actions from the state machine.
-Do not rely on loosely related booleans such as:
-isOnline
-waiting
-pendingReward
-networkBusy
-without one canonical session state.
-Ranked runtime snapshot
-Store only the minimum client runtime data required to resume/retry:
-run ID;
-ruleset ID and exact hash;
-current revision;
-current token and token kind;
-current operation ID when pending;
-canonical public projection;
-active directive;
-active offer/transaction projection;
-last acknowledged response identity;
-connection state.
-Do not treat locally stored build, gold, lives or score as canonical.
-Workstream 3 — Ranked mode entry and start
-Mode selection
-Add a clear entry point for:
-Practice;
-Ranked Online v3.
-Do not remove existing Practice entry points.
-Ranked must be visibly marked as requiring a connection.
-Do not call the API merely because the game booted or the main menu opened.
-Worker availability
-Before starting Ranked:
-allow an explicit lightweight availability check only when the player selects Ranked;
-show a clear error when the local/staging Worker is unavailable;
-allow returning to Practice;
-do not block the entire game boot.
-Start flow
-Implement:
-Player selects Ranked
-→ create stable start operation ID
-→ POST real run/start
-→ receive AWAITING_STARTING_RELIC state
-→ show canonical starting relic offer
-→ select opaque choice ID
-→ submit authenticated bootstrap operation
-→ receive first canonical room directive and room token
-→ enter the first room
-The client must not locally choose:
-starting relic candidates;
-first room type;
-depth;
-room nonce;
-directive ID;
-initial lives;
-initial gold.
-Start retry
-Cover:
-lost start response;
-start timeout;
-duplicate click;
-reload while start request is unresolved;
-exact retry after Worker restart;
-conflicting start state.
-Never create two runs from one intentional start action when an exact retry is possible.
-Workstream 4 — Directive adapter
+remain separate from accounts/login;
+use an opaque profile ID;
+use an independent high-entropy profile credential;
+store only the canonical Camp/profile state required by v0.8;
+never authenticate by player name, run ID or install hash alone;
+load canonical profile state at Ranked run start;
+credit extraction/Camp resources atomically;
+apply canonical Camp upgrades to following Ranked runs;
+preserve identical gameplay effects between Practice and Ranked;
+remain test/local-only.
+
+Any D1 migration must be additive and locally tested.
+
+Outcome B — stop with a precise blocker
+
+If exact v0.8 persistence semantics cannot be established safely, stop before implementing a fake or temporary Camp model.
+
+Do not:
+
+expose Camp after every room;
+create run-local Camp upgrades that baseline treats as cross-run;
+silently disable Camp and claim gameplay parity;
+trust local Ranked profile state as canonical.
+
+M5 must remain blocked until Camp parity is resolved.
+
+Extraction integration
+
+Extraction must:
+
+derive eligibility canonically;
+transition to the correct post-run Camp lifecycle;
+not allow ordinary room access to Camp;
+not allow post-finalization mutation of the finalized run;
+keep leaderboard score/summary immutable;
+apply profile mutations in a clearly defined atomic boundary.
+Workstream 2 — Authenticated run resume and token refresh
 Goal
-Translate canonical room directives into the existing local room setup without replacing the game engine.
-Create one explicit adapter, conceptually:
-applyOnlineV3RoomDirective(...)
-It should map canonical directive data into the minimum existing setup inputs.
-The adapter must not:
-reroll the room locally;
-substitute another special room;
-change depth;
-change boss identity;
-change reward source;
-silently fall back to local generation.
-Supported directive categories
-Audit and support all directive kinds used by v08-meta-1, including:
-regular combat;
-elite;
-boss;
-final boss;
-Shrine;
-Vault;
-Merchant;
-Forge;
-Crossroads;
-Camp;
-Pact;
-other active special rooms present in the canonical ruleset.
-Use source evidence and current directive contracts.
-If a directive cannot be represented by the current game without changing gameplay semantics, stop and report the exact mismatch.
-Local combat
-During an active combat room:
-local combat logic runs normally;
-animations remain local;
-AI remains local;
-no network request occurs per turn.
-At the canonical room boundary, the client submits only the documented bounded outcome/attestation required by the Worker.
-Do not submit a full arbitrary game-state patch.
-Workstream 5 — Room completion and checkpoint lifecycle
-At room completion:
-freeze local room-result input;
-create one stable operation ID;
-show a resolving state;
-submit the canonical checkpoint/event request;
-process the server response;
-display any canonical reward or transaction;
-receive the next directive or terminal token;
-continue only after canonical acknowledgement.
-Duplicate actions
-Disable or safely deduplicate:
-double portal clicks;
-double reward clicks;
-repeated Merchant purchases;
-repeated Forge confirmations;
-double finalize clicks.
-UI disabling is not the security boundary.
-The server remains authoritative through operation identity and revision binding.
-Lost responses
-When the request may have committed but the response was lost:
-retain the original operation ID;
-resend the exact request;
-accept reconstructed response;
-do not rerun local room completion;
-do not locally award rewards twice;
-do not advance to another room before acknowledgement.
-Workstream 6 — Canonical reward UI
-Implement adapters for existing UI surfaces using server-provided projections.
-Required flows:
-starting relic;
-regular relic offer;
-Warden relic offer;
-Otter relic offer;
-Arena relic offer;
-canonical replacement transaction;
-no-reward result;
-fallback gold;
-other currently supported canonical reward envelopes.
-Rules
-The UI must render:
-public IDs and display metadata mapped from the local catalog;
-opaque choice IDs;
-canonical stack information;
-canonical slots and limits;
-canonical replacement candidates;
-canonical fallback outcome.
-The client must not calculate legal choices independently.
-Local catalog metadata may provide:
-name;
-icon;
-description;
-rarity presentation.
-Local metadata must not alter:
-availability;
-choice count;
-stack amount;
-legality;
-gold delta;
-slot limit.
-Replacement
-When the server returns a pending replacement:
-show only canonical legal replacement choices;
-submit only the opaque replacement choice ID;
-preserve the incoming choice and transaction ID;
-support exact retry;
-respect canonical cancel behavior;
-do not mutate local build before server commit.
-Workstream 7 — Meta-transaction UI
-Integrate all completed M1 systems:
-Merchant;
-Forge Temper;
-Forge Transmute;
-Crossroads;
-Camp;
-Pact.
-Use one shared transaction adapter where practical.
-Transaction lifecycle
-Conceptually:
-canonical preflight
-→ render canonical choices/costs/effects
-→ player submits opaque choice
-→ server commit
-→ apply returned public projection
-Do not calculate or commit effects locally before acknowledgement.
-Merchant
-Render canonical:
-inventory;
-price;
-affordability;
-purchase result;
-resulting gold/build state.
-Do not trust existing local Merchant prices in Ranked.
-Forge
-Support:
-Temper;
-Transmute;
-replacement flow where required;
-canonical costs;
-canonical resulting build.
-Crossroads, Camp and Pact
-Render only canonical choices and consequences.
-Do not reuse local random choice generation in Ranked.
-Workstream 8 — Canonical lives and terminal flow
-Lives
-Ranked HUD must display canonical lives from server projections.
-Support visual presentation for:
-current lives;
-maximum lives;
-Chrono Loop prevention;
-Second Chance prevention;
-canonical life loss;
-terminal defeat.
-Local animation may present the result, but it must not change canonical life state.
-Terminal token
-Handle run_terminal separately from room tokens.
-When the Worker returns terminal eligibility:
-stop normal room progression;
-prevent further transactions;
-show the appropriate victory, defeat or extraction presentation;
-retain the terminal token for finalize.
-Finalization
-Implement:
-terminal state
-→ stable finalize operation ID
-→ finalize request
-→ canonical outcome, score, duration and summary
-→ leaderboard entry
-Do not calculate score locally.
-Do not derive outcome from presentation state.
-Retry
-A lost finalize response must:
-reuse the same operation ID;
-reproduce the original final result;
-not create another leaderboard entry;
-not restart the run.
-Workstream 9 — Leaderboard and run details
-Integrate the existing Online v3 leaderboard endpoints.
-Required UI:
-leaderboard list;
-pagination/cursor;
-loading state;
-empty state;
-network error state;
-run detail view.
-Display canonical fields where available:
-rank;
-player/display name according to current contract;
-score;
-outcome;
-depth;
-duration;
-final gold;
-ruleset/version;
-timestamp;
-relics and stacks;
-run modifiers;
-skill tiers;
-elixirs;
-lives;
-public build summary.
-Do not expose:
-signed tokens;
-internal receipts;
-request digests;
-anomaly flags;
-private operation history;
-internal state digest unless explicitly part of public diagnostics.
-Ordering
-Do not reorder leaderboard entries locally beyond the server contract.
-Cursor state must be treated as opaque.
-Workstream 10 — Recovery and persistence
-Define safe recovery behavior for an interrupted Ranked session.
-Audit whether the current game can persist a minimal Ranked resume record without conflicting with Practice save data.
-Requirements
-Practice save data and Ranked recovery data must be separate.
-Do not migrate or overwrite Practice saves.
-A Ranked recovery record may contain only the client runtime data required for:
-exact retry;
-reconnect;
-fetching or resuming canonical state through supported contracts.
-It must not be treated as authoritative game state.
-Reload scenarios
+
+Add a secure canonical recovery path for a valid server run when:
+
+local recovery data is stale;
+current boundary token expired;
+a browser reload occurs;
+an acknowledged response cannot be applied locally;
+another tab committed a newer revision.
+
+Do not authorize resume by runId alone.
+
+Recovery credential
+
+At run creation, issue an independent recovery credential.
+
+Requirements:
+
+cryptographically random;
+minimum 256 bits of entropy;
+separate from boundary tokens;
+separate from operation IDs;
+scoped to one run;
+bound to ruleset ID/hash;
+long-lived only for the run’s valid retention period;
+raw value returned only to the authorized browser;
+raw value never stored in D1;
+D1 stores a hash/verifier;
+credential comparison is timing-safe where applicable;
+credential is redacted from logs and diagnostics;
+install hash may be an additional signal but never the credential.
+
+Document rotation and revocation policy.
+
+Resume endpoint
+
+Add an authenticated route conceptually equivalent to:
+
+POST /api/v3/runs/resume
+
+Use the existing route/version conventions.
+
+Request must include only fields equivalent to:
+
+{
+  operationId,
+  runId,
+  recoveryCredential,
+  clientProtocolVersion,
+  lastKnownRevision
+}
+
+Do not place credentials in URLs.
+
+Canonical response
+
+The Worker derives the current run state from D1 and returns only the public projection required to continue.
+
+Depending on canonical status, return:
+
+awaiting starting relic:
+current starting offer;
+fresh run_bootstrap token;
+active room:
+current directive;
+current reward envelope;
+active public offer/transaction;
+fresh room_checkpoint token;
+terminal:
+terminal projection;
+fresh run_terminal token;
+finalized:
+immutable final summary;
+leaderboard entry identity;
+no mutation token;
+expired/abandoned:
+explicit terminal recovery error.
+
+Do not return:
+
+private canonical state;
+HMAC secret;
+raw recovery verifier;
+private receipts;
+recent operation history;
+anomaly internals;
+unreleased choices;
+another user/client identity.
+Token refresh
+
+Resume must issue a fresh boundary token of the correct kind.
+
+A short-lived boundary token expiring must not permanently strand an otherwise valid run with a valid recovery credential.
+
+Exact retry
+
+Resume must have explicit deterministic retry semantics.
+
+If it mutates:
+
+credential rotation;
+last-access metadata;
+revision;
+another canonical field;
+
+use stable operation identity and compact idempotency.
+
+If it is a pure authenticated read, document why duplicate requests are safe.
+
+Security tests
+
 Cover:
-reload while awaiting starting relic;
-reload during a pending checkpoint;
-reload while reward choice is displayed;
-reload during a pending transaction;
-reload after terminal state before finalize;
-reload after finalize response was lost.
-If the current backend lacks a safe state-resume/read endpoint required for these scenarios, stop and document the exact missing contract instead of inventing local authority.
-Do not add an endpoint outside the allowed scope without documenting and testing it.
-Workstream 11 — UI/UX and accessibility
-Ranked network state must be understandable without overwhelming the player.
-Required presentation states:
-connecting;
-starting;
-resolving;
-retrying;
-offline;
-reconnect required;
-protocol/ruleset mismatch;
-maintenance/unavailable;
-finalized.
-Do not expose raw JSON or internal error stacks to players.
-Keep diagnostic details available in development logs with tokens redacted.
-Prevent accidental repeated input while preserving keyboard navigation.
-Maintain current responsive behavior where applicable.
-Do not redesign the entire game UI in this milestone.
-Workstream 12 — Browser and headed E2E
-Add headed browser coverage for both Practice and Ranked.
-Practice regression
-Required:
-boot Practice;
-zero /api/v3 requests;
-Classic mode;
-HD mode;
-audio;
-32 cheat options;
-Observer Bot;
-Shrine;
-Vault Guardian;
-save/Continue;
-Final Defeat;
-local reward flow;
-local special-room flow.
-Practice must work when the Worker is unavailable.
-Ranked bootstrap
-select Ranked;
-start request;
-canonical starting relic choices;
-starting relic selection;
-first canonical directive;
-first room starts;
-no requests during active combat animation.
-Ranked progression
-regular room checkpoint;
-next directive;
-relic offer;
-replacement;
-Warden;
-Otter;
-Arena;
-Merchant;
-Forge Temper;
-Forge Transmute;
-Crossroads;
-Camp;
-Pact.
-Where full natural navigation would make E2E excessively long, use approved deterministic test/dev controls that still exercise the real client/Worker contracts.
-Do not bypass HTTP or inject final state directly into the UI.
-Lives and terminal
-life loss;
-Chrono Loop or Second Chance presentation where available;
-terminal defeat;
-victory;
-supported extraction;
-terminal token handling;
-finalize;
-final score and summary;
-one leaderboard entry.
-Network behavior
-start response lost;
-checkpoint response lost;
-reward commit response lost;
-transaction response lost;
-finalize response lost;
-Worker temporary outage;
-retry after reconnect;
-conflicting retry error;
-ruleset mismatch;
+
+valid credential;
+wrong credential;
+credential from another run;
+run ID only;
+install hash only;
+expired boundary token plus valid recovery credential;
+wrong ruleset binding;
+finalized run;
+expired run;
+repeated failed attempts;
+credential logging/redaction;
+Worker restart.
+Workstream 3 — Repair Ranked error and abandon flow
+Problem
+
+The current “Return to Practice” path may clear the only local recovery data before performing an illegal state transition.
+
+Required state-machine behavior
+
+Make error states actively reachable and meaningful:
+
+RETRYING;
+RECONNECT_REQUIRED;
+UNRECOVERABLE_PROTOCOL_ERROR;
+ABANDONED_LOCAL_SESSION.
+
+Classify errors into at least:
+
+temporary network failure;
+timeout;
+token expired;
 stale revision;
-duplicate click protection.
-Reload/recovery
-reload during bootstrap;
-reload during pending checkpoint;
-reload during reward;
-reload before finalize;
-reload after lost finalize response.
-Only implement scenarios supported safely by canonical recovery contracts.
-Internal commits
-Use separate logical local commits.
-Do not create one enormous commit.
-M4.1
-Add isolated Online v3 client transport
-Contains:
-transport;
-operation identity;
-token handling;
-structured errors;
-retry/reconnect foundation;
-unit tests.
-No gameplay integration yet.
-M4.2
-Integrate Online v3 Ranked bootstrap and directives
-Contains:
-mode entry;
-Ranked session state machine;
-run start;
-starting relic;
-directive adapter;
-first-room flow;
-Practice isolation tests.
-M4.3
-Integrate Online v3 rewards and meta transactions
-Contains:
+conflicting retry;
+ruleset/protocol mismatch;
+unauthorized recovery;
+unrecoverable malformed response;
+server unavailable.
+Return to Practice
+
+“Return to Practice” must not silently destroy a recoverable Ranked run.
+
+Required behavior:
+
+enter a legal error/reconnect state;
+preserve recovery data;
+allow returning to Practice while keeping “Resume Ranked Run” available;
+provide a separate explicit “Abandon Ranked Run” action;
+require confirmation before permanent local deletion;
+clear recovery only after the state transition and abandonment decision succeed.
+
+If a canonical abandon endpoint is introduced:
+
+authenticate it;
+make it idempotent;
+never publish a leaderboard entry;
+mark the run unavailable for further mutation;
+preserve explicit retention/cleanup semantics.
+
+If the Worker is unreachable:
+
+returning to Practice must preserve recovery by default;
+local deletion must require a separate warning;
+do not pretend the server run was abandoned.
+Acknowledged-response adapter failure
+
+If the Worker committed successfully but the local adapter/projection fails:
+
+do not retry the mutation with a new operation ID;
+use authenticated resume/resync;
+preserve the canonical server result;
+avoid clearing the recovery record.
+Workstream 4 — Single-writer browser ownership and canonical resync
+Goal
+
+Prevent multiple tabs, double choices and stale local pending operations from dead-ending a valid run.
+
+One active writer per run
+
+Implement browser coordination using a suitable mechanism such as:
+
+BroadcastChannel;
+localStorage lease plus storage events;
+both, with a tested fallback.
+
+Each tab must have an opaque tab ID.
+
+The active lease must include:
+
+run ID;
+tab ID;
+lease version;
+heartbeat/expiry;
+last known revision.
+
+Only the active owner may submit mutations.
+
+Other tabs must:
+
+show read-only/reconnect status;
+not overwrite pending operation state;
+be able to request ownership after lease expiry or explicit handoff.
+
+Do not treat the lease as a server security boundary.
+
+The Worker remains authoritative.
+
+Global mutation lock
+
+When one mutation is pending:
+
+disable the complete relevant choice/action set;
+preserve keyboard and accessibility state;
+prevent different choices from being submitted concurrently;
+reuse the same operation ID on retry;
+clear the lock only after canonical acknowledgement, resync or explicit recovery state.
+Conflict handling
+
+On 409/stale revision/conflicting state:
+
+stop blind retry;
+preserve diagnostic context;
+call authenticated resume;
+replace local public projection with canonical current projection;
+clear obsolete pending operation only after successful resync;
+reopen the correct canonical UI state.
+
+Do not retry a stale pending operation forever.
+
+Multi-tab tests
+
+Cover:
+
+two tabs opening the same run;
+simultaneous distinct choices;
+owner tab closes;
+lease expires;
+stale tab tries to mutate;
+storage record overwritten;
+one tab finalizes;
+another tab resumes after finalization;
+BroadcastChannel unavailable fallback;
+no duplicate canonical mutation.
+Workstream 5 — Run retention and abuse safeguards
+Goal
+
+Prevent unlimited accumulation of abandoned runs and require explicit abuse-control readiness before public/shared deployment.
+
+Retention
+
+Use the existing expires_at field or an explicitly versioned replacement.
+
+Implement deterministic cleanup for:
+
+expired non-finalized runs;
+explicitly abandoned runs after the retention window;
+stale operation history as allowed by policy.
+
+Do not delete:
+
+finalized leaderboard entries;
+immutable public summaries required by leaderboard;
+active valid runs;
+audit records required for exact retry inside the supported window.
+
+Create a locally testable cleanup function and scheduled Worker entrypoint if appropriate.
+
+Do not execute remote cleanup.
+
+Active-run limits
+
+Implement a bounded active-run policy for an authenticated anonymous profile or recovery principal when available.
+
+Do not use player name as identity.
+
+Do not claim client install hash is authentication.
+
+If profile creation remains unauthenticated, document the remaining edge-abuse limitation.
+
+Rate-control deployment gate
+
+Do not invent an unreliable in-memory module-global rate limiter.
+
+Create an explicit production readiness requirement for one of:
+
+Cloudflare edge rate limiting;
+another configured Cloudflare abuse-control binding;
+Turnstile where product-appropriate;
+a durable persistence-backed limiter justified by the architecture.
+
+Production activation must remain blocked when required abuse-control configuration is absent.
+
+Local/test behavior may use an explicit test adapter.
+
+Monitoring contract
+
+Define counters/metrics for at least:
+
+run starts;
+rejected starts;
+active runs;
+abandoned/expired cleanup;
+resume success/failure;
+invalid recovery credentials;
+stale/conflicting requests;
+finalizations;
+leaderboard reads;
+D1 write failures.
+
+Do not log raw credentials or tokens.
+
+Workstream 6 — Protocol and cursor hardening
+Unknown-field policy
+
+Create a consistent versioned policy for HTTP request bodies.
+
+For each endpoint, explicitly choose:
+
+reject unknown fields;
+ignore unknown fields for forward compatibility.
+
+Do not mix policies accidentally.
+
+Security-sensitive mutation endpoints should prefer strict schemas unless a documented compatibility reason exists.
+
+Response projection validation
+
+Expand client validation for nested public projections used by:
+
+bootstrap;
+directives;
 relic offers;
 replacement;
 fallback;
@@ -682,285 +641,489 @@ Forge;
 Crossroads;
 Camp;
 Pact;
-shared UI transaction adapter.
-M4.4
-Integrate Online v3 canonical lives and finalization
-Contains:
-canonical lives presentation;
-terminal state;
-finalize;
-retry/recovery;
-final summary.
-M4.5
-Add Online v3 leaderboard and build details
-Contains:
-leaderboard list;
-cursor;
-details;
-canonical build display;
-loading/error states.
-M4.6
-Add Online v3 Ranked headed lifecycle coverage
-Contains:
-headed Practice regression additions;
-real local Worker Ranked lifecycle;
-network-loss;
-duplicate/retry;
-reload/recovery tests.
-Final documentation
-Complete Online v3 client integration milestone
+lives;
+terminal;
+final summary;
+leaderboard details.
+
+Fail closed on malformed or unknown response kinds.
+
+A local adapter error after server commit must trigger canonical resume, not destructive local fallback.
+
+Protocol versioning
+
+Document supported client/server protocol versions.
+
+Add an explicit mismatch response or availability descriptor suitable for M5 rolling deployment.
+
+Do not activate production.
+
+Leaderboard cursor
+
+Choose and implement one documented policy:
+
+Signed cursor
+versioned;
+purpose-specific signature;
+tamper rejection;
+no raw secret exposure.
+Public seek tuple
+explicitly documented as client-controlled;
+strict schema validation;
+malformed cursor returns a clear 400;
+no silent fallback to first page.
+
+Do not continue describing an unsigned seek tuple as cryptographically opaque.
+
+Inactive proof modules
+
+Audit:
+
+ranked-v3-recorder.js;
+ranked-v3-checkpoints.js;
+other speculative/unused proof paths.
+
+Either:
+
+clearly mark them test/spec-only and remove them from active assurances;
+or remove them if they are unused and safe to delete.
+
+Do not wire them in as fake combat security.
+
+Practice recovery read
+
+Prefer deferring Ranked recovery-record reads until:
+
+the user opens Ranked;
+or a narrow menu-only recovery indicator explicitly requires it.
+
+Practice simulation, save and startup must remain independent.
+
+Workstream 7 — Documentation consistency
+
+Update the current architecture documents to match HEAD.
+
+Resolve known drift including:
+
+recent operation ring size 12;
+active real-ruleset client integration;
+current token kinds;
+recovery design;
+Camp lifecycle;
+accepted Ranked trust boundary;
+production release gates.
+
+Create:
+
+docs/ONLINE_V3_R2.md
+
+It must document:
+
+R1 findings addressed;
+accepted P0 product decision;
+Camp/profile model;
+resume credential design;
+token refresh;
+error/abandon state machine;
+multi-tab ownership;
+retention;
+abuse-control deployment gate;
+protocol/cursor policy;
+remaining M5 work.
+
+Keep ONLINE_V3_HANDOFF.md short.
+
+Do not copy full test logs into the handoff.
+
+Workstream 8 — Remediation test and review pass
+Required tests
+
+Add unit, property, Worker, Wrangler/D1 and headed coverage for the remediation.
+
+At minimum cover:
+
+Camp
+no Camp after ordinary room;
+extraction-to-Camp source binding;
+canonical Camp resource credit;
+profile persistence when implemented;
+next run applies canonical upgrades;
+fake local Camp state ignored;
+Practice Camp unchanged.
+Resume
+valid resume;
+expired boundary token refresh;
+cleared local session with retained credential recovery;
+wrong credential;
+credential from another run;
+run ID alone rejected;
+install hash alone rejected;
+terminal resume;
+finalized resume;
+expired run;
+Worker restart;
+credential redaction.
+Error and abandon
+network error enters reconnect state;
+Return to Practice preserves recovery;
+explicit abandonment confirmation;
+clear occurs only after legal transition;
+offline exit preserves recovery;
+acknowledged-response adapter failure resyncs.
+Multi-tab
+one writer;
+second tab read-only;
+simultaneous different choices;
+stale pending conflict;
+owner tab closes;
+lease takeover;
+finalized run in another tab;
+no infinite retry loop.
+Retention and abuse
+expired run cleanup;
+active run preserved;
+finalized leaderboard preserved;
+active-run cap;
+production abuse-control gate;
+no module-global mutable limiter;
+metrics contain no credentials.
+Protocol
+unknown-field policy;
+malformed nested projection;
+protocol version mismatch;
+cursor tampering/malformed behavior;
+unknown response kind;
+resync after local projection failure.
+R1 threat-matrix rerun
+
+Rerun all 30 R1 threat scenarios.
+
+For R1-P0-001, expected result is:
+
+ACCEPTED_PRODUCT_LIMITATION
+
+not PASS and not an implementation blocker.
+
+Confirm that:
+
+direct score/gold/depth/lives/outcome manipulation remains rejected;
+duplicate rewards and transactions remain prevented;
+the accepted local combat boundary has not expanded.
+Remediation review document
+
+Create:
+
+docs/ONLINE_V3_R2_REVIEW.md
+
+Final statuses must distinguish:
+
+FIXED;
+ACCEPTED_PRODUCT_LIMITATION;
+DEFERRED_TO_M5;
+OPEN_BLOCKER.
+
+M5 planning may proceed only when:
+
+no unaccepted P0 remains;
+no P1 remains;
+deferred items have explicit production gates.
+Internal commits
+
+Use separate local commits.
+
+R2.0
+Add Online v3 R1 review and Ranked trust decision
+
 Contains only:
-M4 documentation;
-short handoff update;
+
+docs/ONLINE_V3_R1_REVIEW.md;
+Ranked trust decision document;
+no runtime changes.
+R2.1
+Correct Online v3 Camp and extraction lifecycle
+
+Contains:
+
+Camp source correction;
+extraction integration;
+canonical profile boundary if required;
+Camp tests and source documentation.
+
+If Camp requires an unresolved design, stop before this commit.
+
+R2.2
+Add authenticated Online v3 run resume
+
+Contains:
+
+recovery credential;
+verifier storage;
+resume/refresh endpoint;
+canonical projection;
+security and persistence tests.
+R2.3
+Fix Online v3 error abandon and resync flows
+
+Contains:
+
+legal error states;
+Return to Practice behavior;
+explicit abandonment;
+canonical resync;
+client tests.
+R2.4
+Add Online v3 single-writer browser coordination
+
+Contains:
+
+lease/BroadcastChannel;
+global mutation lock;
+multi-tab handling;
+stale pending recovery;
+headed tests.
+R2.5
+Add Online v3 run retention and abuse safeguards
+
+Contains:
+
+cleanup;
+retention;
+active-run policy;
+abuse-control release gate;
+monitoring contract;
+D1/Worker tests.
+R2.6
+Harden Online v3 protocol and leaderboard cursor
+
+Contains:
+
+schema policy;
+response validation;
+protocol versioning;
+cursor decision;
+inactive proof-module cleanup;
+tests.
+R2.7
+Add Online v3 R2 remediation lifecycle coverage
+
+Contains:
+
+combined Wrangler/D1 scenarios;
+headed recovery/multi-tab/error/Camp coverage;
+R1 threat-matrix rerun support.
+Final documentation
+Complete Online v3 R2 remediation milestone
+
+Contains only:
+
+docs/ONLINE_V3_R2.md;
+docs/ONLINE_V3_R2_REVIEW.md;
+current architecture updates;
+short handoff;
 CURRENT status;
 no runtime changes.
-If M4 becomes too large for one session, stop only at a clean internal commit boundary and update the handoff.
-Do not silently reduce acceptance criteria.
+
+Do not squash prior M1–M4 commits.
+
 Allowed paths
-M4 is explicitly authorized to modify only the paths required for client integration, including:
-new online-v3/** client/runtime/UI modules;
-existing Online v3 client modules;
-index.html, only for explicit Ranked loading/integration;
-game.js, only for narrow documented Online v3 integration hooks;
-existing UI modules directly required for canonical offers and transactions;
-relevant CSS for Ranked states and leaderboard;
-local catalog/display metadata adapters;
+
+R2 may modify only paths required for the remediation, including:
+
+cloudflare/leaderboard-v3/src/**;
+Worker/ruleset tests;
+additive D1 migrations where proven necessary;
+local Wrangler/D1 harness;
+Online v3 browser client/runtime/UI modules;
+Ranked state machine and storage;
+narrow game-facing hooks only when required for Camp/extraction parity;
+leaderboard cursor/protocol modules;
 browser/headed tests;
-local test/dev harness;
-package scripts required for stable verification;
+verification registration;
+relevant package scripts;
 docs/ONLINE_V3_*;
 docs/tasks/CURRENT.md;
 ONLINE_V3_HANDOFF.md.
-Changes to game.js must be minimal and documented by hook.
-Do not perform unrelated cleanup or refactoring.
-Do not modify gameplay mechanics merely to simplify integration.
-Required integration-hook budget
-Before editing game.js, create an inventory of planned integration points.
-Prefer no more than approximately eight logical hooks:
-mode selection/start;
-Ranked bootstrap;
-room directive application;
-room completion/checkpoint;
-reward resolution;
-special-room transaction resolution;
-terminal/finalize;
-leaderboard entry/display.
-A hook may delegate to isolated modules.
-Do not interpret this as a requirement to force exactly eight code edits.
-If substantially more hooks are required, stop and explain why before spreading Online v3 logic throughout the game.
-Document every modified game.js region:
-purpose;
-Practice behavior;
-Ranked behavior;
-network boundary;
-tests protecting it.
+
+Changes to gameplay code must be minimal and must not alter Practice mechanics.
+
+Do not perform unrelated refactors.
+
 Out of scope
-Do not:
-activate production ruleset;
-deploy Worker or Pages;
-run remote D1 migrations;
-modify production secrets;
-add accounts;
-add login;
-add profile cloud saves;
-synchronize profile unlocks;
-redesign gameplay;
-create server-authoritative per-turn combat;
-add combat requests;
-redesign score;
-redesign lives;
-change canonical backend rules;
-modify D1 schema unless a proven client-resume blocker requires a separately documented decision;
-rewrite the game engine;
-restore or commit Vault Guardian WIP;
-begin M5.
+
+Do not implement:
+
+server-authoritative combat;
+per-turn networking;
+new gameplay mechanics;
+gameplay differences between Practice and Ranked;
+player-facing trust-level labels;
+accounts/login;
+social identity;
+public cloud-save UI;
+production deployment;
+production ruleset activation;
+remote D1 migration;
+Pages deployment;
+full M5 observability/rollback implementation;
+invasive anti-cheat;
+unrelated UI redesign;
+protected Vault Guardian work.
+
+Do not begin M5.
+
 Security requirements
-Client is untrusted
-The client must not become authoritative for:
-depth;
-room type;
-offers;
-reward legality;
-gold;
-build;
-relic stacks;
-modifiers;
-lives;
-terminal outcome;
-duration;
-score;
-leaderboard data.
-Token safety
-redact tokens from logs;
-do not put tokens in URLs;
-do not expose tokens in DOM;
-do not persist more token data than required for recovery;
-clear Ranked token state when the run is permanently abandoned or finalized.
-Request safety
-stable operation ID per logical action;
-no automatic mutation retry with a new operation ID;
-bounded timeout/retry;
-precise handling of 409/stale/conflict responses;
-no generic state-patch requests;
-fail closed on unknown response kinds.
-Content safety
-Map server-provided IDs through known local catalogs.
-Do not inject untrusted server text as HTML.
-Use text-safe rendering.
+Recovery
+run ID is never sufficient;
+player name is never sufficient;
+install hash is never sufficient;
+raw recovery credential is never stored server-side;
+credentials and tokens are redacted;
+resume returns only public canonical projection;
+fresh token kind matches canonical run status.
+Client reliability
+one logical mutation uses one stable operation ID;
+stale/conflicting mutations cause resume/resync;
+no blind infinite retry;
+no local state becomes canonical;
+Return to Practice does not destroy recoverable runs;
+one active browser writer per run.
+Camp/profile
+persistent Camp state is canonical for Ranked;
+local Practice Camp remains unchanged;
+extraction is the only confirmed Camp source;
+ordinary room completion cannot open Camp.
+Retention and abuse
+no mutable module-global rate state;
+expired runs are cleaned by deterministic policy;
+production remains blocked without configured abuse controls;
+credentials are absent from metrics and logs.
 Stop conditions
+
 Stop instead of guessing if:
-canonical directive cannot be represented by current gameplay;
-Practice behavior would need to change;
-integration requires per-turn network calls;
-more than a narrow adapter layer is required in game.js;
-current backend lacks a safe recovery contract required for mandatory reload scenarios;
-client would need to treat local gold/build/lives as canonical;
-an endpoint contract must be changed substantially;
-leaderboard identity/display-name behavior is ambiguous;
-Ranked v2 assets contain inseparable stale protocol behavior;
-a required change touches the protected 172-path WIP;
-production activation would be enabled;
-a destructive migration is required.
-A partial M4 with a precise blocker is preferable to a hidden local-authority fallback.
+
+exact Camp/profile behavior cannot be confirmed from v0.8;
+gameplay parity requires an undefined persistent profile model;
+recovery cannot be authenticated independently of run ID/install hash;
+resume requires exposing private canonical state;
+a destructive D1 migration is required;
+multi-tab ownership cannot avoid data loss;
+rate limiting requires pretending an unsafe local mechanism is production-grade;
+protocol hardening requires a breaking client contract without versioning;
+Practice gameplay or saves would change;
+server-authoritative combat would become necessary;
+protected 172-path WIP would be touched;
+production activation would be enabled.
+
+A partial R2 with a precise blocker is preferable to insecure recovery or fake Camp parity.
+
 Verification workflow
+
 During development:
+
 npm run verify:fast
-Before each internal commit, run targeted tests for that workstream.
-Before final completion:
+
+Before every internal commit, run targeted tests.
+
+Before R2 completion:
+
 npm run verify:phase
 npm run verify:baseline
 npm run verify:full
 git diff --check
-Required final verification
-Must include:
-client transport unit tests;
-stable operation identity;
-exact/conflicting retry;
-token-kind handling;
-Ranked session state-machine tests;
-directive adapter tests;
-reward and transaction UI tests;
-terminal/finalization tests;
-leaderboard UI tests;
-XSS/text-safe rendering checks;
-reload/recovery tests where supported;
-real local Worker/D1 Ranked browser lifecycle;
-network-loss headed tests;
-all Worker/ruleset regression tests;
-Practice baseline smoke;
-protected 172-path guard;
-zero unexpected console errors;
-zero page errors;
-git diff --check.
-Practice invariants
-Practice acceptance is mandatory.
-Practice must preserve:
-existing boot behavior;
-Classic;
-HD;
-audio;
-animations;
-HUD;
-all 32 cheat options;
-Observer Bot;
-Shrine;
-Vault Guardian;
-special rooms;
-local rewards;
-save/Continue;
-Final Defeat;
-offline play.
-Practice must produce:
+
+Final verification must include:
+
+all existing ruleset and Worker tests;
+recovery credential tests;
+token refresh;
+resume endpoint security;
+Camp lifecycle;
+profile persistence if implemented;
+error and abandon state machine;
+canonical resync;
+multi-tab ownership;
+stale operation recovery;
+retention cleanup;
+abuse-control release gate;
+protocol schemas;
+cursor behavior;
+real Wrangler/D1 persistence and concurrency;
+headed Practice and Ranked;
+R1 threat matrix;
+zero unexpected console/page errors;
+protected WIP guard.
+
+Practice must continue to produce:
+
 zero /api/v3 requests
-No Practice regression may be accepted as a temporary M4 compromise.
-Ranked invariants
-Ranked must:
-use real local Worker HTTP;
-use the exact run-bound ruleset hash;
-use authenticated token kinds;
-receive canonical directives;
-receive canonical offers;
-receive canonical transactions;
-display canonical lives;
-use canonical finalization;
-publish one canonical leaderboard entry;
-reuse operation identity on retry;
-avoid network requests during active combat;
-fail visibly rather than silently switching to Practice/local authority.
+
+during normal Practice gameplay.
+
 Acceptance criteria
-M4 is complete only when:
-Practice remains behaviorally equivalent to v0.8;
-Practice performs zero /api/v3 requests;
-Practice works while Worker is unavailable;
-Ranked is entered explicitly;
-Ranked start and bootstrap use the real Worker;
-starting relic selection is canonical;
-first room directive is canonical;
-Ranked room progression uses server directives;
-no per-turn combat networking exists;
-rewards are rendered from canonical offers;
-replacement uses canonical candidates;
-all M1 meta-transactions are integrated;
-canonical lives are displayed;
-terminal token is handled correctly;
-finalize uses canonical score/outcome/duration;
-exact finalize retry creates no duplicate entry;
-leaderboard and build details render canonical data;
-network-loss retries preserve logical operation identity;
-reload/recovery is safe for every supported state;
-unknown/stale/conflicting responses fail visibly;
-real local Ranked browser lifecycle passes;
-all existing Worker/ruleset tests remain green;
+
+R2 is complete only when:
+
+R1-P0-001 is documented as an accepted product limitation;
+no player-facing mode-name or gameplay change was introduced for that decision;
+direct canonical-state manipulation remains blocked;
+Camp is unavailable after ordinary room completion;
+Ranked Camp matches confirmed extraction lifecycle;
+persistent Camp state is canonical or R2 stops with a blocker;
+run resume requires an independent recovery credential;
+expired boundary tokens can be refreshed safely;
+localStorage loss does not strand a run when the recovery credential is retained;
+run ID/install hash alone cannot resume a run;
+Return to Practice preserves recoverable Ranked state;
+explicit abandon is legal, confirmed and idempotent;
+acknowledged server state can be canonically resynced;
+only one browser tab can actively mutate a run;
+stale pending operations cannot loop forever;
+expired abandoned runs have a cleanup policy;
+production activation requires configured abuse controls;
+protocol unknown-field semantics are consistent;
+nested public projections are validated;
+cursor behavior is explicit and tested;
+no unaccepted P0 remains;
+no P1 remains;
+deferred M5 items have explicit release gates;
+Practice remains behaviorally identical and offline-capable;
 protected 172-path WIP has zero delta;
-production remains blocked;
-no push or deployment occurred;
-verify:phase, verify:baseline and verify:full pass.
-Required documentation
-Create:
-docs/ONLINE_V3_M4.md
-Document:
-client architecture;
-session state machine;
-transport and retry policy;
-token storage;
-operation-ID lifecycle;
-integration hook inventory;
-Practice/Ranked separation;
-directive adapter;
-reward/transaction adapters;
-terminal/finalize flow;
-leaderboard UI;
-recovery behavior;
-headed E2E coverage;
-unresolved staging blockers.
-Update ONLINE_V3_HANDOFF.md as a short current snapshot.
-Do not copy full test logs into the handoff.
-Final report
+all verification commands pass;
+no push, deployment or production activation occurred.
+Required final report
+
 Report concisely:
-M4 commit hashes;
-client module structure;
-number and location of game.js integration hooks;
-Ranked session states;
-token storage and redaction policy;
-operation-ID retry policy;
-Practice API request count;
-Ranked network boundaries;
-supported canonical directive types;
-integrated reward flows;
-integrated meta-transactions;
-lives and terminal behavior;
-finalization behavior;
-leaderboard UI fields;
-reload/recovery support;
-headed Ranked scenario count;
-network-loss scenario count;
+
+all R2 commit hashes;
+accepted Ranked trust-model decision;
+Camp/extraction/profile outcome;
+resume credential design;
+resume and token-refresh behavior;
+error/Return-to-Practice behavior;
+abandon behavior;
+multi-tab ownership model;
+stale/conflict resync behavior;
+retention policy;
+abuse-control deployment gate;
+protocol unknown-field policy;
+cursor policy;
+R1 threat-matrix rerun result;
+P0/P1/P2/P3 status after remediation;
+remaining M5 gates;
+ruleset hash before/after;
+D1 migration status;
 verify:phase;
 verify:baseline;
 verify:full;
-ruleset hash before/after;
+headed scenario count;
 protected WIP fingerprint/delta;
-confirmation that production and deployment were untouched;
-unresolved M5 blockers;
-next recommended milestone without starting it.
+confirmation that Practice gameplay remained unchanged;
+confirmation that production/deployment were untouched;
+final recommendation:
+READY_FOR_M5_PLANNING;
+PARTIAL_R2_BLOCKED;
+R2_FIXES_REQUIRED.
+
 After the final documentation commit, stop.
+
 Do not push, deploy, activate production or begin M5.

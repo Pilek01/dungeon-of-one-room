@@ -1,7 +1,8 @@
 # Dungeon Online v3 protocol
 
-Status: isolated Phase 2 Worker contract plus a disconnected, `test-only`
-Phase 3B2B2B1 ruleset. No browser client or production ruleset is connected.
+Status: Milestone R2 local contract. The real `v08-meta-1` browser/Worker/D1
+lifecycle is integrated locally; the ruleset remains test-only and production
+is gated.
 
 ```text
 base path: /api/v3
@@ -24,67 +25,49 @@ Authenticated mutations contain `runId`, `checkpointToken`, `roomDirectiveId`, a
 
 `POST /api/v3/runs/start`
 
+Registered start requires the ruleset ID/hash, anonymous profile ID and
+credential, an independent run recovery credential, and the client protocol
+version. The raw credentials are never returned by the Worker or stored in D1.
+An exact retry must resend the identical body and operation key.
+
 ```json
 {
-  "playerName": "FixturePlayer",
-  "season": "fixture-season",
+  "playerName": "Player",
+  "season": "local-season",
   "gameVersion": "v0.8.0",
+  "rulesetId": "v08-meta-1",
   "rulesetHash": "sha256:...",
-  "clientInstallIdHash": "non-secret-one-way-identifier"
+  "clientProtocolVersion": "ranked-v3-checkpoint-1",
+  "clientInstallIdHash": "non-secret-signal",
+  "profileId": "profile_...",
+  "profileCredential": "client-held-secret",
+  "recoveryCredential": "different-client-held-secret"
 }
 ```
 
-The active Phase 2 fixture returns a first room directive. The disconnected
-Phase 3B2B2B1 ruleset instead begins with a private starting-relic offer and no
-room directive; a valid opaque starting choice is required before the first
-directive can be issued. No production endpoint exposes that flow yet.
-
-The Worker fails closed with `503` when a matching complete ruleset, HMAC secret, or D1 binding is unavailable. Phase 2 has no production ruleset.
+The response is either a bootstrap offer or, for a hydrated extracted profile,
+an active first room. Production start additionally requires configured edge
+abuse control.
 
 ## Checkpoint
 
 `POST /api/v3/runs/checkpoint`
 
-```json
-{
-  "runId": "run_...",
-  "checkpointToken": "payload.signature",
-  "roomDirectiveId": "directive_...",
-  "roomNonce": "nonce_...",
-  "roomResult": "cleared",
-  "turnCount": 6,
-  "elapsedMs": 12000,
-  "commandJournalDigest": "hex-digest",
-  "compactRoomProof": {
-    "roomDirectiveId": "directive_...",
-    "roomNonce": "nonce_...",
-    "commands": [
-      { "code": "move", "count": 4 },
-      { "code": "attack", "count": 2 }
-    ]
-  },
-  "clientSummary": {}
-}
-```
-
-The Worker validates the current signed boundary, recalculates the journal digest when commands are present, applies exactly one ruleset-derived depth advance, and issues a new directive, nonce, digest, and token. Fields in `clientSummary`, including claimed depth, gold, build, offers, schedule, or score, are ignored.
+The strict registered body contains the current run/token/directive/nonce,
+`roomResult: "cleared"`, bounded reward claims, turn/time counters, journal
+digest, compact proof, and `clientProtocolVersion`. Unknown top-level fields
+return 400. The Worker verifies the boundary and advances exactly one canonical
+room. The compact proof is bounded client attestation, not proof of combat.
 
 ## Meta event
 
 `POST /api/v3/runs/event`
 
-```json
-{
-  "runId": "run_...",
-  "checkpointToken": "payload.signature",
-  "roomDirectiveId": "directive_...",
-  "roomNonce": "nonce_...",
-  "type": "relic_selected",
-  "payload": { "relicId": "server-offered-id" }
-}
-```
-
-Allowed event names are `reward_selected`, `relic_selected`, `mutator_selected`, `skill_upgraded`, `elixir_selected`, `merchant_purchase`, `camp_upgrade`, `forge_action`, `pact_selected`, `life_lost`, and `extract`. Acceptance and all costs/effects come from the stored state and injected ruleset, never from client prices or resulting totals.
+The strict body contains run/token/directive/nonce, one supported event type,
+its exact event-specific payload, and `clientProtocolVersion`. Bootstrap relic
+selection uses its separate bootstrap token and exact offer/choice IDs. Costs,
+choices, rewards, replacement, lives, extraction, and resulting state are
+resolved from stored canonical state.
 
 ## Finalize
 
@@ -93,20 +76,36 @@ Allowed event names are `reward_selected`, `relic_selected`, `mutator_selected`,
 ```json
 {
   "runId": "run_...",
-  "checkpointToken": "payload.signature",
-  "roomDirectiveId": "directive_...",
-  "roomNonce": "nonce_...",
-  "outcome": "defeat"
+  "checkpointToken": "terminal-payload.signature",
+  "clientProtocolVersion": "ranked-v3-checkpoint-1"
 }
 ```
 
-`outcome` is `victory`, `defeat`, or `extract`; extract requires an accepted prior extract event. The ruleset computes score and public summary. The run update and single leaderboard insert execute in one D1 batch. Client score/final-state fields are ignored.
+Only a canonical terminal boundary is accepted. Outcome, score, duration,
+build, lives, and public summary are derived server-side. The run update and
+single leaderboard insert execute atomically.
+
+## Resume, abandonment, and Camp
+
+`POST /api/v3/runs/resume` requires operation ID, run ID, independent recovery
+credential, protocol version, and last known revision. Run ID, install hash, or
+player name alone never authorize it. The response contains only the public
+canonical projection and a state-correct fresh boundary token.
+
+`POST /api/v3/runs/abandon` uses the same authentication and is idempotent.
+Finalized runs are immutable. `POST /api/v3/profiles/camp` requires the profile
+credential and permits `open`, `commit`, or `close` only after canonical
+extraction and finalization.
+
+`GET /api/v3/availability` needs no D1 binding. It reports supported protocol
+versions, strict schema-policy version, compatibility, test-only or
+production-gated availability, and never activates production.
 
 ## Leaderboard reads
 
 `GET /api/v3/leaderboard?season=fixture-season&limit=20&cursor=...`
 
-Returns a deterministic page ordered by score descending, then creation time and run ID ascending. Compact rows contain run ID, player name, score, depth, gold, duration, outcome, verification level, and creation time. Build data is excluded.
+Returns a deterministic page ordered by score descending, then creation time and run ID ascending. The version-1 cursor is a strictly validated, client-controlled public seek tuple. Malformed/unsupported cursor data returns `400 LEADERBOARD_CURSOR_INVALID`; it never silently resets to page one. Compact rows exclude build data.
 
 `GET /api/v3/leaderboard/:runId`
 
@@ -149,40 +148,13 @@ Network retry rules:
 
 The server stores only a bounded operation ring and the latest journal digest. The compact journal is heuristic evidence, not an authoritative combat replay.
 
-## Local runtime conformance
+## Local R2 conformance
 
-Phase 2.5 executes this protocol through real HTTP on a local Wrangler
-`4.114.0` process and reads the resulting rows from its persistent D1. Tests
-cover:
+The complete unit/property/Worker suite, real Wrangler/D1 lifecycle, D1
+atomicity fault test, and headed browser lifecycle exercise this contract.
+Recovery and Camp survive Worker restart; the headed suite covers reload,
+response loss, multi-tab takeover, extraction-to-Camp, and next-run profile
+hydration. Recorder/checkpoint proof helpers remain explicitly test/spec-only.
 
-- the six routes and their JSON/content-type/status contracts;
-- exact network-loss replay for start, checkpoint, event, and finalize;
-- one-winner optimistic concurrency for checkpoint, `reward_selected`,
-  merchant purchase, and finalize;
-- same-secret and different-secret restarts;
-- expired, other-season, other-ruleset, noncanonical, and invalid-signature
-  tokens;
-- leaderboard order, limit, cursor, tie stability, details, missing IDs, and
-  season isolation;
-- absence of canonical state, operation history, secrets, and tokens from
-  public reads and runtime logs.
-
-This test runtime uses only the fixture ruleset. It does not establish or imply
-a production v0.8 ruleset.
-
-The Phase 3B2B2B2 `v08-meta-1` directory implements deterministic initial state,
-mandatory opaque starting-relic selection, a canonical relic build ledger,
-room selection, `RoomDirectiveV3` consumption, standard Warden relic offers,
-an Otter Crimson-chest relic offer, exact source-specific rarity rules, and
-run-scoped Warden drop pity for isolated tests. Vault is conclusively
-`NOT_AN_ACTIVE_RELIC_SOURCE` because the active baseline Vault chest has no
-relic outcome. Arena is active but `BLOCKED_BY_REPLACEMENT_POLICY` because its
-choice count depends on noncanonical Ascension state and full-slot selection
-enters the deferred global replacement flow. Its
-descriptor is `test-only`, registry resolution rejects it, and neither active
-entrypoint imports it. It therefore does not alter any route or payload above.
-Starting and regular offers are bound to canonical state and selected only by
-opaque `offerId`/`choiceId`. The shared public choice projection exposes the
-canonical relic result while private choice maps and state digests remain
-server-only. Other special sources and endpoint integration remain deferred; client
-rarity, stacks, costs, capacity, and resulting totals remain non-authoritative.
+This conformance does not authorize a production ruleset, remote migration,
+shared abuse-control binding, deployment, or M5 rollout.
