@@ -193,6 +193,15 @@ export function createD1RunRepository(db, leaderboardRepository, profileReposito
       const results = await db.batch([updateRun, updateProfile]);
       return changes(results[0]) === 1 && changes(results[1]) === 1;
     },
+    async deleteExpired(now) {
+      const result = await db.prepare(`
+        DELETE FROM ranked_runs
+        WHERE expires_at <= ?
+          AND status <> 'finalized'
+      `).bind(now).run();
+      return changes(result);
+    },
+
     async finalizeAtomic(state, expectedRevision, metadata, leaderboardEntry) {
       const update = db.prepare(`
         UPDATE ranked_runs SET

@@ -277,8 +277,8 @@ test("registry dispatch is exact and production remains fail closed", async () =
   }
   const production = createRealHarness({ environment: "production" });
   const denied = await production.start("registry-production");
-  assert.equal(denied.response.status, 422);
-  assert.equal(denied.payload.error.code, "RULESET_PRODUCTION_UNAVAILABLE");
+  assert.equal(denied.response.status, 503);
+  assert.equal(denied.payload.error.code, "ABUSE_CONTROL_REQUIRED");
 });
 
 test("real finalize rejects a nonterminal room boundary", async () => {
@@ -412,7 +412,11 @@ test("real HTTP lifecycle reaches canonical relic and meta transaction systems",
   for (let attempt = 0; attempt < 4; attempt += 1) {
     if (attempt > 0) {
       const nextStarted = (
-        await harness.start(`lifecycle-start-${attempt}`)
+        await harness.start(`lifecycle-start-${attempt}`, {
+          profileId: `profile_${String(attempt).repeat(32)}`,
+          profileCredential: String.fromCharCode(112 + attempt).repeat(43),
+          recoveryCredential: String.fromCharCode(114 + attempt).repeat(43)
+        })
       ).payload;
       session = (
         await harness.select(

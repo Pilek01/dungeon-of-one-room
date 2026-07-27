@@ -1,6 +1,8 @@
 import {
   ABANDONED_RUN_TTL_MS,
+  ABUSE_CONTROL_BINDING,
   HMAC_SECRET_BINDING,
+  MAX_ACTIVE_RUNS_PER_PROFILE,
   PROTOCOL_VERSION,
   PROFILE_TTL_MS,
   RECENT_OPS_LIMIT,
@@ -36,6 +38,7 @@ import {
   stateForDigest
 } from "./domain/run-state.js";
 import { assertRulesetV3 } from "./domain/ruleset-interface.js";
+import { cleanupExpiredRuns } from "./domain/retention.js";
 import { errorFromCause, HttpError } from "./http/errors.js";
 import {
   parseLeaderboardQuery,
@@ -62,6 +65,42 @@ import {
   requireRecoveryCredential,
   timingSafeVerifierEqual
 } from "./security/credential-verifier.js";
+
+export const R2_METRIC_NAMES = Object.freeze([
+  "run_starts",
+  "rejected_starts",
+  "active_runs",
+  "cleanup_deleted",
+  "resume_success",
+  "resume_failure",
+  "invalid_recovery_credentials",
+  "stale_conflicts",
+  "finalizations",
+  "leaderboard_reads",
+  "d1_write_failures"
+]);
+
+function recordMetric(env, options, name, value = 1, dimension = "") {
+  if (!R2_METRIC_NAMES.includes(name)) return;
+  const safeDimension = String(dimension || "").slice(0, 64);
+  options.metrics?.increment?.(name, value, safeDimension);
+  env?.RANKED_V3_METRICS?.writeDataPoint?.({
+    blobs: [name, safeDimension],
+    doubles: [Number(value) || 0],
+    indexes: [name]
+  });
+}
+
+function enforceAbuseControlGate(env, options) {
+  if (options.rulesetEnvironment !== "production") return;
+  if (!env?.[ABUSE_CONTROL_BINDING]) {
+    throw new HttpError(
+      503,
+      "ABUSE_CONTROL_REQUIRED",
+      "Production Ranked start requires configured edge abuse control."
+    );
+  }
+}
 
 function randomIdentifier(prefix, randomUUID) {
   return `${prefix}_${randomUUID().replaceAll("-", "")}`;
@@ -733,6 +772,8 @@ async function handleRegisteredResume(request, env, options, repositories) {
     recovery.recoveryVerifier,
     expectedVerifier
   )) {
+    recordMetric(env, options, "invalid_recovery_credentials", 1, "resume");
+    recordMetric(env, options, "resume_failure", 1, "unauthorized");
     throw new HttpError(401, "RECOVERY_UNAUTHORIZED", "Run recovery credential is invalid.");
   }
   const now = options.now();
@@ -776,6 +817,7 @@ async function handleRegisteredResume(request, env, options, repositories) {
     metaState: publicRulesetMetaState(state, ruleset),
     ...(state.status === "finalized" ? { leaderboardEntryId: state.runId } : {})
   };
+  recordMetric(env, options, "resume_success", 1, state.status);
   return jsonResponse(responseBody, 200, { "cache-control": "no-store" });
 }
 
@@ -870,6 +912,7 @@ async function handleRegisteredAbandon(request, env, options, repositories) {
 async function handleRegisteredStart(request, env, options, repositories) {
   const idempotencyKey = requireIdempotencyKey(request);
   const body = validateRegisteredStartBody(await readJsonRequest(request));
+  enforceAbuseControlGate(env, options);
   const ruleset = resolveRegisteredRuleset(options, body);
   const secret = requireSecret(env);
   const requestDigest = await canonicalDigest({
@@ -877,8 +920,19 @@ async function handleRegisteredStart(request, env, options, repositories) {
     path: "/api/v3/runs/start",
     body
   });
+  const priorStart = await repositories.runs.findByStartOperation(idempotencyKey);
+  if (priorStart) {
+    const replay = await replayOrConflict(priorStart, idempotencyKey, requestDigest);
+    if (replay) return replay;
+  }
   const now = options.now();
   const profileAccess = await loadRankedProfile(body, repositories, now);
+  const activeRuns = await repositories.profiles.countActiveRuns(body.profileId, now);
+  recordMetric(env, options, "active_runs", activeRuns, "start");
+  if (activeRuns >= MAX_ACTIVE_RUNS_PER_PROFILE) {
+    recordMetric(env, options, "rejected_starts", 1, "active_run_cap");
+    throw new HttpError(429, "ACTIVE_RUN_LIMIT", "The Ranked profile has too many active runs.");
+  }
   const runId = randomIdentifier("run", options.randomUUID);
   const recoveryVerifier = await createCredentialVerifier(
     body.recoveryCredential,
@@ -976,6 +1030,7 @@ async function handleRegisteredStart(request, env, options, repositories) {
       "The original start response is outside retained retry history."
     );
   }
+  recordMetric(env, options, "run_starts", 1, "accepted");
   return jsonResponse(responseBody, 201);
 }
 async function handleRegisteredEvent(request, env, options, repositories) {
@@ -1094,6 +1149,7 @@ async function handleRegisteredFinalize(request, env, options, repositories) {
     (effect) => effect.type === "insert_leaderboard"
   );
   if (!leaderboardEffect) throw new TypeError("LEADERBOARD_EFFECT_REQUIRED");
+  recordMetric(env, options, "finalizations", 1, transition.nextState.outcome || "terminal");
   return persistRegisteredMutation(context, transition, repositories, {
     operationType: "finalize",
     responseKind: "finalize",
@@ -1348,13 +1404,15 @@ async function handleFinalize(request, env, options, repositories) {
   });
 }
 
-async function handleLeaderboard(url, repositories) {
+async function handleLeaderboard(url, repositories, env, options) {
   const query = parseLeaderboardQuery(url);
+  recordMetric(env, options, "leaderboard_reads", 1, "list");
   const page = await repositories.leaderboard.list(query.season, query);
   return jsonResponse({ ok: true, season: query.season, ...page });
 }
 
-async function handleLeaderboardDetail(runId, repositories) {
+async function handleLeaderboardDetail(runId, repositories, env, options) {
+  recordMetric(env, options, "leaderboard_reads", 1, "detail");
   const detail = await repositories.leaderboard.detail(runId);
   if (!detail) throw new HttpError(404, "LEADERBOARD_ENTRY_NOT_FOUND", "Entry not found.");
   return jsonResponse({ ok: true, entry: detail });
@@ -1366,6 +1424,7 @@ export function createWorker(workerOptions = {}) {
     rulesetRegistry: workerOptions.rulesetRegistry,
     rulesetEnvironment: workerOptions.rulesetEnvironment || "test",
     repositories: workerOptions.repositories,
+    metrics: workerOptions.metrics,
     onError: workerOptions.onError,
     now: workerOptions.now || (() => Date.now()),
     randomUUID: workerOptions.randomUUID || (() => crypto.randomUUID())
@@ -1419,17 +1478,29 @@ export function createWorker(workerOptions = {}) {
           return await handleFinalize(request, env, options, repositories);
         }
         if (request.method === "GET" && url.pathname === "/api/v3/leaderboard") {
-          return await handleLeaderboard(url, repositories);
+          return await handleLeaderboard(url, repositories, env, options);
         }
         const detailMatch = /^\/api\/v3\/leaderboard\/(run_[a-f0-9]+)$/u.exec(url.pathname);
         if (request.method === "GET" && detailMatch) {
-          return await handleLeaderboardDetail(detailMatch[1], repositories);
+          return await handleLeaderboardDetail(detailMatch[1], repositories, env, options);
         }
         throw new HttpError(404, "ROUTE_NOT_FOUND", "Route not found.");
       } catch (cause) {
+        if (["REVISION_CONFLICT", "STATE_DIGEST_CONFLICT", "ROOM_TOKEN_CONFLICT"].includes(cause?.code || cause?.message)) {
+          recordMetric(env, options, "stale_conflicts", 1, String(cause?.code || cause?.message));
+        }
+        if (/D1|storage|database/iu.test(String(cause?.code || cause?.message || ""))) {
+          recordMetric(env, options, "d1_write_failures", 1, "worker_error");
+        }
         options.onError?.(cause);
         return errorResponse(errorFromCause(cause), traceId);
       }
+    },
+    async scheduled(_controller, env) {
+      const repositories = resolveRepositories(env, options);
+      const result = await cleanupExpiredRuns(repositories.runs, options.now());
+      recordMetric(env, options, "cleanup_deleted", result.deleted, "scheduled");
+      return result;
     }
   };
 }

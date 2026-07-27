@@ -128,6 +128,19 @@ export function createMemoryRepositories() {
       profileRows.set(profile.profileId, clone(profile));
       return true;
     },
+    async deleteExpired(now) {
+      let deleted = 0;
+      for (const [runId, row] of runRows) {
+        if (row.state.status !== "finalized" && row.state.expiresAt <= now) {
+          runRows.delete(runId);
+          deleted += 1;
+        }
+      }
+      metrics.writes += deleted;
+      metrics.statements.push("delete_expired_runs");
+      return deleted;
+    },
+
     async finalizeAtomic(state, expectedRevision, metadata, leaderboardEntry) {
       metrics.batches += 1;
       metrics.writes += 2;
