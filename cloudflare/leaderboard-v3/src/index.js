@@ -16,6 +16,18 @@ import {
   resolveIdempotentReplay
 } from "./domain/idempotency.js";
 import {
+  bootstrapTokenPayloadForState,
+  createAuthenticatedRunBootstrap,
+  roomTokenPayloadForState,
+  selectAuthenticatedStartingRelic
+} from "./domain/run-bootstrap.js";
+import {
+  applyRulesetCheckpoint,
+  applyRulesetEvent,
+  publicRulesetMetaState,
+  rejectUnresolvedRealFinalize
+} from "./domain/ruleset-runtime.js";
+import {
   createInitialRun,
   publicMetaState,
   stateForDigest
@@ -30,8 +42,12 @@ import {
 } from "./http/request.js";
 import { errorResponse, jsonResponse } from "./http/response.js";
 import {
+  BOUNDARY_KINDS,
+  decodeBoundaryToken,
   decodeCheckpointToken,
+  signBoundaryToken,
   signCheckpointToken,
+  verifyBoundaryToken,
   verifyCheckpointToken
 } from "./security/checkpoint-token.js";
 import { canonicalDigest } from "./security/digests.js";
@@ -77,6 +93,16 @@ function resolveRuleset(env, options, requestedHash = "") {
   return assertRulesetV3(options.ruleset || env?.RANKED_V3_RULESET, requestedHash);
 }
 
+function resolveRegisteredRuleset(options, binding) {
+  if (!options.rulesetRegistry) throw new TypeError("RULESET_REGISTRY_UNAVAILABLE");
+  return options.rulesetRegistry.resolve({
+    rulesetId: binding.rulesetId,
+    rulesetHash: binding.rulesetHash,
+    environment: options.rulesetEnvironment,
+    lifecycle: "ranked"
+  });
+}
+
 function validateStartBody(body) {
   return {
     playerName: requireString(body.playerName, "playerName", { maximum: 18 }),
@@ -89,6 +115,16 @@ function validateStartBody(body) {
     clientInstallIdHash: requireString(body.clientInstallIdHash, "clientInstallIdHash", {
       minimum: 16,
       maximum: 128,
+      pattern: /^[A-Za-z0-9._:-]+$/u
+    })
+  };
+}
+
+function validateRegisteredStartBody(body) {
+  return {
+    ...validateStartBody(body),
+    rulesetId: requireString(body.rulesetId, "rulesetId", {
+      maximum: 80,
       pattern: /^[A-Za-z0-9._:-]+$/u
     })
   };
@@ -204,6 +240,376 @@ async function validateJournalDigest(body) {
   if (actual !== body.commandJournalDigest) {
     throw new HttpError(422, "JOURNAL_DIGEST_MISMATCH", "Command journal digest does not match.");
   }
+}
+
+function validateRegisteredRunId(value) {
+  return requireString(value, "runId", {
+    maximum: 80,
+    pattern: /^run_[a-f0-9]+$/u
+  });
+}
+
+function validateBootstrapSelectionBody(body) {
+  const allowed = [
+    "runId",
+    "type",
+    "bootstrapToken",
+    "offerId",
+    "choiceId"
+  ];
+  if (Object.keys(body).some((field) => !allowed.includes(field))) {
+    throw new HttpError(
+      400,
+      "BOOTSTRAP_REQUEST_FIELDS_INVALID",
+      "Starting relic bootstrap request fields are invalid."
+    );
+  }
+  if (body.type !== "select_starting_relic") {
+    throw new HttpError(422, "EVENT_TYPE_INVALID", "Starting relic event type is invalid.");
+  }
+  return {
+    runId: validateRegisteredRunId(body.runId),
+    type: body.type,
+    bootstrapToken: requireString(body.bootstrapToken, "bootstrapToken", {
+      maximum: 4096
+    }),
+    offerId: requireString(body.offerId, "offerId", { maximum: 160 }),
+    choiceId: requireString(body.choiceId, "choiceId", { maximum: 160 })
+  };
+}
+
+function validateRegisteredRoomEnvelope(body) {
+  return {
+    ...body,
+    runId: validateRegisteredRunId(body.runId),
+    checkpointToken: requireString(body.checkpointToken, "checkpointToken", {
+      maximum: 4096
+    }),
+    roomDirectiveId: requireString(body.roomDirectiveId, "roomDirectiveId", {
+      maximum: 160
+    }),
+    roomNonce: requireString(body.roomNonce, "roomNonce", { maximum: 160 })
+  };
+}
+
+function enforceRegisteredBoundary(payload, state, kind, now) {
+  if (payload.expiresAt <= now) {
+    throw new HttpError(401, "TOKEN_EXPIRED", "Boundary token is expired.");
+  }
+  if (payload.revision !== state.revision) {
+    throw new HttpError(409, "REVISION_CONFLICT", "Boundary token revision is stale or ahead.");
+  }
+  if (payload.stateDigest !== state.stateDigest) {
+    throw new HttpError(409, "STATE_DIGEST_CONFLICT", "Boundary token state digest is stale.");
+  }
+  if (kind === BOUNDARY_KINDS.RUN_BOOTSTRAP) {
+    if (
+      state.status !== "awaiting_starting_relic" ||
+      payload.startingOfferId !== state.pendingOffer?.offerId ||
+      payload.bootstrapNonce !== state.bootstrapBoundary?.bootstrapNonce
+    ) {
+      throw new HttpError(
+        409,
+        "BOOTSTRAP_TOKEN_CONFLICT",
+        "Bootstrap token claims are stale."
+      );
+    }
+    return;
+  }
+  if (
+    state.status !== "active" ||
+    payload.roomDirectiveId !== state.currentRoomDirective?.directiveId ||
+    payload.roomNonce !== state.currentRoomDirective?.roomNonce
+  ) {
+    throw new HttpError(409, "ROOM_TOKEN_CONFLICT", "Room token claims are stale.");
+  }
+}
+
+async function loadRegisteredMutationContext({
+  request,
+  env,
+  options,
+  repositories,
+  path,
+  body,
+  token,
+  boundaryKind
+}) {
+  const idempotencyKey = requireIdempotencyKey(request);
+  const requestDigest = await canonicalDigest({ method: request.method, path, body });
+  const decoded = decodeBoundaryToken(token);
+  if (decoded.payload.runId !== body.runId) {
+    throw new HttpError(401, "TOKEN_RUN_MISMATCH", "Boundary token belongs to another run.");
+  }
+  const state = await repositories.runs.get(body.runId);
+  if (!state) throw new HttpError(404, "RUN_NOT_FOUND", "Run not found.");
+  const ruleset = resolveRegisteredRuleset(options, state);
+  const secret = requireSecret(env);
+  const now = options.now();
+  const tokenPayload = await verifyBoundaryToken(token, secret, {
+    now,
+    allowExpired: true,
+    boundaryKind,
+    runId: state.runId,
+    rulesetId: state.rulesetId,
+    rulesetHash: state.rulesetHash
+  });
+  const replay = await replayOrConflict(state, idempotencyKey, requestDigest);
+  if (replay) return { replay };
+  enforceRegisteredBoundary(tokenPayload, state, boundaryKind, now);
+  return {
+    body,
+    idempotencyKey,
+    requestDigest,
+    state,
+    ruleset,
+    secret,
+    now
+  };
+}
+
+async function persistRegisteredMutation(context, transition, repositories, options = {}) {
+  const nextState = {
+    ...transition.nextState,
+    updatedAt: context.now
+  };
+  const stateDigest = await canonicalDigest(stateForDigest(nextState));
+  const checkpointToken =
+    nextState.status === "active" && nextState.currentRoomDirective
+      ? await signBoundaryToken(
+          roomTokenPayloadForState(nextState, stateDigest, context.now),
+          context.secret
+        )
+      : null;
+  const responseBody = {
+    ok: true,
+    ...transition.response,
+    runId: nextState.runId,
+    revision: nextState.revision,
+    publicStateDigest: stateDigest,
+    ...(checkpointToken ? { checkpointToken } : {}),
+    metaState: publicRulesetMetaState(nextState, context.ruleset)
+  };
+  const operationType = options.operationType || "mutation";
+  const recentOps = await appendVersionedRecentOperation(
+    context.state.recentOps,
+    await operationRecord({
+      idempotencyKey: context.idempotencyKey,
+      operationType,
+      requestDigest: context.requestDigest,
+      responseKind: options.responseKind || operationType,
+      responseStatus: 200,
+      responseBody,
+      runId: nextState.runId,
+      rulesetId: nextState.rulesetId,
+      rulesetHash: nextState.rulesetHash,
+      revisionBefore: context.state.revision,
+      resultingRevision: nextState.revision,
+      stateDigest,
+      createdAt: context.now
+    }),
+    RECENT_OPS_LIMIT
+  );
+  const persisted = await repositories.runs.updateConditional(
+    nextState,
+    context.state.revision,
+    {
+      stateDigest,
+      recentOps,
+      expectedStateDigest: context.state.stateDigest,
+      expectedStatus: context.state.status
+    }
+  );
+  if (!persisted) {
+    throw new HttpError(409, "REVISION_CONFLICT", "Run changed before this operation committed.");
+  }
+  return jsonResponse(responseBody, 200);
+}
+
+async function handleRegisteredStart(request, env, options, repositories) {
+  const idempotencyKey = requireIdempotencyKey(request);
+  const body = validateRegisteredStartBody(await readJsonRequest(request));
+  const ruleset = resolveRegisteredRuleset(options, body);
+  const secret = requireSecret(env);
+  const requestDigest = await canonicalDigest({
+    method: request.method,
+    path: "/api/v3/runs/start",
+    body
+  });
+  const now = options.now();
+  const transition = await createAuthenticatedRunBootstrap(body, {
+    ruleset,
+    secret,
+    now,
+    runId: randomIdentifier("run", options.randomUUID),
+    bootstrapNonce: randomIdentifier("bootstrap", options.randomUUID)
+  });
+  const state = transition.nextState;
+  const stateDigest = await canonicalDigest(stateForDigest(state));
+  const bootstrapToken = await signBoundaryToken(
+    bootstrapTokenPayloadForState(state, stateDigest, now),
+    secret
+  );
+  const responseBody = {
+    ok: true,
+    protocolVersion: PROTOCOL_VERSION,
+    runId: state.runId,
+    revision: state.revision,
+    bootstrapToken,
+    publicStateDigest: stateDigest,
+    metaState: publicRulesetMetaState(state, ruleset)
+  };
+  const recentOps = await appendVersionedRecentOperation(
+    createRecentOperationsV2(),
+    await operationRecord({
+      idempotencyKey,
+      operationType: "start",
+      requestDigest,
+      responseKind: "run_bootstrap",
+      responseStatus: 201,
+      responseBody,
+      runId: state.runId,
+      rulesetId: state.rulesetId,
+      rulesetHash: state.rulesetHash,
+      revisionBefore: state.revision,
+      resultingRevision: state.revision,
+      stateDigest,
+      createdAt: now
+    }),
+    RECENT_OPS_LIMIT
+  );
+  try {
+    await repositories.runs.insert(state, {
+      stateDigest,
+      recentOps,
+      startIdempotencyKey: idempotencyKey,
+      startRequestDigest: requestDigest
+    });
+  } catch (cause) {
+    if (cause?.code !== "START_OPERATION_CONFLICT") throw cause;
+    const existing = await repositories.runs.findByStartOperation(idempotencyKey);
+    if (!existing) throw cause;
+    const replay = await replayOrConflict(existing, idempotencyKey, requestDigest);
+    if (replay) return replay;
+    throw new HttpError(
+      409,
+      "IDEMPOTENCY_WINDOW_EXPIRED",
+      "The original start response is outside retained retry history."
+    );
+  }
+  return jsonResponse(responseBody, 201);
+}
+
+async function handleRegisteredEvent(request, env, options, repositories) {
+  const rawBody = await readJsonRequest(request);
+  if (rawBody.type === "select_starting_relic") {
+    const body = validateBootstrapSelectionBody(rawBody);
+    const context = await loadRegisteredMutationContext({
+      request,
+      env,
+      options,
+      repositories,
+      path: "/api/v3/runs/event",
+      body,
+      token: body.bootstrapToken,
+      boundaryKind: BOUNDARY_KINDS.RUN_BOOTSTRAP
+    });
+    if (context.replay) return context.replay;
+    const transition = await selectAuthenticatedStartingRelic(
+      context.state,
+      { offerId: body.offerId, choiceId: body.choiceId },
+      {
+        ruleset: context.ruleset,
+        secret: context.secret
+      }
+    );
+    return persistRegisteredMutation(context, transition, repositories, {
+      operationType: "select_starting_relic",
+      responseKind: "starting_relic_selected"
+    });
+  }
+  const body = validateRegisteredRoomEnvelope(rawBody);
+  const context = await loadRegisteredMutationContext({
+    request,
+    env,
+    options,
+    repositories,
+    path: "/api/v3/runs/event",
+    body,
+    token: body.checkpointToken,
+    boundaryKind: BOUNDARY_KINDS.ROOM_CHECKPOINT
+  });
+  if (context.replay) return context.replay;
+  if (
+    body.roomDirectiveId !== context.state.currentRoomDirective?.directiveId ||
+    body.roomNonce !== context.state.currentRoomDirective?.roomNonce
+  ) {
+    throw new HttpError(409, "ROOM_TOKEN_CONFLICT", "Room request claims are stale.");
+  }
+  const transition = await applyRulesetEvent(
+    context.state,
+    body,
+    context.ruleset,
+    { secret: context.secret }
+  );
+  return persistRegisteredMutation(context, transition, repositories, {
+    operationType: "event",
+    responseKind: body.type
+  });
+}
+
+async function handleRegisteredCheckpoint(request, env, options, repositories) {
+  const body = validateRegisteredRoomEnvelope(await readJsonRequest(request));
+  const context = await loadRegisteredMutationContext({
+    request,
+    env,
+    options,
+    repositories,
+    path: "/api/v3/runs/checkpoint",
+    body,
+    token: body.checkpointToken,
+    boundaryKind: BOUNDARY_KINDS.ROOM_CHECKPOINT
+  });
+  if (context.replay) return context.replay;
+  if (
+    body.roomDirectiveId !== context.state.currentRoomDirective?.directiveId ||
+    body.roomNonce !== context.state.currentRoomDirective?.roomNonce
+  ) {
+    throw new HttpError(409, "ROOM_TOKEN_CONFLICT", "Room request claims are stale.");
+  }
+  await validateJournalDigest(body);
+  const transition = await applyRulesetCheckpoint(
+    context.state,
+    body,
+    context.ruleset,
+    { secret: context.secret }
+  );
+  return persistRegisteredMutation(context, transition, repositories, {
+    operationType: "checkpoint",
+    responseKind: "checkpoint"
+  });
+}
+
+async function handleRegisteredFinalize(request, env, options, repositories) {
+  const body = validateRegisteredRoomEnvelope(await readJsonRequest(request));
+  const context = await loadRegisteredMutationContext({
+    request,
+    env,
+    options,
+    repositories,
+    path: "/api/v3/runs/finalize",
+    body,
+    token: body.checkpointToken,
+    boundaryKind: BOUNDARY_KINDS.ROOM_CHECKPOINT
+  });
+  if (context.replay) return context.replay;
+  if (
+    body.roomDirectiveId !== context.state.currentRoomDirective?.directiveId ||
+    body.roomNonce !== context.state.currentRoomDirective?.roomNonce
+  ) {
+    throw new HttpError(409, "ROOM_TOKEN_CONFLICT", "Room request claims are stale.");
+  }
+  rejectUnresolvedRealFinalize();
 }
 
 async function handleStart(request, env, options, repositories) {
@@ -352,7 +758,12 @@ async function persistMutation(context, transition, repositories, options = {}) 
     persisted = await repositories.runs.finalizeAtomic(
       nextState,
       context.state.revision,
-      { stateDigest, recentOps },
+      {
+        stateDigest,
+        recentOps,
+        expectedStateDigest: context.state.stateDigest,
+        expectedStatus: context.state.status
+      },
       {
         ...options.leaderboardEntry,
         stateDigest
@@ -362,7 +773,12 @@ async function persistMutation(context, transition, repositories, options = {}) 
     persisted = await repositories.runs.updateConditional(
       nextState,
       context.state.revision,
-      { stateDigest, recentOps }
+      {
+        stateDigest,
+        recentOps,
+        expectedStateDigest: context.state.stateDigest,
+        expectedStatus: context.state.status
+      }
     );
   }
   if (!persisted) {
@@ -458,6 +874,8 @@ async function handleLeaderboardDetail(runId, repositories) {
 export function createWorker(workerOptions = {}) {
   const options = {
     ruleset: workerOptions.ruleset,
+    rulesetRegistry: workerOptions.rulesetRegistry,
+    rulesetEnvironment: workerOptions.rulesetEnvironment || "test",
     repositories: workerOptions.repositories,
     now: workerOptions.now || (() => Date.now()),
     randomUUID: workerOptions.randomUUID || (() => crypto.randomUUID())
@@ -469,15 +887,27 @@ export function createWorker(workerOptions = {}) {
         const url = new URL(request.url);
         const repositories = resolveRepositories(env, options);
         if (request.method === "POST" && url.pathname === "/api/v3/runs/start") {
+          if (options.rulesetRegistry) {
+            return await handleRegisteredStart(request, env, options, repositories);
+          }
           return await handleStart(request, env, options, repositories);
         }
         if (request.method === "POST" && url.pathname === "/api/v3/runs/checkpoint") {
+          if (options.rulesetRegistry) {
+            return await handleRegisteredCheckpoint(request, env, options, repositories);
+          }
           return await handleCheckpoint(request, env, options, repositories);
         }
         if (request.method === "POST" && url.pathname === "/api/v3/runs/event") {
+          if (options.rulesetRegistry) {
+            return await handleRegisteredEvent(request, env, options, repositories);
+          }
           return await handleEvent(request, env, options, repositories);
         }
         if (request.method === "POST" && url.pathname === "/api/v3/runs/finalize") {
+          if (options.rulesetRegistry) {
+            return await handleRegisteredFinalize(request, env, options, repositories);
+          }
           return await handleFinalize(request, env, options, repositories);
         }
         if (request.method === "GET" && url.pathname === "/api/v3/leaderboard") {

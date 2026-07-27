@@ -17,6 +17,7 @@ function stateFromRow(row) {
 }
 
 function runValues(state, stateDigest, recentOps) {
+  const directive = state.roomDirective || state.currentRoomDirective;
   return [
     state.season,
     state.protocolVersion,
@@ -26,9 +27,9 @@ function runValues(state, stateDigest, recentOps) {
     state.playerName,
     state.depth,
     state.roomIndex,
-    state.roomDirective?.id || null,
-    state.roomDirective?.roomType || null,
-    state.roomDirective?.roomNonce || null,
+    directive?.id || directive?.directiveId || null,
+    directive?.roomType || null,
+    directive?.roomNonce || null,
     state.gold,
     state.lives,
     canonicalJson(stateForDigest(state)),
@@ -46,6 +47,7 @@ function runValues(state, stateDigest, recentOps) {
 export function createD1RunRepository(db, leaderboardRepository) {
   return {
     async insert(state, metadata) {
+      const directive = state.roomDirective || state.currentRoomDirective;
       try {
         await db.prepare(`
           INSERT INTO ranked_runs (
@@ -68,9 +70,9 @@ export function createD1RunRepository(db, leaderboardRepository) {
           state.playerName,
           state.depth,
           state.roomIndex,
-          state.roomDirective.id,
-          state.roomDirective.roomType,
-          state.roomDirective.roomNonce,
+          directive?.id || directive?.directiveId || null,
+          directive?.roomType || null,
+          directive?.roomNonce || null,
           state.gold,
           state.lives,
           canonicalJson(stateForDigest(state)),
@@ -124,11 +126,15 @@ export function createD1RunRepository(db, leaderboardRepository) {
           lives = ?, canonical_state_json = ?, state_digest = ?,
           journal_digest = ?, recent_ops_json = ?, anomaly_score = ?,
           updated_at = ?, expires_at = ?, finalized_at = ?, outcome = ?
-        WHERE run_id = ? AND revision = ? AND status = 'active'
+        WHERE run_id = ? AND revision = ? AND status = ?
+          AND (? IS NULL OR state_digest = ?)
       `).bind(
         ...runValues(state, metadata.stateDigest, metadata.recentOps),
         state.runId,
-        expectedRevision
+        expectedRevision,
+        metadata.expectedStatus || "active",
+        metadata.expectedStateDigest ?? null,
+        metadata.expectedStateDigest ?? null
       ).run();
       return changes(result) === 1;
     },
@@ -142,11 +148,15 @@ export function createD1RunRepository(db, leaderboardRepository) {
           lives = ?, canonical_state_json = ?, state_digest = ?,
           journal_digest = ?, recent_ops_json = ?, anomaly_score = ?,
           updated_at = ?, expires_at = ?, finalized_at = ?, outcome = ?
-        WHERE run_id = ? AND revision = ? AND status = 'active'
+        WHERE run_id = ? AND revision = ? AND status = ?
+          AND (? IS NULL OR state_digest = ?)
       `).bind(
         ...runValues(state, metadata.stateDigest, metadata.recentOps),
         state.runId,
-        expectedRevision
+        expectedRevision,
+        metadata.expectedStatus || "active",
+        metadata.expectedStateDigest ?? null,
+        metadata.expectedStateDigest ?? null
       );
       const insert = leaderboardRepository.prepareInsert({
         ...leaderboardEntry,

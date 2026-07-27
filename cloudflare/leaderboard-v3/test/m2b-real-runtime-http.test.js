@@ -1,0 +1,276 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import { createWorker } from "../src/index.js";
+import { createRulesetRegistry } from "../src/rulesets/registry.js";
+import { V08_META_1_LOCAL_RELEASE_DESCRIPTOR } from "../src/rulesets/releases.js";
+import { createMemoryRepositories } from "./fixtures/memory-repositories.js";
+import { canonicalDigest } from "../src/security/digests.js";
+import {
+  decodeBoundaryToken,
+  signBoundaryToken
+} from "../src/security/checkpoint-token.js";
+import { TEST_SECRET } from "./fixtures/harness.js";
+
+const RULESET_ID = "v08-meta-1";
+const RULESET_HASH = "sha256:2fcc9df6032f7966ff0ede0e723dc1f0f3b0b28cc0d77533caaeb7ae886a8594";
+
+function createRealHarness(options = {}) {
+  const repositories = options.repositories || createMemoryRepositories();
+  const registry = options.registry || createRulesetRegistry([
+    V08_META_1_LOCAL_RELEASE_DESCRIPTOR
+  ]);
+  let now = 1_800_000_000_000;
+  let sequence = 1;
+  const worker = createWorker({
+    rulesetRegistry: registry,
+    rulesetEnvironment: options.environment || "local",
+    repositories,
+    now: () => now,
+    randomUUID() {
+      const suffix = String(sequence).padStart(12, "0");
+      sequence += 1;
+      return `00000000-0000-4000-8000-${suffix}`;
+    }
+  });
+  const env = { RANKED_V3_HMAC_SECRET: TEST_SECRET };
+
+  async function call(path, body, idempotencyKey) {
+    const response = await worker.fetch(new Request(`https://local.invalid${path}`, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "Idempotency-Key": idempotencyKey
+      },
+      body: JSON.stringify(body)
+    }), env);
+    return { response, payload: await response.json() };
+  }
+
+  function startBody(overrides = {}) {
+    return {
+      playerName: "RealRuntime",
+      season: "local-season",
+      gameVersion: "0.8.1",
+      rulesetId: RULESET_ID,
+      rulesetHash: RULESET_HASH,
+      clientInstallIdHash: "install_0123456789abcdef",
+      ...overrides
+    };
+  }
+
+  async function start(key = "real-start-0001", overrides = {}) {
+    return call("/api/v3/runs/start", startBody(overrides), key);
+  }
+
+  async function select(session, choiceIndex = 0, key = "real-select-0001", overrides = {}) {
+    return call("/api/v3/runs/event", {
+      runId: session.runId,
+      type: "select_starting_relic",
+      bootstrapToken: session.bootstrapToken,
+      offerId: session.metaState.startingRelicOffer.offerId,
+      choiceId: session.metaState.startingRelicOffer.publicChoices[choiceIndex].choiceId,
+      ...overrides
+    }, key);
+  }
+
+  async function checkpoint(session, key = "real-checkpoint-0001", overrides = {}) {
+    const directive = session.metaState.currentRoomDirective;
+    const commands = [{ code: "move", count: 2 }, { code: "attack", count: 1 }];
+    return call("/api/v3/runs/checkpoint", {
+      runId: session.runId,
+      checkpointToken: session.checkpointToken,
+      roomDirectiveId: directive.directiveId,
+      roomNonce: directive.roomNonce,
+      roomResult: "cleared",
+      turnCount: 3,
+      elapsedMs: 1_000,
+      commandJournalDigest: await canonicalDigest(commands),
+      compactRoomProof: {
+        roomDirectiveId: directive.directiveId,
+        roomNonce: directive.roomNonce,
+        commands
+      },
+      ...overrides
+    }, key);
+  }
+
+  return {
+    repositories,
+    registry,
+    worker,
+    env,
+    call,
+    start,
+    startBody,
+    select,
+    checkpoint,
+    advance(ms) {
+      now += ms;
+    }
+  };
+}
+
+test("real start returns authenticated bootstrap state without a synthetic room", async () => {
+  const harness = createRealHarness();
+  const first = await harness.start();
+  assert.equal(first.response.status, 201);
+  assert.equal(first.payload.metaState.status, "awaiting_starting_relic");
+  assert.equal(first.payload.metaState.revision, 0);
+  assert.equal(first.payload.metaState.currentRoomDirective, null);
+  assert.equal(first.payload.metaState.startingRelicOffer.publicChoices.length, 3);
+  assert.equal(typeof first.payload.bootstrapToken, "string");
+  assert.equal("checkpointToken" in first.payload, false);
+  assert.equal("roomDirectiveId" in first.payload, false);
+  assert.equal("roomNonce" in first.payload, false);
+
+  const retry = await harness.start();
+  assert.equal(retry.response.status, 201);
+  assert.equal(retry.response.headers.get("x-idempotent-replay"), "1");
+  assert.deepEqual(retry.payload, first.payload);
+
+  const conflict = await harness.start("real-start-0001", { playerName: "Other" });
+  assert.equal(conflict.response.status, 409);
+  assert.equal(conflict.payload.error.code, "IDEMPOTENCY_KEY_REUSED");
+});
+
+test("authenticated starting selection returns one deterministic first room and exact retry", async () => {
+  const harness = createRealHarness();
+  const started = (await harness.start()).payload;
+  const selected = await harness.select(started);
+  assert.equal(selected.response.status, 200);
+  assert.equal(selected.payload.metaState.status, "active");
+  assert.equal(selected.payload.revision, 1);
+  assert.equal(selected.payload.metaState.build.relics.length, 1);
+  assert.equal(selected.payload.metaState.currentRoomDirective.revision, 1);
+  assert.equal(typeof selected.payload.checkpointToken, "string");
+  assert.equal("bootstrapToken" in selected.payload, false);
+
+  const retry = await harness.select(started);
+  assert.equal(retry.response.status, 200);
+  assert.equal(retry.response.headers.get("x-idempotent-replay"), "1");
+  assert.deepEqual(retry.payload, selected.payload);
+
+  const conflict = await harness.select(started, 1);
+  assert.equal(conflict.response.status, 409);
+  assert.equal(conflict.payload.error.code, "IDEMPOTENCY_KEY_REUSED");
+});
+
+test("starting selection rejects fake authority, stale bindings and token-kind substitution", async () => {
+  const harness = createRealHarness();
+  const started = (await harness.start()).payload;
+  for (const [index, overrides] of [
+    [0, { offerId: "offer_fake" }],
+    [0, { choiceId: "choice_fake" }],
+    [0, { relicId: "relic_fake" }],
+    [0, { build: { relics: [] } }]
+  ]) {
+    const attempt = await harness.select(
+      started,
+      index,
+      `invalid-selection-${JSON.stringify(overrides)}`,
+      overrides
+    );
+    assert.notEqual(attempt.response.status, 200);
+  }
+  const bootstrapPayload = decodeBoundaryToken(started.bootstrapToken).payload;
+  const wrongNonceToken = await signBoundaryToken({
+    ...bootstrapPayload,
+    bootstrapNonce: "bootstrap_wrong"
+  }, TEST_SECRET);
+  const wrongNonce = await harness.select(started, 0, "wrong-nonce", {
+    bootstrapToken: wrongNonceToken
+  });
+  assert.equal(wrongNonce.response.status, 409);
+  assert.equal(wrongNonce.payload.error.code, "BOOTSTRAP_TOKEN_CONFLICT");
+
+  const selected = (await harness.select(started, 0, "valid-after-failures")).payload;
+  const roomAsBootstrap = await harness.select(started, 0, "room-as-bootstrap", {
+    bootstrapToken: selected.checkpointToken
+  });
+  assert.equal(roomAsBootstrap.response.status, 401);
+  assert.equal(roomAsBootstrap.payload.error.code, "TOKEN_INVALID");
+
+  const directive = selected.metaState.currentRoomDirective;
+  const bootstrapAsRoom = await harness.call("/api/v3/runs/event", {
+    runId: selected.runId,
+    checkpointToken: started.bootstrapToken,
+    roomDirectiveId: directive.directiveId,
+    roomNonce: directive.roomNonce,
+    type: "open_meta_offer",
+    payload: {}
+  }, "bootstrap-as-room");
+  assert.equal(bootstrapAsRoom.response.status, 401);
+  assert.equal(bootstrapAsRoom.payload.error.code, "TOKEN_INVALID");
+});
+
+test("concurrent conflicting starting choices commit at most one canonical result", async () => {
+  const harness = createRealHarness();
+  const started = (await harness.start()).payload;
+  const [left, right] = await Promise.all([
+    harness.select(started, 0, "concurrent-left"),
+    harness.select(started, 1, "concurrent-right")
+  ]);
+  assert.equal([left, right].filter((result) => result.response.status === 200).length, 1);
+  const stored = harness.repositories.snapshotRun(started.runId);
+  assert.equal(stored.status, "active");
+  assert.equal(stored.revision, 1);
+  assert.equal(stored.statistics.roomsIssued, 1);
+  assert.equal(stored.offerSettlementHistory.length, 1);
+});
+
+test("real room checkpoint consumes one directive and returns the next sequential room", async () => {
+  const harness = createRealHarness();
+  const started = (await harness.start()).payload;
+  const selected = (await harness.select(started)).payload;
+  const firstDirective = selected.metaState.currentRoomDirective;
+  const cleared = await harness.checkpoint(selected);
+  assert.equal(cleared.response.status, 200);
+  assert.equal(cleared.payload.revision, 2);
+  assert.equal(cleared.payload.metaState.depth, firstDirective.depth);
+  assert.equal(
+    cleared.payload.metaState.currentRoomDirective.roomIndex,
+    firstDirective.roomIndex + 1
+  );
+  assert.notEqual(
+    cleared.payload.metaState.currentRoomDirective.directiveId,
+    firstDirective.directiveId
+  );
+  const retry = await harness.checkpoint(selected);
+  assert.equal(retry.response.headers.get("x-idempotent-replay"), "1");
+  assert.deepEqual(retry.payload, cleared.payload);
+});
+
+test("registry dispatch is exact and production remains fail closed", async () => {
+  for (const [overrides, expectedCode] of [
+    [{ rulesetId: "unknown" }, "RULESET_ID_UNSUPPORTED"],
+    [{ rulesetHash: "sha256:unknown" }, "RULESET_HASH_UNSUPPORTED"],
+    [{ rulesetId: "fixture-v3" }, "RULESET_ID_UNSUPPORTED"]
+  ]) {
+    const harness = createRealHarness();
+    const result = await harness.start(`registry-${expectedCode}`, overrides);
+    assert.equal(result.response.status, 422);
+    assert.equal(result.payload.error.code, expectedCode);
+  }
+  const production = createRealHarness({ environment: "production" });
+  const denied = await production.start("registry-production");
+  assert.equal(denied.response.status, 422);
+  assert.equal(denied.payload.error.code, "RULESET_PRODUCTION_UNAVAILABLE");
+});
+
+test("real finalize remains explicit and fail closed until M3 canonical policy", async () => {
+  const harness = createRealHarness();
+  const started = (await harness.start()).payload;
+  const selected = (await harness.select(started)).payload;
+  const directive = selected.metaState.currentRoomDirective;
+  const result = await harness.call("/api/v3/runs/finalize", {
+    runId: selected.runId,
+    checkpointToken: selected.checkpointToken,
+    roomDirectiveId: directive.directiveId,
+    roomNonce: directive.roomNonce,
+    outcome: "defeat"
+  }, "real-finalize-blocked");
+  assert.equal(result.response.status, 409);
+  assert.equal(result.payload.error.code, "REAL_RULESET_FINALIZATION_REQUIRES_M3");
+  assert.equal(harness.repositories.leaderboardCount(), 0);
+  assert.equal(harness.repositories.snapshotRun(selected.runId).status, "active");
+});

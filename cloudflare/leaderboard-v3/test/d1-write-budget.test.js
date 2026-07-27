@@ -85,8 +85,9 @@ test("D1 mutations use optimistic concurrency and finalize gates its insert", as
   ]);
   assert.match(
     runSource,
-    /WHERE run_id = \? AND revision = \? AND status = 'active'/u
+    /WHERE run_id = \? AND revision = \? AND status = \?/u
   );
+  assert.match(runSource, /state_digest = \?/u);
   assert.match(runSource, /db\.batch\(\[update, insert\]\)/u);
   assert.match(leaderboardSource, /WHERE changes\(\) = 1/u);
 });

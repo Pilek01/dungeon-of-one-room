@@ -62,8 +62,20 @@ export function errorFromCause(cause) {
   if (/token is expired/iu.test(message)) {
     return new HttpError(401, "TOKEN_EXPIRED", "Checkpoint token is expired.");
   }
-  if (/Checkpoint token|base64url|canonical/iu.test(message)) {
+  if (/Checkpoint token|Boundary token|TOKEN_BOUNDARY_KIND_MISMATCH|base64url|canonical/iu.test(message)) {
     return new HttpError(401, "TOKEN_INVALID", "Checkpoint token is invalid.");
+  }
+  if (
+    /^(STARTING_RELIC_|RELIC_|META_TRANSACTION_|MERCHANT_|FORGE_|CROSSROADS_|CAMP_|PACT_|ROOM_CHECKPOINT_|PUBLIC_)/u.test(code)
+  ) {
+    return new HttpError(422, code, code);
+  }
+  if (code === "REAL_RULESET_FINALIZATION_REQUIRES_M3") {
+    return new HttpError(
+      409,
+      code,
+      "Real ruleset finalization remains fail-closed until M3 defines canonical outcome and score."
+    );
   }
   if (code.startsWith("RULESET_")) return new HttpError(422, code, code);
   return new HttpError(500, "INTERNAL_ERROR", "Internal server error.");

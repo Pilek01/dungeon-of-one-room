@@ -66,7 +66,9 @@ export function createMemoryRepositories() {
       if (
         !current ||
         current.state.revision !== expectedRevision ||
-        current.state.status !== "active"
+        current.state.status !== (metadata.expectedStatus || "active") ||
+        metadata.expectedStateDigest !== undefined &&
+          current.stateDigest !== metadata.expectedStateDigest
       ) {
         return false;
       }
@@ -82,7 +84,9 @@ export function createMemoryRepositories() {
       if (
         !current ||
         current.state.revision !== expectedRevision ||
-        current.state.status !== "active" ||
+        current.state.status !== (metadata.expectedStatus || "active") ||
+        metadata.expectedStateDigest !== undefined &&
+          current.stateDigest !== metadata.expectedStateDigest ||
         leaderboardRows.has(state.runId)
       ) {
         return false;
