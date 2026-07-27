@@ -3,6 +3,7 @@
   "name": "dungeon-of-one-room",
   "pages_build_output_dir": "./output/pages-dist",
   "compatibility_date": "2026-07-23",
+  "services": [],
   "env": {
     "production": {
       "services": [
@@ -11,9 +12,6 @@
           "service": "dungeon-online-v3-production"
         }
       ]
-    },
-    "preview": {
-      "services": []
     }
   }
 }

@@ -102,6 +102,9 @@ test("Pages release stays same-origin and disconnects all v2 bindings", async ()
     rootFile("online-v3/ranked-v3-ui.js"),
     rootFile("cloudflare/leaderboard-v3/wrangler.production.toml")
   ]);
+  const pagesConfig = JSON.parse(pages);
+  assert.deepEqual(pagesConfig.services, []);
+  assert.equal("preview" in pagesConfig.env, false);
   assert.match(pages, /"binding": "RANKED_V3_BACKEND"/u);
   assert.match(pages, /"service": "dungeon-online-v3-production"/u);
   assert.doesNotMatch(pages, /RANKED_BACKEND|ranked-v2|ranked-s1/iu);
