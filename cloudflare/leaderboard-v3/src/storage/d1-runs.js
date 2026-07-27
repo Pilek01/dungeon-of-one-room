@@ -89,9 +89,9 @@ export function createD1RunRepository(db, leaderboardRepository, profileReposito
           state.outcome,
           metadata.startIdempotencyKey,
           metadata.startRequestDigest,
-          metadata.recoveryVerifier,
-          metadata.recoveryIssuedAt,
-          metadata.recoveryIssuedAt
+          metadata.recoveryVerifier || null,
+          metadata.recoveryIssuedAt ?? null,
+          metadata.recoveryIssuedAt ?? null
         ).run();
         return true;
       } catch (cause) {

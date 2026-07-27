@@ -6,7 +6,7 @@ import {
 } from "node:test";
 import assert from "node:assert/strict";
 import { execFile, spawn } from "node:child_process";
-import { randomBytes, randomUUID } from "node:crypto";
+import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { mkdir, rm } from "node:fs/promises";
 import net from "node:net";
 import path from "node:path";
@@ -35,6 +35,7 @@ const DATABASE = "dungeon-online-v3-local";
 const RULESET_ID = "v08-meta-1";
 const RULESET_HASH = manifest.rulesetHash;
 const SEASON = "real-ruleset-e2e";
+const PROTOCOL_VERSION = "ranked-v3-checkpoint-1";
 
 let port;
 let baseUrl;
@@ -185,20 +186,33 @@ async function request(pathname, body, idempotencyKey) {
   return { response, payload: await response.json() };
 }
 
-function startBody(overrides = {}) {
+function deterministicCredential(label) {
+  return createHash("sha256").update(label).digest("base64url");
+}
+
+function startBody(key, overrides = {}) {
+  const identity = createHash("sha256").update(`profile:${key}`).digest("hex");
   return {
     playerName: "WranglerReal",
     season: SEASON,
     gameVersion: "0.8.1",
     rulesetId: RULESET_ID,
     rulesetHash: RULESET_HASH,
-    clientInstallIdHash: "install_real_e2e_0123456789",
+    clientProtocolVersion: PROTOCOL_VERSION,
+    clientInstallIdHash: `install_${identity.slice(0, 24)}`,
+    profileId: `profile_${identity.slice(0, 32)}`,
+    profileCredential: deterministicCredential(`profile-credential:${key}`),
+    recoveryCredential: deterministicCredential(`recovery-credential:${key}`),
     ...overrides
   };
 }
 
 async function startRun(key = `start-${randomUUID()}`, overrides = {}) {
-  return request("/api/v3/runs/start", startBody(overrides), key);
+  const body = startBody(key, overrides);
+  return {
+    ...await request("/api/v3/runs/start", body, key),
+    requestBody: body
+  };
 }
 
 function selectionBody(started, choiceIndex = 0, overrides = {}) {
@@ -209,6 +223,7 @@ function selectionBody(started, choiceIndex = 0, overrides = {}) {
     offerId: started.metaState.startingRelicOffer.offerId,
     choiceId:
       started.metaState.startingRelicOffer.publicChoices[choiceIndex].choiceId,
+    clientProtocolVersion: PROTOCOL_VERSION,
     ...overrides
   };
 }
@@ -237,7 +252,8 @@ async function checkpoint(active, key) {
       roomDirectiveId: directive.directiveId,
       roomNonce: directive.roomNonce,
       commands
-    }
+    },
+    clientProtocolVersion: PROTOCOL_VERSION
   }, key);
 }
 
@@ -249,7 +265,8 @@ async function event(active, type, payload, key) {
     roomDirectiveId: directive.directiveId,
     roomNonce: directive.roomNonce,
     type,
-    payload
+    payload,
+    clientProtocolVersion: PROTOCOL_VERSION
   }, key);
 }
 
@@ -257,6 +274,7 @@ async function finalizeTerminal(terminal, key, overrides = {}) {
   return request("/api/v3/runs/finalize", {
     runId: terminal.runId,
     checkpointToken: terminal.checkpointToken,
+    clientProtocolVersion: PROTOCOL_VERSION,
     ...overrides
   }, key);
 }
@@ -342,6 +360,42 @@ describe("Online v3 real ruleset Wrangler and D1 lifecycle", {
     assert.deepEqual(retry.payload, first.payload);
   }, { timeout: 45_000 });
 
+  test("authenticated recovery survives Worker restart and raw credential never reaches D1", async () => {
+    const key = `recovery-start-${randomUUID()}`;
+    const startedResult = await startRun(key);
+    assert.equal(startedResult.response.status, 201);
+    await startRuntime();
+    const operationId = "op_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+    const resumed = await request("/api/v3/runs/resume", {
+      operationId,
+      runId: startedResult.payload.runId,
+      recoveryCredential: startedResult.requestBody.recoveryCredential,
+      clientProtocolVersion: PROTOCOL_VERSION,
+      lastKnownRevision: 0
+    }, operationId);
+    assert.equal(resumed.response.status, 200);
+    assert.equal(resumed.payload.metaState.status, "awaiting_starting_relic");
+    assert.equal(typeof resumed.payload.bootstrapToken, "string");
+
+    const rows = await d1Query(`
+      SELECT recovery_verifier, recent_ops_json, canonical_state_json
+      FROM ranked_runs WHERE run_id = '${startedResult.payload.runId}'
+    `);
+    assert.equal(rows.length, 1);
+    assert.equal(JSON.stringify(rows).includes(startedResult.requestBody.recoveryCredential), false);
+    assert.notEqual(rows[0].recovery_verifier, startedResult.requestBody.recoveryCredential);
+
+    const wrongOperationId = "op_bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+    const wrong = await request("/api/v3/runs/resume", {
+      operationId: wrongOperationId,
+      runId: startedResult.payload.runId,
+      recoveryCredential: deterministicCredential("wrong-run-credential"),
+      clientProtocolVersion: PROTOCOL_VERSION,
+      lastKnownRevision: 0
+    }, wrongOperationId);
+    assert.equal(wrong.response.status, 401);
+    assert.equal(wrong.payload.error.code, "RECOVERY_UNAUTHORIZED");
+  }, { timeout: 45_000 });
   test("selection persistence, exact retry and first directive survive restart", async () => {
     const started = (await startRun()).payload;
     const key = `real-select-${randomUUID()}`;
@@ -520,6 +574,44 @@ describe("Online v3 real ruleset Wrangler and D1 lifecycle", {
     `).then((rows) => Number(rows[0].count)), 1);
   }, { timeout: 45_000 });
 
+  test("extraction profile persists through restart and opens canonical Camp in real D1", async () => {
+    const key = `camp-start-${randomUUID()}`;
+    const startedResult = await startRun(key);
+    let session = (
+      await selectStarting(startedResult.payload, `camp-select-${randomUUID()}`)
+    ).payload;
+    session = (await event(
+      session,
+      "request_extraction",
+      { mode: "emergency" },
+      `camp-extract-${randomUUID()}`
+    )).payload;
+    assert.equal(session.metaState.status, "extraction");
+    const finalized = await finalizeTerminal(session, `camp-finalize-${randomUUID()}`);
+    assert.equal(finalized.response.status, 200);
+    await startRuntime();
+
+    const opened = await request("/api/v3/profiles/camp", {
+      profileId: startedResult.requestBody.profileId,
+      profileCredential: startedResult.requestBody.profileCredential,
+      rulesetId: RULESET_ID,
+      rulesetHash: RULESET_HASH,
+      clientProtocolVersion: PROTOCOL_VERSION,
+      action: "open"
+    }, `camp-open-${randomUUID()}`);
+    assert.equal(opened.response.status, 200);
+    assert.equal(opened.payload.profile.profileId, startedResult.requestBody.profileId);
+    assert.equal(opened.payload.profile.campSession.active, true);
+
+    const profiles = await d1Query(`
+      SELECT canonical_profile_json FROM ranked_profiles
+      WHERE profile_id = '${startedResult.requestBody.profileId}'
+    `);
+    assert.equal(profiles.length, 1);
+    const profile = JSON.parse(profiles[0].canonical_profile_json);
+    assert.equal(profile.lastExtractedRunId, session.runId);
+    assert.equal(profile.campSession.active, true);
+  }, { timeout: 60_000 });
   test("accepted depth-100 final room is the only victory path", async () => {
     const started = (await startRun(`victory-start-${randomUUID()}`)).payload;
     let session = (

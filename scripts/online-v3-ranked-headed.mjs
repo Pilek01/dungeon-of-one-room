@@ -296,7 +296,7 @@ async function main() {
       localStorage.setItem("dungeonOneRoomGraphicsMode", "hd");
       localStorage.setItem("dungeonOneRoomTutorialRunSeenV1", "1");
     }, SEASON);
-    const page = await context.newPage();
+    let page = await context.newPage();
     page.on("request", (request) => {
       const url = new URL(request.url());
       if (url.pathname.startsWith("/api/v3/")) {
@@ -340,6 +340,50 @@ async function main() {
       requestsBeforeCombatWait,
       "Active local combat emitted a network request"
     );
+
+    const ownerPage = page;
+    const observerPage = await context.newPage();
+    observerPage.on("request", (request) => {
+      const url = new URL(request.url());
+      if (url.pathname.startsWith("/api/v3/")) {
+        diagnostics.apiRequests.push({ method: request.method(), path: url.pathname });
+        if (url.pathname === "/api/v3/runs/finalize") {
+          diagnostics.finalizeOperationIds.push(request.headers()["idempotency-key"] || "");
+        }
+      }
+    });
+    observerPage.on("response", async (response) => {
+      const url = new URL(response.url());
+      if (url.pathname.startsWith("/api/v3/") && !response.ok()) {
+        diagnostics.apiErrors.push({
+          status: response.status(),
+          path: url.pathname,
+          body: await response.text().catch(() => "")
+        });
+      }
+    });
+    observerPage.on("console", (message) => {
+      if (message.type() === "error") diagnostics.consoleErrors.push(message.text());
+      if (message.type() === "debug") diagnostics.debugMessages.push(message.text());
+    });
+    observerPage.on("pageerror", (error) => diagnostics.pageErrors.push(String(error?.stack || error)));
+    await observerPage.goto(`${proxy.baseUrl}/`, { waitUntil: "domcontentloaded" });
+    await observerPage.waitForFunction(() => typeof window.render_game_to_text === "function");
+    await dismissBoot(observerPage);
+    await observerPage.locator(".ranked-v3-entry").waitFor({ state: "visible" });
+    await observerPage.locator(".ranked-v3-entry").click();
+    await sessionState(observerPage, "RECONNECT_REQUIRED");
+    await observerPage.getByRole("button", { name: "Request control" }).waitFor({ state: "visible" });
+    assert.equal(await ownerPage.evaluate(() => window.DungeonOnlineV3.getSessionState()), "ROOM_ACTIVE");
+    await ownerPage.evaluate(() => window.dispatchEvent(new Event("beforeunload")));
+    await ownerPage.close();
+    await observerPage.getByRole("button", { name: "Request control" }).click();
+    await sessionState(observerPage, "ROOM_ACTIVE");
+    assert.equal(
+      await observerPage.evaluate(() => window.DungeonOnlineV3.getSnapshot().runId),
+      runId
+    );
+    page = observerPage;
 
     await page.reload({ waitUntil: "domcontentloaded" });
     await dismissBoot(page);
@@ -429,6 +473,45 @@ async function main() {
       fullPage: true
     });
 
+    await page.reload({ waitUntil: "domcontentloaded" });
+    await dismissBoot(page);
+    await page.locator(".ranked-v3-entry").waitFor({ state: "visible" });
+    await page.locator(".ranked-v3-entry").click();
+    await page.locator(".ranked-v3-choice").first().waitFor({ state: "visible" });
+    await page.locator(".ranked-v3-choice").first().click();
+    await sessionState(page, "ROOM_ACTIVE");
+    await page.evaluate(() => window.DungeonOnlineV3.onExtraction("emergency"));
+    await sessionState(page, "TERMINAL_PENDING");
+    assert.equal(
+      await page.evaluate(() => window.DungeonOnlineV3.getSnapshot().publicState.status),
+      "extraction"
+    );
+    await page.getByRole("button", { name: "Finalize" }).click();
+    await sessionState(page, "FINALIZED");
+    await page.getByRole("button", { name: "Open Camp" }).click();
+    await page.getByText("Canonical Camp Gold:").waitFor({ state: "visible" });
+    await page.screenshot({
+      path: path.join(ARTIFACT_ROOT, "ranked-camp.png"),
+      fullPage: true
+    });
+    await page.getByRole("button", { name: "Leave Camp" }).click();
+
+    await page.reload({ waitUntil: "domcontentloaded" });
+    await dismissBoot(page);
+    await page.locator(".ranked-v3-entry").waitFor({ state: "visible" });
+    await page.locator(".ranked-v3-entry").click();
+    await page.waitForTimeout(1_000);
+    const nextRunAudit = await page.evaluate(() => ({
+      session: window.DungeonOnlineV3.getSessionState(),
+      snapshot: window.DungeonOnlineV3.getSnapshot(),
+      overlay: document.querySelector(".ranked-v3-overlay")?.textContent || ""
+    }));
+    assert.equal(nextRunAudit.session, "ROOM_ACTIVE", JSON.stringify(nextRunAudit));
+    assert(
+      await page.evaluate(() => window.DungeonOnlineV3.getSnapshot().publicState.build.relics.length > 0),
+      "Next Ranked run did not apply canonical extracted profile build"
+    );
+
     const expectedDroppedResponseErrors = diagnostics.consoleErrors.filter(
       (message) => message === "Failed to load resource: net::ERR_FAILED"
     );
@@ -444,6 +527,9 @@ async function main() {
       rankedLifecycleScenarios: 1,
       networkLossScenarios: 1,
       reloadRecoveryScenarios: 1,
+      multiTabTakeoverScenarios: 1,
+      campLifecycleScenarios: 1,
+      nextRunProfileScenarios: 1,
       activeCombatApiRequests: 0,
       finalizeAttempts: diagnostics.finalizeOperationIds.length,
       uniqueFinalizeOperationIds: new Set(diagnostics.finalizeOperationIds).size,
@@ -460,7 +546,8 @@ async function main() {
     );
     process.stdout.write(
       `Online v3 Ranked headed lifecycle PASS (${summary.rankedLifecycleScenarios} lifecycle, ` +
-      `${summary.networkLossScenarios} network-loss, ${summary.reloadRecoveryScenarios} reload)\n`
+      `${summary.networkLossScenarios} network-loss, ${summary.reloadRecoveryScenarios} reload, ` +
+      `${summary.multiTabTakeoverScenarios} multi-tab, ${summary.campLifecycleScenarios} Camp)\n`
     );
     await context.close();
   } finally {

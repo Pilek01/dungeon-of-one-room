@@ -73,16 +73,17 @@ test("real D1 finalize batch never leaves a split run/leaderboard state", {
 
   try {
     const db = await miniflare.getD1Database("DB");
-    const migration = await readFile(
-      path.join(WORKER_ROOT, "migrations", "0001_initial.sql"),
-      "utf8"
-    );
-    const migrationStatements = migration
-      .split(";")
+    const migrations = await Promise.all([
+      "0001_initial.sql",
+      "0002_r2_ranked_profiles.sql",
+      "0003_r2_run_recovery.sql"
+    ].map((name) => readFile(path.join(WORKER_ROOT, "migrations", name), "utf8")));
+    const migrationStatements = migrations
+      .flatMap((migration) => migration.split(";"))
       .map((statement) => statement.trim())
       .filter(Boolean)
       .map((statement) => db.prepare(statement));
-    assert.equal(migrationStatements.length, 3);
+    assert.equal(migrationStatements.length, 10);
     await db.batch(migrationStatements);
 
     const initial = createInitialRun({

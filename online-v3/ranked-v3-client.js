@@ -471,6 +471,10 @@
       heartbeatWriter: () => Boolean(snapshot?.runId && coordinator.heartbeat(snapshot.runId, snapshot.revision)),
       releaseWriter: () => Boolean(snapshot?.runId && coordinator.release(snapshot.runId)),
       getSnapshot: () => clone(snapshot),
+      clearRecovery: () => {
+        store.clearRecovery?.();
+        options.recoveryRecord = null;
+      },
       clear: () => {
         snapshot = null;
         store.clearSession();

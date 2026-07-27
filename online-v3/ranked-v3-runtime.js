@@ -442,7 +442,7 @@
     const choices = Array.isArray(offer?.choices) ? offer.choices : [];
     if (!choices.length) {
       ui.showMessage("Ranked Camp", "No canonical Camp actions are currently available.", [
-        ui.button("Leave Camp", () => { client.clear(); ui.hide(); })
+        ui.button("Leave Camp", () => { client.clearRecovery(); client.clear(); ui.hide(); })
       ]);
       return;
     }
@@ -466,7 +466,7 @@
       }
     );
     ui.overlay.querySelector(".ranked-v3-actions")?.append(
-      ui.button("Leave Camp", () => { client.clear(); ui.hide(); })
+      ui.button("Leave Camp", () => { client.clearRecovery(); client.clear(); ui.hide(); })
     );
   }
 
@@ -562,15 +562,18 @@
     const controls = extractedProfileReady
       ? [
           ui.button("Open Camp", () => openCamp().catch(presentError)),
-          ui.button("Close", () => { client.clear(); ui.hide(); })
+          ui.button("Close", () => { client.clearRecovery(); client.clear(); ui.hide(); })
         ]
-      : [ui.button("Close", () => { client.clear(); ui.hide(); })];
+      : [ui.button("Close", () => { client.clearRecovery(); client.clear(); ui.hide(); })];
     ui.showMessage(
       "Ranked run finalized",
       `Score ${Number(response.score) || 0}. One canonical leaderboard result was published.`,
       controls
     );
-    if (!extractedProfileReady) client.clear();
+    if (!extractedProfileReady) {
+      client.clearRecovery();
+      client.clear();
+    }
   }
 
   async function onFatalEvent() {

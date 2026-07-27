@@ -44,3 +44,56 @@ test("migration exposes every required authoritative column", async () => {
   ];
   for (const column of required) assert.match(sql, new RegExp(`\\b${column}\\b`, "u"));
 });
+test("R2 migrations are additive and expose profile plus recovery retention state", async () => {
+  const migrations = await Promise.all([
+    "0001_initial.sql",
+    "0002_r2_ranked_profiles.sql",
+    "0003_r2_run_recovery.sql"
+  ].map((name) => readFile(new URL(`../migrations/${name}`, import.meta.url), "utf8")));
+  const database = new DatabaseSync(":memory:");
+  database.exec("PRAGMA foreign_keys = ON;");
+  for (const sql of migrations) database.exec(sql);
+
+  const tables = database.prepare(`
+    SELECT name FROM sqlite_master
+    WHERE type = 'table' AND name NOT LIKE 'sqlite_%'
+    ORDER BY name
+  `).all().map((row) => row.name);
+  assert.deepEqual(tables, [
+    "leaderboard_entries",
+    "ranked_profiles",
+    "ranked_runs"
+  ]);
+
+  const runColumns = database.prepare("PRAGMA table_info(ranked_runs)").all()
+    .map((row) => row.name);
+  for (const column of [
+    "profile_id",
+    "recovery_verifier",
+    "recovery_issued_at",
+    "last_accessed_at"
+  ]) {
+    assert(runColumns.includes(column), `missing ranked_runs.${column}`);
+  }
+
+  const profileColumns = database.prepare("PRAGMA table_info(ranked_profiles)").all()
+    .map((row) => row.name);
+  for (const column of [
+    "profile_id",
+    "credential_verifier",
+    "canonical_profile_json",
+    "recent_ops_json",
+    "expires_at"
+  ]) {
+    assert(profileColumns.includes(column), `missing ranked_profiles.${column}`);
+  }
+
+  const indexes = database.prepare(`
+    SELECT name FROM sqlite_master
+    WHERE type = 'index'
+    ORDER BY name
+  `).all().map((row) => row.name);
+  assert(indexes.includes("ranked_runs_profile_status_expires"));
+  assert(indexes.includes("idx_ranked_runs_recovery_retention"));
+  database.close();
+});

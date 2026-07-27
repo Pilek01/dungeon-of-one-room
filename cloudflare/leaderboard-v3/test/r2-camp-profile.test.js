@@ -1,4 +1,5 @@
 import test from "node:test";
+import { createRequire } from "node:module";
 import assert from "node:assert/strict";
 import { createWorker } from "../src/index.js";
 import { createRulesetRegistry } from "../src/rulesets/registry.js";
@@ -6,6 +7,9 @@ import { V08_META_1_LOCAL_RELEASE_DESCRIPTOR } from "../src/rulesets/releases.js
 import { createMemoryRepositories } from "./fixtures/memory-repositories.js";
 import { TEST_SECRET } from "./fixtures/harness.js";
 import manifest from "../src/rulesets/v08-meta-1/data/ruleset-manifest.json" with { type: "json" };
+
+const require = createRequire(import.meta.url);
+const sessionApi = require("../../../online-v3/ranked-v3-session.js");
 
 const PROFILE_ID = "profile_0123456789abcdef0123456789abcdef";
 const PROFILE_CREDENTIAL = "ppppppppppppppppppppppppppppppppppppppppppp";
@@ -153,4 +157,11 @@ test("canonical extraction creates an authenticated profile Camp and next run", 
     harness.repositories.snapshotProfile(PROFILE_ID).state.lastExtractedRunId,
     extracted.runId
   );
+});
+test("profile-backed start may enter the first room without a new relic bootstrap", () => {
+  const session = sessionApi.createStateMachine();
+  session.transition(sessionApi.STATES.starting);
+  session.transition(sessionApi.STATES.entering);
+  session.transition(sessionApi.STATES.active);
+  assert.equal(session.getState(), sessionApi.STATES.active);
 });
