@@ -24,6 +24,7 @@ function terminalSession(pendingOperation = null) {
     token: { kind: protocol.TOKEN_KINDS.terminal, value: "terminal-secret" },
     publicState: {
       runId: "run_a1",
+      protocolVersion: protocol.PROTOCOL_VERSION,
       rulesetId: protocol.RULESET_ID,
       rulesetHash: protocol.RULESET_HASH,
       revision: 5,
@@ -46,6 +47,7 @@ test("M4 finalization sends only run and terminal token and clears recovery afte
         return {
           payload: {
             ok: true,
+            protocolVersion: protocol.PROTOCOL_VERSION,
             runId: "run_a1",
             revision: 6,
             score: 1234,
@@ -60,7 +62,11 @@ test("M4 finalization sends only run and terminal token and clears recovery afte
     }
   });
   const result = await client.finalize();
-  assert.deepEqual(body, { runId: "run_a1", checkpointToken: "terminal-secret" });
+  assert.deepEqual(body, {
+    runId: "run_a1",
+    checkpointToken: "terminal-secret",
+    clientProtocolVersion: protocol.PROTOCOL_VERSION
+  });
   assert.equal(result.score, 1234);
   assert.equal(client.getSnapshot().token, null);
   client.clear();
@@ -84,6 +90,7 @@ test("M4 lost finalize response recovery reuses exact operation and body", async
         return {
           payload: {
             ok: true,
+            protocolVersion: protocol.PROTOCOL_VERSION,
             runId: "run_a1",
             revision: 6,
             score: 1234,

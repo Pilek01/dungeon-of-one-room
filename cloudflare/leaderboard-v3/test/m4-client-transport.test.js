@@ -59,11 +59,13 @@ test("M4 transport reports conflicting retry without retrying", async () => {
 test("M4 response validation distinguishes bootstrap, room and terminal tokens", () => {
   const base = {
     ok: true,
+    protocolVersion: protocol.PROTOCOL_VERSION,
     runId: "run_a",
     revision: 0,
     bootstrapToken: "secret-bootstrap",
     metaState: {
       runId: "run_a",
+      protocolVersion: protocol.PROTOCOL_VERSION,
       rulesetId: protocol.RULESET_ID,
       rulesetHash: protocol.RULESET_HASH,
       revision: 0,

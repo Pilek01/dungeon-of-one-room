@@ -106,10 +106,12 @@ test("client clears recovery only after acknowledged abandonment", async () => {
   resolveRequest({
     payload: {
       ok: true,
+      protocolVersion: protocol.PROTOCOL_VERSION,
       runId: "run_a1",
       revision: 1,
       metaState: {
         runId: "run_a1",
+        protocolVersion: protocol.PROTOCOL_VERSION,
         rulesetId: protocol.RULESET_ID,
         rulesetHash: protocol.RULESET_HASH,
         revision: 1,

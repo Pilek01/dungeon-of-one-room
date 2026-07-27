@@ -48,6 +48,11 @@ import {
 } from "./http/request.js";
 import { errorResponse, jsonResponse } from "./http/response.js";
 import {
+  REGISTERED_MUTATION_FIELDS,
+  REQUEST_SCHEMA_POLICY_VERSION,
+  rejectUnknownRequestFields
+} from "./http/schema-policy.js";
+import {
   BOUNDARY_KINDS,
   decodeBoundaryToken,
   decodeCheckpointToken,
@@ -170,6 +175,7 @@ function validateStartBody(body) {
 }
 
 function validateRegisteredStartBody(body) {
+  rejectUnknownRequestFields(body, "start");
   return {
     ...validateStartBody(body),
     rulesetId: requireString(body.rulesetId, "rulesetId", {
@@ -187,7 +193,10 @@ function validateRegisteredStartBody(body) {
     recoveryCredential: requireRecoveryCredential(
       body.recoveryCredential,
       "recoveryCredential"
-    )
+    ),
+    clientProtocolVersion: body.clientProtocolVersion === undefined
+      ? PROTOCOL_VERSION
+      : requireString(body.clientProtocolVersion, "clientProtocolVersion", { maximum: 64 })
   };
 }
 
@@ -335,20 +344,7 @@ function validateRegisteredRunId(value) {
 }
 
 function validateBootstrapSelectionBody(body) {
-  const allowed = [
-    "runId",
-    "type",
-    "bootstrapToken",
-    "offerId",
-    "choiceId"
-  ];
-  if (Object.keys(body).some((field) => !allowed.includes(field))) {
-    throw new HttpError(
-      400,
-      "BOOTSTRAP_REQUEST_FIELDS_INVALID",
-      "Starting relic bootstrap request fields are invalid."
-    );
-  }
+  rejectUnknownRequestFields(body, "bootstrapEvent", "BOOTSTRAP_REQUEST_FIELDS_INVALID");
   if (body.type !== "select_starting_relic") {
     throw new HttpError(422, "EVENT_TYPE_INVALID", "Starting relic event type is invalid.");
   }
@@ -359,11 +355,15 @@ function validateBootstrapSelectionBody(body) {
       maximum: 4096
     }),
     offerId: requireString(body.offerId, "offerId", { maximum: 160 }),
-    choiceId: requireString(body.choiceId, "choiceId", { maximum: 160 })
+    choiceId: requireString(body.choiceId, "choiceId", { maximum: 160 }),
+    clientProtocolVersion: body.clientProtocolVersion === undefined
+      ? PROTOCOL_VERSION
+      : requireString(body.clientProtocolVersion, "clientProtocolVersion", { maximum: 64 })
   };
 }
 
-function validateRegisteredRoomEnvelope(body) {
+function validateRegisteredRoomEnvelope(body, policyName) {
+  rejectUnknownRequestFields(body, policyName);
   return {
     ...body,
     runId: validateRegisteredRunId(body.runId),
@@ -373,25 +373,30 @@ function validateRegisteredRoomEnvelope(body) {
     roomDirectiveId: requireString(body.roomDirectiveId, "roomDirectiveId", {
       maximum: 160
     }),
-    roomNonce: requireString(body.roomNonce, "roomNonce", { maximum: 160 })
+    roomNonce: requireString(body.roomNonce, "roomNonce", { maximum: 160 }),
+    clientProtocolVersion: body.clientProtocolVersion === undefined
+      ? PROTOCOL_VERSION
+      : requireString(body.clientProtocolVersion, "clientProtocolVersion", { maximum: 64 })
   };
 }
 
 function validateRegisteredFinalizeBody(body) {
-  const allowed = ["runId", "checkpointToken"];
-  if (Object.keys(body).some((field) => !allowed.includes(field))) {
-    throw new HttpError(
-      400,
-      "FINALIZE_REQUEST_FIELDS_INVALID",
-      "Finalization request fields are invalid."
-    );
-  }
+  rejectUnknownRequestFields(body, "finalize", "FINALIZE_REQUEST_FIELDS_INVALID");
   return {
     runId: validateRegisteredRunId(body.runId),
     checkpointToken: requireString(body.checkpointToken, "checkpointToken", {
       maximum: 4096
-    })
+    }),
+    clientProtocolVersion: body.clientProtocolVersion === undefined
+      ? PROTOCOL_VERSION
+      : requireString(body.clientProtocolVersion, "clientProtocolVersion", { maximum: 64 })
   };
+}
+
+function enforceSupportedProtocol(body) {
+  if (body.clientProtocolVersion !== PROTOCOL_VERSION) {
+    throw new HttpError(409, "PROTOCOL_VERSION_MISMATCH", "Client protocol version is unsupported.");
+  }
 }
 
 function enforceRegisteredBoundary(payload, state, kind, now) {
@@ -530,6 +535,7 @@ async function persistRegisteredMutation(context, transition, repositories, opti
   }
   const responseBody = {
     ok: true,
+    protocolVersion: PROTOCOL_VERSION,
     ...transition.response,
     runId: nextState.runId,
     revision: nextState.revision,
@@ -912,6 +918,7 @@ async function handleRegisteredAbandon(request, env, options, repositories) {
 async function handleRegisteredStart(request, env, options, repositories) {
   const idempotencyKey = requireIdempotencyKey(request);
   const body = validateRegisteredStartBody(await readJsonRequest(request));
+  enforceSupportedProtocol(body);
   enforceAbuseControlGate(env, options);
   const ruleset = resolveRegisteredRuleset(options, body);
   const secret = requireSecret(env);
@@ -1040,6 +1047,7 @@ async function handleRegisteredEvent(request, env, options, repositories) {
   }
   if (rawBody.type === "select_starting_relic") {
     const body = validateBootstrapSelectionBody(rawBody);
+    enforceSupportedProtocol(body);
     const context = await loadRegisteredMutationContext({
       request,
       env,
@@ -1064,7 +1072,8 @@ async function handleRegisteredEvent(request, env, options, repositories) {
       responseKind: "starting_relic_selected"
     });
   }
-  const body = validateRegisteredRoomEnvelope(rawBody);
+  const body = validateRegisteredRoomEnvelope(rawBody, "roomEvent");
+  enforceSupportedProtocol(body);
   const context = await loadRegisteredMutationContext({
     request,
     env,
@@ -1096,7 +1105,8 @@ async function handleRegisteredEvent(request, env, options, repositories) {
 }
 
 async function handleRegisteredCheckpoint(request, env, options, repositories) {
-  const body = validateRegisteredRoomEnvelope(await readJsonRequest(request));
+  const body = validateRegisteredRoomEnvelope(await readJsonRequest(request), "checkpoint");
+  enforceSupportedProtocol(body);
   const context = await loadRegisteredMutationContext({
     request,
     env,
@@ -1129,6 +1139,7 @@ async function handleRegisteredCheckpoint(request, env, options, repositories) {
 
 async function handleRegisteredFinalize(request, env, options, repositories) {
   const body = validateRegisteredFinalizeBody(await readJsonRequest(request));
+  enforceSupportedProtocol(body);
   const context = await loadRegisteredMutationContext({
     request,
     env,
@@ -1272,6 +1283,7 @@ async function persistMutation(context, transition, repositories, options = {}) 
   }
   const responseBody = {
     ok: true,
+    protocolVersion: PROTOCOL_VERSION,
     ...transition.response,
     runId: nextState.runId,
     revision: nextState.revision,
@@ -1418,6 +1430,26 @@ async function handleLeaderboardDetail(runId, repositories, env, options) {
   return jsonResponse({ ok: true, entry: detail });
 }
 
+function handleAvailability(url, options) {
+  const requestedVersion = String(url.searchParams.get("clientProtocolVersion") || "");
+  const compatible = !requestedVersion || requestedVersion === PROTOCOL_VERSION;
+  return jsonResponse({
+    ok: true,
+    protocolVersion: PROTOCOL_VERSION,
+    supportedClientProtocolVersions: [PROTOCOL_VERSION],
+    requestSchemaPolicy: {
+      version: REQUEST_SCHEMA_POLICY_VERSION,
+      mutationPolicy: "reject_unknown_fields",
+      endpoints: Object.keys(REGISTERED_MUTATION_FIELDS)
+    },
+    compatible,
+    availability: options.rulesetEnvironment === "production"
+      ? "production_gated"
+      : "test_only",
+    productionActivated: false
+  }, compatible ? 200 : 409, { "cache-control": "no-store" });
+}
+
 export function createWorker(workerOptions = {}) {
   const options = {
     ruleset: workerOptions.ruleset,
@@ -1434,6 +1466,9 @@ export function createWorker(workerOptions = {}) {
       const traceId = crypto.randomUUID();
       try {
         const url = new URL(request.url);
+        if (request.method === "GET" && url.pathname === "/api/v3/availability") {
+          return handleAvailability(url, options);
+        }
         const repositories = resolveRepositories(env, options);
         if (request.method === "POST" && url.pathname === "/api/v3/runs/abandon") {
           if (!options.rulesetRegistry) {

@@ -87,6 +87,7 @@
         method: "GET",
         path: `${protocol.ENDPOINTS.leaderboard.path}?${query.toString()}`
       });
+      protocol.validateLeaderboardResponse(result.payload, "list");
       return clone(result.payload);
     }
 
@@ -99,6 +100,7 @@
         method: "GET",
         path: protocol.ENDPOINTS.detail.path.replace(":runId", encodeURIComponent(canonicalRunId))
       });
+      protocol.validateLeaderboardResponse(result.payload, "detail");
       return clone(result.payload);
     }
 
@@ -152,11 +154,28 @@
         operationId: operation.operationId,
         body: operation.body
       });
-      const validated = protocol.validateMutationResponse(result.payload, {
-        runId: snapshot.runId || undefined,
-        rulesetId: protocol.RULESET_ID,
-        rulesetHash: protocol.RULESET_HASH
-      });
+      let validated;
+      try {
+        validated = protocol.validateMutationResponse(result.payload, {
+          runId: snapshot.runId || undefined,
+          rulesetId: protocol.RULESET_ID,
+          rulesetHash: protocol.RULESET_HASH
+        });
+      } catch (cause) {
+        if (/^(PROTOCOL_|LEADERBOARD_|RANKED_CAMP_)/u.test(String(cause?.message || ""))) {
+          try {
+            await resumeCanonical({
+              runId: current.runId,
+              lastKnownRevision: current.revision
+            });
+            cause.canonicalResyncCompleted = true;
+          } catch (resyncCause) {
+            cause.canonicalResyncCompleted = false;
+            cause.resyncErrorCode = String(resyncCause?.code || resyncCause?.message || "RESYNC_FAILED");
+          }
+        }
+        throw cause;
+      }
       persist({
         ...snapshot,
         runId: validated.metaState.runId,
@@ -189,7 +208,8 @@
         clientInstallIdHash: String(input.clientInstallIdHash),
         profileId: profile.profileId,
         profileCredential: profile.profileCredential,
-        recoveryCredential
+        recoveryCredential,
+        clientProtocolVersion: protocol.PROTOCOL_VERSION
       };
       persist({
         schemaVersion: 1,
@@ -228,10 +248,6 @@
       if (!coordinator.acquire(validated.metaState.runId, validated.metaState.revision)) {
         throw new TypeError("RANKED_WRITER_LEASE_HELD");
       }
-      mutationLocked = false;
-      if (!coordinator.acquire(validated.metaState.runId, validated.metaState.revision)) {
-        throw new TypeError("RANKED_WRITER_LEASE_HELD");
-      }
       return clone(result.payload);
     }
 
@@ -247,6 +263,7 @@
         checkpointToken: current.token.value,
         roomDirectiveId: directive?.directiveId,
         roomNonce: directive?.roomNonce,
+        clientProtocolVersion: protocol.PROTOCOL_VERSION,
         ...(payload === undefined ? {} : { payload })
       };
     }
@@ -264,7 +281,8 @@
           type: "select_starting_relic",
           bootstrapToken: current.token.value,
           offerId,
-          choiceId
+          choiceId,
+          clientProtocolVersion: protocol.PROTOCOL_VERSION
         }
       });
     }
@@ -315,7 +333,7 @@
       return execute(protocol.ENDPOINTS.finalize, {
         endpoint: "finalize",
         operationId,
-        body: { runId: current.runId, checkpointToken: current.token.value }
+        body: { runId: current.runId, checkpointToken: current.token.value, clientProtocolVersion: protocol.PROTOCOL_VERSION }
       });
     }
 
@@ -333,13 +351,7 @@
           : {})
       };
       const result = await transport.request(protocol.ENDPOINTS.camp, { operationId, body });
-      if (!result.payload || result.payload.ok !== true || !result.payload.profile) {
-        throw new TypeError("RANKED_CAMP_RESPONSE_INVALID");
-      }
-      mutationLocked = false;
-      if (!coordinator.acquire(validated.metaState.runId, validated.metaState.revision)) {
-        throw new TypeError("RANKED_WRITER_LEASE_HELD");
-      }
+      protocol.validateCampResponse(result.payload);
       return clone(result.payload);
     }
 
@@ -456,8 +468,6 @@
         return coordinator.acquire(current.runId, current.revision);
       },
       isWriter: () => Boolean(snapshot?.runId && coordinator.isOwner(snapshot.runId)),
-      heartbeatWriter: () => Boolean(snapshot?.runId && coordinator.heartbeat(snapshot.runId, snapshot.revision)),
-      releaseWriter: () => Boolean(snapshot?.runId && coordinator.release(snapshot.runId)),
       heartbeatWriter: () => Boolean(snapshot?.runId && coordinator.heartbeat(snapshot.runId, snapshot.revision)),
       releaseWriter: () => Boolean(snapshot?.runId && coordinator.release(snapshot.runId)),
       getSnapshot: () => clone(snapshot),

@@ -1,4 +1,5 @@
 import { MAX_REQUEST_BYTES } from "../config.js";
+import { decodeLeaderboardCursor } from "../domain/leaderboard-cursor.js";
 import { HttpError } from "./errors.js";
 
 const decoder = new TextDecoder();
@@ -76,9 +77,21 @@ export function parseLeaderboardQuery(url) {
   });
   const rawLimit = Number(url.searchParams.get("limit") || 20);
   const limit = Number.isSafeInteger(rawLimit) ? rawLimit : 20;
+  const cursor = String(url.searchParams.get("cursor") || "");
+  if (cursor) {
+    try {
+      decodeLeaderboardCursor(cursor);
+    } catch {
+      throw new HttpError(
+        400,
+        "LEADERBOARD_CURSOR_INVALID",
+        "Leaderboard cursor is malformed or unsupported."
+      );
+    }
+  }
   return {
     season,
     limit,
-    cursor: String(url.searchParams.get("cursor") || "")
+    cursor
   };
 }

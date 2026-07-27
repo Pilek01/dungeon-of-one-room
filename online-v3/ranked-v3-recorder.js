@@ -7,6 +7,11 @@
 })(typeof globalThis === "object" ? globalThis : null, function createRecorderModule() {
   "use strict";
 
+  const ASSURANCE = Object.freeze({
+    status: "test_spec_only",
+    activeCombatSecurity: false,
+    note: "Not wired into the Ranked runtime and not evidence of server-authoritative combat."
+  });
   const JOURNAL_VERSION = 1;
   const MAX_JOURNAL_COMMANDS = 4096;
 
@@ -85,6 +90,7 @@
   }
 
   return Object.freeze({
+    ASSURANCE,
     JOURNAL_VERSION,
     MAX_JOURNAL_COMMANDS,
     canonicalJson,

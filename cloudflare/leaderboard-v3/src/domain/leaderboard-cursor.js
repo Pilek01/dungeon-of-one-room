@@ -1,3 +1,9 @@
+export const LEADERBOARD_CURSOR_POLICY = Object.freeze({
+  version: 1,
+  integrity: "client_controlled_public_seek",
+  malformedBehavior: "http_400",
+  ordering: "score_desc_created_at_asc_run_id_asc"
+});
 function cursorFields(entry) {
   return {
     score: entry?.score,
@@ -19,7 +25,7 @@ export function compareLeaderboardEntries(left, right) {
 export function encodeLeaderboardCursor(entry) {
   if (!entry) return null;
   const value = cursorFields(entry);
-  return btoa(JSON.stringify(value))
+  return btoa(JSON.stringify({ version: 1, ...value }))
     .replaceAll("+", "-")
     .replaceAll("/", "_")
     .replace(/=+$/u, "");
@@ -28,23 +34,35 @@ export function encodeLeaderboardCursor(entry) {
 export function decodeLeaderboardCursor(value) {
   if (!value) return null;
   try {
+    if (typeof value !== "string" || value.length > 512 || !/^[A-Za-z0-9_-]+$/u.test(value)) {
+      throw new TypeError("LEADERBOARD_CURSOR_INVALID");
+    }
     const padding = "=".repeat((4 - (value.length % 4)) % 4);
     const decoded = JSON.parse(atob(
       value.replaceAll("-", "+").replaceAll("_", "/") + padding
     ));
     if (
+      !decoded ||
+      typeof decoded !== "object" ||
+      Array.isArray(decoded) ||
+      Object.keys(decoded).sort().join(",") !== "createdAt,runId,score,version" ||
+      decoded.version !== 1 ||
       !Number.isSafeInteger(decoded.score) ||
       decoded.score < 0 ||
       !Number.isSafeInteger(decoded.createdAt) ||
       decoded.createdAt < 0 ||
       typeof decoded.runId !== "string" ||
-      !decoded.runId
+      !/^run_[a-f0-9]+$/u.test(decoded.runId)
     ) {
-      return null;
+      throw new TypeError("LEADERBOARD_CURSOR_INVALID");
     }
-    return decoded;
+    return {
+      score: decoded.score,
+      createdAt: decoded.createdAt,
+      runId: decoded.runId
+    };
   } catch {
-    return null;
+    throw new TypeError("LEADERBOARD_CURSOR_INVALID");
   }
 }
 

@@ -21,6 +21,7 @@ function memoryStore(initial = null) {
 function meta(status, revision, directive = null) {
   return {
     runId: "run_a1",
+    protocolVersion: protocol.PROTOCOL_VERSION,
     rulesetId: protocol.RULESET_ID,
     rulesetHash: protocol.RULESET_HASH,
     revision,
@@ -45,6 +46,7 @@ test("M4 Ranked start persists exact pending action before sending", async () =>
         return {
           payload: {
             ok: true,
+            protocolVersion: protocol.PROTOCOL_VERSION,
             runId: "run_a1",
             revision: 0,
             bootstrapToken: "bootstrap-secret",
@@ -89,6 +91,7 @@ test("M4 starting relic selection accepts only bootstrap token and first directi
         return {
           payload: {
             ok: true,
+            protocolVersion: protocol.PROTOCOL_VERSION,
             runId: "run_a1",
             revision: 1,
             checkpointToken: "room-secret",

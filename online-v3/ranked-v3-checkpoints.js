@@ -7,6 +7,11 @@
 })(typeof globalThis === "object" ? globalThis : null, function createCheckpointModule() {
   "use strict";
 
+  const ASSURANCE = Object.freeze({
+    status: "test_spec_only",
+    activeCombatSecurity: false,
+    note: "Projection helper only; active Ranked assurance remains checkpoint-authoritative meta-progression."
+  });
   const RANKED_STATE_VERSION = 1;
   const TERMINAL_STATUSES = Object.freeze(["finalized", "abandoned", "rejected"]);
 
@@ -115,6 +120,7 @@
   }
 
   return Object.freeze({
+    ASSURANCE,
     RANKED_STATE_VERSION,
     TERMINAL_STATUSES,
     createRankedStateV3,
