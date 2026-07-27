@@ -241,6 +241,51 @@ async function checkpoint(active, key) {
   }, key);
 }
 
+async function event(active, type, payload, key) {
+  const directive = active.metaState.currentRoomDirective;
+  return request("/api/v3/runs/event", {
+    runId: active.runId,
+    checkpointToken: active.checkpointToken,
+    roomDirectiveId: directive.directiveId,
+    roomNonce: directive.roomNonce,
+    type,
+    payload
+  }, key);
+}
+
+async function finalizeTerminal(terminal, key, overrides = {}) {
+  return request("/api/v3/runs/finalize", {
+    runId: terminal.runId,
+    checkpointToken: terminal.checkpointToken,
+    ...overrides
+  }, key);
+}
+
+async function reachDefeat(prefix) {
+  const started = (await startRun(`${prefix}-start`)).payload;
+  let session = (
+    await selectStarting(started, `${prefix}-select`)
+  ).payload;
+  for (let index = 0; index < 8 && session.metaState.status === "active"; index += 1) {
+    const result = await event(
+      session,
+      "report_fatal_event",
+      { classification: "local_fatal_event" },
+      `${prefix}-fatal-${index}`
+    );
+    assert.equal(result.response.status, 200);
+    session = result.payload;
+  }
+  assert.equal(session.metaState.status, "defeat");
+  assert.equal(session.metaState.lives, 0);
+  return session;
+}
+
+async function getJson(pathname) {
+  const response = await fetch(`${baseUrl}${pathname}`);
+  return { response, payload: await response.json() };
+}
+
 describe("Online v3 real ruleset Wrangler and D1 lifecycle", {
   concurrency: 1
 }, () => {
@@ -369,24 +414,17 @@ describe("Online v3 real ruleset Wrangler and D1 lifecycle", {
     assert.deepEqual(retry.payload, first.payload);
   }, { timeout: 45_000 });
 
-  test("real finalize dependency is fail closed and creates no leaderboard entry", async () => {
+  test("nonterminal finalize rejects a room token and creates no leaderboard entry", async () => {
     const started = (await startRun()).payload;
     const selected = (
       await selectStarting(started, `finalize-select-${randomUUID()}`)
     ).payload;
-    const directive = selected.metaState.currentRoomDirective;
     const result = await request("/api/v3/runs/finalize", {
       runId: selected.runId,
-      checkpointToken: selected.checkpointToken,
-      roomDirectiveId: directive.directiveId,
-      roomNonce: directive.roomNonce,
-      outcome: "defeat"
+      checkpointToken: selected.checkpointToken
     }, `finalize-${randomUUID()}`);
-    assert.equal(result.response.status, 409);
-    assert.equal(
-      result.payload.error.code,
-      "REAL_RULESET_FINALIZATION_REQUIRES_M3"
-    );
+    assert.equal(result.response.status, 401);
+    assert.equal(result.payload.error.code, "TOKEN_INVALID");
     const rows = await d1Query(`
       SELECT status, revision FROM ranked_runs WHERE run_id = '${selected.runId}'
     `);
@@ -395,5 +433,188 @@ describe("Online v3 real ruleset Wrangler and D1 lifecycle", {
       SELECT COUNT(*) AS count FROM leaderboard_entries WHERE run_id = '${selected.runId}'
     `);
     assert.deepEqual(leaderboard, [{ count: 0 }]);
+  }, { timeout: 30_000 });
+
+  test("canonical defeat finalizes once and exact retry survives Worker restart", async () => {
+    const terminal = await reachDefeat(`defeat-${randomUUID()}`);
+    const key = `defeat-final-${randomUUID()}`;
+    const first = await finalizeTerminal(terminal, key);
+    assert.equal(first.response.status, 200);
+    assert.equal(first.payload.outcome, "defeat");
+    assert.equal(first.payload.metaState.status, "finalized");
+    assert.equal(first.payload.metaState.lives, 0);
+    assert.equal(first.payload.scoreVersion, "v08-score-1");
+    assert.equal(first.payload.durationPolicyVersion, "server-wall-clock-v1");
+    await startRuntime();
+    const retry = await finalizeTerminal(terminal, key);
+    assert.equal(retry.response.status, 200);
+    assert.equal(retry.response.headers.get("x-idempotent-replay"), "1");
+    assert.deepEqual(retry.payload, first.payload);
+    const rows = await d1Query(`
+      SELECT status, outcome, revision FROM ranked_runs
+      WHERE run_id = '${terminal.runId}'
+    `);
+    assert.deepEqual(rows, [{
+      status: "finalized",
+      outcome: "defeat",
+      revision: first.payload.revision
+    }]);
+    const entries = await d1Query(`
+      SELECT score, depth, gold, duration_ms, outcome, summary_json
+      FROM leaderboard_entries
+      WHERE run_id = '${terminal.runId}'
+    `);
+    assert.equal(entries.length, 1);
+    assert.equal(entries[0].outcome, "defeat");
+    assert.equal(entries[0].score, first.payload.score);
+    assert.equal(
+      JSON.parse(entries[0].summary_json).scoreVersion,
+      "v08-score-1"
+    );
+  }, { timeout: 60_000 });
+
+  test("normal extraction requires a clear and finalizes from canonical state", async () => {
+    const started = (await startRun(`extract-start-${randomUUID()}`)).payload;
+    let session = (
+      await selectStarting(started, `extract-select-${randomUUID()}`)
+    ).payload;
+    const premature = await event(
+      session,
+      "request_extraction",
+      { mode: "normal" },
+      `extract-premature-${randomUUID()}`
+    );
+    assert.equal(premature.response.status, 422);
+    assert.equal(
+      premature.payload.error.code,
+      "NORMAL_EXTRACTION_REQUIRES_ACCEPTED_ROOM_CLEAR"
+    );
+    session = (
+      await checkpoint(session, `extract-checkpoint-${randomUUID()}`)
+    ).payload;
+    const extracted = await event(
+      session,
+      "request_extraction",
+      { mode: "normal" },
+      `extract-valid-${randomUUID()}`
+    );
+    assert.equal(extracted.response.status, 200);
+    assert.equal(extracted.payload.metaState.status, "extraction");
+    const fake = await finalizeTerminal(
+      extracted.payload,
+      `extract-fake-${randomUUID()}`,
+      { outcome: "victory", score: 999999, lives: 5 }
+    );
+    assert.equal(fake.response.status, 400);
+    assert.equal(fake.payload.error.code, "FINALIZE_REQUEST_FIELDS_INVALID");
+    const finalized = await finalizeTerminal(
+      extracted.payload,
+      `extract-final-${randomUUID()}`
+    );
+    assert.equal(finalized.response.status, 200);
+    assert.equal(finalized.payload.outcome, "extract");
+    assert.equal(finalized.payload.summary.score, finalized.payload.score);
+    assert.equal(await d1Query(`
+      SELECT COUNT(*) AS count FROM leaderboard_entries
+      WHERE run_id = '${session.runId}'
+    `).then((rows) => Number(rows[0].count)), 1);
+  }, { timeout: 45_000 });
+
+  test("accepted depth-100 final room is the only victory path", async () => {
+    const started = (await startRun(`victory-start-${randomUUID()}`)).payload;
+    let session = (
+      await selectStarting(started, `victory-select-${randomUUID()}`)
+    ).payload;
+    for (let index = 0; index < 100 && session.metaState.status === "active"; index += 1) {
+      const result = await checkpoint(
+        session,
+        `victory-checkpoint-${index}-${randomUUID()}`
+      );
+      assert.equal(
+        result.response.status,
+        200,
+        result.payload?.error?.code || `checkpoint-${index}`
+      );
+      session = result.payload;
+    }
+    assert.equal(session.metaState.status, "victory");
+    assert.equal(session.metaState.maxDepth, 100);
+    assert.equal(session.metaState.statistics.finalRoomsCompleted, 1);
+    const finalized = await finalizeTerminal(
+      session,
+      `victory-final-${randomUUID()}`
+    );
+    assert.equal(finalized.response.status, 200);
+    assert.equal(finalized.payload.outcome, "victory");
+    assert.equal(
+      finalized.payload.score,
+      100 * 1000 +
+        finalized.payload.summary.goldEarned * 2 +
+        Math.floor(100 / 5) * 2500
+    );
+    const detail = await getJson(`/api/v3/leaderboard/${session.runId}`);
+    assert.equal(detail.response.status, 200);
+    assert.equal(detail.payload.entry.outcome, "victory");
+    assert.equal(detail.payload.entry.summary.finalRoomsCompleted, 1);
+    assert.equal(detail.payload.entry.summary.scoreVersion, "v08-score-1");
+  }, { timeout: 120_000 });
+
+  test("concurrent finalizers publish at most one result and finalized run is immutable", async () => {
+    const terminal = await reachDefeat(`concurrent-${randomUUID()}`);
+    const [left, right] = await Promise.all([
+      finalizeTerminal(terminal, `concurrent-left-${randomUUID()}`),
+      finalizeTerminal(terminal, `concurrent-right-${randomUUID()}`)
+    ]);
+    assert.equal(
+      [left, right].filter((result) => result.response.status === 200).length,
+      1
+    );
+    assert.equal(await d1Query(`
+      SELECT COUNT(*) AS count FROM leaderboard_entries
+      WHERE run_id = '${terminal.runId}'
+    `).then((rows) => Number(rows[0].count)), 1);
+    const postEvent = await request("/api/v3/runs/event", {
+      runId: terminal.runId,
+      checkpointToken: terminal.checkpointToken,
+      roomDirectiveId: "directive_post_final",
+      roomNonce: "nonce_post_final",
+      type: "report_fatal_event",
+      payload: { classification: "local_fatal_event" }
+    }, `post-final-event-${randomUUID()}`);
+    assert.notEqual(postEvent.response.status, 200);
+    const postFinalize = await finalizeTerminal(
+      terminal,
+      `post-finalize-${randomUUID()}`
+    );
+    assert.equal(postFinalize.response.status, 409);
+    assert.equal(postFinalize.payload.error.code, "REVISION_CONFLICT");
+  }, { timeout: 60_000 });
+
+  test("real leaderboard cursor and detail match frozen canonical results", async () => {
+    const first = await getJson(
+      `/api/v3/leaderboard?season=${SEASON}&limit=2`
+    );
+    assert.equal(first.response.status, 200);
+    assert.equal(first.payload.entries.length, 2);
+    assert(first.payload.cursor);
+    const second = await getJson(
+      `/api/v3/leaderboard?season=${SEASON}&limit=2&cursor=${
+        encodeURIComponent(first.payload.cursor)
+      }`
+    );
+    assert.equal(second.response.status, 200);
+    const combined = [...first.payload.entries, ...second.payload.entries];
+    assert.equal(new Set(combined.map((entry) => entry.runId)).size, combined.length);
+    for (const entry of combined) {
+      assert.equal("build" in entry, false);
+      assert.equal("summary" in entry, false);
+    }
+    const detail = await getJson(
+      `/api/v3/leaderboard/${first.payload.entries[0].runId}`
+    );
+    assert.equal(detail.response.status, 200);
+    assert(detail.payload.entry.build.buildDigest);
+    assert.equal(detail.payload.entry.summary.score, detail.payload.entry.score);
+    assert.equal("clientInstallIdHash" in detail.payload.entry, false);
   }, { timeout: 30_000 });
 });

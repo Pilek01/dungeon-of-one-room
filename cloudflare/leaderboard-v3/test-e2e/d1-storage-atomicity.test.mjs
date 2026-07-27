@@ -15,6 +15,9 @@ import {
   fixtureRuleset,
   FIXTURE_RULESET_HASH
 } from "../test/fixtures/fixture-ruleset.js";
+import { RUN_TTL_MS } from "../src/config.js";
+import { createInitialMetaStateV08 } from "../src/rulesets/v08-meta-1/meta-state.js";
+import { finalizeRunV08 } from "../src/rulesets/v08-meta-1/finalization-policy.js";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const WORKER_ROOT = path.resolve(HERE, "..");
@@ -183,6 +186,104 @@ test("real D1 finalize batch never leaves a split run/leaderboard state", {
       revision: 1,
       leaderboardRows: 1
     });
+
+    const realStartedAt = 1_810_000_000_000;
+    const realState = createInitialMetaStateV08(
+      { startDepth: 0 },
+      {
+        runId: "run_08a70a1c",
+        season: "real-atomicity-season",
+        startedAt: realStartedAt
+      }
+    );
+    Object.assign(realState, {
+      playerName: "RealAtomicity",
+      protocolVersion: "ranked-v3-checkpoint-1",
+      gameVersion: "0.8.1",
+      clientInstallIdHash: "real_atomicity_install_hash",
+      status: "defeat",
+      expiresAt: realStartedAt + RUN_TTL_MS,
+      finalizedAt: null,
+      outcome: null,
+      journalDigest: "",
+      anomalyScore: 0,
+      terminalEligibility: {
+        outcome: "defeat",
+        eligibleRevision: realState.revision,
+        reason: "canonical_lives_exhausted"
+      }
+    });
+    const realInitialDigest = await canonicalDigest(stateForDigest(realState));
+    await runs.insert(realState, {
+      stateDigest: realInitialDigest,
+      recentOps: [],
+      startIdempotencyKey: "real-atomicity-start-key",
+      startRequestDigest: "real-atomicity-start-digest"
+    });
+    const realTransition = finalizeRunV08(realState, {
+      finalizedAt: realStartedAt + 12_345
+    });
+    const realNextState = {
+      ...realTransition.nextState,
+      updatedAt: realStartedAt + 12_345
+    };
+    const realFinalDigest = await canonicalDigest(stateForDigest(realNextState));
+    const realEntry = realTransition.storageEffects.find(
+      (effect) => effect.type === "insert_leaderboard"
+    ).entry;
+    const realDuringBatchFailure = createD1RunRepository(db, {
+      prepareInsert() {
+        return db.prepare(`
+          INSERT INTO leaderboard_table_that_does_not_exist (run_id)
+          VALUES (?)
+        `).bind(realState.runId);
+      }
+    });
+    await assert.rejects(
+      realDuringBatchFailure.finalizeAtomic(
+        realNextState,
+        realState.revision,
+        {
+          stateDigest: realFinalDigest,
+          recentOps: [],
+          expectedStateDigest: realInitialDigest,
+          expectedStatus: "defeat"
+        },
+        realEntry
+      )
+    );
+    assert.deepEqual(await databaseState(db, realState.runId), {
+      status: "defeat",
+      revision: 0,
+      leaderboardRows: 0
+    });
+    assert.equal(await runs.finalizeAtomic(
+      realNextState,
+      realState.revision,
+      {
+        stateDigest: realFinalDigest,
+        recentOps: [],
+        expectedStateDigest: realInitialDigest,
+        expectedStatus: "defeat"
+      },
+      realEntry
+    ), true);
+    assert.deepEqual(await databaseState(db, realState.runId), {
+      status: "finalized",
+      revision: 1,
+      leaderboardRows: 1
+    });
+    assert.equal(await runs.finalizeAtomic(
+      realNextState,
+      realState.revision,
+      {
+        stateDigest: realFinalDigest,
+        recentOps: [],
+        expectedStateDigest: realInitialDigest,
+        expectedStatus: "defeat"
+      },
+      realEntry
+    ), false);
   } finally {
     await miniflare.dispose();
   }
