@@ -4743,6 +4743,7 @@
   }
 
   function saveRunSnapshot() {
+    if (state.onlineV3Ranked) return;
     if (state.phase !== "playing" && state.phase !== "relic" && state.phase !== "camp") {
       return;
     }
@@ -12711,7 +12712,9 @@
     let roomEnemyAttackMultiplier = 1;
     let roomEnemyRewardBonus = 0;
 
-    state.roomType = chooseRoomType();
+    state.roomType = state.onlineV3Ranked && state.onlineV3Directive
+      ? state.onlineV3Directive.roomType
+      : chooseRoomType();
     if (state.roomType === "crossroads") {
       buildCrossroadsRoom(occupied);
       return;
@@ -13061,7 +13064,9 @@
   function buildBossRoom(occupied) {
     const regionConfig = getCampaignRegionConfig();
     const bossProfile = getWardenBossProfile(state.depth);
-    state.roomType = "boss";
+    state.roomType = state.onlineV3Ranked && state.onlineV3Directive
+      ? state.onlineV3Directive.roomType
+      : "boss";
     state.portal =
       randomFreeLargeObjectTile(occupied, { avoidBonfire: true, allowTightFallback: true }) ||
       randomFreeLargeObjectTile(occupied, { allowTightFallback: true });
@@ -13738,6 +13743,10 @@
   }
 
   function buildRoom() {
+    if (state.onlineV3Ranked && state.onlineV3Directive) {
+      state.depth = state.onlineV3Directive.depth;
+      state.roomIndex = state.onlineV3Directive.roomIndex - 1;
+    }
     state.debugCheatMerchantActive = false;
     state.debugCheatMerchantClaimed = false;
     state.roomIndex += 1;
@@ -13760,7 +13769,9 @@
     state.player.dashAfterline = null;
     clearForgeFlowState();
     state.pactPrompt = null;
-    state.bossRoom = isBossDepth();
+    state.bossRoom = state.onlineV3Ranked && state.onlineV3Directive
+      ? ["boss", "final"].includes(state.onlineV3Directive.roomType)
+      : isBossDepth();
     state.finalBossPhase = state.bossRoom && state.depth >= MAX_DEPTH ? 1 : 0;
     state.otterRoomRelicOfferIds = [];
     state.shrine = null;
@@ -14078,9 +14089,11 @@
     // Unlocks persist between runs within the same session.
     // Full reset happens in resetMetaProgressForFreshStart() on game over.
 
-    applyCampUpgradesToRun();
-    applyMutatorsToRun();
-    applyPersistentPactsToRun();
+    if (!state.onlineV3Ranked) {
+      applyCampUpgradesToRun();
+      applyMutatorsToRun();
+      applyPersistentPactsToRun();
+    }
     if (carryRelics) {
       for (const relicId of carriedRelics) {
         applyRelic(relicId);
@@ -15623,6 +15636,18 @@
       );
     }
     state.roomCleared = true;
+    if (state.onlineV3Ranked) {
+      state.runMaxDepth = Math.max(state.runMaxDepth, state.depth);
+      clearCombatShield();
+      revealPortalFx();
+      pushLog("Room cleared. Waiting for Online v3 checkpoint.", "good");
+      window.DungeonOnlineV3?.onLocalRoomCleared?.({
+        turnCount: Math.max(0, Number(state.turn) || 0),
+        rewardClaims: []
+      });
+      markUiDirty();
+      return;
+    }
     if (!state.potionUsedInRoom) {
       state.potionFreeRoomStreak = (state.potionFreeRoomStreak || 0) + 1;
       syncMutatorUnlocks();
@@ -20451,6 +20476,19 @@
     }
     if (state.depth >= MAX_DEPTH) {
       pushLog(`Depth cap reached (${MAX_DEPTH}). Defeat the final boss to win.`, "bad");
+      return;
+    }
+    if (state.onlineV3Ranked) {
+      if (!state.onlineV3NextDirective) {
+        pushLog("Online v3 is still resolving the next room.", "warn");
+        return;
+      }
+      state.onlineV3Directive = state.onlineV3NextDirective;
+      state.onlineV3NextDirective = null;
+      playSfx("portal");
+      buildRoom();
+      pushLog(`Canonical depth ${state.depth}: ${ROOM_TYPE_LABELS[state.roomType] || state.roomType}.`, "good");
+      markUiDirty();
       return;
     }
     state.depth = Math.min(MAX_DEPTH, state.depth + 1);
@@ -32725,6 +32763,34 @@
   }
 
   window.render_game_to_text = renderGameToText;
+  window.DungeonOnlineV3GameBridge = Object.freeze({
+    startRanked(directive, publicState) {
+      state.onlineV3Ranked = true;
+      state.onlineV3Directive = directive;
+      state.onlineV3NextDirective = null;
+      const carriedRelics = (publicState?.build?.relics || []).flatMap((relic) =>
+        Array.from({ length: Math.max(1, Number(relic.stacks) || 1) }, () => String(relic.relicId || relic.id || ""))
+      ).filter(Boolean);
+      startRun({ carriedRelics, resetMapFragments: true });
+      state.player.gold = Math.max(0, Number(publicState?.gold) || 0);
+      state.lives = Math.max(0, Number(publicState?.lives) || 0);
+      markUiDirty();
+    },
+    setNextDirective(directive) {
+      state.onlineV3NextDirective = directive;
+      pushLog("Online v3 acknowledged the room. Portal is ready.", "good");
+      markUiDirty();
+    },
+    syncCanonicalProjection(publicState) {
+      state.player.gold = Math.max(0, Number(publicState?.gold) || 0);
+      state.lives = Math.max(0, Number(publicState?.lives) || 0);
+      state.runMaxDepth = Math.max(0, Number(publicState?.maxDepth) || state.runMaxDepth);
+      markUiDirty();
+    },
+    isRanked() {
+      return Boolean(state.onlineV3Ranked);
+    }
+  });
   window.advanceTime = async (ms) => {
     const stepMs = 1000 / 60;
     const totalSteps = Math.max(1, Math.round((Number(ms) || stepMs) / stepMs));

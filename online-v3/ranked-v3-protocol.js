@@ -9,7 +9,7 @@
 
   const PROTOCOL_VERSION = "ranked-v3-checkpoint-1";
   const RULESET_ID = "v08-meta-1";
-  const RULESET_HASH = "sha256:08f023da2700e76e862d7adec7045dc8aa6e931b5c97976d955182aa19f2cebb";
+  const RULESET_HASH = "sha256:13b0605ef0e7e23b742d558eac02d739d898a941ef172fa58f3acb1d86966f3e";
   const API_PREFIX = "/api/v3";
   const TOKEN_KINDS = Object.freeze({
     bootstrap: "run_bootstrap",

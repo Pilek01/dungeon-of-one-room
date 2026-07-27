@@ -11,9 +11,6 @@ const SAFE_REPO = REPO_ROOT.replaceAll("\\", "/");
 const BASELINE_SHA = "f98820c99066d810169e100beb23a54a332734bd";
 
 const PROTECTED_PATHS = [
-  "game.js",
-  "index.html",
-  "style.css",
   "style-hd-boot.css",
   "style-hd-composition.css",
   "style-hd-defeat.css",
@@ -27,7 +24,7 @@ const PROTECTED_PATHS = [
   "assets"
 ];
 
-test("Phase 2 protected baseline paths match f98820c", () => {
+test("non-M4 Practice baseline paths still match f98820c", () => {
   const changed = execFileSync(
     "git",
     [
@@ -44,9 +41,19 @@ test("Phase 2 protected baseline paths match f98820c", () => {
   assert.equal(changed, "");
 });
 
-test("Worker remains disconnected from index.html and gameplay modules", async () => {
+test("M4 loads only isolated client modules while Worker source stays disconnected", async () => {
   const index = await readFile(path.join(REPO_ROOT, "index.html"), "utf8");
-  assert.doesNotMatch(index, /leaderboard-v3|online-v3\/ranked-v3/iu);
+  assert.match(index, /online-v3\/ranked-v3-runtime\.js/iu);
+  assert.doesNotMatch(index, /cloudflare\/leaderboard-v3|src\/local-ruleset-entry/iu);
+  const runtime = await readFile(
+    path.join(REPO_ROOT, "online-v3", "ranked-v3-runtime.js"),
+    "utf8"
+  );
+  const startFunction = runtime.indexOf("async function startRanked()");
+  const entryHandler = runtime.indexOf('ui.entry.addEventListener("click", startRanked)');
+  assert(startFunction > 0 && entryHandler > startFunction);
+  assert.match(runtime, /let client = null;/u);
+  assert.match(runtime, /ui\.entry\.addEventListener\("click", startRanked\)/u);
 
   const workerFiles = execFileSync(
     "git",
@@ -61,7 +68,7 @@ test("Worker remains disconnected from index.html and gameplay modules", async (
     ],
     { cwd: REPO_ROOT, encoding: "utf8" }
   );
-  assert.doesNotMatch(workerFiles, /game\.js|index\.html|style|assets/iu);
+  assert.doesNotMatch(workerFiles, /assets/iu);
 });
 
 test("Worker source imports no game, DOM, audio, HUD, renderer, or Ranked v2 code", async () => {

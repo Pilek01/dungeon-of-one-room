@@ -126,11 +126,12 @@ test("Phase 3A documentation uses the narrow verification contract consistently"
   assert.match(combined, /not a complete anti-cheat/u);
 });
 
-test("ruleset skeleton remains disconnected from active Worker behavior", async () => {
+test("ruleset remains disconnected from active Worker while M4 client is explicitly loaded", async () => {
   const workerIndex = await readFile(path.join(WORKER_ROOT, "src", "index.js"), "utf8");
   const fixtureEntry = await readFile(path.join(WORKER_ROOT, "src", "local-fixture-entry.js"), "utf8");
   const gameIndex = await readFile(path.join(REPO_ROOT, "index.html"), "utf8");
   assert.doesNotMatch(workerIndex, /rulesets\/registry|v08-meta-1/u);
   assert.match(fixtureEntry, /test\/fixtures\/fixture-ruleset\.js/u);
-  assert.doesNotMatch(gameIndex, /leaderboard-v3|online-v3\/ranked-v3/iu);
+  assert.match(gameIndex, /online-v3\/ranked-v3-runtime\.js/iu);
+  assert.doesNotMatch(gameIndex, /cloudflare\/leaderboard-v3|src\/local-ruleset-entry/iu);
 });

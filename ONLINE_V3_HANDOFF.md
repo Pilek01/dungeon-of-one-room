@@ -1,5 +1,24 @@
 # Online v3 - Current Handoff
 
+## Milestone M4 in progress
+
+- `4cd353b` adds the isolated browser transport, real token-kind validation,
+  stable operation identity, exact/conflicting retry handling, redacted logs,
+  separate recovery storage, and the pre-integration source audit.
+- M4.2 now has an explicit Ranked entry, canonical start/starting-relic flow,
+  a fail-closed session state machine, the complete directive allowlist and
+  four narrow `game.js` bridge regions. Practice does not instantiate the
+  transport and keeps its own save path.
+- The authorized `game.js` hooks changed source provenance only. Regeneration
+  changed the test-only ruleset hash from
+  `sha256:08f023da2700e76e862d7adec7045dc8aa6e931b5c97976d955182aa19f2cebb`
+  to
+  `sha256:13b0605ef0e7e23b742d558eac02d739d898a941ef172fa58f3acb1d86966f3e`;
+  no canonical policy table was edited.
+- Latest M4.2 targeted tests: 10/10 PASS. Latest `verify:fast`: 24/24 PASS.
+- No push, deployment, production activation, D1 migration or Vault Guardian
+  change has occurred.
+
 ## Repository
 
 - Workspace: D:/Codex workstation/Dungeon/dungeon-online-v3
