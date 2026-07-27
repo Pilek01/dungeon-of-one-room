@@ -42,9 +42,14 @@
   Practice headless preflight is PASS and `verify:fast` is 36/36 PASS.
 - `d7eaf33` adds the real local Worker/D1 headed lifecycle and makes the clean
   baseline verifier run both Practice and Ranked browser suites.
-- M4 implementation is complete through six internal commits. Final
-  documentation and the phase/baseline/full gates are the only remaining
-  local handoff steps. Production remains blocked and `v08-meta-1` test-only.
+- `0865a07` records the completed M4 architecture, recovery boundary and task
+  status.
+- Final verification after that documentation commit: `verify:phase` 678/678
+  PASS; `verify:baseline` 3/3 plus clean headed Practice and Ranked PASS;
+  `verify:full` 700/700 plus Wrangler/D1 and clean headed browser PASS;
+  `git diff --check` PASS.
+- M4 is complete locally. Production remains blocked and `v08-meta-1`
+  test-only.
 - Current test-only ruleset hash after the terminal hooks is
   `sha256:d1f28d957244002da574180c5c9a7040d4d18deba1551a24e6597712d971b231`.
 - No push, deployment, production activation, D1 migration or Vault Guardian
