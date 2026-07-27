@@ -31,6 +31,7 @@ const TUTORIAL_KEYS = [
 const ONLINE_V3_FILES = [
   "online-v3/ranked-v3-checkpoints.js",
   "online-v3/ranked-v3-client.js",
+  "online-v3/ranked-v3-coordination.js",
   "online-v3/ranked-v3-directives.js",
   "online-v3/ranked-v3-hooks.js",
   "online-v3/ranked-v3-leaderboard-ui.js",

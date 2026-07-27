@@ -4,20 +4,23 @@
   const api = factory(
     root?.DungeonRankedV3Protocol,
     root?.DungeonRankedV3Transport,
-    root?.DungeonRankedV3Storage
+    root?.DungeonRankedV3Storage,
+    root?.DungeonRankedV3Coordination
   );
   if (root) root.DungeonRankedV3Client = api;
   if (typeof module === "object" && module.exports) {
     module.exports = factory(
       require("./ranked-v3-protocol.js"),
       require("./ranked-v3-transport.js"),
-      require("./ranked-v3-storage.js")
+      require("./ranked-v3-storage.js"),
+      require("./ranked-v3-coordination.js")
     );
   }
 })(typeof globalThis === "object" ? globalThis : null, function createClientModule(
   protocol,
   transportApi,
-  storageApi
+  storageApi,
+  coordinationApi
 ) {
   "use strict";
 
@@ -105,7 +108,24 @@
   function createRankedClient(options = {}) {
     const transport = options.transport || transportApi.createTransport(options);
     const store = options.store || storageApi.createStore(options.storage || globalThis.localStorage);
+    const coordinator = options.coordinator || (store.loadWriterLease && store.saveWriterLease
+      ? coordinationApi.createCoordinator({
+          store,
+          cryptoProvider: options.cryptoProvider || globalThis.crypto,
+          now: options.now,
+          ttlMs: options.leaseTtlMs,
+          BroadcastChannel: options.BroadcastChannel,
+          broadcastChannel: options.broadcastChannel
+        })
+      : Object.freeze({
+          acquire: () => true,
+          heartbeat: () => true,
+          isOwner: () => true,
+          release: () => true,
+          close() {}
+        }));
     let snapshot = store.loadSession();
+    let mutationLocked = Boolean(snapshot?.pendingOperation);
 
     function persist(next) {
       snapshot = clone(next);
@@ -119,7 +139,15 @@
     }
 
     async function execute(endpoint, operation) {
-      persist({ ...requireSnapshot(), pendingOperation: clone(operation) });
+      const current = requireSnapshot();
+      if (!coordinator.isOwner(current.runId) && !coordinator.acquire(current.runId, current.revision)) {
+        throw new TypeError("RANKED_WRITER_LEASE_HELD");
+      }
+      if (mutationLocked && current.pendingOperation?.operationId !== operation.operationId) {
+        throw new TypeError("RANKED_MUTATION_LOCKED");
+      }
+      mutationLocked = true;
+      persist({ ...current, pendingOperation: clone(operation) });
       const result = await transport.request(endpoint, {
         operationId: operation.operationId,
         body: operation.body
@@ -138,6 +166,11 @@
         pendingOperation: null,
         lastAcknowledgedOperationId: operation.operationId
       });
+      mutationLocked = false;
+      coordinator.heartbeat(validated.metaState.runId, validated.metaState.revision);
+      if (["finalized", "abandoned"].includes(validated.metaState.status)) {
+        coordinator.release(validated.metaState.runId);
+      }
       return clone(result.payload);
     }
 
@@ -191,6 +224,14 @@
         pendingOperation: null,
         lastAcknowledgedOperationId: operationId
       });
+      mutationLocked = false;
+      if (!coordinator.acquire(validated.metaState.runId, validated.metaState.revision)) {
+        throw new TypeError("RANKED_WRITER_LEASE_HELD");
+      }
+      mutationLocked = false;
+      if (!coordinator.acquire(validated.metaState.runId, validated.metaState.revision)) {
+        throw new TypeError("RANKED_WRITER_LEASE_HELD");
+      }
       return clone(result.payload);
     }
 
@@ -295,6 +336,10 @@
       if (!result.payload || result.payload.ok !== true || !result.payload.profile) {
         throw new TypeError("RANKED_CAMP_RESPONSE_INVALID");
       }
+      mutationLocked = false;
+      if (!coordinator.acquire(validated.metaState.runId, validated.metaState.revision)) {
+        throw new TypeError("RANKED_WRITER_LEASE_HELD");
+      }
       return clone(result.payload);
     }
 
@@ -329,6 +374,10 @@
         pendingOperation: null,
         lastAcknowledgedOperationId: operationId
       });
+      mutationLocked = false;
+      if (!coordinator.acquire(validated.metaState.runId, validated.metaState.revision)) {
+        throw new TypeError("RANKED_WRITER_LEASE_HELD");
+      }
       return clone(result.payload);
     }
 
@@ -336,6 +385,9 @@
       const recovery = store.loadRecovery?.() || options.recoveryRecord;
       if (!recovery?.runId || !recovery?.recoveryCredential) {
         throw new TypeError("RANKED_RECOVERY_CREDENTIAL_MISSING");
+      }
+      if (!coordinator.isOwner(recovery.runId) && !coordinator.acquire(recovery.runId, snapshot?.revision || 0)) {
+        throw new TypeError("RANKED_WRITER_LEASE_HELD");
       }
       const body = {
         operationId,
@@ -353,6 +405,8 @@
       snapshot = null;
       store.clearSession();
       store.clearRecovery?.();
+      coordinator.release(recovery.runId);
+      mutationLocked = false;
       options.recoveryRecord = null;
       return clone(result.payload);
     }
@@ -397,6 +451,15 @@
       resumeCanonical,
       abandonCanonical,
       retryPending,
+      requestOwnership: () => {
+        const current = requireSnapshot();
+        return coordinator.acquire(current.runId, current.revision);
+      },
+      isWriter: () => Boolean(snapshot?.runId && coordinator.isOwner(snapshot.runId)),
+      heartbeatWriter: () => Boolean(snapshot?.runId && coordinator.heartbeat(snapshot.runId, snapshot.revision)),
+      releaseWriter: () => Boolean(snapshot?.runId && coordinator.release(snapshot.runId)),
+      heartbeatWriter: () => Boolean(snapshot?.runId && coordinator.heartbeat(snapshot.runId, snapshot.revision)),
+      releaseWriter: () => Boolean(snapshot?.runId && coordinator.release(snapshot.runId)),
       getSnapshot: () => clone(snapshot),
       clear: () => {
         snapshot = null;

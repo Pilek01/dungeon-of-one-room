@@ -188,7 +188,8 @@
   function presentError(error) {
     const code = String(error?.code || "");
     const conflict = error?.conflict || error?.status === 409;
-    const protocolFailure = error instanceof TypeError || [
+    const writerHeld = ["RANKED_WRITER_LEASE_HELD", "RANKED_MUTATION_LOCKED"].includes(String(error?.message || ""));
+    const protocolFailure = error instanceof TypeError && !writerHeld || [
       "PROTOCOL_VERSION_MISMATCH",
       "RESPONSE_NOT_JSON"
     ].includes(code);
@@ -206,6 +207,14 @@
     const controls = [];
     if (error?.retryable || ["NETWORK_ERROR", "TIMEOUT"].includes(code)) {
       controls.push(ui.button("Retry exact action", retryPending));
+    }
+    if (writerHeld) {
+      controls.push(ui.button("Request control", async () => {
+        if (!createClient().requestOwnership()) {
+          throw new TypeError("RANKED_WRITER_LEASE_HELD");
+        }
+        await resyncCanonical();
+      }));
     }
     controls.push(
       ui.button("Resync Ranked Run", () => resyncCanonical().catch(presentError)),
@@ -626,7 +635,9 @@
 
   ui.entry.addEventListener("click", () => openRankedEntry().catch(presentError));
   leaderboardEntry.addEventListener("click", () => openLeaderboard(true));
+  root.addEventListener("beforeunload", () => client?.releaseWriter?.());
   root.setInterval(() => {
+    client?.heartbeatWriter?.();
     let phase = "";
     try {
       phase = JSON.parse(root.render_game_to_text?.() || "{}").phase || "";
