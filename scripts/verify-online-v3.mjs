@@ -149,6 +149,20 @@ async function cleanBaselineSmoke() {
   try {
     result = await runProcess(process.execPath, ["scripts/online-v3-baseline-smoke.mjs"], { cwd: checkout });
     chunks.push(`$ ${result.display}\n${result.output}`);
+    if (result.code === 0) {
+      result = await runProcess(
+        process.execPath,
+        ["scripts/online-v3-ranked-headed.mjs"],
+        {
+          cwd: checkout,
+          env: {
+            ...process.env,
+            DUNGEON_ONLINE_V3_WORKER_NODE_MODULES: path.join(WORKER, "node_modules")
+          }
+        }
+      );
+      chunks.push(`$ ${result.display}\n${result.output}`);
+    }
   } finally {
     const remove = await runProcess("git", [
       "-c", `safe.directory=${SAFE_ROOT}`,

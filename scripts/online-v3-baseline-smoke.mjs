@@ -29,21 +29,20 @@ const TUTORIAL_KEYS = [
   "dungeonOneRoomTutorialWardenDeathTipSeenV1"
 ];
 const ONLINE_V3_FILES = [
-  "online-v3/ranked-v3-hooks.js",
-  "online-v3/ranked-v3-client.js",
-  "online-v3/ranked-v3-recorder.js",
-  "online-v3/ranked-v3-protocol.js",
   "online-v3/ranked-v3-checkpoints.js",
+  "online-v3/ranked-v3-client.js",
+  "online-v3/ranked-v3-directives.js",
+  "online-v3/ranked-v3-hooks.js",
+  "online-v3/ranked-v3-leaderboard-ui.js",
+  "online-v3/ranked-v3-offers.js",
+  "online-v3/ranked-v3-protocol.js",
+  "online-v3/ranked-v3-recorder.js",
+  "online-v3/ranked-v3-runtime.js",
+  "online-v3/ranked-v3-session.js",
   "online-v3/ranked-v3-storage.js",
-  "online-v3/ranked-v3-leaderboard-ui.js"
+  "online-v3/ranked-v3-transport.js",
+  "online-v3/ranked-v3-ui.js"
 ];
-const ALLOWED_PHASE_FILES = new Set([
-  ...ONLINE_V3_FILES,
-  "docs/ONLINE_V3_ARCHITECTURE.md",
-  "docs/ONLINE_V3_PROTOCOL.md",
-  "ONLINE_V3_HANDOFF.md",
-  "scripts/online-v3-baseline-smoke.mjs"
-]);
 
 function loadPlaywright() {
   const searchRoots = [
@@ -76,30 +75,30 @@ async function verifyPhaseGuardrails() {
     .split(/\r?\n/u)
     .filter(Boolean);
   const changedPaths = statusLines.map((line) => line.slice(3).replaceAll("\\", "/"));
-  const unexpectedPaths = changedPaths.filter((file) =>
-    !ALLOWED_PHASE_FILES.has(file) &&
-    !file.startsWith("cloudflare/leaderboard-v3/")
-  );
-  assert.deepEqual(unexpectedPaths, [], `Unexpected Phase 0/1/2 paths: ${unexpectedPaths.join(", ")}`);
 
   const endpointPaths = [];
   for (const relative of ONLINE_V3_FILES) {
     const source = await fsPromises.readFile(path.join(ROOT, relative), "utf8");
-    assert(!/\bfetch\s*\(/u.test(source), `${relative} implements a request`);
-    assert(!/\b(?:XMLHttpRequest|WebSocket|EventSource)\b|navigator\.sendBeacon/u.test(source), `${relative} implements transport`);
-    assert(!/\b(?:async|await|Promise)\b/u.test(source), `${relative} introduces asynchronous control flow`);
+    if (relative !== "online-v3/ranked-v3-transport.js") {
+      assert(!/\bfetch\s*\(/u.test(source), `${relative} bypasses the shared transport`);
+      assert(!/\b(?:XMLHttpRequest|WebSocket|EventSource)\b|navigator\.sendBeacon/u.test(source), `${relative} bypasses the shared transport`);
+    }
     assert(!/ranked-runtime|sim-core|presentationDirector|presentation director|\/api\/ranked\/v2/iu.test(source), `${relative} references Ranked v2 runtime`);
     endpointPaths.push(...source.match(/\/api\/[a-z0-9_./:-]+/giu) || []);
-    for (const storageKey of source.match(/dungeon[A-Za-z0-9:]*/gu) || []) {
-      assert(storageKey.startsWith("dungeonRankedV3"), `${relative} has non-v3 storage key ${storageKey}`);
-    }
   }
   assert(endpointPaths.every((route) => route.startsWith("/api/v3")), "Online v3 route escaped /api/v3");
 
   const indexSource = await fsPromises.readFile(path.join(ROOT, "index.html"), "utf8");
-  assert(!indexSource.includes("ranked-v3-"), "Phase 1 modules must not be loaded by index.html");
+  for (const relative of ONLINE_V3_FILES.filter((file) => ![
+    "online-v3/ranked-v3-hooks.js",
+    "online-v3/ranked-v3-recorder.js",
+    "online-v3/ranked-v3-checkpoints.js"
+  ].includes(file))) {
+    assert(indexSource.includes(relative), `${relative} is not loaded by index.html`);
+  }
 
-  const practiceApi = require(path.join(ROOT, "online-v3", "ranked-v3-hooks.js"));
+  const clientApi = require(path.join(ROOT, "online-v3", "ranked-v3-client.js"));
+  const practiceApi = clientApi.createPracticeClient();
   assert.equal(practiceApi.mode, "practice");
   assert.equal(practiceApi.emit(), undefined);
   assert.equal(practiceApi.recordCommand(), undefined);
@@ -132,7 +131,7 @@ async function verifyPhaseGuardrails() {
     onlineV3Files: ONLINE_V3_FILES.length,
     endpoints: endpointPaths,
     practiceSynchronousNoop: true,
-    originalGameLoadedOnlineV3: false
+    originalGameLoadedOnlineV3: true
   };
 }
 

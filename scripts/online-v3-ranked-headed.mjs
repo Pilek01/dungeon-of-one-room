@@ -1,0 +1,491 @@
+import assert from "node:assert/strict";
+import { execFile, spawn } from "node:child_process";
+import { randomBytes } from "node:crypto";
+import fs from "node:fs";
+import { promises as fsPromises } from "node:fs";
+import http from "node:http";
+import net from "node:net";
+import path from "node:path";
+import { createRequire } from "node:module";
+import { fileURLToPath } from "node:url";
+import { promisify } from "node:util";
+
+const require = createRequire(import.meta.url);
+const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+const WORKER_ROOT = path.join(ROOT, "cloudflare", "leaderboard-v3");
+const OUTPUT_ROOT = path.join(ROOT, "output");
+const ARTIFACT_ROOT = path.join(OUTPUT_ROOT, "online-v3-m4-ranked-headed");
+const PERSIST_ROOT = path.join(ARTIFACT_ROOT, "state");
+const XDG_ROOT = path.join(ARTIFACT_ROOT, "xdg");
+const CONFIG = path.join(WORKER_ROOT, "wrangler.local.jsonc");
+const WORKER_NODE_MODULES = process.env.DUNGEON_ONLINE_V3_WORKER_NODE_MODULES ||
+  path.join(WORKER_ROOT, "node_modules");
+const WRANGLER = path.join(WORKER_NODE_MODULES, "wrangler", "bin", "wrangler.js");
+const DATABASE = "dungeon-online-v3-local";
+const SEASON = "m4-headed";
+const HEADLESS = process.argv.includes("--headless");
+const execFileAsync = promisify(execFile);
+
+function assertOutputPath(candidate) {
+  const output = path.resolve(OUTPUT_ROOT);
+  const resolved = path.resolve(candidate);
+  assert(resolved.startsWith(`${output}${path.sep}`));
+}
+
+function loadPlaywright() {
+  const roots = [
+    process.env.DUNGEON_PLAYWRIGHT_NODE_MODULES,
+    path.join(process.env.USERPROFILE || "", ".codex", "skills", "develop-web-game", "node_modules"),
+    path.join(ROOT, "node_modules")
+  ].filter(Boolean);
+  for (const searchRoot of roots) {
+    try {
+      return require(require.resolve("playwright", { paths: [searchRoot] }));
+    } catch {
+      // Try the next repository-scoped or skill-scoped dependency root.
+    }
+  }
+  throw new Error("Playwright is unavailable for the M4 headed Ranked lifecycle.");
+}
+
+function environment(extra = {}) {
+  return {
+    ...process.env,
+    CI: "1",
+    NO_COLOR: "1",
+    WRANGLER_SEND_METRICS: "false",
+    XDG_CONFIG_HOME: XDG_ROOT,
+    ...extra
+  };
+}
+
+async function acquirePort() {
+  const server = net.createServer();
+  await new Promise((resolve, reject) => {
+    server.once("error", reject);
+    server.listen(0, "127.0.0.1", resolve);
+  });
+  const address = server.address();
+  assert(address && typeof address === "object");
+  await new Promise((resolve) => server.close(resolve));
+  return address.port;
+}
+
+async function runWrangler(args) {
+  return execFileAsync(process.execPath, [WRANGLER, ...args], {
+    cwd: WORKER_ROOT,
+    env: environment(),
+    maxBuffer: 10 * 1024 * 1024,
+    windowsHide: true
+  });
+}
+
+async function waitForExit(child, timeoutMs = 5_000) {
+  if (child.exitCode !== null) return;
+  await Promise.race([
+    new Promise((resolve) => child.once("exit", resolve)),
+    new Promise((resolve) => setTimeout(resolve, timeoutMs))
+  ]);
+}
+
+async function startWorker(port, secret) {
+  const child = spawn(process.execPath, [
+    WRANGLER,
+    "dev",
+    "--local",
+    "--config",
+    CONFIG,
+    "--persist-to",
+    PERSIST_ROOT,
+    "--ip",
+    "127.0.0.1",
+    "--port",
+    String(port),
+    "--log-level",
+    "error"
+  ], {
+    cwd: WORKER_ROOT,
+    env: environment({
+      CLOUDFLARE_INCLUDE_PROCESS_ENV: "true",
+      RANKED_V3_HMAC_SECRET: secret
+    }),
+    stdio: ["ignore", "pipe", "pipe"],
+    windowsHide: true
+  });
+  let logs = "";
+  child.stdout.setEncoding("utf8");
+  child.stderr.setEncoding("utf8");
+  child.stdout.on("data", (chunk) => { logs += chunk; });
+  child.stderr.on("data", (chunk) => { logs += chunk; });
+  const baseUrl = `http://127.0.0.1:${port}`;
+  const deadline = Date.now() + 20_000;
+  while (Date.now() < deadline) {
+    if (child.exitCode !== null) throw new Error(`Wrangler exited early: ${logs}`);
+    try {
+      const response = await fetch(`${baseUrl}/api/v3/leaderboard?season=${SEASON}&limit=1`);
+      if (response.ok) return { child, baseUrl, getLogs: () => logs };
+    } catch {
+      // Readiness polling is bounded by the deadline.
+    }
+    await new Promise((resolve) => setTimeout(resolve, 100));
+  }
+  throw new Error(`Wrangler did not become ready: ${logs}`);
+}
+
+function mimeType(filePath) {
+  return {
+    ".html": "text/html; charset=utf-8",
+    ".js": "text/javascript; charset=utf-8",
+    ".css": "text/css; charset=utf-8",
+    ".json": "application/json; charset=utf-8",
+    ".png": "image/png",
+    ".jpg": "image/jpeg",
+    ".mp3": "audio/mpeg",
+    ".wav": "audio/wav",
+    ".ogg": "audio/ogg"
+  }[path.extname(filePath).toLowerCase()] || "application/octet-stream";
+}
+
+async function requestBody(request) {
+  const chunks = [];
+  for await (const chunk of request) chunks.push(chunk);
+  return chunks.length ? Buffer.concat(chunks) : undefined;
+}
+
+async function startGameProxy(workerBaseUrl) {
+  const rootPrefix = `${ROOT}${path.sep}`;
+  const server = http.createServer(async (request, response) => {
+    try {
+      const url = new URL(request.url || "/", "http://127.0.0.1");
+      if (url.pathname.startsWith("/api/v3/")) {
+        const upstream = await fetch(`${workerBaseUrl}${url.pathname}${url.search}`, {
+          method: request.method,
+          headers: request.headers,
+          body: ["GET", "HEAD"].includes(request.method || "GET")
+            ? undefined
+            : await requestBody(request)
+        });
+        const bytes = Buffer.from(await upstream.arrayBuffer());
+        response.writeHead(upstream.status, {
+          "content-type": upstream.headers.get("content-type") || "application/json",
+          ...(upstream.headers.get("x-idempotent-replay")
+            ? { "x-idempotent-replay": upstream.headers.get("x-idempotent-replay") }
+            : {})
+        });
+        response.end(bytes);
+        return;
+      }
+      const relative = decodeURIComponent(url.pathname) === "/"
+        ? "index.html"
+        : decodeURIComponent(url.pathname).replace(/^\/+/u, "");
+      const candidate = path.resolve(ROOT, relative);
+      if (candidate !== ROOT && !candidate.startsWith(rootPrefix)) {
+        response.writeHead(403).end("Forbidden");
+        return;
+      }
+      const stat = await fsPromises.stat(candidate);
+      const filePath = stat.isDirectory() ? path.join(candidate, "index.html") : candidate;
+      response.writeHead(200, {
+        "content-type": mimeType(filePath),
+        "cache-control": "no-store"
+      });
+      fs.createReadStream(filePath).pipe(response);
+    } catch {
+      response.writeHead(404, { "content-type": "text/plain; charset=utf-8" }).end("Not found");
+    }
+  });
+  await new Promise((resolve, reject) => {
+    server.once("error", reject);
+    server.listen(0, "127.0.0.1", resolve);
+  });
+  const address = server.address();
+  assert(address && typeof address === "object");
+  return { server, baseUrl: `http://127.0.0.1:${address.port}` };
+}
+
+async function closeServer(server) {
+  await new Promise((resolve) => server.close(resolve));
+}
+
+async function dismissBoot(page) {
+  for (let attempt = 0; attempt < 6; attempt += 1) {
+    const phase = await page.evaluate(() => {
+      try {
+        return JSON.parse(window.render_game_to_text?.() || "{}").phase || "";
+      } catch {
+        return "";
+      }
+    });
+    if (phase === "menu") return;
+    await page.keyboard.press("Enter");
+    await page.waitForTimeout(150);
+  }
+  await page.waitForFunction(() => {
+    try {
+      return JSON.parse(window.render_game_to_text?.() || "{}").phase === "menu";
+    } catch {
+      return false;
+    }
+  });
+}
+
+async function sessionState(page, expected) {
+  await page.waitForFunction(
+    (value) => window.DungeonOnlineV3?.getSessionState?.() === value,
+    expected,
+    { timeout: 15_000 }
+  );
+}
+
+async function d1Count(runId) {
+  const sql = `SELECT COUNT(*) AS count FROM leaderboard_entries WHERE run_id = '${runId}'`;
+  const { stdout } = await runWrangler([
+    "d1",
+    "execute",
+    DATABASE,
+    "--local",
+    "--config",
+    CONFIG,
+    "--persist-to",
+    PERSIST_ROOT,
+    "--command",
+    sql,
+    "--json"
+  ]);
+  return Number(JSON.parse(stdout)[0].results[0].count);
+}
+
+async function main() {
+  assertOutputPath(ARTIFACT_ROOT);
+  await fsPromises.rm(ARTIFACT_ROOT, { recursive: true, force: true });
+  await fsPromises.mkdir(PERSIST_ROOT, { recursive: true });
+  await fsPromises.mkdir(XDG_ROOT, { recursive: true });
+  const version = await runWrangler(["--version"]);
+  assert.equal(version.stdout.trim(), "4.114.0");
+  await runWrangler([
+    "d1",
+    "migrations",
+    "apply",
+    DATABASE,
+    "--local",
+    "--config",
+    CONFIG,
+    "--persist-to",
+    PERSIST_ROOT
+  ]);
+
+  const secret = randomBytes(48).toString("base64url");
+  const worker = await startWorker(await acquirePort(), secret);
+  const proxy = await startGameProxy(worker.baseUrl);
+  const diagnostics = {
+    apiRequests: [],
+    apiErrors: [],
+    debugMessages: [],
+    consoleErrors: [],
+    pageErrors: [],
+    finalizeOperationIds: []
+  };
+  const { chromium } = loadPlaywright();
+  const browser = await chromium.launch({ headless: HEADLESS });
+  try {
+    const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+    await context.addInitScript((season) => {
+      window.DUNGEON_ONLINE_V3_SEASON = season;
+      window.DUNGEON_ONLINE_V3_DEBUG = true;
+      localStorage.setItem("dungeonOneRoomPlayerName", "M4Headed");
+      localStorage.setItem("dungeonOneRoomGraphicsMode", "hd");
+      localStorage.setItem("dungeonOneRoomTutorialRunSeenV1", "1");
+    }, SEASON);
+    const page = await context.newPage();
+    page.on("request", (request) => {
+      const url = new URL(request.url());
+      if (url.pathname.startsWith("/api/v3/")) {
+        diagnostics.apiRequests.push({ method: request.method(), path: url.pathname });
+        if (url.pathname === "/api/v3/runs/finalize") {
+          diagnostics.finalizeOperationIds.push(request.headers()["idempotency-key"] || "");
+        }
+      }
+    });
+    page.on("response", async (response) => {
+      const url = new URL(response.url());
+      if (url.pathname.startsWith("/api/v3/") && !response.ok()) {
+        diagnostics.apiErrors.push({
+          status: response.status(),
+          path: url.pathname,
+          body: await response.text().catch(() => "")
+        });
+      }
+    });
+    page.on("console", (message) => {
+      if (message.type() === "error") diagnostics.consoleErrors.push(message.text());
+      if (message.type() === "debug") diagnostics.debugMessages.push(message.text());
+    });
+    page.on("pageerror", (error) => diagnostics.pageErrors.push(String(error?.stack || error)));
+
+    await page.goto(`${proxy.baseUrl}/`, { waitUntil: "domcontentloaded" });
+    await page.waitForFunction(() => typeof window.render_game_to_text === "function");
+    await dismissBoot(page);
+    await page.locator(".ranked-v3-entry").waitFor({ state: "visible" });
+    await page.locator(".ranked-v3-entry").click();
+    await page.locator(".ranked-v3-choice").first().waitFor({ state: "visible" });
+    await page.locator(".ranked-v3-choice").first().click();
+    await sessionState(page, "ROOM_ACTIVE");
+    const runId = await page.evaluate(() => window.DungeonOnlineV3.getSnapshot().runId);
+    assert.match(runId, /^run_[a-f0-9]+$/u);
+
+    const requestsBeforeCombatWait = diagnostics.apiRequests.length;
+    await page.waitForTimeout(500);
+    assert.equal(
+      diagnostics.apiRequests.length,
+      requestsBeforeCombatWait,
+      "Active local combat emitted a network request"
+    );
+
+    await page.reload({ waitUntil: "domcontentloaded" });
+    await dismissBoot(page);
+    await page.locator(".ranked-v3-entry").waitFor({ state: "visible" });
+    await page.locator(".ranked-v3-entry").click();
+    await sessionState(page, "ROOM_ACTIVE");
+    assert.equal(
+      await page.evaluate(() => window.DungeonOnlineV3.getSnapshot().runId),
+      runId
+    );
+
+    await page.evaluate(() => window.DungeonOnlineV3.onLocalRoomCleared({
+      turnCount: 5,
+      rewardClaims: []
+    }));
+    await page.getByRole("button", { name: "Resolve checkpoint" }).click();
+    await sessionState(page, "ENTERING_NEXT_ROOM");
+    await page.evaluate(() => window.DungeonOnlineV3GameBridge.enterNextDirective());
+    await sessionState(page, "ROOM_ACTIVE");
+
+    for (let index = 0; index < 8; index += 1) {
+      const status = await page.evaluate(() => window.DungeonOnlineV3.getSnapshot()?.publicState?.status);
+      if (["victory", "defeat", "extraction"].includes(status)) break;
+      await page.evaluate(() => window.DungeonOnlineV3.onFatalEvent());
+    }
+    const terminalAudit = await page.evaluate(() => ({
+      status: window.DungeonOnlineV3.getSnapshot()?.publicState?.status || "",
+      session: window.DungeonOnlineV3.getSessionState(),
+      overlay: document.querySelector(".ranked-v3-overlay")?.textContent || ""
+    }));
+    assert(
+      ["victory", "defeat", "extraction"].includes(terminalAudit.status),
+      `Fatal-event loop did not reach terminal state: ${JSON.stringify({
+        ...terminalAudit,
+        apiErrors: diagnostics.apiErrors,
+        debugMessages: diagnostics.debugMessages
+      })}`
+    );
+    await sessionState(page, "TERMINAL_PENDING");
+    assert.equal(
+      await page.evaluate(() => window.DungeonOnlineV3.getSnapshot().publicState.status),
+      "defeat"
+    );
+
+    let droppedFinalizeResponse = false;
+    await page.route("**/api/v3/runs/finalize", async (route) => {
+      if (!droppedFinalizeResponse) {
+        droppedFinalizeResponse = true;
+        await route.fetch();
+        await route.abort("failed");
+        return;
+      }
+      await route.continue();
+    });
+    await page.getByRole("button", { name: "Finalize" }).click();
+    await sessionState(page, "FINALIZED");
+    assert.equal(droppedFinalizeResponse, true);
+    assert.equal(diagnostics.finalizeOperationIds.length, 2);
+    assert.equal(
+      new Set(diagnostics.finalizeOperationIds).size,
+      1,
+      "Lost finalize response changed the logical operation ID"
+    );
+    assert.equal(await d1Count(runId), 1);
+
+    await page.screenshot({
+      path: path.join(ARTIFACT_ROOT, "ranked-finalized.png"),
+      fullPage: true
+    });
+    await page.reload({ waitUntil: "domcontentloaded" });
+    await dismissBoot(page);
+    await page.locator(".ranked-v3-leaderboard-entry").waitFor({ state: "visible" });
+    await page.locator(".ranked-v3-leaderboard-entry").click();
+    await page.locator(".ranked-v3-leaderboard-row").waitFor({ state: "visible" });
+    assert.match(
+      await page.locator(".ranked-v3-leaderboard-row").first().textContent(),
+      /M4Headed/u
+    );
+    await page.getByRole("button", { name: "Build details" }).first().click();
+    await page.locator(".ranked-v3-leaderboard-detail").waitFor({ state: "visible" });
+    assert.match(
+      await page.locator(".ranked-v3-leaderboard-detail").textContent(),
+      /Ruleset v08-meta-1/u
+    );
+    await page.screenshot({
+      path: path.join(ARTIFACT_ROOT, "ranked-leaderboard-detail.png"),
+      fullPage: true
+    });
+
+    const expectedDroppedResponseErrors = diagnostics.consoleErrors.filter(
+      (message) => message === "Failed to load resource: net::ERR_FAILED"
+    );
+    const unexpectedConsoleErrors = diagnostics.consoleErrors.filter(
+      (message) => message !== "Failed to load resource: net::ERR_FAILED"
+    );
+    assert.equal(expectedDroppedResponseErrors.length, 1);
+    assert.deepEqual(unexpectedConsoleErrors, []);
+    assert.deepEqual(diagnostics.pageErrors, []);
+    const summary = {
+      mode: HEADLESS ? "headless" : "headed",
+      runId,
+      rankedLifecycleScenarios: 1,
+      networkLossScenarios: 1,
+      reloadRecoveryScenarios: 1,
+      activeCombatApiRequests: 0,
+      finalizeAttempts: diagnostics.finalizeOperationIds.length,
+      uniqueFinalizeOperationIds: new Set(diagnostics.finalizeOperationIds).size,
+      leaderboardRowsForRun: await d1Count(runId),
+      apiRequests: diagnostics.apiRequests,
+      consoleErrors: unexpectedConsoleErrors.length,
+      expectedDroppedResponseConsoleErrors: expectedDroppedResponseErrors.length,
+      pageErrors: diagnostics.pageErrors.length
+    };
+    await fsPromises.writeFile(
+      path.join(ARTIFACT_ROOT, "ranked-headed-summary.json"),
+      `${JSON.stringify(summary, null, 2)}\n`,
+      "utf8"
+    );
+    process.stdout.write(
+      `Online v3 Ranked headed lifecycle PASS (${summary.rankedLifecycleScenarios} lifecycle, ` +
+      `${summary.networkLossScenarios} network-loss, ${summary.reloadRecoveryScenarios} reload)\n`
+    );
+    await context.close();
+  } finally {
+    await browser.close();
+    await closeServer(proxy.server);
+    worker.child.kill();
+    await waitForExit(worker.child);
+    if (worker.child.exitCode === null) {
+      worker.child.kill("SIGKILL");
+      await waitForExit(worker.child);
+    }
+    assert.equal(worker.getLogs().includes(secret), false);
+  }
+}
+
+main().catch(async (error) => {
+  await fsPromises.mkdir(ARTIFACT_ROOT, { recursive: true });
+  await fsPromises.writeFile(
+    path.join(ARTIFACT_ROOT, "ranked-headed-failure.json"),
+    `${JSON.stringify({
+      message: String(error?.message || error),
+      stack: String(error?.stack || "")
+    }, null, 2)}\n`,
+    "utf8"
+  );
+  console.error(error);
+  process.exitCode = 1;
+});

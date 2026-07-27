@@ -4608,7 +4608,7 @@ body:has(#game.graphics-hd) .overlay-menu-row.selected .overlay-menu-key {
 
 .ranked-v3-entry {
   position: fixed;
-  z-index: 120;
+  z-index: 12000;
   left: 50%;
   bottom: max(18px, env(safe-area-inset-bottom));
   transform: translateX(-50%);
@@ -4623,7 +4623,7 @@ body:has(#game.graphics-hd) .overlay-menu-row.selected .overlay-menu-key {
 
 .ranked-v3-leaderboard-entry {
   position: fixed;
-  z-index: 120;
+  z-index: 12000;
   left: 50%;
   bottom: max(68px, calc(env(safe-area-inset-bottom) + 50px));
   transform: translateX(-50%);
@@ -4638,7 +4638,7 @@ body:has(#game.graphics-hd) .overlay-menu-row.selected .overlay-menu-key {
 
 .ranked-v3-overlay {
   position: fixed;
-  z-index: 150;
+  z-index: 12010;
   inset: 0;
   display: grid;
   place-items: center;

@@ -139,6 +139,14 @@
 
   function presentError(error) {
     const conflict = error?.conflict || error?.status === 409;
+    if (root.DUNGEON_ONLINE_V3_DEBUG === true) {
+      console.debug("[Online v3] client error", {
+        name: String(error?.name || "Error"),
+        code: String(error?.code || ""),
+        status: Number(error?.status) || 0,
+        message: String(error?.message || "")
+      });
+    }
     ui.showMessage(
       conflict ? "Ranked state conflict" : "Ranked unavailable",
       conflict
@@ -377,6 +385,11 @@
     const slot = offers.pendingRewardSlots(state)[0];
     if (slot) return issueRelicSlot(slot);
     if (pendingRoomSummary) return resolveCheckpoint();
+    if (state.currentRoomDirective) {
+      const directive = directives.applyOnlineV3RoomDirective(state.currentRoomDirective);
+      root.DungeonOnlineV3GameBridge.setNextDirective(directive);
+      session.transition(root.DungeonRankedV3Session.STATES.next);
+    }
     ui.hide();
   }
 
@@ -401,10 +414,7 @@
         showTerminal(state);
         return;
       }
-      const directive = directives.applyOnlineV3RoomDirective(state.currentRoomDirective);
-      root.DungeonOnlineV3GameBridge.setNextDirective(directive);
-      session.transition(root.DungeonRankedV3Session.STATES.next);
-      ui.hide();
+      await continueBoundary(state);
     } catch (error) {
       pendingRoomSummary = summary;
       presentError(error);
@@ -436,7 +446,11 @@
   }
 
   async function onRoomEntered(directive) {
-    if (!directive || !["merchant", "crossroads"].includes(directive.roomType)) return;
+    if (!directive) return;
+    if (session.getState() === root.DungeonRankedV3Session.STATES.next) {
+      session.transition(root.DungeonRankedV3Session.STATES.active);
+    }
+    if (!["merchant", "crossroads"].includes(directive.roomType)) return;
     pendingRoomSummary = { turnCount: 0, rewardClaims: [] };
     session.transition(root.DungeonRankedV3Session.STATES.offer);
     ui.showMessage(
@@ -460,7 +474,8 @@
     try {
       session.transition(root.DungeonRankedV3Session.STATES.resolving);
       ui.showMessage("Resolving fatal event", "The server owns lives and prevention entitlements.");
-      const previousDirectiveId = snapshot?.publicState?.currentRoomDirective?.directiveId || null;
+      const previousDirectiveId =
+        createClient().getSnapshot()?.publicState?.currentRoomDirective?.directiveId || null;
       const response = await createClient().event("report_fatal_event", {
         classification: "local_fatal_event"
       });

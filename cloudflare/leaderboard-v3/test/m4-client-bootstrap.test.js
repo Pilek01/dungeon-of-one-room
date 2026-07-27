@@ -148,6 +148,15 @@ test("M4 session state machine fails closed on illegal transitions", () => {
   assert.throws(() => machine.transition(sessionApi.STATES.finalized), /TRANSITION_INVALID/u);
 });
 
+test("M4 session state permits only explicit room-boundary UI and portal transitions", () => {
+  const offerMachine = sessionApi.createStateMachine(sessionApi.STATES.active);
+  offerMachine.transition(sessionApi.STATES.offer);
+  offerMachine.transition(sessionApi.STATES.resolving);
+  offerMachine.transition(sessionApi.STATES.next);
+  offerMachine.transition(sessionApi.STATES.active);
+  assert.equal(offerMachine.getState(), sessionApi.STATES.active);
+});
+
 test("M4 game integration remains a narrow directive/checkpoint bridge", () => {
   const game = fs.readFileSync(new URL("../../../game.js", import.meta.url), "utf8");
   assert.match(game, /state\.onlineV3Ranked && state\.onlineV3Directive/u);

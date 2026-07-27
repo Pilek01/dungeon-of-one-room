@@ -33,6 +33,13 @@
   server-order list rendering and immutable public build details. It renders
   no tokens, digests, receipts or private operation data. Targeted tests are
   4/4 and `verify:fast` is 35/35 PASS.
+- `1fa8e4b` adds the canonical leaderboard list and public build details.
+- M4.6 adds clean Practice guardrails plus a real Wrangler/D1 headed Ranked
+  lifecycle. One headed run covers bootstrap, starting relic, first checkpoint,
+  active-combat zero-network observation, reload recovery, canonical defeat,
+  lost-finalize-response exact replay, one D1 row, leaderboard and build
+  detail. The headed lifecycle is 1/1, network-loss 1/1 and reload 1/1;
+  Practice headless preflight is PASS and `verify:fast` is 36/36 PASS.
 - Current test-only ruleset hash after the terminal hooks is
   `sha256:d1f28d957244002da574180c5c9a7040d4d18deba1551a24e6597712d971b231`.
 - No push, deployment, production activation, D1 migration or Vault Guardian
