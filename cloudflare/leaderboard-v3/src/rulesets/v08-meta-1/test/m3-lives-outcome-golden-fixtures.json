@@ -1,0 +1,14 @@
+[
+  {"fixtureId":"fresh-five-lives","expected":"lives=5 maximum=5"},
+  {"fixtureId":"ordinary-fatal-life-loss","expected":"exactly one life lost"},
+  {"fixtureId":"chrono-loop-priority","expected":"Chrono Loop prevents before Second Chance"},
+  {"fixtureId":"second-chance-prevention","expected":"entitlement consumed and no life lost"},
+  {"fixtureId":"nonterminal-continuation","expected":"restart at entrance with carried canonical build"},
+  {"fixtureId":"terminal-defeat","expected":"zero canonical lives makes defeat eligible"},
+  {"fixtureId":"death-relic-loss","expected":"one uniform non-Mythic owned copy"},
+  {"fixtureId":"mythic-death-protection","expected":"Mythic copies excluded"},
+  {"fixtureId":"normal-extraction","expected":"requires accepted clear and converts wallet 1:1"},
+  {"fixtureId":"emergency-extraction","expected":"floor kept wallet after canonical loss ratio"},
+  {"fixtureId":"victory-eligibility","expected":"accepted final directive at depth 100"},
+  {"fixtureId":"client-authority-rejected","expected":"no client lives target result or outcome"}
+]

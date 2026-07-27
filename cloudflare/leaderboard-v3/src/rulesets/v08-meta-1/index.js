@@ -49,6 +49,8 @@ import {
   issuePactOfferV08
 } from "./pact-policy.js";
 import { projectPublicMetaTransactionOfferV08 } from "./meta-transaction.js";
+import { applyFatalEventV08 } from "./life-policy.js";
+import { requestExtractionV08 } from "./outcome-policy.js";
 export {
   applyRelicAcquisition,
   applyRelicRemovalV08,
@@ -146,6 +148,19 @@ export {
   commitPactTransactionV08,
   issuePactOfferV08
 } from "./pact-policy.js";
+export {
+  LIFE_POLICY_SPEC,
+  LIFE_POLICY_VERSION,
+  applyFatalEventV08,
+  assertLifeLedgerV08,
+  createLifeLedgerV08
+} from "./life-policy.js";
+export {
+  OUTCOME_POLICY_VERSION,
+  TERMINAL_ELIGIBLE_STATUSES,
+  assertTerminalEligibilityV08,
+  requestExtractionV08
+} from "./outcome-policy.js";
 
 function mergeContext(options, context) {
   return {
@@ -353,6 +368,28 @@ export function createV08Meta1Ruleset(options = {}) {
         operation,
         mergeContext(options, context)
       );
+    },
+
+    async reportFatalEvent(state, request, context = {}) {
+      const result = await applyFatalEventV08(
+        state,
+        request,
+        mergeContext(options, context)
+      );
+      if (
+        result.nextState.status === "active" &&
+        !result.nextState.currentRoomDirective
+      ) {
+        result.nextState = await issueNextRoomDirectiveV08(
+          result.nextState,
+          mergeContext(options, context)
+        );
+      }
+      return result;
+    },
+
+    requestExtraction(state, request) {
+      return requestExtractionV08(state, request);
     },
 
     async settleRoomRewardEnvelope(state, request, context = {}) {

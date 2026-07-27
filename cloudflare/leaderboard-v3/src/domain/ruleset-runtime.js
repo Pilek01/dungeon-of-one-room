@@ -73,6 +73,14 @@ export function publicRulesetMetaState(state, ruleset) {
     gold: state.gold,
     campGold: state.campGold,
     lives: state.lives,
+    maxDepth: state.maxDepth,
+    lifeState: {
+      maximumLives: state.lifeLedger.maximumLives,
+      fatalEvents: state.lifeLedger.fatalEvents,
+      preventedDeaths: state.lifeLedger.preventedDeaths,
+      lifeLosses: state.lifeLedger.lifeLosses,
+      currentLife: state.lifeLedger.currentLife
+    },
     build: structuredClone(state.build),
     statistics: structuredClone(state.statistics),
     startingRelicOffer:
@@ -313,6 +321,33 @@ export async function applyRulesetEvent(state, body, ruleset, context = {}) {
         rulesetContext
       );
       break;
+    case "report_fatal_event": {
+      const request = exactPayload(
+        body.payload,
+        ["classification"],
+        "FATAL_EVENT_PAYLOAD_INVALID"
+      );
+      const result = await ruleset.reportFatalEvent(
+        structuredClone(state),
+        request,
+        rulesetContext
+      );
+      nextState = result.nextState;
+      break;
+    }
+    case "request_extraction": {
+      const request = exactPayload(
+        body.payload,
+        ["mode"],
+        "EXTRACTION_PAYLOAD_INVALID"
+      );
+      const result = ruleset.requestExtraction(
+        structuredClone(state),
+        request
+      );
+      nextState = result.nextState;
+      break;
+    }
     case "open_camp_offer":
       exactPayload(body.payload, [], "CAMP_OPEN_PAYLOAD_INVALID");
       nextState = await ruleset.issueCampTransactions(

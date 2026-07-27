@@ -41,6 +41,10 @@
       "schemaVersion": 2
     },
     {
+      "file": "data/m3-finalization-source-audit.generated.json",
+      "schemaVersion": 1
+    },
+    {
       "file": "data/merchant-transaction-policy.generated.json",
       "schemaVersion": 1
     },
@@ -207,6 +211,11 @@
       "sha256": "0bb927245cbfc38c73bb868d8ca60e4154307dafcb11e121e40b199fab2046f5"
     },
     {
+      "file": "data/m3-finalization-source-audit.generated.json",
+      "byteLength": 1777,
+      "sha256": "a4b7a92a719018d883d881cdf1310319fa67530bbab1043d14ec94ff2141ee7c"
+    },
+    {
       "file": "data/merchant-transaction-policy.generated.json",
       "byteLength": 4568,
       "sha256": "3330c6551511e2647051dac8df55cde896305616b80fde909090f9a50fd94b22"
@@ -348,8 +357,8 @@
     },
     {
       "file": "index.js",
-      "byteLength": 10110,
-      "sha256": "11aeaf8e62b2d5ec229977f3e8e790f57e28d1ae11a0dcc0638cd058e4e276b9"
+      "byteLength": 11099,
+      "sha256": "8f9186af81330877fd6650ba34959c068bde039ac839a0f93d13d7cf0ad5540b"
     },
     {
       "file": "leaderboard-summary.js",
@@ -358,8 +367,8 @@
     },
     {
       "file": "life-policy.js",
-      "byteLength": 320,
-      "sha256": "94bf104e778bce77bb0c5beed9f794c28489e77af2ba293d65320c9b397d1c21"
+      "byteLength": 6349,
+      "sha256": "6f127af1215f26f554c9283cf00443e6d8610ebc7828f6e9cdbb21d07147468d"
     },
     {
       "file": "merchant-policy.js",
@@ -368,13 +377,18 @@
     },
     {
       "file": "meta-state.js",
-      "byteLength": 8887,
-      "sha256": "a53d2e75a78e75c5e60c47cf1f03a232f0974709305f7aa5e65ad983b6a2bffe"
+      "byteLength": 9212,
+      "sha256": "b816b4f9b4badccdf67726927d03f3815f5f72c6f8906c524bb185cec17b444e"
     },
     {
       "file": "meta-transaction.js",
       "byteLength": 17944,
       "sha256": "ef685c6980ed3848b4cad3125131fff0fba6bbaffc20b46237d181785c5c4612"
+    },
+    {
+      "file": "outcome-policy.js",
+      "byteLength": 3325,
+      "sha256": "d7f452dec71538661689b5b4bdf05bf60d6ef026a0ee2793ec6ef0d41cebbda2"
     },
     {
       "file": "pact-policy.js",
@@ -423,8 +437,8 @@
     },
     {
       "file": "room-policy.js",
-      "byteLength": 14864,
-      "sha256": "033c4862a6e12372148d2194ba9d88619416769a39b1a550080b5ab0d1f08570"
+      "byteLength": 15071,
+      "sha256": "a8d98e4aca520980376aabf6435a92bd868bcbb364dd920c5185a9923f8c49b4"
     },
     {
       "file": "run-modifiers.js",
@@ -465,6 +479,11 @@
       "file": "test/m1-meta-transaction-core-golden-fixtures.json",
       "byteLength": 846,
       "sha256": "c323960a9eda385595ab2175ddb770f327dcff756fe964e8a90e040e16c867d8"
+    },
+    {
+      "file": "test/m3-lives-outcome-golden-fixtures.json",
+      "byteLength": 1083,
+      "sha256": "f8084ca3cc5d039b225f834c6c62dc135b7b7d546502ab903e85e1b83a827a75"
     },
     {
       "file": "test/phase3b1-golden-fixtures.json",
@@ -517,5 +536,5 @@
       "sha256": "e06c85319b457817a0fa313302d0136eb746738719ab9cc6db73eacc8d62b489"
     }
   ],
-  "rulesetHash": "sha256:58528474cf072fbeddfc68a29c1eda00414996cd8fb4ea2871e0b954a1f95276"
+  "rulesetHash": "sha256:40ef3c318688204cc2038d1e0d473c7f0dcbdcb7360cd03839f94c8eb30d2f38"
 }

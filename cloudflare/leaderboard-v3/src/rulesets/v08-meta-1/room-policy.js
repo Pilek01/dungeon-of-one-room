@@ -425,6 +425,7 @@ export async function consumeRoomDirectiveV08(state, operation = {}, context = {
   const settlement = await settleRoomRewardEnvelopeV3(state, rewardClaim, context);
   const next = settlement.state;
   next.depth = directive.depth;
+  next.maxDepth = Math.max(next.maxDepth, directive.depth);
   next.revision += 1;
   next.currentRoomDirective = null;
   next.currentRewardEnvelope = null;
@@ -439,6 +440,11 @@ export async function consumeRoomDirectiveV08(state, operation = {}, context = {
 
   if (directive.roomCategory === "final") {
     next.status = "victory";
+    next.terminalEligibility = {
+      outcome: "victory",
+      eligibleRevision: next.revision,
+      reason: "accepted_final_boss_clear"
+    };
   } else {
     const issued = await issueNextRoomDirectiveV08(next, context);
     Object.assign(next, issued);

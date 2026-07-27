@@ -1,0 +1,66 @@
+{
+  "schemaVersion": 1,
+  "rulesetId": "v08-meta-1",
+  "sourceCommit": "f98820c99066d810169e100beb23a54a332734bd",
+  "sources": [
+    {
+      "file": "game.js",
+      "byteLength": 1292796,
+      "sha256": "a7d436f8cdde618e7bab802322a658d2055f201950d9ae7b4598269feff3df00"
+    },
+    {
+      "file": "loot-tables.js",
+      "byteLength": 2509,
+      "sha256": "9343a62db72aacd89d16ab0efa3c1fba0c40d08cc1e82e10795990299467e0a9"
+    },
+    {
+      "file": "relic-data.js",
+      "byteLength": 9135,
+      "sha256": "fa4cdd27c3b3b9d2b61df3bc346a4123e9d3f70f58afdc16cd626411d6bdfa59"
+    }
+  ],
+  "canonicalData": {
+    "initialLives": 5,
+    "maximumLives": 5,
+    "fatalPreventionOrder": [
+      "chronoloop",
+      "secondchance"
+    ],
+    "deathRelicLoss": {
+      "count": 1,
+      "selection": "uniform-owned-copy",
+      "excludedRarities": [
+        "mythic"
+      ]
+    },
+    "victory": {
+      "depth": 100,
+      "requiresAcceptedFinalBossClear": true,
+      "settlesFinalRoomRewardFirst": true
+    },
+    "defeat": {
+      "requiresAcceptedLifeLossAtZero": true
+    },
+    "extraction": {
+      "supported": true,
+      "normalRequiresAcceptedRoomClear": true,
+      "normalCampGoldRounding": "round",
+      "emergencyKeepRounding": "floor",
+      "emergencyBaseLossRatio": 0.7,
+      "emergencyStashReductionPerLevel": 0.1,
+      "minimumLossRatio": 0.05,
+      "maximumLossRatio": 0.95
+    },
+    "score": {
+      "version": "v08-score-1",
+      "formula": "depth*1000 + runGoldEarned*2 + floor(depth/5)*2500",
+      "depthSource": "acceptedMaxDepth",
+      "goldSource": "acceptedRunGoldEarned"
+    },
+    "duration": {
+      "version": "server-wall-clock-v1",
+      "source": "persisted Worker startedAt/finalizedAt",
+      "scoreContribution": false
+    }
+  }
+}

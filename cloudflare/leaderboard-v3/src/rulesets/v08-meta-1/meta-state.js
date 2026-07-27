@@ -18,6 +18,11 @@ import {
   assertMetaTransactionReceiptsV08,
   assertPendingMetaTransactionOfferV08
 } from "./meta-transaction.js";
+import {
+  assertLifeLedgerV08,
+  createLifeLedgerV08
+} from "./life-policy.js";
+import { TERMINAL_ELIGIBLE_STATUSES } from "./outcome-policy.js";
 
 const progression = progressionDocument.canonicalData;
 
@@ -122,6 +127,8 @@ export function createInitialMetaStateV08(input = {}, context = {}) {
     goldLedger: createGoldLedger(),
     rewardSettlementHistory: [],
     lives: progression.initialLives,
+    maxDepth: 0,
+    lifeLedger: createLifeLedgerV08(),
     build: createEmptyRelicBuildV08(),
     runModifiers: createEmptyRunModifierLedgerV08(),
     pendingOffer: null,
@@ -161,7 +168,14 @@ export function assertMetaStateV08(state) {
   if (!state || typeof state !== "object") throw new TypeError("META_STATE_INVALID");
   if (state.rulesetId !== RULESET_ID) throw new TypeError("RULESET_ID_MISMATCH");
   if (state.rulesetHash !== manifest.rulesetHash) throw new TypeError("RULESET_HASH_MISMATCH");
-  if (!["awaiting_starting_relic", "active", "victory"].includes(state.status)) {
+  if (
+    ![
+      "awaiting_starting_relic",
+      "active",
+      ...TERMINAL_ELIGIBLE_STATUSES,
+      "finalized"
+    ].includes(state.status)
+  ) {
     throw new TypeError("RUN_STATUS_INVALID");
   }
   for (const [field, minimum] of [
@@ -171,6 +185,7 @@ export function assertMetaStateV08(state) {
     ["gold", 0],
     ["campGold", 0],
     ["lives", 0],
+    ["maxDepth", 0],
     ["elapsedMs", 0]
   ]) {
     if (!Number.isSafeInteger(state[field]) || state[field] < minimum) {
@@ -182,6 +197,7 @@ export function assertMetaStateV08(state) {
   if (!state.build || typeof state.build !== "object") throw new TypeError("META_STATE_INVALID:build");
   assertCanonicalRelicBuildV08(state.build);
   assertCanonicalRunModifierLedgerV08(state.runModifiers);
+  assertLifeLedgerV08(state);
   assertGoldLedgerV08(state);
   assertPendingMetaTransactionOfferV08(state.pendingInventory);
   assertMetaTransactionReceiptsV08(state.metaTransactionReceipts);
