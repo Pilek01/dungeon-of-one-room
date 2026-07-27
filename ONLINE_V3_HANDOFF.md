@@ -16,6 +16,13 @@
   `sha256:13b0605ef0e7e23b742d558eac02d739d898a941ef172fa58f3acb1d86966f3e`;
   no canonical policy table was edited.
 - Latest M4.2 targeted tests: 10/10 PASS. Latest `verify:fast`: 24/24 PASS.
+- `7a43dcc` integrates explicit Ranked bootstrap, canonical starting relics,
+  the full active directive allowlist, and the narrow game bridge.
+- M4.3 adds one shared public-projection adapter for Warden/Otter/Arena relic
+  offers, replacement, Merchant, Forge Temper/Transmute, Crossroads, Camp and
+  Pact. Targeted client tests are 14/14 and `verify:fast` is 28/28 PASS.
+- Current test-only ruleset hash after the final game hook is
+  `sha256:a2f231db39d722c9d5d75e71f1d7dd14b8bdf289e7182af354e5759d481e0792`.
 - No push, deployment, production activation, D1 migration or Vault Guardian
   change has occurred.
 

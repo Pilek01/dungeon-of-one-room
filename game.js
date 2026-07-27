@@ -32775,11 +32775,20 @@
       state.player.gold = Math.max(0, Number(publicState?.gold) || 0);
       state.lives = Math.max(0, Number(publicState?.lives) || 0);
       markUiDirty();
+      window.DungeonOnlineV3?.onRoomEntered?.(directive);
     },
     setNextDirective(directive) {
       state.onlineV3NextDirective = directive;
       pushLog("Online v3 acknowledged the room. Portal is ready.", "good");
       markUiDirty();
+    },
+    enterNextDirective() {
+      if (!state.onlineV3Ranked || !state.onlineV3NextDirective) return false;
+      state.onlineV3Directive = state.onlineV3NextDirective;
+      state.onlineV3NextDirective = null;
+      buildRoom();
+      window.DungeonOnlineV3?.onRoomEntered?.(state.onlineV3Directive);
+      return true;
     },
     syncCanonicalProjection(publicState) {
       state.player.gold = Math.max(0, Number(publicState?.gold) || 0);

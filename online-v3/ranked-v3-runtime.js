@@ -5,10 +5,12 @@
   const protocol = root.DungeonRankedV3Protocol;
   const clientApi = root.DungeonRankedV3Client;
   const directives = root.DungeonRankedV3Directives;
+  const offers = root.DungeonRankedV3Offers;
   const ui = root.DungeonRankedV3Ui.createUi(root.document);
   const session = root.DungeonRankedV3Session.createStateMachine();
   let client = null;
   let startedAt = 0;
+  let pendingRoomSummary = null;
 
   function publicName() {
     return String(root.localStorage.getItem("dungeonOneRoomPlayerName") || "Anonymous").slice(0, 18);
@@ -127,9 +129,138 @@
     }
   }
 
-  async function onLocalRoomCleared(summary) {
+  async function commitReplacement(replacement, replacementChoiceId) {
+    ui.setStatus("Committing canonical replacement...");
+    const response = await createClient().event("commit_relic_replacement", {
+      transactionId: replacement.transactionId,
+      replacementChoiceId
+    });
+    root.DungeonOnlineV3GameBridge.syncCanonicalProjection(response.metaState);
+    await continueBoundary(response.metaState);
+  }
+
+  async function presentReplacement(replacement) {
+    session.transition(root.DungeonRankedV3Session.STATES.offer);
+    ui.showChoices(
+      "Choose a relic to replace",
+      `Incoming: ${replacement.incoming?.relicId || "canonical relic"}.`,
+      offers.replacementChoices(replacement),
+      (choiceId) => commitReplacement(replacement, choiceId).catch(presentError)
+    );
+    if (replacement.cancelAllowed) {
+      const cancel = ui.button("Cancel incoming relic", async () => {
+        try {
+          const response = await createClient().event("cancel_relic_replacement", {
+            transactionId: replacement.transactionId
+          });
+          await continueBoundary(response.metaState);
+        } catch (error) {
+          presentError(error);
+        }
+      });
+      ui.overlay.querySelector(".ranked-v3-actions")?.append(cancel);
+    }
+  }
+
+  async function presentRelicOffer(offer) {
+    session.transition(root.DungeonRankedV3Session.STATES.offer);
+    ui.showChoices(
+      "Canonical relic reward",
+      "Select one server-issued opaque choice.",
+      offers.relicChoices(offer),
+      async (choiceId) => {
+        try {
+          const response = await createClient().event("select_relic", {
+            offerId: offer.offerId,
+            choiceId
+          });
+          root.DungeonOnlineV3GameBridge.syncCanonicalProjection(response.metaState);
+          await continueBoundary(response.metaState);
+        } catch (error) {
+          presentError(error);
+        }
+      }
+    );
+  }
+
+  async function issueRelicSlot(slot) {
+    const response = await createClient().event("issue_relic_offer", {
+      rewardSlotId: slot.slotId
+    });
+    await continueBoundary(response.metaState);
+  }
+
+  async function commitMetaChoice(offer, choiceId) {
+    const choice = offer.choices.find((entry) => entry.choiceId === choiceId);
+    if (!choice || choice.status !== "available") throw new TypeError("RANKED_META_CHOICE_UNAVAILABLE");
+    ui.setStatus("Committing canonical transaction...");
+    const response = await createClient().event("commit_meta_transaction", {
+      transactionId: choice.transactionId,
+      choiceId: choice.choiceId
+    });
+    root.DungeonOnlineV3GameBridge.syncCanonicalProjection(response.metaState);
+    await continueBoundary(response.metaState);
+  }
+
+  function presentMetaOffer(offer) {
+    session.transition(root.DungeonRankedV3Session.STATES.offer);
+    ui.showChoices(
+      `${offer.sourceType || "Ranked"} choices`,
+      "Costs and effects come from the canonical projection.",
+      offers.metaChoices(offer).filter((choice) => !choice.disabled),
+      (choiceId) => commitMetaChoice(offer, choiceId).catch(presentError)
+    );
+    ui.overlay.querySelector(".ranked-v3-actions")?.append(
+      ui.button("Done", () => resolveCheckpoint().catch(presentError))
+    );
+  }
+
+  async function openMetaOffer(roomType) {
+    let payload = {};
+    if (roomType === "forge") {
+      ui.showMessage("Canonical Forge", "Choose the Forge operation.", [
+        ui.button("Temper", async () => {
+          try {
+            await continueBoundary((await createClient().event("open_meta_offer", { mode: "temper" })).metaState);
+          } catch (error) { presentError(error); }
+        }),
+        ui.button("Transmute", async () => {
+          try {
+            await continueBoundary((await createClient().event("open_meta_offer", { mode: "transmute" })).metaState);
+          } catch (error) { presentError(error); }
+        })
+      ]);
+      return;
+    }
+    const response = await createClient().event("open_meta_offer", payload);
+    await continueBoundary(response.metaState);
+  }
+
+  async function openCamp() {
+    ui.setStatus("Opening canonical Camp session...");
+    await createClient().event("begin_camp_session", {});
+    const response = await createClient().event("open_camp_offer", {});
+    await continueBoundary(response.metaState);
+  }
+
+  async function continueBoundary(state) {
+    root.DungeonOnlineV3GameBridge.syncCanonicalProjection(state);
+    if (state.relicReplacement) return presentReplacement(state.relicReplacement);
+    if (state.relicOffer) return presentRelicOffer(state.relicOffer);
+    if (state.metaTransactionOffer) return presentMetaOffer(state.metaTransactionOffer);
+    const slot = offers.pendingRewardSlots(state)[0];
+    if (slot) return issueRelicSlot(slot);
+    if (pendingRoomSummary) return resolveCheckpoint();
+    ui.hide();
+  }
+
+  async function resolveCheckpoint() {
+    const summary = pendingRoomSummary || {};
+    pendingRoomSummary = null;
     try {
-      session.transition(root.DungeonRankedV3Session.STATES.resolving);
+      if (session.getState() !== root.DungeonRankedV3Session.STATES.resolving) {
+        session.transition(root.DungeonRankedV3Session.STATES.resolving);
+      }
       ui.showMessage("Resolving room", "Waiting for the canonical checkpoint...");
       const response = await createClient().checkpoint({
         turnCount: summary?.turnCount,
@@ -158,8 +289,44 @@
       session.transition(root.DungeonRankedV3Session.STATES.next);
       ui.hide();
     } catch (error) {
+      pendingRoomSummary = summary;
       presentError(error);
     }
+  }
+
+  async function onLocalRoomCleared(summary) {
+    pendingRoomSummary = summary || {};
+    const state = createClient().getSnapshot()?.publicState;
+    const roomType = state?.currentRoomDirective?.roomType;
+    if (["forge", "pact"].includes(roomType)) {
+      session.transition(root.DungeonRankedV3Session.STATES.offer);
+      ui.showMessage(
+        roomType === "forge" ? "Forge awakened" : "Pact sigil awakened",
+        "Open the canonical server-issued choices.",
+        [ui.button("Open", () => openMetaOffer(roomType).catch(presentError))]
+      );
+      return;
+    }
+    if (offers.pendingRewardSlots(state).length > 0) {
+      await continueBoundary(state);
+      return;
+    }
+    session.transition(root.DungeonRankedV3Session.STATES.offer);
+    ui.showMessage("Room cleared", "Choose the next canonical boundary.", [
+      ui.button("Resolve checkpoint", () => resolveCheckpoint().catch(presentError)),
+      ui.button("Visit Camp", () => openCamp().catch(presentError))
+    ]);
+  }
+
+  async function onRoomEntered(directive) {
+    if (!directive || !["merchant", "crossroads"].includes(directive.roomType)) return;
+    pendingRoomSummary = { turnCount: 0, rewardClaims: [] };
+    session.transition(root.DungeonRankedV3Session.STATES.offer);
+    ui.showMessage(
+      directive.roomType === "merchant" ? "Canonical Merchant" : "Canonical Crossroads",
+      "Open the server-issued choices before leaving this room.",
+      [ui.button("Open", () => openMetaOffer(directive.roomType).catch(presentError))]
+    );
   }
 
   function acceptFinal(response) {
@@ -187,6 +354,7 @@
     mode: "practice",
     startRanked,
     onLocalRoomCleared,
+    onRoomEntered,
     getSessionState: session.getState,
     getSnapshot: () => client?.getSnapshot() || null
   });
