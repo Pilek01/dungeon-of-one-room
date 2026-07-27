@@ -1,6 +1,6 @@
 # Online v3 - Current Handoff
 
-## Milestone M4 in progress
+## Milestone M4 complete locally
 
 - `4cd353b` adds the isolated browser transport, real token-kind validation,
   stable operation identity, exact/conflicting retry handling, redacted logs,
@@ -40,6 +40,11 @@
   lost-finalize-response exact replay, one D1 row, leaderboard and build
   detail. The headed lifecycle is 1/1, network-loss 1/1 and reload 1/1;
   Practice headless preflight is PASS and `verify:fast` is 36/36 PASS.
+- `d7eaf33` adds the real local Worker/D1 headed lifecycle and makes the clean
+  baseline verifier run both Practice and Ranked browser suites.
+- M4 implementation is complete through six internal commits. Final
+  documentation and the phase/baseline/full gates are the only remaining
+  local handoff steps. Production remains blocked and `v08-meta-1` test-only.
 - Current test-only ruleset hash after the terminal hooks is
   `sha256:d1f28d957244002da574180c5c9a7040d4d18deba1551a24e6597712d971b231`.
 - No push, deployment, production activation, D1 migration or Vault Guardian
