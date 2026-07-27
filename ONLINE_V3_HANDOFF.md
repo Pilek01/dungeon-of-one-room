@@ -15,13 +15,14 @@ Internal commits:
 - `60ef67c` — single-writer browser coordination;
 - `e9299e5` — retention, active-run cap, abuse gate, and metrics;
 - `24d29e7` — strict protocol projections and public seek cursor;
-- `972e2ea` — D1/headed lifecycle and 30-scenario threat rerun.
+- `972e2ea` — D1/headed lifecycle and 30-scenario threat rerun;
+- `41b9056` — align the local D1 schema assertion with the R2 profile migration.
 
 Current test-only ruleset hash:
 `sha256:0bf00607056dbf3c30ffe57bbcfc77cea95b21c9ccc23aa985ec555856d1cbd6`.
 
-The final documentation commit is followed by fresh `verify:phase`,
-`verify:baseline`, and `verify:full`. See:
+The final documentation commit is followed by fresh `verify:phase` (702/702),
+`verify:baseline` (3/3 plus headed smoke), and `verify:full` (726/726). See:
 
 - `docs/ONLINE_V3_R2.md` for architecture and release gates;
 - `docs/ONLINE_V3_R2_REVIEW.md` for finding dispositions and threat rerun;

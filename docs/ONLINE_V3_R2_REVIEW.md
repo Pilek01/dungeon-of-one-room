@@ -53,8 +53,8 @@ The rerun confirms:
 - headed browser: lifecycle, lost response, reload recovery, multi-tab
   takeover, extraction-to-Camp, and next-run profile hydration;
 - protected baseline: 3/3 plus headed Practice/Ranked smoke;
-- the final documentation commit is followed by fresh
-  `verify:phase`, `verify:baseline`, and `verify:full`.
+- final gates: `verify:phase` 702/702, `verify:baseline` 3/3 plus headed
+  smoke, and `verify:full` 726/726.
 
 ## Release decision
 

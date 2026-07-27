@@ -21,7 +21,8 @@ gameplay and their existing player-facing names.
 - `60ef67c` — add single-writer browser coordination;
 - `e9299e5` — add retention and abuse safeguards;
 - `24d29e7` — harden protocol projections and the leaderboard cursor;
-- `972e2ea` — add combined lifecycle, D1, headed, and threat-matrix coverage.
+- `972e2ea` — add combined lifecycle, D1, headed, and threat-matrix coverage;
+- `41b9056` — align the local D1 schema assertion with the profile migration.
 
 ## Camp and anonymous profile
 

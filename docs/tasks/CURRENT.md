@@ -13,7 +13,8 @@ Implementation commits:
 - `60ef67c` — single-writer browser coordination;
 - `e9299e5` — retention and abuse safeguards;
 - `24d29e7` — protocol and cursor hardening;
-- `972e2ea` — remediation lifecycle coverage and threat rerun.
+- `972e2ea` — remediation lifecycle coverage and threat rerun;
+- `41b9056` — local D1 schema assertion aligned with the R2 profile migration.
 
 R1-P0-001 is `ACCEPTED_PRODUCT_LIMITATION`. No P1 remains. Deferred M5 items
 have explicit production gates in `docs/ONLINE_V3_R2.md` and
