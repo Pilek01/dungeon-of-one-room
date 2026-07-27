@@ -1,74 +1,90 @@
-# Milestone M2B — Authenticated Run Bootstrap & Real Ruleset Runtime
+# Milestone M3 — Canonical Run Completion, Outcome & Scoring
 
 ## Status
 
-Completed locally with an explicit M3 finalization dependency.
+Completed locally on 2026-07-27.
 
-Implementation commits:
+Do not begin client integration or deployment automatically.
 
-- `80b8edf` — authenticated run-bootstrap boundary;
-- `90a597c` — atomic starting-relic transition and first directive;
-- `87c3da9` — exact local `v08-meta-1` Worker dispatch;
-- `4963754` — real Wrangler/D1 lifecycle and restart coverage.
+## Completion record
 
-The real ruleset now starts, selects its starting relic, issues the first
-canonical room and continues through authenticated room/meta operations.
-Real finalization remains deliberately fail-closed with
-`REAL_RULESET_FINALIZATION_REQUIRES_M3`; M2B did not invent score, outcome,
-lives or extract policy.
-
-Final ruleset hash:
-
-`sha256:58528474cf072fbeddfc68a29c1eda00414996cd8fb4ea2871e0b954a1f95276`
-
-This milestone resolves the canonical pre-room boundary blocker discovered during M2 and completes the previously blocked M2.4 and M2.5 workstreams.
-
-Do not start M3 automatically.
+- `d7a0071` — canonical lives and outcome state.
+- `ee2de2c` — canonical server duration and `v08-score-1`.
+- `6b01106` — terminal boundary and atomic real-ruleset finalization.
+- `61a0f89` — canonical leaderboard publication, detail, ordering and cursor.
+- `d042f53` — real Wrangler/D1 completion lifecycle and rollback coverage.
+- Source audit: `docs/ONLINE_V3_M3_SOURCE_AUDIT.md`.
+- Milestone report: `docs/ONLINE_V3_M3.md`.
+- Ruleset hash changed from
+  `sha256:58528474cf072fbeddfc68a29c1eda00414996cd8fb4ea2871e0b954a1f95276`
+  to
+  `sha256:08f023da2700e76e862d7adec7045dc8aa6e931b5c97976d955182aa19f2cebb`.
+- Final verification: phase 656/656, baseline guard 3/3 plus headed smoke,
+  full 678/678 including local Wrangler/D1 19/19.
+- M4 was not started.
 
 ## Objective
 
-Implement an authenticated canonical run-bootstrap state that exists before the first room directive, then wire the real `v08-meta-1` ruleset into the existing local Worker endpoints and prove the complete lifecycle through real Wrangler and D1.
+Implement the complete canonical end-of-run contract for the real `v08-meta-1` ruleset.
+
+M3 must define and implement:
+
+- canonical lives;
+- death and continuation semantics;
+- victory;
+- defeat;
+- extraction, only if supported by v0.8;
+- final run outcome;
+- canonical score;
+- final duration;
+- final build and run summary;
+- atomic finalization;
+- single leaderboard publication;
+- deterministic exact retry.
 
 Required end state:
 
-> A real `v08-meta-1` run can be started locally, the starting relic can be selected through an authenticated pre-room operation, the first room directive can be issued deterministically, and the remaining lifecycle works through the existing HTTP/D1 runtime.
+> A real local `v08-meta-1` run can reach a canonical terminal state, finalize atomically and create exactly one leaderboard entry through the real Worker and D1 runtime.
 
-No game-client integration and no deployment.
+The game client remains untouched.
 
 ---
 
 ## Starting state
 
-Expected HEAD includes:
+Expected repository state includes M2B commits:
 
-- `e267999` — compact idempotency v2;
-- `7f52493` — v1/v2 compatibility and D1 persistence;
-- `3898db7` — local release candidate;
-- `a5d94c9` — documented pre-room blocker.
+- `80b8edf` — authenticated bootstrap boundary;
+- `90a597c` — atomic starting-relic transition;
+- `87c3da9` — local real-ruleset Worker runtime;
+- `4963754` — real Wrangler/D1 lifecycle;
+- `f5b1dc8` — M2B documentation.
 
 Current ruleset hash:
 
-`sha256:2fcc9df6032f7966ff0ede0e723dc1f0f3b0b28cc0d77533caaeb7ae886a8594`
+`sha256:58528474cf072fbeddfc68a29c1eda00414996cd8fb4ea2871e0b954a1f95276`
 
-Current conditions:
+Current behavior:
 
-- compact `recent_ops` v2 is implemented;
-- ring size is 12;
-- legacy v1 retry remains supported;
-- `v08-meta-1` is a local/test release candidate;
+- real `v08-meta-1` run start works locally;
+- starting relic bootstrap works;
+- first room directive is deterministic;
+- room lifecycle and meta-transactions work;
+- compact idempotency v2 works;
+- finalize currently fails closed with:
+  `REAL_RULESET_FINALIZATION_REQUIRES_M3`;
+- fixture runtime remains separate;
 - production activation remains blocked;
-- real endpoint dispatch is not yet enabled;
-- fixture Worker runtime remains active;
 - game and client remain untouched.
 
-There are exactly 172 unrelated protected Vault Guardian deletions.
+There are exactly 172 protected unrelated Vault Guardian deletions.
 
 They must remain:
 
+- unchanged;
 - unstaged;
-- unmodified;
-- outside every M2B commit;
-- identical in path set and delta.
+- outside every M3 commit;
+- identical in path set and content fingerprint.
 
 ---
 
@@ -80,393 +96,508 @@ Read:
 2. `ONLINE_V3_HANDOFF.md`;
 3. `cloudflare/leaderboard-v3/AGENTS.md`;
 4. this file;
-5. current token-signing and verification code;
-6. run start/event/checkpoint/finalize handlers;
-7. starting relic offer domain code;
-8. room directive generation;
-9. compact idempotency v2 reconstruction;
-10. current Wrangler/D1 E2E harness.
+5. baseline v0.8 code related to:
+   - player lives;
+   - death;
+   - resurrection or continuation;
+   - Final Defeat;
+   - victory;
+   - depth 100;
+   - extraction or run abandonment;
+   - score;
+   - run duration;
+   - final summary;
+6. current Worker finalize implementation;
+7. leaderboard entry schema;
+8. compact idempotency v2;
+9. real-ruleset Wrangler/D1 lifecycle tests.
 
-Do not read the entire history archive unless required by a specific unresolved contract.
+Do not infer missing behavior from Ranked v2.
+
+Use active v0.8 source evidence.
 
 ---
 
-# Workstream 1 — Canonical bootstrap state
+# Workstream 1 — End-of-run source audit
 
-## Required state machine
+Before implementation, inventory every active v0.8 rule related to:
 
-Introduce an explicit canonical state transition:
+- starting lives;
+- maximum lives;
+- life loss;
+- death prevention;
+- resurrection;
+- relic or mutator effects on lives;
+- terminal defeat;
+- final boss victory;
+- depth 100 completion;
+- extract/quit/abandon behavior;
+- score calculation;
+- score modifiers;
+- gold contribution;
+- depth contribution;
+- time contribution;
+- boss or elite contribution;
+- build summary;
+- run statistics;
+- leaderboard fields.
+
+For each rule document:
+
+- source file;
+- symbol/function;
+- trigger;
+- canonical inputs;
+- calculation order;
+- rounding;
+- caps;
+- mutator/relic interaction;
+- authority classification;
+- whether exact server derivation is possible.
+
+Stop instead of guessing where evidence is ambiguous.
+
+---
+
+# Workstream 2 — Canonical lives ledger
+
+Implement canonical lives as part of run meta-state.
+
+The server must derive:
+
+- initial lives;
+- maximum lives;
+- current lives;
+- life gains;
+- life losses;
+- death-prevention effects;
+- terminal defeat.
+
+Client input may report only a bounded, classified room/combat result required by the existing authority matrix.
+
+The client must not provide authoritative:
+
+- current lives;
+- maximum lives;
+- life delta;
+- death count;
+- terminal defeat;
+- resurrection result.
+
+Use existing canonical relic and run-modifier effects.
+
+Do not create a second build or effect evaluator.
+
+## Required transitions
+
+Implement pure transitions for confirmed v0.8 behavior, such as:
+
+- room completion without death;
+- nonterminal death;
+- life loss;
+- prevented death;
+- life gain;
+- terminal defeat.
+
+Exact names should follow project conventions.
+
+Every transition must be:
+
+- immutable;
+- revision-bound;
+- state-digest-bound;
+- idempotent;
+- restart deterministic;
+- atomic.
+
+---
+
+# Workstream 3 — Canonical outcome state machine
+
+Define explicit run states.
+
+Conceptually:
 
 ```text
-RUN_CREATED
-→ AWAITING_STARTING_RELIC
-→ ROOM_DIRECTIVE_ACTIVE
-The names may follow existing project conventions, but the states must remain distinguishable.
-A newly created run must not require:
-roomDirectiveId;
-roomNonce;
-fake depth;
-synthetic room;
-placeholder room result.
-The starting relic must be selected before generation of the first playable room directive.
-Bootstrap state
-Canonical server state must bind at least:
-run ID;
-ruleset ID;
-exact ruleset hash;
-current revision;
-current state digest;
-starting offer ID;
-starting reward slot or equivalent canonical source;
-allowed starting choices;
-bootstrap status;
-bootstrap nonce or equivalent replay-binding value.
-Client-provided build, relic, depth, directive, nonce or revision are not sources of truth.
-Workstream 2 — Authenticated bootstrap token
-Token type
-Add a versioned authenticated boundary token capable of representing a pre-room state.
-Preferred conceptual form:
-{
-  tokenVersion: 2,
-  boundaryKind: "run_bootstrap",
-  runId,
-  rulesetId,
-  rulesetHash,
-  revision,
-  startingOfferId,
-  stateDigest,
-  bootstrapNonce
-}
-Use existing HMAC infrastructure.
-Do not create an unrelated second signing system.
-Token separation
-The verifier must distinguish at least:
-bootstrap token;
-room/checkpoint token;
-finalized or otherwise invalid boundary.
-A bootstrap token must not be accepted for:
-room checkpoint;
-normal room event;
-finalization requiring a room boundary.
-A room token must not be accepted for:
-starting relic selection.
-Wrong token kind must fail closed with a precise error.
-Compatibility
-Existing fixture token behavior must remain available for explicit fixture tests.
-Production activation remains blocked.
-Do not silently reinterpret old tokens as bootstrap tokens.
-Workstream 3 — Starting relic transition
-Implement one explicit authenticated operation for selecting the starting relic.
-The operation may use the existing event endpoint if its contract can be safely extended with an explicit operation type.
-Do not add a generic state-patch endpoint.
-Client intent should contain only fields equivalent to:
-{
-  operationId,
-  operationType: "select_starting_relic",
-  bootstrapToken,
-  offerId,
-  choiceId
-}
-Exact field names must follow existing contracts.
-Server responsibilities
-The Worker/ruleset must derive:
-current starting offer;
-legal choices;
-selected relic;
-resulting build;
-build digest;
-next revision;
-first room directive;
-room nonce;
-next checkpoint token.
-The client must not provide any of those results.
-Atomic transition
-A successful operation atomically:
-verifies the bootstrap token;
-verifies run/ruleset/hash/revision/state digest;
-verifies the canonical starting offer;
-resolves the opaque choice ID;
-applies the canonical starting relic;
-consumes the starting offer exactly once;
-advances the revision;
-generates the first room directive;
-generates the first room nonce;
-issues the normal room token;
-writes compact idempotency history;
-persists the complete resulting run state.
-Failure at any step must leave the run in the original bootstrap state.
-Workstream 4 — Bootstrap retry and reconstruction
-Compact idempotency v2 must support the bootstrap operation.
-Exact retry
-An exact retry must reproduce the original externally observable result:
-status;
-revision;
-selected starting relic projection;
-build projection;
-first room directive;
-room directive ID;
-room nonce;
-checkpoint token;
-public state digest;
-response kind.
-Reconstruction must use immutable historical operation data.
-It must never regenerate the first room from the newest run state.
-Conflicting retry
-The same operation identity with another:
-choice ID;
-offer ID;
-token;
-request digest;
-must be rejected as a conflicting retry.
-Restart behavior
-After Worker restart and D1 reload:
-exact bootstrap retry returns an equivalent result;
-conflicting retry remains rejected;
-the first directive does not change.
-Workstream 5 — Real ruleset endpoint wiring
-After bootstrap is complete, wire the existing local Online v3 endpoint surface to v08-meta-1.
-Use exact ruleset dispatch:
-ruleset ID + exact ruleset hash
-→ immutable registered implementation
-Never resolve to the newest hash automatically.
-Start
-The real start endpoint must:
-create a canonical real-ruleset run;
-create revision zero or the existing canonical initial revision;
-issue the starting relic offer;
-enter AWAITING_STARTING_RELIC;
-return a signed bootstrap token;
-not issue a fake room directive.
-Event/bootstrap selection
-The authenticated starting selection must transition into the first real room.
-Checkpoint
-After bootstrap completion, existing room checkpoint semantics must operate using:
-canonical directives;
-reward envelopes;
-gold ledger;
-relic offers;
-replacement;
-fallback;
-Merchant;
-Forge;
-Crossroads;
-Camp;
-Pact.
-Do not create combat-per-turn authority.
-Finalize
-Preserve the existing atomic finalize behavior.
-Do not invent unresolved M3 systems such as:
-final score;
+ACTIVE
+→ VICTORY_ELIGIBLE
+→ DEFEAT_ELIGIBLE
+→ EXTRACTION_ELIGIBLE
+→ FINALIZED
+Use names matching the existing architecture.
+At minimum distinguish:
+active run;
+terminal victory;
+terminal defeat;
+valid extraction;
+abandoned/invalid run, if required;
+finalized run.
+A run must not finalize merely because the client claims an outcome.
+The ruleset must derive eligibility from canonical state.
+Victory
+Confirm and implement:
+required depth;
+final boss completion;
+required room/reward completion;
+terminal transition timing.
+Defeat
+Confirm and implement:
+zero-lives behavior;
+Final Defeat eligibility;
+pending reward or transaction behavior;
+whether unfinished transactions must block finalization.
+Extraction
+Implement only if active v0.8 evidence supports a real extraction mechanic.
+Do not invent extraction solely because the endpoint has an outcome field.
+If no active extraction exists, document:
+EXTRACTION_NOT_SUPPORTED_BY_V08
+and reject it fail-closed.
+Workstream 4 — Canonical duration
+Define canonical run duration.
+Audit whether existing infrastructure already tracks:
+server start time;
+checkpoint timestamps;
+monotonic elapsed time;
+pause time;
+disconnected time;
+client-reported gameplay time.
+Prefer server-derived duration based on persisted timestamps.
+Document:
+start timestamp;
+final timestamp;
+precision;
+pause/disconnect treatment;
+maximum allowed duration;
+clock-skew behavior;
+retry behavior.
+Client-reported duration may be telemetry only unless source evidence requires otherwise.
+Exact retry must reproduce the original finalized duration.
+Workstream 5 — Canonical score
+Implement one versioned score projector:
+deriveFinalScoreV08(...)
+or equivalent.
+It must be the only canonical source for leaderboard score.
+Audit and include only confirmed v0.8 components.
+Potential inputs must be validated from source evidence:
+depth;
+victory/defeat;
+gold;
+elites;
+bosses;
+lives remaining;
+relic/build state;
+mutators;
+duration;
+room outcomes;
+challenge modifiers.
+Do not invent score bonuses.
+Requirements
+explicit score version;
+deterministic calculation;
+explicit calculation order;
+explicit rounding;
+integer final score;
+bounded numeric range;
+no client-provided score;
+property tests for overflow and negative inputs;
+exact retry stability;
+restart stability.
+If v0.8 has no complete existing score formula, stop and report the unresolved components rather than designing a new scoring system without user approval.
+Workstream 6 — Final summary projection
+Build canonical immutable final projections.
+Build summary
+Include where applicable:
+relic IDs and stacks;
+rarity;
+slot usage and limit;
+run modifiers;
+skill tiers;
+elixirs;
+canonical build digest.
+Do not include assets, HTML or presentation strings.
+Run summary
+Include where confirmed:
+outcome;
+final depth;
+score;
+gold earned/spent/final;
+duration;
 lives;
-victory/defeat policy;
-extract policy.
-If current real ruleset finalization lacks those canonical values, keep the documented provisional/local behavior and record the M3 dependency.
-Workstream 6 — Real HTTP/Wrangler/D1 E2E
-Add real local E2E coverage using v08-meta-1.
+rooms completed;
+bosses;
+elites;
+relevant transaction counts;
+ruleset ID/hash;
+score version.
+Separate:
+private/internal summary;
+public leaderboard summary;
+detailed leaderboard build projection.
+Do not expose private anti-abuse or anomaly internals.
+Workstream 7 — Atomic finalize
+Replace REAL_RULESET_FINALIZATION_REQUIRES_M3 with real canonical finalization.
+A successful finalize must atomically:
+authenticate the current boundary token;
+verify run/ruleset/hash/revision/state digest;
+verify canonical terminal eligibility;
+reject unfinished blocking offers or transactions where required;
+derive outcome;
+freeze duration;
+derive final score;
+create immutable final build summary;
+create immutable run summary;
+mark run finalized;
+create exactly one leaderboard entry;
+write compact idempotency v2 history;
+persist all changes atomically.
+No partial state may remain after failure.
+Exact retry
+Exact finalize retry must return the original:
+status;
+outcome;
+score;
+duration;
+final revision;
+leaderboard entry identity;
+build summary;
+run summary.
+It must not recalculate using current time or latest state.
+Conflicting retry
+The same operation ID with another payload or claimed outcome must fail as a conflicting retry.
+Post-finalization
+Reject:
+further checkpoints;
+further events;
+further transactions;
+second finalization with a different request;
+build mutations.
+Workstream 8 — Leaderboard publication
+Use the existing leaderboard tables and endpoint contracts.
+Do not introduce accounts or profiles.
+Ensure:
+exactly one entry per finalized run;
+score comes only from canonical score projection;
+outcome comes only from canonical state;
+ruleset ID/hash is persisted;
+score version is persisted or reconstructible;
+build summary is immutable;
+public details do not trust client JSON;
+leaderboard retry does not create duplicates;
+concurrent finalize creates at most one entry.
+Audit cursor and ordering behavior.
+Define tie-breaking deterministically using existing schema capabilities.
+Do not silently change public leaderboard ordering without documentation and tests.
+Workstream 9 — Real HTTP/Wrangler/D1 lifecycle
+Extend the real-ruleset E2E suite.
 Required scenarios include:
-Bootstrap start
-start creates AWAITING_STARTING_RELIC;
-response contains a bootstrap token;
-response does not require room directive fields;
-exact start retry is equivalent;
-conflicting start retry is rejected;
-restart preserves start retry.
-Starting relic
-legal starting choice;
-invalid choice;
-fake relic ID;
-fake build payload;
-wrong offer ID;
-wrong bootstrap nonce;
-stale revision;
-wrong ruleset hash;
-room token used as bootstrap token;
-bootstrap token used as room token;
-exact selection retry;
-conflicting selection retry;
-retry after Worker restart;
-first directive remains identical.
-Atomicity
-failed relic selection leaves offer unconsumed;
-failed directive generation rolls back relic acquisition;
-failed persistence leaves no partial revision;
-duplicate request creates only one first directive;
-concurrent conflicting choices commit at most one result.
-Real lifecycle
-first room checkpoint;
-next sequential room;
-relic reward;
-replacement transaction;
-fallback reward;
-Merchant;
-Forge Temper;
-Forge Transmute;
-Crossroads;
-Camp;
-Pact;
-restart during run;
-compact retry within ring;
-explicit error outside retained ring;
-atomic finalize;
+Lives
+initial lives;
+ordinary room without life loss;
+life loss;
+prevented death, if supported;
+life gain, if supported;
+nonterminal death;
+terminal defeat;
+fake client lives rejected/ignored;
+exact retry;
+restart persistence.
+Victory
+premature victory rejected;
+final-depth requirements;
+final boss completion;
+valid victory eligibility;
+valid victory finalization.
+Extraction
+valid extraction, if supported;
+invalid extraction;
+extraction explicitly rejected when unsupported.
+Finalization
+nonterminal finalize rejected;
+pending blocking transaction rejected;
+valid defeat finalize;
+valid victory finalize;
+valid extraction finalize, if supported;
 exact finalize retry;
-leaderboard entry created once.
-Fail-closed registry
-unknown ruleset ID;
-unknown hash;
-mismatched ID/hash;
-production activation rejected;
-fixture ruleset cannot silently replace the real ruleset.
-Use real Wrangler and D1 for persistence-specific tests.
-Do not replace them with mocks.
+conflicting retry;
+retry after Worker restart;
+concurrent duplicate finalize;
+concurrent conflicting finalize;
+rollback after simulated D1 failure;
+no partial leaderboard entry.
+Scoring
+deterministic score;
+score modifier behavior;
+rounding boundary;
+overflow boundary;
+fake client score ignored;
+same canonical run gives same score after restart.
+Leaderboard
+entry created exactly once;
+public summary matches canonical final state;
+details match canonical build;
+ordering and tie-break;
+cursor remains valid;
+finalized run cannot mutate;
+unknown ruleset/hash fail closed.
+Use real local Wrangler and D1 for persistence and concurrency cases.
 Internal commits
-Use separate local commits.
-M2B.1
-Implement authenticated Online v3 run bootstrap boundary
+Use larger logical commits.
+M3.1
+Implement Online v3 canonical lives and outcome state
 Contains:
-canonical bootstrap state;
-bootstrap token type;
-verification;
-pure-domain transitions;
-unit/property tests.
-M2B.2
-Add Online v3 starting relic bootstrap transition
+source audit;
+lives ledger;
+outcome state machine;
+pure-domain tests.
+M3.2
+Implement Online v3 canonical duration and scoring
 Contains:
-authenticated starting selection;
-atomic first-directive generation;
+duration policy;
+score projector;
+final projections;
+golden/property tests.
+If the score formula is unresolved, stop before this commit and report the exact missing evidence.
+M3.3
+Implement atomic Online v3 real-ruleset finalization
+Contains:
+finalize domain transition;
 compact retry reconstruction;
-concurrency/restart tests.
-M2B.3
-Wire v08-meta-1 into local Worker runtime
+post-finalization guards;
+Worker runtime integration.
+M3.4
+Publish canonical Online v3 leaderboard results
 Contains:
-start/event/checkpoint/finalize dispatch;
-local release-candidate routing;
-HTTP contract tests.
-M2B.4
-Add real ruleset Wrangler and D1 lifecycle tests
+leaderboard persistence;
+public summary/details;
+duplicate/concurrency protection;
+ordering tests.
+M3.5
+Add Online v3 finalization Wrangler and D1 lifecycle coverage
 Contains:
-full real-ruleset E2E;
-persistence;
+real HTTP/D1 finalization scenarios;
 restart;
 concurrency;
 rollback;
-finalize coverage.
+scoring and leaderboard E2E.
 Final documentation
-Complete Online v3 authenticated runtime milestone
+Complete Online v3 run finalization milestone
 Contains only:
-handoff;
-M2B documentation;
+M3 documentation;
+short handoff update;
 CURRENT status;
-no runtime changes.
-Do not squash previous M2 commits.
+no runtime code.
 Allowed paths
 Only where required:
 cloudflare/leaderboard-v3/src/**;
-Worker/ruleset tests;
-Wrangler/D1 local test harness;
-token and HTTP contract schemas;
-generated manifests only when source inputs genuinely change;
-scripts/verify-online-v3.mjs only when registering stable tests;
-relevant package scripts;
+Worker and ruleset tests;
+real Wrangler/D1 test harness;
+leaderboard contracts and projections;
+generated ruleset data only if canonical source inputs change;
+verification registration where necessary;
 docs/ONLINE_V3_*;
 docs/tasks/CURRENT.md;
 ONLINE_V3_HANDOFF.md.
 Out of scope
-Do not modify:
-game client;
+Do not implement:
+game-client integration;
 game.js;
-index.html;
-CSS;
-rendering;
-audio;
-HUD;
-cheat menu;
-Observer Bot;
-special rooms;
 Ranked UI;
-client networking;
-leaderboard UI;
-final score design;
-lives;
-victory/defeat/extract design;
-accounts/profile systems;
+loading screen;
+reward UI;
+network client;
+accounts;
+profiles;
+global unlock synchronization;
 production activation;
-production D1;
-Cloudflare deployment;
-Pages integration;
-protected Vault Guardian WIP.
-Do not start M3.
+remote D1 migration;
+deployment;
+Cloudflare Pages integration;
+anti-cheat beyond existing authority model;
+new gameplay mechanics;
+redesigned score not evidenced by v0.8;
+M4 client integration.
+Do not touch protected Vault Guardian WIP.
 Stop conditions
 Stop instead of guessing if:
-bootstrap cannot be represented without breaking existing token security;
-starting relic selection requires client changes;
-the first directive cannot be deterministically retained for retry;
-exact retry would depend on latest mutable state;
-existing endpoint schemas cannot safely distinguish bootstrap from room operations;
-real finalization requires unresolved M3 rules;
+v0.8 has no unambiguous score formula;
+life-loss behavior cannot be derived canonically;
+victory conditions are ambiguous;
+extraction is not confirmed;
+duration semantics require client authority;
+finalization needs game-client changes;
+leaderboard schema cannot retain required immutable data safely;
 a destructive D1 migration is required;
-production activation would be enabled;
-protected WIP would be touched.
+protected WIP would be touched;
+production activation would become possible.
+A documented partial M3 is preferable to invented scoring or outcome rules.
 Verification
 During development:
 npm run verify:fast
-Before each internal commit, run targeted tests.
+Before every internal commit, run targeted tests.
 Before milestone completion:
 npm run verify:phase
 npm run verify:baseline
 npm run verify:full
 git diff --check
 Final verification must include:
-bootstrap token tests;
-token-kind separation;
-exact/conflicting retry;
-compact v2 reconstruction;
-Worker restart;
-concurrent starting choices;
+source-evidence completeness;
+lives ledger;
+terminal-state invariants;
+duration determinism;
+score golden fixtures;
+score property tests;
+exact/conflicting finalize retry;
+restart;
+concurrency;
 atomic rollback;
-real ruleset HTTP contracts;
+leaderboard uniqueness;
 real Wrangler/D1 lifecycle;
 registry fail-closed;
-all existing ruleset fixtures/property tests;
+all existing ruleset tests;
 protected-files guard;
 headed baseline smoke.
 Acceptance criteria
-M2B is complete only when:
-a real run starts without a fake room directive;
-the run enters an explicit pre-room bootstrap state;
-the starting relic is selected through an authenticated canonical operation;
-the transition is atomic;
-the first room directive is deterministic;
-exact retry reproduces the original first directive and token;
+M3 is complete only when:
+lives are canonical and server-derived;
+victory and defeat eligibility are canonical;
+extraction is either implemented from evidence or explicitly unsupported;
+duration is deterministic and frozen at finalization;
+score is versioned and derived only from canonical state;
+final build and run summaries are immutable;
+finalize is atomic;
+exact retry reproduces the original final result;
 conflicting retry is rejected;
-retry survives Worker restart;
-existing local endpoints execute the real ruleset;
-the exact ruleset hash remains bound to the run;
-production activation remains blocked;
-real HTTP/Wrangler/D1 lifecycle passes;
-fixture tests remain available explicitly;
+concurrent finalize creates at most one result;
+exactly one leaderboard entry exists per finalized run;
+finalized runs cannot mutate;
+real HTTP/Wrangler/D1 finalization passes;
+production remains blocked;
 game/client remain untouched;
 protected 172-path WIP has zero delta;
 all verification commands pass;
 no push or deployment occurred.
 Final report
 Report concisely:
-M2B commit hashes;
-bootstrap state model;
-bootstrap token version and fields;
-token-kind separation;
-starting relic transition;
-first-directive generation;
-exact retry reconstruction;
-concurrency result;
-restart result;
-real endpoints wired;
+M3 commit hashes;
+canonical lives rules;
+outcome state machine;
+victory requirements;
+defeat requirements;
+extraction status;
+duration policy;
+score formula and version;
+score source evidence;
+final build/run projections;
+finalize atomicity;
+retry and concurrency results;
+leaderboard uniqueness;
 real E2E scenario count;
-ruleset state and hash;
+ruleset hash before/after;
 verify:phase;
 verify:baseline;
 verify:full;
-protected WIP delta;
+protected WIP fingerprint/delta;
 confirmation that game/client/production were untouched;
-remaining M3 dependency.
+next recommended milestone without starting it.
 After the final documentation commit, stop.
-Do not push, deploy or begin M3.
+Do not push, deploy or begin M4.

@@ -166,6 +166,44 @@
   smoke PASS; full 647/647 PASS including local Wrangler/D1 14/14;
   `git diff --check` PASS.
 
+## Milestone M3
+
+- M3 canonical run completion is complete locally in `d7a0071`, `ee2de2c`,
+  `6b01106`, `61a0f89`, and `d042f53`.
+- Active v0.8 evidence is recorded in `docs/ONLINE_V3_M3_SOURCE_AUDIT.md`;
+  no score, lives, outcome, extraction or duration rule came from Ranked v2 or
+  a client claim.
+- Lives start and cap at 5. Chrono Loop and Second Chance precede one canonical
+  life loss; a zero-life loss creates defeat eligibility. Victory requires the
+  accepted depth-100 final directive and settled reward. Confirmed normal and
+  emergency extraction policies create extraction eligibility.
+- `server-wall-clock-v1` freezes duration from persisted Worker timestamps.
+  `v08-score-1` uses only accepted maximum depth, cumulative canonical earned
+  gold, and the confirmed five-depth milestone term.
+- A dedicated signed `run_terminal` boundary replaces any need for a synthetic
+  room. Finalization accepts only run ID and the opaque token, derives every
+  result server-side, and commits the finalized run plus exactly one
+  leaderboard entry in one D1 batch.
+- Exact retry survives restart and reconstructs the original result.
+  Conflicting/stale retries fail, concurrent finalizers publish at most one
+  row, D1 failure rolls back both effects, and finalized runs cannot mutate.
+- Public leaderboard order remains score descending, creation time ascending,
+  run ID ascending. Cursor, compact list and frozen public detail share those
+  canonical projections and expose no client identity, token, recent ops or
+  canonical state.
+- M3 has 36 golden fixtures, 512 explicit property cases, and 11 targeted real
+  Wrangler/D1 lifecycle scenarios.
+- Ruleset hash changed from
+  `sha256:58528474cf072fbeddfc68a29c1eda00414996cd8fb4ea2871e0b954a1f95276`
+  to
+  `sha256:08f023da2700e76e862d7adec7045dc8aa6e931b5c97976d955182aa19f2cebb`.
+- Final verification: phase 656/656 PASS; baseline guard 3/3 plus headed smoke
+  PASS; full 678/678 PASS including local Wrangler/D1 19/19;
+  `git diff --check` PASS.
+- Game/client, D1 schema/migration, compact `recent_ops`, production
+  activation, deployment configuration, staging and production remain
+  unchanged. M4 is not started.
+
 ## Verification
 
 - npm run verify:fast
