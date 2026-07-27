@@ -84,7 +84,9 @@ function createRealHarness(options = {}) {
       gameVersion: "0.8.1",
       rulesetId: "v08-meta-1",
       rulesetHash: manifest.rulesetHash,
-      clientInstallIdHash: "install_0123456789abcdef"
+      clientInstallIdHash: "install_0123456789abcdef",
+      profileId: "profile_0123456789abcdef0123456789abcdef",
+      profileCredential: "ppppppppppppppppppppppppppppppppppppppppppp"
     }, `${prefix}-start`)).payload;
     let session = (await call("/api/v3/runs/event", {
       runId: started.runId,

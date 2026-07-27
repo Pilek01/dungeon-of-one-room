@@ -79,7 +79,8 @@ export async function createAuthenticatedRunBootstrap(input, context) {
     "RUN_BOOTSTRAP_NONCE_REQUIRED"
   );
   const canonical = await ruleset.createRun({
-    startDepth: 0
+    startDepth: 0,
+    profileState: context.profileState || null
   }, {
     runId,
     season: requireText(input?.season, "SEASON_REQUIRED"),
@@ -105,24 +106,33 @@ export async function createAuthenticatedRunBootstrap(input, context) {
       input?.clientInstallIdHash,
       "CLIENT_INSTALL_ID_HASH_REQUIRED"
     ),
-    bootstrapBoundary: {
-      boundaryVersion: 1,
-      status: "awaiting_selection",
-      bootstrapNonce,
-      startingOfferId: canonical.pendingOffer?.offerId || "",
-      issuedRevision: canonical.revision
-    },
+    profileId: context.profileId || null,
+    bootstrapBoundary: canonical.status === "awaiting_starting_relic"
+      ? {
+          boundaryVersion: 1,
+          status: "awaiting_selection",
+          bootstrapNonce,
+          startingOfferId: canonical.pendingOffer?.offerId || "",
+          issuedRevision: canonical.revision
+        }
+      : null,
     journalDigest: "",
     anomalyScore: 0,
     expiresAt: now + RUN_TTL_MS,
     finalizedAt: null,
     outcome: null
   };
-  assertAwaitingRunBootstrap(nextState);
+  if (nextState.status === "awaiting_starting_relic") {
+    assertAwaitingRunBootstrap(nextState);
+  } else if (nextState.status !== "active" || !nextState.currentRoomDirective) {
+    throw new TypeError("RUN_START_PROFILE_STATE_INVALID");
+  }
   return {
     nextState,
     response: {
-      acceptedBoundary: "run_bootstrap_created"
+      acceptedBoundary: nextState.status === "active"
+        ? "run_profile_loaded"
+        : "run_bootstrap_created"
     },
     storageEffects: [{ type: "insert_run" }]
   };

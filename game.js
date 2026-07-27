@@ -14089,8 +14089,8 @@
     // Unlocks persist between runs within the same session.
     // Full reset happens in resetMetaProgressForFreshStart() on game over.
 
+    applyCampUpgradesToRun();
     if (!state.onlineV3Ranked) {
-      applyCampUpgradesToRun();
       applyMutatorsToRun();
       applyPersistentPactsToRun();
     }
@@ -32781,6 +32781,14 @@
       state.onlineV3Ranked = true;
       state.onlineV3Directive = directive;
       state.onlineV3NextDirective = null;
+      state.campUpgrades = sanitizeCampUpgrades(publicState?.build?.campUpgrades || {});
+      state.skillTiers = sanitizeSkillTiers(publicState?.build?.skillTiers || {});
+      const canonicalElixir = Array.isArray(publicState?.build?.elixirs)
+        ? publicState.build.elixirs[0]
+        : null;
+      state.elixirLoadout = sanitizeElixirLoadout(canonicalElixir
+        ? { type: canonicalElixir.elixirId, charges: canonicalElixir.charges }
+        : {});
       const carriedRelics = (publicState?.build?.relics || []).flatMap((relic) =>
         Array.from({ length: Math.max(1, Number(relic.stacks) || 1) }, () => String(relic.relicId || relic.id || ""))
       ).filter(Boolean);

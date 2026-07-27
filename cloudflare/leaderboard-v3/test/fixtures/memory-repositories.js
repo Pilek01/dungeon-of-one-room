@@ -13,6 +13,7 @@ export function createMemoryRepositories() {
   const runRows = new Map();
   const startKeys = new Map();
   const leaderboardRows = new Map();
+  const profileRows = new Map();
   const metrics = {
     reads: 0,
     writes: 0,
@@ -83,6 +84,33 @@ export function createMemoryRepositories() {
       return true;
     },
 
+    async updateWithProfileAtomic(
+      state,
+      expectedRevision,
+      metadata,
+      profile,
+      expectedProfileRevision
+    ) {
+      metrics.batches += 1;
+      metrics.writes += 2;
+      metrics.statements.push("batch_update_run", "batch_update_profile");
+      const current = runRows.get(state.runId);
+      const currentProfile = profileRows.get(profile.profileId);
+      if (
+        !current ||
+        !currentProfile ||
+        current.state.revision !== expectedRevision ||
+        current.state.status !== (metadata.expectedStatus || "active") ||
+        currentProfile.revision !== expectedProfileRevision ||
+        metadata.expectedStateDigest !== undefined &&
+          current.stateDigest !== metadata.expectedStateDigest
+      ) {
+        return false;
+      }
+      storeRun(state, metadata);
+      profileRows.set(profile.profileId, clone(profile));
+      return true;
+    },
     async finalizeAtomic(state, expectedRevision, metadata, leaderboardEntry) {
       metrics.batches += 1;
       metrics.writes += 2;
@@ -107,6 +135,40 @@ export function createMemoryRepositories() {
     }
   };
 
+  const profiles = {
+    async get(profileId) {
+      metrics.reads += 1;
+      metrics.statements.push("read_profile");
+      return clone(profileRows.get(profileId) || null);
+    },
+
+    async insert(profile) {
+      metrics.writes += 1;
+      metrics.statements.push("insert_profile");
+      if (profileRows.has(profile.profileId)) {
+        throw new Error("PROFILE_CONFLICT");
+      }
+      profileRows.set(profile.profileId, clone(profile));
+      return true;
+    },
+
+    async updateConditional(profile, expectedRevision) {
+      metrics.writes += 1;
+      metrics.statements.push("conditional_update_profile");
+      const current = profileRows.get(profile.profileId);
+      if (!current || current.revision !== expectedRevision) return false;
+      profileRows.set(profile.profileId, clone(profile));
+      return true;
+    },
+
+    async countActiveRuns(profileId, now) {
+      return [...runRows.values()].filter((row) =>
+        row.state.profileId === profileId &&
+        !["finalized", "abandoned"].includes(row.state.status) &&
+        row.state.expiresAt > now
+      ).length;
+    }
+  };
   const leaderboard = {
     async list(season, options = {}) {
       metrics.reads += 1;
@@ -147,6 +209,7 @@ export function createMemoryRepositories() {
 
   return {
     runs,
+    profiles,
     leaderboard,
     metrics,
     resetMetrics() {
@@ -157,6 +220,9 @@ export function createMemoryRepositories() {
     },
     snapshotRun(runId) {
       return runs.peek(runId);
+    },
+    snapshotProfile(profileId) {
+      return clone(profileRows.get(profileId) || null);
     },
     leaderboardCount() {
       return leaderboardRows.size;

@@ -44,24 +44,25 @@ function runValues(state, stateDigest, recentOps) {
   ];
 }
 
-export function createD1RunRepository(db, leaderboardRepository) {
+export function createD1RunRepository(db, leaderboardRepository, profileRepository) {
   return {
     async insert(state, metadata) {
       const directive = state.roomDirective || state.currentRoomDirective;
       try {
         await db.prepare(`
           INSERT INTO ranked_runs (
-            run_id, season, protocol_version, ruleset_hash, status, revision,
+            run_id, profile_id, season, protocol_version, ruleset_hash, status, revision,
             player_name, depth, room_index, room_directive_id, room_type,
             room_nonce, gold, lives, canonical_state_json, state_digest,
             journal_digest, recent_ops_json, anomaly_score, started_at,
             updated_at, expires_at, finalized_at, outcome,
             start_idempotency_key, start_request_digest
           ) VALUES (
-            ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+            ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
           )
         `).bind(
           state.runId,
+          state.profileId || null,
           state.season,
           state.protocolVersion,
           state.rulesetHash,
@@ -139,6 +140,39 @@ export function createD1RunRepository(db, leaderboardRepository) {
       return changes(result) === 1;
     },
 
+    async updateWithProfileAtomic(
+      state,
+      expectedRevision,
+      metadata,
+      profile,
+      expectedProfileRevision
+    ) {
+      if (!profileRepository) throw new TypeError("PROFILE_REPOSITORY_REQUIRED");
+      const updateRun = db.prepare(`
+        UPDATE ranked_runs SET
+          season = ?, protocol_version = ?, ruleset_hash = ?, status = ?,
+          revision = ?, player_name = ?, depth = ?, room_index = ?,
+          room_directive_id = ?, room_type = ?, room_nonce = ?, gold = ?,
+          lives = ?, canonical_state_json = ?, state_digest = ?,
+          journal_digest = ?, recent_ops_json = ?, anomaly_score = ?,
+          updated_at = ?, expires_at = ?, finalized_at = ?, outcome = ?
+        WHERE run_id = ? AND revision = ? AND status = ?
+          AND (? IS NULL OR state_digest = ?)
+      `).bind(
+        ...runValues(state, metadata.stateDigest, metadata.recentOps),
+        state.runId,
+        expectedRevision,
+        metadata.expectedStatus || "active",
+        metadata.expectedStateDigest ?? null,
+        metadata.expectedStateDigest ?? null
+      );
+      const updateProfile = profileRepository.prepareConditionalUpdate(
+        profile,
+        expectedProfileRevision
+      );
+      const results = await db.batch([updateRun, updateProfile]);
+      return changes(results[0]) === 1 && changes(results[1]) === 1;
+    },
     async finalizeAtomic(state, expectedRevision, metadata, leaderboardEntry) {
       const update = db.prepare(`
         UPDATE ranked_runs SET

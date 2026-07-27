@@ -46,6 +46,31 @@
     return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0")).join("");
   }
 
+  function base64Url(bytes) {
+    let binary = "";
+    for (const value of bytes) binary += String.fromCharCode(value);
+    return btoa(binary).replaceAll("+", "-").replaceAll("/", "_").replace(/=+$/u, "");
+  }
+
+  function ensureProfileIdentity(store, options) {
+    const current = store.loadProfile?.() || options.profileIdentity;
+    if (
+      current &&
+      /^profile_[a-f0-9]{32}$/u.test(String(current.profileId || "")) &&
+      /^[A-Za-z0-9_-]{43,128}$/u.test(String(current.profileCredential || ""))
+    ) {
+      return current;
+    }
+    const cryptoProvider = options.cryptoProvider || globalThis.crypto;
+    const randomUUID = options.randomUUID || (() => cryptoProvider.randomUUID());
+    const profile = {
+      profileId: `profile_${randomUUID().replaceAll("-", "")}`,
+      profileCredential: base64Url(cryptoProvider.getRandomValues(new Uint8Array(32)))
+    };
+    store.saveProfile?.(profile);
+    options.profileIdentity = profile;
+    return profile;
+  }
   function createLeaderboardClient(options = {}) {
     const transport = options.transport || transportApi.createTransport(options);
 
@@ -118,13 +143,16 @@
 
     async function start(input) {
       const operationId = input.operationId || transport.createOperationId();
+      const profile = ensureProfileIdentity(store, options);
       const body = {
         playerName: String(input.playerName || "Anonymous"),
         season: String(input.season || "local-m4"),
         gameVersion: String(input.gameVersion || "v0.8.0"),
         rulesetId: protocol.RULESET_ID,
         rulesetHash: protocol.RULESET_HASH,
-        clientInstallIdHash: String(input.clientInstallIdHash)
+        clientInstallIdHash: String(input.clientInstallIdHash),
+        profileId: profile.profileId,
+        profileCredential: profile.profileCredential
       };
       persist({
         schemaVersion: 1,
@@ -140,8 +168,7 @@
       const result = await transport.request(protocol.ENDPOINTS.start, { operationId, body });
       const validated = protocol.validateMutationResponse(result.payload, {
         rulesetId: protocol.RULESET_ID,
-        rulesetHash: protocol.RULESET_HASH,
-        tokenKind: protocol.TOKEN_KINDS.bootstrap
+        rulesetHash: protocol.RULESET_HASH
       });
       persist({
         ...snapshot,
@@ -239,6 +266,26 @@
       });
     }
 
+    async function camp(action, input = {}, operationId = transport.createOperationId()) {
+      const profile = ensureProfileIdentity(store, options);
+      const body = {
+        profileId: profile.profileId,
+        profileCredential: profile.profileCredential,
+        rulesetId: protocol.RULESET_ID,
+        rulesetHash: protocol.RULESET_HASH,
+        clientProtocolVersion: protocol.PROTOCOL_VERSION,
+        action,
+        ...(action === "commit"
+          ? { transactionId: String(input.transactionId), choiceId: String(input.choiceId) }
+          : {})
+      };
+      const result = await transport.request(protocol.ENDPOINTS.camp, { operationId, body });
+      if (!result.payload || result.payload.ok !== true || !result.payload.profile) {
+        throw new TypeError("RANKED_CAMP_RESPONSE_INVALID");
+      }
+      return clone(result.payload);
+    }
+
     async function retryPending() {
       const pending = requireSnapshot().pendingOperation;
       if (!pending) throw new TypeError("RANKED_PENDING_OPERATION_MISSING");
@@ -275,6 +322,7 @@
       event,
       checkpoint,
       finalize,
+      camp,
       retryPending,
       getSnapshot: () => clone(snapshot),
       clear: () => {

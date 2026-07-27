@@ -22,6 +22,7 @@
   let leaderboardCursor = null;
   let startedAt = 0;
   let pendingRoomSummary = null;
+  let extractedProfileReady = false;
   const recoveryStore = root.DungeonRankedV3Storage.createStore(root.localStorage);
   const recoveryAtBoot = recoveryStore.loadSession();
 
@@ -370,11 +371,42 @@
     await continueBoundary(response.metaState);
   }
 
+  function presentCampOffer(response) {
+    const offer = response.metaTransactionOffer;
+    const choices = Array.isArray(offer?.choices) ? offer.choices : [];
+    if (!choices.length) {
+      ui.showMessage("Ranked Camp", "No canonical Camp actions are currently available.", [
+        ui.button("Leave Camp", () => { client.clear(); ui.hide(); })
+      ]);
+      return;
+    }
+    ui.showChoices(
+      "Ranked Camp",
+      `Canonical Camp Gold: ${Number(response.profile?.campGold) || 0}.`,
+      choices.filter((choice) => choice.status === "available"),
+      async (choiceId) => {
+        try {
+          const choice = choices.find((entry) => entry.choiceId === choiceId);
+          if (!choice) throw new TypeError("RANKED_CAMP_CHOICE_INVALID");
+          ui.setStatus("Committing canonical Camp choice...");
+          await createClient().camp("commit", {
+            transactionId: choice.transactionId,
+            choiceId
+          });
+          await openCamp();
+        } catch (error) {
+          presentError(error);
+        }
+      }
+    );
+    ui.overlay.querySelector(".ranked-v3-actions")?.append(
+      ui.button("Leave Camp", () => { client.clear(); ui.hide(); })
+    );
+  }
+
   async function openCamp() {
     ui.setStatus("Opening canonical Camp session...");
-    await createClient().event("begin_camp_session", {});
-    const response = await createClient().event("open_camp_offer", {});
-    await continueBoundary(response.metaState);
+    presentCampOffer(await createClient().camp("open"));
   }
 
   async function continueBoundary(state) {
@@ -439,9 +471,8 @@
       return;
     }
     session.transition(root.DungeonRankedV3Session.STATES.offer);
-    ui.showMessage("Room cleared", "Choose the next canonical boundary.", [
-      ui.button("Resolve checkpoint", () => resolveCheckpoint().catch(presentError)),
-      ui.button("Visit Camp", () => openCamp().catch(presentError))
+    ui.showMessage("Room cleared", "Resolve the canonical checkpoint to continue.", [
+      ui.button("Resolve checkpoint", () => resolveCheckpoint().catch(presentError))
     ]);
   }
 
@@ -462,12 +493,18 @@
 
   function acceptFinal(response) {
     session.transition(root.DungeonRankedV3Session.STATES.finalized);
+    const controls = extractedProfileReady
+      ? [
+          ui.button("Open Camp", () => openCamp().catch(presentError)),
+          ui.button("Close", () => { client.clear(); ui.hide(); })
+        ]
+      : [ui.button("Close", () => { client.clear(); ui.hide(); })];
     ui.showMessage(
       "Ranked run finalized",
       `Score ${Number(response.score) || 0}. One canonical leaderboard result was published.`,
-      [ui.button("Close", () => ui.hide())]
+      controls
     );
-    client.clear();
+    if (!extractedProfileReady) client.clear();
   }
 
   async function onFatalEvent() {
@@ -507,6 +544,7 @@
       session.transition(root.DungeonRankedV3Session.STATES.resolving);
       ui.showMessage("Requesting extraction", "Waiting for canonical outcome and gold conversion...");
       const response = await createClient().event("request_extraction", { mode });
+      extractedProfileReady = response.metaState?.status === "extraction" && Boolean(response.profile);
       session.transition(root.DungeonRankedV3Session.STATES.terminal);
       showTerminal(response.metaState);
     } catch (error) {

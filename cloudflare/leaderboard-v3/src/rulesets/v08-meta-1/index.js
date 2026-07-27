@@ -57,7 +57,12 @@ import {
   deriveFinalDurationV08
 } from "./leaderboard-summary.js";
 import { finalizeRunV08 } from "./finalization-policy.js";
-export {
+import {
+  createInitialProfileStateV08,
+  hydrateRunFromProfileV08,
+  profileStateFromRunV08,
+  publicProfileStateV08
+} from "./profile-policy.js";export {
   applyRelicAcquisition,
   applyRelicRemovalV08,
   assertCanonicalRelicBuildDigestV08,
@@ -203,8 +208,29 @@ export function createV08Meta1Ruleset(options = {}) {
     },
 
     async createRun(input, context) {
-      const initial = createInitialMetaStateV08(input, context);
+      let initial = createInitialMetaStateV08(input, context);
+      initial = await hydrateRunFromProfileV08(
+        initial,
+        input.profileState,
+        mergeContext(options, context)
+      );
+      if (initial.build.relics.length > 0) {
+        initial.status = "active";
+        return issueNextRoomDirectiveV08(initial, mergeContext(options, context));
+      }
       return issueStartingRelicOfferV08(initial, mergeContext(options, context));
+    },
+
+    createInitialProfileState(state, profileId) {
+      return createInitialProfileStateV08(state, profileId);
+    },
+
+    profileStateFromRun(state, profileId, profileRevision) {
+      return profileStateFromRunV08(state, profileId, profileRevision);
+    },
+
+    publicProfileState(profile) {
+      return publicProfileStateV08(profile);
     },
 
     async selectStartingRelic(state, request, context = {}) {

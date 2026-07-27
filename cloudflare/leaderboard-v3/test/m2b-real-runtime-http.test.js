@@ -59,6 +59,8 @@ function createRealHarness(options = {}) {
       rulesetId: RULESET_ID,
       rulesetHash: RULESET_HASH,
       clientInstallIdHash: "install_0123456789abcdef",
+      profileId: "profile_0123456789abcdef0123456789abcdef",
+      profileCredential: "ppppppppppppppppppppppppppppppppppppppppppp",
       ...overrides
     };
   }
@@ -470,20 +472,6 @@ test("real HTTP lifecycle reaches canonical relic and meta transaction systems",
     }
   }
 
-  await event("begin_camp_session", {});
-  await event("open_camp_offer", {});
-  const campOffer = session.metaState.metaTransactionOffer;
-  const campChoice = campOffer?.choices.find(
-    (entry) => entry.status === "available" && entry.kind === "camp_relic_sale"
-  );
-  if (campChoice) {
-    await event("commit_meta_transaction", {
-      transactionId: campChoice.transactionId,
-      choiceId: campChoice.choiceId
-    });
-    covered.add("camp");
-  }
-
   for (const system of [
     "relic_reward",
     "replacement",
@@ -491,8 +479,7 @@ test("real HTTP lifecycle reaches canonical relic and meta transaction systems",
     "forge_temper",
     "forge_transmute",
     "crossroads",
-    "pact",
-    "camp"
+    "pact"
   ]) {
     assert(covered.has(system), `real lifecycle did not reach ${system}`);
   }

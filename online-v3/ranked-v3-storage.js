@@ -12,7 +12,9 @@
   const STORAGE_KEYS = Object.freeze({
     session: `${STORAGE_PREFIX}:sessionV2`,
     installationId: `${STORAGE_PREFIX}:installationIdV2`,
-    leaderboardCache: `${STORAGE_PREFIX}:leaderboardCacheV2`
+    leaderboardCache: `${STORAGE_PREFIX}:leaderboardCacheV2`,
+    profile: `${STORAGE_PREFIX}:profileV1`,
+    writerLease: `${STORAGE_PREFIX}:writerLeaseV1`
   });
 
   function isOwnedKey(key) {
@@ -45,6 +47,21 @@
       },
       clearSession() {
         storage.removeItem(STORAGE_KEYS.session);
+      },
+      loadProfile() {
+        return deserialize(storage.getItem(STORAGE_KEYS.profile), null);
+      },
+      saveProfile(profile) {
+        storage.setItem(STORAGE_KEYS.profile, serialize(profile));
+      },
+      loadWriterLease() {
+        return deserialize(storage.getItem(STORAGE_KEYS.writerLease), null);
+      },
+      saveWriterLease(lease) {
+        storage.setItem(STORAGE_KEYS.writerLease, serialize(lease));
+      },
+      clearWriterLease() {
+        storage.removeItem(STORAGE_KEYS.writerLease);
       },
       getInstallationId(createId) {
         const current = String(storage.getItem(STORAGE_KEYS.installationId) || "");

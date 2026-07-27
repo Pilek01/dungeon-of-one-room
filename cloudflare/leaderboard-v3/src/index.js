@@ -1,6 +1,7 @@
 import {
   HMAC_SECRET_BINDING,
   PROTOCOL_VERSION,
+  PROFILE_TTL_MS,
   RECENT_OPS_LIMIT,
   TOKEN_TTL_MS
 } from "./config.js";
@@ -54,6 +55,12 @@ import {
 import { canonicalDigest } from "./security/digests.js";
 import { createD1LeaderboardRepository } from "./storage/d1-leaderboard.js";
 import { createD1RunRepository } from "./storage/d1-runs.js";
+import { createD1ProfileRepository } from "./storage/d1-profiles.js";
+import {
+  createCredentialVerifier,
+  requireRecoveryCredential,
+  timingSafeVerifierEqual
+} from "./security/credential-verifier.js";
 
 function randomIdentifier(prefix, randomUUID) {
   return `${prefix}_${randomUUID().replaceAll("-", "")}`;
@@ -86,8 +93,9 @@ function resolveRepositories(env, options) {
   if (options.repositories) return options.repositories;
   if (!env?.DB) throw new HttpError(503, "D1_UNAVAILABLE", "D1 binding is unavailable.");
   const leaderboard = createD1LeaderboardRepository(env.DB);
-  const runs = createD1RunRepository(env.DB, leaderboard);
-  return { runs, leaderboard };
+  const profiles = createD1ProfileRepository(env.DB);
+  const runs = createD1RunRepository(env.DB, leaderboard, profiles);
+  return { runs, leaderboard, profiles };
 }
 
 function resolveRuleset(env, options, requestedHash = "") {
@@ -127,8 +135,37 @@ function validateRegisteredStartBody(body) {
     rulesetId: requireString(body.rulesetId, "rulesetId", {
       maximum: 80,
       pattern: /^[A-Za-z0-9._:-]+$/u
-    })
+    }),
+    profileId: requireString(body.profileId, "profileId", {
+      maximum: 80,
+      pattern: /^profile_[a-f0-9]{32}$/u
+    }),
+    profileCredential: requireRecoveryCredential(
+      body.profileCredential,
+      "profileCredential"
+    )
   };
+}
+
+async function loadRankedProfile(body, repositories, now) {
+  if (!repositories.profiles) {
+    throw new HttpError(503, "PROFILE_STORAGE_UNAVAILABLE", "Ranked profile storage is unavailable.");
+  }
+  const verifier = await createCredentialVerifier(
+    body.profileCredential,
+    "ranked-profile-v1"
+  );
+  const existing = await repositories.profiles.get(body.profileId);
+  if (!existing) return { existing: null, verifier };
+  if (
+    existing.rulesetId !== body.rulesetId ||
+    existing.rulesetHash !== body.rulesetHash ||
+    existing.expiresAt <= now ||
+    !timingSafeVerifierEqual(existing.credentialVerifier, verifier)
+  ) {
+    throw new HttpError(401, "PROFILE_UNAUTHORIZED", "Ranked profile credential is invalid.");
+  }
+  return { existing, verifier };
 }
 
 function validateMutationEnvelope(body) {
@@ -421,6 +458,29 @@ async function persistRegisteredMutation(context, transition, repositories, opti
       context.secret
     );
   }
+  let profileMutation = null;
+  if (options.profileExtraction === true) {
+    const currentProfile = await repositories.profiles?.get(nextState.profileId);
+    if (!currentProfile) {
+      throw new HttpError(409, "PROFILE_NOT_FOUND", "Ranked profile is unavailable.");
+    }
+    const profileRevision = currentProfile.revision + 1;
+    const profileState = context.ruleset.profileStateFromRun(
+      nextState,
+      nextState.profileId,
+      profileRevision
+    );
+    profileMutation = {
+      expectedRevision: currentProfile.revision,
+      next: {
+        ...currentProfile,
+        revision: profileRevision,
+        state: profileState,
+        updatedAt: context.now,
+        expiresAt: context.now + PROFILE_TTL_MS
+      }
+    };
+  }
   const responseBody = {
     ok: true,
     ...transition.response,
@@ -428,7 +488,10 @@ async function persistRegisteredMutation(context, transition, repositories, opti
     revision: nextState.revision,
     publicStateDigest: stateDigest,
     ...(checkpointToken ? { checkpointToken } : {}),
-    metaState: publicRulesetMetaState(nextState, context.ruleset)
+    metaState: publicRulesetMetaState(nextState, context.ruleset),
+    ...(profileMutation
+      ? { profile: context.ruleset.publicProfileState(profileMutation.next.state) }
+      : {})
   };
   const operationType = options.operationType || "mutation";
   const recentOps = await appendVersionedRecentOperation(
@@ -456,23 +519,155 @@ async function persistRegisteredMutation(context, transition, repositories, opti
     expectedStateDigest: context.state.stateDigest,
     expectedStatus: context.state.status
   };
-  const persisted = options.leaderboardEntry
-    ? await repositories.runs.finalizeAtomic(
+  const persisted = profileMutation
+    ? await repositories.runs.updateWithProfileAtomic(
         nextState,
         context.state.revision,
         metadata,
-        {
-          ...options.leaderboardEntry,
-          stateDigest
-        }
+        profileMutation.next,
+        profileMutation.expectedRevision
       )
-    : await repositories.runs.updateConditional(
-        nextState,
-        context.state.revision,
-        metadata
-      );
+    : options.leaderboardEntry
+      ? await repositories.runs.finalizeAtomic(
+          nextState,
+          context.state.revision,
+          metadata,
+          {
+            ...options.leaderboardEntry,
+            stateDigest
+          }
+        )
+      : await repositories.runs.updateConditional(
+          nextState,
+          context.state.revision,
+          metadata
+        );
   if (!persisted) {
     throw new HttpError(409, "REVISION_CONFLICT", "Run changed before this operation committed.");
+  }
+  return jsonResponse(responseBody, 200);
+}
+
+function validateProfileCampBody(body) {
+  const allowed = [
+    "profileId",
+    "profileCredential",
+    "rulesetId",
+    "rulesetHash",
+    "clientProtocolVersion",
+    "action",
+    "transactionId",
+    "choiceId"
+  ];
+  if (Object.keys(body).some((field) => !allowed.includes(field))) {
+    throw new HttpError(400, "PROFILE_CAMP_REQUEST_FIELDS_INVALID", "Camp request fields are invalid.");
+  }
+  const action = requireString(body.action, "action", { maximum: 32 });
+  if (!["open", "commit", "close"].includes(action)) {
+    throw new HttpError(422, "PROFILE_CAMP_ACTION_INVALID", "Camp action is invalid.");
+  }
+  return {
+    profileId: requireString(body.profileId, "profileId", {
+      maximum: 80,
+      pattern: /^profile_[a-f0-9]{32}$/u
+    }),
+    profileCredential: requireRecoveryCredential(body.profileCredential, "profileCredential"),
+    rulesetId: requireString(body.rulesetId, "rulesetId", { maximum: 80 }),
+    rulesetHash: requireString(body.rulesetHash, "rulesetHash", { maximum: 128 }),
+    clientProtocolVersion: requireString(body.clientProtocolVersion, "clientProtocolVersion", { maximum: 64 }),
+    action,
+    ...(action === "commit"
+      ? {
+          transactionId: requireString(body.transactionId, "transactionId", { maximum: 192 }),
+          choiceId: requireString(body.choiceId, "choiceId", { maximum: 192 })
+        }
+      : {})
+  };
+}
+
+async function handleProfileCamp(request, env, options, repositories) {
+  const idempotencyKey = requireIdempotencyKey(request);
+  const body = validateProfileCampBody(await readJsonRequest(request));
+  if (body.clientProtocolVersion !== PROTOCOL_VERSION) {
+    throw new HttpError(409, "PROTOCOL_VERSION_MISMATCH", "Client protocol version is unsupported.");
+  }
+  const now = options.now();
+  const access = await loadRankedProfile(body, repositories, now);
+  const current = access.existing;
+  if (!current) throw new HttpError(404, "PROFILE_NOT_FOUND", "Ranked profile not found.");
+  if (!current.state?.lastExtractedRunId) {
+    throw new HttpError(409, "CAMP_EXTRACTION_REQUIRED", "Camp requires a canonical extraction.");
+  }
+  const extractedRun = await repositories.runs.get(current.state.lastExtractedRunId);
+  if (!extractedRun || extractedRun.status !== "finalized") {
+    throw new HttpError(409, "CAMP_FINALIZATION_REQUIRED", "Finalize the extracted run before opening Camp.");
+  }
+  const requestDigest = await canonicalDigest({
+    method: request.method,
+    path: "/api/v3/profiles/camp",
+    body
+  });
+  const replay = await replayOrConflict(current, idempotencyKey, requestDigest);
+  if (replay) return replay;
+  const ruleset = resolveRegisteredRuleset(options, current);
+  let state = structuredClone(current.state);
+  if (body.action === "open") {
+    state.revision += 1;
+    state = await ruleset.beginCampSession(state, { secret: requireSecret(env) });
+    state = await ruleset.issueCampTransactions(state, { secret: requireSecret(env) });
+  } else if (body.action === "commit") {
+    state = await ruleset.commitCampTransaction(state, {
+      transactionId: body.transactionId,
+      choiceId: body.choiceId
+    }, { secret: requireSecret(env) });
+    state.revision += 1;
+  } else {
+    if (state.pendingInventory) {
+      throw new HttpError(409, "CAMP_TRANSACTION_PENDING", "Resolve the current Camp choice before closing.");
+    }
+    state.campSession = null;
+    state.revision += 1;
+  }
+  const publicProfile = ruleset.publicProfileState(state);
+  const responseBody = {
+    ok: true,
+    protocolVersion: PROTOCOL_VERSION,
+    profileId: current.profileId,
+    revision: state.revision,
+    profile: publicProfile,
+    metaState: publicProfile,
+    metaTransactionOffer: ruleset.projectPublicCampTransactions(state)
+  };
+  const stateDigest = await canonicalDigest(state);
+  const recentOps = await appendVersionedRecentOperation(
+    current.recentOps,
+    await operationRecord({
+      idempotencyKey,
+      operationType: `profile_camp_${body.action}`,
+      requestDigest,
+      responseKind: `profile_camp_${body.action}`,
+      responseStatus: 200,
+      responseBody,
+      runId: current.profileId,
+      rulesetId: current.rulesetId,
+      rulesetHash: current.rulesetHash,
+      revisionBefore: current.revision,
+      resultingRevision: current.revision + 1,
+      stateDigest,
+      createdAt: now
+    }),
+    RECENT_OPS_LIMIT
+  );
+  const next = {
+    ...current,
+    revision: current.revision + 1,
+    state,
+    recentOps,
+    updatedAt: now,
+    expiresAt: now + PROFILE_TTL_MS
+  };
+  if (!await repositories.profiles.updateConditional(next, current.revision)) {
+    throw new HttpError(409, "PROFILE_REVISION_CONFLICT", "Ranked profile changed before Camp committed.");
   }
   return jsonResponse(responseBody, 200);
 }
@@ -488,27 +683,58 @@ async function handleRegisteredStart(request, env, options, repositories) {
     body
   });
   const now = options.now();
+  const profileAccess = await loadRankedProfile(body, repositories, now);
   const transition = await createAuthenticatedRunBootstrap(body, {
     ruleset,
     secret,
     now,
     runId: randomIdentifier("run", options.randomUUID),
-    bootstrapNonce: randomIdentifier("bootstrap", options.randomUUID)
+    bootstrapNonce: randomIdentifier("bootstrap", options.randomUUID),
+    profileId: body.profileId,
+    profileState: profileAccess.existing?.state || null
   });
   const state = transition.nextState;
   const stateDigest = await canonicalDigest(stateForDigest(state));
-  const bootstrapToken = await signBoundaryToken(
-    bootstrapTokenPayloadForState(state, stateDigest, now),
-    secret
-  );
+  let boundaryToken;
+  let boundaryField;
+  if (state.status === "awaiting_starting_relic") {
+    boundaryToken = await signBoundaryToken(
+      bootstrapTokenPayloadForState(state, stateDigest, now),
+      secret
+    );
+    boundaryField = "bootstrapToken";
+  } else {
+    boundaryToken = await signBoundaryToken(
+      roomTokenPayloadForState(state, stateDigest, now),
+      secret
+    );
+    boundaryField = "checkpointToken";
+  }
+  let profile = profileAccess.existing;
+  if (!profile) {
+    profile = {
+      profileId: body.profileId,
+      rulesetId: body.rulesetId,
+      rulesetHash: body.rulesetHash,
+      credentialVerifier: profileAccess.verifier,
+      revision: 0,
+      state: ruleset.createInitialProfileState(state, body.profileId),
+      recentOps: createRecentOperationsV2(),
+      createdAt: now,
+      updatedAt: now,
+      expiresAt: now + PROFILE_TTL_MS
+    };
+    await repositories.profiles.insert(profile);
+  }
   const responseBody = {
     ok: true,
     protocolVersion: PROTOCOL_VERSION,
     runId: state.runId,
     revision: state.revision,
-    bootstrapToken,
+    [boundaryField]: boundaryToken,
     publicStateDigest: stateDigest,
-    metaState: publicRulesetMetaState(state, ruleset)
+    metaState: publicRulesetMetaState(state, ruleset),
+    profile: ruleset.publicProfileState(profile.state)
   };
   const recentOps = await appendVersionedRecentOperation(
     createRecentOperationsV2(),
@@ -516,7 +742,7 @@ async function handleRegisteredStart(request, env, options, repositories) {
       idempotencyKey,
       operationType: "start",
       requestDigest,
-      responseKind: "run_bootstrap",
+      responseKind: state.status === "active" ? "profile_run_started" : "run_bootstrap",
       responseStatus: 201,
       responseBody,
       runId: state.runId,
@@ -550,9 +776,11 @@ async function handleRegisteredStart(request, env, options, repositories) {
   }
   return jsonResponse(responseBody, 201);
 }
-
 async function handleRegisteredEvent(request, env, options, repositories) {
   const rawBody = await readJsonRequest(request);
+  if (["begin_camp_session", "open_camp_offer"].includes(rawBody.type)) {
+    throw new HttpError(409, "CAMP_EXTRACTION_REQUIRED", "Ranked Camp is available only through an extracted profile.");
+  }
   if (rawBody.type === "select_starting_relic") {
     const body = validateBootstrapSelectionBody(rawBody);
     const context = await loadRegisteredMutationContext({
@@ -605,7 +833,8 @@ async function handleRegisteredEvent(request, env, options, repositories) {
   );
   return persistRegisteredMutation(context, transition, repositories, {
     operationType: "event",
-    responseKind: body.type
+    responseKind: body.type,
+    profileExtraction: body.type === "request_extraction"
   });
 }
 
@@ -945,6 +1174,12 @@ export function createWorker(workerOptions = {}) {
       try {
         const url = new URL(request.url);
         const repositories = resolveRepositories(env, options);
+        if (request.method === "POST" && url.pathname === "/api/v3/profiles/camp") {
+          if (!options.rulesetRegistry) {
+            throw new HttpError(404, "ROUTE_NOT_FOUND", "Route not found.");
+          }
+          return await handleProfileCamp(request, env, options, repositories);
+        }
         if (request.method === "POST" && url.pathname === "/api/v3/runs/start") {
           if (options.rulesetRegistry) {
             return await handleRegisteredStart(request, env, options, repositories);

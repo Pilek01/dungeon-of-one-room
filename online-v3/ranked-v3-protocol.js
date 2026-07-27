@@ -9,7 +9,7 @@
 
   const PROTOCOL_VERSION = "ranked-v3-checkpoint-1";
   const RULESET_ID = "v08-meta-1";
-  const RULESET_HASH = "sha256:d1f28d957244002da574180c5c9a7040d4d18deba1551a24e6597712d971b231";
+  const RULESET_HASH = "sha256:b3f6434bbc05436936d95ce99179c46cc1ebcaf584af1228f7ee4d5b1ef75731";
   const API_PREFIX = "/api/v3";
   const TOKEN_KINDS = Object.freeze({
     bootstrap: "run_bootstrap",
@@ -21,6 +21,9 @@
     checkpoint: Object.freeze({ method: "POST", path: `${API_PREFIX}/runs/checkpoint` }),
     event: Object.freeze({ method: "POST", path: `${API_PREFIX}/runs/event` }),
     finalize: Object.freeze({ method: "POST", path: `${API_PREFIX}/runs/finalize` }),
+    resume: Object.freeze({ method: "POST", path: `${API_PREFIX}/runs/resume` }),
+    abandon: Object.freeze({ method: "POST", path: `${API_PREFIX}/runs/abandon` }),
+    camp: Object.freeze({ method: "POST", path: `${API_PREFIX}/profiles/camp` }),
     leaderboard: Object.freeze({ method: "GET", path: `${API_PREFIX}/leaderboard` }),
     detail: Object.freeze({ method: "GET", path: `${API_PREFIX}/leaderboard/:runId` })
   });

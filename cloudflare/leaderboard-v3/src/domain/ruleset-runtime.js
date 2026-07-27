@@ -57,6 +57,7 @@ export function publicRulesetMetaState(state, ruleset) {
     : null;
   return {
     runId: state.runId,
+    profileId: state.profileId || null,
     protocolVersion: state.protocolVersion,
     season: state.season,
     gameVersion: state.gameVersion,
