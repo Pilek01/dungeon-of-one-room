@@ -50,10 +50,10 @@ test("M4 loads only isolated client modules while Worker source stays disconnect
     "utf8"
   );
   const startFunction = runtime.indexOf("async function startRanked()");
-  const entryHandler = runtime.indexOf('ui.entry.addEventListener("click", startRanked)');
+  const entryHandler = runtime.indexOf('ui.entry.addEventListener("click", recoveryAtBoot ? resumeRanked : startRanked)');
   assert(startFunction > 0 && entryHandler > startFunction);
   assert.match(runtime, /let client = null;/u);
-  assert.match(runtime, /ui\.entry\.addEventListener\("click", startRanked\)/u);
+  assert.match(runtime, /ui\.entry\.addEventListener\("click", recoveryAtBoot \? resumeRanked : startRanked\)/u);
 
   const workerFiles = execFileSync(
     "git",

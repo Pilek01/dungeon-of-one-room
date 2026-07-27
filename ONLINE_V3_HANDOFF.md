@@ -21,8 +21,14 @@
 - M4.3 adds one shared public-projection adapter for Warden/Otter/Arena relic
   offers, replacement, Merchant, Forge Temper/Transmute, Crossroads, Camp and
   Pact. Targeted client tests are 14/14 and `verify:fast` is 28/28 PASS.
-- Current test-only ruleset hash after the final game hook is
-  `sha256:a2f231db39d722c9d5d75e71f1d7dd14b8bdf289e7182af354e5759d481e0792`.
+- `a6c648c` integrates those canonical reward and meta-transaction surfaces.
+- M4.4 adds server-owned fatal-event, prevention, extraction and finalization
+  handling. Lost responses resume the exact persisted operation; canonical
+  terminal state stops local simulation and the published score is displayed
+  only after finalization. Targeted client tests are 17/17 and `verify:fast`
+  is 31/31 PASS.
+- Current test-only ruleset hash after the terminal hooks is
+  `sha256:d1f28d957244002da574180c5c9a7040d4d18deba1551a24e6597712d971b231`.
 - No push, deployment, production activation, D1 migration or Vault Guardian
   change has occurred.
 

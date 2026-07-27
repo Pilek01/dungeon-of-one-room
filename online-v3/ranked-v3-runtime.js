@@ -11,6 +11,8 @@
   let client = null;
   let startedAt = 0;
   let pendingRoomSummary = null;
+  const recoveryStore = root.DungeonRankedV3Storage.createStore(root.localStorage);
+  const recoveryAtBoot = recoveryStore.loadSession();
 
   function publicName() {
     return String(root.localStorage.getItem("dungeonOneRoomPlayerName") || "Anonymous").slice(0, 18);
@@ -67,6 +69,21 @@
     }
   }
 
+  function showTerminal(state) {
+    root.DungeonOnlineV3GameBridge?.holdTerminal?.(state);
+    ui.showMessage(
+      `Ranked ${state.status}`,
+      "Canonical terminal state is ready to finalize.",
+      [ui.button("Finalize", () => finalize().catch(presentError))]
+    );
+  }
+
+  async function finalize() {
+    session.transition(root.DungeonRankedV3Session.STATES.finalizing);
+    ui.setStatus("Publishing one canonical result...");
+    acceptFinal(await createClient().finalize());
+  }
+
   async function acceptResponse(response) {
     const state = response.metaState;
     if (!state || state.rulesetHash !== protocol.RULESET_HASH) {
@@ -101,6 +118,15 @@
       }
       bridge.startRanked(directive, state);
       session.transition(root.DungeonRankedV3Session.STATES.active);
+      return;
+    }
+    if (["victory", "defeat", "extraction"].includes(state.status)) {
+      session.transition(root.DungeonRankedV3Session.STATES.terminal);
+      showTerminal(state);
+      return;
+    }
+    if (state.status === "finalized") {
+      acceptFinal(response);
       return;
     }
     throw new TypeError("RANKED_RESPONSE_STATE_UNSUPPORTED");
@@ -272,16 +298,7 @@
       root.DungeonOnlineV3GameBridge.syncCanonicalProjection(state);
       if (["victory", "defeat", "extraction"].includes(state.status)) {
         session.transition(root.DungeonRankedV3Session.STATES.terminal);
-        ui.showMessage(`Ranked ${state.status}`, "Canonical terminal state is ready to finalize.", [
-          ui.button("Finalize", async () => {
-            try {
-              session.transition(root.DungeonRankedV3Session.STATES.finalizing);
-              await acceptFinal(await createClient().finalize());
-            } catch (error) {
-              presentError(error);
-            }
-          })
-        ]);
+        showTerminal(state);
         return;
       }
       const directive = directives.applyOnlineV3RoomDirective(state.currentRoomDirective);
@@ -333,13 +350,87 @@
     session.transition(root.DungeonRankedV3Session.STATES.finalized);
     ui.showMessage(
       "Ranked run finalized",
-      `Score ${Number(response.metaState?.finalScore || response.finalSummary?.score || 0)}. One canonical leaderboard result was published.`,
+      `Score ${Number(response.score) || 0}. One canonical leaderboard result was published.`,
       [ui.button("Close", () => ui.hide())]
     );
     client.clear();
   }
 
-  ui.entry.addEventListener("click", startRanked);
+  async function onFatalEvent() {
+    try {
+      session.transition(root.DungeonRankedV3Session.STATES.resolving);
+      ui.showMessage("Resolving fatal event", "The server owns lives and prevention entitlements.");
+      const previousDirectiveId = snapshot?.publicState?.currentRoomDirective?.directiveId || null;
+      const response = await createClient().event("report_fatal_event", {
+        classification: "local_fatal_event"
+      });
+      const state = response.metaState;
+      root.DungeonOnlineV3GameBridge.syncCanonicalProjection(state);
+      if (["defeat", "victory", "extraction"].includes(state.status)) {
+        session.transition(root.DungeonRankedV3Session.STATES.terminal);
+        showTerminal(state);
+        return;
+      }
+      const directive = directives.applyOnlineV3RoomDirective(state.currentRoomDirective);
+      if (previousDirectiveId && directive.directiveId === previousDirectiveId) {
+        root.DungeonOnlineV3GameBridge.resumePreventedFatal(state);
+        session.transition(root.DungeonRankedV3Session.STATES.active);
+        ui.hide();
+        return;
+      }
+      root.DungeonOnlineV3GameBridge.resumeAfterFatal(directive, state);
+      session.transition(root.DungeonRankedV3Session.STATES.next);
+      session.transition(root.DungeonRankedV3Session.STATES.active);
+      ui.hide();
+    } catch (error) {
+      presentError(error);
+    }
+  }
+
+  async function onExtraction(mode) {
+    try {
+      session.transition(root.DungeonRankedV3Session.STATES.resolving);
+      ui.showMessage("Requesting extraction", "Waiting for canonical outcome and gold conversion...");
+      const response = await createClient().event("request_extraction", { mode });
+      session.transition(root.DungeonRankedV3Session.STATES.terminal);
+      showTerminal(response.metaState);
+    } catch (error) {
+      presentError(error);
+    }
+  }
+
+  async function resumeRanked() {
+    try {
+      const saved = createClient().getSnapshot();
+      if (!saved) throw new TypeError("RANKED_SESSION_MISSING");
+      session.transition(root.DungeonRankedV3Session.STATES.retrying);
+      if (saved.pendingOperation) {
+        ui.showMessage("Recovering Ranked", "Retrying the exact interrupted action...");
+        await acceptResponse(await createClient().retryPending());
+        return;
+      }
+      const state = saved.publicState;
+      if (!state) throw new TypeError("RANKED_RECOVERY_STATE_MISSING");
+      if (state.status === "awaiting_starting_relic") {
+        await acceptResponse({ metaState: state });
+      } else if (["victory", "defeat", "extraction"].includes(state.status)) {
+        session.transition(root.DungeonRankedV3Session.STATES.terminal);
+        showTerminal(state);
+      } else if (state.relicReplacement || state.relicOffer || state.metaTransactionOffer) {
+        session.transition(root.DungeonRankedV3Session.STATES.offer);
+        await continueBoundary(state);
+      } else if (state.currentRoomDirective) {
+        await acceptResponse({ metaState: state });
+      } else {
+        throw new TypeError("RANKED_RECOVERY_BOUNDARY_UNSUPPORTED");
+      }
+    } catch (error) {
+      presentError(error);
+    }
+  }
+
+  if (recoveryAtBoot) ui.entry.textContent = "Resume Ranked Online v3";
+  ui.entry.addEventListener("click", recoveryAtBoot ? resumeRanked : startRanked);
   root.setInterval(() => {
     let phase = "";
     try {
@@ -355,6 +446,8 @@
     startRanked,
     onLocalRoomCleared,
     onRoomEntered,
+    onFatalEvent,
+    onExtraction,
     getSessionState: session.getState,
     getSnapshot: () => client?.getSnapshot() || null
   });

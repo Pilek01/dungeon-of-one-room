@@ -146,6 +146,7 @@
         throw new TypeError("RANKED_BOOTSTRAP_TOKEN_REQUIRED");
       }
       return execute(protocol.ENDPOINTS.event, {
+        endpoint: "event",
         operationId,
         body: {
           runId: current.runId,
@@ -159,6 +160,7 @@
 
     async function event(type, payload, operationId = transport.createOperationId()) {
       return execute(protocol.ENDPOINTS.event, {
+        endpoint: "event",
         operationId,
         body: roomBinding(type, payload)
       });
@@ -187,7 +189,11 @@
         }
       };
       delete body.type;
-      return execute(protocol.ENDPOINTS.checkpoint, { operationId, body });
+      return execute(protocol.ENDPOINTS.checkpoint, {
+        endpoint: "checkpoint",
+        operationId,
+        body
+      });
     }
 
     async function finalize(operationId = transport.createOperationId()) {
@@ -196,6 +202,7 @@
         throw new TypeError("RANKED_TERMINAL_TOKEN_REQUIRED");
       }
       return execute(protocol.ENDPOINTS.finalize, {
+        endpoint: "finalize",
         operationId,
         body: { runId: current.runId, checkpointToken: current.token.value }
       });

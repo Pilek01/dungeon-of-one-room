@@ -14262,6 +14262,15 @@
 
   function gameOver(reason, context = null) {
     if (state.phase !== "playing") return;
+    if (state.onlineV3Ranked) {
+      if (state.onlineV3FatalPending) return;
+      state.onlineV3FatalPending = true;
+      state.turnInProgress = true;
+      pushLog("Reporting the local fatal event to Online v3.", "warn");
+      window.DungeonOnlineV3?.onFatalEvent?.({ reason: String(reason || "") });
+      markUiDirty();
+      return;
+    }
     if (state.player.hp <= 0 && tryTriggerChronoLoop("fatal blow")) {
       return;
     }
@@ -14396,6 +14405,10 @@
     if (!forced && !isOnPortal()) return;
     if (!forced && !state.roomCleared) {
       pushLog("Clear the room before extracting.", "bad");
+      return;
+    }
+    if (state.onlineV3Ranked) {
+      window.DungeonOnlineV3?.onExtraction?.(forced ? "emergency" : "normal");
       return;
     }
     state.merchantMenuOpen = false;
@@ -32794,6 +32807,35 @@
       state.player.gold = Math.max(0, Number(publicState?.gold) || 0);
       state.lives = Math.max(0, Number(publicState?.lives) || 0);
       state.runMaxDepth = Math.max(0, Number(publicState?.maxDepth) || state.runMaxDepth);
+      markUiDirty();
+    },
+    resumeAfterFatal(directive, publicState) {
+      state.onlineV3FatalPending = false;
+      state.turnInProgress = false;
+      state.phase = "playing";
+      state.onlineV3Directive = directive;
+      state.onlineV3NextDirective = null;
+      state.player.hp = Math.max(1, Number(state.player.maxHp) || 1);
+      state.lives = Math.max(0, Number(publicState?.lives) || 0);
+      buildRoom();
+      pushLog(`Canonical life ${publicState?.lifeState?.currentLife || 1} begins.`, "good");
+      markUiDirty();
+    },
+    resumePreventedFatal(publicState) {
+      state.onlineV3FatalPending = false;
+      state.turnInProgress = false;
+      state.phase = "playing";
+      const canonicalHp = Number(publicState?.build?.resources?.hp);
+      state.player.hp = Math.max(1, Number.isFinite(canonicalHp) ? canonicalHp : Number(state.player.maxHp) || 1);
+      state.lives = Math.max(0, Number(publicState?.lives) || 0);
+      pushLog("Canonical fatal-event prevention restored the current room.", "good");
+      markUiDirty();
+    },
+    holdTerminal(publicState) {
+      state.onlineV3FatalPending = false;
+      state.turnInProgress = true;
+      state.phase = publicState?.status === "victory" ? "won" : "dead";
+      state.lives = Math.max(0, Number(publicState?.lives) || 0);
       markUiDirty();
     },
     isRanked() {
