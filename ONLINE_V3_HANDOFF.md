@@ -123,6 +123,49 @@
   authenticated pre-room offer boundary. Do not start M3 before M2 endpoint
   dispatch and real-ruleset lifecycle coverage are complete.
 
+## Milestone M2B progress
+
+- Commit `80b8edf` implements the authenticated pre-room bootstrap boundary:
+  exact v2 `run_bootstrap` tokens bind the run, ruleset ID/hash, revision,
+  starting offer, state digest and bootstrap nonce while legacy checkpoint
+  tokens remain fixture-only and are not reinterpreted.
+- The canonical bootstrap remains `awaiting_starting_relic` with its real
+  server-issued offer and no room directive, room nonce, synthetic room or
+  placeholder result.
+- M2B.1 verification: targeted token/bootstrap tests 13/13, 64 explicit
+  determinism seeds, phase 616/616, baseline guard 3/3 and headed smoke PASS.
+- Commit `90a597c` implements the immutable starting-relic bootstrap
+  transition. The client supplies only opaque offer/choice IDs; the ruleset
+  derives the relic, build and first room directive atomically.
+- M2B.2 verification: targeted bootstrap/selection tests 10/10, 64 explicit
+  selection seeds, phase 622/622, baseline guard 3/3 and headed smoke PASS.
+- Commit `87c3da9` wires the exact local-release-candidate ID/hash through the
+  existing start/event/checkpoint surface. The local Wrangler entry now uses
+  the real registry; the fixture entry remains explicit for fixture tests and
+  cannot silently replace the real ruleset.
+- Real finalization is authenticated but intentionally fail-closed with
+  `REAL_RULESET_FINALIZATION_REQUIRES_M3`; score, outcome, lives and extract
+  policy were not invented in M2B.
+- M2B.3 verification: real HTTP contracts 7/7, focused runtime/config/D1
+  contracts 11/11, phase 629/629, baseline guard 3/3 and headed smoke PASS.
+- Commit `4963754` adds real Wrangler/D1 persistence, restart, concurrency,
+  checkpoint and finalize-blocker coverage while retaining the fixture E2E as
+  a separate explicit harness.
+- Real persistence exposed and fixed canonical JSON key-order validation and
+  the incorrect use of gold-modifier IDs as the full legal Pact/Camp catalog.
+  The genuine ruleset source change updates the hash to
+  `sha256:58528474cf072fbeddfc68a29c1eda00414996cd8fb4ea2871e0b954a1f95276`.
+- M2B.4 verification: real Wrangler/D1 5/5, M2B targeted contracts 18/18,
+  phase 630/630, baseline guard 3/3 and headed smoke PASS.
+- M2B code is complete in four internal commits. Final verification and the
+  documentation-only completion commit follow this handoff update.
+- M3 remains unstarted. Its first required decision is the canonical real-run
+  finalization contract (score, outcome, lives/extract and public leaderboard
+  summary); until then real finalize remains fail-closed and non-mutating.
+- Final M2B verification: phase 630/630 PASS; baseline guard 3/3 and headed
+  smoke PASS; full 647/647 PASS including local Wrangler/D1 14/14;
+  `git diff --check` PASS.
+
 ## Verification
 
 - npm run verify:fast
