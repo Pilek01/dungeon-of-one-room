@@ -11,7 +11,7 @@ const MODE = process.argv[2];
 const MODES = new Set(["fast", "phase", "baseline", "full"]);
 const NPM_CLI = process.env.npm_execpath || path.join(path.dirname(process.execPath), "node_modules", "npm", "bin", "npm-cli.js");
 const SAFE_ROOT = ROOT.replaceAll("\\", "/");
-const CURRENT_PHASE_TEST_PREFIX = "m1-";
+const CURRENT_PHASE_TEST_PREFIX = "m4-";
 const CORE_FAST_TESTS = Object.freeze([
   "test/baseline-guard.test.js",
   "test/ruleset-manifest.test.js",
