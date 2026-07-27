@@ -7,7 +7,7 @@ workers_dev = false
 [[d1_databases]]
 binding = "DB"
 database_name = "dungeon-online-v3-production"
-database_id = "REPLACE_WITH_D1_DATABASE_ID"
+database_id = "1a9e5378-420a-4088-8f1c-6d50af5a4f17"
 migrations_dir = "migrations"
 
 [[ratelimits]]
