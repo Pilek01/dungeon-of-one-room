@@ -1,3 +1,10 @@
+import {
+  compareLeaderboardEntries,
+  decodeLeaderboardCursor,
+  encodeLeaderboardCursor,
+  isAfterLeaderboardCursor
+} from "../../src/domain/leaderboard-cursor.js";
+
 function clone(value) {
   return value === null || value === undefined ? value : structuredClone(value);
 }
@@ -105,14 +112,15 @@ export function createMemoryRepositories() {
       metrics.reads += 1;
       metrics.statements.push("read_leaderboard");
       const limit = Math.max(1, Math.min(50, Number(options.limit) || 20));
-      const entries = [...leaderboardRows.values()]
+      const cursor = decodeLeaderboardCursor(options.cursor);
+      const rows = [...leaderboardRows.values()]
         .filter((entry) => entry.season === season)
-        .sort((a, b) =>
-          b.score - a.score ||
-          a.createdAt - b.createdAt ||
-          a.runId.localeCompare(b.runId)
-        )
-        .slice(0, limit)
+        .sort(compareLeaderboardEntries)
+        .filter((entry) => isAfterLeaderboardCursor(entry, cursor))
+        .slice(0, limit + 1);
+      const hasMore = rows.length > limit;
+      const page = rows.slice(0, limit);
+      const entries = page
         .map((entry) => ({
           runId: entry.runId,
           playerName: entry.playerName,
@@ -124,7 +132,10 @@ export function createMemoryRepositories() {
           verificationLevel: entry.verificationLevel,
           createdAt: entry.createdAt
         }));
-      return { entries, cursor: null };
+      return {
+        entries,
+        cursor: hasMore ? encodeLeaderboardCursor(page.at(-1)) : null
+      };
     },
 
     async detail(runId) {

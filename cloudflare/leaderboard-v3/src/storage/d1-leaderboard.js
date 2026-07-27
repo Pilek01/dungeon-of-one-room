@@ -2,36 +2,11 @@ import {
   DEFAULT_LEADERBOARD_LIMIT,
   MAX_LEADERBOARD_LIMIT
 } from "../config.js";
+import {
+  decodeLeaderboardCursor,
+  encodeLeaderboardCursor
+} from "../domain/leaderboard-cursor.js";
 import { canonicalJson } from "../security/canonical-json.js";
-
-function encodeCursor(entry) {
-  if (!entry) return null;
-  return btoa(JSON.stringify({
-    score: entry.score,
-    createdAt: entry.created_at,
-    runId: entry.run_id
-  })).replaceAll("+", "-").replaceAll("/", "_").replace(/=+$/u, "");
-}
-
-function decodeCursor(value) {
-  if (!value) return null;
-  try {
-    const padding = "=".repeat((4 - (value.length % 4)) % 4);
-    const decoded = JSON.parse(atob(
-      value.replaceAll("-", "+").replaceAll("_", "/") + padding
-    ));
-    if (
-      !Number.isSafeInteger(decoded.score) ||
-      !Number.isSafeInteger(decoded.createdAt) ||
-      typeof decoded.runId !== "string"
-    ) {
-      return null;
-    }
-    return decoded;
-  } catch {
-    return null;
-  }
-}
 
 function compactEntry(row) {
   return {
@@ -86,7 +61,7 @@ export function createD1LeaderboardRepository(db) {
         MAX_LEADERBOARD_LIMIT,
         Math.max(1, Math.floor(Number(options.limit) || DEFAULT_LEADERBOARD_LIMIT))
       );
-      const cursor = decodeCursor(options.cursor);
+      const cursor = decodeLeaderboardCursor(options.cursor);
       const cursorClause = cursor
         ? `AND (
             score < ? OR
@@ -120,7 +95,7 @@ export function createD1LeaderboardRepository(db) {
       const page = rows.slice(0, limit);
       return {
         entries: page.map(compactEntry),
-        cursor: hasMore ? encodeCursor(page.at(-1)) : null
+        cursor: hasMore ? encodeLeaderboardCursor(page.at(-1)) : null
       };
     },
 
