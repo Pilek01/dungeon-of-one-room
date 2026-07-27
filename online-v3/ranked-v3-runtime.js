@@ -24,7 +24,6 @@
   let pendingRoomSummary = null;
   let extractedProfileReady = false;
   const recoveryStore = root.DungeonRankedV3Storage.createStore(root.localStorage);
-  const recoveryAtBoot = recoveryStore.loadSession();
 
   function publicName() {
     return String(root.localStorage.getItem("dungeonOneRoomPlayerName") || "Anonymous").slice(0, 18);
@@ -138,33 +137,91 @@
     }
   }
 
-  function presentError(error) {
-    const conflict = error?.conflict || error?.status === 409;
-    if (root.DUNGEON_ONLINE_V3_DEBUG === true) {
-      console.debug("[Online v3] client error", {
-        name: String(error?.name || "Error"),
-        code: String(error?.code || ""),
-        status: Number(error?.status) || 0,
-        message: String(error?.message || "")
-      });
+  function moveToRecoveryState(target) {
+    if (session.getState() === target) return;
+    try {
+      session.transition(target);
+    } catch {
+      if (target !== root.DungeonRankedV3Session.STATES.protocolError) {
+        throw new TypeError(`RANKED_RECOVERY_TRANSITION_INVALID:${session.getState()}:${target}`);
+      }
     }
+  }
+
+  async function resyncCanonical() {
+    moveToRecoveryState(root.DungeonRankedV3Session.STATES.retrying);
+    ui.setStatus("Resyncing the canonical Ranked state...");
+    await acceptResponse(await createClient().resumeCanonical());
+  }
+
+  function returnToPractice() {
+    if (![root.DungeonRankedV3Session.STATES.reconnect, root.DungeonRankedV3Session.STATES.protocolError].includes(session.getState())) {
+      moveToRecoveryState(root.DungeonRankedV3Session.STATES.reconnect);
+    }
+    client?.clear();
+    client = null;
+    session.transition(root.DungeonRankedV3Session.STATES.abandoned);
+    root.DungeonOnlineV3GameBridge?.returnToPractice?.();
+    ui.hide();
+  }
+
+  async function abandonCanonical() {
+    ui.setStatus("Abandoning the canonical Ranked run...");
+    await createClient().abandonCanonical();
+    client = null;
+    moveToRecoveryState(root.DungeonRankedV3Session.STATES.abandoned);
+    root.DungeonOnlineV3GameBridge?.returnToPractice?.();
+    ui.hide();
+  }
+
+  function confirmAbandon() {
     ui.showMessage(
-      conflict ? "Ranked state conflict" : "Ranked unavailable",
-      conflict
-        ? "This action conflicts with the canonical run. The run was not changed locally."
-        : "The Online v3 Worker could not acknowledge this action. You can retry with the same operation.",
+      "Abandon Ranked Run?",
+      "This permanently ends the canonical run and removes local recovery. No leaderboard result will be published.",
       [
-        ui.button("Retry exact action", retryPending),
-        ui.button("Return to Practice", abandon)
+        ui.button("Confirm abandonment", () => abandonCanonical().catch(presentError)),
+        ui.button("Keep recovery", () => presentError({ code: "RECOVERY_PRESERVED", status: 0 }))
       ]
     );
   }
 
-  function abandon() {
-    client?.clear();
-    client = null;
-    session.transition(root.DungeonRankedV3Session.STATES.abandoned);
-    ui.hide();
+  function presentError(error) {
+    const code = String(error?.code || "");
+    const conflict = error?.conflict || error?.status === 409;
+    const protocolFailure = error instanceof TypeError || [
+      "PROTOCOL_VERSION_MISMATCH",
+      "RESPONSE_NOT_JSON"
+    ].includes(code);
+    moveToRecoveryState(protocolFailure
+      ? root.DungeonRankedV3Session.STATES.protocolError
+      : root.DungeonRankedV3Session.STATES.reconnect);
+    if (root.DUNGEON_ONLINE_V3_DEBUG === true) {
+      console.debug("[Online v3] client error", {
+        name: String(error?.name || "Error"),
+        code,
+        status: Number(error?.status) || 0,
+        message: String(error?.message || "")
+      });
+    }
+    const controls = [];
+    if (error?.retryable || ["NETWORK_ERROR", "TIMEOUT"].includes(code)) {
+      controls.push(ui.button("Retry exact action", retryPending));
+    }
+    controls.push(
+      ui.button("Resync Ranked Run", () => resyncCanonical().catch(presentError)),
+      ui.button("Return to Practice", returnToPractice),
+      ui.button("Abandon Ranked Run", confirmAbandon)
+    );
+    ui.showMessage(
+      conflict ? "Ranked state conflict" : "Ranked reconnect required",
+      conflict
+        ? "The canonical run changed. Resync before sending another action."
+        : "Recovery is preserved. Return to Practice does not abandon the Ranked run.",
+      controls
+    );
+    if ((conflict || ["TOKEN_EXPIRED", "REVISION_CONFLICT", "STATE_DIGEST_CONFLICT", "ROOM_TOKEN_CONFLICT"].includes(code)) && !protocolFailure) {
+      root.setTimeout(() => resyncCanonical().catch(presentError), 0);
+    }
   }
 
   async function retryPending() {
@@ -554,36 +611,20 @@
 
   async function resumeRanked() {
     try {
-      const saved = createClient().getSnapshot();
-      if (!saved) throw new TypeError("RANKED_SESSION_MISSING");
-      session.transition(root.DungeonRankedV3Session.STATES.retrying);
-      if (saved.pendingOperation) {
-        ui.showMessage("Recovering Ranked", "Retrying the exact interrupted action...");
-        await acceptResponse(await createClient().retryPending());
-        return;
-      }
-      const state = saved.publicState;
-      if (!state) throw new TypeError("RANKED_RECOVERY_STATE_MISSING");
-      if (state.status === "awaiting_starting_relic") {
-        await acceptResponse({ metaState: state });
-      } else if (["victory", "defeat", "extraction"].includes(state.status)) {
-        session.transition(root.DungeonRankedV3Session.STATES.terminal);
-        showTerminal(state);
-      } else if (state.relicReplacement || state.relicOffer || state.metaTransactionOffer) {
-        session.transition(root.DungeonRankedV3Session.STATES.offer);
-        await continueBoundary(state);
-      } else if (state.currentRoomDirective) {
-        await acceptResponse({ metaState: state });
-      } else {
-        throw new TypeError("RANKED_RECOVERY_BOUNDARY_UNSUPPORTED");
-      }
+      moveToRecoveryState(root.DungeonRankedV3Session.STATES.retrying);
+      ui.showMessage("Recovering Ranked", "Loading the canonical server state...");
+      await acceptResponse(await createClient().resumeCanonical());
     } catch (error) {
       presentError(error);
     }
   }
 
-  if (recoveryAtBoot) ui.entry.textContent = "Resume Ranked Online v3";
-  ui.entry.addEventListener("click", recoveryAtBoot ? resumeRanked : startRanked);
+  async function openRankedEntry() {
+    if (recoveryStore.loadRecovery()) await resumeRanked();
+    else await startRanked();
+  }
+
+  ui.entry.addEventListener("click", () => openRankedEntry().catch(presentError));
   leaderboardEntry.addEventListener("click", () => openLeaderboard(true));
   root.setInterval(() => {
     let phase = "";
@@ -592,7 +633,7 @@
     } catch {
       phase = "";
     }
-    const menuIdle = phase === "menu" && session.getState() === "IDLE";
+    const menuIdle = phase === "menu" && ["IDLE", "ABANDONED_LOCAL_SESSION"].includes(session.getState());
     ui.setEntryVisible(menuIdle);
     leaderboardEntry.hidden = !menuIdle;
   }, 250);

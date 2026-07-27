@@ -332,6 +332,31 @@
       return clone(result.payload);
     }
 
+    async function abandonCanonical(operationId = transport.createOperationId()) {
+      const recovery = store.loadRecovery?.() || options.recoveryRecord;
+      if (!recovery?.runId || !recovery?.recoveryCredential) {
+        throw new TypeError("RANKED_RECOVERY_CREDENTIAL_MISSING");
+      }
+      const body = {
+        operationId,
+        runId: recovery.runId,
+        recoveryCredential: recovery.recoveryCredential,
+        clientProtocolVersion: protocol.PROTOCOL_VERSION,
+        lastKnownRevision: Math.max(0, Number(snapshot?.revision) || 0)
+      };
+      const result = await transport.request(protocol.ENDPOINTS.abandon, { operationId, body });
+      protocol.validateMutationResponse(result.payload, {
+        runId: recovery.runId,
+        rulesetId: protocol.RULESET_ID,
+        rulesetHash: protocol.RULESET_HASH
+      });
+      snapshot = null;
+      store.clearSession();
+      store.clearRecovery?.();
+      options.recoveryRecord = null;
+      return clone(result.payload);
+    }
+
     async function retryPending() {
       const pending = requireSnapshot().pendingOperation;
       if (!pending) throw new TypeError("RANKED_PENDING_OPERATION_MISSING");
@@ -370,6 +395,7 @@
       finalize,
       camp,
       resumeCanonical,
+      abandonCanonical,
       retryPending,
       getSnapshot: () => clone(snapshot),
       clear: () => {

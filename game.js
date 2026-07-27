@@ -32846,6 +32846,16 @@
       state.lives = Math.max(0, Number(publicState?.lives) || 0);
       markUiDirty();
     },
+    returnToPractice() {
+      state.onlineV3Ranked = false;
+      state.onlineV3Directive = null;
+      state.onlineV3NextDirective = null;
+      state.onlineV3FatalPending = false;
+      state.campUpgrades = sanitizeCampUpgrades(readJsonStorage(STORAGE_CAMP_UPGRADES, {}));
+      state.skillTiers = sanitizeSkillTiers(readJsonStorage(STORAGE_SKILL_TIERS, {}));
+      state.elixirLoadout = sanitizeElixirLoadout(readJsonStorage(STORAGE_ELIXIR_LOADOUT, {}));
+      enterMenu();
+    },
     isRanked() {
       return Boolean(state.onlineV3Ranked);
     }

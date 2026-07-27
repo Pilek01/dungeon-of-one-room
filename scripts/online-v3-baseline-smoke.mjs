@@ -115,6 +115,7 @@ async function verifyPhaseGuardrails() {
       "POST /api/v3/runs/event",
       "POST /api/v3/runs/finalize",
       "POST /api/v3/runs/resume",
+      "POST /api/v3/runs/abandon",
       "POST /api/v3/profiles/camp",
       "GET /api/v3/leaderboard",
       "GET /api/v3/leaderboard/:runId"

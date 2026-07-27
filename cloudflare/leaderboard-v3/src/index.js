@@ -1,4 +1,5 @@
 import {
+  ABANDONED_RUN_TTL_MS,
   HMAC_SECRET_BINDING,
   PROTOCOL_VERSION,
   PROFILE_TTL_MS,
@@ -778,6 +779,94 @@ async function handleRegisteredResume(request, env, options, repositories) {
   return jsonResponse(responseBody, 200, { "cache-control": "no-store" });
 }
 
+async function handleRegisteredAbandon(request, env, options, repositories) {
+  const idempotencyKey = requireIdempotencyKey(request);
+  const body = validateResumeBody(await readJsonRequest(request));
+  if (body.operationId !== idempotencyKey) {
+    throw new HttpError(400, "ABANDON_OPERATION_ID_MISMATCH", "Abandon operation identity is inconsistent.");
+  }
+  const recovery = await repositories.runs.getRecovery(body.runId);
+  if (!recovery) throw new HttpError(404, "RUN_NOT_FOUND", "Run not found.");
+  const state = recovery.state;
+  const verifier = await createCredentialVerifier(
+    body.recoveryCredential,
+    `ranked-run-recovery-v1:${state.runId}:${state.rulesetHash}`
+  );
+  if (!recovery.recoveryVerifier || !timingSafeVerifierEqual(recovery.recoveryVerifier, verifier)) {
+    throw new HttpError(401, "RECOVERY_UNAUTHORIZED", "Run recovery credential is invalid.");
+  }
+  const requestDigest = await canonicalDigest({
+    method: request.method,
+    path: "/api/v3/runs/abandon",
+    body
+  });
+  const replay = await replayOrConflict(state, idempotencyKey, requestDigest);
+  if (replay) return replay;
+  if (state.status === "finalized") {
+    throw new HttpError(409, "FINALIZED_RUN_IMMUTABLE", "A finalized run cannot be abandoned.");
+  }
+  if (state.status === "abandoned") {
+    throw new HttpError(409, "RUN_ALREADY_ABANDONED", "Run is already abandoned.");
+  }
+  const now = options.now();
+  const nextState = {
+    ...state,
+    status: "abandoned",
+    revision: state.revision + 1,
+    currentRoomDirective: null,
+    currentRewardEnvelope: null,
+    pendingOffer: null,
+    pendingRelicTransaction: null,
+    pendingInventory: null,
+    updatedAt: now,
+    expiresAt: now + ABANDONED_RUN_TTL_MS,
+    outcome: "abandoned"
+  };
+  const ruleset = resolveRegisteredRuleset(options, state);
+  const stateDigest = await canonicalDigest(stateForDigest(nextState));
+  const responseBody = {
+    ok: true,
+    protocolVersion: PROTOCOL_VERSION,
+    acceptedBoundary: "run_abandoned",
+    runId: nextState.runId,
+    revision: nextState.revision,
+    metaState: publicRulesetMetaState(nextState, ruleset)
+  };
+  const recentOps = await appendVersionedRecentOperation(
+    state.recentOps,
+    await operationRecord({
+      idempotencyKey,
+      operationType: "abandon",
+      requestDigest,
+      responseKind: "run_abandoned",
+      responseStatus: 200,
+      responseBody,
+      runId: state.runId,
+      rulesetId: state.rulesetId,
+      rulesetHash: state.rulesetHash,
+      revisionBefore: state.revision,
+      resultingRevision: nextState.revision,
+      stateDigest,
+      createdAt: now
+    }),
+    RECENT_OPS_LIMIT
+  );
+  const persisted = await repositories.runs.updateConditional(
+    nextState,
+    state.revision,
+    {
+      stateDigest,
+      recentOps,
+      expectedStateDigest: state.stateDigest,
+      expectedStatus: state.status
+    }
+  );
+  if (!persisted) {
+    throw new HttpError(409, "REVISION_CONFLICT", "Run changed before abandonment committed.");
+  }
+  return jsonResponse(responseBody, 200);
+}
+
 async function handleRegisteredStart(request, env, options, repositories) {
   const idempotencyKey = requireIdempotencyKey(request);
   const body = validateRegisteredStartBody(await readJsonRequest(request));
@@ -1287,6 +1376,12 @@ export function createWorker(workerOptions = {}) {
       try {
         const url = new URL(request.url);
         const repositories = resolveRepositories(env, options);
+        if (request.method === "POST" && url.pathname === "/api/v3/runs/abandon") {
+          if (!options.rulesetRegistry) {
+            throw new HttpError(404, "ROUTE_NOT_FOUND", "Route not found.");
+          }
+          return await handleRegisteredAbandon(request, env, options, repositories);
+        }
         if (request.method === "POST" && url.pathname === "/api/v3/runs/resume") {
           if (!options.rulesetRegistry) {
             throw new HttpError(404, "ROUTE_NOT_FOUND", "Route not found.");
