@@ -346,6 +346,11 @@
       "sha256": "b999280d7badd54549473659d9fda64c8c715972b994aa3f80e98b6dfd8310ab"
     },
     {
+      "file": "finalization-policy.js",
+      "byteLength": 2649,
+      "sha256": "6a2210ad03abae8bcbc644fa45ab5617f28aa050712d7874a05dedfce2c8475f"
+    },
+    {
       "file": "forge-policy.js",
       "byteLength": 13199,
       "sha256": "085393d5dddcf4b2fab24ad811c6cf8f70da36ab5e378419a6da52fcb0c7c380"
@@ -357,8 +362,8 @@
     },
     {
       "file": "index.js",
-      "byteLength": 11828,
-      "sha256": "ff4b47ccc619573903c62b39bfdfa289fa7484fa66ba0cbb1ee88edf159e0676"
+      "byteLength": 12071,
+      "sha256": "05d80fd0a372e8c0911a41603b48e3f4b107dfcb3f8a4bc3b6b126ec55982f65"
     },
     {
       "file": "leaderboard-summary.js",
@@ -486,6 +491,11 @@
       "sha256": "a18d53674855cb34bbf40d8f768e48bcfe2b8ca9dc26cabfd2f8468470b1c5b3"
     },
     {
+      "file": "test/m3-finalization-golden-fixtures.json",
+      "byteLength": 1485,
+      "sha256": "9ea9662399a77190c52c0452cf4524ff0ef53d9a5fe44c1aa8f0a58923815474"
+    },
+    {
       "file": "test/m3-lives-outcome-golden-fixtures.json",
       "byteLength": 1083,
       "sha256": "f8084ca3cc5d039b225f834c6c62dc135b7b7d546502ab903e85e1b83a827a75"
@@ -541,5 +551,5 @@
       "sha256": "e06c85319b457817a0fa313302d0136eb746738719ab9cc6db73eacc8d62b489"
     }
   ],
-  "rulesetHash": "sha256:6800125fcb42ff932b7db1a668739fe936364587d61eb1bace84751f9f668df4"
+  "rulesetHash": "sha256:08f023da2700e76e862d7adec7045dc8aa6e931b5c97976d955182aa19f2cebb"
 }

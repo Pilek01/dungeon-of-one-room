@@ -145,6 +145,32 @@ export function bootstrapTokenPayloadForState(state, stateDigest, now) {
   };
 }
 
+export function terminalTokenPayloadForState(state, stateDigest, now) {
+  if (!["victory", "defeat", "extraction"].includes(state?.status)) {
+    throw new TypeError("RUN_TERMINAL_BOUNDARY_STATUS_INVALID");
+  }
+  if (
+    state.currentRoomDirective !== null ||
+    state.currentRewardEnvelope !== null ||
+    state.pendingOffer !== null ||
+    state.pendingRelicTransaction !== null ||
+    state.pendingInventory !== null
+  ) {
+    throw new TypeError("RUN_TERMINAL_BOUNDARY_HAS_BLOCKING_WORK");
+  }
+  return {
+    tokenVersion: 2,
+    boundaryKind: "run_terminal",
+    runId: requireText(state.runId, "RUN_ID_REQUIRED"),
+    rulesetId: requireText(state.rulesetId, "RULESET_ID_REQUIRED"),
+    rulesetHash: requireText(state.rulesetHash, "RULESET_HASH_REQUIRED"),
+    revision: state.revision,
+    stateDigest: requireText(stateDigest, "STATE_DIGEST_REQUIRED"),
+    issuedAt: requireTimestamp(now, "TOKEN_ISSUED_AT_INVALID"),
+    expiresAt: now + TOKEN_TTL_MS
+  };
+}
+
 function normalizeStartingRelicSelection(request) {
   if (!request || typeof request !== "object" || Array.isArray(request)) {
     throw new TypeError("STARTING_RELIC_SELECTION_INVALID");

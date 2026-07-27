@@ -278,20 +278,16 @@ test("registry dispatch is exact and production remains fail closed", async () =
   assert.equal(denied.payload.error.code, "RULESET_PRODUCTION_UNAVAILABLE");
 });
 
-test("real finalize remains explicit and fail closed until M3 canonical policy", async () => {
+test("real finalize rejects a nonterminal room boundary", async () => {
   const harness = createRealHarness();
   const started = (await harness.start()).payload;
   const selected = (await harness.select(started)).payload;
-  const directive = selected.metaState.currentRoomDirective;
   const result = await harness.call("/api/v3/runs/finalize", {
     runId: selected.runId,
-    checkpointToken: selected.checkpointToken,
-    roomDirectiveId: directive.directiveId,
-    roomNonce: directive.roomNonce,
-    outcome: "defeat"
+    checkpointToken: selected.checkpointToken
   }, "real-finalize-blocked");
-  assert.equal(result.response.status, 409);
-  assert.equal(result.payload.error.code, "REAL_RULESET_FINALIZATION_REQUIRES_M3");
+  assert.equal(result.response.status, 401);
+  assert.equal(result.payload.error.code, "TOKEN_INVALID");
   assert.equal(harness.repositories.leaderboardCount(), 0);
   assert.equal(harness.repositories.snapshotRun(selected.runId).status, "active");
 });

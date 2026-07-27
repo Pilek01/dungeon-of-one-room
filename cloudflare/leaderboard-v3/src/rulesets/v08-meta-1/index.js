@@ -56,6 +56,7 @@ import {
   buildFinalProjectionsV08,
   deriveFinalDurationV08
 } from "./leaderboard-summary.js";
+import { finalizeRunV08 } from "./finalization-policy.js";
 export {
   applyRelicAcquisition,
   applyRelicRemovalV08,
@@ -178,6 +179,10 @@ export {
   buildFinalProjectionsV08,
   deriveFinalDurationV08
 } from "./leaderboard-summary.js";
+export {
+  FINALIZATION_POLICY_VERSION,
+  finalizeRunV08
+} from "./finalization-policy.js";
 
 function mergeContext(options, context) {
   return {
@@ -419,6 +424,10 @@ export function createV08Meta1Ruleset(options = {}) {
 
     deriveFinalDuration(state, finalizedAt) {
       return deriveFinalDurationV08(state, finalizedAt);
+    },
+
+    finalizeRun(state, context = {}) {
+      return finalizeRunV08(state, context);
     },
 
     async settleRoomRewardEnvelope(state, request, context = {}) {

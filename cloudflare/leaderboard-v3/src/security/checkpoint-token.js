@@ -19,7 +19,8 @@ const CHECKPOINT_TOKEN_FIELDS = Object.freeze([
 const BOUNDARY_TOKEN_VERSION = 2;
 const BOUNDARY_KINDS = Object.freeze({
   RUN_BOOTSTRAP: "run_bootstrap",
-  ROOM_CHECKPOINT: "room_checkpoint"
+  ROOM_CHECKPOINT: "room_checkpoint",
+  RUN_TERMINAL: "run_terminal"
 });
 const BOUNDARY_COMMON_FIELDS = Object.freeze([
   "tokenVersion",
@@ -42,7 +43,8 @@ const BOUNDARY_KIND_FIELDS = Object.freeze({
     ...BOUNDARY_COMMON_FIELDS,
     "roomDirectiveId",
     "roomNonce"
-  ])
+  ]),
+  [BOUNDARY_KINDS.RUN_TERMINAL]: BOUNDARY_COMMON_FIELDS
 });
 
 async function importHmacKey(secret) {
@@ -120,7 +122,9 @@ function requireBoundaryTokenPayload(payload) {
     "stateDigest",
     ...(payload.boundaryKind === BOUNDARY_KINDS.RUN_BOOTSTRAP
       ? ["startingOfferId", "bootstrapNonce"]
-      : ["roomDirectiveId", "roomNonce"])
+      : payload.boundaryKind === BOUNDARY_KINDS.ROOM_CHECKPOINT
+        ? ["roomDirectiveId", "roomNonce"]
+        : [])
   ]) {
     if (typeof payload[field] !== "string" || !payload[field]) {
       throw new TypeError(`Boundary token requires ${field}.`);

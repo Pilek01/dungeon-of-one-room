@@ -19,13 +19,14 @@ import {
   bootstrapTokenPayloadForState,
   createAuthenticatedRunBootstrap,
   roomTokenPayloadForState,
-  selectAuthenticatedStartingRelic
+  selectAuthenticatedStartingRelic,
+  terminalTokenPayloadForState
 } from "./domain/run-bootstrap.js";
 import {
   applyRulesetCheckpoint,
   applyRulesetEvent,
+  finalizeRulesetRun,
   publicRulesetMetaState,
-  rejectUnresolvedRealFinalize
 } from "./domain/ruleset-runtime.js";
 import {
   createInitialRun,
@@ -292,6 +293,23 @@ function validateRegisteredRoomEnvelope(body) {
   };
 }
 
+function validateRegisteredFinalizeBody(body) {
+  const allowed = ["runId", "checkpointToken"];
+  if (Object.keys(body).some((field) => !allowed.includes(field))) {
+    throw new HttpError(
+      400,
+      "FINALIZE_REQUEST_FIELDS_INVALID",
+      "Finalization request fields are invalid."
+    );
+  }
+  return {
+    runId: validateRegisteredRunId(body.runId),
+    checkpointToken: requireString(body.checkpointToken, "checkpointToken", {
+      maximum: 4096
+    })
+  };
+}
+
 function enforceRegisteredBoundary(payload, state, kind, now) {
   if (payload.expiresAt <= now) {
     throw new HttpError(401, "TOKEN_EXPIRED", "Boundary token is expired.");
@@ -312,6 +330,23 @@ function enforceRegisteredBoundary(payload, state, kind, now) {
         409,
         "BOOTSTRAP_TOKEN_CONFLICT",
         "Bootstrap token claims are stale."
+      );
+    }
+    return;
+  }
+  if (kind === BOUNDARY_KINDS.RUN_TERMINAL) {
+    if (
+      !["victory", "defeat", "extraction"].includes(state.status) ||
+      state.currentRoomDirective ||
+      state.currentRewardEnvelope ||
+      state.pendingOffer ||
+      state.pendingRelicTransaction ||
+      state.pendingInventory
+    ) {
+      throw new HttpError(
+        409,
+        "TERMINAL_TOKEN_CONFLICT",
+        "Terminal token claims are stale."
       );
     }
     return;
@@ -374,13 +409,18 @@ async function persistRegisteredMutation(context, transition, repositories, opti
     updatedAt: context.now
   };
   const stateDigest = await canonicalDigest(stateForDigest(nextState));
-  const checkpointToken =
-    nextState.status === "active" && nextState.currentRoomDirective
-      ? await signBoundaryToken(
-          roomTokenPayloadForState(nextState, stateDigest, context.now),
-          context.secret
-        )
-      : null;
+  let checkpointToken = null;
+  if (nextState.status === "active" && nextState.currentRoomDirective) {
+    checkpointToken = await signBoundaryToken(
+      roomTokenPayloadForState(nextState, stateDigest, context.now),
+      context.secret
+    );
+  } else if (["victory", "defeat", "extraction"].includes(nextState.status)) {
+    checkpointToken = await signBoundaryToken(
+      terminalTokenPayloadForState(nextState, stateDigest, context.now),
+      context.secret
+    );
+  }
   const responseBody = {
     ok: true,
     ...transition.response,
@@ -410,16 +450,27 @@ async function persistRegisteredMutation(context, transition, repositories, opti
     }),
     RECENT_OPS_LIMIT
   );
-  const persisted = await repositories.runs.updateConditional(
-    nextState,
-    context.state.revision,
-    {
-      stateDigest,
-      recentOps,
-      expectedStateDigest: context.state.stateDigest,
-      expectedStatus: context.state.status
-    }
-  );
+  const metadata = {
+    stateDigest,
+    recentOps,
+    expectedStateDigest: context.state.stateDigest,
+    expectedStatus: context.state.status
+  };
+  const persisted = options.leaderboardEntry
+    ? await repositories.runs.finalizeAtomic(
+        nextState,
+        context.state.revision,
+        metadata,
+        {
+          ...options.leaderboardEntry,
+          stateDigest
+        }
+      )
+    : await repositories.runs.updateConditional(
+        nextState,
+        context.state.revision,
+        metadata
+      );
   if (!persisted) {
     throw new HttpError(409, "REVISION_CONFLICT", "Run changed before this operation committed.");
   }
@@ -591,7 +642,7 @@ async function handleRegisteredCheckpoint(request, env, options, repositories) {
 }
 
 async function handleRegisteredFinalize(request, env, options, repositories) {
-  const body = validateRegisteredRoomEnvelope(await readJsonRequest(request));
+  const body = validateRegisteredFinalizeBody(await readJsonRequest(request));
   const context = await loadRegisteredMutationContext({
     request,
     env,
@@ -600,16 +651,23 @@ async function handleRegisteredFinalize(request, env, options, repositories) {
     path: "/api/v3/runs/finalize",
     body,
     token: body.checkpointToken,
-    boundaryKind: BOUNDARY_KINDS.ROOM_CHECKPOINT
+    boundaryKind: BOUNDARY_KINDS.RUN_TERMINAL
   });
   if (context.replay) return context.replay;
-  if (
-    body.roomDirectiveId !== context.state.currentRoomDirective?.directiveId ||
-    body.roomNonce !== context.state.currentRoomDirective?.roomNonce
-  ) {
-    throw new HttpError(409, "ROOM_TOKEN_CONFLICT", "Room request claims are stale.");
-  }
-  rejectUnresolvedRealFinalize();
+  const transition = finalizeRulesetRun(
+    context.state,
+    context.ruleset,
+    { now: context.now }
+  );
+  const leaderboardEffect = transition.storageEffects.find(
+    (effect) => effect.type === "insert_leaderboard"
+  );
+  if (!leaderboardEffect) throw new TypeError("LEADERBOARD_EFFECT_REQUIRED");
+  return persistRegisteredMutation(context, transition, repositories, {
+    operationType: "finalize",
+    responseKind: "finalize",
+    leaderboardEntry: leaderboardEffect.entry
+  });
 }
 
 async function handleStart(request, env, options, repositories) {

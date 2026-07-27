@@ -1,5 +1,3 @@
-import { VERIFICATION_LEVEL } from "../config.js";
-
 function requireObject(value, code) {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     throw new TypeError(code);
@@ -386,8 +384,11 @@ export async function applyRulesetEvent(state, body, ruleset, context = {}) {
   };
 }
 
-export function rejectUnresolvedRealFinalize() {
-  const error = new TypeError("REAL_RULESET_FINALIZATION_REQUIRES_M3");
-  error.verificationLevel = VERIFICATION_LEVEL;
-  throw error;
+export function finalizeRulesetRun(state, ruleset, context = {}) {
+  if (typeof ruleset?.finalizeRun !== "function") {
+    throw new TypeError("RULESET_METHOD_MISSING:finalizeRun");
+  }
+  return ruleset.finalizeRun(structuredClone(state), {
+    finalizedAt: context.now
+  });
 }

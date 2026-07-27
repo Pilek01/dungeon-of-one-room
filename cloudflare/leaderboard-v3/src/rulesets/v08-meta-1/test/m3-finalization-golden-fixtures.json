@@ -1,0 +1,14 @@
+[
+  {"fixtureId":"m3-final-01","status":"defeat","depth":0,"gold":0,"durationMs":0,"outcome":"defeat","score":0},
+  {"fixtureId":"m3-final-02","status":"defeat","depth":1,"gold":10,"durationMs":1,"outcome":"defeat","score":1020},
+  {"fixtureId":"m3-final-03","status":"extraction","depth":4,"gold":99,"durationMs":1000,"outcome":"extract","score":4198},
+  {"fixtureId":"m3-final-04","status":"extraction","depth":5,"gold":0,"durationMs":5000,"outcome":"extract","score":7500},
+  {"fixtureId":"m3-final-05","status":"defeat","depth":9,"gold":50,"durationMs":9999,"outcome":"defeat","score":11600},
+  {"fixtureId":"m3-final-06","status":"extraction","depth":10,"gold":125,"durationMs":10000,"outcome":"extract","score":15250},
+  {"fixtureId":"m3-final-07","status":"defeat","depth":25,"gold":1000,"durationMs":25000,"outcome":"defeat","score":39500},
+  {"fixtureId":"m3-final-08","status":"extraction","depth":50,"gold":2500,"durationMs":50000,"outcome":"extract","score":80000},
+  {"fixtureId":"m3-final-09","status":"defeat","depth":75,"gold":5000,"durationMs":75000,"outcome":"defeat","score":122500},
+  {"fixtureId":"m3-final-10","status":"defeat","depth":99,"gold":7777,"durationMs":99000,"outcome":"defeat","score":162054},
+  {"fixtureId":"m3-final-11","status":"victory","depth":100,"gold":0,"durationMs":100000,"outcome":"victory","score":150000},
+  {"fixtureId":"m3-final-12","status":"victory","depth":100,"gold":10000,"durationMs":200000,"outcome":"victory","score":170000}
+]
