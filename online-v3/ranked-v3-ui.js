@@ -83,6 +83,16 @@
       overlay.hidden = false;
     }
 
+    function showContent(heading, message, content, controls = []) {
+      text(title, heading);
+      text(status, message);
+      clear(body);
+      clear(actions);
+      if (content) body.append(content);
+      for (const control of controls) actions.append(control);
+      overlay.hidden = false;
+    }
+
     return Object.freeze({
       entry,
       overlay,
@@ -90,6 +100,7 @@
       setEntryVisible: (visible) => { entry.hidden = !visible; },
       showMessage,
       showChoices,
+      showContent,
       hide: () => { overlay.hidden = true; },
       setStatus: (message) => text(status, message)
     });

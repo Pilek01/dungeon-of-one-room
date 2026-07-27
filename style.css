@@ -4621,6 +4621,21 @@ body:has(#game.graphics-hd) .overlay-menu-row.selected .overlay-menu-key {
   cursor: pointer;
 }
 
+.ranked-v3-leaderboard-entry {
+  position: fixed;
+  z-index: 120;
+  left: 50%;
+  bottom: max(68px, calc(env(safe-area-inset-bottom) + 50px));
+  transform: translateX(-50%);
+  border: 1px solid #86a7d5;
+  border-radius: 8px;
+  padding: 8px 16px;
+  color: #edf5ff;
+  background: #1c304d;
+  font: inherit;
+  cursor: pointer;
+}
+
 .ranked-v3-overlay {
   position: fixed;
   z-index: 150;
@@ -4632,7 +4647,8 @@ body:has(#game.graphics-hd) .overlay-menu-row.selected .overlay-menu-key {
 }
 
 .ranked-v3-overlay[hidden],
-.ranked-v3-entry[hidden] {
+.ranked-v3-entry[hidden],
+.ranked-v3-leaderboard-entry[hidden] {
   display: none;
 }
 
@@ -4680,4 +4696,32 @@ body:has(#game.graphics-hd) .overlay-menu-row.selected .overlay-menu-key {
   border-radius: 7px;
   color: #fff;
   background: #342248;
+}
+
+.ranked-v3-leaderboard-list,
+.ranked-v3-leaderboard-detail {
+  display: grid;
+  gap: 10px;
+}
+
+.ranked-v3-leaderboard-row {
+  display: grid;
+  gap: 6px;
+  padding: 10px;
+  border: 1px solid #405979;
+  border-radius: 8px;
+  background: #152238;
+}
+
+.ranked-v3-leaderboard-details-button {
+  justify-self: start;
+  padding: 7px 10px;
+  border: 1px solid #7195c5;
+  border-radius: 6px;
+  color: #fff;
+  background: #263e60;
+}
+
+.ranked-v3-leaderboard-build {
+  border-top: 1px solid #49375d;
 }

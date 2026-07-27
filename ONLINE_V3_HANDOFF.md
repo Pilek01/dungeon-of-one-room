@@ -27,6 +27,12 @@
   terminal state stops local simulation and the published score is displayed
   only after finalization. Targeted client tests are 17/17 and `verify:fast`
   is 31/31 PASS.
+- `4c76ccb` integrates canonical lives, terminal outcomes, extraction,
+  finalization and exact terminal recovery.
+- M4.5 adds an explicit public leaderboard entry, opaque cursor pagination,
+  server-order list rendering and immutable public build details. It renders
+  no tokens, digests, receipts or private operation data. Targeted tests are
+  4/4 and `verify:fast` is 35/35 PASS.
 - Current test-only ruleset hash after the terminal hooks is
   `sha256:d1f28d957244002da574180c5c9a7040d4d18deba1551a24e6597712d971b231`.
 - No push, deployment, production activation, D1 migration or Vault Guardian

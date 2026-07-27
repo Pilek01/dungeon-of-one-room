@@ -46,6 +46,37 @@
     return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0")).join("");
   }
 
+  function createLeaderboardClient(options = {}) {
+    const transport = options.transport || transportApi.createTransport(options);
+
+    async function list(input = {}) {
+      const query = new URLSearchParams({
+        season: String(input.season || "local-m4"),
+        limit: String(Math.min(20, Math.max(1, Math.floor(Number(input.limit) || 20))))
+      });
+      if (input.cursor) query.set("cursor", String(input.cursor));
+      const result = await transport.request({
+        method: "GET",
+        path: `${protocol.ENDPOINTS.leaderboard.path}?${query.toString()}`
+      });
+      return clone(result.payload);
+    }
+
+    async function detail(runId) {
+      const canonicalRunId = String(runId || "");
+      if (!/^run_[a-f0-9]+$/u.test(canonicalRunId)) {
+        throw new TypeError("LEADERBOARD_RUN_ID_INVALID");
+      }
+      const result = await transport.request({
+        method: "GET",
+        path: protocol.ENDPOINTS.detail.path.replace(":runId", encodeURIComponent(canonicalRunId))
+      });
+      return clone(result.payload);
+    }
+
+    return Object.freeze({ list, detail });
+  }
+
   function createRankedClient(options = {}) {
     const transport = options.transport || transportApi.createTransport(options);
     const store = options.store || storageApi.createStore(options.storage || globalThis.localStorage);
@@ -257,6 +288,7 @@
     createPracticeClient,
     isPracticeClient,
     createRankedClient,
+    createLeaderboardClient,
     sha256Hex
   });
 });

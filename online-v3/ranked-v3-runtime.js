@@ -6,9 +6,20 @@
   const clientApi = root.DungeonRankedV3Client;
   const directives = root.DungeonRankedV3Directives;
   const offers = root.DungeonRankedV3Offers;
+  const leaderboardUi = root.DungeonRankedV3LeaderboardUi;
   const ui = root.DungeonRankedV3Ui.createUi(root.document);
+  const leaderboardEntry = root.document.createElement("button");
+  leaderboardEntry.type = "button";
+  leaderboardEntry.className = "ranked-v3-leaderboard-entry";
+  leaderboardEntry.textContent = "Online v3 Leaderboard";
+  leaderboardEntry.hidden = true;
+  leaderboardEntry.setAttribute("aria-label", "Open the canonical Online v3 leaderboard.");
+  root.document.body.append(leaderboardEntry);
   const session = root.DungeonRankedV3Session.createStateMachine();
   let client = null;
+  let leaderboardClient = null;
+  let leaderboardRows = [];
+  let leaderboardCursor = null;
   let startedAt = 0;
   let pendingRoomSummary = null;
   const recoveryStore = root.DungeonRankedV3Storage.createStore(root.localStorage);
@@ -35,6 +46,95 @@
       }
     });
     return client;
+  }
+
+  function createLeaderboardClient() {
+    if (leaderboardClient) return leaderboardClient;
+    leaderboardClient = clientApi.createLeaderboardClient({
+      baseUrl: String(root.DUNGEON_ONLINE_V3_API || ""),
+      cryptoProvider: root.crypto,
+      log(kind, detail) {
+        if (root.DUNGEON_ONLINE_V3_DEBUG === true) console.debug(`[Online v3] ${kind}`, detail);
+      }
+    });
+    return leaderboardClient;
+  }
+
+  function leaderboardControls() {
+    const controls = [
+      ui.button("Close", () => ui.hide())
+    ];
+    if (leaderboardCursor) {
+      controls.unshift(ui.button("Load next page", () => openLeaderboard(false)));
+    }
+    return controls;
+  }
+
+  function showLeaderboardRows() {
+    if (!leaderboardRows.length) {
+      ui.showMessage("Online v3 Leaderboard", "No canonical results are published for this season.", [
+        ui.button("Close", () => ui.hide())
+      ]);
+      return;
+    }
+    const content = leaderboardUi.renderList(
+      root.document,
+      leaderboardRows,
+      (runId) => openLeaderboardDetail(runId)
+    );
+    ui.showContent(
+      "Online v3 Leaderboard",
+      "Server order is preserved. Cursor pagination is canonical.",
+      content,
+      leaderboardControls()
+    );
+  }
+
+  async function openLeaderboard(reset = true) {
+    try {
+      if (reset) {
+        leaderboardRows = [];
+        leaderboardCursor = null;
+      }
+      ui.showMessage("Online v3 Leaderboard", "Loading canonical results...");
+      const payload = await createLeaderboardClient().list({
+        season: String(root.DUNGEON_ONLINE_V3_SEASON || "local-m4"),
+        limit: 20,
+        cursor: reset ? "" : leaderboardCursor
+      });
+      const page = leaderboardUi.createLeaderboardViewModel(payload, leaderboardRows.length);
+      leaderboardRows = leaderboardRows.concat(page.rows);
+      leaderboardCursor = page.cursor;
+      showLeaderboardRows();
+    } catch {
+      ui.showMessage("Leaderboard unavailable", "Canonical results could not be loaded.", [
+        ui.button("Retry", () => openLeaderboard(reset)),
+        ui.button("Close", () => ui.hide())
+      ]);
+    }
+  }
+
+  async function openLeaderboardDetail(runId) {
+    try {
+      ui.showMessage("Ranked build details", "Loading the immutable public projection...");
+      const detail = leaderboardUi.createDetailViewModel(
+        await createLeaderboardClient().detail(runId)
+      );
+      ui.showContent(
+        "Ranked build details",
+        `${detail.verificationLevel} · ${detail.season}`,
+        leaderboardUi.renderDetail(root.document, detail),
+        [
+          ui.button("Back to leaderboard", showLeaderboardRows),
+          ui.button("Close", () => ui.hide())
+        ]
+      );
+    } catch {
+      ui.showMessage("Build details unavailable", "The canonical public run projection could not be loaded.", [
+        ui.button("Back to leaderboard", showLeaderboardRows),
+        ui.button("Close", () => ui.hide())
+      ]);
+    }
   }
 
   function presentError(error) {
@@ -431,6 +531,7 @@
 
   if (recoveryAtBoot) ui.entry.textContent = "Resume Ranked Online v3";
   ui.entry.addEventListener("click", recoveryAtBoot ? resumeRanked : startRanked);
+  leaderboardEntry.addEventListener("click", () => openLeaderboard(true));
   root.setInterval(() => {
     let phase = "";
     try {
@@ -438,7 +539,9 @@
     } catch {
       phase = "";
     }
-    ui.setEntryVisible(phase === "menu" && session.getState() === "IDLE");
+    const menuIdle = phase === "menu" && session.getState() === "IDLE";
+    ui.setEntryVisible(menuIdle);
+    leaderboardEntry.hidden = !menuIdle;
   }, 250);
 
   root.DungeonOnlineV3 = Object.freeze({
