@@ -2,6 +2,13 @@
 
 ## Status
 
+M5P planning complete locally - `READY_FOR_M5A_AUTHORIZATION`.
+
+The documentation-only staging/release plan is in
+`docs/ONLINE_V3_M5_PLAN.md`. M5P created no Cloudflare resource, secret,
+route, remote migration, deployment, production activation, or ruleset
+promotion. M5A requires a fresh, explicitly authorized task.
+
 Complete locally — `READY_FOR_M5_PLANNING`.
 
 Implementation commits:

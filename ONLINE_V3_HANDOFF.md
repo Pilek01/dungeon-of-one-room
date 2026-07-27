@@ -1,5 +1,18 @@
 # Online v3 — Current Handoff
 
+## Milestone M5P planning complete
+
+The documentation-only staging and release plan is complete in
+`docs/ONLINE_V3_M5_PLAN.md`. It defines isolated staging/production topology,
+same-origin routing, ruleset promotion, secret rotation, D1 migration order,
+abuse controls, retention, observability, private staging, M5A/M5B/M5C gates,
+and rollback.
+
+M5P created no Cloudflare resource, secret, route, remote migration,
+deployment, production activation, or ruleset promotion. The current ruleset
+hash remains test/local-only. The next task may begin M5A only with fresh,
+explicit staging authorization.
+
 ## Milestone R2 complete locally
 
 R2 resolves every actionable R1 P1 and every P2 selected by
