@@ -29,3 +29,8 @@ window.DUNGEON_LEADERBOARD_API = "";
 // Current leaderboard season id (used by "Current Season" scope).
 // Change this only on major balance resets, not every patch version.
 window.DUNGEON_LEADERBOARD_SEASON = "season-1";
+
+// Online v3 production values are injected only into the Pages build output.
+window.DUNGEON_ONLINE_V3_API = "";
+window.DUNGEON_ONLINE_V3_SEASON = "local-m4";
+window.DUNGEON_ONLINE_V3_DEBUG = false;

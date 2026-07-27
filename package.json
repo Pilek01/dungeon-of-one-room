@@ -2,6 +2,7 @@
   "name": "dungeon-online-v3-workflow",
   "private": true,
   "scripts": {
+    "pages:build": "node scripts/build-pages-v3.mjs",
     "verify:fast": "node scripts/verify-online-v3.mjs fast",
     "verify:phase": "node scripts/verify-online-v3.mjs phase",
     "verify:baseline": "node scripts/verify-online-v3.mjs baseline",

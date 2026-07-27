@@ -1,0 +1,19 @@
+{
+  "$schema": "./cloudflare/leaderboard-v3/node_modules/wrangler/config-schema.json",
+  "name": "dungeon-of-one-room",
+  "pages_build_output_dir": "./output/pages-dist",
+  "compatibility_date": "2026-07-23",
+  "env": {
+    "production": {
+      "services": [
+        {
+          "binding": "RANKED_V3_BACKEND",
+          "service": "dungeon-online-v3-production"
+        }
+      ]
+    },
+    "preview": {
+      "services": []
+    }
+  }
+}

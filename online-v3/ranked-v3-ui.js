@@ -18,10 +18,10 @@
   }
 
   function createUi(documentRef = globalThis.document) {
-    const entry = createElement(documentRef, "button", "ranked-v3-entry", "Ranked Online v3");
+    const entry = createElement(documentRef, "button", "ranked-v3-entry", "Ranked (Online)");
     entry.type = "button";
     entry.hidden = true;
-    entry.setAttribute("aria-label", "Start Ranked Online v3. Connection required.");
+    entry.setAttribute("aria-label", "Start Ranked (Online). Connection required.");
 
     const overlay = createElement(documentRef, "section", "ranked-v3-overlay");
     overlay.hidden = true;
