@@ -2,7 +2,7 @@
 
 ## Active status
 
-`IN_PROGRESS` for the existing `dungeon-of-one-room` Pages project.
+`COMPLETED_AND_PRODUCTION_VERIFIED` on the existing `dungeon-of-one-room` Pages project, deployment `47048250-f120-45c2-92e7-344cdb34c27f` from source commit `3d76ea6`.
 
 This is an R2-only production hotfix for the player-reported `Ranked
 Unavailable` screen when starting a new Ranked run. The reproduced failure is
@@ -43,6 +43,26 @@ Verification and release:
   ruleset data/hash, combat authority, mode names, or R1-P0-001;
 - do not push, create staging, touch or stage the 172 protected Vault Guardian
   deletions, use a paid service, or start M5.
+
+Completion evidence:
+
+- exact Chromium quota reproduction recovered automatically and reached the
+  native starting-relic screen on both local and public production builds;
+- production smoke returned `201 start -> 200 abandon`, preserved both Practice
+  sentinels, reported zero console/page errors, and produced the visually
+  correct starting-relic presentation;
+- remote D1 confirms smoke run `run_46b7c3ab52d649e8a0ddc32f14aedcd4`
+  is `abandoned` at revision 1 with zero leaderboard rows;
+- one earlier smoke attempt stopped after successful start on a test assertion;
+  its revision-0 `awaiting_starting_relic` run has zero leaderboard rows, no
+  chosen relic, cannot publish, and is left to normal retention;
+- R2 threat matrix 30/30, `verify:fast` 45/45, `verify:phase` 721/721,
+  `verify:baseline` 3/3 plus headed smoke, and `verify:full` 745/745 including
+  21/21 local Wrangler/D1 E2E;
+- source `game.js`, ruleset hash, Worker/D1 schema and behavior, gameplay,
+  combat authority, mode names, Practice behavior, R1-P0-001, and all 172
+  protected Vault Guardian deletions remain unchanged;
+- no push, staging, Worker deploy, paid service, or M5 work was performed.
 
 ---# Production direct Ranked start and stale-profile recovery hotfix - Online v3
 

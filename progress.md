@@ -926,3 +926,15 @@ Updated next good targets
   full 745/745 including local Wrangler/D1 21/21; `git diff --check` PASS.
 - Source `game.js`, ruleset, Worker/D1, gameplay, mode names, Practice behavior,
   R1-P0-001, and all 172 protected deletions remain unchanged.
+## 2026-07-28 - Ranked browser-storage recovery deployed and verified
+
+- Code/test commit `3d76ea6`; production Pages deployment
+  `47048250-f120-45c2-92e7-344cdb34c27f` on the existing project and `main`.
+- Public saturated-storage smoke passed `201 start -> 200 abandon`, preserved
+  both Practice sentinels, reached the native starting-relic screen with zero
+  console/page errors, and was visually inspected.
+- Remote D1 confirms `run_46b7c3ab52d649e8a0ddc32f14aedcd4` is abandoned
+  at revision 1 with zero leaderboard rows. One assertion-stopped revision-0
+  preflight has no relic or leaderboard row and remains under normal retention.
+- No Worker/D1 schema or behavior change, gameplay change, push, staging, paid
+  service, or M5 work occurred; all 172 protected deletions remain untouched.

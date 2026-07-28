@@ -1,29 +1,46 @@
 # Online v3 - Production handoff
 
-## Ranked browser-storage recovery hotfix validated locally
+## Ranked browser-storage recovery hotfix complete
 
-The player-reported generic `Ranked Unavailable` start failure was reproduced
-as browser `QuotaExceededError` code 22 before any `/api/v3/runs/start`
-request. The local R2 fix is ready for the authorized Pages-only production
-deployment.
+The player-reported generic `Ranked Unavailable` start failure is fixed on
+`https://dungeon-of-one-room.pages.dev`.
 
-- critical Ranked writes retry once after removing only the retired
-  `dungeonRankedV2Active` value and noncritical Online v3 leaderboard cache;
-- `dungeonOneRoomRunSave`, `dungeonPracticeV2Active`, and unrelated browser
-  data are preserved;
-- insufficient safe space produces an explicit browser-storage message and
-  cannot enter reconnect recovery before a local session exists;
-- headed saturated-storage QA reached the native starting-relic screen,
-  preserved both Practice sentinels, canonically abandoned the test run, and
-  visually passed;
-- R2 threat matrix 30/30, `verify:fast` 45/45, `verify:phase` 721/721,
-  `verify:baseline` 3/3 plus headed smoke, and `verify:full` 745/745 including
-  21/21 local Wrangler/D1 E2E.
+- production Pages deployment: `47048250-f120-45c2-92e7-344cdb34c27f`;
+- deployed source: `3d76ea6dc31e22dc4ed64d94a1f2bd674e4fb988` on production branch `main`;
+- the failure was browser `QuotaExceededError` code 22 before any start API
+  request; critical Ranked writes now retry once after removing only retired
+  `dungeonRankedV2Active` and noncritical Online v3 leaderboard cache;
+- Practice v3/v2 saves and unrelated browser data remain preserved;
+- insufficient safe space has an explicit message and cannot enter reconnect
+  recovery before a local session exists;
+- public saturated-storage smoke passed `201 start -> 200 abandon`, reached the
+  native starting-relic screen with zero console/page errors, and remote D1
+  confirms `abandoned`, revision 1, and zero leaderboard rows.
 
-Source `game.js` and the ruleset hash remain unchanged. Worker/D1 behavior and
-schema, gameplay, combat authority, mode names, Practice behavior, and
-R1-P0-001 remain unchanged. No push, staging, Worker deployment, paid service,
-or M5 work is authorized. All 172 protected Vault Guardian deletions remain
+Verification:
+
+- focused regressions: 18/18 PASS;
+- R2 threat matrix: 30/30 scenarios covered; R1-P0-001 remains accepted;
+- `verify:fast`: 45/45 PASS;
+- `verify:phase`: 721/721 PASS
+  (`output/verification/phase-20260728T171838104Z.log`);
+- `verify:baseline`: 3/3 PASS plus headed game smoke
+  (`output/verification/baseline-20260728T171957035Z.log`);
+- `verify:full`: 745/745 PASS, including 21/21 local Wrangler/D1 E2E and
+  headed game smoke (`output/verification/full-20260728T172154637Z.log`);
+- local and production saturated-storage screenshots were visually inspected.
+
+One earlier public smoke attempt stopped after its start succeeded because the
+test expected the wrong internal state label. Its revision-0
+`awaiting_starting_relic` run has zero leaderboard rows, no selected relic,
+cannot publish a result, and is left to normal retention.
+
+Source `game.js` remains byte-identical at SHA-256
+`556829c909cdc9eaefb4238279457eb9b3427adef9ce494f35743542770ee7de`.
+The ruleset remains `v08-meta-1` at
+`sha256:0bf00607056dbf3c30ffe57bbcfc77cea95b21c9ccc23aa985ec555856d1cbd6`.
+No Worker/D1 change, gameplay change, push, staging, paid service, rollback, or
+M5 work was performed. All 172 protected Vault Guardian deletions remain
 untouched and unstaged.
 ## Direct Ranked start and stale-profile recovery hotfix complete
 
