@@ -243,6 +243,12 @@ async function openNativeMenuOption(page, title) {
   await option.click();
 }
 
+async function openRankedChoice(page, choice) {
+  await openNativeMenuOption(page, "Ranked (Online)");
+  await page.getByRole("heading", { name: "Ranked (Online)", exact: true }).waitFor({ state: "visible" });
+  await page.getByRole("button", { name: choice, exact: true }).click();
+}
+
 async function sessionState(page, expected) {
   await page.waitForFunction(
     (value) => window.DungeonOnlineV3?.getSessionState?.() === value,
@@ -390,15 +396,38 @@ async function main() {
     await page.waitForFunction(() => typeof window.render_game_to_text === "function");
     await dismissBoot(page);
     const nativeMenuText = await page.locator(".overlay-menu").innerText();
-    assert.match(nativeMenuText, /Practice \(Offline\)[\s\S]*Ranked \(Online\)[\s\S]*Continue[\s\S]*Ranked Leaderboard/u);
+    assert.match(nativeMenuText, /Practice \(Offline\)[\s\S]*Ranked \(Online\)[\s\S]*Ranked Leaderboard/u);
+    assert.equal(await page.locator(".overlay-menu-row", { hasText: /^Continue$/u }).count(), 0);
     assert.equal(await page.locator(".ranked-v3-entry:visible").count(), 0);
     assert.equal(await page.locator(".ranked-v3-leaderboard-entry:visible").count(), 0);
     await page.screenshot({
       path: path.join(ARTIFACT_ROOT, "ranked-native-menu.png"),
       fullPage: true
     });
-    await openNativeMenuOption(page, "Ranked (Online)");
 
+    const practiceApiBefore = diagnostics.apiRequests.length;
+    await openNativeMenuOption(page, "Practice (Offline)");
+    await page.waitForFunction(() => JSON.parse(window.render_game_to_text()).phase === "relic");
+    await page.keyboard.press("1");
+    await page.waitForFunction(() => JSON.parse(window.render_game_to_text()).phase === "playing");
+    await page.keyboard.press("Escape");
+    const pauseMenuText = await page.locator(".overlay-menu").innerText();
+    assert.match(pauseMenuText, /Main Menu[\s\S]*Continue/u);
+    assert.doesNotMatch(pauseMenuText, /Practice \(Offline\)/u);
+    await page.screenshot({
+      path: path.join(ARTIFACT_ROOT, "practice-pause-main-menu.png"),
+      fullPage: true
+    });
+    await openNativeMenuOption(page, "Main Menu");
+    await openNativeMenuOption(page, "Practice (Offline)");
+    await page.locator(".overlay-menu-row", { hasText: "Load Continue" }).waitFor({ state: "visible" });
+    await openNativeMenuOption(page, "Load Continue");
+    await page.waitForFunction(() => JSON.parse(window.render_game_to_text()).phase === "playing");
+    assert.equal(diagnostics.apiRequests.length, practiceApiBefore, "Practice emitted an Online v3 API request");
+    await page.keyboard.press("Escape");
+    await openNativeMenuOption(page, "Main Menu");
+
+    await openRankedChoice(page, "Start New Ranked");
     await page.locator(".ranked-v3-choice-relic").first().waitFor({ state: "visible" });
     assert.equal(await page.locator(".ranked-v3-entry:visible").count(), 0);
     assert.equal(await page.locator(".ranked-v3-leaderboard-entry:visible").count(), 0);
@@ -449,7 +478,7 @@ async function main() {
     await observerPage.goto(`${proxy.baseUrl}/`, { waitUntil: "domcontentloaded" });
     await observerPage.waitForFunction(() => typeof window.render_game_to_text === "function");
     await dismissBoot(observerPage);
-    await openNativeMenuOption(observerPage, "Ranked (Online)");
+    await openRankedChoice(observerPage, "Continue Ranked");
 
     await sessionState(observerPage, "RECONNECT_REQUIRED");
     await observerPage.getByRole("button", { name: "Request control" }).waitFor({ state: "visible" });
@@ -466,7 +495,7 @@ async function main() {
 
     await page.reload({ waitUntil: "domcontentloaded" });
     await dismissBoot(page);
-    await openNativeMenuOption(page, "Ranked (Online)");
+    await openRankedChoice(page, "Continue Ranked");
 
     await sessionState(page, "ROOM_ACTIVE");
     assert.equal(
@@ -556,7 +585,7 @@ async function main() {
 
     await page.reload({ waitUntil: "domcontentloaded" });
     await dismissBoot(page);
-    await openNativeMenuOption(page, "Ranked (Online)");
+    await openRankedChoice(page, "Start New Ranked");
 
     await page.locator(".ranked-v3-choice-relic").first().waitFor({ state: "visible" });
     assert.equal(await page.locator(".ranked-v3-entry:visible").count(), 0);
@@ -632,7 +661,7 @@ async function main() {
     await recoveryPage.goto(`${proxy.baseUrl}/`, { waitUntil: "domcontentloaded" });
     await recoveryPage.waitForFunction(() => typeof window.render_game_to_text === "function");
     await dismissBoot(recoveryPage);
-    await openNativeMenuOption(recoveryPage, "Ranked (Online)");
+    await openRankedChoice(recoveryPage, "Continue Ranked");
     await sessionState(recoveryPage, "RECONNECT_REQUIRED");
     await recoveryPage.getByRole("button", { name: "Request control" }).waitFor({ state: "visible" });
 
@@ -654,9 +683,9 @@ async function main() {
     });
     assert.equal(abandonAttempts, 3, "Abandon did not exhaust the exact retry policy");
     await recoveryPage.unroute("**/api/v3/runs/abandon");
-    await recoveryPage.getByRole("button", { name: "Return to Practice" }).click();
+    await recoveryPage.getByRole("button", { name: "Main Menu" }).click();
     await recoveryPage.locator(".ranked-v3-overlay").waitFor({ state: "hidden" });
-    await openNativeMenuOption(recoveryPage, "Ranked (Online)");
+    await openRankedChoice(recoveryPage, "Continue Ranked");
     await recoveryPage.getByRole("heading", { name: "Ranked Run Ended" }).waitFor({ state: "visible" });
     assert.equal(await recoveryPage.getByRole("button", { name: "Resync Ranked Run" }).count(), 0);
     assert.equal(await recoveryPage.getByRole("button", { name: "Abandon Ranked Run" }).count(), 0);

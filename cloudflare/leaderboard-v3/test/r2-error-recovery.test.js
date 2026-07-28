@@ -145,10 +145,29 @@ test("runtime preserves recovery for Practice exit and resyncs canonical state",
     import.meta.url
   ), "utf8");
   assert.doesNotMatch(runtime, /const recoveryAtBoot = recoveryStore\.loadSession/u);
-  assert.match(runtime, /Return to Practice[\s\S]*returnToPractice/u);
+  assert.match(runtime, /Main Menu[\s\S]*returnToPractice/u);
   assert.match(runtime, /Abandon Ranked Run[\s\S]*confirmAbandon/u);
   assert.match(runtime, /resumeCanonical\(\)/u);
   assert.match(runtime, /RUN_RECOVERY_UNAVAILABLE[\s\S]*Ranked Run Ended[\s\S]*Start New Ranked Run/u);
   assert.match(runtime, /clearEndedRecovery[\s\S]*clearRecovery\?\.\(\)/u);
   assert.match(runtime, /client\?\.clear\(\)[\s\S]*ABANDONED_LOCAL_SESSION/u);
+});
+test("runtime exposes explicit Ranked selection and terminal abandonment recovery", async () => {
+  const runtime = await readFile(new URL(
+    "../../../online-v3/ranked-v3-runtime.js",
+    import.meta.url
+  ), "utf8");
+  assert.match(runtime, /Start New Ranked/u);
+  assert.match(runtime, /Continue Ranked/u);
+  assert.doesNotMatch(runtime, /openRankedEntry\(\)\.catch/u);
+  assert.match(runtime, /Cancel/u);
+  assert.doesNotMatch(
+    runtime,
+    /if \(recoveryStore\.loadRecovery\(\)\) await resumeRanked\(\);\s*else await startRanked\(\);/u
+  );
+  assert.match(runtime, /FINALIZED_RUN_IMMUTABLE[\s\S]*Ranked Run Ended/u);
+  assert.match(runtime, /RECOVERY_UNAUTHORIZED[\s\S]*Forget Local Ranked Save/u);
+  assert.match(runtime, /Main Menu/u);
+  assert.match(runtime, /returnToPractice[\s\S]*releaseWriter\?\.\(\)/u);
+  assert.match(runtime, /clearEndedRecovery[\s\S]*releaseWriter\?\.\(\)/u);
 });

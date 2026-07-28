@@ -153,3 +153,17 @@ test("Pages release stays same-origin and disconnects all v2 bindings", async ()
   assert.match(workerConfig, /crons = \["\*\/15 \* \* \* \*"\]/u);
   assert.match(workerConfig, /database_name = "dungeon-online-v3-production"/u);
 });
+test("production menu separates Practice pause, Practice save, and Ranked save choices", async () => {
+  const [builder, runtime] = await Promise.all([
+    rootFile("scripts/build-pages-v3.mjs"),
+    rootFile("online-v3/ranked-v3-runtime.js")
+  ]);
+  assert.match(builder, /isRunPauseMenuActive\(\)[\s\S]*title: "Main Menu"/u);
+  assert.match(builder, /title: "Main Menu"[\s\S]*enterMenu\(\);/u);
+  assert.match(builder, /rankedPause[\s\S]*leaveToMainMenu/u);
+  assert.match(builder, /data-menu-new-game-index[\s\S]*activateMenuNewGameConfirmSelection/u);
+  assert.doesNotMatch(runtime, /options\.get\("continue"\),/u);
+  assert.match(runtime, /Start New Ranked/u);
+  assert.match(runtime, /Continue Ranked/u);
+  assert.match(runtime, /recoveryStore\.loadRecovery\(\)/u);
+});

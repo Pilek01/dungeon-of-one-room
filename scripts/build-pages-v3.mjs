@@ -162,7 +162,23 @@ for (const [sourceText, replacement] of menuReplacements) {
 }
 const menuReturn = "    ];\n  }\n\n";
 const menuExtension = `    ];
-    if (isRunPauseMenuActive()) return baseOptions;
+    if (isRunPauseMenuActive()) {
+      const rankedPause = Boolean(window.DungeonOnlineV3?.getSnapshot?.());
+      return baseOptions.map((option) => option.id === "practice" ? {
+        ...option,
+        title: "Main Menu",
+        desc: rankedPause
+          ? "Keep this Ranked run saved and return to the main menu."
+          : "Save this Practice run and return to the main menu.",
+        action: () => {
+          if (rankedPause) {
+            window.DungeonOnlineV3?.leaveToMainMenu?.();
+            return;
+          }
+          enterMenu();
+        }
+      } : option);
+    }
     const extendOptions = window.DungeonOnlineV3Menu?.extendOptions;
     if (typeof extendOptions !== "function") return baseOptions;
     try {
@@ -178,6 +194,15 @@ if (!menuSource.endsWith(menuReturn)) throw new Error("Unexpected main menu func
 menuSource = `${menuSource.slice(0, -menuReturn.length)}${menuExtension}`;
 game = `${game.slice(0, menuStart)}${menuSource}${game.slice(menuEnd)}`;
 
+const menuConfirmRenderStart = game.indexOf('    if (state.phase === "menu" && state.menuNewGameConfirmOpen) {');
+const menuConfirmRenderEnd = game.indexOf('    if (state.phase === "menu" && state.menuOptionsOpen) {', menuConfirmRenderStart);
+if (menuConfirmRenderStart < 0 || menuConfirmRenderEnd < 0) throw new Error("Missing New/Continue renderer boundaries.");
+let menuConfirmRenderSource = game.slice(menuConfirmRenderStart, menuConfirmRenderEnd);
+const menuConfirmRow = '`<div class="${classes}">`,';
+const productionMenuConfirmRow = '`<div class="${classes}" data-menu-new-game-index="${index}" role="button" tabindex="0">`,';
+if (!menuConfirmRenderSource.includes(menuConfirmRow)) throw new Error("Missing New/Continue menu row.");
+menuConfirmRenderSource = menuConfirmRenderSource.replace(menuConfirmRow, productionMenuConfirmRow);
+game = `${game.slice(0, menuConfirmRenderStart)}${menuConfirmRenderSource}${game.slice(menuConfirmRenderEnd)}`;
 const menuRenderStart = game.indexOf('    } else if (state.phase === "menu") {', game.indexOf('    let menuBlock = "";'));
 const menuRenderEnd = game.indexOf('    } else if (state.phase === "relic") {', menuRenderStart);
 if (menuRenderStart < 0 || menuRenderEnd < 0) throw new Error("Missing main menu renderer boundaries.");
@@ -412,6 +437,15 @@ const productionGameReplacements = [
 `    if (state.phase === "menu") {
       if (state.menuNewGameConfirmOpen) {`,
 `    if (state.phase === "menu") {
+      const newGameRow = event.target?.closest?.("[data-menu-new-game-index]");
+      if (state.menuNewGameConfirmOpen && newGameRow && screenOverlayEl?.contains(newGameRow)) {
+        const newGameIndex = Number(newGameRow.dataset.menuNewGameIndex);
+        if (Number.isInteger(newGameIndex)) {
+          state.menuNewGameConfirmIndex = newGameIndex;
+          activateMenuNewGameConfirmSelection(newGameIndex);
+          return;
+        }
+      }
       const menuRow = event.target?.closest?.("[data-menu-index]");
       if (menuRow && screenOverlayEl?.contains(menuRow)) {
         const menuIndex = Number(menuRow.dataset.menuIndex);

@@ -161,6 +161,7 @@
     if (![root.DungeonRankedV3Session.STATES.reconnect, root.DungeonRankedV3Session.STATES.protocolError].includes(session.getState())) {
       moveToRecoveryState(root.DungeonRankedV3Session.STATES.reconnect);
     }
+    client?.releaseWriter?.();
     client?.clear();
     client = null;
     const abandonedLocalSession = root.DungeonRankedV3Session.STATES.abandoned;
@@ -173,9 +174,7 @@
   }
 
   function clearEndedRecovery() {
-    if (![root.DungeonRankedV3Session.STATES.reconnect, root.DungeonRankedV3Session.STATES.protocolError].includes(session.getState())) {
-      moveToRecoveryState(root.DungeonRankedV3Session.STATES.reconnect);
-    }
+    client?.releaseWriter?.();
     client?.clearRecovery?.();
     client?.clear();
     client = null;
@@ -183,7 +182,7 @@
     if (abandonedLocalSession !== "ABANDONED_LOCAL_SESSION") {
       throw new TypeError("RANKED_ABANDONED_STATE_MISMATCH");
     }
-    session.transition(abandonedLocalSession);
+    session = root.DungeonRankedV3Session.createStateMachine(abandonedLocalSession);
     root.DungeonOnlineV3GameBridge?.returnToPractice?.();
     ui.hide();
   }
@@ -193,6 +192,37 @@
     await startRanked();
   }
 
+  const endedRecoveryCodes = Object.freeze([
+    "RUN_RECOVERY_UNAVAILABLE",
+    "RUN_NOT_FOUND",
+    "FINALIZED_RUN_IMMUTABLE"
+  ]);
+
+  function isEndedRecoveryError(error) {
+    return endedRecoveryCodes.includes(String(error?.code || ""));
+  }
+
+  function isUnrecoverableLocalSave(error) {
+    return ["RECOVERY_UNAUTHORIZED", "RECOVERY_CREDENTIAL_INVALID"].includes(String(error?.code || "")) ||
+      String(error?.message || "") === "RANKED_RECOVERY_CREDENTIAL_MISSING";
+  }
+
+  async function forgetLocalRecoveryAndStartNew() {
+    clearEndedRecovery();
+    await startRanked();
+  }
+
+  function confirmForgetLocalRecovery() {
+    ui.showMessage(
+      "Forget Local Ranked Save?",
+      "This browser cannot recover that save. Forget it here to start a new Ranked run.",
+      [
+        ui.button("Forget and Start New", () => forgetLocalRecoveryAndStartNew().catch(presentError)),
+        ui.button("Keep Local Save", openRankedEntry)
+      ]
+    );
+  }
+
   async function abandonCanonical() {
     ui.setStatus("Abandoning your Ranked run...");
     await createClient().abandonCanonical();
@@ -200,6 +230,36 @@
     moveToRecoveryState(root.DungeonRankedV3Session.STATES.abandoned);
     root.DungeonOnlineV3GameBridge?.returnToPractice?.();
     ui.hide();
+  }
+
+  async function abandonAndStartNewRanked() {
+    ui.setStatus("Ending the saved Ranked run...");
+    try {
+      await createClient().abandonCanonical();
+      client = null;
+      session = root.DungeonRankedV3Session.createStateMachine(
+        root.DungeonRankedV3Session.STATES.abandoned
+      );
+    } catch (error) {
+      if (!isEndedRecoveryError(error)) throw error;
+      clearEndedRecovery();
+    }
+    await startRanked();
+  }
+
+  function confirmStartNewRanked() {
+    if (!recoveryStore.loadRecovery()) {
+      startRanked().catch(presentError);
+      return;
+    }
+    ui.showMessage(
+      "Start New Ranked Run?",
+      "This permanently ends the saved Ranked run before starting a new one.",
+      [
+        ui.button("Confirm New Ranked", () => abandonAndStartNewRanked().catch(presentError)),
+        ui.button("Keep Saved Run", openRankedEntry)
+      ]
+    );
   }
 
   function confirmAbandon() {
@@ -232,13 +292,24 @@
         message: String(error?.message || "")
       });
     }
-    if (["RUN_RECOVERY_UNAVAILABLE", "RUN_NOT_FOUND"].includes(code)) {
+    if (isEndedRecoveryError(error)) {
       ui.showMessage(
         "Ranked Run Ended",
         "This Ranked run has already ended. Clear it to begin a new descent.",
         [
           ui.button("Start New Ranked Run", () => startAfterEndedRecovery().catch(presentError)),
-          ui.button("Return to Practice", clearEndedRecovery)
+          ui.button("Main Menu", clearEndedRecovery)
+        ]
+      );
+      return;
+    }
+    if (isUnrecoverableLocalSave(error)) {
+      ui.showMessage(
+        "Ranked Save Cannot Be Recovered",
+        "The saved Ranked run cannot be verified by this browser.",
+        [
+          ui.button("Forget Local Ranked Save", confirmForgetLocalRecovery),
+          ui.button("Main Menu", () => ui.hide())
         ]
       );
       return;
@@ -257,14 +328,14 @@
     }
     controls.push(
       ui.button("Resync Ranked Run", () => resyncCanonical().catch(presentError)),
-      ui.button("Return to Practice", returnToPractice),
+      ui.button("Main Menu", returnToPractice),
       ui.button("Abandon Ranked Run", confirmAbandon)
     );
     ui.showMessage(
       conflict ? "Ranked state conflict" : "Ranked reconnect required",
       conflict
         ? "Your Ranked run changed. Refresh it before continuing."
-        : "Recovery is preserved. Return to Practice does not abandon the Ranked run.",
+        : "Recovery is preserved. Main Menu does not abandon the Ranked run.",
       controls
     );
     if ((conflict || ["TOKEN_EXPIRED", "REVISION_CONFLICT", "STATE_DIGEST_CONFLICT", "ROOM_TOKEN_CONFLICT"].includes(code)) && !protocolFailure) {
@@ -716,9 +787,19 @@
     }
   }
 
-  async function openRankedEntry() {
-    if (recoveryStore.loadRecovery()) await resumeRanked();
-    else await startRanked();
+  function openRankedEntry() {
+    const hasRecovery = Boolean(recoveryStore.loadRecovery());
+    ui.showMessage(
+      "Ranked (Online)",
+      hasRecovery
+        ? "Start a new Ranked run or continue the saved Ranked run."
+        : "Start a new Ranked run. No Ranked save is available in this browser.",
+      [
+        ui.button("Start New Ranked", confirmStartNewRanked),
+        ui.button("Continue Ranked", () => resumeRanked().catch(presentError), !hasRecovery),
+        ui.button("Cancel", () => ui.hide())
+      ]
+    );
   }
 
   const menuEnabled = Boolean(String(root.DUNGEON_ONLINE_V3_API || "").trim());
@@ -735,13 +816,12 @@
           ? "Continue your active Ranked descent."
           : "Start a connected Ranked descent.",
         disabled: false,
-        action: () => openRankedEntry().catch(presentError)
+        action: openRankedEntry
       };
       const leaderboard = options.get("leaderboard");
       const ordered = [
         practice ? { ...practice, title: "Practice (Offline)" } : null,
         ranked,
-        options.get("continue"),
         leaderboard ? {
           ...leaderboard,
           title: "Ranked Leaderboard",
@@ -754,11 +834,11 @@
       ].filter(Boolean);
       return ordered.map((option, index) => ({ ...option, key: String(index + 1) }));
     },
-    openRanked: () => openRankedEntry().catch(presentError),
+    openRanked: openRankedEntry,
     openLeaderboard: () => openLeaderboard(true)
   });
 
-  ui.entry.addEventListener("click", () => openRankedEntry().catch(presentError));
+  ui.entry.addEventListener("click", openRankedEntry);
   leaderboardEntry.addEventListener("click", () => openLeaderboard(true));
   root.addEventListener("beforeunload", () => client?.releaseWriter?.());
   root.setInterval(() => {
@@ -776,6 +856,7 @@
     onExtraction,
     onCampAction,
     onCampStartRun,
+    leaveToMainMenu: returnToPractice,
     getSessionState: () => session.getState(),
     getSnapshot: () => client?.getSnapshot() || null
   });
