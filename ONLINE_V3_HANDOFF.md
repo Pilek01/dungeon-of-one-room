@@ -1,5 +1,50 @@
 # Online v3 - Production handoff
 
+## Production UI hotfix complete
+
+The production UI hotfix is active on `https://dungeon-of-one-room.pages.dev`.
+
+- final Pages deployment: `2c5bab5b-e9fa-4446-b946-f3cb00df44de`;
+- deployed source: `797499d` on production branch `main`;
+- native menu rows now contain `Practice (Offline)`, `Ranked (Online)`, and
+  `Ranked Leaderboard`; the former floating controls remain hidden;
+- the first boot input starts a visible loading bar and keyboard/pointer input
+  stays locked through the complete boot fade until the menu is usable;
+- Ranked relic offers use catalog names, descriptions, rarities, and icons;
+- ordinary checkpoints save automatically with restrained feedback;
+- player-facing Online v3 protocol terminology and raw identifiers are hidden.
+
+Final verification on commit `797499d`:
+
+- R2 threat matrix: all 30 scenarios covered; accepted R1-P0-001 boundary unchanged;
+- `verify:phase`: 709/709 PASS (`output/verification/phase-20260728T014312884Z.log`);
+- `verify:baseline`: 3/3 PASS plus headed Practice/Ranked smoke
+  (`output/verification/baseline-20260728T014423271Z.log`);
+- `verify:full`: 733/733 PASS, including 21/21 local Wrangler/D1 E2E and headed
+  smoke (`output/verification/full-20260728T014601857Z.log`);
+- focused headed lifecycle: PASS for lifecycle, network loss, reload, multi-tab,
+  and Camp; visual artifacts are in ignored `output/online-v3-m4-ranked-headed/`;
+- production headed smoke: PASS with Practice at zero `/api/v3` requests,
+  start/resume/automatic checkpoint/next room/leaderboard all successful, and
+  zero API, console, or page errors; smoke run
+  `run_0f41876d60ee4a6e92996322b23945b1` reached revision 2.
+
+The source `game.js` remains byte-identical at SHA-256
+`556829c909cdc9eaefb4238279457eb9b3427adef9ce494f35743542770ee7de`.
+The activated ruleset remains `v08-meta-1` at
+`sha256:0bf00607056dbf3c30ffe57bbcfc77cea95b21c9ccc23aa985ec555856d1cbd6`.
+No gameplay, Worker, D1 schema, combat-authority model, mode names, or mode
+rules changed. No staging, push, rollback, paid service, or M5 work was started.
+The 172 Vault Guardian deletions remain unstaged and outside every commit and
+both production bundles.
+
+Hotfix commits:
+
+- `24c2f4d` - integrate the production UI with the native game presentation;
+- `877501f` - add focused production and headed coverage;
+- `f2abf3a` - preserve the Ranked local recovery contract;
+- `797499d` - hold boot input lock through the complete fade.
+
 ## Production release complete
 
 Online v3 is active on the existing production Pages project:

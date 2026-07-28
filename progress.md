@@ -726,3 +726,23 @@ Updated next good targets
 - Smoke run `run_d59efc9a79ce4ceb924c7cb9a53049de` was verified read-only in production D1 at revision 2, depth 1, room 2.
 - No staging, Access gate, tester list, paid plan, soak, canary, M5, force push, or unrelated-history merge was performed.
 - All 172 Vault Guardian deletions remain unstaged and outside the deployment.
+
+## 2026-07-28 - Online v3 production UI hotfix
+
+- Deployed native Online v3 menu integration, player-facing relic cards and copy,
+  and automatic ordinary checkpoints to `https://dungeon-of-one-room.pages.dev`.
+- Added a v2-style boot loading bar; after the first input, all keyboard and
+  pointer input remains blocked until assets are ready and the boot fade is
+  completely hidden.
+- Final source commit is `797499d`; final Pages deployment is
+  `2c5bab5b-e9fa-4446-b946-f3cb00df44de`.
+- Final gates passed: threat matrix 30/30, phase 709/709, baseline 3/3 plus
+  headed Practice/Ranked smoke, and full 733/733 including 21/21 Wrangler/D1 E2E.
+- Production smoke passed Practice with zero API calls, Ranked start/resume,
+  automatic checkpoint, next room, leaderboard status 200, and zero API,
+  console, or page errors. Smoke run:
+  `run_0f41876d60ee4a6e92996322b23945b1` at revision 2.
+- Source `game.js`, ruleset hash, gameplay, Worker/D1, mode names, and combat
+  authority remain unchanged. No staging, push, rollback, paid service, or M5.
+- All 172 Vault Guardian deletions remain unstaged and outside the commits and
+  deployment bundles.

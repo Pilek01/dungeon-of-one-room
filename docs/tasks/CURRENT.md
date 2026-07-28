@@ -2,7 +2,7 @@
 
 ## Active status
 
-`AUTHORIZED_FOR_DIRECT_PRODUCTION_UI_HOTFIX` on the existing Pages project
+`COMPLETED_AND_PRODUCTION_VERIFIED` on the existing Pages project
 `dungeon-of-one-room`. The current production deployment remains active while
 the owner tests each corrected release directly.
 
@@ -50,6 +50,18 @@ Verification and release:
 - deploy directly to the existing production Pages project after all gates;
 - do not create staging, push unrelated histories, touch the 172 protected
   Vault Guardian deletions, or begin another milestone.
+
+Completion evidence:
+
+- final production deployment `2c5bab5b-e9fa-4446-b946-f3cb00df44de` from
+  source commit `797499d`;
+- threat matrix 30/30 scenarios covered;
+- `verify:phase` 709/709, `verify:baseline` 3/3 plus headed smoke, and
+  `verify:full` 733/733;
+- production smoke passed boot input lock, Practice zero-API, Ranked
+  start/resume/automatic checkpoint/leaderboard, and zero browser/API errors;
+- ruleset hash, source `game.js`, gameplay, Worker, D1, and all 172 protected
+  deletions remained unchanged.
 
 ---
 
