@@ -210,6 +210,49 @@ function validateRegisteredStartBody(body) {
   };
 }
 
+function normalizeProfileCampLedger(state) {
+  if (!state || typeof state !== "object" || Array.isArray(state)) {
+    throw new TypeError("PROFILE_STATE_INVALID");
+  }
+  const next = structuredClone(state);
+  const campGold = next.campGold ?? 0;
+  if (!Number.isSafeInteger(campGold) || campGold < 0) {
+    throw new TypeError("PROFILE_CAMP_GOLD_INVALID");
+  }
+  if (!next.goldLedger || typeof next.goldLedger !== "object") {
+    throw new TypeError("PROFILE_GOLD_LEDGER_INVALID");
+  }
+  const earned = next.goldLedger.campEarnedServerDerived ?? 0;
+  const spent = next.goldLedger.campSpentServerDerived ?? 0;
+  if (
+    !Number.isSafeInteger(earned) ||
+    earned < 0 ||
+    !Number.isSafeInteger(spent) ||
+    spent < 0
+  ) {
+    throw new TypeError("PROFILE_CAMP_GOLD_LEDGER_INVALID");
+  }
+  const normalizedEarned = spent + campGold;
+  if (!Number.isSafeInteger(normalizedEarned)) {
+    throw new TypeError("PROFILE_CAMP_GOLD_LEDGER_INVALID");
+  }
+  next.campGold = campGold;
+  next.goldLedger.campEarnedServerDerived =
+    earned >= spent && earned - spent === campGold ? earned : normalizedEarned;
+  next.goldLedger.campSpentServerDerived = spent;
+  return next;
+}
+
+function profileStateForRulesetBootstrap(profileState) {
+  if (!profileState) return { carried: null, input: null };
+  const carried = normalizeProfileCampLedger(profileState);
+  const input = structuredClone(carried);
+  input.campGold = 0;
+  input.goldLedger.campEarnedServerDerived = 0;
+  input.goldLedger.campSpentServerDerived = 0;
+  return { carried, input };
+}
+
 async function loadRankedProfile(body, repositories, now) {
   if (!repositories.profiles) {
     throw new HttpError(503, "PROFILE_STORAGE_UNAVAILABLE", "Ranked profile storage is unavailable.");
@@ -527,10 +570,12 @@ async function persistRegisteredMutation(context, transition, repositories, opti
       throw new HttpError(409, "PROFILE_NOT_FOUND", "Ranked profile is unavailable.");
     }
     const profileRevision = currentProfile.revision + 1;
-    const profileState = context.ruleset.profileStateFromRun(
-      nextState,
-      nextState.profileId,
-      profileRevision
+    const profileState = normalizeProfileCampLedger(
+      context.ruleset.profileStateFromRun(
+        nextState,
+        nextState.profileId,
+        profileRevision
+      )
     );
     profileMutation = {
       expectedRevision: currentProfile.revision,
@@ -673,7 +718,7 @@ async function handleProfileCamp(request, env, options, repositories) {
   const replay = await replayOrConflict(current, idempotencyKey, requestDigest);
   if (replay) return replay;
   const ruleset = resolveRegisteredRuleset(options, current);
-  let state = structuredClone(current.state);
+  let state = normalizeProfileCampLedger(current.state);
   if (body.action === "open") {
     state.revision += 1;
     state = await ruleset.beginCampSession(state, { secret: requireSecret(env) });
@@ -966,6 +1011,9 @@ async function handleRegisteredStart(request, env, options, repositories) {
     body.recoveryCredential,
     `ranked-run-recovery-v1:${runId}:${body.rulesetHash}`
   );
+  const profileBootstrap = profileStateForRulesetBootstrap(
+    profileAccess.existing?.state || null
+  );
   const transition = await createAuthenticatedRunBootstrap(body, {
     ruleset,
     secret,
@@ -973,9 +1021,16 @@ async function handleRegisteredStart(request, env, options, repositories) {
     runId,
     bootstrapNonce: randomIdentifier("bootstrap", options.randomUUID),
     profileId: body.profileId,
-    profileState: profileAccess.existing?.state || null
+    profileState: profileBootstrap.input
   });
   const state = transition.nextState;
+  if (profileBootstrap.carried) {
+    state.campGold = profileBootstrap.carried.campGold;
+    state.goldLedger.campEarnedServerDerived =
+      profileBootstrap.carried.goldLedger.campEarnedServerDerived;
+    state.goldLedger.campSpentServerDerived =
+      profileBootstrap.carried.goldLedger.campSpentServerDerived;
+  }
   const stateDigest = await canonicalDigest(stateForDigest(state));
   let boundaryToken;
   let boundaryField;

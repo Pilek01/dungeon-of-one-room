@@ -6,6 +6,7 @@ import { createRulesetRegistry } from "../src/rulesets/registry.js";
 import { V08_META_1_LOCAL_RELEASE_DESCRIPTOR } from "../src/rulesets/releases.js";
 import { createMemoryRepositories } from "./fixtures/memory-repositories.js";
 import { TEST_SECRET } from "./fixtures/harness.js";
+import { canonicalDigest } from "../src/security/digests.js";
 import manifest from "../src/rulesets/v08-meta-1/data/ruleset-manifest.json" with { type: "json" };
 
 const require = createRequire(import.meta.url);
@@ -104,15 +105,41 @@ test("canonical extraction creates an authenticated profile Camp and next run", 
     choiceId: started.metaState.startingRelicOffer.publicChoices[0].choiceId
   }, "r2-camp-select-extract")).payload;
   const directive = selected.metaState.currentRoomDirective;
-  const extracted = (await harness.post("/api/v3/runs/event", {
+  const commands = [{ code: "move", count: 2 }, { code: "attack", count: 1 }];
+  const checkpointed = (await harness.post("/api/v3/runs/checkpoint", {
     runId: selected.runId,
-    type: "request_extraction",
     checkpointToken: selected.checkpointToken,
     roomDirectiveId: directive.directiveId,
     roomNonce: directive.roomNonce,
-    payload: { mode: "emergency" }
+    roomResult: "cleared",
+    rewardClaims: [],
+    turnCount: 3,
+    elapsedMs: 1_000,
+    commandJournalDigest: await canonicalDigest(commands),
+    compactRoomProof: {
+      version: 1,
+      roomDirectiveId: directive.directiveId,
+      roomNonce: directive.roomNonce,
+      commands
+    }
+  }, "r2-camp-checkpoint")).payload;
+  assert.ok(checkpointed.metaState.gold > 0);
+  const nextDirective = checkpointed.metaState.currentRoomDirective;
+  const extracted = (await harness.post("/api/v3/runs/event", {
+    runId: checkpointed.runId,
+    type: "request_extraction",
+    checkpointToken: checkpointed.checkpointToken,
+    roomDirectiveId: nextDirective.directiveId,
+    roomNonce: nextDirective.roomNonce,
+    payload: { mode: "normal" }
   }, "r2-camp-extract")).payload;
   assert.equal(extracted.metaState.status, "extraction");
+  assert.ok(extracted.metaState.campGold > 0);
+  const storedExtractionProfile = harness.repositories.snapshotProfile(PROFILE_ID).state;
+  assert.equal(
+    storedExtractionProfile.goldLedger.campEarnedServerDerived,
+    storedExtractionProfile.campGold
+  );
   assert.equal(extracted.profile.profileId, PROFILE_ID);
 
   const beforeFinalize = await harness.post(
@@ -147,6 +174,18 @@ test("canonical extraction creates an authenticated profile Camp and next run", 
   assert.equal(opened.response.status, 200);
   assert.equal(opened.payload.profile.profileId, PROFILE_ID);
   assert.equal(opened.payload.profile.campSession.active, true);
+
+  const currentProfile = await harness.repositories.profiles.get(PROFILE_ID);
+  const legacyProfile = structuredClone(currentProfile);
+  legacyProfile.state.goldLedger.campEarnedServerDerived = 0;
+  legacyProfile.state.goldLedger.campSpentServerDerived = 0;
+  assert.equal(
+    await harness.repositories.profiles.updateConditional(
+      legacyProfile,
+      currentProfile.revision
+    ),
+    true
+  );
 
   const nextRun = await harness.start("r2-camp-next-run");
   assert.equal(nextRun.response.status, 201);
