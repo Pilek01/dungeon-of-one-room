@@ -16,7 +16,7 @@
   leaderboardEntry.tabIndex = -1;
   leaderboardEntry.setAttribute("aria-hidden", "true");
   root.document.body.append(leaderboardEntry);
-  const session = root.DungeonRankedV3Session.createStateMachine();
+  let session = root.DungeonRankedV3Session.createStateMachine();
   let client = null;
   let leaderboardClient = null;
   let leaderboardRows = [];
@@ -24,6 +24,8 @@
   let startedAt = 0;
   let pendingRoomSummary = null;
   let extractedProfileReady = false;
+  let currentCampResponse = null;
+  let campMutationPending = false;
   const recoveryStore = root.DungeonRankedV3Storage.createStore(root.localStorage);
 
   function publicName() {
@@ -251,17 +253,13 @@
 
   function showTerminal(state) {
     root.DungeonOnlineV3GameBridge?.holdTerminal?.(state);
-    ui.showMessage(
-      `Ranked ${state.status}`,
-      "Your result is ready.",
-      [ui.button("Finalize", () => finalize().catch(presentError))]
-    );
+    ui.hide();
+    root.setTimeout(() => finalize().catch(presentError), 0);
   }
 
   async function finalize() {
     session.transition(root.DungeonRankedV3Session.STATES.finalizing);
-    ui.setStatus("Publishing your result...");
-    acceptFinal(await createClient().finalize());
+    await acceptFinal(await createClient().finalize());
   }
 
   async function acceptResponse(response) {
@@ -302,11 +300,17 @@
     }
     if (["victory", "defeat", "extraction"].includes(state.status)) {
       session.transition(root.DungeonRankedV3Session.STATES.terminal);
-      showTerminal(state);
+      extractedProfileReady = state.status === "extraction" && Boolean(response.profile);
+      if (extractedProfileReady) {
+        root.DungeonOnlineV3GameBridge?.beginRankedExtraction?.();
+        await finalize();
+      } else {
+        showTerminal(state);
+      }
       return;
     }
     if (state.status === "finalized") {
-      acceptFinal(response);
+      await acceptFinal(response);
       return;
     }
     throw new TypeError("RANKED_RESPONSE_STATE_UNSUPPORTED");
@@ -454,42 +458,92 @@
     await continueBoundary(response.metaState);
   }
 
-  function presentCampOffer(response) {
-    const offer = response.metaTransactionOffer;
-    const choices = Array.isArray(offer?.choices) ? offer.choices : [];
-    if (!choices.length) {
-      ui.showMessage("Ranked Camp", "No Camp actions are currently available.", [
-        ui.button("Leave Camp", () => { client.clearRecovery(); client.clear(); ui.hide(); })
-      ]);
-      return;
-    }
-    ui.showChoices(
-      "Ranked Camp",
-      `Camp Gold: ${Number(response.profile?.campGold) || 0}.`,
-      choices.filter((choice) => choice.status === "available"),
-      async (choiceId) => {
-        try {
-          const choice = choices.find((entry) => entry.choiceId === choiceId);
-          if (!choice) throw new TypeError("RANKED_CAMP_CHOICE_INVALID");
-          ui.setStatus("Confirming your Camp choice...");
-          await createClient().camp("commit", {
-            transactionId: choice.transactionId,
-            choiceId
-          });
-          await openCamp();
-        } catch (error) {
-          presentError(error);
-        }
+  function availableCampChoices() {
+    const choices = currentCampResponse?.metaTransactionOffer?.choices;
+    return Array.isArray(choices)
+      ? choices.filter((choice) => !choice.status || choice.status === "available")
+      : [];
+  }
+
+  function campChoiceFor(request = {}) {
+    const action = String(request.action || "");
+    return availableCampChoices().find((choice) => {
+      const data = choice.publicData || choice;
+      if (action === "upgrade") {
+        return data.action === "upgrade" && data.upgradeId === request.upgradeId;
       }
-    );
-    ui.overlay.querySelector(".ranked-v3-actions")?.append(
-      ui.button("Leave Camp", () => { client.clearRecovery(); client.clear(); ui.hide(); })
-    );
+      if (action === "elixir_buy_refill") {
+        return ["elixir_buy", "elixir_refill"].includes(data.action) && data.elixirId === request.elixirId;
+      }
+      if (action === "elixir_discard") {
+        return data.action === "elixir_discard" && data.elixirId === request.elixirId;
+      }
+      if (action === "relic_sale") {
+        return data.action === "relic_sale" && data.relicId === request.relicId;
+      }
+      return false;
+    }) || null;
+  }
+
+  function presentNativeCamp(response) {
+    const bridge = root.DungeonOnlineV3GameBridge;
+    if (!bridge || typeof bridge.enterRankedCamp !== "function") {
+      throw new TypeError("RANKED_CAMP_BRIDGE_UNAVAILABLE");
+    }
+    currentCampResponse = response;
+    client?.clearRecovery?.();
+    bridge.enterRankedCamp(response.profile, response.metaTransactionOffer);
+    ui.hide();
   }
 
   async function openCamp() {
-    ui.setStatus("Opening Camp...");
-    presentCampOffer(await createClient().camp("open"));
+    const response = await createClient().camp("open");
+    presentNativeCamp(response);
+    return response;
+  }
+
+  function presentCampError(error) {
+    if (root.DUNGEON_ONLINE_V3_DEBUG === true) {
+      console.debug("[Online v3] Camp error", error);
+    }
+    ui.showMessage("Camp unavailable", "Your Ranked Camp state is preserved.", [
+      ui.button("Retry Camp", () => openCamp().catch(presentCampError)),
+      ui.button("Back to Camp", () => ui.hide())
+    ]);
+  }
+
+  function onCampAction(request = {}) {
+    if (campMutationPending) return false;
+    const choice = campChoiceFor(request);
+    if (!choice) return false;
+    campMutationPending = true;
+    createClient().camp("commit", {
+      transactionId: choice.transactionId,
+      choiceId: choice.choiceId
+    })
+      .then(() => openCamp())
+      .catch(presentCampError)
+      .finally(() => { campMutationPending = false; });
+    return true;
+  }
+
+  function onCampStartRun() {
+    if (campMutationPending) return false;
+    campMutationPending = true;
+    Promise.resolve()
+      .then(() => {
+        client?.clearRecovery?.();
+        client?.clear?.();
+        client = null;
+        currentCampResponse = null;
+        extractedProfileReady = false;
+        session = root.DungeonRankedV3Session.createStateMachine();
+        ui.hide();
+        return startRanked();
+      })
+      .catch(presentCampError)
+      .finally(() => { campMutationPending = false; });
+    return true;
   }
 
   async function continueBoundary(state) {
@@ -564,23 +618,15 @@
     await openMetaOffer(directive.roomType);
   }
 
-  function acceptFinal(response) {
+  async function acceptFinal() {
     session.transition(root.DungeonRankedV3Session.STATES.finalized);
-    const controls = extractedProfileReady
-      ? [
-          ui.button("Open Camp", () => openCamp().catch(presentError)),
-          ui.button("Close", () => { client.clearRecovery(); client.clear(); ui.hide(); })
-        ]
-      : [ui.button("Close", () => { client.clearRecovery(); client.clear(); ui.hide(); })];
-    ui.showMessage(
-      "Ranked run finalized",
-      `Score ${Number(response.score) || 0}. Your result is now on the Ranked leaderboard.`,
-      controls
-    );
-    if (!extractedProfileReady) {
-      client.clearRecovery();
-      client.clear();
+    if (extractedProfileReady) {
+      await openCamp();
+      return;
     }
+    client?.clearRecovery?.();
+    client?.clear?.();
+    ui.hide();
   }
 
   async function onFatalEvent() {
@@ -618,11 +664,11 @@
   async function onExtraction(mode) {
     try {
       session.transition(root.DungeonRankedV3Session.STATES.resolving);
-      ui.showSync("Securing your extraction...");
+      root.DungeonOnlineV3GameBridge?.beginRankedExtraction?.();
       const response = await createClient().event("request_extraction", { mode });
       extractedProfileReady = response.metaState?.status === "extraction" && Boolean(response.profile);
       session.transition(root.DungeonRankedV3Session.STATES.terminal);
-      showTerminal(response.metaState);
+      await finalize();
     } catch (error) {
       presentError(error);
     }
@@ -696,7 +742,9 @@
     onRoomEntered,
     onFatalEvent,
     onExtraction,
-    getSessionState: session.getState,
+    onCampAction,
+    onCampStartRun,
+    getSessionState: () => session.getState(),
     getSnapshot: () => client?.getSnapshot() || null
   });
 })(typeof globalThis === "object" ? globalThis : null);

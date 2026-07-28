@@ -487,6 +487,17 @@ async function main() {
       fullPage: true
     });
 
+    let droppedFinalizeResponse = false;
+    await page.route("**/api/v3/runs/finalize", async (route) => {
+      if (!droppedFinalizeResponse) {
+        droppedFinalizeResponse = true;
+        await route.fetch();
+        await route.abort("failed");
+        return;
+      }
+      await route.continue();
+    });
+
     for (let index = 0; index < 8; index += 1) {
       const status = await page.evaluate(() => window.DungeonOnlineV3.getSnapshot()?.publicState?.status);
       if (["victory", "defeat", "extraction"].includes(status)) break;
@@ -505,23 +516,10 @@ async function main() {
         debugMessages: diagnostics.debugMessages
       })}`
     );
-    await sessionState(page, "TERMINAL_PENDING");
     assert.equal(
       await page.evaluate(() => window.DungeonOnlineV3.getSnapshot().publicState.status),
       "defeat"
     );
-
-    let droppedFinalizeResponse = false;
-    await page.route("**/api/v3/runs/finalize", async (route) => {
-      if (!droppedFinalizeResponse) {
-        droppedFinalizeResponse = true;
-        await route.fetch();
-        await route.abort("failed");
-        return;
-      }
-      await route.continue();
-    });
-    await page.getByRole("button", { name: "Finalize" }).click();
     await sessionState(page, "FINALIZED");
     assert.equal(droppedFinalizeResponse, true);
     assert.equal(diagnostics.finalizeOperationIds.length, 2);
@@ -571,24 +569,29 @@ async function main() {
     await page.locator(".ranked-v3-choice-relic").first().click();
     await sessionState(page, "ROOM_ACTIVE");
     await page.evaluate(() => window.DungeonOnlineV3.onExtraction("emergency"));
-    await sessionState(page, "TERMINAL_PENDING");
-    assert.equal(
-      await page.evaluate(() => window.DungeonOnlineV3.getSnapshot().publicState.status),
-      "extraction"
-    );
-    await page.getByRole("button", { name: "Finalize" }).click();
     await sessionState(page, "FINALIZED");
-    await page.getByRole("button", { name: "Open Camp" }).click();
-    await page.getByText("Camp Gold:").waitFor({ state: "visible" });
+    await page.waitForTimeout(3_000);
+    const campAudit = await page.evaluate(() => ({
+      game: JSON.parse(window.render_game_to_text()),
+      session: window.DungeonOnlineV3.getSessionState(),
+      snapshot: window.DungeonOnlineV3.getSnapshot(),
+      onlineOverlay: document.querySelector(".ranked-v3-overlay")?.textContent || "",
+      nativeCamp: Boolean(document.querySelector(".camp-revamp"))
+    }));
+    assert.equal(campAudit.game.phase, "camp", JSON.stringify(campAudit));
+    if (!campAudit.nativeCamp && /Camp Guide/u.test(campAudit.game.overlayText)) {
+      await page.keyboard.press("h");
+    }
+    await page.locator(".camp-revamp").waitFor({ state: "visible" });
+    assert.equal(await page.locator(".ranked-v3-overlay:visible").count(), 0);
+    assert.equal(await page.getByRole("button", { name: "Finalize" }).count(), 0);
+    assert.equal(await page.getByRole("button", { name: "Open Camp" }).count(), 0);
     await page.screenshot({
       path: path.join(ARTIFACT_ROOT, "ranked-camp.png"),
       fullPage: true
     });
-    await page.getByRole("button", { name: "Leave Camp" }).click();
-
-    await page.reload({ waitUntil: "domcontentloaded" });
-    await dismissBoot(page);
-    await openNativeMenuOption(page, "Ranked (Online)");
+    await page.getByRole("button", { name: /Start Next Run/u }).click();
+    await sessionState(page, "ROOM_ACTIVE");
 
     await page.waitForTimeout(1_000);
     const nextRunAudit = await page.evaluate(() => ({

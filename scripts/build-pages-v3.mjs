@@ -277,6 +277,138 @@ const productionGameReplacements = [
       window.DungeonOnlineV3?.onRoomEntered?.(state.onlineV3Directive);`
   ],
   [
+`    const def = CAMP_UPGRADES[index];
+    if (!def) return;
+
+    const level =`,
+`    const def = CAMP_UPGRADES[index];
+    if (!def) return;
+    if (state.onlineV3Ranked) {
+      const accepted = window.DungeonOnlineV3?.onCampAction?.({ action: "upgrade", upgradeId: def.id });
+      if (!accepted) pushLog("That Camp upgrade is not currently available.", "bad");
+      return;
+    }
+
+    const level =`
+  ],
+  [
+`    state.campGold -= cost;
+    state.elixirLoadout = {`,
+`    if (state.onlineV3Ranked) {
+      const accepted = window.DungeonOnlineV3?.onCampAction?.({ action: "elixir_buy_refill", elixirId: elixir.id });
+      if (!accepted) pushLog("That elixir action is not currently available.", "bad");
+      return accepted;
+    }
+    state.campGold -= cost;
+    state.elixirLoadout = {`
+  ],
+  [
+`    state.campGold += Math.max(0, refund);
+    state.elixirLoadout = { type: "", charges: 0 };`,
+`    if (state.onlineV3Ranked) {
+      const accepted = window.DungeonOnlineV3?.onCampAction?.({ action: "elixir_discard", elixirId: elixir.id });
+      if (!accepted) pushLog("That elixir action is not currently available.", "bad");
+      return accepted;
+    }
+    state.campGold += Math.max(0, refund);
+    state.elixirLoadout = { type: "", charges: 0 };`
+  ],
+  [
+`    state.relics.splice(safeIndex, 1);
+    normalizeRelicInventory();`,
+`    if (state.onlineV3Ranked) {
+      const accepted = window.DungeonOnlineV3?.onCampAction?.({ action: "relic_sale", relicId });
+      if (!accepted) pushLog("That relic sale is not currently available.", "bad");
+      state.campRelicSellPendingIndex = -1;
+      markUiDirty();
+      return accepted;
+    }
+    state.relics.splice(safeIndex, 1);
+    normalizeRelicInventory();`
+  ],
+  [
+`  function openCampStartDepthPrompt() {
+    if (state.phase !== "camp") return false;
+    if (state.extractRelicPrompt) return false;
+    const available = getAvailableStartDepths();`,
+`  function openCampStartDepthPrompt() {
+    if (state.phase !== "camp") return false;
+    if (state.extractRelicPrompt) return false;
+    if (state.onlineV3Ranked) {
+      return Boolean(window.DungeonOnlineV3?.onCampStartRun?.());
+    }
+    const available = getAvailableStartDepths();`
+  ],
+  [
+`  function toggleMutator(index) {
+    const mutator = MUTATORS[index];
+    if (!mutator) return;`,
+`  function toggleMutator(index) {
+    const mutator = MUTATORS[index];
+    if (!mutator) return;
+    if (state.onlineV3Ranked && state.phase === "camp") {
+      pushLog("Ranked mutators are fixed by the canonical run profile.", "bad");
+      return;
+    }`
+  ],
+  [
+`    setNextDirective(directive) {`,
+`    beginRankedExtraction() {
+      if (!state.onlineV3Ranked) return;
+      state.extractConfirm = null;
+      state.merchantMenuOpen = false;
+      state.turnInProgress = true;
+      markUiDirty();
+    },
+    enterRankedCamp(profile, offer) {
+      const wasCamp = state.phase === "camp";
+      const build = profile?.build || {};
+      state.onlineV3Ranked = true;
+      state.onlineV3FatalPending = false;
+      state.onlineV3Directive = null;
+      state.onlineV3NextDirective = null;
+      state.turnInProgress = false;
+      state.extractConfirm = null;
+      state.extractRelicPrompt = null;
+      state.merchantMenuOpen = false;
+      state.legendarySwapPending = null;
+      state.relicSwapPending = null;
+      state.relicSwapAdditionalDiscards = 0;
+      state.campStartDepthPromptOpen = false;
+      state.campRelicSellPendingIndex = -1;
+      if (!wasCamp) state.campPanelView = "shop";
+      state.campGold = Math.max(0, Number(profile?.campGold) || 0);
+      state.lives = Math.max(0, Number(profile?.lives) || 0);
+      state.campUpgrades = sanitizeCampUpgrades(build.campUpgrades || {});
+      state.skillTiers = sanitizeSkillTiers(build.skillTiers || {});
+      const canonicalElixir = Array.isArray(build.elixirs) ? build.elixirs[0] : null;
+      state.elixirLoadout = sanitizeElixirLoadout(canonicalElixir
+        ? { type: canonicalElixir.elixirId, charges: canonicalElixir.charges }
+        : {});
+      state.relics = (Array.isArray(build.relics) ? build.relics : []).flatMap((relic) =>
+        Array.from({ length: Math.max(1, Number(relic.stacks) || 1) }, () => String(relic.relicId || relic.id || ""))
+      ).filter(Boolean);
+      normalizeRelicInventory();
+      const choices = Array.isArray(offer?.choices) ? offer.choices : [];
+      const pricedUpgrade = choices.find((choice) => choice?.action === "upgrade");
+      const pricedDef = CAMP_UPGRADES.find((entry) => entry.id === pricedUpgrade?.upgradeId);
+      const pricedLevel = Math.max(0, Number(pricedUpgrade?.currentLevel) || 0);
+      const basePrice = pricedDef
+        ? Math.round(pricedDef.baseCost * Math.max(1, Number(pricedDef.costGrowth) || 2) ** pricedLevel)
+        : 0;
+      state.campVisitShopCostMult = basePrice > 0
+        ? Math.max(0, Number(pricedUpgrade.price) || 0) / basePrice
+        : 1;
+      state.phase = "camp";
+      if (!wasCamp) {
+        pushLog("Extraction success. Ranked result secured.", "good");
+        pushLog("Camp: use arrows to choose a tab or action, then press Enter.");
+      }
+      syncBgmWithState();
+      markUiDirty();
+    },
+    setNextDirective(directive) {`
+  ],  [
 `    if (state.phase === "menu") {
       if (state.menuNewGameConfirmOpen) {`,
 `    if (state.phase === "menu") {
