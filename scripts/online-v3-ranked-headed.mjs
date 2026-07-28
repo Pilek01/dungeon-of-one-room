@@ -605,13 +605,92 @@ async function main() {
       "Next Ranked run did not apply canonical extracted profile build"
     );
 
+    const abandonedRunId = nextRunAudit.snapshot.runId;
+    const ownerForAbandon = page;
+    const recoveryPage = await context.newPage();
+    recoveryPage.on("request", (request) => {
+      const url = new URL(request.url());
+      if (url.pathname.startsWith("/api/v3/")) {
+        diagnostics.apiRequests.push({ method: request.method(), path: url.pathname });
+      }
+    });
+    recoveryPage.on("response", async (response) => {
+      const url = new URL(response.url());
+      if (url.pathname.startsWith("/api/v3/") && !response.ok()) {
+        diagnostics.apiErrors.push({
+          status: response.status(),
+          path: url.pathname,
+          body: await response.text().catch(() => "")
+        });
+      }
+    });
+    recoveryPage.on("console", (message) => {
+      if (message.type() === "error") diagnostics.consoleErrors.push(message.text());
+      if (message.type() === "debug") diagnostics.debugMessages.push(message.text());
+    });
+    recoveryPage.on("pageerror", (error) => diagnostics.pageErrors.push(String(error?.stack || error)));
+    await recoveryPage.goto(`${proxy.baseUrl}/`, { waitUntil: "domcontentloaded" });
+    await recoveryPage.waitForFunction(() => typeof window.render_game_to_text === "function");
+    await dismissBoot(recoveryPage);
+    await openNativeMenuOption(recoveryPage, "Ranked (Online)");
+    await sessionState(recoveryPage, "RECONNECT_REQUIRED");
+    await recoveryPage.getByRole("button", { name: "Request control" }).waitFor({ state: "visible" });
+
+    let abandonAttempts = 0;
+    await recoveryPage.route("**/api/v3/runs/abandon", async (route) => {
+      abandonAttempts += 1;
+      if (abandonAttempts === 1) {
+        await route.fetch();
+      }
+      await route.abort("failed");
+    });
+    await ownerForAbandon.evaluate(() => window.dispatchEvent(new Event("beforeunload")));
+    await ownerForAbandon.close();
+    await recoveryPage.getByRole("button", { name: "Abandon Ranked Run" }).click();
+    await recoveryPage.getByRole("button", { name: "Confirm abandonment" }).click();
+    await recoveryPage.getByRole("heading", { name: "Ranked reconnect required" }).waitFor({
+      state: "visible",
+      timeout: 20_000
+    });
+    assert.equal(abandonAttempts, 3, "Abandon did not exhaust the exact retry policy");
+    await recoveryPage.unroute("**/api/v3/runs/abandon");
+    await recoveryPage.getByRole("button", { name: "Return to Practice" }).click();
+    await recoveryPage.locator(".ranked-v3-overlay").waitFor({ state: "hidden" });
+    await openNativeMenuOption(recoveryPage, "Ranked (Online)");
+    await recoveryPage.getByRole("heading", { name: "Ranked Run Ended" }).waitFor({ state: "visible" });
+    assert.equal(await recoveryPage.getByRole("button", { name: "Resync Ranked Run" }).count(), 0);
+    assert.equal(await recoveryPage.getByRole("button", { name: "Abandon Ranked Run" }).count(), 0);
+    await recoveryPage.screenshot({
+      path: path.join(ARTIFACT_ROOT, "ranked-ended-recovery.png"),
+      fullPage: true
+    });
+    await recoveryPage.getByRole("button", { name: "Start New Ranked Run" }).click();
+    await recoveryPage.waitForFunction(() => (
+      window.DungeonOnlineV3?.getSessionState?.() === "ROOM_ACTIVE" ||
+      Boolean(document.querySelector(".ranked-v3-choice-relic"))
+    ));
+    if (await recoveryPage.locator(".ranked-v3-choice-relic").count() > 0) {
+      await recoveryPage.locator(".ranked-v3-choice-relic").first().click();
+    }
+    await sessionState(recoveryPage, "ROOM_ACTIVE");
+    const restartedRunId = await recoveryPage.evaluate(() => window.DungeonOnlineV3.getSnapshot().runId);
+    assert.notEqual(restartedRunId, abandonedRunId, "Ended recovery reused the abandoned run");
+    page = recoveryPage;
+
     const expectedDroppedResponseErrors = diagnostics.consoleErrors.filter(
       (message) => message === "Failed to load resource: net::ERR_FAILED"
     );
-    const unexpectedConsoleErrors = diagnostics.consoleErrors.filter(
-      (message) => message !== "Failed to load resource: net::ERR_FAILED"
+    const expectedEndedRecoveryErrors = diagnostics.consoleErrors.filter(
+      (message) => message === "Failed to load resource: the server responded with a status of 410 (Gone)"
     );
-    assert.equal(expectedDroppedResponseErrors.length, 1);
+    const unexpectedConsoleErrors = diagnostics.consoleErrors.filter(
+      (message) => ![
+        "Failed to load resource: net::ERR_FAILED",
+        "Failed to load resource: the server responded with a status of 410 (Gone)"
+      ].includes(message)
+    );
+    assert.equal(expectedDroppedResponseErrors.length, 4);
+    assert.equal(expectedEndedRecoveryErrors.length, 1);
     assert.deepEqual(unexpectedConsoleErrors, []);
     assert.deepEqual(diagnostics.pageErrors, []);
     const summary = {
@@ -623,6 +702,7 @@ async function main() {
       multiTabTakeoverScenarios: 1,
       campLifecycleScenarios: 1,
       nextRunProfileScenarios: 1,
+      endedRecoveryRestartScenarios: 1,
       activeCombatApiRequests: 0,
       finalizeAttempts: diagnostics.finalizeOperationIds.length,
       uniqueFinalizeOperationIds: new Set(diagnostics.finalizeOperationIds).size,
@@ -630,6 +710,7 @@ async function main() {
       apiRequests: diagnostics.apiRequests,
       consoleErrors: unexpectedConsoleErrors.length,
       expectedDroppedResponseConsoleErrors: expectedDroppedResponseErrors.length,
+      expectedEndedRecoveryConsoleErrors: expectedEndedRecoveryErrors.length,
       pageErrors: diagnostics.pageErrors.length
     };
     await fsPromises.writeFile(

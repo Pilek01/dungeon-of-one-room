@@ -172,6 +172,27 @@
     ui.hide();
   }
 
+  function clearEndedRecovery() {
+    if (![root.DungeonRankedV3Session.STATES.reconnect, root.DungeonRankedV3Session.STATES.protocolError].includes(session.getState())) {
+      moveToRecoveryState(root.DungeonRankedV3Session.STATES.reconnect);
+    }
+    client?.clearRecovery?.();
+    client?.clear();
+    client = null;
+    const abandonedLocalSession = root.DungeonRankedV3Session.STATES.abandoned;
+    if (abandonedLocalSession !== "ABANDONED_LOCAL_SESSION") {
+      throw new TypeError("RANKED_ABANDONED_STATE_MISMATCH");
+    }
+    session.transition(abandonedLocalSession);
+    root.DungeonOnlineV3GameBridge?.returnToPractice?.();
+    ui.hide();
+  }
+
+  async function startAfterEndedRecovery() {
+    clearEndedRecovery();
+    await startRanked();
+  }
+
   async function abandonCanonical() {
     ui.setStatus("Abandoning your Ranked run...");
     await createClient().abandonCanonical();
@@ -210,6 +231,17 @@
         status: Number(error?.status) || 0,
         message: String(error?.message || "")
       });
+    }
+    if (["RUN_RECOVERY_UNAVAILABLE", "RUN_NOT_FOUND"].includes(code)) {
+      ui.showMessage(
+        "Ranked Run Ended",
+        "This Ranked run has already ended. Clear it to begin a new descent.",
+        [
+          ui.button("Start New Ranked Run", () => startAfterEndedRecovery().catch(presentError)),
+          ui.button("Return to Practice", clearEndedRecovery)
+        ]
+      );
+      return;
     }
     const controls = [];
     if (error?.retryable || ["NETWORK_ERROR", "TIMEOUT"].includes(code)) {

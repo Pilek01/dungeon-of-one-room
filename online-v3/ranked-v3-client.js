@@ -438,6 +438,14 @@
           rulesetId: protocol.RULESET_ID,
           rulesetHash: protocol.RULESET_HASH
         });
+        const recoveryRecord = {
+          runId: validated.metaState.runId,
+          recoveryCredential: pending.body.recoveryCredential,
+          rulesetId: protocol.RULESET_ID,
+          rulesetHash: protocol.RULESET_HASH
+        };
+        store.saveRecovery?.(recoveryRecord);
+        options.recoveryRecord = recoveryRecord;
         persist({
           ...snapshot,
           runId: validated.metaState.runId,
@@ -447,6 +455,10 @@
           pendingOperation: null,
           lastAcknowledgedOperationId: pending.operationId
         });
+        mutationLocked = false;
+        if (!coordinator.acquire(validated.metaState.runId, validated.metaState.revision)) {
+          throw new TypeError("RANKED_WRITER_LEASE_HELD");
+        }
         return clone(result.payload);
       }
       return execute(endpoint, pending);

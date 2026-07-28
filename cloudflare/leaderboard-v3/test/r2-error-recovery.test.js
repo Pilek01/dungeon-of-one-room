@@ -148,5 +148,7 @@ test("runtime preserves recovery for Practice exit and resyncs canonical state",
   assert.match(runtime, /Return to Practice[\s\S]*returnToPractice/u);
   assert.match(runtime, /Abandon Ranked Run[\s\S]*confirmAbandon/u);
   assert.match(runtime, /resumeCanonical\(\)/u);
+  assert.match(runtime, /RUN_RECOVERY_UNAVAILABLE[\s\S]*Ranked Run Ended[\s\S]*Start New Ranked Run/u);
+  assert.match(runtime, /clearEndedRecovery[\s\S]*clearRecovery\?\.\(\)/u);
   assert.match(runtime, /client\?\.clear\(\)[\s\S]*ABANDONED_LOCAL_SESSION/u);
 });

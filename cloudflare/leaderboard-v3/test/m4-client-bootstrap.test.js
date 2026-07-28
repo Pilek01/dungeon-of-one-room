@@ -63,6 +63,66 @@ test("M4 Ranked start persists exact pending action before sending", async () =>
   assert.equal(client.getSnapshot().pendingOperation, null);
 });
 
+test("M4 exact start retry persists recovery before entering Ranked", async () => {
+  let recovery = null;
+  const pendingBody = {
+    playerName: "M4",
+    season: "local-m4",
+    gameVersion: "v0.8.0",
+    rulesetId: protocol.RULESET_ID,
+    rulesetHash: protocol.RULESET_HASH,
+    clientInstallIdHash: "install-hash-1234",
+    profileId: "profile_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    profileCredential: "ppppppppppppppppppppppppppppppppppppppppppp",
+    recoveryCredential: "rrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrr",
+    clientProtocolVersion: protocol.PROTOCOL_VERSION
+  };
+  const sessionStore = memoryStore({
+    schemaVersion: 1,
+    mode: "ranked",
+    runId: "",
+    revision: 0,
+    pendingOperation: {
+      endpoint: "start",
+      operationId: "op_start",
+      body: pendingBody
+    }
+  });
+  const store = {
+    ...sessionStore,
+    loadRecovery: () => structuredClone(recovery),
+    saveRecovery: (next) => { recovery = structuredClone(next); },
+    clearRecovery: () => { recovery = null; }
+  };
+  const client = clientApi.createRankedClient({
+    store,
+    transport: {
+      createOperationId: () => "op_unused",
+      async request(endpoint, request) {
+        assert.equal(endpoint.path, "/api/v3/runs/start");
+        assert.equal(request.operationId, "op_start");
+        return {
+          payload: {
+            ok: true,
+            protocolVersion: protocol.PROTOCOL_VERSION,
+            runId: "run_a1",
+            revision: 0,
+            bootstrapToken: "bootstrap-secret",
+            metaState: meta("awaiting_starting_relic", 0)
+          }
+        };
+      }
+    }
+  });
+  await client.retryPending();
+  assert.deepEqual(recovery, {
+    runId: "run_a1",
+    recoveryCredential: pendingBody.recoveryCredential,
+    rulesetId: protocol.RULESET_ID,
+    rulesetHash: protocol.RULESET_HASH
+  });
+  assert.equal(client.getSnapshot().pendingOperation, null);
+});
 test("M4 starting relic selection accepts only bootstrap token and first directive", async () => {
   const directive = {
     directiveId: "directive_a",
