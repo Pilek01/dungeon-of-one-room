@@ -840,3 +840,23 @@ Updated next good targets
   final Ranked headed lifecycle PASS, and public zero-API menu smoke PASS.
 - Source `game.js`, ruleset, Worker/D1, gameplay, mode names, 172 protected
   Vault Guardian deletions, and the R1-P0-001 boundary remain unchanged.
+
+## 2026-07-28 - Ranked reward/death presentation regression fix started
+
+- New request: fix the player-reported early relic offer after an ordinary
+  combat clear and the missing death screen/audio after a nonterminal Ranked
+  life loss.
+- Confirmed reward root cause: after an ordinary checkpoint, the response
+  already contains the next directive and its reward envelope; the runtime
+  consumed that upcoming room's relic slot before installing/entering the
+  directive.
+- Confirmed death root cause: the Ranked `gameOver` branch returns before the
+  native death presentation, while `resumeAfterFatal` immediately rebuilds the
+  next room.
+- Baseline before edits: `main@af9b46f`, source `game.js` SHA-256
+  `556829c909cdc9eaefb4238279457eb9b3427adef9ce494f35743542770ee7de`,
+  ruleset `sha256:0bf00607056dbf3c30ffe57bbcfc77cea95b21c9ccc23aa985ec555856d1cbd6`,
+  and 172 unstaged protected deletions with path/status fingerprint
+  `3350fde4b0f51e8c82607fe35c413de2849d46d171c793bb6ffd18ee08c3c08c`.
+- Scope is local-only. Source `game.js`, Worker/D1, ruleset, Practice, and the
+  protected deletions remain outside the implementation.

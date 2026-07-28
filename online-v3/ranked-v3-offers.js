@@ -50,7 +50,29 @@
     }));
   }
 
-  function pendingRewardSlots(publicState) {
+  function relicStacks(build) {
+    const counts = new Map();
+    const relics = Array.isArray(build?.relics) ? build.relics : [];
+    for (const relic of relics) {
+      const relicId = safeText(relic?.relicId) || safeText(relic?.id);
+      if (!relicId) continue;
+      const stacks = Math.max(1, Math.floor(Number(relic?.stacks) || 1));
+      counts.set(relicId, (counts.get(relicId) || 0) + stacks);
+    }
+    return counts;
+  }
+
+  function lostRelicId(beforeBuild, afterBuild) {
+    const before = relicStacks(beforeBuild);
+    const after = relicStacks(afterBuild);
+    for (const [relicId, stacks] of before) {
+      if (stacks > (after.get(relicId) || 0)) return relicId;
+    }
+    return null;
+  }
+
+  function pendingRewardSlots(publicState, options = {}) {
+    if (options?.roomClearPending !== true) return [];
     const slots = publicState?.currentRewardEnvelope?.rewardSlots;
     if (!Array.isArray(slots)) return [];
     return slots.filter((slot) =>
@@ -66,6 +88,7 @@
     metaChoices,
     relicChoices,
     replacementChoices,
+    lostRelicId,
     pendingRewardSlots
   });
 });

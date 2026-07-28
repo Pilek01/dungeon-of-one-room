@@ -219,6 +219,112 @@ const productionGameReplacements = [
     "  let bootDismissPromise = null;\n  let bootInputLocked = false;"
   ],
   [
+`  function enterMenu(menuConfig = {}) {
+    const preserveRunContext = Boolean(menuConfig.preserveRunContext)`,
+`  function enterMenu(menuConfig = {}) {
+    if (state.onlineV3Ranked && state.phase === "dead" && state.onlineV3NextDirective) {
+      window.DungeonOnlineV3?.leaveToMainMenu?.();
+      return;
+    }
+    const preserveRunContext = Boolean(menuConfig.preserveRunContext)`
+  ],
+  [
+`  function startRun(options = {}) {
+    const carriedRelics = Array.isArray(options.carriedRelics)`,
+`  function startRun(options = {}) {
+    const rankedFatalDirective =
+      state.onlineV3Ranked && state.phase === "dead" ? state.onlineV3NextDirective : null;
+    if (rankedFatalDirective) {
+      state.onlineV3Directive = rankedFatalDirective;
+      state.onlineV3NextDirective = null;
+      const canonicalRelics = Array.isArray(state.relics) ? [...state.relics] : [];
+      options = { ...options, carriedRelics: canonicalRelics, startDepth: 0 };
+    }
+    const carriedRelics = Array.isArray(options.carriedRelics)`
+  ],
+  [
+`    state.player.hp = state.player.maxHp;
+
+    buildRoom();
+    resetObserverBotStallTracker();`,
+`    state.player.hp = state.player.maxHp;
+
+    buildRoom();
+    if (rankedFatalDirective) {
+      window.DungeonOnlineV3?.onRoomEntered?.(state.onlineV3Directive);
+    }
+    resetObserverBotStallTracker();`
+  ],
+  [
+`    resumeAfterFatal(directive, publicState) {
+      state.onlineV3FatalPending = false;
+      state.turnInProgress = false;
+      state.phase = "playing";
+      state.onlineV3Directive = directive;
+      state.onlineV3NextDirective = null;
+      state.player.hp = Math.max(1, Number(state.player.maxHp) || 1);
+      state.lives = Math.max(0, Number(publicState?.lives) || 0);
+      buildRoom();
+      pushLog(\`Canonical life \${publicState?.lifeState?.currentLife || 1} begins.\`, "good");
+      markUiDirty();
+    },`,
+`    resumeAfterFatal(directive, publicState, presentation = {}) {
+      state.onlineV3FatalPending = false;
+      state.onlineV3NextDirective = directive;
+      const build = publicState?.build || {};
+      state.campUpgrades = sanitizeCampUpgrades(build.campUpgrades || {});
+      state.skillTiers = sanitizeSkillTiers(build.skillTiers || {});
+      const canonicalElixir = Array.isArray(build.elixirs) ? build.elixirs[0] : null;
+      state.elixirLoadout = sanitizeElixirLoadout(canonicalElixir
+        ? { type: canonicalElixir.elixirId, charges: canonicalElixir.charges }
+        : {});
+      state.relics = (Array.isArray(build.relics) ? build.relics : []).flatMap((relic) =>
+        Array.from(
+          { length: Math.max(1, Number(relic.stacks) || 1) },
+          () => String(relic.relicId || relic.id || "")
+        )
+      ).filter(Boolean);
+      normalizeRelicInventory();
+      state.lives = Math.max(0, Number(publicState?.lives) || 0);
+      state.simulation.lastGameOverReason = String(presentation?.reason || "You fell in battle.");
+      const lostRelic = getRelicById(String(presentation?.lostRelicId || ""));
+      const lostRelicOverlayName = formatRelicNameForOverlay(lostRelic);
+      state.lastDeathRelicLossText = lostRelic
+        ? "Death penalty: lost relic " + lostRelicOverlayName + "."
+        : "Death penalty: no relic lost.";
+      state.phase = "dead";
+      state.deathScreenSelection = 0;
+      state.player.hp = 0;
+      state.player.visualDeathTimer = 0;
+      state.wardenDeathTipPromptOpen = false;
+      state.finalVictoryPrompt = null;
+      state.finalGameOverPrompt = null;
+      state.turnInProgress = false;
+      state.playerShieldBrokeThisTurn = false;
+      state.enemyTurnInProgress = false;
+      state.enemyTurnQueue = [];
+      state.enemyTurnStepTimer = 0;
+      state.enemyTurnStepIndex = 0;
+      state.enemyMeleeOverflowCommitted = 0;
+      state.enemyBlackboard = null;
+      state.enemyAntiStrafe = null;
+      state.enemyDebugPlans = [];
+      state.extractConfirm = null;
+      state.merchantMenuOpen = false;
+      clearElixirCombatState();
+      syncBgmWithState();
+      stopVictoryTrack(true);
+      stopFinalGameOverTrack(true);
+      const usedDeathTrack = playDeathTrack();
+      if (!usedDeathTrack) playSfx("death");
+      const lossSummary = lostRelic ? " Lost relic: " + lostRelic.name + "." : " No relic lost.";
+      pushLog(state.simulation.lastGameOverReason + lossSummary, "bad");
+      pushLog("Life lost. " + state.lives + "/" + MAX_LIVES + " remaining.", "bad");
+      pushLog("Press R or Enter to rise again.", "good");
+      markUiDirty();
+    },`
+  ],
+  [
 `  function dismissBootScreen() {
     if (bootDismissPromise) return bootDismissPromise;
     bootDismissPromise = Promise.resolve(initialGraphicsReady).then(() => {

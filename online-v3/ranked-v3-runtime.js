@@ -654,7 +654,9 @@
     if (state.relicReplacement) return presentReplacement(state.relicReplacement);
     if (state.relicOffer) return presentRelicOffer(state.relicOffer);
     if (state.metaTransactionOffer) return presentMetaOffer(state.metaTransactionOffer);
-    const slot = offers.pendingRewardSlots(state)[0];
+    const slot = offers.pendingRewardSlots(state, {
+      roomClearPending: Boolean(pendingRoomSummary)
+    })[0];
     if (slot) return issueRelicSlot(slot);
     if (pendingRoomSummary) return resolveCheckpoint();
     if (state.currentRoomDirective) {
@@ -702,7 +704,9 @@
       await openMetaOffer(roomType);
       return;
     }
-    if (offers.pendingRewardSlots(state).length > 0) {
+    if (offers.pendingRewardSlots(state, {
+      roomClearPending: Boolean(pendingRoomSummary)
+    }).length > 0) {
       await continueBoundary(state);
       return;
     }
@@ -732,12 +736,12 @@
     ui.hide();
   }
 
-  async function onFatalEvent() {
+  async function onFatalEvent(context = {}) {
     try {
       session.transition(root.DungeonRankedV3Session.STATES.resolving);
       ui.showSync("Checking your fate...");
-      const previousDirectiveId =
-        createClient().getSnapshot()?.publicState?.currentRoomDirective?.directiveId || null;
+      const previousState = createClient().getSnapshot()?.publicState;
+      const previousDirectiveId = previousState?.currentRoomDirective?.directiveId || null;
       const response = await createClient().event("report_fatal_event", {
         classification: "local_fatal_event"
       });
@@ -755,9 +759,12 @@
         ui.hide();
         return;
       }
-      root.DungeonOnlineV3GameBridge.resumeAfterFatal(directive, state);
+      root.DungeonOnlineV3GameBridge.resumeAfterFatal(directive, state, {
+        reason: String(context?.reason || ""),
+        lostRelicId: offers.lostRelicId(previousState?.build, state?.build)
+      });
       session.transition(root.DungeonRankedV3Session.STATES.next);
-      session.transition(root.DungeonRankedV3Session.STATES.active);
+      // The native death screen remains visible until the player starts the next canonical life.
       ui.hide();
     } catch (error) {
       presentError(error);

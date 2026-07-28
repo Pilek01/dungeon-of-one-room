@@ -71,8 +71,38 @@ test("M4 reward-slot adapter recognizes Warden, Otter and Arena without inventin
         { slotId: "done", sourceId: "warden", consumed: true }
       ]
     }
-  });
+  }, { roomClearPending: true });
   assert.deepEqual(pending.map((slot) => slot.slotId), ["w", "o", "a"]);
+});
+
+test("M4 reward slots stay hidden until their owning room has a pending local clear", () => {
+  const state = {
+    currentRoomDirective: {
+      directiveId: "directive_upcoming_warden",
+      roomType: "boss"
+    },
+    currentRewardEnvelope: {
+      directiveId: "directive_upcoming_warden",
+      rewardSlots: [
+        { slotId: "warden", sourceId: "warden-relic", consumed: false }
+      ]
+    }
+  };
+  assert.deepEqual(
+    offers.pendingRewardSlots(state, { roomClearPending: false }),
+    []
+  );
+  assert.deepEqual(
+    offers.pendingRewardSlots(state, { roomClearPending: true }).map((slot) => slot.slotId),
+    ["warden"]
+  );
+});
+
+test("M4 fatal presentation derives the one canonical relic stack removed by the server", () => {
+  const before = { relics: [{ relicId: "fang", stacks: 2 }, { relicId: "idol", stacks: 1 }] };
+  const after = { relics: [{ relicId: "fang", stacks: 1 }, { relicId: "idol", stacks: 1 }] };
+  assert.equal(offers.lostRelicId(before, after), "fang");
+  assert.equal(offers.lostRelicId(after, after), null);
 });
 
 test("M4 UI adapters preserve text as text instead of producing HTML", () => {

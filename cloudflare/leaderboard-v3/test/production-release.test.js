@@ -143,6 +143,15 @@ test("Pages release stays same-origin and disconnects all v2 bindings", async ()
   assert.match(runtime, /onCampAction/u);
   assert.match(builder, /enterRankedCamp/u);
   assert.match(builder, /onCampAction/u);
+  assert.match(runtime, /roomClearPending: Boolean\(pendingRoomSummary\)/u);
+  assert.match(runtime, /lostRelicId/u);
+  assert.match(
+    builder,
+    /resumeAfterFatal\(directive, publicState, presentation = \{\}\)[\s\S]*?state\.phase = "dead"[\s\S]*?playDeathTrack\(\)/u
+  );
+  assert.match(builder, /rankedFatalDirective/u);
+  assert.match(builder, /state\.onlineV3Ranked && state\.phase === "dead"[\s\S]*?leaveToMainMenu/u);
+  assert.match(builder, /DungeonOnlineV3\?\.onRoomEntered\?\.\(state\.onlineV3Directive\)/u);
   assert.match(style, /\.ranked-v3-entry,[\s\S]*display: none !important;/u);
   assert.match(style, /body\.ranked-v3-modal-open #screenOverlay/u);
   assert.doesNotMatch(style, /#32204c|#9b70d8/u);
