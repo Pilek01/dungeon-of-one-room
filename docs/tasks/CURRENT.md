@@ -1,3 +1,143 @@
+# Production direct Ranked start and stale-profile recovery hotfix - Online v3
+
+## Active status
+
+`COMPLETED_AND_PRODUCTION_VERIFIED` on the existing
+`dungeon-of-one-room` Pages project, deployment `2eeead39-2f33-4f75-818e-5d9909bbb3a8` from source commit
+`c091b7c`.
+
+This is an R2 production hotfix only. It fixes the player-reported loop where
+`Start New Ranked` becomes `Ranked reconnect required`, invalid recovery leads
+to `Ranked Save Cannot Be Recovered`, and forgetting the recovery returns to
+the same reconnect screen. It also makes the Ranked entry compact and native
+to the existing game presentation.
+
+Authorized paths:
+
+- `online-v3/ranked-v3-client.js`;
+- `online-v3/ranked-v3-storage.js`;
+- `online-v3/ranked-v3-runtime.js`;
+- `online-v3/ranked-v3-ui.js`;
+- `style.css`, limited to Online v3 presentation;
+- focused Online v3 unit, production, and headed tests;
+- `scripts/online-v3-ranked-headed.mjs`;
+- `ONLINE_V3_HANDOFF.md`;
+- `progress.md`;
+- this file.
+
+Required outcome:
+
+- with no local Ranked recovery, the native `Ranked (Online)` row starts the
+  run directly without an intermediate menu;
+- with a local recovery, the compact Ranked menu offers only Start New,
+  Continue, and Cancel;
+- Start New canonically abandons a recoverable run, but an invalid local
+  recovery cannot trap the player behind additional forget/confirmation
+  screens;
+- a stale local Ranked profile credential is cleared once and the start is
+  retried with a fresh anonymous profile identity;
+- a failed start without a canonical run never enters the reconnect/resync
+  flow and never leaves a pending local start that masquerades as recovery;
+- network and rate-limit start failures remain explicit and do not rotate the
+  profile identity or bypass abuse controls;
+- Ranked message actions are centered, narrower, and use the same restrained
+  gothic edge treatment as the native HD menus.
+
+Verification and release:
+
+- add focused failing regressions before implementation;
+- run the supplied headed browser loop and visually inspect the stale-profile
+  repair and compact saved-run menu;
+- rerun the R2 threat matrix, `verify:phase`, `verify:baseline`,
+  `verify:full`, and `git diff --check`;
+- create exact internal local commits and deploy directly to the existing
+  production Pages project;
+- production smoke must exercise a real stale-profile rejection, successful
+  automatic retry, starting relic, and canonical abandonment;
+- do not change Worker/D1 behavior or schema, source `game.js`, gameplay,
+  ruleset data/hash, combat authority, mode names, Practice storage, or the
+  accepted R1-P0-001 boundary;
+- do not push, create staging, touch or stage the 172 protected Vault Guardian
+  deletions, use a paid service, or start M5.
+
+Completion evidence:
+
+- no-recovery `Ranked (Online)` starts directly; a stale profile produces one
+  expected `PROFILE_UNAUTHORIZED`, rotates only the Ranked profile identity,
+  retries automatically, and reaches the starting relic without reconnect;
+- saved-run navigation is limited to compact `Start New Ranked`, `Continue
+  Ranked`, and `Cancel` controls with the native gothic edge treatment;
+- public smoke on `https://dungeon-of-one-room.pages.dev` passed the real
+  sequence `201 start -> 200 abandon -> 401 stale profile -> 201 repaired
+  start -> 200 abandon`, with zero page errors and no reconnect screen;
+- the repaired production smoke run is `abandoned` with zero leaderboard rows;
+- R2 threat matrix 30/30, `verify:fast` 44/44, `verify:phase` 717/717,
+  `verify:baseline` 3/3 plus headed smoke, and `verify:full` 741/741;
+- source `game.js`, ruleset hash, Worker/D1 schema and behavior, gameplay,
+  combat authority, mode names, Practice storage, and the accepted R1-P0-001
+  boundary remain unchanged;
+- no push, staging, Worker deploy, paid service, or M5 work was performed, and
+  all 172 protected Vault Guardian deletions remain untouched and unstaged.
+
+---
+# Local Ranked reward and death presentation regression fix - Online v3
+
+## Active status
+
+`COMPLETED_LOCALLY` in commit `9f60eaa`; included in the later authorized
+production Pages deployment `2eeead39-2f33-4f75-818e-5d9909bbb3a8`.
+
+This is one local-only integration hotfix for two player-reported Ranked
+regressions:
+
+- a relic reward belonging to an upcoming Warden, Otter, or Arena room must
+  not be presented after clearing the preceding ordinary combat room;
+- an accepted nonterminal Ranked life loss must show the native v0.8 death
+  screen and play the native death track before the player starts the next
+  canonical life.
+
+Authorized paths:
+
+- `online-v3/ranked-v3-runtime.js`;
+- `online-v3/ranked-v3-offers.js`;
+- `scripts/build-pages-v3.mjs`;
+- `cloudflare/leaderboard-v3/test/m4-client-offers.test.js`;
+- `cloudflare/leaderboard-v3/test/production-release.test.js`;
+- `scripts/online-v3-ranked-headed.mjs`;
+- `ONLINE_V3_HANDOFF.md`;
+- `progress.md`;
+- this file.
+
+Required boundaries:
+
+- source `game.js` and `index.html` remain byte-identical;
+- Practice gameplay, saves, UI, audio, and zero-API behavior remain unchanged;
+- the Worker, D1, ruleset data/hash, reward probabilities, life accounting,
+  combat-authority model, and mode names remain unchanged;
+- Chrono Loop and Second Chance prevention remain server-decided and do not
+  show a false death screen;
+- no push, deploy, staging, ruleset activation, migration, rollback, paid
+  service, canary, soak, or M5 work;
+- the 172 protected Vault Guardian deletions remain unchanged and unstaged.
+
+Required verification:
+
+- add focused regressions first and observe the relevant RED failures;
+- run the focused unit/build tests and the supplied headed Ranked lifecycle;
+- visually inspect the ordinary-to-Warden boundary, native nonterminal death
+  screen, and post-death continuation artifacts;
+- run `npm run verify:fast`, `npm run verify:phase`, `npm run verify:baseline`,
+  `npm run verify:full`, and `git diff --check`;
+- confirm source `game.js`, ruleset hash, and the protected-WIP fingerprint are
+  unchanged.
+
+Required local commit:
+
+- `Fix Ranked reward and death presentation`
+
+After the local commit, stop and report that production remains unchanged.
+
+---
 # Production Practice/Ranked menu and recovery hotfix - Online v3
 
 ## Active status

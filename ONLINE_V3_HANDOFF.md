@@ -1,5 +1,47 @@
 # Online v3 - Production handoff
 
+## Direct Ranked start and stale-profile recovery hotfix complete
+
+The reported Ranked start/reconnect/forget loop is fixed on
+`https://dungeon-of-one-room.pages.dev`.
+
+- production Pages deployment: `2eeead39-2f33-4f75-818e-5d9909bbb3a8`;
+- deployed source: `c091b7c1573d05e6c0c2afe17d6ecadd959940d8` on production branch `main`;
+- with no Ranked recovery, `Ranked (Online)` starts immediately;
+- a stale local Ranked profile is rejected once, replaced automatically, and
+  retried without showing reconnect or forget screens;
+- a saved Ranked run uses only the compact `Start New Ranked`, `Continue
+  Ranked`, and `Cancel` menu, with narrower native gothic actions;
+- the preceding local reward/death presentation fix is committed as `9f60eaa`
+  and is included in the same Pages deployment.
+
+Verification:
+
+- R2 threat matrix: all 30 scenarios covered; R1-P0-001 remains accepted;
+- `verify:fast`: 44/44 PASS
+  (`output/verification/fast-20260728T150139026Z.log`);
+- `verify:phase`: 717/717 PASS
+  (`output/verification/phase-20260728T151817165Z.log`);
+- `verify:baseline`: 3/3 PASS plus headed game smoke
+  (`output/verification/baseline-20260728T152422708Z.log`);
+- `verify:full`: 741/741 PASS, including 21/21 local Wrangler/D1 E2E and
+  headed game smoke (`output/verification/full-20260728T152634804Z.log`);
+- supplied headed Ranked lifecycle PASS for stale-profile repair, compact
+  saved-run menu, reward boundary, native death presentation, network loss,
+  reload, multi-tab, and Camp;
+- public production smoke observed one expected `PROFILE_UNAUTHORIZED`,
+  automatic fresh-profile start, a visible starting relic, no reconnect
+  screen, zero page errors, and canonical abandonment; remote D1 confirms the
+  smoke run is `abandoned` with zero leaderboard rows.
+
+Source `game.js` remains byte-identical at SHA-256
+`556829c909cdc9eaefb4238279457eb9b3427adef9ce494f35743542770ee7de`.
+The ruleset remains `v08-meta-1` at
+`sha256:0bf00607056dbf3c30ffe57bbcfc77cea95b21c9ccc23aa985ec555856d1cbd6`.
+No Worker/D1 change, gameplay change, push, staging, paid service, rollback, or
+M5 work was performed. All 172 protected Vault Guardian deletions remain
+untouched and unstaged.
+
 ## Practice/Ranked menu and recovery hotfix complete
 
 The reported Practice pause, save selection, and stuck Ranked recovery flows

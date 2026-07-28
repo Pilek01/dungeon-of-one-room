@@ -888,3 +888,24 @@ Updated next good targets
   staged paths and no protected path included in either local commit.
 - This task performed no push, deploy, staging, canary, soak, ruleset activation,
   migration, rollback, paid-service, or M5 action.
+## 2026-07-28 - Ranked reward/death and stale-profile hotfixes completed
+
+- Committed the local reward/death presentation fix as `9f60eaa` and the
+  direct start/stale-profile recovery fix as `c091b7c`.
+- Focused regressions pass: offers 6/6, production release 5/5, and
+  client/recovery 14/14. The supplied headed lifecycle passes stale-profile
+  repair, compact saved-run UI, reward-boundary ownership, native nonterminal
+  death presentation, network loss, reload, multi-tab, and Camp.
+- R2 threat matrix remains 30/30. `verify:fast` is 44/44, `verify:phase` is
+  717/717, `verify:baseline` is 3/3 plus headed smoke, and `verify:full` is
+  741/741 including 21/21 local Wrangler/D1 E2E.
+- Built the exact source commit in an isolated worktree and deployed Pages
+  production as `2eeead39-2f33-4f75-818e-5d9909bbb3a8` on the existing `dungeon-of-one-room` project.
+- Public production smoke passed a real stale-profile rejection and automatic
+  retry, reached the starting relic without reconnect, and canonically
+  abandoned the repaired run. Remote D1 confirms `abandoned` and zero
+  leaderboard rows.
+- Source `game.js`, the ruleset hash, Worker/D1 behavior and schema, gameplay,
+  Practice storage, mode names, combat authority, and R1-P0-001 are unchanged.
+  No push, staging, paid service, or M5 work occurred; all 172 protected Vault
+  Guardian deletions remain untouched and unstaged.
