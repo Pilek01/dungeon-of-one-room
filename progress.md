@@ -715,3 +715,14 @@ Updated next good targets
 ## 2026-07-20 - No elite Riftweaver in endgame boss rooms
 - Boss add selection now rejects Riftweaver at depth 80+, while regular rooms and boss rooms below depth 80 retain the existing Riftweaver rules.
 - Added expansion_endgame_boss_adds_hd for deterministic roster QA. At depth 85 it produced Abyssal Warden plus two elite adds (Skeleton and Acolyte), with no Riftweaver or console errors; artifacts: artifacts/endgame-boss-adds-no-riftweaver/.
+
+## 2026-07-28 - Online v3 production release
+
+- Deployed Online v3 to `https://dungeon-of-one-room.pages.dev` from verified source commit `7645e80`; final Pages deployment is `a218de92-6f9d-4301-a322-219c28a4f9a5`.
+- Created the Free-plan production D1 `dungeon-online-v3-production` in WEUR and applied migrations 0001-0003; old v2 and older databases were not modified.
+- Activated only `v08-meta-1` at `sha256:0bf00607056dbf3c30ffe57bbcfc77cea95b21c9ccc23aa985ec555856d1cbd6` through private Worker `dungeon-online-v3-production`.
+- Final gates passed: threat matrix 30/30, phase 706/706, baseline 3/3 plus headed smoke, and full 730/730 including 21/21 local Wrangler/D1 E2E.
+- Production headed smoke passed menu labels, Practice with zero API calls, Ranked start, starting relic, first canonical room, resume, checkpoint, next room, leaderboard, and zero browser errors.
+- Smoke run `run_d59efc9a79ce4ceb924c7cb9a53049de` was verified read-only in production D1 at revision 2, depth 1, room 2.
+- No staging, Access gate, tester list, paid plan, soak, canary, M5, force push, or unrelated-history merge was performed.
+- All 172 Vault Guardian deletions remain unstaged and outside the deployment.
