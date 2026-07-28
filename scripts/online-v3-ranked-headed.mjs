@@ -967,8 +967,36 @@ ${fatalTestHookAnchor}`;
     });
     await page.locator(".ranked-v3-choice-relic").first().click();
     await sessionState(page, "ROOM_ACTIVE");
-    await page.evaluate(() => window.DungeonOnlineV3.onExtraction("emergency"));
+    const extractionStart = await visibleGameState(page);
+    for (let step = 1; step <= 3; step += 1) {
+      await clearVisibleRoom(page);
+      await sessionState(page, "ENTERING_NEXT_ROOM");
+      await crossVisiblePortal(page, extractionStart.depth + step);
+    }
+    let releaseCheckpoint;
+    let markCheckpointStarted;
+    const checkpointStarted = new Promise((resolve) => { markCheckpointStarted = resolve; });
+    const checkpointGate = new Promise((resolve) => { releaseCheckpoint = resolve; });
+    let delayedCheckpoint = false;
+    await page.route("**/api/v3/runs/checkpoint", async (route) => {
+      if (!delayedCheckpoint) {
+        delayedCheckpoint = true;
+        markCheckpointStarted();
+        await checkpointGate;
+      }
+      await route.continue();
+    });
+    await clearVisibleRoom(page);
+    await checkpointStarted;
+    await page.keyboard.press("q");
+    assert.equal(
+      await page.evaluate(() => window.DungeonOnlineV3.getSessionState()),
+      "RESOLVING_ROOM"
+    );
+    assert.equal(await page.getByRole("heading", { name: "Ranked reconnect required" }).count(), 0);
+    releaseCheckpoint();
     await sessionState(page, "FINALIZED");
+    await page.unroute("**/api/v3/runs/checkpoint");
     await page.waitForTimeout(3_000);
     const campAudit = await page.evaluate(() => ({
       game: JSON.parse(window.render_game_to_text()),
@@ -989,8 +1017,37 @@ ${fatalTestHookAnchor}`;
       path: path.join(ARTIFACT_ROOT, "ranked-camp.png"),
       fullPage: true
     });
+    const nextRunRequestsBefore = diagnostics.apiRequests.length;
+    const nextRunDebugBefore = diagnostics.debugMessages.length;
     await page.getByRole("button", { name: /Start Next Run/u }).click();
-    await sessionState(page, "ROOM_ACTIVE");
+    await page.waitForFunction(() => (
+      window.DungeonOnlineV3?.getSessionState?.() === "ROOM_ACTIVE" ||
+      Boolean(document.querySelector(".ranked-v3-choice-relic")) ||
+      /Ranked Unavailable/u.test(document.querySelector(".ranked-v3-overlay")?.textContent || "")
+    ), null, { timeout: 15_000 });
+    if (await page.locator(".ranked-v3-choice-relic").count() > 0) {
+      await page.locator(".ranked-v3-choice-relic").first().click();
+    }
+    const nextRunFailureAudit = await page.evaluate(() => ({
+      session: window.DungeonOnlineV3?.getSessionState?.(),
+      snapshot: window.DungeonOnlineV3?.getSnapshot?.(),
+      overlay: document.querySelector(".ranked-v3-overlay")?.textContent || "",
+      rankedStorage: Object.fromEntries(
+        Object.keys(localStorage)
+          .filter((key) => key.startsWith("dungeonRankedV3"))
+          .map((key) => [key, localStorage.getItem(key)])
+      )
+    }));
+    assert.equal(
+      nextRunFailureAudit.session,
+      "ROOM_ACTIVE",
+      JSON.stringify({
+        nextRunFailureAudit,
+        apiRequests: diagnostics.apiRequests.slice(nextRunRequestsBefore),
+        debugMessages: diagnostics.debugMessages.slice(nextRunDebugBefore),
+        apiErrors: diagnostics.apiErrors
+      })
+    );
 
     await page.waitForTimeout(1_000);
     const nextRunAudit = await page.evaluate(() => ({
@@ -1076,6 +1133,34 @@ ${fatalTestHookAnchor}`;
     assert.notEqual(restartedRunId, abandonedRunId, "Ended recovery reused the abandoned run");
     page = recoveryPage;
 
+    await page.evaluate(() => window.DungeonOnlineV3.onExtraction("emergency"));
+    await sessionState(page, "FINALIZED");
+    await page.locator(".camp-revamp").waitFor({ state: "visible", timeout: 15_000 });
+    await page.route("**/api/v3/runs/start", async (route) => {
+      await route.fulfill({
+        status: 400,
+        contentType: "application/json",
+        body: JSON.stringify({
+          ok: false,
+          error: { code: "TEST_START_BLOCKED", message: "Headed Main Menu regression." }
+        })
+      });
+    });
+    await page.getByRole("button", { name: /Start Next Run/u }).click();
+    await page.getByRole("heading", { name: "Ranked Unavailable" }).waitFor({ state: "visible" });
+    await page.screenshot({
+      path: path.join(ARTIFACT_ROOT, "ranked-camp-next-run-error.png"),
+      fullPage: true
+    });
+    await page.getByRole("button", { name: "Main Menu" }).click();
+    await page.waitForFunction(() => JSON.parse(window.render_game_to_text()).phase === "menu");
+    assert.equal(await page.locator(".camp-revamp:visible").count(), 0);
+    await page.unroute("**/api/v3/runs/start");
+    await page.screenshot({
+      path: path.join(ARTIFACT_ROOT, "ranked-camp-error-main-menu.png"),
+      fullPage: true
+    });
+
     const expectedDroppedResponseErrors = diagnostics.consoleErrors.filter(
       (message) => message === "Failed to load resource: net::ERR_FAILED"
     );
@@ -1085,16 +1170,21 @@ ${fatalTestHookAnchor}`;
     const expectedStaleProfileErrors = diagnostics.consoleErrors.filter(
       (message) => message === "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
     );
+    const expectedCampStartErrors = diagnostics.consoleErrors.filter(
+      (message) => message === "Failed to load resource: the server responded with a status of 400 (Bad Request)"
+    );
     const unexpectedConsoleErrors = diagnostics.consoleErrors.filter(
       (message) => ![
         "Failed to load resource: net::ERR_FAILED",
         "Failed to load resource: the server responded with a status of 410 (Gone)",
-        "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+        "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+        "Failed to load resource: the server responded with a status of 400 (Bad Request)"
       ].includes(message)
     );
     assert.equal(expectedDroppedResponseErrors.length, 4);
     assert.equal(expectedEndedRecoveryErrors.length, 1);
     assert.equal(expectedStaleProfileErrors.length, 1);
+    assert.equal(expectedCampStartErrors.length, 1);
     assert.deepEqual(unexpectedConsoleErrors, []);
     assert.deepEqual(diagnostics.pageErrors, []);
     const summary = {
@@ -1108,6 +1198,8 @@ ${fatalTestHookAnchor}`;
       multiTabTakeoverScenarios: 1,
       campLifecycleScenarios: 1,
       nextRunProfileScenarios: 1,
+      checkpointExtractionScenarios: 1,
+      campErrorMainMenuScenarios: 1,
       endedRecoveryRestartScenarios: 1,
       staleProfileRepairScenarios: 1,
       storageQuotaRecoveryScenarios: 1,
@@ -1120,6 +1212,7 @@ ${fatalTestHookAnchor}`;
       expectedDroppedResponseConsoleErrors: expectedDroppedResponseErrors.length,
       expectedEndedRecoveryConsoleErrors: expectedEndedRecoveryErrors.length,
       expectedStaleProfileConsoleErrors: expectedStaleProfileErrors.length,
+      expectedCampStartConsoleErrors: expectedCampStartErrors.length,
       pageErrors: diagnostics.pageErrors.length
     };
     await fsPromises.writeFile(

@@ -215,6 +215,9 @@ game = `${game.slice(0, menuRenderStart)}${menuRenderSource}${game.slice(menuRen
 
 const productionGameReplacements = [
   [
+`      window.DungeonOnlineV3?.onExtraction?.(forced ? "emergency" : "normal");`,
+`      window.DungeonOnlineV3?.onExtraction?.(forced && !state.roomCleared ? "emergency" : "normal");`
+  ],  [
     "  let bootDismissPromise = null;",
     "  let bootDismissPromise = null;\n  let bootInputLocked = false;"
   ],

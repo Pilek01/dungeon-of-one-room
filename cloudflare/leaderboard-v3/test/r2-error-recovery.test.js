@@ -12,6 +12,7 @@ import manifest from "../src/rulesets/v08-meta-1/data/ruleset-manifest.json" wit
 const require = createRequire(import.meta.url);
 const clientApi = require("../../../online-v3/ranked-v3-client.js");
 const protocol = require("../../../online-v3/ranked-v3-protocol.js");
+const sessionApi = require("../../../online-v3/ranked-v3-session.js");
 
 function recoveryStore() {
   let session = { runId: "run_a1", revision: 0 };
@@ -197,4 +198,30 @@ test("Ranked start presents browser storage exhaustion explicitly", async () => 
   );
   assert.match(runtime, /code === "RANKED_STORAGE_FULL"/u);
   assert.match(runtime, /Browser storage is full/u);
+});
+
+test("cleared-room extraction queues across checkpoint and stays normal", async () => {
+  const [runtime, sessionSource, builder] = await Promise.all([
+    readFile(new URL("../../../online-v3/ranked-v3-runtime.js", import.meta.url), "utf8"),
+    readFile(new URL("../../../online-v3/ranked-v3-session.js", import.meta.url), "utf8"),
+    readFile(new URL("../../../scripts/build-pages-v3.mjs", import.meta.url), "utf8")
+  ]);
+  const session = sessionApi.createStateMachine(sessionApi.STATES.next);
+  assert.doesNotThrow(() => session.transition(sessionApi.STATES.resolving));
+  assert.match(runtime, /pendingExtractionMode/u);
+  assert.match(runtime, /if \(pendingExtractionMode\)[\s\S]*performExtraction/u);
+  assert.match(builder, /forced && !state\.roomCleared \? "emergency" : "normal"/u);
+  assert.match(sessionSource, /ENTERING_NEXT_ROOM[^\n]*RESOLVING_ROOM/u);
+});
+
+test("fresh Ranked start clears only transient Ranked state and failed-start Main Menu exits Camp", async () => {
+  const runtime = await readFile(
+    new URL("../../../online-v3/ranked-v3-runtime.js", import.meta.url),
+    "utf8"
+  );
+  assert.match(runtime, /prepareFreshRankedStart/u);
+  assert.match(runtime, /clearWriterLease/u);
+  assert.match(runtime, /returnFromFailedStartToMainMenu/u);
+  assert.match(runtime, /ui\.button\("Main Menu", returnFromFailedStartToMainMenu\)/u);
+  assert.doesNotMatch(runtime, /ui\.button\("Main Menu", \(\) => ui\.hide\(\)\)/u);
 });

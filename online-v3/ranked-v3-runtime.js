@@ -23,6 +23,7 @@
   let leaderboardCursor = null;
   let startedAt = 0;
   let pendingRoomSummary = null;
+  let pendingExtractionMode = null;
   let extractedProfileReady = false;
   let currentCampResponse = null;
   let campMutationPending = false;
@@ -49,6 +50,36 @@
       }
     });
     return client;
+  }
+
+  function resetLocalRankedSession() {
+    pendingExtractionMode = null;
+    extractedProfileReady = false;
+    client?.releaseWriter?.();
+    client?.clear?.();
+    client = null;
+    recoveryStore.clearSession();
+    recoveryStore.clearWriterLease();
+  }
+
+  function prepareFreshRankedStart() {
+    if (recoveryStore.loadRecovery()) return false;
+    resetLocalRankedSession();
+    recoveryStore.clearRecovery();
+    session = root.DungeonRankedV3Session.createStateMachine(
+      root.DungeonRankedV3Session.STATES.abandoned
+    );
+    return true;
+  }
+
+  function returnFromFailedStartToMainMenu() {
+    resetLocalRankedSession();
+    currentCampResponse = null;
+    session = root.DungeonRankedV3Session.createStateMachine(
+      root.DungeonRankedV3Session.STATES.abandoned
+    );
+    root.DungeonOnlineV3GameBridge?.returnToPractice?.();
+    ui.hide();
   }
 
   function createLeaderboardClient() {
@@ -158,6 +189,7 @@
   }
 
   function returnToPractice() {
+    pendingExtractionMode = null;
     if (![root.DungeonRankedV3Session.STATES.reconnect, root.DungeonRankedV3Session.STATES.protocolError].includes(session.getState())) {
       moveToRecoveryState(root.DungeonRankedV3Session.STATES.reconnect);
     }
@@ -285,7 +317,7 @@
         "This browser cannot verify that old Ranked save. Start a new run or return to the Main Menu.",
         [
           ui.button("Start New Ranked", () => startFromUnrecoverableRecovery().catch(presentError)),
-          ui.button("Main Menu", () => ui.hide())
+          ui.button("Main Menu", returnFromFailedStartToMainMenu)
         ]
       );
       return;
@@ -366,6 +398,12 @@
       return;
     }
     if (state.status === "active" && state.currentRoomDirective) {
+      if (pendingExtractionMode) {
+        const extractionMode = pendingExtractionMode;
+        pendingExtractionMode = null;
+        await performExtraction(extractionMode);
+        return;
+      }
       const directive = directives.applyOnlineV3RoomDirective(state.currentRoomDirective);
       session.transition(root.DungeonRankedV3Session.STATES.entering);
       ui.hide();
@@ -426,7 +464,7 @@
             : "Ranked could not start. Try again or return to the Main Menu.";
     ui.showMenu("Ranked Unavailable", message, [
       ui.button("Try Again", () => startRanked()),
-      ui.button("Main Menu", () => ui.hide())
+      ui.button("Main Menu", returnFromFailedStartToMainMenu)
     ]);
   }
 
@@ -662,11 +700,9 @@
     Promise.resolve()
       .then(() => {
         client?.clearRecovery?.();
-        client?.clear?.();
-        client = null;
+        recoveryStore.clearRecovery();
+        prepareFreshRankedStart();
         currentCampResponse = null;
-        extractedProfileReady = false;
-        session = root.DungeonRankedV3Session.createStateMachine();
         ui.hide();
         return startRanked();
       })
@@ -712,6 +748,12 @@
       if (["victory", "defeat", "extraction"].includes(state.status)) {
         session.transition(root.DungeonRankedV3Session.STATES.terminal);
         showTerminal(state);
+        return;
+      }
+      if (pendingExtractionMode) {
+        const extractionMode = pendingExtractionMode;
+        pendingExtractionMode = null;
+        await performExtraction(extractionMode);
         return;
       }
       await continueBoundary(state);
@@ -797,14 +839,25 @@
     }
   }
 
+  async function performExtraction(mode) {
+    const resolving = root.DungeonRankedV3Session.STATES.resolving;
+    if (session.getState() !== resolving) session.transition(resolving);
+    root.DungeonOnlineV3GameBridge?.beginRankedExtraction?.();
+    const response = await createClient().event("request_extraction", { mode });
+    extractedProfileReady = response.metaState?.status === "extraction" && Boolean(response.profile);
+    session.transition(root.DungeonRankedV3Session.STATES.terminal);
+    await finalize();
+  }
+
   async function onExtraction(mode) {
-    try {
-      session.transition(root.DungeonRankedV3Session.STATES.resolving);
+    const extractionMode = mode === "normal" ? "normal" : "emergency";
+    if (session.getState() === root.DungeonRankedV3Session.STATES.resolving) {
+      if (!pendingExtractionMode) pendingExtractionMode = extractionMode;
       root.DungeonOnlineV3GameBridge?.beginRankedExtraction?.();
-      const response = await createClient().event("request_extraction", { mode });
-      extractedProfileReady = response.metaState?.status === "extraction" && Boolean(response.profile);
-      session.transition(root.DungeonRankedV3Session.STATES.terminal);
-      await finalize();
+      return;
+    }
+    try {
+      await performExtraction(extractionMode);
     } catch (error) {
       presentError(error);
     }
@@ -823,6 +876,7 @@
   function openRankedEntry() {
     const hasRecovery = Boolean(recoveryStore.loadRecovery());
     if (!hasRecovery) {
+      prepareFreshRankedStart();
       startRanked();
       return;
     }
