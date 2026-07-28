@@ -266,6 +266,17 @@ const productionGameReplacements = [
     }`
   ],
   [
+`      state.onlineV3Directive = state.onlineV3NextDirective;
+      state.onlineV3NextDirective = null;
+      playSfx("portal");
+      buildRoom();`,
+`      state.onlineV3Directive = state.onlineV3NextDirective;
+      state.onlineV3NextDirective = null;
+      playSfx("portal");
+      buildRoom();
+      window.DungeonOnlineV3?.onRoomEntered?.(state.onlineV3Directive);`
+  ],
+  [
 `    if (state.phase === "menu") {
       if (state.menuNewGameConfirmOpen) {`,
 `    if (state.phase === "menu") {

@@ -122,6 +122,10 @@ test("Pages release stays same-origin and disconnects all v2 bindings", async ()
   assert.match(builder, /bootInputLocked/u);
   assert.match(builder, /data-menu-index/u);
   assert.match(builder, /Preparing the dungeon/u);
+  assert.match(
+    builder,
+    /state\.onlineV3Directive = state\.onlineV3NextDirective;[\s\S]*?buildRoom\(\);[\s\S]*?DungeonOnlineV3\?\.onRoomEntered\?\.\(state\.onlineV3Directive\)/u
+  );
   assert.match(config, /DUNGEON_ONLINE_V3_API = ""/u);
   assert.match(game, /title: "Start New Game"/u);
   assert.doesNotMatch(game, /DungeonOnlineV3Menu|bootInputLocked|data-menu-index/u);

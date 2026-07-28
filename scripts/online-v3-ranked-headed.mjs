@@ -251,6 +251,41 @@ async function sessionState(page, expected) {
   );
 }
 
+async function visibleGameState(page) {
+  return page.evaluate(() => JSON.parse(window.render_game_to_text()));
+}
+
+async function runDebugAction(page, menuKey, actionKey, actionName) {
+  await page.keyboard.press(menuKey);
+  const menu = page.locator(".overlay-card-debug-cheats");
+  await menu.waitFor({ state: "visible" });
+  await menu.getByText(actionName, { exact: true }).waitFor({ state: "visible" });
+  await page.keyboard.press(actionKey);
+  await page.keyboard.press(menuKey);
+  await menu.waitFor({ state: "hidden" });
+}
+
+async function clearVisibleRoom(page) {
+  await runDebugAction(page, "F9", "5", "Clear Room");
+  await page.waitForFunction(() => JSON.parse(window.render_game_to_text()).roomCleared === true);
+}
+
+async function crossVisiblePortal(page, expectedDepth) {
+  await runDebugAction(page, "F10", "b", "Toggle Observer Bot");
+  await page.waitForFunction(
+    (depth) => {
+      const game = JSON.parse(window.render_game_to_text());
+      return game.depth >= depth && window.DungeonOnlineV3?.getSessionState?.() === "ROOM_ACTIVE";
+    },
+    expectedDepth,
+    { timeout: 30_000 }
+  );
+  await runDebugAction(page, "F10", "b", "Toggle Observer Bot");
+  const state = await visibleGameState(page);
+  assert.equal(state.depth, expectedDepth);
+  assert.notEqual(state.latestLog, "Online v3 is still resolving the next room.");
+}
+
 async function d1Count(runId) {
   const sql = `SELECT COUNT(*) AS count FROM leaderboard_entries WHERE run_id = '${runId}'`;
   const { stdout } = await runWrangler([
@@ -294,6 +329,15 @@ async function main() {
     maxBuffer: 10 * 1024 * 1024,
     windowsHide: true
   });
+  const headedConfigPath = path.join(GAME_ROOT, "config.js");
+  const headedConfig = await fsPromises.readFile(headedConfigPath, "utf8");
+  const debugDisabled = "window.DUNGEON_DEBUG_CHEATS_ENABLED = false;";
+  assert(headedConfig.includes(debugDisabled));
+  await fsPromises.writeFile(
+    headedConfigPath,
+    headedConfig.replace(debugDisabled, "window.DUNGEON_DEBUG_CHEATS_ENABLED = true;"),
+    "utf8"
+  );
   const secret = randomBytes(48).toString("base64url");
   const worker = await startWorker(await acquirePort(), secret);
   const proxy = await startGameProxy(worker.baseUrl);
@@ -430,14 +474,18 @@ async function main() {
       runId
     );
 
-    await page.evaluate(() => window.DungeonOnlineV3.onLocalRoomCleared({
-      turnCount: 5,
-      rewardClaims: []
-    }));
-
+    const firstRoom = await visibleGameState(page);
+    await clearVisibleRoom(page);
     await sessionState(page, "ENTERING_NEXT_ROOM");
-    await page.evaluate(() => window.DungeonOnlineV3GameBridge.enterNextDirective());
-    await sessionState(page, "ROOM_ACTIVE");
+    await crossVisiblePortal(page, firstRoom.depth + 1);
+
+    await clearVisibleRoom(page);
+    await sessionState(page, "ENTERING_NEXT_ROOM");
+    await crossVisiblePortal(page, firstRoom.depth + 2);
+    await page.screenshot({
+      path: path.join(ARTIFACT_ROOT, "ranked-two-player-portals.png"),
+      fullPage: true
+    });
 
     for (let index = 0; index < 8; index += 1) {
       const status = await page.evaluate(() => window.DungeonOnlineV3.getSnapshot()?.publicState?.status);
