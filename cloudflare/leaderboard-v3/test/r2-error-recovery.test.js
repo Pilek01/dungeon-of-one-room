@@ -161,13 +161,32 @@ test("runtime exposes explicit Ranked selection and terminal abandonment recover
   assert.match(runtime, /Continue Ranked/u);
   assert.doesNotMatch(runtime, /openRankedEntry\(\)\.catch/u);
   assert.match(runtime, /Cancel/u);
+  assert.match(runtime, /if \(!hasRecovery\)[\s\S]*startRanked/u);
+  assert.match(runtime, /if \(resetProfile\)[\s\S]*resetProfileIdentity/u);
+  assert.match(runtime, /repairProfile[\s\S]*PROFILE_UNAUTHORIZED/u);
+  assert.match(runtime, /discardFailedStart/u);
+  assert.match(runtime, /presentStartError/u);
+  assert.doesNotMatch(runtime, /Forget Local Ranked Save/u);
+  assert.doesNotMatch(runtime, /Forget and Start New/u);
+  assert.doesNotMatch(runtime, /Confirm New Ranked/u);
   assert.doesNotMatch(
     runtime,
     /if \(recoveryStore\.loadRecovery\(\)\) await resumeRanked\(\);\s*else await startRanked\(\);/u
   );
   assert.match(runtime, /FINALIZED_RUN_IMMUTABLE[\s\S]*Ranked Run Ended/u);
-  assert.match(runtime, /RECOVERY_UNAUTHORIZED[\s\S]*Forget Local Ranked Save/u);
+  assert.match(runtime, /RECOVERY_UNAUTHORIZED[\s\S]*Start New Ranked/u);
   assert.match(runtime, /Main Menu/u);
   assert.match(runtime, /returnToPractice[\s\S]*releaseWriter\?\.\(\)/u);
   assert.match(runtime, /clearEndedRecovery[\s\S]*releaseWriter\?\.\(\)/u);
+});
+test("Ranked message actions use the compact gothic menu treatment", async () => {
+  const style = await readFile(new URL("../../../style.css", import.meta.url), "utf8");
+  const ui = await readFile(new URL(
+    "../../../online-v3/ranked-v3-ui.js",
+    import.meta.url
+  ), "utf8");
+  assert.match(ui, /ranked-v3-card-menu/u);
+  assert.match(style, /\.ranked-v3-card-menu[\s\S]*width:\s*min\(500px/u);
+  assert.match(style, /\.ranked-v3-card-menu \.ranked-v3-actions[\s\S]*max-width:\s*360px/u);
+  assert.match(style, /\.ranked-v3-button::before[\s\S]*\.ranked-v3-button::after/u);
 });

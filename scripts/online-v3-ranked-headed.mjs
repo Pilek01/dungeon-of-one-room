@@ -245,8 +245,114 @@ async function openNativeMenuOption(page, title) {
 
 async function openRankedChoice(page, choice) {
   await openNativeMenuOption(page, "Ranked (Online)");
+  if (choice === "Start New Ranked") {
+    const savedRunChoice = page.getByRole("button", { name: choice, exact: true });
+    if (await savedRunChoice.isVisible().catch(() => false)) {
+      await savedRunChoice.click();
+    }
+    return;
+  }
   await page.getByRole("heading", { name: "Ranked (Online)", exact: true }).waitFor({ state: "visible" });
   await page.getByRole("button", { name: choice, exact: true }).click();
+}
+
+async function seedStaleRankedProfile(page) {
+  return page.evaluate(async (season) => {
+    const protocol = window.DungeonRankedV3Protocol;
+    const storage = window.DungeonRankedV3Storage;
+    const credential = (fill) => {
+      const bytes = new Uint8Array(32);
+      bytes.fill(fill);
+      let binary = "";
+      for (const byte of bytes) binary += String.fromCharCode(byte);
+      return btoa(binary).replaceAll("+", "-").replaceAll("/", "_").replace(/=+$/u, "");
+    };
+    const profileId = `profile_${crypto.randomUUID().replaceAll("-", "")}`;
+    const profileCredential = credential(8);
+    const staleCredential = credential(9);
+    const recoveryCredential = credential(10);
+    const startOperationId = `op_${crypto.randomUUID().replaceAll("-", "")}`;
+    const startBody = {
+      playerName: "StaleProfile",
+      season,
+      gameVersion: String(window.DUNGEON_GAME_VERSION || window.GAME_VERSION || "v0.8.0"),
+      rulesetId: protocol.RULESET_ID,
+      rulesetHash: protocol.RULESET_HASH,
+      clientInstallIdHash: "a".repeat(64),
+      profileId,
+      profileCredential,
+      recoveryCredential,
+      clientProtocolVersion: protocol.PROTOCOL_VERSION
+    };
+    const startedResponse = await fetch(protocol.ENDPOINTS.start.path, {
+      method: "POST",
+      headers: { "content-type": "application/json", "Idempotency-Key": startOperationId },
+      body: JSON.stringify(startBody)
+    });
+    const started = await startedResponse.json();
+    if (!startedResponse.ok) throw new Error(`STALE_PROFILE_SEED_START:${JSON.stringify(started)}`);
+    const abandonOperationId = `op_${crypto.randomUUID().replaceAll("-", "")}`;
+    const abandonResponse = await fetch(protocol.ENDPOINTS.abandon.path, {
+      method: "POST",
+      headers: { "content-type": "application/json", "Idempotency-Key": abandonOperationId },
+      body: JSON.stringify({
+        operationId: abandonOperationId,
+        runId: started.runId,
+        recoveryCredential,
+        clientProtocolVersion: protocol.PROTOCOL_VERSION,
+        lastKnownRevision: started.revision
+      })
+    });
+    if (!abandonResponse.ok) throw new Error(`STALE_PROFILE_SEED_ABANDON:${await abandonResponse.text()}`);
+    localStorage.setItem(storage.STORAGE_KEYS.profile, storage.serialize({
+      profileId,
+      profileCredential: staleCredential
+    }));
+    localStorage.removeItem(storage.STORAGE_KEYS.session);
+    localStorage.removeItem(storage.STORAGE_KEYS.recovery);
+    localStorage.removeItem(storage.STORAGE_KEYS.writerLease);
+    return { profileId, seedRunId: started.runId };
+  }, SEASON);
+}
+
+async function abandonCurrentRankedAndClearLocal(page) {
+  return page.evaluate(async () => {
+    const protocol = window.DungeonRankedV3Protocol;
+    const storageApi = window.DungeonRankedV3Storage;
+    const store = storageApi.createStore(localStorage);
+    const recovery = store.loadRecovery();
+    const snapshot = store.loadSession();
+    if (!recovery?.runId || !snapshot?.runId) throw new Error("RANKED_CLEANUP_STATE_MISSING");
+    const operationId = `op_${crypto.randomUUID().replaceAll("-", "")}`;
+    const response = await fetch(protocol.ENDPOINTS.abandon.path, {
+      method: "POST",
+      headers: { "content-type": "application/json", "Idempotency-Key": operationId },
+      body: JSON.stringify({
+        operationId,
+        runId: recovery.runId,
+        recoveryCredential: recovery.recoveryCredential,
+        clientProtocolVersion: protocol.PROTOCOL_VERSION,
+        lastKnownRevision: snapshot.revision
+      })
+    });
+    const payload = await response.json();
+    if (!response.ok) throw new Error(`RANKED_CLEANUP_ABANDON:${JSON.stringify(payload)}`);
+    window.dispatchEvent(new Event("beforeunload"));
+    for (const key of Object.keys(localStorage)) {
+      if (storageApi.isOwnedKey(key)) localStorage.removeItem(key);
+    }
+    return { runId: recovery.runId, status: payload.metaState?.status };
+  });
+}
+
+async function chooseRelicWithoutFatalPrevention(page) {
+  const choiceIndex = await page.evaluate(() => {
+    const state = window.DungeonOnlineV3?.getSnapshot?.()?.publicState;
+    const choices = state?.startingRelicOffer?.publicChoices || state?.relicOffer?.publicChoices || [];
+    const safeIndex = choices.findIndex((choice) => choice?.relicId !== "chronoloop");
+    return safeIndex >= 0 ? safeIndex : 0;
+  });
+  await page.locator(".ranked-v3-choice-relic").nth(choiceIndex).click();
 }
 
 async function sessionState(page, expected) {
@@ -344,6 +450,23 @@ async function main() {
     headedConfig.replace(debugDisabled, "window.DUNGEON_DEBUG_CHEATS_ENABLED = true;"),
     "utf8"
   );
+  const headedGamePath = path.join(GAME_ROOT, "game.js");
+  const headedGame = await fsPromises.readFile(headedGamePath, "utf8");
+  const fatalTestHookAnchor = "  window.render_game_to_text = renderGameToText;";
+  assert(headedGame.includes(fatalTestHookAnchor));
+  const fatalTestHook = `  window.__DUNGEON_TEST_TRIGGER_FATAL = (reason = "Headed fatal event") => {
+    if (!canUseDebugCheats() || state.phase !== "playing") return false;
+    state.player.hp = 0;
+    gameOver(String(reason || "Headed fatal event"));
+    return true;
+  };
+
+${fatalTestHookAnchor}`;
+  await fsPromises.writeFile(
+    headedGamePath,
+    headedGame.replace(fatalTestHookAnchor, fatalTestHook),
+    "utf8"
+  );
   const secret = randomBytes(48).toString("base64url");
   const worker = await startWorker(await acquirePort(), secret);
   const proxy = await startGameProxy(worker.baseUrl);
@@ -362,6 +485,12 @@ async function main() {
     await context.addInitScript((season) => {
       window.DUNGEON_ONLINE_V3_SEASON = season;
       window.DUNGEON_ONLINE_V3_DEBUG = true;
+      window.__dungeonPlayedAudio = [];
+      const originalAudioPlay = HTMLMediaElement.prototype.play;
+      HTMLMediaElement.prototype.play = function trackDungeonAudio(...args) {
+        window.__dungeonPlayedAudio.push(new URL(this.currentSrc || this.src, location.href).pathname);
+        return originalAudioPlay.apply(this, args);
+      };
       localStorage.setItem("dungeonOneRoomPlayerName", "M4Headed");
       localStorage.setItem("dungeonOneRoomGraphicsMode", "hd");
       localStorage.setItem("dungeonOneRoomTutorialRunSeenV1", "1");
@@ -405,6 +534,43 @@ async function main() {
       fullPage: true
     });
 
+    const staleProfile = await seedStaleRankedProfile(page);
+    const staleErrorsBefore = diagnostics.apiErrors.length;
+    await openRankedChoice(page, "Start New Ranked");
+    await page.locator(".ranked-v3-choice-relic").first().waitFor({ state: "visible" });
+    const repairedProfile = await page.evaluate(() => (
+      window.DungeonRankedV3Storage.createStore(localStorage).loadProfile()
+    ));
+    const repairedRunId = await page.evaluate(() => window.DungeonOnlineV3.getSnapshot().runId);
+    assert.notEqual(repairedProfile.profileId, staleProfile.profileId);
+    assert.notEqual(repairedRunId, staleProfile.seedRunId);
+    assert.equal(
+      diagnostics.apiErrors.slice(staleErrorsBefore).some((entry) => /PROFILE_UNAUTHORIZED/u.test(entry.body)),
+      true,
+      JSON.stringify(diagnostics.apiErrors.slice(staleErrorsBefore))
+    );
+    assert.equal(await page.getByRole("heading", { name: "Ranked reconnect required" }).count(), 0);
+    await page.screenshot({
+      path: path.join(ARTIFACT_ROOT, "ranked-stale-profile-repaired.png"),
+      fullPage: true
+    });
+    await page.reload({ waitUntil: "domcontentloaded" });
+    await dismissBoot(page);
+    await openNativeMenuOption(page, "Ranked (Online)");
+    await page.getByRole("heading", { name: "Ranked (Online)", exact: true }).waitFor({ state: "visible" });
+    const savedMenuBox = await page.locator(".ranked-v3-card-menu").boundingBox();
+    const savedActionsBox = await page.locator(".ranked-v3-card-menu .ranked-v3-actions").boundingBox();
+    assert(savedMenuBox && savedMenuBox.width <= 500, JSON.stringify(savedMenuBox));
+    assert(savedActionsBox && savedActionsBox.width <= 360, JSON.stringify(savedActionsBox));
+    await page.screenshot({
+      path: path.join(ARTIFACT_ROOT, "ranked-saved-run-menu.png"),
+      fullPage: true
+    });
+    const staleCleanup = await abandonCurrentRankedAndClearLocal(page);
+    assert.equal(staleCleanup.status, "abandoned");
+    await page.reload({ waitUntil: "domcontentloaded" });
+    await dismissBoot(page);
+
     const practiceApiBefore = diagnostics.apiRequests.length;
     await openNativeMenuOption(page, "Practice (Offline)");
     await page.waitForFunction(() => JSON.parse(window.render_game_to_text()).phase === "relic");
@@ -436,7 +602,7 @@ async function main() {
       path: path.join(ARTIFACT_ROOT, "ranked-starting-relic.png"),
       fullPage: true
     });
-    await page.locator(".ranked-v3-choice-relic").first().click();
+    await chooseRelicWithoutFatalPrevention(page);
     await sessionState(page, "ROOM_ACTIVE");
     const runId = await page.evaluate(() => window.DungeonOnlineV3.getSnapshot().runId);
     assert.match(runId, /^run_[a-f0-9]+$/u);
@@ -516,6 +682,111 @@ async function main() {
       fullPage: true
     });
 
+    await clearVisibleRoom(page);
+    await sessionState(page, "ENTERING_NEXT_ROOM");
+    await crossVisiblePortal(page, firstRoom.depth + 3);
+
+    const requestsBeforePreWardenClear = diagnostics.apiRequests.length;
+    await clearVisibleRoom(page);
+    await sessionState(page, "ENTERING_NEXT_ROOM");
+    const preWardenAudit = await page.evaluate(() => {
+      const snapshot = window.DungeonOnlineV3.getSnapshot();
+      return {
+        game: JSON.parse(window.render_game_to_text()),
+        session: window.DungeonOnlineV3.getSessionState(),
+        directive: snapshot?.publicState?.currentRoomDirective || null,
+        rewardSlots: snapshot?.publicState?.currentRewardEnvelope?.rewardSlots || [],
+        visibleRelicChoices: [...document.querySelectorAll(".ranked-v3-choice-relic")]
+          .filter((element) => element.getClientRects().length).length,
+        visibleOnlineOverlay: [...document.querySelectorAll(".ranked-v3-overlay")]
+          .filter((element) => element.getClientRects().length).length
+      };
+    });
+    assert.equal(preWardenAudit.directive?.depth, firstRoom.depth + 4, JSON.stringify(preWardenAudit));
+    assert.equal(preWardenAudit.directive?.roomType, "boss", JSON.stringify(preWardenAudit));
+    assert(
+      preWardenAudit.rewardSlots.some((slot) => String(slot?.sourceId || "").includes("warden")),
+      JSON.stringify(preWardenAudit)
+    );
+    assert.equal(preWardenAudit.visibleRelicChoices, 0, JSON.stringify(preWardenAudit));
+    assert.equal(preWardenAudit.visibleOnlineOverlay, 0, JSON.stringify(preWardenAudit));
+    assert.equal(
+      diagnostics.apiRequests.length - requestsBeforePreWardenClear,
+      1,
+      "Ordinary room clear issued a next-room Warden relic before entering or clearing the boss"
+    );
+    await page.screenshot({
+      path: path.join(ARTIFACT_ROOT, "ranked-ordinary-clear-before-warden.png"),
+      fullPage: true
+    });
+
+    await crossVisiblePortal(page, firstRoom.depth + 4);
+    assert.equal(await page.locator(".ranked-v3-choice-relic:visible").count(), 0);
+    await clearVisibleRoom(page);
+    await page.waitForFunction(() => [
+      "AWAITING_REWARD_OR_TRANSACTION",
+      "ENTERING_NEXT_ROOM"
+    ].includes(window.DungeonOnlineV3?.getSessionState?.()), null, { timeout: 15_000 });
+    if (await page.locator(".ranked-v3-choice-relic:visible").count() > 0) {
+      await page.screenshot({
+        path: path.join(ARTIFACT_ROOT, "ranked-warden-relic-after-clear.png"),
+        fullPage: true
+      });
+      await chooseRelicWithoutFatalPrevention(page);
+      await sessionState(page, "ENTERING_NEXT_ROOM");
+    } else {
+      await sessionState(page, "ENTERING_NEXT_ROOM");
+    }
+    await crossVisiblePortal(page, firstRoom.depth + 5);
+
+    const livesBeforeDeath = await page.evaluate(() => (
+      window.DungeonOnlineV3.getSnapshot()?.publicState?.lives || 0
+    ));
+    const audioBeforeDeath = await page.evaluate(() => window.__dungeonPlayedAudio.length);
+    assert(livesBeforeDeath > 1, "Headed death check requires a nonterminal life");
+    assert.equal(
+      await page.evaluate(() => window.__DUNGEON_TEST_TRIGGER_FATAL("Headed nonterminal fatal event")),
+      true
+    );
+    await page.waitForFunction(() => {
+      const game = JSON.parse(window.render_game_to_text());
+      return game.phase === "dead" && window.DungeonOnlineV3?.getSessionState?.() === "ENTERING_NEXT_ROOM";
+    }, null, { timeout: 15_000 });
+    const deathAudit = await page.evaluate((audioStart) => {
+      const snapshot = window.DungeonOnlineV3.getSnapshot();
+      const game = JSON.parse(window.render_game_to_text());
+      return {
+        game,
+        session: window.DungeonOnlineV3.getSessionState(),
+        lives: snapshot?.publicState?.lives || 0,
+        nextDepth: snapshot?.publicState?.currentRoomDirective?.depth || 0,
+        nativeDeathVisible: Boolean(document.querySelector(".death-requiem")?.getClientRects().length),
+        onlineOverlayVisible: Boolean(document.querySelector(".ranked-v3-overlay")?.getClientRects().length),
+        playedAudio: window.__dungeonPlayedAudio.slice(audioStart)
+      };
+    }, audioBeforeDeath);
+    assert.equal(deathAudit.lives, livesBeforeDeath - 1, JSON.stringify(deathAudit));
+    assert.equal(deathAudit.nativeDeathVisible, true, JSON.stringify(deathAudit));
+    assert.equal(deathAudit.onlineOverlayVisible, false, JSON.stringify(deathAudit));
+    assert.match(deathAudit.game.overlayText, /You Died[\s\S]*Rise Again/u);
+    assert(
+      deathAudit.playedAudio.some((audioPath) => audioPath.endsWith("/assets/death.mp3")),
+      JSON.stringify(deathAudit)
+    );
+    await page.screenshot({
+      path: path.join(ARTIFACT_ROOT, "ranked-nonterminal-death.png"),
+      fullPage: true
+    });
+    await page.keyboard.press("r");
+    await sessionState(page, "ROOM_ACTIVE");
+    await page.waitForFunction(() => JSON.parse(window.render_game_to_text()).phase === "playing");
+    const resumedAfterDeath = await visibleGameState(page);
+    assert.equal(resumedAfterDeath.depth, deathAudit.nextDepth, JSON.stringify({ deathAudit, resumedAfterDeath }));
+    await page.screenshot({
+      path: path.join(ARTIFACT_ROOT, "ranked-after-death-continue.png"),
+      fullPage: true
+    });
+
     let droppedFinalizeResponse = false;
     await page.route("**/api/v3/runs/finalize", async (route) => {
       if (!droppedFinalizeResponse) {
@@ -530,7 +801,29 @@ async function main() {
     for (let index = 0; index < 8; index += 1) {
       const status = await page.evaluate(() => window.DungeonOnlineV3.getSnapshot()?.publicState?.status);
       if (["victory", "defeat", "extraction"].includes(status)) break;
-      await page.evaluate(() => window.DungeonOnlineV3.onFatalEvent());
+      assert.equal(
+        await page.evaluate(() => window.__DUNGEON_TEST_TRIGGER_FATAL("Headed terminal fatal event")),
+        true
+      );
+      await page.waitForFunction(() => {
+        const nextStatus = window.DungeonOnlineV3.getSnapshot()?.publicState?.status;
+        const nextSession = window.DungeonOnlineV3.getSessionState();
+        return ["victory", "defeat", "extraction"].includes(nextStatus) ||
+          ["ROOM_ACTIVE", "ENTERING_NEXT_ROOM"].includes(nextSession);
+      }, null, { timeout: 15_000 });
+      const afterFatal = await page.evaluate(() => ({
+        status: window.DungeonOnlineV3.getSnapshot()?.publicState?.status || "",
+        session: window.DungeonOnlineV3.getSessionState(),
+        phase: JSON.parse(window.render_game_to_text()).phase
+      }));
+      if (["victory", "defeat", "extraction"].includes(afterFatal.status)) break;
+      if (afterFatal.session === "ENTERING_NEXT_ROOM" && afterFatal.phase === "dead") {
+        await page.keyboard.press("Enter");
+        await sessionState(page, "ROOM_ACTIVE");
+        await page.waitForFunction(() => JSON.parse(window.render_game_to_text()).phase === "playing");
+      } else {
+        assert.equal(afterFatal.session, "ROOM_ACTIVE", JSON.stringify(afterFatal));
+      }
     }
     const terminalAudit = await page.evaluate(() => ({
       status: window.DungeonOnlineV3.getSnapshot()?.publicState?.status || "",
@@ -712,26 +1005,34 @@ async function main() {
     const expectedEndedRecoveryErrors = diagnostics.consoleErrors.filter(
       (message) => message === "Failed to load resource: the server responded with a status of 410 (Gone)"
     );
+    const expectedStaleProfileErrors = diagnostics.consoleErrors.filter(
+      (message) => message === "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    );
     const unexpectedConsoleErrors = diagnostics.consoleErrors.filter(
       (message) => ![
         "Failed to load resource: net::ERR_FAILED",
-        "Failed to load resource: the server responded with a status of 410 (Gone)"
+        "Failed to load resource: the server responded with a status of 410 (Gone)",
+        "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
       ].includes(message)
     );
     assert.equal(expectedDroppedResponseErrors.length, 4);
     assert.equal(expectedEndedRecoveryErrors.length, 1);
+    assert.equal(expectedStaleProfileErrors.length, 1);
     assert.deepEqual(unexpectedConsoleErrors, []);
     assert.deepEqual(diagnostics.pageErrors, []);
     const summary = {
       mode: HEADLESS ? "headless" : "headed",
       runId,
       rankedLifecycleScenarios: 1,
+      rewardBoundaryScenarios: 1,
+      deathPresentationScenarios: 1,
       networkLossScenarios: 1,
       reloadRecoveryScenarios: 1,
       multiTabTakeoverScenarios: 1,
       campLifecycleScenarios: 1,
       nextRunProfileScenarios: 1,
       endedRecoveryRestartScenarios: 1,
+      staleProfileRepairScenarios: 1,
       activeCombatApiRequests: 0,
       finalizeAttempts: diagnostics.finalizeOperationIds.length,
       uniqueFinalizeOperationIds: new Set(diagnostics.finalizeOperationIds).size,
@@ -740,6 +1041,7 @@ async function main() {
       consoleErrors: unexpectedConsoleErrors.length,
       expectedDroppedResponseConsoleErrors: expectedDroppedResponseErrors.length,
       expectedEndedRecoveryConsoleErrors: expectedEndedRecoveryErrors.length,
+      expectedStaleProfileConsoleErrors: expectedStaleProfileErrors.length,
       pageErrors: diagnostics.pageErrors.length
     };
     await fsPromises.writeFile(
@@ -750,7 +1052,8 @@ async function main() {
     process.stdout.write(
       `Online v3 Ranked headed lifecycle PASS (${summary.rankedLifecycleScenarios} lifecycle, ` +
       `${summary.networkLossScenarios} network-loss, ${summary.reloadRecoveryScenarios} reload, ` +
-      `${summary.multiTabTakeoverScenarios} multi-tab, ${summary.campLifecycleScenarios} Camp)\n`
+      `${summary.multiTabTakeoverScenarios} multi-tab, ${summary.rewardBoundaryScenarios} reward-boundary, ` +
+      `${summary.deathPresentationScenarios} death-presentation, ${summary.campLifecycleScenarios} Camp)\n`
     );
     await context.close();
   } finally {

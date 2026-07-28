@@ -207,20 +207,9 @@
       String(error?.message || "") === "RANKED_RECOVERY_CREDENTIAL_MISSING";
   }
 
-  async function forgetLocalRecoveryAndStartNew() {
+  async function startFromUnrecoverableRecovery() {
     clearEndedRecovery();
     await startRanked();
-  }
-
-  function confirmForgetLocalRecovery() {
-    ui.showMessage(
-      "Forget Local Ranked Save?",
-      "This browser cannot recover that save. Forget it here to start a new Ranked run.",
-      [
-        ui.button("Forget and Start New", () => forgetLocalRecoveryAndStartNew().catch(presentError)),
-        ui.button("Keep Local Save", openRankedEntry)
-      ]
-    );
   }
 
   async function abandonCanonical() {
@@ -232,34 +221,21 @@
     ui.hide();
   }
 
-  async function abandonAndStartNewRanked() {
-    ui.setStatus("Ending the saved Ranked run...");
-    try {
-      await createClient().abandonCanonical();
-      client = null;
-      session = root.DungeonRankedV3Session.createStateMachine(
-        root.DungeonRankedV3Session.STATES.abandoned
-      );
-    } catch (error) {
-      if (!isEndedRecoveryError(error)) throw error;
-      clearEndedRecovery();
+  async function startNewRanked() {
+    if (recoveryStore.loadRecovery()) {
+      ui.setStatus("Ending the saved Ranked run...");
+      try {
+        await createClient().abandonCanonical();
+        client = null;
+        session = root.DungeonRankedV3Session.createStateMachine(
+          root.DungeonRankedV3Session.STATES.abandoned
+        );
+      } catch (error) {
+        if (!isEndedRecoveryError(error) && !isUnrecoverableLocalSave(error)) throw error;
+        clearEndedRecovery();
+      }
     }
     await startRanked();
-  }
-
-  function confirmStartNewRanked() {
-    if (!recoveryStore.loadRecovery()) {
-      startRanked().catch(presentError);
-      return;
-    }
-    ui.showMessage(
-      "Start New Ranked Run?",
-      "This permanently ends the saved Ranked run before starting a new one.",
-      [
-        ui.button("Confirm New Ranked", () => abandonAndStartNewRanked().catch(presentError)),
-        ui.button("Keep Saved Run", openRankedEntry)
-      ]
-    );
   }
 
   function confirmAbandon() {
@@ -304,11 +280,11 @@
       return;
     }
     if (isUnrecoverableLocalSave(error)) {
-      ui.showMessage(
-        "Ranked Save Cannot Be Recovered",
-        "The saved Ranked run cannot be verified by this browser.",
+      ui.showMenu(
+        "Ranked Save Cannot Be Continued",
+        "This browser cannot verify that old Ranked save. Start a new run or return to the Main Menu.",
         [
-          ui.button("Forget Local Ranked Save", confirmForgetLocalRecovery),
+          ui.button("Start New Ranked", () => startFromUnrecoverableRecovery().catch(presentError)),
           ui.button("Main Menu", () => ui.hide())
         ]
       );
@@ -419,7 +395,43 @@
     throw new TypeError("RANKED_RESPONSE_STATE_UNSUPPORTED");
   }
 
+  function discardFailedStart(resetProfile = false) {
+    const failedClient = createClient();
+    failedClient.discardFailedStart();
+    if (resetProfile) {
+      failedClient.resetProfileIdentity();
+      failedClient.clearRecovery?.();
+    }
+    failedClient.clear();
+    client = null;
+    session = root.DungeonRankedV3Session.createStateMachine(
+      root.DungeonRankedV3Session.STATES.abandoned
+    );
+  }
+
+  function presentStartError(error) {
+    const code = String(error?.code || "");
+    const rateLimited = code === "START_RATE_LIMITED";
+    const activeLimit = code === "ACTIVE_RUN_LIMIT";
+    const offline = error?.retryable || ["NETWORK_ERROR", "TIMEOUT"].includes(code);
+    const message = rateLimited
+      ? "Too many start attempts. Wait a moment, then try again."
+      : activeLimit
+        ? "This Ranked profile still has active runs. Try Continue or wait for them to expire."
+        : offline
+          ? "Ranked could not connect. Your Practice save is unchanged."
+          : "Ranked could not start. Try again or return to the Main Menu.";
+    ui.showMenu("Ranked Unavailable", message, [
+      ui.button("Try Again", () => startRanked()),
+      ui.button("Main Menu", () => ui.hide())
+    ]);
+  }
+
   async function startRanked() {
+    return startRankedAttempt(true);
+  }
+
+  async function startRankedAttempt(allowProfileRepair) {
     if (new URL(root.location.href).searchParams.has("scenario") || root.DUNGEON_DEBUG_SCENARIO_ACTIVE) {
       ui.showMessage("Ranked unavailable", "Scenario and debug overrides cannot enter Ranked.", [
         ui.button("Close", () => ui.hide())
@@ -438,7 +450,18 @@
       });
       await acceptResponse(response);
     } catch (error) {
-      presentError(error);
+      const repairProfile = allowProfileRepair && String(error?.code || "") === "PROFILE_UNAUTHORIZED";
+      try {
+        discardFailedStart(repairProfile);
+      } catch (cleanupError) {
+        presentError(cleanupError);
+        return;
+      }
+      if (repairProfile) {
+        await startRankedAttempt(false);
+        return;
+      }
+      presentStartError(error);
     }
   }
 
@@ -796,14 +819,16 @@
 
   function openRankedEntry() {
     const hasRecovery = Boolean(recoveryStore.loadRecovery());
-    ui.showMessage(
+    if (!hasRecovery) {
+      startRanked();
+      return;
+    }
+    ui.showMenu(
       "Ranked (Online)",
-      hasRecovery
-        ? "Start a new Ranked run or continue the saved Ranked run."
-        : "Start a new Ranked run. No Ranked save is available in this browser.",
+      "Start a new Ranked run or continue the saved Ranked run.",
       [
-        ui.button("Start New Ranked", confirmStartNewRanked),
-        ui.button("Continue Ranked", () => resumeRanked().catch(presentError), !hasRecovery),
+        ui.button("Start New Ranked", () => startNewRanked().catch(presentError)),
+        ui.button("Continue Ranked", () => resumeRanked().catch(presentError)),
         ui.button("Cancel", () => ui.hide())
       ]
     );

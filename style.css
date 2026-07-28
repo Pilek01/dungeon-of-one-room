@@ -4672,6 +4672,22 @@ body.ranked-v3-modal-open #screenOverlay {
   width: min(900px, calc(100vw - 48px));
 }
 
+.ranked-v3-card-menu {
+  width: min(500px, calc(100vw - 36px));
+  padding: 58px 52px 46px;
+}
+
+.ranked-v3-card-menu .ranked-v3-title {
+  font-size: clamp(1.8rem, 3.2vw, 2.55rem);
+}
+
+.ranked-v3-card-menu .ranked-v3-actions {
+  width: 100%;
+  max-width: 360px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
 .ranked-v3-eyebrow {
   margin: 0 0 8px;
   color: #9e8065;
@@ -4752,6 +4768,7 @@ body.ranked-v3-modal-open #screenOverlay {
 
 .ranked-v3-button,
 .ranked-v3-leaderboard-details-button {
+  position: relative;
   min-height: 44px;
   padding: 10px 16px;
   border: 1px solid #5b6267;
@@ -4764,6 +4781,27 @@ body.ranked-v3-modal-open #screenOverlay {
   letter-spacing: 0.55px;
   cursor: pointer;
   box-shadow: inset 0 0 0 1px #050607, inset 0 0 15px #0008;
+}
+
+.ranked-v3-button::before,
+.ranked-v3-button::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  width: 5px;
+  height: 5px;
+  border: 1px solid #91764a;
+  background: #17130e;
+  transform: translateY(-50%) rotate(45deg);
+  opacity: 0.78;
+}
+
+.ranked-v3-button::before {
+  left: 11px;
+}
+
+.ranked-v3-button::after {
+  right: 11px;
 }
 
 .ranked-v3-button:hover,

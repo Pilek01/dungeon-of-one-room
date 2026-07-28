@@ -18,6 +18,24 @@ function memoryStore(initial = null) {
   };
 }
 
+function rankedIdentityStore(initial = {}) {
+  let session = structuredClone(initial.session ?? null);
+  let recovery = structuredClone(initial.recovery ?? null);
+  let profile = structuredClone(initial.profile ?? null);
+  return {
+    loadSession: () => structuredClone(session),
+    saveSession: (next) => { session = structuredClone(next); },
+    clearSession: () => { session = null; },
+    loadRecovery: () => structuredClone(recovery),
+    saveRecovery: (next) => { recovery = structuredClone(next); },
+    clearRecovery: () => { recovery = null; },
+    loadProfile: () => structuredClone(profile),
+    saveProfile: (next) => { profile = structuredClone(next); },
+    clearProfile: () => { profile = null; },
+    snapshot: () => structuredClone({ session, recovery, profile })
+  };
+}
+
 function meta(status, revision, directive = null) {
   return {
     runId: "run_a1",
@@ -123,6 +141,98 @@ test("M4 exact start retry persists recovery before entering Ranked", async () =
   });
   assert.equal(client.getSnapshot().pendingOperation, null);
 });
+test("M4 stale profile repair clears a failed start and rotates only Ranked identity", async () => {
+  const staleProfile = {
+    profileId: "profile_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    profileCredential: "sssssssssssssssssssssssssssssssssssssssssss"
+  };
+  const store = rankedIdentityStore({
+    profile: staleProfile,
+    session: {
+      schemaVersion: 1,
+      mode: "ranked",
+      runId: "",
+      revision: 0,
+      pendingOperation: {
+        endpoint: "start",
+        operationId: "op_stale",
+        body: {}
+      }
+    },
+    recovery: {
+      runId: "run_stale",
+      recoveryCredential: "rrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrr"
+    }
+  });
+  const client = clientApi.createRankedClient({
+    store,
+    randomUUID: () => "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+    cryptoProvider: {
+      randomUUID: () => "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+      getRandomValues(bytes) {
+        bytes.fill(7);
+        return bytes;
+      }
+    },
+    transport: {
+      createOperationId: () => "op_retry",
+      async request() {
+        return {
+          payload: {
+            ok: true,
+            protocolVersion: protocol.PROTOCOL_VERSION,
+            runId: "run_b1",
+            revision: 0,
+            bootstrapToken: "bootstrap-secret",
+            metaState: { ...meta("awaiting_starting_relic", 0), runId: "run_b1" }
+          }
+        };
+      }
+    }
+  });
+
+  client.discardFailedStart();
+  client.resetProfileIdentity();
+  assert.deepEqual(store.snapshot(), {
+    session: null,
+    recovery: {
+      runId: "run_stale",
+      recoveryCredential: "rrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrr"
+    },
+    profile: null
+  });
+
+  store.clearRecovery();
+  await client.start({ playerName: "M4", clientInstallIdHash: "install-hash-1234" });
+  const repaired = store.snapshot();
+  assert.equal(repaired.profile.profileId, "profile_bbbbbbbbbbbb4bbb8bbbbbbbbbbbbbbb");
+  assert.notEqual(repaired.profile.profileCredential, staleProfile.profileCredential);
+  assert.equal(repaired.recovery.runId, "run_b1");
+  assert.equal(repaired.session.pendingOperation, null);
+});
+
+test("M4 failed-start cleanup refuses to erase a canonical Ranked run", () => {
+  const store = rankedIdentityStore({
+    session: {
+      runId: "run_live",
+      revision: 1,
+      pendingOperation: null
+    }
+  });
+  const client = clientApi.createRankedClient({
+    store,
+    transport: {
+      createOperationId: () => "op_unused",
+      request: async () => {
+        throw new Error("unused");
+      }
+    }
+  });
+  assert.throws(() => client.discardFailedStart(), /RANKED_FAILED_START_NOT_DISCARDABLE/u);
+  assert.throws(() => client.resetProfileIdentity(), /RANKED_PROFILE_RESET_ACTIVE_RUN/u);
+  assert.equal(store.snapshot().session.runId, "run_live");
+});
+
 test("M4 starting relic selection accepts only bootstrap token and first directive", async () => {
   const directive = {
     directiveId: "directive_a",

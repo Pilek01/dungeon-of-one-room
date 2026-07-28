@@ -92,6 +92,7 @@
         "ranked-v3-card",
         normalized === "relic" ? "ranked-v3-card-relic overlay-card-relic-starting" : "",
         normalized === "leaderboard" ? "ranked-v3-card-leaderboard" : "",
+        normalized === "menu" ? "ranked-v3-card-menu" : "",
         normalized === "sync" ? "ranked-v3-card-sync" : ""
       ].filter(Boolean).join(" ");
     }
@@ -113,6 +114,17 @@
 
     function showMessage(heading, message, controls = []) {
       setView("message");
+      text(title, heading);
+      text(status, message);
+      clear(body);
+      clear(actions);
+      for (const control of controls) actions.append(control);
+      setOpen(true);
+      root?.requestAnimationFrame?.(() => actions.querySelector("button:not(:disabled)")?.focus());
+    }
+
+    function showMenu(heading, message, controls = []) {
+      setView("menu");
       text(title, heading);
       text(status, message);
       clear(body);
@@ -256,6 +268,7 @@
       button,
       setEntryVisible: () => { entry.hidden = true; },
       showMessage,
+      showMenu,
       showSync,
       showChoices,
       showContent,

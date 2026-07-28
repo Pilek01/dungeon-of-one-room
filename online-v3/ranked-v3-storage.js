@@ -55,6 +55,9 @@
       saveProfile(profile) {
         storage.setItem(STORAGE_KEYS.profile, serialize(profile));
       },
+      clearProfile() {
+        storage.removeItem(STORAGE_KEYS.profile);
+      },
       loadRecovery() {
         return deserialize(storage.getItem(STORAGE_KEYS.recovery), null);
       },

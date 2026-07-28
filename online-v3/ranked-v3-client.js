@@ -464,6 +464,27 @@
       return execute(endpoint, pending);
     }
 
+    function discardFailedStart() {
+      if (
+        !snapshot ||
+        snapshot.runId ||
+        snapshot.pendingOperation?.endpoint !== "start"
+      ) {
+        throw new TypeError("RANKED_FAILED_START_NOT_DISCARDABLE");
+      }
+      snapshot = null;
+      mutationLocked = false;
+      store.clearSession();
+    }
+
+    function resetProfileIdentity() {
+      if (snapshot?.runId) {
+        throw new TypeError("RANKED_PROFILE_RESET_ACTIVE_RUN");
+      }
+      store.clearProfile?.();
+      options.profileIdentity = null;
+    }
+
     return Object.freeze({
       mode: "ranked",
       start,
@@ -475,6 +496,8 @@
       resumeCanonical,
       abandonCanonical,
       retryPending,
+      discardFailedStart,
+      resetProfileIdentity,
       requestOwnership: () => {
         const current = requireSnapshot();
         return coordinator.acquire(current.runId, current.revision);
