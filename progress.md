@@ -938,3 +938,27 @@ Updated next good targets
   preflight has no relic or leaderboard row and remains under normal retention.
 - No Worker/D1 schema or behavior change, gameplay change, push, staging, paid
   service, or M5 work occurred; all 172 protected deletions remain untouched.
+## 2026-07-28 - Ranked extraction and Camp continuation deployed
+
+- Reproduced the cleared-room Q race and the positive Camp Gold next-run failure.
+  The latter was the exact Worker rejection `CAMP_GOLD_LEDGER_TOTAL_MISMATCH`.
+- Worker profile boundaries now normalize the canonical net Camp balance without
+  a ruleset-hash change. Existing legacy zeroed ledgers work without deleting
+  cookies, while normal extraction and Camp writes persist a consistent ledger.
+- Cleared-room Q waits for its checkpoint and remains normal extraction; fresh
+  Ranked start resets only transient Ranked state when no recoverable run exists;
+  failed Camp start `Main Menu` reaches the native Main Menu.
+- Internal commits: `0794906` and `b107e3a`. Production Worker version
+  `4ab7c6be-9fea-4bc3-aa37-c1687143cd55` is at 100%; Pages deployment is
+  `4eebd3c0-2065-4474-8630-946fed56df7e` on `main`.
+- Focused 12/12, threat matrix 30/30, fast 45/45, phase 723/723, baseline 3/3
+  plus headed smoke, and full 747/747 including Wrangler/D1 21/21 all pass.
+- Dedicated headed QA passed checkpoint+Q, native Camp, positive-gold next run,
+  and failed-start Main Menu with zero console/page errors. Public build hashes
+  match the verified bundle.
+- Production smoke `run_cd9b7be2195b41d7a2fe2d901646a49a` is abandoned at
+  revision 1 with zero leaderboard rows. One revision-0 assertion-preflight run
+  remains incapable of publishing and is left to normal retention.
+- Source `game.js` and ruleset hash remain unchanged; there was no D1 migration,
+  push, staging, paid service, rollback, or M5 work. All 172 protected Vault
+  Guardian deletions remain untouched and unstaged.

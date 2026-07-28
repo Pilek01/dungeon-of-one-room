@@ -1,3 +1,55 @@
+# Production Ranked extraction/Camp continuation hotfix - Online v3
+
+## Active status
+
+`COMPLETED_AND_PRODUCTION_VERIFIED` on the existing `dungeon-of-one-room` Pages project, deployment `4eebd3c0-2065-4474-8630-946fed56df7e` from source commit `b107e3a`.
+
+This R2-only hotfix covers the reported cleared-room Q/checkpoint race, Camp
+next-run failure, false Main Menu return to Camp, and stale Ranked-only browser
+state. Authorized paths are `online-v3/ranked-v3-{runtime,session,storage,client}.js`,
+`scripts/build-pages-v3.mjs`, the registered profile boundary in
+`cloudflare/leaderboard-v3/src/index.js`, focused Online v3/Worker tests and headed QA,
+`ONLINE_V3_HANDOFF.md`, `progress.md`, and this file.
+
+Required outcome:
+
+- cleared-room Q waits for an in-flight checkpoint, remains a normal
+  extraction, and enters native Camp without reconnect or exposing the next
+  depth;
+- Camp can start a next run with positive Camp Gold, including an existing
+  profile written with the legacy zeroed Camp ledger, and when the prior fatal
+  event removed the final carried relic;
+- `Main Menu` from a failed Camp next-run reaches the native Main Menu;
+- stale Ranked-only transient storage repairs without deleting Practice or
+  unrelated browser data and without discarding a recoverable canonical run.
+
+Run focused RED/GREEN regressions, exact headed keyboard QA, the R2 threat
+matrix, `verify:fast`, `verify:phase`, `verify:baseline`, `verify:full`, and
+`git diff --check`. Create exact internal commits and deploy the minimal Worker
+Camp-ledger fix plus Pages to the existing production project. The positive
+Camp Gold regression proved the server defect; do not change D1 schema/data or
+the ruleset data/hash. Do not change gameplay,
+combat authority, mode names, Practice, R1-P0-001, or the 172 protected Vault
+Guardian deletions. No push, staging, paid service, or M5.
+
+Completion evidence:
+
+- internal commits `0794906` and `b107e3a` preserve the Worker/client split;
+- Worker version `4ab7c6be-9fea-4bc3-aa37-c1687143cd55` receives 100% production
+  traffic; Pages deployment `4eebd3c0-2065-4474-8630-946fed56df7e` is Production
+  on `main`;
+- focused tests 12/12, threat matrix 30/30, fast 45/45, phase 723/723,
+  baseline 3/3 plus headed smoke, and full 747/747 including Wrangler/D1 21/21;
+- headed Ranked lifecycle passed cleared-room Q, normal extraction, native Camp,
+  positive-gold next run, and failed-start Main Menu with zero console/page
+  errors;
+- public build hashes match the verified Pages bundle; production smoke passed
+  `201 start -> 200 abandon`, with the abandoned run at revision 1 and zero
+  leaderboard rows in remote D1;
+- source `game.js`, ruleset data/hash, D1 schema/data, gameplay, combat authority,
+  mode names, Practice, R1-P0-001, and all 172 protected deletions are unchanged.
+
+---
 # Production Ranked browser-storage recovery hotfix - Online v3
 
 ## Active status

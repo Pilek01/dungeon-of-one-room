@@ -1,5 +1,57 @@
 # Online v3 - Production handoff
 
+## Ranked extraction and Camp continuation hotfix complete
+
+The reported cleared-room Q reconnect, broken Camp next run, stale browser
+state, and false Main Menu return are fixed on
+`https://dungeon-of-one-room.pages.dev`.
+
+- production Worker version: `4ab7c6be-9fea-4bc3-aa37-c1687143cd55` at 100%;
+- production Pages deployment: `4eebd3c0-2065-4474-8630-946fed56df7e`;
+- internal code commits: `0794906` (profile/Camp continuation) and `b107e3a`
+  (extraction, recovery, Main Menu, and headed coverage);
+- Q after an accepted room clear queues behind the in-flight checkpoint, stays
+  a normal extraction, and enters the native Camp without exposing the next
+  depth or showing reconnect;
+- positive Camp Gold now receives a consistent profile ledger at the Worker
+  boundary, and an existing zeroed legacy Camp ledger is repaired in memory on
+  Camp access or next-run bootstrap without deleting cookies or migrating D1;
+- transient Ranked-only state can reset for a fresh start only when no valid
+  recovery exists; Practice and unrelated browser storage remain untouched;
+- `Main Menu` after a failed Camp start invokes the native bridge and no longer
+  reveals the Camp underneath.
+
+Verification:
+
+- focused regressions: 12/12 PASS;
+- R2 threat matrix: 30/30 scenarios covered; R1-P0-001 remains accepted;
+- `verify:fast`: 45/45 PASS;
+- `verify:phase`: 723/723 PASS
+  (`output/verification/phase-20260728T192005050Z.log`);
+- `verify:baseline`: 3/3 PASS plus headed game smoke
+  (`output/verification/baseline-20260728T192121287Z.log`);
+- `verify:full`: 747/747 PASS, including 21/21 local Wrangler/D1 E2E and
+  headed game smoke (`output/verification/full-20260728T192323050Z.log`);
+- the dedicated headed Ranked lifecycle passed checkpoint+Q, normal Camp,
+  next-run continuation and failed-start Main Menu with zero console/page
+  errors; artifacts remain in `output/online-v3-m4-ranked-headed/`;
+- the public production build matches the local runtime and `game.js` hashes;
+  smoke passed `201 start -> 200 abandon`, and remote D1 confirms
+  `run_cd9b7be2195b41d7a2fe2d901646a49a` is abandoned at revision 1 with zero
+  leaderboard rows.
+
+The first public smoke attempt started successfully but used an invalid
+abandonment operation ID. Its revision-0 `awaiting_starting_relic` run
+`run_2b3ffbcd18ac48edbc19d8514326621d` has no leaderboard row, cannot publish,
+and is left to normal retention.
+
+Source `game.js` remains byte-identical at SHA-256
+`556829c909cdc9eaefb4238279457eb9b3427adef9ce494f35743542770ee7de`.
+The ruleset remains `v08-meta-1` at
+`sha256:0bf00607056dbf3c30ffe57bbcfc77cea95b21c9ccc23aa985ec555856d1cbd6`.
+No D1 schema/data migration, gameplay change, push, staging, paid service,
+rollback, or M5 work was performed. All 172 protected Vault Guardian deletions
+remain untouched and unstaged.
 ## Ranked browser-storage recovery hotfix complete
 
 The player-reported generic `Ranked Unavailable` start failure is fixed on
