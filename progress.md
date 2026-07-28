@@ -962,3 +962,22 @@ Updated next good targets
 - Source `game.js` and ruleset hash remain unchanged; there was no D1 migration,
   push, staging, paid service, rollback, or M5 work. All 172 protected Vault
   Guardian deletions remain untouched and unstaged.
+## 2026-07-29 - Native Ranked Merchant flow deployed
+
+- Reproduced the automatic generic Merchant overlay and traced the reconnect /
+  `still resolving` loop to `onRoomEntered` opening the canonical offer before
+  the player interacted with the Merchant.
+- Commit `c313e52` keeps Merchant room entry native, opens the existing
+  `Curio Merchant` screen only on `E`, commits canonical opaque transactions,
+  and closes the room with exactly one leave plus checkpoint before portal
+  entry. Commit `ad5fdac` stabilizes an existing render-frame QA assertion.
+- Dedicated headed keyboard QA passed native entry, one skill purchase, menu
+  close, portal, and next Combat room with zero console/page/network errors.
+- Threat matrix 30/30, fast 45/45, phase 723/723, baseline 3/3 plus headed
+  smoke, and full 747/747 including Wrangler/D1 21/21 all pass.
+- Deployed only Pages production as
+  `78d976ff-48b1-40ff-869b-f3e1c8facbe3` from `ad5fdac`; the main URL serves
+  byte-identical verified game/runtime assets.
+- Source `game.js`, ruleset hash, Worker/D1 behavior and schema, gameplay,
+  mode names, combat authority, R1-P0-001, and all 172 protected deletions are
+  unchanged. No push, staging, paid service, rollback, or M5 work occurred.

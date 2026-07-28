@@ -1,5 +1,45 @@
 # Online v3 - Production handoff
 
+## Native Ranked Merchant parity hotfix complete
+
+The reported automatic `MERCHANT CHOICES` overlay, reconnect interruption,
+and `Online v3 is still resolving the next room.` portal loop are fixed on
+`https://dungeon-of-one-room.pages.dev`.
+
+- production Pages deployment:
+  `78d976ff-48b1-40ff-869b-f3e1c8facbe3` from `ad5fdac`;
+- internal commits: `c313e52` (native Merchant flow and focused QA) and
+  `ad5fdac` (deterministic existing lifecycle assertion);
+- entering a canonical Merchant room now stays in the normal playable room;
+  only the normal `E` interaction opens the existing `Curio Merchant` screen;
+- native Merchant actions commit the server-issued opaque transaction before
+  the canonical projection updates the existing Practice presentation;
+- leaving or skipping the Merchant performs one canonical leave, one
+  checkpoint, and enters the prepared portal directive without reconnect.
+
+Verification:
+
+- focused regressions: 15/15 PASS;
+- dedicated headed Merchant QA: native room entry, `E`, one skill purchase,
+  `Esc`, portal, next Combat room, zero console/page/network errors;
+- R2 threat matrix: 30/30 scenarios covered; R1-P0-001 remains accepted;
+- `verify:fast`: 45/45 PASS;
+- `verify:phase`: 723/723 PASS
+  (`output/verification/phase-20260728T231643239Z.log`);
+- `verify:baseline`: 3/3 PASS plus headed game smoke
+  (`output/verification/baseline-20260728T232047521Z.log`);
+- `verify:full`: 747/747 PASS, including 21/21 local Wrangler/D1 E2E and
+  headed game smoke (`output/verification/full-20260728T232303475Z.log`);
+- the public `game.js` and `online-v3/ranked-v3-runtime.js` hashes match the
+  verified local Pages bundle byte-for-byte.
+
+Source `game.js` remains byte-identical at SHA-256
+`556829c909cdc9eaefb4238279457eb9b3427adef9ce494f35743542770ee7de`.
+The ruleset remains `v08-meta-1` at
+`sha256:0bf00607056dbf3c30ffe57bbcfc77cea95b21c9ccc23aa985ec555856d1cbd6`.
+No Worker/D1 change or deployment, schema/data migration, gameplay change,
+push, staging, paid service, rollback, or M5 work was performed. All 172
+protected Vault Guardian deletions remain untouched and unstaged.
 ## Ranked extraction and Camp continuation hotfix complete
 
 The reported cleared-room Q reconnect, broken Camp next run, stale browser

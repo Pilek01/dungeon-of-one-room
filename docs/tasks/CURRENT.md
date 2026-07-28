@@ -2,7 +2,19 @@
 
 ## Active status
 
-`IN_PROGRESS` as an R2-only production hotfix.
+`COMPLETED_AND_PRODUCTION_VERIFIED` on the existing `dungeon-of-one-room`
+Pages project, deployment `78d976ff-48b1-40ff-869b-f3e1c8facbe3` from source
+commit `ad5fdac`.
+
+Implementation commit `c313e52` restores the native Merchant room and screen;
+verification-harness commit `ad5fdac` waits for the existing Camp DOM to leave
+the render tree before asserting Main Menu. Focused regressions pass 15/15,
+the dedicated headed Merchant flow passes one native purchase and one portal
+transition with zero console/page/network errors, the R2 threat matrix remains
+30/30, `verify:fast` is 45/45, `verify:phase` is 723/723,
+`verify:baseline` is 3/3 plus headed smoke, and `verify:full` is 747/747
+including 21/21 local Wrangler/D1 E2E. The main production URL serves byte-
+identical verified `game.js` and Ranked runtime assets.
 
 The player-reported failure is reproduced from source: entering a canonical
 Merchant room immediately calls `open_meta_offer`, replaces the native game
