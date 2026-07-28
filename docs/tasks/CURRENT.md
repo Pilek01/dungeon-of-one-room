@@ -1,3 +1,31 @@
+# Production recovery acknowledgement hotfix - Online v3
+
+## Active status
+
+`COMPLETED_AND_PRODUCTION_VERIFIED` on Worker
+`dungeon-online-v3-production`, version
+`8e44d059-717c-4c6b-8cd9-591ed7c1bc1a`.
+
+An authenticated Abandon that was already committed but lost its client
+acknowledgement is now semantically idempotent across a new operation ID. This
+allows the existing recovery screen to clear a canonically abandoned run
+instead of looping between failed Resync and Abandon attempts.
+
+Completion evidence:
+
+- code commit `044839a`;
+- focused lost-acknowledgement regression PASS;
+- threat matrix 30/30, `verify:fast` 39/39, `verify:phase` 709/709,
+  `verify:baseline` 3/3 plus headed smoke, and `verify:full` 733/733;
+- production smoke repeated Abandon with a new operation ID at the same
+  revision, returned 200 with replay acknowledgement, and left zero leaderboard
+  rows;
+- source `game.js`, ruleset hash, Pages assets, D1 schema, gameplay, mode names,
+  and all 172 protected deletions remain unchanged;
+- no push, staging, rollback, paid service, or M5 work was performed.
+
+---
+
 # Native Ranked extraction and Camp hotfix - Online v3
 
 ## Active status

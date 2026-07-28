@@ -798,3 +798,20 @@ Updated next good targets
   passed.
 - Source `game.js`, ruleset, Worker/D1, gameplay tables, mode names, combat
   authority, and all 172 protected Vault Guardian deletions remain unchanged.
+
+## 2026-07-28 - Ranked recovery acknowledgement production hotfix
+
+- Fixed the stuck reconnect flow after a canonical Abandon succeeded but its
+  browser acknowledgement was lost.
+- A later authenticated Abandon with a new operation ID now returns the
+  existing abandoned state as an idempotent success without changing revision
+  or publishing a result.
+- Commit `044839a` is deployed as Worker version
+  `8e44d059-717c-4c6b-8cd9-591ed7c1bc1a`.
+- Threat matrix 30/30, fast 39/39, phase 709/709, baseline 3/3 plus headed
+  smoke, and full 733/733 all passed.
+- Production smoke `run_0c4b6e458ce543eb86de3fd5deb97341` confirmed first
+  Abandon 200, recovery Abandon 200 with a new operation ID, unchanged revision,
+  `abandoned` persistence, and zero leaderboard rows.
+- Pages, `game.js`, ruleset, D1 schema, gameplay, mode names, combat authority,
+  and all 172 protected deletions remain unchanged.

@@ -1,5 +1,35 @@
 # Online v3 - Production handoff
 
+## Ranked recovery acknowledgement hotfix complete
+
+The stuck `Ranked reconnect required` flow is fixed in the production Worker.
+
+- Worker version: `8e44d059-717c-4c6b-8cd9-591ed7c1bc1a`;
+- source commit: `044839a`;
+- an authenticated Abandon that was already committed but whose acknowledgement
+  was lost now returns the same abandoned state successfully, even when the
+  browser retries with a new operation ID;
+- the repeated acknowledgement does not increment the run revision and cannot
+  publish a leaderboard result;
+- production smoke run `run_0c4b6e458ce543eb86de3fd5deb97341`
+  passed start, first Abandon, recovery Abandon with a new operation ID, and
+  terminal resume rejection; D1 confirms `abandoned`, revision 1, and zero
+  leaderboard rows.
+
+Verification:
+
+- R2 threat matrix: 30/30 scenarios covered; R1-P0-001 unchanged;
+- `verify:fast`: 39/39 PASS;
+- `verify:phase`: 709/709 PASS;
+- `verify:baseline`: 3/3 PASS plus headed baseline smoke;
+- `verify:full`: 733/733 PASS, including 21/21 local Wrangler/D1 E2E and
+  headed smoke.
+
+No Pages asset, source `game.js`, gameplay, mode name, ruleset, D1 schema,
+combat-authority boundary, push, staging, rollback, paid service, or M5 work
+changed. The 172 protected Vault Guardian deletions remain untouched and
+unstaged.
+
 ## Native Ranked extraction and Camp hotfix complete
 
 The player-facing extraction lifecycle now uses the original v0.8 presentation
