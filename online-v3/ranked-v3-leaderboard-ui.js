@@ -1,10 +1,10 @@
 (function exposeRankedV3LeaderboardUi(root, factory) {
   "use strict";
 
-  const api = factory();
+  const api = factory(root);
   if (root) root.DungeonRankedV3LeaderboardUi = api;
   if (typeof module === "object" && module.exports) module.exports = api;
-})(typeof globalThis === "object" ? globalThis : null, function createLeaderboardUiModule() {
+})(typeof globalThis === "object" ? globalThis : null, function createLeaderboardUiModule(root) {
   "use strict";
 
   const SELECTORS = Object.freeze({
@@ -17,6 +17,24 @@
     build: "ranked-v3-leaderboard-build",
     status: "ranked-v3-leaderboard-status"
   });
+
+  function humanize(value) {
+    return String(value || "")
+      .replace(/[_-]+/gu, " ")
+      .replace(/\b\w/gu, (letter) => letter.toUpperCase()) || "None";
+  }
+
+  function relicName(relicId) {
+    const id = String(relicId || "");
+    const relic = Array.isArray(root?.DungeonRelicData?.RELICS)
+      ? root.DungeonRelicData.RELICS.find((entry) => entry.id === id)
+      : null;
+    return String(relic?.name || humanize(id));
+  }
+
+  function outcomeLabel(value) {
+    return humanize(value || "completed");
+  }
 
   function integer(value) {
     return Math.max(0, Math.floor(Number(value) || 0));
@@ -99,13 +117,13 @@
         documentRef,
         "strong",
         SELECTORS.rank,
-        `#${row.rank} ${row.playerName} — ${row.score}`
+        `#${row.rank} ${row.playerName} - ${row.score}`
       );
       const facts = element(
         documentRef,
         "span",
         "",
-        `${row.outcome} · depth ${row.depth} · ${Math.floor(row.durationMs / 1000)}s · gold ${row.gold}`
+        `${outcomeLabel(row.outcome)} | Depth ${row.depth} | ${Math.floor(row.durationMs / 1000)}s | Gold ${row.gold}`
       );
       const details = element(documentRef, "button", SELECTORS.detailsButton, "Build details");
       details.type = "button";
@@ -132,51 +150,50 @@
       documentRef,
       "p",
       "",
-      `${detail.playerName} · ${detail.outcome} · score ${detail.score} · depth ${detail.depth}`
+      `${detail.playerName} | ${outcomeLabel(detail.outcome)} | Score ${detail.score} | Depth ${detail.depth}`
     ));
     const summary = detail.summary;
     root.append(element(
       documentRef,
       "p",
       "",
-      `Duration ${Math.floor(detail.durationMs / 1000)}s · final gold ${detail.gold} · lives ${integer(summary?.lives?.remaining)}/${integer(summary?.lives?.maximum)}`
+      `Duration ${Math.floor(detail.durationMs / 1000)}s | Final gold ${detail.gold} | Lives ${integer(summary?.lives?.remaining)}/${integer(summary?.lives?.maximum)}`
     ));
     root.append(element(
       documentRef,
       "p",
       "",
-      `Ruleset ${String(summary.rulesetId || "")} · ${String(summary.scoreVersion || "")} · ${new Date(detail.createdAt).toLocaleString()}`
-    ));
-    appendSection(
+      `Published ${new Date(detail.createdAt).toLocaleString()}`
+    ));    appendSection(
       documentRef,
       root,
       "Relics",
-      detail.build.relics.map((relic) => `${relic.relicId} ×${relic.stacks}`)
+      detail.build.relics.map((relic) => `${relicName(relic.relicId)} x${relic.stacks}`)
     );
-    appendSection(documentRef, root, "Pacts", detail.build.pacts);
+    appendSection(documentRef, root, "Pacts", detail.build.pacts.map(humanize));
     appendSection(
       documentRef,
       root,
       "Run modifiers",
-      detail.build.runModifiers.map((modifier) => String(modifier.modifierId || modifier.id || ""))
+      detail.build.runModifiers.map((modifier) => humanize(modifier.modifierId || modifier.id))
     );
     appendSection(
       documentRef,
       root,
       "Skill tiers",
-      Object.entries(detail.build.skillTiers).map(([id, level]) => `${id}: ${integer(level)}`)
+      Object.entries(detail.build.skillTiers).map(([id, level]) => `${humanize(id)}: ${integer(level)}`)
     );
     appendSection(
       documentRef,
       root,
       "Camp upgrades",
-      Object.entries(detail.build.campUpgrades).map(([id, level]) => `${id}: ${integer(level)}`)
+      Object.entries(detail.build.campUpgrades).map(([id, level]) => `${humanize(id)}: ${integer(level)}`)
     );
     appendSection(
       documentRef,
       root,
       "Elixirs",
-      detail.build.elixirs.map((elixir) => String(elixir.elixirId || elixir.id || ""))
+      detail.build.elixirs.map((elixir) => humanize(elixir.elixirId || elixir.id))
     );
     return root;
   }

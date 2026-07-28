@@ -4606,34 +4606,13 @@ body:has(#game.graphics-hd) .overlay-menu-row.selected .overlay-menu-key {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
-.ranked-v3-entry {
-  position: fixed;
-  z-index: 12000;
-  left: 50%;
-  bottom: max(18px, env(safe-area-inset-bottom));
-  transform: translateX(-50%);
-  border: 1px solid #c69cff;
-  border-radius: 8px;
-  padding: 10px 18px;
-  color: #fff;
-  background: #32204c;
-  font: inherit;
-  cursor: pointer;
+.ranked-v3-entry,
+.ranked-v3-leaderboard-entry {
+  display: none !important;
 }
 
-.ranked-v3-leaderboard-entry {
-  position: fixed;
-  z-index: 12000;
-  left: 50%;
-  bottom: max(68px, calc(env(safe-area-inset-bottom) + 50px));
-  transform: translateX(-50%);
-  border: 1px solid #86a7d5;
-  border-radius: 8px;
-  padding: 8px 16px;
-  color: #edf5ff;
-  background: #1c304d;
-  font: inherit;
-  cursor: pointer;
+body.ranked-v3-modal-open #screenOverlay {
+  visibility: hidden;
 }
 
 .ranked-v3-overlay {
@@ -4642,86 +4621,346 @@ body:has(#game.graphics-hd) .overlay-menu-row.selected .overlay-menu-key {
   inset: 0;
   display: grid;
   place-items: center;
-  padding: 18px;
-  background: rgba(6, 4, 12, 0.88);
+  box-sizing: border-box;
+  padding: clamp(18px, 4vh, 42px);
+  overflow: auto;
+  background:
+    radial-gradient(circle at 50% 42%, #30364242 0 18%, transparent 58%),
+    radial-gradient(circle at 50% 50%, transparent 0 28%, #020304e8 78%),
+    #020304e6;
+  backdrop-filter: blur(6px) saturate(0.55) brightness(0.42);
 }
 
-.ranked-v3-overlay[hidden],
-.ranked-v3-entry[hidden],
-.ranked-v3-leaderboard-entry[hidden] {
+.ranked-v3-overlay[hidden] {
   display: none;
 }
 
 .ranked-v3-card {
-  width: min(680px, 100%);
-  max-height: min(760px, calc(100vh - 36px));
+  --ranked-ivory: #e8dfd2;
+  --ranked-copy: #c7b9a8;
+  --ranked-muted: #8e8379;
+  --ranked-gold: #d6b361;
+  position: relative;
+  isolation: isolate;
+  width: min(720px, calc(100vw - 36px));
+  max-height: calc(100vh - 36px);
+  box-sizing: border-box;
+  padding: clamp(58px, 7vh, 76px) clamp(42px, 5vw, 68px) clamp(42px, 5vh, 58px);
   overflow: auto;
-  border: 1px solid #9b70d8;
-  border-radius: 12px;
-  padding: 20px;
-  color: #f6edff;
-  background: #171020;
-  box-shadow: 0 18px 70px #000;
+  border: 0;
+  border-radius: 0;
+  color: var(--ranked-copy);
+  text-align: center;
+  text-shadow: 0 2px 3px #000;
+  background-color: #07090b;
+  background-image:
+    url("assets/hd/ui/abyssal-gothic/menu-frame.png"),
+    radial-gradient(ellipse at 50% 18%, #33404c24, transparent 42%),
+    url("assets/hd/ui/abyssal-gothic/panel-texture.png");
+  background-position: center, center, center;
+  background-repeat: no-repeat, no-repeat, repeat;
+  background-size: 100% 100%, 100% 100%, 240px 240px;
+  box-shadow: 0 34px 90px #000, 0 0 54px #26344026;
+  animation: rankedV3Enter 220ms cubic-bezier(0.2, 0.82, 0.3, 1) both;
+}
+
+.ranked-v3-card-relic {
+  width: min(1160px, calc(100vw - 48px));
+}
+
+.ranked-v3-card-leaderboard {
+  width: min(900px, calc(100vw - 48px));
+}
+
+.ranked-v3-eyebrow {
+  margin: 0 0 8px;
+  color: #9e8065;
+  font: 700 0.66rem/1.2 "Courier New", monospace;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+}
+
+.ranked-v3-title {
+  margin: 0;
+  color: var(--ranked-ivory);
+  font: 600 clamp(2rem, 4vw, 3.35rem)/0.98 "Copperplate Gothic Light", "Palatino Linotype", Georgia, serif;
+  letter-spacing: clamp(2px, 0.42vw, 6px);
+  text-transform: uppercase;
+  text-shadow: 0 5px 5px #000, 0 0 24px #6d77913d;
 }
 
 .ranked-v3-status {
-  color: #cab9dc;
+  margin: 10px 0 0;
+  color: #a89d93;
+  font: italic clamp(0.78rem, 1.05vw, 0.94rem)/1.4 Georgia, "Times New Roman", serif;
+}
+
+.ranked-v3-body {
+  margin-top: clamp(18px, 2.5vh, 26px);
 }
 
 .ranked-v3-choice-list,
 .ranked-v3-actions {
   display: grid;
-  gap: 10px;
+  gap: 9px;
+}
+
+.ranked-v3-actions:not(:empty) {
+  margin-top: 18px;
 }
 
 .ranked-v3-choice {
   display: grid;
-  gap: 4px;
+  gap: 5px;
   width: 100%;
-  padding: 12px;
-  border: 1px solid #61477d;
-  border-radius: 8px;
-  color: inherit;
+  min-height: 58px;
+  box-sizing: border-box;
+  padding: 11px 14px;
+  border: 1px solid #444b50;
+  border-radius: 0;
+  color: #ddd4c6;
   text-align: left;
-  background: #241832;
+  background:
+    linear-gradient(90deg, #151a1edb, #0a0d10e8),
+    url("assets/hd/ui/abyssal-gothic/panel-texture.png") center / 210px 210px;
+  box-shadow: inset 0 0 0 1px #030405, inset 0 0 18px #0008;
+  cursor: pointer;
 }
 
-.ranked-v3-choice span {
-  color: #c8b7d9;
+.ranked-v3-choice > strong {
+  color: #e7decf;
+  font: 600 1rem/1.15 "Copperplate Gothic Light", "Palatino Linotype", Georgia, serif;
+  letter-spacing: 0.4px;
 }
 
-.ranked-v3-button {
-  padding: 10px 12px;
-  border: 1px solid #8c68b5;
-  border-radius: 7px;
-  color: #fff;
-  background: #342248;
+.ranked-v3-choice > span {
+  color: #929590;
+  font: 0.72rem/1.35 "Courier New", monospace;
+}
+
+.ranked-v3-choice:hover,
+.ranked-v3-choice:focus-visible,
+.ranked-v3-choice.hd-nav-selected {
+  outline: 1px solid #a69168;
+  outline-offset: 2px;
+  border-color: #829099;
+  background:
+    linear-gradient(90deg, #35424bbf, #151b20ed 76%),
+    url("assets/hd/ui/abyssal-gothic/panel-texture.png") center / 210px 210px;
+  box-shadow: inset 4px 0 0 #b89a62, inset 0 0 0 1px #050607, 0 0 15px #7187962b;
+}
+
+.ranked-v3-button,
+.ranked-v3-leaderboard-details-button {
+  min-height: 44px;
+  padding: 10px 16px;
+  border: 1px solid #5b6267;
+  border-radius: 0;
+  color: #ddd4c6;
+  background:
+    linear-gradient(180deg, #242b30e8, #101417ed),
+    url("assets/hd/ui/abyssal-gothic/panel-texture.png") center / 190px 190px;
+  font: 600 0.78rem/1.15 "Copperplate Gothic Light", "Palatino Linotype", Georgia, serif;
+  letter-spacing: 0.55px;
+  cursor: pointer;
+  box-shadow: inset 0 0 0 1px #050607, inset 0 0 15px #0008;
+}
+
+.ranked-v3-button:hover,
+.ranked-v3-button:focus-visible,
+.ranked-v3-leaderboard-details-button:hover,
+.ranked-v3-leaderboard-details-button:focus-visible {
+  outline: 1px solid #b89a62;
+  outline-offset: 2px;
+  border-color: #8b959b;
+  color: #f1e7d5;
+  background: linear-gradient(180deg, #3a444be8, #171d21ed);
+}
+
+.ranked-v3-button:disabled,
+.ranked-v3-choice:disabled {
+  opacity: 0.48;
+  cursor: not-allowed;
 }
 
 .ranked-v3-leaderboard-list,
 .ranked-v3-leaderboard-detail {
   display: grid;
   gap: 10px;
+  text-align: left;
 }
 
 .ranked-v3-leaderboard-row {
   display: grid;
-  gap: 6px;
-  padding: 10px;
-  border: 1px solid #405979;
-  border-radius: 8px;
-  background: #152238;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 6px 16px;
+  align-items: center;
+  padding: 13px 15px;
+  border: 1px solid #3f484e;
+  background:
+    linear-gradient(90deg, #151a1ee8, #090c0fe8),
+    url("assets/hd/ui/abyssal-gothic/panel-texture.png") center / 210px 210px;
+  box-shadow: inset 3px 0 0 #5f6d75, inset 0 0 18px #0009;
+}
+
+.ranked-v3-leaderboard-rank {
+  color: #e4d9c7;
+  font: 600 1rem/1.2 "Copperplate Gothic Light", "Palatino Linotype", Georgia, serif;
+}
+
+.ranked-v3-leaderboard-row > span {
+  grid-column: 1;
+  color: #909894;
+  font: 0.68rem/1.35 "Courier New", monospace;
 }
 
 .ranked-v3-leaderboard-details-button {
-  justify-self: start;
-  padding: 7px 10px;
-  border: 1px solid #7195c5;
-  border-radius: 6px;
-  color: #fff;
-  background: #263e60;
+  grid-column: 2;
+  grid-row: 1 / span 2;
+}
+
+.ranked-v3-leaderboard-detail > p {
+  margin: 0;
+  color: #aaa197;
 }
 
 .ranked-v3-leaderboard-build {
-  border-top: 1px solid #49375d;
+  padding-top: 10px;
+  border-top: 1px solid #493f34;
+}
+
+.ranked-v3-leaderboard-build h3 {
+  margin: 0 0 6px;
+  color: #cdb988;
+  font: 600 0.78rem/1.2 "Copperplate Gothic Light", "Palatino Linotype", Georgia, serif;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.ranked-v3-leaderboard-build ul {
+  margin: 0;
+  padding-left: 20px;
+  color: #a9a098;
+}
+
+.ranked-v3-overlay[data-view="sync"] {
+  place-items: end center;
+  padding-bottom: max(22px, env(safe-area-inset-bottom));
+  overflow: hidden;
+  pointer-events: none;
+  background: transparent;
+  backdrop-filter: none;
+}
+
+.ranked-v3-card-sync {
+  width: auto;
+  max-width: min(440px, calc(100vw - 32px));
+  min-height: 0;
+  padding: 11px 18px;
+  overflow: hidden;
+  border: 1px solid #5f5a4e;
+  color: #d8c9aa;
+  background: #090b0de8;
+  background-image: linear-gradient(90deg, #171a1de8, #090b0de8);
+  box-shadow: 0 8px 28px #000c, inset 3px 0 0 #b89a62;
+}
+
+.ranked-v3-card-sync .ranked-v3-eyebrow,
+.ranked-v3-card-sync .ranked-v3-status,
+.ranked-v3-card-sync .ranked-v3-body,
+.ranked-v3-card-sync .ranked-v3-actions {
+  display: none;
+}
+
+.ranked-v3-card-sync .ranked-v3-title {
+  color: #d8c9aa;
+  font: 700 0.7rem/1.2 "Courier New", monospace;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+}
+
+@keyframes rankedV3Enter {
+  from { opacity: 0; transform: scale(0.98) translateY(8px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+@media (max-width: 1200px) {
+  .ranked-v3-card-relic {
+    width: min(880px, calc(100vw - 32px));
+  }
+
+  .ranked-v3-card-relic .relic-draft-grid-standard {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .ranked-v3-choice-relic {
+    min-height: 260px;
+    text-align: center;
+  }
+
+  .ranked-v3-choice-relic .relic-draft-icon {
+    width: 96px;
+    height: 96px;
+    margin: 0 auto;
+    object-fit: contain;
+  }
+
+  .ranked-v3-choice-relic .relic-draft-choice-copy {
+    display: grid;
+    gap: 5px;
+    text-align: center;
+  }
+}
+
+@media (max-width: 760px), (max-height: 620px) {
+  .ranked-v3-overlay {
+    place-items: start center;
+    padding: 10px;
+  }
+
+  .ranked-v3-card,
+  .ranked-v3-card-relic,
+  .ranked-v3-card-leaderboard {
+    width: min(100%, 680px);
+    max-height: none;
+    min-height: calc(100vh - 20px);
+    padding: 50px 28px 34px;
+  }
+
+  .ranked-v3-title {
+    font-size: clamp(1.65rem, 8vw, 2.35rem);
+  }
+
+  .ranked-v3-card-relic .relic-draft-grid-standard {
+    grid-template-columns: 1fr;
+  }
+
+  .ranked-v3-choice-relic {
+    min-height: 130px;
+    grid-template-columns: 84px 1fr;
+    text-align: left;
+  }
+
+  .ranked-v3-choice-relic .relic-draft-icon {
+    width: 76px;
+    height: 76px;
+  }
+
+  .ranked-v3-leaderboard-row {
+    grid-template-columns: 1fr;
+  }
+
+  .ranked-v3-leaderboard-details-button {
+    grid-column: 1;
+    grid-row: auto;
+    width: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ranked-v3-card {
+    animation: none;
+  }
 }

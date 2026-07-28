@@ -11,9 +11,10 @@
   const leaderboardEntry = root.document.createElement("button");
   leaderboardEntry.type = "button";
   leaderboardEntry.className = "ranked-v3-leaderboard-entry";
-  leaderboardEntry.textContent = "Online v3 Leaderboard";
+  leaderboardEntry.textContent = "Ranked Leaderboard";
   leaderboardEntry.hidden = true;
-  leaderboardEntry.setAttribute("aria-label", "Open the canonical Online v3 leaderboard.");
+  leaderboardEntry.tabIndex = -1;
+  leaderboardEntry.setAttribute("aria-hidden", "true");
   root.document.body.append(leaderboardEntry);
   const session = root.DungeonRankedV3Session.createStateMachine();
   let client = null;
@@ -72,7 +73,7 @@
 
   function showLeaderboardRows() {
     if (!leaderboardRows.length) {
-      ui.showMessage("Online v3 Leaderboard", "No canonical results are published for this season.", [
+      ui.showMessage("Ranked Leaderboard", "No Ranked results have been published this season.", [
         ui.button("Close", () => ui.hide())
       ]);
       return;
@@ -83,8 +84,8 @@
       (runId) => openLeaderboardDetail(runId)
     );
     ui.showContent(
-      "Online v3 Leaderboard",
-      "Server order is preserved. Cursor pagination is canonical.",
+      "Ranked Leaderboard",
+      "The strongest descents of the current season.",
       content,
       leaderboardControls()
     );
@@ -96,7 +97,7 @@
         leaderboardRows = [];
         leaderboardCursor = null;
       }
-      ui.showMessage("Online v3 Leaderboard", "Loading canonical results...");
+      ui.showMessage("Ranked Leaderboard", "Loading season results...");
       const payload = await createLeaderboardClient().list({
         season: String(root.DUNGEON_ONLINE_V3_SEASON || "local-m4"),
         limit: 20,
@@ -107,7 +108,7 @@
       leaderboardCursor = page.cursor;
       showLeaderboardRows();
     } catch {
-      ui.showMessage("Leaderboard unavailable", "Canonical results could not be loaded.", [
+      ui.showMessage("Leaderboard unavailable", "Season results could not be loaded.", [
         ui.button("Retry", () => openLeaderboard(reset)),
         ui.button("Close", () => ui.hide())
       ]);
@@ -116,13 +117,13 @@
 
   async function openLeaderboardDetail(runId) {
     try {
-      ui.showMessage("Ranked build details", "Loading the immutable public projection...");
+      ui.showMessage("Ranked Build", "Loading this descent...");
       const detail = leaderboardUi.createDetailViewModel(
         await createLeaderboardClient().detail(runId)
       );
       ui.showContent(
-        "Ranked build details",
-        `${detail.verificationLevel} · ${detail.season}`,
+        "Ranked Build",
+        displaySeason(detail.season),
         leaderboardUi.renderDetail(root.document, detail),
         [
           ui.button("Back to leaderboard", showLeaderboardRows),
@@ -130,7 +131,7 @@
         ]
       );
     } catch {
-      ui.showMessage("Build details unavailable", "The canonical public run projection could not be loaded.", [
+      ui.showMessage("Build details unavailable", "This Ranked build could not be loaded.", [
         ui.button("Back to leaderboard", showLeaderboardRows),
         ui.button("Close", () => ui.hide())
       ]);
@@ -150,7 +151,7 @@
 
   async function resyncCanonical() {
     moveToRecoveryState(root.DungeonRankedV3Session.STATES.retrying);
-    ui.setStatus("Resyncing the canonical Ranked state...");
+    ui.setStatus("Refreshing your Ranked run...");
     await acceptResponse(await createClient().resumeCanonical());
   }
 
@@ -166,7 +167,7 @@
   }
 
   async function abandonCanonical() {
-    ui.setStatus("Abandoning the canonical Ranked run...");
+    ui.setStatus("Abandoning your Ranked run...");
     await createClient().abandonCanonical();
     client = null;
     moveToRecoveryState(root.DungeonRankedV3Session.STATES.abandoned);
@@ -177,7 +178,7 @@
   function confirmAbandon() {
     ui.showMessage(
       "Abandon Ranked Run?",
-      "This permanently ends the canonical run and removes local recovery. No leaderboard result will be published.",
+      "This permanently ends this run. It will not appear on the leaderboard.",
       [
         ui.button("Confirm abandonment", () => abandonCanonical().catch(presentError)),
         ui.button("Keep recovery", () => presentError({ code: "RECOVERY_PRESERVED", status: 0 }))
@@ -224,7 +225,7 @@
     ui.showMessage(
       conflict ? "Ranked state conflict" : "Ranked reconnect required",
       conflict
-        ? "The canonical run changed. Resync before sending another action."
+        ? "Your Ranked run changed. Refresh it before continuing."
         : "Recovery is preserved. Return to Practice does not abandon the Ranked run.",
       controls
     );
@@ -248,14 +249,14 @@
     root.DungeonOnlineV3GameBridge?.holdTerminal?.(state);
     ui.showMessage(
       `Ranked ${state.status}`,
-      "Canonical terminal state is ready to finalize.",
+      "Your result is ready.",
       [ui.button("Finalize", () => finalize().catch(presentError))]
     );
   }
 
   async function finalize() {
     session.transition(root.DungeonRankedV3Session.STATES.finalizing);
-    ui.setStatus("Publishing one canonical result...");
+    ui.setStatus("Publishing your result...");
     acceptFinal(await createClient().finalize());
   }
 
@@ -268,12 +269,12 @@
       session.transition(root.DungeonRankedV3Session.STATES.startingRelic);
       const offer = state.startingRelicOffer;
       ui.showChoices(
-        "Choose your Ranked relic",
-        "These choices were issued by the Online v3 ruleset.",
+        "Choose Starting Relic",
+        "Choose one relic to carry into the dungeon.",
         offer?.publicChoices || [],
         async (choiceId) => {
           try {
-            ui.setStatus("Confirming canonical choice...");
+            ui.setStatus("Confirming your relic...");
             const selected = await createClient().selectStartingRelic(offer.offerId, choiceId);
             await acceptResponse(selected);
           } catch (error) {
@@ -316,7 +317,7 @@
     }
     try {
       session.transition(root.DungeonRankedV3Session.STATES.starting);
-      ui.showMessage("Connecting to Ranked", "Creating one canonical run...");
+      ui.showMessage("Entering Ranked", "Preparing your descent...");
       startedAt = Date.now();
       const response = await createClient().start({
         playerName: publicName(),
@@ -330,8 +331,20 @@
     }
   }
 
+
+  function displaySeason(value) {
+    const clean = String(value || "")
+      .replace(/^season[_ -]*/iu, "")
+      .replace(/[_-]+/gu, " ")
+      .trim();
+    return clean ? `Season ${clean.replace(/\b\w/gu, (letter) => letter.toUpperCase())}` : "Current season";
+  }
+
+  function displayRelicName(relicId) {
+    return root.DungeonRankedV3Ui.relicDetails({ relicId })?.name || "new relic";
+  }
   async function commitReplacement(replacement, replacementChoiceId) {
-    ui.setStatus("Committing canonical replacement...");
+    ui.setStatus("Replacing your relic...");
     const response = await createClient().event("commit_relic_replacement", {
       transactionId: replacement.transactionId,
       replacementChoiceId
@@ -344,7 +357,7 @@
     session.transition(root.DungeonRankedV3Session.STATES.offer);
     ui.showChoices(
       "Choose a relic to replace",
-      `Incoming: ${replacement.incoming?.relicId || "canonical relic"}.`,
+      `Incoming: ${displayRelicName(replacement.incoming?.relicId)}.`,
       offers.replacementChoices(replacement),
       (choiceId) => commitReplacement(replacement, choiceId).catch(presentError)
     );
@@ -366,8 +379,8 @@
   async function presentRelicOffer(offer) {
     session.transition(root.DungeonRankedV3Session.STATES.offer);
     ui.showChoices(
-      "Canonical relic reward",
-      "Select one server-issued opaque choice.",
+      "Choose a Relic",
+      "Choose one relic to carry into the next room.",
       offers.relicChoices(offer),
       async (choiceId) => {
         try {
@@ -394,7 +407,7 @@
   async function commitMetaChoice(offer, choiceId) {
     const choice = offer.choices.find((entry) => entry.choiceId === choiceId);
     if (!choice || choice.status !== "available") throw new TypeError("RANKED_META_CHOICE_UNAVAILABLE");
-    ui.setStatus("Committing canonical transaction...");
+    ui.setStatus("Confirming your choice...");
     const response = await createClient().event("commit_meta_transaction", {
       transactionId: choice.transactionId,
       choiceId: choice.choiceId
@@ -407,7 +420,7 @@
     session.transition(root.DungeonRankedV3Session.STATES.offer);
     ui.showChoices(
       `${offer.sourceType || "Ranked"} choices`,
-      "Costs and effects come from the canonical projection.",
+      "Choose how to shape your build.",
       offers.metaChoices(offer).filter((choice) => !choice.disabled),
       (choiceId) => commitMetaChoice(offer, choiceId).catch(presentError)
     );
@@ -419,7 +432,7 @@
   async function openMetaOffer(roomType) {
     let payload = {};
     if (roomType === "forge") {
-      ui.showMessage("Canonical Forge", "Choose the Forge operation.", [
+      ui.showMessage("Forge", "Choose the Forge operation.", [
         ui.button("Temper", async () => {
           try {
             await continueBoundary((await createClient().event("open_meta_offer", { mode: "temper" })).metaState);
@@ -441,20 +454,20 @@
     const offer = response.metaTransactionOffer;
     const choices = Array.isArray(offer?.choices) ? offer.choices : [];
     if (!choices.length) {
-      ui.showMessage("Ranked Camp", "No canonical Camp actions are currently available.", [
+      ui.showMessage("Ranked Camp", "No Camp actions are currently available.", [
         ui.button("Leave Camp", () => { client.clearRecovery(); client.clear(); ui.hide(); })
       ]);
       return;
     }
     ui.showChoices(
       "Ranked Camp",
-      `Canonical Camp Gold: ${Number(response.profile?.campGold) || 0}.`,
+      `Camp Gold: ${Number(response.profile?.campGold) || 0}.`,
       choices.filter((choice) => choice.status === "available"),
       async (choiceId) => {
         try {
           const choice = choices.find((entry) => entry.choiceId === choiceId);
           if (!choice) throw new TypeError("RANKED_CAMP_CHOICE_INVALID");
-          ui.setStatus("Committing canonical Camp choice...");
+          ui.setStatus("Confirming your Camp choice...");
           await createClient().camp("commit", {
             transactionId: choice.transactionId,
             choiceId
@@ -471,7 +484,7 @@
   }
 
   async function openCamp() {
-    ui.setStatus("Opening canonical Camp session...");
+    ui.setStatus("Opening Camp...");
     presentCampOffer(await createClient().camp("open"));
   }
 
@@ -498,7 +511,7 @@
       if (session.getState() !== root.DungeonRankedV3Session.STATES.resolving) {
         session.transition(root.DungeonRankedV3Session.STATES.resolving);
       }
-      ui.showMessage("Resolving room", "Waiting for the canonical checkpoint...");
+      ui.showSync("Saving progress...");
       const response = await createClient().checkpoint({
         turnCount: summary?.turnCount,
         elapsedMs: Math.max(0, Date.now() - startedAt),
@@ -525,11 +538,7 @@
     const roomType = state?.currentRoomDirective?.roomType;
     if (["forge", "pact"].includes(roomType)) {
       session.transition(root.DungeonRankedV3Session.STATES.offer);
-      ui.showMessage(
-        roomType === "forge" ? "Forge awakened" : "Pact sigil awakened",
-        "Open the canonical server-issued choices.",
-        [ui.button("Open", () => openMetaOffer(roomType).catch(presentError))]
-      );
+      await openMetaOffer(roomType);
       return;
     }
     if (offers.pendingRewardSlots(state).length > 0) {
@@ -537,9 +546,7 @@
       return;
     }
     session.transition(root.DungeonRankedV3Session.STATES.offer);
-    ui.showMessage("Room cleared", "Resolve the canonical checkpoint to continue.", [
-      ui.button("Resolve checkpoint", () => resolveCheckpoint().catch(presentError))
-    ]);
+    await resolveCheckpoint();
   }
 
   async function onRoomEntered(directive) {
@@ -550,11 +557,7 @@
     if (!["merchant", "crossroads"].includes(directive.roomType)) return;
     pendingRoomSummary = { turnCount: 0, rewardClaims: [] };
     session.transition(root.DungeonRankedV3Session.STATES.offer);
-    ui.showMessage(
-      directive.roomType === "merchant" ? "Canonical Merchant" : "Canonical Crossroads",
-      "Open the server-issued choices before leaving this room.",
-      [ui.button("Open", () => openMetaOffer(directive.roomType).catch(presentError))]
-    );
+    await openMetaOffer(directive.roomType);
   }
 
   function acceptFinal(response) {
@@ -567,7 +570,7 @@
       : [ui.button("Close", () => { client.clearRecovery(); client.clear(); ui.hide(); })];
     ui.showMessage(
       "Ranked run finalized",
-      `Score ${Number(response.score) || 0}. One canonical leaderboard result was published.`,
+      `Score ${Number(response.score) || 0}. Your result is now on the Ranked leaderboard.`,
       controls
     );
     if (!extractedProfileReady) {
@@ -579,7 +582,7 @@
   async function onFatalEvent() {
     try {
       session.transition(root.DungeonRankedV3Session.STATES.resolving);
-      ui.showMessage("Resolving fatal event", "The server owns lives and prevention entitlements.");
+      ui.showSync("Checking your fate...");
       const previousDirectiveId =
         createClient().getSnapshot()?.publicState?.currentRoomDirective?.directiveId || null;
       const response = await createClient().event("report_fatal_event", {
@@ -611,7 +614,7 @@
   async function onExtraction(mode) {
     try {
       session.transition(root.DungeonRankedV3Session.STATES.resolving);
-      ui.showMessage("Requesting extraction", "Waiting for canonical outcome and gold conversion...");
+      ui.showSync("Securing your extraction...");
       const response = await createClient().event("request_extraction", { mode });
       extractedProfileReady = response.metaState?.status === "extraction" && Boolean(response.profile);
       session.transition(root.DungeonRankedV3Session.STATES.terminal);
@@ -624,7 +627,7 @@
   async function resumeRanked() {
     try {
       moveToRecoveryState(root.DungeonRankedV3Session.STATES.retrying);
-      ui.showMessage("Recovering Ranked", "Loading the canonical server state...");
+      ui.showMessage("Recovering Ranked", "Loading your last saved room...");
       await acceptResponse(await createClient().resumeCanonical());
     } catch (error) {
       presentError(error);
@@ -636,20 +639,50 @@
     else await startRanked();
   }
 
+  const menuEnabled = Boolean(String(root.DUNGEON_ONLINE_V3_API || "").trim());
+  root.DungeonOnlineV3Menu = Object.freeze({
+    extendOptions(baseOptions) {
+      if (!menuEnabled || !Array.isArray(baseOptions)) return baseOptions;
+      const options = new Map(baseOptions.map((option) => [option.id, option]));
+      const practice = options.get("practice");
+      const ranked = {
+        id: "ranked-online",
+        key: "2",
+        title: "Ranked (Online)",
+        desc: recoveryStore.loadRecovery()
+          ? "Continue your active Ranked descent."
+          : "Start a connected Ranked descent.",
+        disabled: false,
+        action: () => openRankedEntry().catch(presentError)
+      };
+      const leaderboard = options.get("leaderboard");
+      const ordered = [
+        practice ? { ...practice, title: "Practice (Offline)" } : null,
+        ranked,
+        options.get("continue"),
+        leaderboard ? {
+          ...leaderboard,
+          title: "Ranked Leaderboard",
+          desc: "View the current Ranked season.",
+          action: () => openLeaderboard(true)
+        } : null,
+        options.get("nickname"),
+        options.get("tutorial"),
+        options.get("options")
+      ].filter(Boolean);
+      return ordered.map((option, index) => ({ ...option, key: String(index + 1) }));
+    },
+    openRanked: () => openRankedEntry().catch(presentError),
+    openLeaderboard: () => openLeaderboard(true)
+  });
+
   ui.entry.addEventListener("click", () => openRankedEntry().catch(presentError));
   leaderboardEntry.addEventListener("click", () => openLeaderboard(true));
   root.addEventListener("beforeunload", () => client?.releaseWriter?.());
   root.setInterval(() => {
     client?.heartbeatWriter?.();
-    let phase = "";
-    try {
-      phase = JSON.parse(root.render_game_to_text?.() || "{}").phase || "";
-    } catch {
-      phase = "";
-    }
-    const menuIdle = phase === "menu" && ["IDLE", "ABANDONED_LOCAL_SESSION"].includes(session.getState());
-    ui.setEntryVisible(menuIdle);
-    leaderboardEntry.hidden = !menuIdle;
+    ui.setEntryVisible(false);
+    leaderboardEntry.hidden = true;
   }, 250);
 
   root.DungeonOnlineV3 = Object.freeze({
