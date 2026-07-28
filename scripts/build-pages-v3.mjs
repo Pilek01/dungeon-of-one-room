@@ -223,14 +223,22 @@ const productionGameReplacements = [
         bootScreenEl?.classList.add("ready");
         return new Promise((resolve) => window.setTimeout(resolve, 180));
       })
-      .then(() => {
-        if (bootScreenEl) {
-          const hideBoot = () => bootScreenEl.classList.add("hidden");
-          bootScreenEl.classList.add("fading");
-          bootScreenEl.addEventListener("transitionend", hideBoot, { once: true });
-          window.setTimeout(hideBoot, 700);
+      .then(() => new Promise((resolve) => {
+        if (!bootScreenEl) {
+          resolve();
+          return;
         }
-      })
+        let hidden = false;
+        const hideBoot = () => {
+          if (hidden) return;
+          hidden = true;
+          bootScreenEl.classList.add("hidden");
+          resolve();
+        };
+        bootScreenEl.classList.add("fading");
+        bootScreenEl.addEventListener("transitionend", hideBoot, { once: true });
+        window.setTimeout(hideBoot, 700);
+      }))
       .finally(() => {
         bootInputLocked = false;
       });
