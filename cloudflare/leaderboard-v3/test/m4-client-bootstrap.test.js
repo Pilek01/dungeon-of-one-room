@@ -347,9 +347,22 @@ test("M4 session state permits only explicit room-boundary UI and portal transit
 
 test("M4 game integration remains a narrow directive/checkpoint bridge", () => {
   const game = fs.readFileSync(new URL("../../../game.js", import.meta.url), "utf8");
+  const runtime = fs.readFileSync(new URL("../../../online-v3/ranked-v3-runtime.js", import.meta.url), "utf8");
+  const builder = fs.readFileSync(new URL("../../../scripts/build-pages-v3.mjs", import.meta.url), "utf8");
   assert.match(game, /state\.onlineV3Ranked && state\.onlineV3Directive/u);
   assert.match(game, /DungeonOnlineV3\?\.onLocalRoomCleared/u);
   assert.match(game, /window\.DungeonOnlineV3GameBridge = Object\.freeze/u);
   assert.doesNotMatch(game, /fetch\s*\([^)]*\/api\/v3/u);
   assert.match(game, /if \(state\.onlineV3Ranked\) return;\s+if \(state\.phase/u);
+  assert.doesNotMatch(
+    runtime,
+    /onRoomEntered\(directive\)[\s\S]*?\["merchant", "crossroads"\][\s\S]*?openMetaOffer\(directive\.roomType\)/u
+  );
+  assert.match(runtime, /async function onMerchantOpen\(\)/u);
+  assert.match(runtime, /function onMerchantAction\(request = \{\}\)/u);
+  assert.match(runtime, /async function onMerchantLeave\(options = \{\}\)/u);
+  assert.match(builder, /enterRankedMerchant\(publicState, offer, request = \{\}\)/u);
+  assert.match(builder, /onMerchantOpen\?\.\(\)/u);
+  assert.match(builder, /onMerchantAction\?\.\(\{ action: "skill_upgrade", skillId \}\)/u);
+  assert.match(builder, /onMerchantLeave\?\.\(\{ enterPortal: true \}\)/u);
 });

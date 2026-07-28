@@ -1,3 +1,52 @@
+# Production native Ranked Merchant interaction hotfix - Online v3
+
+## Active status
+
+`IN_PROGRESS` as an R2-only production hotfix.
+
+The player-reported failure is reproduced from source: entering a canonical
+Merchant room immediately calls `open_meta_offer`, replaces the native game
+with the generic Ranked choices overlay, and moves the session out of
+`ROOM_ACTIVE`. A subsequent reconnect can therefore strand the room without a
+next directive and surface `Online v3 is still resolving the next room.`.
+This violates the canonical Merchant trigger, which is player interaction with
+the Merchant, and does not match Practice presentation.
+
+Authorized paths:
+
+- `online-v3/ranked-v3-runtime.js`;
+- `scripts/build-pages-v3.mjs`;
+- focused `cloudflare/leaderboard-v3/test/m4-*.test.js` coverage;
+- focused headed Ranked Merchant QA;
+- `ONLINE_V3_HANDOFF.md`;
+- `progress.md`;
+- this file.
+
+Required outcome:
+
+- entering a Merchant room keeps the native room playable and shows no Ranked
+  modal;
+- only pressing the normal Merchant interaction while standing on the
+  Merchant opens the existing Practice Merchant screen;
+- the native Merchant rows use the canonical server offer and commit through
+  the existing opaque transaction IDs without applying local purchases first;
+- closing or skipping the Merchant consumes the canonical leave choice,
+  resolves the checkpoint once, and prepares the next portal directive without
+  reconnect or `still resolving` loops;
+- transient request failure returns control to the room and permits retry
+  without a forced reconnect screen.
+
+Run focused RED/GREEN regressions, headed keyboard QA with screenshot,
+`render_game_to_text`, console/page-error checks, the R2 threat matrix,
+`verify:fast`, `verify:phase`, `verify:baseline`, `verify:full`, and
+`git diff --check`. Create exact internal commits and deploy only Pages to the
+existing production project. Do not change Worker/D1 behavior or schema,
+source `game.js`, ruleset data/hash, gameplay, combat authority, mode names,
+Practice, R1-P0-001, or the 172 protected Vault Guardian deletions. No push,
+staging, paid service, or M5.
+
+---
+
 # Production Ranked extraction/Camp continuation hotfix - Online v3
 
 ## Active status

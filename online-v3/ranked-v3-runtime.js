@@ -27,6 +27,8 @@
   let extractedProfileReady = false;
   let currentCampResponse = null;
   let campMutationPending = false;
+  let currentMerchantOffer = null;
+  let merchantMutationPending = false;
   const recoveryStore = root.DungeonRankedV3Storage.createStore(root.localStorage);
 
   function publicName() {
@@ -625,6 +627,156 @@
     await continueBoundary(response.metaState);
   }
 
+  function availableMerchantChoices() {
+    const choices = currentMerchantOffer?.choices;
+    return Array.isArray(choices)
+      ? choices.filter((choice) => choice?.status === "available")
+      : [];
+  }
+
+  function merchantChoiceFor(request = {}) {
+    const action = String(request.action || "");
+    const relicId = String(request.relicId || "");
+    const removalRelicId = String(request.removalRelicId || "");
+    return availableMerchantChoices().find((choice) => {
+      if (action === "potion") return choice.kind === "merchant_potion";
+      if (action === "skill_upgrade") {
+        return choice.kind === "merchant_skill_upgrade" && choice.skillId === request.skillId;
+      }
+      if (action === "relic_purchase") {
+        if (!["merchant_relic_purchase", "merchant_relic_replacement"].includes(choice.kind)) return false;
+        if (relicId && choice.relicId !== relicId) return false;
+        return removalRelicId
+          ? choice.kind === "merchant_relic_replacement" && choice.removals?.some((entry) => entry?.relicId === removalRelicId)
+          : choice.kind === "merchant_relic_purchase" && choice.replacement !== true;
+      }
+      if (action === "reserve_relic") return choice.kind === "merchant_relic_reserve" && (!relicId || choice.relicId === relicId);
+      if (action === "claim_reserved") {
+        if (!["merchant_reserved_claim", "merchant_relic_replacement"].includes(choice.kind)) return false;
+        if (relicId && choice.relicId !== relicId) return false;
+        return removalRelicId
+          ? choice.kind === "merchant_relic_replacement" && choice.removals?.some((entry) => entry?.relicId === removalRelicId)
+          : choice.kind === "merchant_reserved_claim" && choice.replacement !== true;
+      }
+      if (action === "discard_reserved") return choice.kind === "merchant_reserved_discard" && (!relicId || choice.relicId === relicId);
+      if (action === "buyback") return choice.kind === "merchant_buyback" && choice.relicId === relicId;
+      if (action === "service") return choice.kind === "merchant_service" && choice.serviceId === request.serviceId;
+      if (action === "black_market") return choice.kind === "merchant_black_market" && choice.targetRelicId === relicId;
+      if (action === "leave") return choice.kind === "leave";
+      return false;
+    }) || null;
+  }
+
+  function merchantReplacementChoices(request = {}) {
+    const relicId = String(request.relicId || "");
+    return availableMerchantChoices().filter((choice) =>
+      choice.kind === "merchant_relic_replacement" &&
+      (!relicId || choice.relicId === relicId)
+    );
+  }
+
+  function presentNativeMerchant(state, request = {}) {
+    const offer = state?.metaTransactionOffer;
+    if (!offer || offer.sourceType !== "merchant") {
+      throw new TypeError("RANKED_MERCHANT_OFFER_INVALID");
+    }
+    currentMerchantOffer = offer;
+    root.DungeonOnlineV3GameBridge.enterRankedMerchant(state, offer, request);
+    ui.hide();
+  }
+
+  function presentMerchantError(error) {
+    if (root.DUNGEON_ONLINE_V3_DEBUG === true) {
+      console.debug("[Online v3] Merchant error", error);
+    }
+    if (session.getState() === root.DungeonRankedV3Session.STATES.resolving) {
+      session.transition(root.DungeonRankedV3Session.STATES.active);
+    }
+    root.DungeonOnlineV3GameBridge?.failRankedMerchantRequest?.();
+    ui.hide();
+  }
+
+  async function onMerchantOpen() {
+    if (merchantMutationPending) return true;
+    merchantMutationPending = true;
+    root.DungeonOnlineV3GameBridge?.beginRankedMerchantRequest?.();
+    try {
+      if (currentMerchantOffer?.sourceType === "merchant") {
+        presentNativeMerchant(createClient().getSnapshot()?.publicState || {}, {});
+        return true;
+      }
+      const response = await createClient().event("open_meta_offer", {});
+      presentNativeMerchant(response.metaState, {});
+    } catch (error) {
+      presentMerchantError(error);
+    } finally {
+      merchantMutationPending = false;
+    }
+    return true;
+  }
+
+  function onMerchantAction(request = {}) {
+    if (merchantMutationPending) return true;
+    const choice = merchantChoiceFor(request);
+    if (!choice && ["relic_purchase", "claim_reserved"].includes(String(request.action || ""))) {
+      const replacements = merchantReplacementChoices(request);
+      if (replacements.length > 0) {
+        root.DungeonOnlineV3GameBridge?.beginRankedMerchantReplacement?.({
+          source: request.action === "claim_reserved" ? "reserved" : "offer",
+          relicId: replacements[0].relicId,
+          price: replacements[0].price,
+          removalRelicIds: replacements.flatMap((entry) =>
+            Array.isArray(entry.removals) ? entry.removals.map((removal) => removal?.relicId).filter(Boolean) : []
+          )
+        });
+        return true;
+      }
+    }
+    if (!choice) {
+      root.DungeonOnlineV3GameBridge?.failRankedMerchantRequest?.("That Merchant offer is not available.");
+      return true;
+    }
+    merchantMutationPending = true;
+    root.DungeonOnlineV3GameBridge?.beginRankedMerchantRequest?.();
+    createClient().event("commit_meta_transaction", {
+      transactionId: choice.transactionId,
+      choiceId: choice.choiceId
+    })
+      .then((response) => {
+        root.DungeonOnlineV3GameBridge.syncCanonicalProjection(response.metaState);
+        presentNativeMerchant(response.metaState, request);
+      })
+      .catch(presentMerchantError)
+      .finally(() => { merchantMutationPending = false; });
+    return true;
+  }
+
+  async function onMerchantLeave(options = {}) {
+    if (merchantMutationPending) return true;
+    merchantMutationPending = true;
+    root.DungeonOnlineV3GameBridge?.beginRankedMerchantRequest?.();
+    try {
+      const leave = merchantChoiceFor({ action: "leave" });
+      if (leave) {
+        const response = await createClient().event("commit_meta_transaction", {
+          transactionId: leave.transactionId,
+          choiceId: leave.choiceId
+        });
+        currentMerchantOffer = null;
+        root.DungeonOnlineV3GameBridge.syncCanonicalProjection(response.metaState);
+      }
+      const resolved = await resolveCheckpoint({ onError: presentMerchantError, silent: true });
+      if (resolved && options.enterPortal === true) {
+        root.DungeonOnlineV3GameBridge?.enterNextDirective?.();
+      }
+    } catch (error) {
+      presentMerchantError(error);
+    } finally {
+      merchantMutationPending = false;
+    }
+    return true;
+  }
+
   function availableCampChoices() {
     const choices = currentCampResponse?.metaTransactionOffer?.choices;
     return Array.isArray(choices)
@@ -729,14 +881,14 @@
     ui.hide();
   }
 
-  async function resolveCheckpoint() {
+  async function resolveCheckpoint(options = {}) {
     const summary = pendingRoomSummary || {};
     pendingRoomSummary = null;
     try {
       if (session.getState() !== root.DungeonRankedV3Session.STATES.resolving) {
         session.transition(root.DungeonRankedV3Session.STATES.resolving);
       }
-      ui.showSync("Saving progress...");
+      if (options.silent !== true) ui.showSync("Saving progress...");
       const response = await createClient().checkpoint({
         turnCount: summary?.turnCount,
         elapsedMs: Math.max(0, Date.now() - startedAt),
@@ -759,8 +911,10 @@
       await continueBoundary(state);
     } catch (error) {
       pendingRoomSummary = summary;
-      presentError(error);
+      (typeof options.onError === "function" ? options.onError : presentError)(error);
+      return false;
     }
+    return true;
   }
 
   async function onLocalRoomCleared(summary) {
@@ -787,7 +941,14 @@
     if (session.getState() === root.DungeonRankedV3Session.STATES.next) {
       session.transition(root.DungeonRankedV3Session.STATES.active);
     }
-    if (!["merchant", "crossroads"].includes(directive.roomType)) return;
+    if (directive.roomType === "merchant") {
+      currentMerchantOffer = null;
+      merchantMutationPending = false;
+      pendingRoomSummary = { turnCount: 0, rewardClaims: [] };
+      ui.hide();
+      return;
+    }
+    if (directive.roomType !== "crossroads") return;
     pendingRoomSummary = { turnCount: 0, rewardClaims: [] };
     session.transition(root.DungeonRankedV3Session.STATES.offer);
     await openMetaOffer(directive.roomType);
@@ -941,6 +1102,9 @@
     startRanked,
     onLocalRoomCleared,
     onRoomEntered,
+    onMerchantOpen,
+    onMerchantAction,
+    onMerchantLeave,
     onFatalEvent,
     onExtraction,
     onCampAction,

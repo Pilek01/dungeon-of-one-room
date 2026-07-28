@@ -571,6 +571,313 @@ for (const [sourceText, replacement] of productionGameReplacements) {
   if (!game.includes(sourceText)) throw new Error(`Missing production game source: ${sourceText.slice(0, 80)}`);
   game = game.replace(sourceText, replacement);
 }
+const rankedMerchantGameReplacements = [
+  [
+`  function openMerchantMenu() {
+    if (state.debugCheatMerchantActive) return openDebugCheatMerchantMenu();`,
+`  function openMerchantMenu() {
+    if (state.onlineV3Ranked) {
+      window.DungeonOnlineV3?.onMerchantOpen?.();
+      return true;
+    }
+    if (state.debugCheatMerchantActive) return openDebugCheatMerchantMenu();`
+  ],
+  [
+`  function tryBuySkillUpgradeFromMerchant(skillId) {
+    return campRuntime.tryBuySkillUpgradeFromMerchant(skillId);
+  }`,
+`  function tryBuySkillUpgradeFromMerchant(skillId) {
+    if (state.onlineV3Ranked) return Boolean(window.DungeonOnlineV3?.onMerchantAction?.({ action: "skill_upgrade", skillId }));
+    return campRuntime.tryBuySkillUpgradeFromMerchant(skillId);
+  }`
+  ],
+  [
+`  function tryBuyPotionFromMerchant() {
+    return campRuntime.tryBuyPotionFromMerchant();
+  }`,
+`  function tryBuyPotionFromMerchant() {
+    if (state.onlineV3Ranked) return Boolean(window.DungeonOnlineV3?.onMerchantAction?.({ action: "potion" }));
+    return campRuntime.tryBuyPotionFromMerchant();
+  }`
+  ],
+  [
+`  function tryBuyRelicFromMerchant() {
+    return campRuntime.tryBuyRelicFromMerchant();
+  }`,
+`  function tryBuyRelicFromMerchant() {
+    if (state.onlineV3Ranked) return Boolean(window.DungeonOnlineV3?.onMerchantAction?.({ action: "relic_purchase", relicId: state.merchantRelicSlot?.relicId || "" }));
+    return campRuntime.tryBuyRelicFromMerchant();
+  }`
+  ],
+  [
+`  function tryReserveRelicFromMerchant() {
+    return campRuntime.tryReserveRelicFromMerchant();
+  }`,
+`  function tryReserveRelicFromMerchant() {
+    if (state.onlineV3Ranked) return Boolean(window.DungeonOnlineV3?.onMerchantAction?.({ action: "reserve_relic", relicId: state.merchantRelicSlot?.relicId || "" }));
+    return campRuntime.tryReserveRelicFromMerchant();
+  }`
+  ],
+  [
+`  function tryBuyReservedRelicFromMerchant() {
+    return campRuntime.tryBuyReservedRelicFromMerchant();
+  }`,
+`  function tryBuyReservedRelicFromMerchant() {
+    if (state.onlineV3Ranked) return Boolean(window.DungeonOnlineV3?.onMerchantAction?.({ action: "claim_reserved", relicId: state.merchantReservedRelic?.relicId || "" }));
+    return campRuntime.tryBuyReservedRelicFromMerchant();
+  }`
+  ],
+  [
+`  function tryDiscardReservedRelicFromMerchant() {
+    return campRuntime.tryDiscardReservedRelicFromMerchant();
+  }`,
+`  function tryDiscardReservedRelicFromMerchant() {
+    if (state.onlineV3Ranked) return Boolean(window.DungeonOnlineV3?.onMerchantAction?.({ action: "discard_reserved", relicId: state.merchantReservedRelic?.relicId || "" }));
+    return campRuntime.tryDiscardReservedRelicFromMerchant();
+  }`
+  ],
+  [
+`  function resolveMerchantLegendarySwap(acceptIncoming) {
+    return campRuntime.resolveMerchantLegendarySwap(acceptIncoming);
+  }`,
+`  function resolveMerchantLegendarySwap(acceptIncoming) {
+    if (state.onlineV3Ranked) {
+      const pending = state.merchantLegendarySwapPending;
+      if (!pending) return false;
+      state.merchantLegendarySwapPending = null;
+      if (!acceptIncoming) {
+        markUiDirty();
+        return true;
+      }
+      return Boolean(window.DungeonOnlineV3?.onMerchantAction?.({
+        action: pending.source === "reserved" ? "claim_reserved" : "relic_purchase",
+        relicId: pending.relicId || "",
+        removalRelicId: pending.currentLegendaryId || ""
+      }));
+    }
+    return campRuntime.resolveMerchantLegendarySwap(acceptIncoming);
+  }`
+  ],
+  [
+`  function tryBuyFullHeal() {
+    return campRuntime.tryBuyFullHeal();
+  }`,
+`  function tryBuyFullHeal() {
+    if (state.onlineV3Ranked) return Boolean(window.DungeonOnlineV3?.onMerchantAction?.({ action: "service", serviceId: "fullheal" }));
+    return campRuntime.tryBuyFullHeal();
+  }`
+  ],
+  [
+`  function tryBuyCombatBoost() {
+    return campRuntime.tryBuyCombatBoost();
+  }`,
+`  function tryBuyCombatBoost() {
+    if (state.onlineV3Ranked) return Boolean(window.DungeonOnlineV3?.onMerchantAction?.({ action: "service", serviceId: "combatboost" }));
+    return campRuntime.tryBuyCombatBoost();
+  }`
+  ],
+  [
+`  function tryBuyOneLife() {
+    return campRuntime.tryBuyOneLife();
+  }`,
+`  function tryBuyOneLife() {
+    if (state.onlineV3Ranked) return Boolean(window.DungeonOnlineV3?.onMerchantAction?.({ action: "service", serviceId: "onelife" }));
+    return campRuntime.tryBuyOneLife();
+  }`
+  ],
+  [
+`  function tryBuySecondChance() {
+    return campRuntime.tryBuySecondChance();
+  }`,
+`  function tryBuySecondChance() {
+    if (state.onlineV3Ranked) return Boolean(window.DungeonOnlineV3?.onMerchantAction?.({ action: "service", serviceId: "secondchance" }));
+    return campRuntime.tryBuySecondChance();
+  }`
+  ],
+  [
+`  function tryUseBlackMarket(relicId) {
+    return campRuntime.tryUseBlackMarket(relicId);
+  }`,
+`  function tryUseBlackMarket(relicId) {
+    if (state.onlineV3Ranked) return Boolean(window.DungeonOnlineV3?.onMerchantAction?.({ action: "black_market", relicId }));
+    return campRuntime.tryUseBlackMarket(relicId);
+  }`
+  ],
+  [
+`  function tryMerchantRelicSwap(idx) {
+    return campRuntime.tryBuyRelicSwap(idx);
+  }`,
+`  function tryMerchantRelicSwap(idx) {
+    if (state.onlineV3Ranked) {
+      const pending = state.merchantRelicSwapPending;
+      const removalRelicId = state.relics[idx] || "";
+      state.merchantRelicSwapPending = null;
+      return Boolean(window.DungeonOnlineV3?.onMerchantAction?.({
+        action: pending?.source === "reserved" ? "claim_reserved" : "relic_purchase",
+        relicId: pending?.relicId || "",
+        removalRelicId
+      }));
+    }
+    return campRuntime.tryBuyRelicSwap(idx);
+  }`
+  ],
+  [
+`  function trySellRelicToMerchant(relicId) {
+    return campRuntime.trySellRelicToMerchant(relicId);
+  }`,
+`  function trySellRelicToMerchant(relicId) {
+    if (state.onlineV3Ranked) return Boolean(window.DungeonOnlineV3?.onMerchantAction?.({ action: "buyback", relicId }));
+    return campRuntime.trySellRelicToMerchant(relicId);
+  }`
+  ],
+  [
+`    if (state.onlineV3Ranked) {
+      if (!state.onlineV3NextDirective) {
+        pushLog("Online v3 is still resolving the next room.", "warn");
+        return;
+      }`,
+`    if (state.onlineV3Ranked) {
+      if (!state.onlineV3NextDirective) {
+        if (state.roomType === "merchant") {
+          window.DungeonOnlineV3?.onMerchantLeave?.({ enterPortal: true });
+          return;
+        }
+        pushLog("Online v3 is still resolving the next room.", "warn");
+        return;
+      }`
+  ],
+  [
+`    enterNextDirective() {
+      if (!state.onlineV3Ranked || !state.onlineV3NextDirective) return false;
+      state.onlineV3Directive = state.onlineV3NextDirective;
+      state.onlineV3NextDirective = null;
+      buildRoom();
+      window.DungeonOnlineV3?.onRoomEntered?.(state.onlineV3Directive);
+      return true;
+    },`,
+`    enterNextDirective() {
+      if (!state.onlineV3Ranked || !state.onlineV3NextDirective) return false;
+      state.onlineV3Directive = state.onlineV3NextDirective;
+      state.onlineV3NextDirective = null;
+      playSfx("portal");
+      buildRoom();
+      pushLog("Canonical portal entered.", "good");
+      markUiDirty();
+      window.DungeonOnlineV3?.onRoomEntered?.(state.onlineV3Directive);
+      return true;
+    },`
+  ]
+];
+for (const [sourceText, replacement] of rankedMerchantGameReplacements) {
+  if (!game.includes(sourceText)) throw new Error(`Missing Ranked Merchant source: ${sourceText.slice(0, 80)}`);
+  game = game.replace(sourceText, replacement);
+}
+
+const rankedMerchantBridgeMarker = `    enterRankedCamp(profile, offer) {`;
+const rankedMerchantBridge = `    beginRankedMerchantRequest() {
+      if (!state.onlineV3Ranked) return;
+      state.turnInProgress = true;
+      markUiDirty();
+    },
+    failRankedMerchantRequest(message = "Merchant connection failed. Press E to try again.") {
+      if (!state.onlineV3Ranked) return;
+      state.turnInProgress = false;
+      pushLog(String(message || "Merchant connection failed. Press E to try again."), "bad");
+      markUiDirty();
+    },
+    beginRankedMerchantReplacement(pending = {}) {
+      if (!state.onlineV3Ranked) return;
+      state.turnInProgress = false;
+      const incoming = getRelicById(pending.relicId);
+      const removals = Array.isArray(pending.removalRelicIds)
+        ? [...new Set(pending.removalRelicIds.filter((relicId) => typeof relicId === "string" && relicId))]
+        : [];
+      const uniqueSwap = incoming && ["legendary", "mythic"].includes(incoming.rarity) && removals.length === 1;
+      if (uniqueSwap) {
+        state.merchantLegendarySwapPending = {
+          source: pending.source === "reserved" ? "reserved" : "offer",
+          relicId: pending.relicId,
+          price: Math.max(0, Number(pending.price) || 0),
+          currentLegendaryId: removals[0]
+        };
+        state.merchantRelicSwapPending = null;
+      } else {
+        state.merchantRelicSwapPending = {
+          source: pending.source === "reserved" ? "reserved" : "offer",
+          relicId: pending.relicId,
+          price: Math.max(0, Number(pending.price) || 0),
+          allowedRemovalRelicIds: removals
+        };
+        state.merchantLegendarySwapPending = null;
+      }
+      markUiDirty();
+    },
+    enterRankedMerchant(publicState, offer, request = {}) {
+      if (!state.onlineV3Ranked || state.roomType !== "merchant" || !isOnMerchant()) return;
+      const build = publicState?.build || {};
+      const resources = build.resources || {};
+      const merchant = build.merchant || {};
+      const action = String(request.action || "");
+      state.turnInProgress = false;
+      state.player.gold = Math.max(0, Number(publicState?.gold) || 0);
+      state.campGold = Math.max(0, Number(publicState?.campGold) || 0);
+      state.lives = Math.max(0, Number(publicState?.lives) || 0);
+      state.skillTiers = sanitizeSkillTiers(build.skillTiers || {});
+      state.relics = (Array.isArray(build.relics) ? build.relics : []).flatMap((relic) =>
+        Array.from({ length: Math.max(1, Number(relic.stacks) || 1) }, () => String(relic.relicId || relic.id || ""))
+      ).filter(Boolean);
+      normalizeRelicInventory();
+      state.merchantPotionsBought = Math.max(0, Number(merchant.potionsBought) || 0);
+      state.merchantSecondChancePurchases = Math.max(0, Number(merchant.secondChancePurchases) || 0);
+      state.merchantReservedRelic = sanitizeMerchantReservedRelic(merchant.reservedRelic);
+      state.merchantSlotsInitialized = true;
+      if (action === "potion") state.player.potions = Math.max(0, Number(resources.potions) || 0);
+      state.player.maxPotions = Math.max(1, Number(resources.maxPotions) || state.player.maxPotions);
+      if (action === "service" && request.serviceId === "fullheal") {
+        state.player.maxHp = Math.max(1, Number(resources.maxHp) || state.player.maxHp);
+        state.player.hp = Math.max(1, Math.min(state.player.maxHp, Number(resources.hp) || state.player.maxHp));
+      }
+      if (action === "service" && request.serviceId === "secondchance") state.player.hasSecondChance = Boolean(resources.hasSecondChance);
+      if (action === "service" && request.serviceId === "combatboost") {
+        const previousAttack = Math.max(0, Number(state.onlineV3MerchantBoostAttack) || 0);
+        const previousArmor = Math.max(0, Number(state.onlineV3MerchantBoostArmor) || 0);
+        const nextAttack = Math.max(0, Number(resources.combatBoostAttack) || 0);
+        const nextArmor = Math.max(0, Number(resources.combatBoostArmor) || 0);
+        state.player.attack = Math.max(MIN_EFFECTIVE_DAMAGE, state.player.attack - previousAttack + nextAttack);
+        state.player.armor = Math.max(0, state.player.armor - previousArmor + nextArmor);
+        state.player.combatBoostTurns = Math.max(0, Number(resources.combatBoostTurns) || 0);
+        state.onlineV3MerchantBoostAttack = nextAttack;
+        state.onlineV3MerchantBoostArmor = nextArmor;
+      }
+      const choices = Array.isArray(offer?.choices) ? offer.choices : [];
+      const available = choices.filter((choice) => choice?.status === "available");
+      const liveRelic = state.merchantReservedRelic ? null : available.find((choice) =>
+        ["merchant_relic_purchase", "merchant_relic_replacement", "merchant_relic_reserve"].includes(choice.kind) && choice.relicId
+      );
+      state.merchantRelicSlot = liveRelic
+        ? sanitizeMerchantRelicSlot({ relicId: liveRelic.relicId, price: liveRelic.totalPrice || liveRelic.price, offerTag: "" })
+        : null;
+      const service = available.find((choice) => choice.kind === "merchant_service");
+      state.merchantServiceSlot = sanitizeMerchantServiceSlot(
+        service?.serviceId || (available.some((choice) => choice.kind === "merchant_black_market") ? "blackmarket" : "")
+      );
+      state.merchantRelicSwapPending = null;
+      state.merchantLegendarySwapPending = null;
+      state.merchantBuybackPending = null;
+      state.blackMarketPending = null;
+      state.merchantMenuOpen = true;
+      markUiDirty();
+    },
+    enterRankedCamp(profile, offer) {`;
+if (!game.includes(rankedMerchantBridgeMarker)) throw new Error("Missing Ranked Merchant bridge marker.");
+game = game.replace(rankedMerchantBridgeMarker, rankedMerchantBridge);
+const rankedSetNextMarker = `    setNextDirective(directive) {
+      state.onlineV3NextDirective = directive;`;
+if (!game.includes(rankedSetNextMarker)) throw new Error("Missing Ranked setNextDirective marker.");
+game = game.replace(rankedSetNextMarker, `    setNextDirective(directive) {
+      state.turnInProgress = false;
+      state.onlineV3NextDirective = directive;`);
+
 await writeFile(gamePath, game, "utf8");
 
 await writeFile(path.join(output, "_routes.json"), `${JSON.stringify({
