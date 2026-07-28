@@ -333,3 +333,40 @@ Cloudflare Pages from the verified local commit.
 
 The unrelated 172 Vault Guardian deletions remain unstaged, unmodified, and
 outside every Online v3 commit and deployment.
+
+## Local Ranked reward and death presentation regression fix
+
+Core fix commit: `9f60eaa` (`Fix Ranked reward and death presentation`). The
+current local `HEAD` also contains the later, separately scoped recovery commit
+`c091b7c`; history was not rewritten or combined.
+
+- reward slots belonging to an upcoming Warden, Otter, or Arena directive are
+  fail-closed until that directive's room has a pending local clear;
+- accepted nonterminal life loss now reuses the native v0.8 death overlay and
+  death track, synchronizes the canonical server build/relic loss, and waits
+  for R/Enter before entering the next canonical life;
+- Chrono Loop and Second Chance server prevention retain the current room and
+  do not show a false death presentation;
+- source `game.js`, source `index.html`, Worker/D1, ruleset data/hash, reward
+  probabilities, life accounting, Practice, combat authority, and mode names
+  remain unchanged.
+
+Verification on current local `HEAD`:
+
+- focused regression tests: 11/11 PASS after the expected 8/11 RED;
+- headed Ranked lifecycle: PASS, including ordinary-to-Warden reward ownership,
+  post-Warden reward timing, `You Died`, `assets/death.mp3`, R continuation, and
+  zero unexpected console/page errors;
+- `verify:fast`: 44/44 PASS;
+- `verify:phase`: 717/717 PASS;
+- `verify:baseline`: 3/3 PASS plus headed baseline smoke;
+- `verify:full`: 741/741 PASS, including 21/21 local Wrangler/D1 E2E and headed
+  baseline smoke;
+- source `game.js` SHA-256 remains
+  `556829c909cdc9eaefb4238279457eb9b3427adef9ce494f35743542770ee7de`;
+- ruleset remains `sha256:0bf00607056dbf3c30ffe57bbcfc77cea95b21c9ccc23aa985ec555856d1cbd6`;
+- all 172 protected Vault Guardian deletions remain unstaged with zero protected
+  staged paths.
+
+This task performed no push, deploy, staging, canary, soak, rollback, or M5
+action. Production state was not mutated or re-verified by this task.

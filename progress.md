@@ -860,3 +860,31 @@ Updated next good targets
   `3350fde4b0f51e8c82607fe35c413de2849d46d171c793bb6ffd18ee08c3c08c`.
 - Scope is local-only. Source `game.js`, Worker/D1, ruleset, Practice, and the
   protected deletions remain outside the implementation.
+
+## 2026-07-28 - Ranked reward/death presentation regression fix complete
+
+- Core commit: `9f60eaa` (`Fix Ranked reward and death presentation`), six files,
+  204 insertions and 9 deletions. A later separate local recovery commit
+  `c091b7c` contains the combined headed lifecycle coverage.
+- Upcoming-room Warden/Otter/Arena relic slots now remain hidden until their own
+  room has a real pending local clear.
+- Accepted nonterminal Ranked life loss now holds the native v0.8 `You Died`
+  presentation, invokes `assets/death.mp3`, shows the canonical relic loss, and
+  waits for R/Enter before building the next canonical life. Server-prevented
+  fatal events continue without a false death screen.
+- Focused RED: 8/11 PASS with the three expected failures. Focused GREEN: 11/11.
+- Headed Ranked lifecycle: PASS with a real ordinary-to-Warden boundary,
+  post-Warden reward, native nonterminal death, death-audio invocation, R
+  continuation, zero unexpected console errors, and zero page errors.
+- Final verification on current `HEAD`: fast 44/44; phase 717/717; baseline 3/3
+  plus headed smoke; full 741/741, including Wrangler/D1 21/21 and headed smoke;
+  `git diff --check` PASS.
+- Source `game.js` remains SHA-256
+  `556829c909cdc9eaefb4238279457eb9b3427adef9ce494f35743542770ee7de`;
+  source `game.js` and `index.html` have no diff from the initial `af9b46f`.
+  Ruleset remains
+  `sha256:0bf00607056dbf3c30ffe57bbcfc77cea95b21c9ccc23aa985ec555856d1cbd6`.
+- All 172 protected Vault Guardian deletions remain unstaged, with zero protected
+  staged paths and no protected path included in either local commit.
+- This task performed no push, deploy, staging, canary, soak, ruleset activation,
+  migration, rollback, paid-service, or M5 action.
