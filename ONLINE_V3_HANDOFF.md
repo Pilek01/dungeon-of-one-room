@@ -1,6 +1,50 @@
 # Online v3 - Production handoff
 
-## Production UI hotfix complete
+## Production portal synchronization hotfix complete
+
+The reported second-room portal block is fixed and active on
+`https://dungeon-of-one-room.pages.dev`.
+
+- final Pages deployment: `2aa78b63-90d7-444e-a78f-3f960b3ea3be`;
+- deployed source: `1dc325c` on production branch `main`;
+- root cause: the real Ranked portal rebuilt the next room without calling
+  `DungeonOnlineV3.onRoomEntered`, leaving the client session in
+  `ENTERING_NEXT_ROOM` after the first descent;
+- the production bundle now reports real portal room entry exactly as the
+  existing test bridge already did; source `game.js` remains untouched;
+- the headed regression clears and crosses two consecutive real player portals
+  and reaches Depth 3 in `ROOM_ACTIVE`.
+
+Verification on commit `1dc325c`:
+
+- R2 threat matrix: all 30 scenarios covered; R1-P0-001 unchanged;
+- `verify:fast`: 39/39 PASS;
+- `verify:phase`: 709/709 PASS
+  (`output/verification/phase-20260728T021317349Z.log`);
+- `verify:baseline`: 3/3 PASS plus headed baseline smoke
+  (`output/verification/baseline-20260728T021748914Z.log`);
+- `verify:full`: 733/733 PASS, including 21/21 local Wrangler/D1 E2E and headed
+  smoke (`output/verification/full-20260728T021929235Z.log`);
+- focused headed lifecycle: PASS, including two consecutive real portal
+  crossings; artifact: `output/online-v3-m4-ranked-headed/ranked-two-player-portals.png`;
+- production headed smoke: PASS from Depth 1 through two checkpoints and two
+  real portals to Depth 3, with zero API, console, or page errors; finalized
+  smoke run: `run_5c348fefba484959ae81d41a711808a0`.
+
+The source `game.js` remains byte-identical at SHA-256
+`556829c909cdc9eaefb4238279457eb9b3427adef9ce494f35743542770ee7de`.
+The ruleset remains `v08-meta-1` at
+`sha256:0bf00607056dbf3c30ffe57bbcfc77cea95b21c9ccc23aa985ec555856d1cbd6`.
+No gameplay, Worker, D1 schema, combat-authority model, mode names, push,
+staging, rollback, paid service, or M5 work changed. The 172 Vault Guardian
+deletions remain unstaged and outside the commit and deployment bundle.
+
+Hotfix commit:
+
+- `1dc325c` - synchronize the Online v3 session after a real portal descent and
+  cover two consecutive player portal crossings.
+
+## Previous production UI hotfix
 
 The production UI hotfix is active on `https://dungeon-of-one-room.pages.dev`.
 

@@ -1,3 +1,34 @@
+# Production portal synchronization hotfix - Online v3
+
+## Active status
+
+`COMPLETED_AND_PRODUCTION_VERIFIED` on the existing Pages project
+`dungeon-of-one-room`.
+
+The hotfix is limited to the production adapter and focused regression coverage.
+The real Ranked portal now calls `DungeonOnlineV3.onRoomEntered` after building
+the next room, matching the existing bridge path. It does not change gameplay,
+Worker or D1 behavior, protocol semantics, ruleset data, mode names, combat
+authority, or the accepted R1-P0-001 boundary. Source `game.js` remains
+byte-identical.
+
+Completion evidence:
+
+- local commit `1dc325c` and production deployment
+  `2aa78b63-90d7-444e-a78f-3f960b3ea3be`;
+- headed regression and production smoke both crossed two consecutive real
+  portals and reached Depth 3 in `ROOM_ACTIVE`;
+- production smoke accepted exactly two checkpoints and reported zero API,
+  console, or page errors;
+- threat matrix unchanged at 30/30 scenarios covered;
+- `verify:phase` 709/709, `verify:baseline` 3/3 plus headed smoke, and
+  `verify:full` 733/733;
+- ruleset hash, source `game.js`, gameplay, Worker/D1, mode names, and all 172
+  protected Vault Guardian deletions remain unchanged;
+- no staging, push, rollback, paid service, or M5 work was performed.
+
+---
+
 # Production UI hotfix - Online v3
 
 ## Active status

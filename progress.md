@@ -746,3 +746,23 @@ Updated next good targets
   authority remain unchanged. No staging, push, rollback, paid service, or M5.
 - All 172 Vault Guardian deletions remain unstaged and outside the commits and
   deployment bundles.
+
+## 2026-07-28 - Online v3 production portal synchronization hotfix
+
+- Fixed the second-room portal block: the real Ranked descent now notifies the
+  Online v3 runtime after `buildRoom()`, so the session returns from
+  `ENTERING_NEXT_ROOM` to `ROOM_ACTIVE` before the next clear.
+- Added a regression that clears and crosses two consecutive real player
+  portals instead of using the bridge shortcut; the headed artifact reaches
+  Depth 3 at `output/online-v3-m4-ranked-headed/ranked-two-player-portals.png`.
+- Commit `1dc325c` deployed to production as Pages deployment
+  `2aa78b63-90d7-444e-a78f-3f960b3ea3be`.
+- Production smoke run `run_5c348fefba484959ae81d41a711808a0`
+  crossed Depth 1 -> 2 -> 3 through two checkpoints and real portals with zero
+  API, console, or page errors, then finalized normally.
+- Gates passed: threat matrix 30/30, fast 39/39, phase 709/709, baseline 3/3
+  plus headed smoke, and full 733/733 including 21/21 Wrangler/D1 E2E.
+- Source `game.js`, ruleset hash, gameplay, Worker/D1, mode names, and combat
+  authority remain unchanged. No staging, push, rollback, paid service, or M5.
+- All 172 Vault Guardian deletions remain unstaged and outside both commits and
+  the deployment bundle.
