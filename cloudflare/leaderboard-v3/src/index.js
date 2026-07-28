@@ -864,7 +864,18 @@ async function handleRegisteredAbandon(request, env, options, repositories) {
     throw new HttpError(409, "FINALIZED_RUN_IMMUTABLE", "A finalized run cannot be abandoned.");
   }
   if (state.status === "abandoned") {
-    throw new HttpError(409, "RUN_ALREADY_ABANDONED", "Run is already abandoned.");
+    const ruleset = resolveRegisteredRuleset(options, state);
+    return jsonResponse({
+      ok: true,
+      protocolVersion: PROTOCOL_VERSION,
+      acceptedBoundary: "run_abandoned",
+      runId: state.runId,
+      revision: state.revision,
+      metaState: publicRulesetMetaState(state, ruleset)
+    }, 200, {
+      "cache-control": "no-store",
+      "x-idempotent-replay": "1"
+    });
   }
   const now = options.now();
   const nextState = {

@@ -75,10 +75,25 @@ test("canonical abandon is authenticated, exactly retryable and never publishes"
   };
   const first = await post("/api/v3/runs/abandon", body, operationId);
   const replay = await post("/api/v3/runs/abandon", body, operationId);
+  const recoveryAfterLostAcknowledgement = await post(
+    "/api/v3/runs/abandon",
+    {
+      ...body,
+      operationId: "op_dddddddddddddddddddddddddddddddd"
+    },
+    "op_dddddddddddddddddddddddddddddddd"
+  );
   assert.equal(first.response.status, 200);
   assert.equal(first.payload.metaState.status, "abandoned");
   assert.deepEqual(replay.payload, first.payload);
   assert.equal(replay.response.headers.get("x-idempotent-replay"), "1");
+  assert.equal(recoveryAfterLostAcknowledgement.response.status, 200);
+  assert.equal(recoveryAfterLostAcknowledgement.payload.metaState.status, "abandoned");
+  assert.equal(recoveryAfterLostAcknowledgement.payload.revision, first.payload.revision);
+  assert.equal(
+    recoveryAfterLostAcknowledgement.response.headers.get("x-idempotent-replay"),
+    "1"
+  );
   assert.equal(repositories.snapshotRun(started.runId).status, "abandoned");
   assert.equal(repositories.leaderboardCount(), 0);
 
