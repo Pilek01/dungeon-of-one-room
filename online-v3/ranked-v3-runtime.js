@@ -413,14 +413,17 @@
     const code = String(error?.code || "");
     const rateLimited = code === "START_RATE_LIMITED";
     const activeLimit = code === "ACTIVE_RUN_LIMIT";
+    const storageFull = code === "RANKED_STORAGE_FULL";
     const offline = error?.retryable || ["NETWORK_ERROR", "TIMEOUT"].includes(code);
     const message = rateLimited
       ? "Too many start attempts. Wait a moment, then try again."
       : activeLimit
         ? "This Ranked profile still has active runs. Try Continue or wait for them to expire."
-        : offline
-          ? "Ranked could not connect. Your Practice save is unchanged."
-          : "Ranked could not start. Try again or return to the Main Menu.";
+        : storageFull
+          ? "Browser storage is full. Ranked cannot safely save recovery. Practice data was not deleted."
+          : offline
+            ? "Ranked could not connect. Your Practice save is unchanged."
+            : "Ranked could not start. Try again or return to the Main Menu.";
     ui.showMenu("Ranked Unavailable", message, [
       ui.button("Try Again", () => startRanked()),
       ui.button("Main Menu", () => ui.hide())

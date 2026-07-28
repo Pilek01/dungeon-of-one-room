@@ -211,6 +211,20 @@ test("M4 stale profile repair clears a failed start and rotates only Ranked iden
   assert.equal(repaired.session.pendingOperation, null);
 });
 
+test("M4 failed-start cleanup tolerates a local failure before a session exists", () => {
+  const store = rankedIdentityStore();
+  const client = clientApi.createRankedClient({
+    store,
+    transport: {
+      createOperationId: () => "op_unused",
+      request: async () => {
+        throw new Error("unused");
+      }
+    }
+  });
+  assert.doesNotThrow(() => client.discardFailedStart());
+  assert.equal(store.snapshot().session, null);
+});
 test("M4 failed-start cleanup refuses to erase a canonical Ranked run", () => {
   const store = rankedIdentityStore({
     session: {

@@ -9,6 +9,7 @@
 
   const STORAGE_VERSION = 2;
   const STORAGE_PREFIX = "dungeonRankedV3";
+  const LEGACY_RANKED_V2_KEY = "dungeonRankedV2Active";
   const STORAGE_KEYS = Object.freeze({
     session: `${STORAGE_PREFIX}:sessionV2`,
     installationId: `${STORAGE_PREFIX}:installationIdV2`,
@@ -35,6 +36,43 @@
     }
   }
 
+  function isQuotaExceeded(error) {
+    return error?.name === "QuotaExceededError" || error?.code === 22 || error?.code === 1014;
+  }
+
+  function storageFullError(cause) {
+    const error = new Error("RANKED_STORAGE_FULL", { cause });
+    error.name = "RankedV3StorageError";
+    error.code = "RANKED_STORAGE_FULL";
+    return error;
+  }
+
+  function reclaimRetiredRankedStorage(storage) {
+    for (const key of [LEGACY_RANKED_V2_KEY, STORAGE_KEYS.leaderboardCache]) {
+      try {
+        storage.removeItem(key);
+      } catch {
+        // Best effort only. Critical writes below still fail safely.
+      }
+    }
+  }
+
+  function setCriticalItem(storage, key, value) {
+    try {
+      storage.setItem(key, value);
+      return;
+    } catch (error) {
+      if (!isQuotaExceeded(error)) throw error;
+    }
+    reclaimRetiredRankedStorage(storage);
+    try {
+      storage.setItem(key, value);
+    } catch (error) {
+      if (!isQuotaExceeded(error)) throw error;
+      throw storageFullError(error);
+    }
+  }
+
   function createStore(storage) {
     if (!storage || typeof storage.getItem !== "function" || typeof storage.setItem !== "function") {
       throw new TypeError("RANKED_STORAGE_UNAVAILABLE");
@@ -44,7 +82,7 @@
         return deserialize(storage.getItem(STORAGE_KEYS.session), null);
       },
       saveSession(snapshot) {
-        storage.setItem(STORAGE_KEYS.session, serialize(snapshot));
+        setCriticalItem(storage, STORAGE_KEYS.session, serialize(snapshot));
       },
       clearSession() {
         storage.removeItem(STORAGE_KEYS.session);
@@ -53,7 +91,7 @@
         return deserialize(storage.getItem(STORAGE_KEYS.profile), null);
       },
       saveProfile(profile) {
-        storage.setItem(STORAGE_KEYS.profile, serialize(profile));
+        setCriticalItem(storage, STORAGE_KEYS.profile, serialize(profile));
       },
       clearProfile() {
         storage.removeItem(STORAGE_KEYS.profile);
@@ -62,7 +100,7 @@
         return deserialize(storage.getItem(STORAGE_KEYS.recovery), null);
       },
       saveRecovery(recovery) {
-        storage.setItem(STORAGE_KEYS.recovery, serialize(recovery));
+        setCriticalItem(storage, STORAGE_KEYS.recovery, serialize(recovery));
       },
       clearRecovery() {
         storage.removeItem(STORAGE_KEYS.recovery);
@@ -71,7 +109,7 @@
         return deserialize(storage.getItem(STORAGE_KEYS.writerLease), null);
       },
       saveWriterLease(lease) {
-        storage.setItem(STORAGE_KEYS.writerLease, serialize(lease));
+        setCriticalItem(storage, STORAGE_KEYS.writerLease, serialize(lease));
       },
       clearWriterLease() {
         storage.removeItem(STORAGE_KEYS.writerLease);
@@ -80,7 +118,7 @@
         const current = String(storage.getItem(STORAGE_KEYS.installationId) || "");
         if (current) return current;
         const next = String(createId());
-        storage.setItem(STORAGE_KEYS.installationId, next);
+        setCriticalItem(storage, STORAGE_KEYS.installationId, next);
         return next;
       }
     });
@@ -90,6 +128,7 @@
     STORAGE_VERSION,
     STORAGE_PREFIX,
     STORAGE_KEYS,
+    LEGACY_RANKED_V2_KEY,
     isOwnedKey,
     serialize,
     deserialize,

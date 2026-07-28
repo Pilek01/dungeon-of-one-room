@@ -190,3 +190,11 @@ test("Ranked message actions use the compact gothic menu treatment", async () =>
   assert.match(style, /\.ranked-v3-card-menu \.ranked-v3-actions[\s\S]*max-width:\s*360px/u);
   assert.match(style, /\.ranked-v3-button::before[\s\S]*\.ranked-v3-button::after/u);
 });
+test("Ranked start presents browser storage exhaustion explicitly", async () => {
+  const runtime = await readFile(
+    new URL("../../../online-v3/ranked-v3-runtime.js", import.meta.url),
+    "utf8"
+  );
+  assert.match(runtime, /code === "RANKED_STORAGE_FULL"/u);
+  assert.match(runtime, /Browser storage is full/u);
+});

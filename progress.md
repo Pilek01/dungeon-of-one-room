@@ -909,3 +909,20 @@ Updated next good targets
   Practice storage, mode names, combat authority, and R1-P0-001 are unchanged.
   No push, staging, paid service, or M5 work occurred; all 172 protected Vault
   Guardian deletions remain untouched and unstaged.
+
+## 2026-07-28 - Ranked browser-storage recovery hotfix validated locally
+
+- Reproduced the reported `Ranked Unavailable` screen with Chromium localStorage
+  saturated to `QuotaExceededError` code 22; the failure happened before any
+  `/api/v3/runs/start` request.
+- Added safe one-retry reclamation for only retired `dungeonRankedV2Active` and
+  the Online v3 leaderboard cache. Practice v3/v2 sentinels and unrelated
+  storage remain preserved; insufficient space now has an explicit error.
+- Failed-start cleanup now tolerates quota failure before a local session exists
+  and cannot redirect that case into reconnect recovery.
+- Focused GREEN 18/18; saturated-storage headed Ranked lifecycle PASS and was
+  visually inspected at the native starting-relic screen.
+- Threat matrix 30/30, fast 45/45, phase 721/721, baseline 3/3 plus headed,
+  full 745/745 including local Wrangler/D1 21/21; `git diff --check` PASS.
+- Source `game.js`, ruleset, Worker/D1, gameplay, mode names, Practice behavior,
+  R1-P0-001, and all 172 protected deletions remain unchanged.

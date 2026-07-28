@@ -315,6 +315,56 @@ async function seedStaleRankedProfile(page) {
   }, SEASON);
 }
 
+async function seedRankedStoragePressure(page) {
+  return page.evaluate(() => {
+    const storage = window.DungeonRankedV3Storage;
+    localStorage.setItem("dungeonRankedV2Active", "v".repeat(1024 * 1024));
+    localStorage.setItem(storage.STORAGE_KEYS.leaderboardCache, "c".repeat(256 * 1024));
+    localStorage.setItem("dungeonOneRoomRunSave", "practice-sentinel-v3");
+    localStorage.setItem("dungeonPracticeV2Active", "practice-sentinel-v2");
+    let blocks = 0;
+    let quotaError = null;
+    for (const size of [256 * 1024, 64 * 1024, 16 * 1024, 4 * 1024, 1024, 256, 64, 16, 4, 1]) {
+      const block = "x".repeat(size);
+      for (;;) {
+        try {
+          localStorage.setItem(`rankedStorageQuotaHeaded:${blocks}`, block);
+          blocks += 1;
+        } catch (error) {
+          quotaError = error;
+          break;
+        }
+      }
+    }
+    return {
+      blocks,
+      errorName: String(quotaError?.name || ""),
+      errorCode: Number(quotaError?.code || 0)
+    };
+  });
+}
+
+async function auditAndClearRankedStoragePressure(page) {
+  return page.evaluate(() => {
+    const storage = window.DungeonRankedV3Storage;
+    const audit = {
+      legacyRankedV2: localStorage.getItem("dungeonRankedV2Active"),
+      leaderboardCache: localStorage.getItem(storage.STORAGE_KEYS.leaderboardCache),
+      practice: localStorage.getItem("dungeonOneRoomRunSave"),
+      practiceV2: localStorage.getItem("dungeonPracticeV2Active"),
+      fillerCount: Object.keys(localStorage)
+        .filter((key) => key.startsWith("rankedStorageQuotaHeaded:"))
+        .length
+    };
+    for (const key of Object.keys(localStorage)) {
+      if (key.startsWith("rankedStorageQuotaHeaded:")) localStorage.removeItem(key);
+    }
+    localStorage.removeItem("dungeonOneRoomRunSave");
+    localStorage.removeItem("dungeonPracticeV2Active");
+    return audit;
+  });
+}
+
 async function abandonCurrentRankedAndClearLocal(page) {
   return page.evaluate(async () => {
     const protocol = window.DungeonRankedV3Protocol;
@@ -533,6 +583,33 @@ ${fatalTestHookAnchor}`;
       path: path.join(ARTIFACT_ROOT, "ranked-native-menu.png"),
       fullPage: true
     });
+
+    const storagePressure = await seedRankedStoragePressure(page);
+    assert.equal(storagePressure.errorName, "QuotaExceededError", JSON.stringify(storagePressure));
+    assert.equal(storagePressure.errorCode, 22, JSON.stringify(storagePressure));
+    const quotaApiBefore = diagnostics.apiRequests.length;
+    await openRankedChoice(page, "Start New Ranked");
+    await page.locator(".ranked-v3-choice-relic").first().waitFor({ state: "visible" });
+    assert.equal(
+      diagnostics.apiRequests.slice(quotaApiBefore)
+        .some((entry) => entry.path === "/api/v3/runs/start"),
+      true
+    );
+    assert.equal(await page.getByRole("heading", { name: "Ranked Unavailable" }).count(), 0);
+    const quotaAudit = await auditAndClearRankedStoragePressure(page);
+    assert.equal(quotaAudit.legacyRankedV2, null);
+    assert.equal(quotaAudit.leaderboardCache, null);
+    assert.equal(quotaAudit.practice, "practice-sentinel-v3");
+    assert.equal(quotaAudit.practiceV2, "practice-sentinel-v2");
+    assert(quotaAudit.fillerCount > 0);
+    await page.screenshot({
+      path: path.join(ARTIFACT_ROOT, "ranked-storage-quota-recovered.png"),
+      fullPage: true
+    });
+    const quotaCleanup = await abandonCurrentRankedAndClearLocal(page);
+    assert.equal(quotaCleanup.status, "abandoned");
+    await page.reload({ waitUntil: "domcontentloaded" });
+    await dismissBoot(page);
 
     const staleProfile = await seedStaleRankedProfile(page);
     const staleErrorsBefore = diagnostics.apiErrors.length;
@@ -1033,6 +1110,7 @@ ${fatalTestHookAnchor}`;
       nextRunProfileScenarios: 1,
       endedRecoveryRestartScenarios: 1,
       staleProfileRepairScenarios: 1,
+      storageQuotaRecoveryScenarios: 1,
       activeCombatApiRequests: 0,
       finalizeAttempts: diagnostics.finalizeOperationIds.length,
       uniqueFinalizeOperationIds: new Set(diagnostics.finalizeOperationIds).size,

@@ -465,8 +465,12 @@
     }
 
     function discardFailedStart() {
+      if (!snapshot) {
+        mutationLocked = false;
+        store.clearSession();
+        return;
+      }
       if (
-        !snapshot ||
         snapshot.runId ||
         snapshot.pendingOperation?.endpoint !== "start"
       ) {

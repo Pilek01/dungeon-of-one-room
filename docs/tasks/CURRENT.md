@@ -1,4 +1,50 @@
-# Production direct Ranked start and stale-profile recovery hotfix - Online v3
+# Production Ranked browser-storage recovery hotfix - Online v3
+
+## Active status
+
+`IN_PROGRESS` for the existing `dungeon-of-one-room` Pages project.
+
+This is an R2-only production hotfix for the player-reported `Ranked
+Unavailable` screen when starting a new Ranked run. The reproduced failure is
+browser `QuotaExceededError` code 22 before `/api/v3/runs/start` is sent.
+
+Authorized paths:
+
+- `online-v3/ranked-v3-storage.js`;
+- `online-v3/ranked-v3-client.js`;
+- `online-v3/ranked-v3-runtime.js`;
+- focused Online v3 unit and headed tests;
+- `ONLINE_V3_HANDOFF.md`;
+- `progress.md`;
+- this file.
+
+Required outcome:
+
+- critical Ranked writes retry once after deleting only the retired
+  `dungeonRankedV2Active` value and noncritical Online v3 leaderboard cache;
+- Practice saves (`dungeonOneRoomRunSave` and `dungeonPracticeV2Active`) and
+  unrelated browser data are never deleted;
+- if safe reclamation is insufficient, the UI reports that browser storage is
+  full instead of showing the generic Ranked start error;
+- a failure before a local Ranked session exists is safely discarded and does
+  not enter reconnect recovery;
+- successful reclamation proceeds through the ordinary direct Ranked start.
+
+Verification and release:
+
+- keep focused RED/GREEN regression evidence;
+- run headed browser QA with a deliberately saturated localStorage and visually
+  inspect the successful direct start and Practice-save preservation;
+- rerun the R2 threat matrix, `verify:fast`, `verify:phase`,
+  `verify:baseline`, `verify:full`, and `git diff --check`;
+- create exact internal local commits and deploy only Pages directly to the
+  existing production project;
+- do not change Worker/D1 behavior or schema, source `game.js`, gameplay,
+  ruleset data/hash, combat authority, mode names, or R1-P0-001;
+- do not push, create staging, touch or stage the 172 protected Vault Guardian
+  deletions, use a paid service, or start M5.
+
+---# Production direct Ranked start and stale-profile recovery hotfix - Online v3
 
 ## Active status
 

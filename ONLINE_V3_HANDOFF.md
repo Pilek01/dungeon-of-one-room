@@ -1,5 +1,30 @@
 # Online v3 - Production handoff
 
+## Ranked browser-storage recovery hotfix validated locally
+
+The player-reported generic `Ranked Unavailable` start failure was reproduced
+as browser `QuotaExceededError` code 22 before any `/api/v3/runs/start`
+request. The local R2 fix is ready for the authorized Pages-only production
+deployment.
+
+- critical Ranked writes retry once after removing only the retired
+  `dungeonRankedV2Active` value and noncritical Online v3 leaderboard cache;
+- `dungeonOneRoomRunSave`, `dungeonPracticeV2Active`, and unrelated browser
+  data are preserved;
+- insufficient safe space produces an explicit browser-storage message and
+  cannot enter reconnect recovery before a local session exists;
+- headed saturated-storage QA reached the native starting-relic screen,
+  preserved both Practice sentinels, canonically abandoned the test run, and
+  visually passed;
+- R2 threat matrix 30/30, `verify:fast` 45/45, `verify:phase` 721/721,
+  `verify:baseline` 3/3 plus headed smoke, and `verify:full` 745/745 including
+  21/21 local Wrangler/D1 E2E.
+
+Source `game.js` and the ruleset hash remain unchanged. Worker/D1 behavior and
+schema, gameplay, combat authority, mode names, Practice behavior, and
+R1-P0-001 remain unchanged. No push, staging, Worker deployment, paid service,
+or M5 work is authorized. All 172 protected Vault Guardian deletions remain
+untouched and unstaged.
 ## Direct Ranked start and stale-profile recovery hotfix complete
 
 The reported Ranked start/reconnect/forget loop is fixed on
