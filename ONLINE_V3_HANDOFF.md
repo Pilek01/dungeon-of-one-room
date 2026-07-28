@@ -5,8 +5,8 @@
 The reported second-room portal block is fixed and active on
 `https://dungeon-of-one-room.pages.dev`.
 
-- final Pages deployment: `2aa78b63-90d7-444e-a78f-3f960b3ea3be`;
-- deployed source: `1dc325c` on production branch `main`;
+- final Pages deployment: `b9053e9a-c5c0-4784-87ce-ecddb5a32d86`;
+- deployed source: `0e2bb6f` on production branch `main`;
 - root cause: the real Ranked portal rebuilt the next room without calling
   `DungeonOnlineV3.onRoomEntered`, leaving the client session in
   `ENTERING_NEXT_ROOM` after the first descent;
@@ -30,6 +30,9 @@ Verification on commit `1dc325c`:
 - production headed smoke: PASS from Depth 1 through two checkpoints and two
   real portals to Depth 3, with zero API, console, or page errors; finalized
   smoke run: `run_5c348fefba484959ae81d41a711808a0`.
+- post-redeploy fresh-profile menu audit: PASS; `Ranked (Online)` and
+  `Ranked Leaderboard` render as native menu rows, both legacy floating controls
+  are `display: none`, and console/page errors are zero.
 
 The source `game.js` remains byte-identical at SHA-256
 `556829c909cdc9eaefb4238279457eb9b3427adef9ce494f35743542770ee7de`.

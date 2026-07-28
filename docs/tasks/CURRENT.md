@@ -14,12 +14,14 @@ byte-identical.
 
 Completion evidence:
 
-- local commit `1dc325c` and production deployment
-  `2aa78b63-90d7-444e-a78f-3f960b3ea3be`;
+- code commit `1dc325c`, complete-state commit `0e2bb6f`, and final production
+  deployment `b9053e9a-c5c0-4784-87ce-ecddb5a32d86`;
 - headed regression and production smoke both crossed two consecutive real
   portals and reached Depth 3 in `ROOM_ACTIVE`;
 - production smoke accepted exactly two checkpoints and reported zero API,
   console, or page errors;
+- a fresh-profile post-deploy audit confirmed native `Ranked (Online)` and
+  `Ranked Leaderboard` menu rows with both legacy floating controls hidden;
 - threat matrix unchanged at 30/30 scenarios covered;
 - `verify:phase` 709/709, `verify:baseline` 3/3 plus headed smoke, and
   `verify:full` 733/733;

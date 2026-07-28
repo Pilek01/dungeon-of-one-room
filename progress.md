@@ -766,3 +766,22 @@ Updated next good targets
   authority remain unchanged. No staging, push, rollback, paid service, or M5.
 - All 172 Vault Guardian deletions remain unstaged and outside both commits and
   the deployment bundle.
+
+## 2026-07-28 - Online v3 complete-state production redeploy
+
+- Rebuilt Pages from clean complete-state commit `0e2bb6f` and confirmed the
+  deployable `game.js`, UI/runtime modules, and styles were byte-identical to
+  the files already served by production.
+- Redeployed the complete state to the existing production project as
+  `b9053e9a-c5c0-4784-87ce-ecddb5a32d86`.
+- A fresh-profile headed audit confirmed `Practice (Offline)`,
+  `Ranked (Online)`, and `Ranked Leaderboard` as native menu rows; the former
+  floating controls exist only as hidden compatibility nodes with
+  `display: none`.
+- Post-deploy browser diagnostics reported zero console and page errors.
+  `verify:fast` passed 39/39 and the focused production release suite passed
+  4/4; the deployed asset bytes are unchanged from the previously verified
+  733/733 full release bundle.
+- No gameplay, Worker/D1, ruleset, mode name, push, staging, rollback, paid
+  service, or M5 change was made. All 172 protected Vault Guardian deletions
+  remain unstaged and outside the deployment.
