@@ -3,8 +3,12 @@ import test from "node:test";
 import { createRequire } from "node:module";
 
 const require = createRequire(import.meta.url);
+globalThis.DungeonRelicData = {
+  RELICS: [{ id: "fang", name: "Fang Charm", desc: "+10 ATK", rarity: "normal" }]
+};
 const clientApi = require("../../../online-v3/ranked-v3-client.js");
 const leaderboardUi = require("../../../online-v3/ranked-v3-leaderboard-ui.js");
+const rankedUi = require("../../../online-v3/ranked-v3-ui.js");
 
 function fakeDocument() {
   return {
@@ -109,7 +113,7 @@ test("M4 leaderboard rendering is text-safe and never uses innerHTML", () => {
     outcome: "defeat"
   })];
   const rendered = leaderboardUi.renderList(documentRef, rows, () => {});
-  assert.equal(rendered.children[0].children[0].textContent, "#1 <img src=x onerror=alert(1)> — 5");
+  assert.equal(rendered.children[0].children[0].textContent, "#1 <img src=x onerror=alert(1)> - 5");
   assert.equal("innerHTML" in rendered.children[0], false);
 });
 
@@ -125,4 +129,42 @@ test("M4 leaderboard detail rejects non-canonical run IDs before transport", asy
   });
   await assert.rejects(() => client.detail("../private"), /LEADERBOARD_RUN_ID_INVALID/u);
   assert.equal(called, false);
+});
+test("M4 leaderboard renders player-facing relic names without protocol metadata", () => {
+  const documentRef = fakeDocument();
+  const detail = leaderboardUi.createDetailViewModel({
+    entry: {
+      playerName: "Player",
+      outcome: "victory",
+      createdAt: 1,
+      build: { relics: [{ relicId: "fang", stacks: 2 }] },
+      summary: { rulesetId: "v08-meta-1", scoreVersion: "v08-score-1" }
+    }
+  });
+  const rendered = leaderboardUi.renderDetail(documentRef, detail);
+  const text = (node) => [node.textContent, ...(node.children || []).map(text)].join(" ");
+  const visible = text(rendered);
+  assert.match(visible, /Fang Charm x2/u);
+  assert.doesNotMatch(visible, /v08-meta-1|v08-score-1|\bfang\b/u);
+});
+test("M4 Ranked relic choices resolve catalog name, description, rarity, and icon", () => {
+  globalThis.DungeonRelicData.RELICS[0].icon = "assets/hd/ui/relics/fang.png";
+  const details = rankedUi.relicDetails({ choiceId: "opaque-1", relicId: "fang" });
+  assert.deepEqual({
+    id: details.id,
+    name: details.name,
+    description: details.description,
+    rarity: details.rarity,
+    icon: details.icon
+  }, {
+    id: "fang",
+    name: "Fang Charm",
+    description: "+10 ATK",
+    rarity: "normal",
+    icon: "assets/hd/ui/relics/fang.png"
+  });
+});
+test("M4 Ranked choice copy hides protocol-style separators", () => {
+  assert.equal(rankedUi.playerText("Upgrade crit_chance to 1"), "Upgrade crit chance to 1");
+  assert.equal(rankedUi.playerText("buy_iron-1"), "Buy iron 1");
 });

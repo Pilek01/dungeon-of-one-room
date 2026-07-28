@@ -1,3 +1,58 @@
+# Production UI hotfix - Online v3
+
+## Active status
+
+`AUTHORIZED_FOR_DIRECT_PRODUCTION_UI_HOTFIX` on the existing Pages project
+`dungeon-of-one-room`. The current production deployment remains active while
+the owner tests each corrected release directly.
+
+This hotfix may change presentation and menu flow only. It must not change
+gameplay, protocol semantics, ruleset data, mode names, combat authority, D1
+schema, Worker behavior, or the accepted R1-P0-001 boundary.
+
+Authorized paths:
+
+- `game.js` must remain byte-identical; the production builder may inject the
+  fail-safe main-menu and boot-loading adapter into `output/pages-dist/game.js`;
+- `style.css`, limited to Online v3 presentation;
+- `style-hd-boot.css` must remain baseline-identical; the builder may append
+  production-only loading rules to its `output/pages-dist` copy;
+- `online-v3/ranked-v3-ui.js`;
+- `online-v3/ranked-v3-runtime.js`;
+- `online-v3/ranked-v3-leaderboard-ui.js`;
+- focused Online v3 UI, production, and headed test files;
+- `scripts/build-pages-v3.mjs`;
+- `ONLINE_V3_HANDOFF.md`;
+- `progress.md`;
+- this file.
+
+Required outcome:
+
+- the first boot input starts a visible loading bar, all further keyboard and
+  pointer input stays blocked until HD assets and the main menu are ready, and
+  the boot layer then yields to the native menu;
+- `Practice (Offline)`, `Ranked (Online)`, and Ranked leaderboard are native
+  main-menu rows with the existing keyboard/pointer behavior;
+- Online controls never remain visible over another game modal;
+- Ranked relic offers use player-facing names, icons, rarity, and descriptions;
+- ordinary room checkpoints resolve automatically with restrained save
+  feedback and no player-facing protocol button;
+- player-facing copy does not expose `canonical`, `opaque`, protocol, or
+  Online-v3 implementation terminology;
+- Practice remains zero-API and gameplay remains identical between modes.
+
+Verification and release:
+
+- use the supplied headed browser loop and visually inspect every changed view;
+- run `verify:fast` during edits;
+- before the production commit/deploy run `verify:phase`, `verify:baseline`,
+  `verify:full`, and `git diff --check`;
+- deploy directly to the existing production Pages project after all gates;
+- do not create staging, push unrelated histories, touch the 172 protected
+  Vault Guardian deletions, or begin another milestone.
+
+---
+
 # Production release ? Online v3
 
 ## Active status

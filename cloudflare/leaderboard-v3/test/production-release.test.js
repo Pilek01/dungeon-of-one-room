@@ -93,13 +93,15 @@ test("production Ranked start uses the edge limiter with a profile-scoped key", 
 });
 
 test("Pages release stays same-origin and disconnects all v2 bindings", async () => {
-  const [pages, proxy, builder, config, game, ui, workerConfig] = await Promise.all([
+  const [pages, proxy, builder, config, game, ui, runtime, style, workerConfig] = await Promise.all([
     rootFile("wrangler.jsonc"),
     rootFile("functions/api/v3/[[path]].js"),
     rootFile("scripts/build-pages-v3.mjs"),
     rootFile("config.js"),
     rootFile("game.js"),
     rootFile("online-v3/ranked-v3-ui.js"),
+    rootFile("online-v3/ranked-v3-runtime.js"),
+    rootFile("style.css"),
     rootFile("cloudflare/leaderboard-v3/wrangler.production.toml")
   ]);
   const pagesConfig = JSON.parse(pages);
@@ -116,9 +118,27 @@ test("Pages release stays same-origin and disconnects all v2 bindings", async ()
   assert.match(builder, /\["assets", "render", "online-v3"\]/u);
   assert.doesNotMatch(builder, /Vault-Guardian-Codex-Pack/u);
   assert.match(builder, /title: "Practice \(Offline\)"/u);
+  assert.match(builder, /DungeonOnlineV3Menu\?\.extendOptions/u);
+  assert.match(builder, /bootInputLocked/u);
+  assert.match(builder, /data-menu-index/u);
+  assert.match(builder, /Preparing the dungeon/u);
   assert.match(config, /DUNGEON_ONLINE_V3_API = ""/u);
   assert.match(game, /title: "Start New Game"/u);
+  assert.doesNotMatch(game, /DungeonOnlineV3Menu|bootInputLocked|data-menu-index/u);
   assert.match(ui, /"Ranked \(Online\)"/u);
+  assert.match(ui, /relicDetails/u);
+  assert.match(ui, /relic-draft-choice-starting/u);
+  assert.match(ui, /stopPropagation/u);
+  assert.match(ui, /playerText/u);
+  assert.match(runtime, /title: "Ranked \(Online\)"/u);
+  assert.match(runtime, /title: "Ranked Leaderboard"/u);
+  assert.match(runtime, /await resolveCheckpoint\(\);/u);
+  assert.doesNotMatch(runtime, /Resolve checkpoint|server-issued opaque choice/u);
+  assert.match(style, /\.ranked-v3-entry,[\s\S]*display: none !important;/u);
+  assert.match(style, /body\.ranked-v3-modal-open #screenOverlay/u);
+  assert.doesNotMatch(style, /#32204c|#9b70d8/u);
+  assert.match(builder, /\.boot-screen\.loading \.boot-loading/u);
+  assert.match(builder, /hdBootLoadingProgress/u);
   assert.match(workerConfig, /workers_dev = false/u);
   assert.match(workerConfig, /name = "RANKED_V3_ABUSE_CONTROL"/u);
   assert.match(workerConfig, /crons = \["\*\/15 \* \* \* \*"\]/u);

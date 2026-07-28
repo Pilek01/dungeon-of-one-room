@@ -14,6 +14,7 @@ const require = createRequire(import.meta.url);
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const WORKER_ROOT = path.join(ROOT, "cloudflare", "leaderboard-v3");
 const OUTPUT_ROOT = path.join(ROOT, "output");
+const GAME_ROOT = path.join(OUTPUT_ROOT, "pages-dist");
 const ARTIFACT_ROOT = path.join(OUTPUT_ROOT, "online-v3-m4-ranked-headed");
 const PERSIST_ROOT = path.join(ARTIFACT_ROOT, "state");
 const XDG_ROOT = path.join(ARTIFACT_ROOT, "xdg");
@@ -153,7 +154,7 @@ async function requestBody(request) {
 }
 
 async function startGameProxy(workerBaseUrl) {
-  const rootPrefix = `${ROOT}${path.sep}`;
+  const rootPrefix = `${GAME_ROOT}${path.sep}`;
   const server = http.createServer(async (request, response) => {
     try {
       const url = new URL(request.url || "/", "http://127.0.0.1");
@@ -178,8 +179,8 @@ async function startGameProxy(workerBaseUrl) {
       const relative = decodeURIComponent(url.pathname) === "/"
         ? "index.html"
         : decodeURIComponent(url.pathname).replace(/^\/+/u, "");
-      const candidate = path.resolve(ROOT, relative);
-      if (candidate !== ROOT && !candidate.startsWith(rootPrefix)) {
+      const candidate = path.resolve(GAME_ROOT, relative);
+      if (candidate !== GAME_ROOT && !candidate.startsWith(rootPrefix)) {
         response.writeHead(403).end("Forbidden");
         return;
       }
@@ -208,25 +209,38 @@ async function closeServer(server) {
 }
 
 async function dismissBoot(page) {
-  for (let attempt = 0; attempt < 6; attempt += 1) {
-    const phase = await page.evaluate(() => {
-      try {
-        return JSON.parse(window.render_game_to_text?.() || "{}").phase || "";
-      } catch {
-        return "";
-      }
-    });
-    if (phase === "menu") return;
+  const boot = page.locator("#bootScreen");
+  if (!await boot.evaluate((element) => element.classList.contains("hidden"))) {
     await page.keyboard.press("Enter");
-    await page.waitForTimeout(150);
+    await page.locator(".boot-loading").waitFor({ state: "visible" });
+    await page.screenshot({
+      path: path.join(ARTIFACT_ROOT, "ranked-boot-loading.png"),
+      fullPage: true
+    });
+    await page.keyboard.press("Enter");
   }
-  await page.waitForFunction(() => {
-    try {
-      return JSON.parse(window.render_game_to_text?.() || "{}").phase === "menu";
-    } catch {
-      return false;
-    }
-  });
+  await page.waitForFunction(() => document.querySelector("#bootScreen")?.classList.contains("hidden"));
+  await page.waitForTimeout(300);
+  const readiness = await page.evaluate(() => ({
+    phase: (() => {
+      try { return JSON.parse(window.render_game_to_text?.() || "{}").phase || ""; }
+      catch { return ""; }
+    })(),
+    bodyClass: document.body.className,
+    bootClass: document.querySelector("#bootScreen")?.className || "",
+    appClass: document.querySelector("#gameApp")?.className || "",
+    overlayClass: document.querySelector("#screenOverlay")?.className || "",
+    overlayText: document.querySelector("#screenOverlay")?.textContent?.slice(0, 300) || "",
+    mainMenuPresent: Boolean(document.querySelector(".overlay-card-main-menu")),
+    mainMenuVisible: Boolean(document.querySelector(".overlay-card-main-menu")?.getClientRects().length)
+  }));
+  assert.equal(readiness.mainMenuVisible, true, JSON.stringify(readiness));
+}
+
+async function openNativeMenuOption(page, title) {
+  const option = page.locator(".overlay-menu-row", { hasText: title }).first();
+  await option.waitFor({ state: "visible" });
+  await option.click();
 }
 
 async function sessionState(page, expected) {
@@ -274,6 +288,12 @@ async function main() {
     PERSIST_ROOT
   ]);
 
+  await execFileAsync(process.execPath, [path.join(ROOT, "scripts", "build-pages-v3.mjs")], {
+    cwd: ROOT,
+    env: environment(),
+    maxBuffer: 10 * 1024 * 1024,
+    windowsHide: true
+  });
   const secret = randomBytes(48).toString("base64url");
   const worker = await startWorker(await acquirePort(), secret);
   const proxy = await startGameProxy(worker.baseUrl);
@@ -325,10 +345,25 @@ async function main() {
     await page.goto(`${proxy.baseUrl}/`, { waitUntil: "domcontentloaded" });
     await page.waitForFunction(() => typeof window.render_game_to_text === "function");
     await dismissBoot(page);
-    await page.locator(".ranked-v3-entry").waitFor({ state: "visible" });
-    await page.locator(".ranked-v3-entry").click();
-    await page.locator(".ranked-v3-choice").first().waitFor({ state: "visible" });
-    await page.locator(".ranked-v3-choice").first().click();
+    const nativeMenuText = await page.locator(".overlay-menu").innerText();
+    assert.match(nativeMenuText, /Practice \(Offline\)[\s\S]*Ranked \(Online\)[\s\S]*Continue[\s\S]*Ranked Leaderboard/u);
+    assert.equal(await page.locator(".ranked-v3-entry:visible").count(), 0);
+    assert.equal(await page.locator(".ranked-v3-leaderboard-entry:visible").count(), 0);
+    await page.screenshot({
+      path: path.join(ARTIFACT_ROOT, "ranked-native-menu.png"),
+      fullPage: true
+    });
+    await openNativeMenuOption(page, "Ranked (Online)");
+
+    await page.locator(".ranked-v3-choice-relic").first().waitFor({ state: "visible" });
+    assert.equal(await page.locator(".ranked-v3-entry:visible").count(), 0);
+    assert.equal(await page.locator(".ranked-v3-leaderboard-entry:visible").count(), 0);
+    assert.equal(await page.getByText("fang", { exact: true }).count(), 0);
+    await page.screenshot({
+      path: path.join(ARTIFACT_ROOT, "ranked-starting-relic.png"),
+      fullPage: true
+    });
+    await page.locator(".ranked-v3-choice-relic").first().click();
     await sessionState(page, "ROOM_ACTIVE");
     const runId = await page.evaluate(() => window.DungeonOnlineV3.getSnapshot().runId);
     assert.match(runId, /^run_[a-f0-9]+$/u);
@@ -370,8 +405,8 @@ async function main() {
     await observerPage.goto(`${proxy.baseUrl}/`, { waitUntil: "domcontentloaded" });
     await observerPage.waitForFunction(() => typeof window.render_game_to_text === "function");
     await dismissBoot(observerPage);
-    await observerPage.locator(".ranked-v3-entry").waitFor({ state: "visible" });
-    await observerPage.locator(".ranked-v3-entry").click();
+    await openNativeMenuOption(observerPage, "Ranked (Online)");
+
     await sessionState(observerPage, "RECONNECT_REQUIRED");
     await observerPage.getByRole("button", { name: "Request control" }).waitFor({ state: "visible" });
     assert.equal(await ownerPage.evaluate(() => window.DungeonOnlineV3.getSessionState()), "ROOM_ACTIVE");
@@ -387,8 +422,8 @@ async function main() {
 
     await page.reload({ waitUntil: "domcontentloaded" });
     await dismissBoot(page);
-    await page.locator(".ranked-v3-entry").waitFor({ state: "visible" });
-    await page.locator(".ranked-v3-entry").click();
+    await openNativeMenuOption(page, "Ranked (Online)");
+
     await sessionState(page, "ROOM_ACTIVE");
     assert.equal(
       await page.evaluate(() => window.DungeonOnlineV3.getSnapshot().runId),
@@ -399,7 +434,7 @@ async function main() {
       turnCount: 5,
       rewardClaims: []
     }));
-    await page.getByRole("button", { name: "Resolve checkpoint" }).click();
+
     await sessionState(page, "ENTERING_NEXT_ROOM");
     await page.evaluate(() => window.DungeonOnlineV3GameBridge.enterNextDirective());
     await sessionState(page, "ROOM_ACTIVE");
@@ -455,8 +490,8 @@ async function main() {
     });
     await page.reload({ waitUntil: "domcontentloaded" });
     await dismissBoot(page);
-    await page.locator(".ranked-v3-leaderboard-entry").waitFor({ state: "visible" });
-    await page.locator(".ranked-v3-leaderboard-entry").click();
+    await openNativeMenuOption(page, "Ranked Leaderboard");
+
     await page.locator(".ranked-v3-leaderboard-row").waitFor({ state: "visible" });
     assert.match(
       await page.locator(".ranked-v3-leaderboard-row").first().textContent(),
@@ -466,7 +501,7 @@ async function main() {
     await page.locator(".ranked-v3-leaderboard-detail").waitFor({ state: "visible" });
     assert.match(
       await page.locator(".ranked-v3-leaderboard-detail").textContent(),
-      /Ruleset v08-meta-1/u
+      /Relics/u
     );
     await page.screenshot({
       path: path.join(ARTIFACT_ROOT, "ranked-leaderboard-detail.png"),
@@ -475,10 +510,17 @@ async function main() {
 
     await page.reload({ waitUntil: "domcontentloaded" });
     await dismissBoot(page);
-    await page.locator(".ranked-v3-entry").waitFor({ state: "visible" });
-    await page.locator(".ranked-v3-entry").click();
-    await page.locator(".ranked-v3-choice").first().waitFor({ state: "visible" });
-    await page.locator(".ranked-v3-choice").first().click();
+    await openNativeMenuOption(page, "Ranked (Online)");
+
+    await page.locator(".ranked-v3-choice-relic").first().waitFor({ state: "visible" });
+    assert.equal(await page.locator(".ranked-v3-entry:visible").count(), 0);
+    assert.equal(await page.locator(".ranked-v3-leaderboard-entry:visible").count(), 0);
+    assert.equal(await page.getByText("fang", { exact: true }).count(), 0);
+    await page.screenshot({
+      path: path.join(ARTIFACT_ROOT, "ranked-starting-relic.png"),
+      fullPage: true
+    });
+    await page.locator(".ranked-v3-choice-relic").first().click();
     await sessionState(page, "ROOM_ACTIVE");
     await page.evaluate(() => window.DungeonOnlineV3.onExtraction("emergency"));
     await sessionState(page, "TERMINAL_PENDING");
@@ -489,7 +531,7 @@ async function main() {
     await page.getByRole("button", { name: "Finalize" }).click();
     await sessionState(page, "FINALIZED");
     await page.getByRole("button", { name: "Open Camp" }).click();
-    await page.getByText("Canonical Camp Gold:").waitFor({ state: "visible" });
+    await page.getByText("Camp Gold:").waitFor({ state: "visible" });
     await page.screenshot({
       path: path.join(ARTIFACT_ROOT, "ranked-camp.png"),
       fullPage: true
@@ -498,8 +540,8 @@ async function main() {
 
     await page.reload({ waitUntil: "domcontentloaded" });
     await dismissBoot(page);
-    await page.locator(".ranked-v3-entry").waitFor({ state: "visible" });
-    await page.locator(".ranked-v3-entry").click();
+    await openNativeMenuOption(page, "Ranked (Online)");
+
     await page.waitForTimeout(1_000);
     const nextRunAudit = await page.evaluate(() => ({
       session: window.DungeonOnlineV3.getSessionState(),
