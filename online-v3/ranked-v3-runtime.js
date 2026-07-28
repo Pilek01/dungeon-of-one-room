@@ -161,7 +161,11 @@
     }
     client?.clear();
     client = null;
-    session.transition(root.DungeonRankedV3Session.STATES.abandoned);
+    const abandonedLocalSession = root.DungeonRankedV3Session.STATES.abandoned;
+    if (abandonedLocalSession !== "ABANDONED_LOCAL_SESSION") {
+      throw new TypeError("RANKED_ABANDONED_STATE_MISMATCH");
+    }
+    session.transition(abandonedLocalSession);
     root.DungeonOnlineV3GameBridge?.returnToPractice?.();
     ui.hide();
   }
