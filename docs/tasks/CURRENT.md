@@ -1,3 +1,32 @@
+# Native Ranked extraction and Camp hotfix - Online v3
+
+## Active status
+
+`COMPLETED_AND_PRODUCTION_VERIFIED` on the existing Pages project
+`dungeon-of-one-room`.
+
+The normal Ranked extraction path now performs Online v3 request/finalization
+in the background and enters the original v0.8 Camp presentation. The former
+technical extraction/finalization screens and separate Ranked Camp list are no
+longer player-facing. Native Camp controls commit server-issued profile
+transactions and `Start Next Run` starts the next canonical Ranked run.
+
+Completion evidence:
+
+- code commit `6e90aa0` and production deployment
+  `2d7c68be-1430-4f7c-ba81-5416f00193a9`;
+- threat matrix 30/30, `verify:fast` 39/39, `verify:phase` 709/709,
+  `verify:baseline` 3/3 plus headed smoke, and `verify:full` 733/733;
+- focused headed lifecycle passed native Camp, network loss, reload, multi-tab,
+  and native `Start Next Run`;
+- public production smoke reached native `phase=camp`, with no Online overlay,
+  no `Finalize`/`Open Camp`, five successful API responses, and zero browser
+  errors;
+- ruleset hash, source `game.js`, Worker/D1, gameplay tables, combat authority,
+  mode names, and all 172 protected deletions remain unchanged;
+- no push, staging, rollback, paid service, or M5 work was performed.
+
+---
 # Production portal synchronization hotfix - Online v3
 
 ## Active status

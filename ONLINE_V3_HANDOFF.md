@@ -1,5 +1,56 @@
 # Online v3 - Production handoff
 
+## Native Ranked extraction and Camp hotfix complete
+
+The player-facing extraction lifecycle now uses the original v0.8 presentation
+on `https://dungeon-of-one-room.pages.dev`.
+
+- production Pages deployment: `2d7c68be-1430-4f7c-ba81-5416f00193a9`;
+- deployed source: `6e90aa0` on production branch `main`;
+- `Ranked Extraction`, manual `Finalize`, `Ranked Run Finalized`, `Open Camp`,
+  and the separate scrollable `Ranked Camp` choice list were removed from the
+  normal player flow;
+- extraction now requests and finalizes the canonical result in the background,
+  then projects the authenticated profile into the original v0.8 Camp;
+- the native Camp Guide, tabs, upgrade/elixir/relic presentation, confirmation
+  behavior, and `Start Next Run` control are reused unchanged;
+- server-issued Camp upgrade, elixir, and relic-sale choices are committed
+  through the native controls and the canonical profile is reprojected after
+  acknowledgement;
+- source `game.js` remains untouched; the integration exists only in the
+  production builder output and Online v3 runtime.
+
+Verification on commit `6e90aa0`:
+
+- R2 threat matrix: 30/30 scenarios covered; R1-P0-001 unchanged;
+- `verify:fast`: 39/39 PASS;
+- `verify:phase`: 709/709 PASS
+  (`output/verification/phase-20260728T090021133Z.log`);
+- `verify:baseline`: 3/3 PASS plus headed baseline smoke
+  (`output/verification/baseline-20260728T090217178Z.log`);
+- `verify:full`: 733/733 PASS, including 21/21 local Wrangler/D1 E2E and headed
+  smoke (`output/verification/full-20260728T090426026Z.log`);
+- focused headed lifecycle: PASS for lifecycle, network loss, reload, multi-tab,
+  native extraction-to-Camp, and native `Start Next Run`;
+- post-deploy production smoke: PASS in native Camp with no visible Online
+  overlay, no `Finalize`/`Open Camp`, five successful API responses, and zero
+  console/page errors; finalized run
+  `run_9a9e2f0efd59471cae9b8053ca123479`.
+
+The source `game.js` remains byte-identical at SHA-256
+`556829c909cdc9eaefb4238279457eb9b3427adef9ce494f35743542770ee7de`.
+The ruleset remains `v08-meta-1` at
+`sha256:0bf00607056dbf3c30ffe57bbcfc77cea95b21c9ccc23aa985ec555856d1cbd6`.
+No Worker, D1 schema, ruleset, combat authority, gameplay table, mode name,
+push, staging, rollback, paid service, or M5 work changed. The 172 protected
+Vault Guardian deletions remain unstaged and outside both commits and the
+production bundle.
+
+Hotfix commit:
+
+- `6e90aa0` - restore the original extraction and Camp presentation while
+  retaining canonical Online v3 accounting in the background.
+
 ## Production portal synchronization hotfix complete
 
 The reported second-room portal block is fixed and active on

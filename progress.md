@@ -785,3 +785,16 @@ Updated next good targets
 - No gameplay, Worker/D1, ruleset, mode name, push, staging, rollback, paid
   service, or M5 change was made. All 172 protected Vault Guardian deletions
   remain unstaged and outside the deployment.
+## 2026-07-28 - Native Ranked extraction and Camp production hotfix
+
+- Removed the player-facing Ranked Extraction, manual Finalize, finalized, Open
+  Camp, and separate Ranked Camp list from the normal lifecycle.
+- Online v3 now performs canonical extraction/finalization in the background and
+  reuses the original v0.8 Camp UI plus native Start Next Run.
+- Commit `6e90aa0` is active as production Pages deployment
+  `2d7c68be-1430-4f7c-ba81-5416f00193a9`.
+- Threat matrix 30/30, fast 39/39, phase 709/709, baseline 3/3 plus headed
+  smoke, full 733/733, focused headed lifecycle, and public production smoke all
+  passed.
+- Source `game.js`, ruleset, Worker/D1, gameplay tables, mode names, combat
+  authority, and all 172 protected Vault Guardian deletions remain unchanged.
