@@ -1,5 +1,50 @@
 # Online v3 - Production handoff
 
+## Practice/Ranked menu and recovery hotfix complete
+
+The reported Practice pause, save selection, and stuck Ranked recovery flows
+are fixed on `https://dungeon-of-one-room.pages.dev`.
+
+- production Pages deployment: `6d91dd40-0a75-4f8c-86a3-2c3ff22e468c`;
+- deployed source: `86cda91` on production branch `main`;
+- Practice pause now shows `Main Menu`; the already-created Practice snapshot
+  remains available through the native `Start New Game / Load Continue /
+  Cancel` choice, including correct mouse selection;
+- the ambiguous standalone Continue row is gone from the main menu;
+- Ranked always opens `Start New Ranked / Continue Ranked / Cancel`; its local
+  recovery remains separate from the Practice save;
+- Start New with an existing Ranked save requires confirmation and canonically
+  abandons the saved run before starting another;
+- finalized/absent Ranked recoveries no longer return to generic reconnect,
+  returning to the main menu releases the writer lease without abandoning the
+  run, and an invalid local recovery can be explicitly forgotten after a
+  warning so the browser is not permanently trapped.
+
+Verification on commit `86cda91`:
+
+- R2 threat matrix: 30/30 scenarios covered; R1-P0-001 unchanged;
+- `verify:fast`: 40/40 PASS;
+- `verify:phase`: 712/712 PASS
+  (`output/verification/phase-20260728T134905229Z.log`);
+- `verify:baseline`: 3/3 PASS plus headed baseline smoke
+  (`output/verification/baseline-20260728T135044464Z.log`);
+- `verify:full`: 736/736 PASS, including 21/21 local Wrangler/D1 E2E
+  (`output/verification/full-20260728T135336347Z.log`);
+- final supplied headed lifecycle PASS for Practice save navigation, Ranked
+  lifecycle, network loss, reload, multi-tab, abandonment, restart, and Camp;
+- public production smoke passed Practice pause/Load Continue and the Ranked
+  selection screen with zero `/api/v3` requests, zero console errors, and zero
+  page errors. Artifacts are under
+  `output/production-smoke/menu-recovery-6d91dd40/`.
+
+Source `game.js` remains byte-identical at SHA-256
+`556829c909cdc9eaefb4238279457eb9b3427adef9ce494f35743542770ee7de`.
+The ruleset remains `v08-meta-1` at
+`sha256:0bf00607056dbf3c30ffe57bbcfc77cea95b21c9ccc23aa985ec555856d1cbd6`.
+No Worker, D1 schema, gameplay, mode name, combat-authority boundary, push,
+staging, rollback, paid service, or M5 work changed. The 172 protected Vault
+Guardian deletions remain untouched and unstaged.
+
 ## Ended Ranked recovery restart hotfix complete
 
 The reported post-Abandon reconnect loop is fixed on

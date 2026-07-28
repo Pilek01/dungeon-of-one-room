@@ -824,3 +824,19 @@ Updated next good targets
 - Public production headed smoke PASS; final test runs abandoned with zero leaderboard rows and zero unexpected browser errors.
 - One revision-0 synthetic preflight run remains nonpublishable and is left to normal retention because its ephemeral recovery credential was lost when the helper exited.
 - Ruleset and source `game.js` hashes unchanged; Worker/D1 schema/gameplay/mode names unchanged; 172 protected deletions untouched; no push, staging, rollback, paid service, or M5 work.
+## 2026-07-28 - Practice/Ranked menu and recovery production hotfix
+
+- Added `Main Menu` to the Practice pause menu while preserving the native
+  Practice Continue snapshot and fixed mouse selection in the native
+  `Start New Game / Load Continue / Cancel` prompt.
+- Removed the ambiguous standalone Continue row; Practice and Ranked now expose
+  separate save choices, and Ranked always opens an explicit
+  `Start New Ranked / Continue Ranked / Cancel` screen.
+- Closed terminal and invalid-recovery escape paths, released writer ownership
+  on main-menu exit, and kept canonical Abandon ahead of replacing a Ranked run.
+- Code/test commit `86cda91`; production Pages deployment
+  `6d91dd40-0a75-4f8c-86a3-2c3ff22e468c`.
+- Threat matrix 30/30, phase 712/712, baseline 3/3 plus headed, full 736/736,
+  final Ranked headed lifecycle PASS, and public zero-API menu smoke PASS.
+- Source `game.js`, ruleset, Worker/D1, gameplay, mode names, 172 protected
+  Vault Guardian deletions, and the R1-P0-001 boundary remain unchanged.

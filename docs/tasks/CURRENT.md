@@ -1,3 +1,64 @@
+# Production Practice/Ranked menu and recovery hotfix - Online v3
+
+## Active status
+
+`COMPLETED_AND_PRODUCTION_VERIFIED` on the existing `dungeon-of-one-room`
+Pages project, deployment `6d91dd40-0a75-4f8c-86a3-2c3ff22e468c` from
+source commit `86cda91`.
+
+This hotfix is limited to the production menu adapter and Ranked browser
+recovery. It must not change gameplay, Worker/D1 behavior, ruleset data, combat
+authority, mode names, source `game.js`, or the accepted R1-P0-001 boundary.
+
+Authorized paths:
+
+- `scripts/build-pages-v3.mjs`;
+- `online-v3/ranked-v3-runtime.js`;
+- focused Online v3 production, recovery, and headed tests;
+- `ONLINE_V3_HANDOFF.md`;
+- `progress.md`;
+- this file.
+
+Required outcome:
+
+- a paused Practice run has `Main Menu` and preserves the Practice save;
+- the main menu has no ambiguous standalone Continue row;
+- Ranked always opens an explicit Start New / Continue / Cancel choice, with
+  Practice and Ranked storage remaining separate;
+- terminal Ranked recovery and acknowledged abandonment cannot loop back to
+  generic reconnect controls;
+- leaving recovery releases the browser writer lease without deleting the
+  canonical Ranked recovery.
+
+Verification and release:
+
+- add focused regressions before implementation and use the supplied headed
+  browser loop;
+- rerun the R2 threat matrix, `verify:phase`, `verify:baseline`,
+  `verify:full`, and `git diff --check`;
+- create exact internal local commits and deploy directly to the existing
+  production Pages project;
+- do not push, stage or touch the 172 protected Vault Guardian deletions,
+  change the Worker/D1 schema, start M5, or create staging.
+
+Completion evidence:
+
+- Practice pause, `Main Menu`, mouse-driven `Load Continue`, and separate
+  Practice/Ranked saves pass the focused and headed regressions;
+- Ranked now always offers `Start New Ranked`, `Continue Ranked`, and `Cancel`;
+  replacing a saved run first abandons it canonically;
+- finalized/absent recoveries leave the reconnect loop, the writer lease is
+  released on main-menu exit, and an invalid local recovery has an explicit
+  confirmed forget-and-restart fallback;
+- R2 threat matrix 30/30, `verify:fast` 40/40, `verify:phase` 712/712,
+  `verify:baseline` 3/3 plus headed smoke, and `verify:full` 736/736;
+- final supplied headed lifecycle and public production smoke PASS; the public
+  smoke made zero `/api/v3` requests and reported zero console/page errors;
+- source `game.js`, ruleset hash, Worker/D1, gameplay, combat authority, mode
+  names, and all 172 protected deletions remain unchanged;
+- no push, staging, rollback, paid service, or M5 work was performed.
+
+---
 # Production ended Ranked recovery restart hotfix - Online v3
 
 ## Active status
