@@ -1154,6 +1154,7 @@ ${fatalTestHookAnchor}`;
     });
     await page.getByRole("button", { name: "Main Menu" }).click();
     await page.waitForFunction(() => JSON.parse(window.render_game_to_text()).phase === "menu");
+    await page.locator(".camp-revamp").waitFor({ state: "hidden" });
     assert.equal(await page.locator(".camp-revamp:visible").count(), 0);
     await page.unroute("**/api/v3/runs/start");
     await page.screenshot({

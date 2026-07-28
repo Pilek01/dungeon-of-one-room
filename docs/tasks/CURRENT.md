@@ -18,6 +18,8 @@ Authorized paths:
 - `scripts/build-pages-v3.mjs`;
 - focused `cloudflare/leaderboard-v3/test/m4-*.test.js` coverage;
 - focused headed Ranked Merchant QA;
+- existing headed Ranked lifecycle synchronization only if `verify:full`
+  exposes a render-frame race without a product failure;
 - `ONLINE_V3_HANDOFF.md`;
 - `progress.md`;
 - this file.
