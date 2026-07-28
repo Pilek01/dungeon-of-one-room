@@ -1,3 +1,31 @@
+# Production ended Ranked recovery restart hotfix - Online v3
+
+## Active status
+
+`COMPLETED_AND_PRODUCTION_VERIFIED` on the existing Pages project
+`dungeon-of-one-room`, deployment
+`071e6723-8222-4e42-9d7b-bca60e73b763` from source commit `3d68783`.
+
+The browser now distinguishes a canonically ended recovery from a retryable
+reconnect. It offers `Start New Ranked Run`, clears only the ended recovery,
+and creates a different canonical run. Exact retry of a lost start response
+also persists recovery and writer ownership before entering Ranked.
+
+Completion evidence:
+
+- focused unit regressions and full headed lost-acknowledgement lifecycle PASS;
+- threat matrix 30/30, `verify:fast` 40/40, `verify:phase` 710/710,
+  `verify:baseline` 3/3 plus headed smoke, and `verify:full` 734/734;
+- public production headed smoke passed ended recovery and new-run start with
+  zero unexpected browser errors; both final smoke runs were abandoned and
+  produced zero leaderboard rows;
+- one nonpublishable revision-0 preflight run is left to normal retention after
+  its one-shot helper lost the generated recovery credential;
+- source `game.js`, ruleset hash, Worker, D1 schema, gameplay, mode names, and
+  all 172 protected deletions remain unchanged;
+- no push, staging, rollback, paid service, or M5 work was performed.
+
+---
 # Production recovery acknowledgement hotfix - Online v3
 
 ## Active status

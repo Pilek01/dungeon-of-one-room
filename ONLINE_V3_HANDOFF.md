@@ -1,5 +1,49 @@
 # Online v3 - Production handoff
 
+## Ended Ranked recovery restart hotfix complete
+
+The reported post-Abandon reconnect loop is fixed on
+`https://dungeon-of-one-room.pages.dev`.
+
+- production Pages deployment: `071e6723-8222-4e42-9d7b-bca60e73b763`;
+- deployed source: `3d68783` on production branch `main`;
+- an authenticated resume that proves the stored run is already abandoned,
+  expired, or absent now shows `Ranked Run Ended` instead of the generic
+  reconnect controls;
+- `Start New Ranked Run` clears only that ended local recovery and starts a new
+  canonical run; ordinary network/auth errors still preserve recovery;
+- exact retry of a lost start response now persists the issued recovery record
+  and reacquires the single-writer lease before entering Ranked.
+
+Verification on commit `3d68783`:
+
+- R2 threat matrix: 30/30 scenarios covered; R1-P0-001 unchanged;
+- `verify:fast`: 40/40 PASS;
+- `verify:phase`: 710/710 PASS
+  (`output/verification/phase-20260728T102333628Z.log`);
+- `verify:baseline`: 3/3 PASS plus headed baseline smoke
+  (`output/verification/baseline-20260728T102516060Z.log`);
+- `verify:full`: 734/734 PASS, including 21/21 local Wrangler/D1 E2E and
+  headed smoke (`output/verification/full-20260728T102706847Z.log`);
+- focused headed lifecycle reproduced three lost Abandon acknowledgements,
+  terminal resume 410, the ended-run screen, and a different new run ID;
+- public production headed smoke repeated ended recovery and new-run start with
+  zero unexpected console/page errors. Its two final smoke runs are abandoned
+  at revisions 1 and 2 and have zero leaderboard rows.
+
+One earlier preflight-only synthetic run remains at
+`awaiting_starting_relic`, revision 0, because its generated recovery credential
+was intentionally not recoverable after the helper exited. It cannot publish a
+result and is left to the normal retention policy instead of direct D1 deletion.
+
+The source `game.js` remains byte-identical at SHA-256
+`556829c909cdc9eaefb4238279457eb9b3427adef9ce494f35743542770ee7de`.
+The ruleset remains `v08-meta-1` at
+`sha256:0bf00607056dbf3c30ffe57bbcfc77cea95b21c9ccc23aa985ec555856d1cbd6`.
+No gameplay, Worker, D1 schema, combat-authority model, mode name, push,
+staging, paid service, rollback, or M5 work changed. The 172 protected Vault
+Guardian deletions remain untouched and unstaged.
+
 ## Ranked recovery acknowledgement hotfix complete
 
 The stuck `Ranked reconnect required` flow is fixed in the production Worker.

@@ -815,3 +815,12 @@ Updated next good targets
   `abandoned` persistence, and zero leaderboard rows.
 - Pages, `game.js`, ruleset, D1 schema, gameplay, mode names, combat authority,
   and all 172 protected deletions remain unchanged.
+2026-07-28 - Production ended Ranked recovery restart hotfix
+- Fixed the post-Abandon reconnect loop: terminal recovery responses now show `Ranked Run Ended` with `Start New Ranked Run` instead of Resync/Abandon controls.
+- Fixed exact start retry so recovery and single-writer ownership are established before Ranked begins.
+- Added unit and headed regression coverage for lost Abandon acknowledgements, terminal resume 410, and a distinct restarted run.
+- Code/test commit: `3d68783`; production Pages deployment: `071e6723-8222-4e42-9d7b-bca60e73b763`.
+- Verification: threat matrix 30/30; fast 40/40; phase 710/710; baseline 3/3 plus headed smoke; full 734/734; focused headed lifecycle PASS.
+- Public production headed smoke PASS; final test runs abandoned with zero leaderboard rows and zero unexpected browser errors.
+- One revision-0 synthetic preflight run remains nonpublishable and is left to normal retention because its ephemeral recovery credential was lost when the helper exited.
+- Ruleset and source `game.js` hashes unchanged; Worker/D1 schema/gameplay/mode names unchanged; 172 protected deletions untouched; no push, staging, rollback, paid service, or M5 work.
