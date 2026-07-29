@@ -1,3 +1,99 @@
+# Production Ranked gameplay-continuity and gold-parity hotfix - Online v3
+
+## Active status
+
+`COMPLETED_AND_PRODUCTION_VERIFIED` on the existing `dungeon-of-one-room`
+Pages project, deployment `d0e49664-29c7-47f0-80b1-a161d2630a09` from source
+commit `ab46761`.
+
+Internal commits `b10c523` and `ab46761` restore bounded v0.8 gold parity,
+legacy Camp profile continuity, one-per-campaign starting relic behavior,
+native final defeat after the fifth life, and full Practice cleanup after
+Ranked. Production Worker version
+`c7b6cdc1-c0df-4eee-bdf7-d2a0f8682900` and the Pages deployment above are
+active without a D1 schema migration.
+
+Completion evidence:
+
+- focused regressions: 21/21 PASS, including a committed native Camp upgrade
+  and empty-relic next descent without a second starting offer;
+- R2 threat matrix: 30/30 scenarios covered;
+- `verify:fast`: 48/48 PASS;
+- `verify:phase`: 728/728 PASS;
+- `verify:baseline`: 3/3 PASS plus headed game smoke;
+- `verify:full`: 752/752 PASS, including 21/21 local Wrangler/D1 E2E and
+  headed game smoke;
+- dedicated headed lifecycle: native room/enemy/chest gold, Warden reward,
+  fifth-life final defeat, terminal Main Menu, post-Ranked Practice with zero
+  Online API requests, native Camp upgrade, and next-run continuation, with
+  zero unexpected console/page/network errors;
+- canonical production assets match the verified local Pages bundle
+  byte-for-byte;
+- production availability reports ruleset
+  `sha256:bfc32eb2fa252d6543e1c042cb6e45e828a8bf6237b0c30d0b9e2e0a13b99950`;
+- production smoke created and abandoned run
+  `run_6e738c88e4f14b2dac9c3a8cc89d211c` at revision 1; D1 confirms zero
+  leaderboard rows written;
+- source `game.js` remains byte-identical at
+  `556829c909cdc9eaefb4238279457eb9b3427adef9ce494f35743542770ee7de`;
+- all 172 protected Vault Guardian deletions remain untouched and unstaged.
+
+Authorized paths:
+
+- `online-v3/ranked-v3-runtime.js`;
+- `online-v3/ranked-v3-recorder.js`;
+- `online-v3/ranked-v3-protocol.js`;
+- `scripts/build-pages-v3.mjs`;
+- `cloudflare/leaderboard-v3/src/index.js`;
+- `cloudflare/leaderboard-v3/src/rulesets/v08-meta-1/camp-policy.js`;
+- `cloudflare/leaderboard-v3/src/rulesets/v08-meta-1/profile-policy.js`;
+- `cloudflare/leaderboard-v3/src/rulesets/v08-meta-1/reward-policy.js`;
+- `cloudflare/leaderboard-v3/src/rulesets/v08-meta-1/index.js`;
+- `cloudflare/leaderboard-v3/src/rulesets/v08-meta-1/data/ruleset-manifest.json`;
+- `cloudflare/leaderboard-v3/src/rulesets/releases.js`;
+- `cloudflare/leaderboard-v3/src/production-ruleset-entry.js`;
+- focused `cloudflare/leaderboard-v3/test/{m4-*,r2-camp-profile}.test.js`,
+  reward-policy, manifest, production-release, and recorder assurance coverage;
+- focused headed Ranked gameplay-continuity/gold-parity QA and its hash-bound
+  Merchant helper;
+- `ONLINE_V3_HANDOFF.md`;
+- `progress.md`;
+- this file.
+
+Required outcome:
+
+- the existing v0.8 room-clear gold formula and `Room clear bonus` log are
+  presented in Ranked without double-crediting;
+- actual local enemy, elite, hazard, and supported bounded chest outcomes are
+  aggregated into the already-existing reward envelope claims;
+- the canonical checkpoint retains the same default-room gold total visible
+  immediately before settlement;
+- retry reuses the same immutable claim summary and a new room begins with an
+  empty recorder;
+- the Warden claim already present in canonical v0.8 reward data is accepted
+  in boss/final rooms, while the prior production hash remains resolvable for
+  browser saves created before the hotfix;
+- a native Camp purchase commits and refreshes the native Camp without a
+  technical error overlay;
+- starting a later descent with an empty relic inventory does not reissue the
+  one-per-campaign starting relic;
+- the fifth canonical death opens the native final Game Over summary and
+  cannot continue to another depth;
+- leaving Ranked fully clears the presentation-mode flag, and Practice starts
+  and continues through the untouched local v0.8 path with zero Online API
+  requests;
+- source `game.js`, D1 schema, combat authority, mode names, and R1-P0-001
+  remain unchanged.
+
+Run focused RED/GREEN regressions, headed player-visible QA with screenshot,
+`render_game_to_text`, and console/page-error checks, the R2 threat matrix,
+`verify:fast`, `verify:phase`, `verify:baseline`, `verify:full`, and
+`git diff --check`. Create exact internal commits, deploy the ruleset
+compatibility fix to the existing production Worker, then deploy Pages to the
+existing production project. Do not push, stage or touch the 172 protected
+Vault Guardian deletions, use a paid service, or start M5.
+
+---
 # Production native Ranked Merchant interaction hotfix - Online v3
 
 ## Active status

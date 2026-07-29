@@ -1,5 +1,48 @@
 # Online v3 - Production handoff
 
+## Ranked gameplay continuity and gold parity hotfix complete
+
+The player-reported Ranked gold deficit, broken Camp upgrades, repeated
+starting relic after losing the final carried relic, nonterminal fifth death,
+and Practice/Ranked hybrid state are fixed on
+`https://dungeon-of-one-room.pages.dev`.
+
+- internal commits: `b10c523` (canonical gold/Camp profile continuity) and
+  `ab46761` (native gameplay continuity and headed coverage);
+- production Worker version:
+  `c7b6cdc1-c0df-4eee-bdf7-d2a0f8682900`;
+- production Pages deployment:
+  `d0e49664-29c7-47f0-80b1-a161d2630a09` from `ab46761`;
+- ruleset hash:
+  `sha256:0bf00607056dbf3c30ffe57bbcfc77cea95b21c9ccc23aa985ec555856d1cbd6`
+  -> `sha256:bfc32eb2fa252d6543e1c042cb6e45e828a8bf6237b0c30d0b9e2e0a13b99950`;
+- the previous production hash remains resolvable for existing browser saves;
+- no D1 schema migration was performed.
+
+Verification:
+
+- focused regressions: 21/21 PASS;
+- R2 threat matrix: 30/30 scenarios covered; R1-P0-001 remains accepted;
+- `verify:fast`: 48/48 PASS;
+- `verify:phase`: 728/728 PASS
+  (`output/verification/phase-20260729T212936345Z.log`);
+- `verify:baseline`: 3/3 PASS plus headed game smoke
+  (`output/verification/baseline-20260729T213103293Z.log`);
+- `verify:full`: 752/752 PASS, including 21/21 local Wrangler/D1 E2E and
+  headed game smoke (`output/verification/full-20260729T213345075Z.log`);
+- dedicated headed Ranked lifecycle covers bounded v0.8 gold, Warden reward,
+  fifth-life final defeat, terminal Main Menu, post-Ranked zero-API Practice,
+  native Camp purchase, and next-run continuation with zero unexpected errors;
+- public `game.js`, Ranked runtime, and protocol hashes match the verified
+  local Pages bundle byte-for-byte;
+- production start/abandon smoke ended at revision 1 with zero leaderboard
+  rows written.
+
+Source `game.js` remains byte-identical at SHA-256
+`556829c909cdc9eaefb4238279457eb9b3427adef9ce494f35743542770ee7de`.
+No push, staging project, paid service, rollback, combat-authority change,
+mode rename, M5 work, or protected Vault Guardian change was performed.
+
 ## Native Ranked Merchant parity hotfix complete
 
 The reported automatic `MERCHANT CHOICES` overlay, reconnect interruption,

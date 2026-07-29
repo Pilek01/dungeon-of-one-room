@@ -1,5 +1,25 @@
 Original prompt: Create a hard-forked Dungeon 1.0 in a new folder, keep the original game untouched, and push the fork toward a major 1.0 redesign while staying compatible with the current save and leaderboard protocol.
 
+2026-07-29 - Online v3 R2 Ranked gameplay continuity and gold parity complete
+- Internal commits: `b10c523` and `ab46761`.
+- Fixed v0.8 room/enemy/elite/hazard/chest gold parity, legacy Camp upgrades,
+  one-per-campaign starting relic, fifth-life final defeat, and post-Ranked
+  Practice isolation.
+- Focused regressions 21/21, threat matrix 30/30, verify:fast 48/48,
+  verify:phase 728/728, verify:baseline 3/3 plus headed, and verify:full
+  752/752 all pass.
+- Production Worker `c7b6cdc1-c0df-4eee-bdf7-d2a0f8682900` and Pages
+  deployment `d0e49664-29c7-47f0-80b1-a161d2630a09` are active on the
+  existing project.
+- Ruleset hash changed from
+  `sha256:0bf00607056dbf3c30ffe57bbcfc77cea95b21c9ccc23aa985ec555856d1cbd6`
+  to `sha256:bfc32eb2fa252d6543e1c042cb6e45e828a8bf6237b0c30d0b9e2e0a13b99950`;
+  the previous production hash remains resolvable.
+- Public assets match the verified bundle byte-for-byte. Production
+  start/abandon smoke completed at revision 1 with zero leaderboard writes.
+- Source `game.js` and all 172 protected Vault Guardian deletions remain
+  untouched; no push, M5, D1 schema migration, or combat-authority change.
+
 2026-03-05
 - Fork created in `dungeon-1.0/` with copied client files and assets.
 - Rebranded fork to `v1.0.0-alpha` and added `window.DUNGEON_FORK_ID = "dungeon-1.0"`.
