@@ -56,6 +56,10 @@ const bootLoading = `${bootPrompt}
       </div>`;
 if (!index.includes(bootPrompt)) throw new Error("Missing production boot prompt.");
 index = index.replace(bootPrompt, bootLoading);
+const gameScript = '  <script src="game.js"></script>';
+const rewardRecorderScript = '  <script src="online-v3/ranked-v3-recorder.js"></script>';
+if (!index.includes(gameScript)) throw new Error("Missing production game script.");
+index = index.replace(gameScript, `${rewardRecorderScript}\n${gameScript}`);
 await writeFile(indexPath, index, "utf8");
 
 const bootStylePath = path.join(output, "style-hd-boot.css");
@@ -163,7 +167,7 @@ for (const [sourceText, replacement] of menuReplacements) {
 const menuReturn = "    ];\n  }\n\n";
 const menuExtension = `    ];
     if (isRunPauseMenuActive()) {
-      const rankedPause = Boolean(window.DungeonOnlineV3?.getSnapshot?.());
+      const rankedPause = Boolean(window.DungeonOnlineV3GameBridge?.isRanked?.());
       return baseOptions.map((option) => option.id === "practice" ? {
         ...option,
         title: "Main Menu",
@@ -225,7 +229,7 @@ const productionGameReplacements = [
 `  function enterMenu(menuConfig = {}) {
     const preserveRunContext = Boolean(menuConfig.preserveRunContext)`,
 `  function enterMenu(menuConfig = {}) {
-    if (state.onlineV3Ranked && state.phase === "dead" && state.onlineV3NextDirective) {
+    if (state.onlineV3Ranked) {
       window.DungeonOnlineV3?.leaveToMainMenu?.();
       return;
     }
@@ -324,6 +328,56 @@ const productionGameReplacements = [
       pushLog(state.simulation.lastGameOverReason + lossSummary, "bad");
       pushLog("Life lost. " + state.lives + "/" + MAX_LIVES + " remaining.", "bad");
       pushLog("Press R or Enter to rise again.", "good");
+      markUiDirty();
+    },`
+  ],
+  [
+`    holdTerminal(publicState) {
+      state.onlineV3FatalPending = false;
+      state.turnInProgress = true;
+      state.phase = publicState?.status === "victory" ? "won" : "dead";
+      state.lives = Math.max(0, Number(publicState?.lives) || 0);
+      markUiDirty();
+    },`,
+`    holdTerminal(publicState) {
+      state.onlineV3FatalPending = false;
+      state.turnInProgress = false;
+      state.phase = publicState?.status === "victory" ? "won" : "dead";
+      state.lives = Math.max(0, Number(publicState?.lives) || 0);
+      if (publicState?.status === "defeat") {
+        const finalDepth = Math.max(0, Number(publicState?.maxDepth) || getRunMaxDepth());
+        const finalGold = Math.max(0, Number(publicState?.gold) || getRunGoldEarned());
+        state.player.hp = 0;
+        state.finalVictoryPrompt = null;
+        state.finalGameOverPrompt = {
+          depth: finalDepth,
+          gold: finalGold,
+          score: calculateScore(finalDepth, finalGold),
+          totalGoldCollected: Math.max(0, Number(state.totalGoldEarned) || 0),
+          damageDone: Math.max(0, Number(state.damageDoneThisGame) || 0),
+          damageTaken: Math.max(0, Number(state.damageTakenThisGame) || 0),
+          potionsUsed: Math.max(0, Number(state.potionsUsedThisGame) || 0),
+          elixirsUsed: Math.max(0, Number(state.elixirsUsedThisGame) || 0),
+          wardensKilled: Math.max(0, Number(state.wardensKilledThisGame) || 0),
+          totalKills: Math.max(0, Number(state.totalKills) || 0),
+          eliteKills: Math.max(0, Number(state.eliteKills) || 0),
+          deaths: Math.max(
+            Math.max(0, Number(state.deaths) || 0) + 1,
+            MAX_LIVES - state.lives
+          ),
+          totalMerchantPots: Math.max(0, Number(state.totalMerchantPots) || 0),
+          potionFreeExtracts: Math.max(0, Number(state.potionFreeExtract) || 0),
+          shieldUses: Math.max(0, Number(state.shieldUsesThisRun) || 0),
+          depthHighscore: Math.max(0, Number(state.highscore) || 0, finalDepth),
+          bestGold: Math.max(0, Number(state.bestGold) || 0, finalGold),
+          reason: String(state.simulation.lastGameOverReason || "All lives lost.")
+        };
+        state.finalGameOverSelection = 0;
+        stopDeathTrack(true);
+        const usedFinalTrack = playFinalGameOverTrack();
+        if (!usedFinalTrack && !state.audioMuted) playSfx("death");
+        pushLog("GAME OVER. All Ranked lives lost.", "bad");
+      }
       markUiDirty();
     },`
   ],
@@ -541,6 +595,12 @@ const productionGameReplacements = [
       syncBgmWithState();
       markUiDirty();
     },
+    reportCampError() {
+      if (!state.onlineV3Ranked || state.phase !== "camp") return;
+      state.turnInProgress = false;
+      pushLog("Camp action could not be completed. Try again.", "bad");
+      markUiDirty();
+    },
     setNextDirective(directive) {`
   ],  [
 `    if (state.phase === "menu") {
@@ -569,6 +629,93 @@ const productionGameReplacements = [
 ];
 for (const [sourceText, replacement] of productionGameReplacements) {
   if (!game.includes(sourceText)) throw new Error(`Missing production game source: ${sourceText.slice(0, 80)}`);
+  game = game.replace(sourceText, replacement);
+}
+const rankedGoldGameReplacements = [
+  [
+`  const state = {`,
+`  let onlineV3RewardRecorder = null;
+
+  const state = {`
+  ],
+  [
+`  function buildRoom() {
+    if (state.onlineV3Ranked && state.onlineV3Directive) {`,
+`  function buildRoom() {
+    onlineV3RewardRecorder = state.onlineV3Ranked
+      ? window.DungeonRankedV3Recorder?.createRewardClaimRecorder?.() || null
+      : null;
+    if (state.onlineV3Ranked && state.onlineV3Directive) {`
+  ],
+  [
+`    const reward = grantGold(rewardForEnemy(enemy));
+    state.player.adrenaline = clamp(state.player.adrenaline + 1, 0, state.player.maxAdrenaline);`,
+`    const reward = grantGold(rewardForEnemy(enemy));
+    onlineV3RewardRecorder?.recordEnemy?.({ enemyType: enemy.type, elite: Boolean(enemy.elite) });
+    state.player.adrenaline = clamp(state.player.adrenaline + 1, 0, state.player.maxAdrenaline);`
+  ],
+  [
+`      removeEnemy(enemy);
+      const reward = grantGold(1);`,
+`      removeEnemy(enemy);
+      const reward = grantGold(1);
+      onlineV3RewardRecorder?.recordHazard?.();`
+  ],
+  [
+`    if (enemy.hp <= 0) {
+      const reward = grantGold(1);
+      const hazardKill = globalThis.hazardKillApi;`,
+`    if (enemy.hp <= 0) {
+      const reward = grantGold(1);
+      onlineV3RewardRecorder?.recordHazard?.();
+      const hazardKill = globalThis.hazardKillApi;`
+  ],
+  [
+`    chest.opened = true;
+    clearVaultChestThreatState(chest);`,
+`    chest.opened = true;
+    const onlineV3ChestClaimId = onlineV3RewardRecorder?.openChest?.() || null;
+    clearVaultChestThreatState(chest);`
+  ],
+  [
+`      let raw = randInt(4, 8);
+      if (inTreasureRoom) {
+        raw = Math.round(raw * 6);
+      }
+      raw = Math.max(1, Math.round(raw * getTreasureSenseMultiplier()));
+      const scaled = grantGold(raw);`,
+`      let raw = randInt(4, 8);
+      if (inTreasureRoom) {
+        raw = Math.round(raw * 6);
+      }
+      const onlineV3GoldBase = raw;
+      raw = Math.max(1, Math.round(raw * getTreasureSenseMultiplier()));
+      const scaled = grantGold(raw);
+      onlineV3RewardRecorder?.recordChestGold?.(onlineV3ChestClaimId, onlineV3GoldBase);`
+  ],
+  [
+`      revealPortalFx();
+      pushLog("Room cleared. Waiting for Online v3 checkpoint.", "good");
+      window.DungeonOnlineV3?.onLocalRoomCleared?.({
+        turnCount: Math.max(0, Number(state.turn) || 0),
+        rewardClaims: []
+      });`,
+`      revealPortalFx();
+      const roomClearBase = Math.max(0, Number(
+        window.DungeonRankedV3Recorder?.roomClearBaseV08?.(state.depth, state.roomType)
+      ) || 0);
+      const scaled = grantGold(roomClearBase);
+      pushLog("Room clear bonus: +" + scaled + " gold.", "good");
+      window.DungeonOnlineV3?.onLocalRoomCleared?.({
+        turnCount: Math.max(0, Number(state.turn) || 0),
+        rewardClaims: onlineV3RewardRecorder?.snapshot() || []
+      });`
+  ]
+];
+for (const [sourceText, replacement] of rankedGoldGameReplacements) {
+  if (!game.includes(sourceText)) {
+    throw new Error(`Missing Ranked gold source: ${sourceText.slice(0, 80)}`);
+  }
   game = game.replace(sourceText, replacement);
 }
 const rankedMerchantGameReplacements = [

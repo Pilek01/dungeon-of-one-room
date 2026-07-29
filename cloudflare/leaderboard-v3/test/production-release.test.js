@@ -6,13 +6,17 @@ import { fileURLToPath } from "node:url";
 import { createWorker } from "../src/index.js";
 import productionWorker from "../src/production-ruleset-entry.js";
 import { createRulesetRegistry, RULESET_RELEASE_STATES } from "../src/rulesets/registry.js";
-import { V08_META_1_PRODUCTION_RELEASE_DESCRIPTOR } from "../src/rulesets/releases.js";
+import {
+  V08_META_1_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR,
+  V08_META_1_PRODUCTION_RELEASE_DESCRIPTOR
+} from "../src/rulesets/releases.js";
 import manifest from "../src/rulesets/v08-meta-1/data/ruleset-manifest.json" with { type: "json" };
 import { createMemoryRepositories } from "./fixtures/memory-repositories.js";
 import { TEST_SECRET } from "./fixtures/harness.js";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../..");
-const EXPECTED_HASH = "sha256:0bf00607056dbf3c30ffe57bbcfc77cea95b21c9ccc23aa985ec555856d1cbd6";
+const EXPECTED_HASH = "sha256:bfc32eb2fa252d6543e1c042cb6e45e828a8bf6237b0c30d0b9e2e0a13b99950";
+const PREVIOUS_HASH = "sha256:0bf00607056dbf3c30ffe57bbcfc77cea95b21c9ccc23aa985ec555856d1cbd6";
 
 async function rootFile(relative) {
   return readFile(path.join(ROOT, relative), "utf8");
@@ -21,7 +25,10 @@ async function rootFile(relative) {
 test("production entry activates only the exact tested v08-meta-1 hash", async () => {
   assert.equal(manifest.rulesetHash, EXPECTED_HASH);
   assert.equal(V08_META_1_PRODUCTION_RELEASE_DESCRIPTOR.status, RULESET_RELEASE_STATES.PRODUCTION_RELEASED);
-  const registry = createRulesetRegistry([V08_META_1_PRODUCTION_RELEASE_DESCRIPTOR]);
+  const registry = createRulesetRegistry([
+    V08_META_1_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR,
+    V08_META_1_PRODUCTION_RELEASE_DESCRIPTOR
+  ]);
   const resolved = registry.resolve({
     rulesetId: "v08-meta-1",
     rulesetHash: EXPECTED_HASH,
@@ -29,6 +36,13 @@ test("production entry activates only the exact tested v08-meta-1 hash", async (
     lifecycle: "ranked"
   });
   assert.equal(resolved.rulesetHash, EXPECTED_HASH);
+  const previous = registry.resolve({
+    rulesetId: "v08-meta-1",
+    rulesetHash: PREVIOUS_HASH,
+    environment: "production",
+    lifecycle: "ranked"
+  });
+  assert.equal(previous.rulesetHash, PREVIOUS_HASH);
 
   const response = await productionWorker.fetch(new Request(
     "https://production.invalid/api/v3/availability?clientProtocolVersion=ranked-v3-checkpoint-1"
@@ -150,7 +164,7 @@ test("Pages release stays same-origin and disconnects all v2 bindings", async ()
     /resumeAfterFatal\(directive, publicState, presentation = \{\}\)[\s\S]*?state\.phase = "dead"[\s\S]*?playDeathTrack\(\)/u
   );
   assert.match(builder, /rankedFatalDirective/u);
-  assert.match(builder, /state\.onlineV3Ranked && state\.phase === "dead"[\s\S]*?leaveToMainMenu/u);
+  assert.match(builder, /if \(state\.onlineV3Ranked\)[\s\S]*?leaveToMainMenu/u);
   assert.match(builder, /DungeonOnlineV3\?\.onRoomEntered\?\.\(state\.onlineV3Directive\)/u);
   assert.match(style, /\.ranked-v3-entry,[\s\S]*display: none !important;/u);
   assert.match(style, /body\.ranked-v3-modal-open #screenOverlay/u);
@@ -169,10 +183,23 @@ test("production menu separates Practice pause, Practice save, and Ranked save c
   ]);
   assert.match(builder, /isRunPauseMenuActive\(\)[\s\S]*title: "Main Menu"/u);
   assert.match(builder, /title: "Main Menu"[\s\S]*enterMenu\(\);/u);
+  assert.match(builder, /DungeonOnlineV3GameBridge\?\.isRanked\?\.\(\)/u);
   assert.match(builder, /rankedPause[\s\S]*leaveToMainMenu/u);
+  assert.match(
+    builder,
+    /if \(state\.onlineV3Ranked\)[\s\S]*?DungeonOnlineV3\?\.leaveToMainMenu\?\.\(\);[\s\S]*?return;/u
+  );
+  assert.match(
+    builder,
+    /holdTerminal\(publicState\)[\s\S]*?finalGameOverPrompt = \{[\s\S]*?playFinalGameOverTrack\(\)/u
+  );
   assert.match(builder, /data-menu-new-game-index[\s\S]*activateMenuNewGameConfirmSelection/u);
   assert.doesNotMatch(runtime, /options\.get\("continue"\),/u);
   assert.match(runtime, /Start New Ranked/u);
   assert.match(runtime, /Continue Ranked/u);
   assert.match(runtime, /recoveryStore\.loadRecovery\(\)/u);
+  assert.match(
+    runtime,
+    /session\.getState\(\) === root\.DungeonRankedV3Session\.STATES\.finalized[\s\S]*?clearEndedRecovery\(\)/u
+  );
 });

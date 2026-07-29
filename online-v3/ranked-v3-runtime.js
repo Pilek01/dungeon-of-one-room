@@ -191,6 +191,10 @@
   }
 
   function returnToPractice() {
+    if (session.getState() === root.DungeonRankedV3Session.STATES.finalized) {
+      clearEndedRecovery();
+      return;
+    }
     pendingExtractionMode = null;
     if (![root.DungeonRankedV3Session.STATES.reconnect, root.DungeonRankedV3Session.STATES.protocolError].includes(session.getState())) {
       moveToRecoveryState(root.DungeonRankedV3Session.STATES.reconnect);
@@ -825,10 +829,12 @@
     if (root.DUNGEON_ONLINE_V3_DEBUG === true) {
       console.debug("[Online v3] Camp error", error);
     }
-    ui.showMessage("Camp unavailable", "Your Ranked Camp state is preserved.", [
-      ui.button("Retry Camp", () => openCamp().catch(presentCampError)),
-      ui.button("Back to Camp", () => ui.hide())
-    ]);
+    if (currentCampResponse) {
+      root.DungeonOnlineV3GameBridge?.reportCampError?.();
+      ui.hide();
+      return;
+    }
+    presentError(error);
   }
 
   function onCampAction(request = {}) {

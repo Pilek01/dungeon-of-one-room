@@ -433,7 +433,7 @@ async function clearVisibleRoom(page) {
 }
 
 async function crossVisiblePortal(page, expectedDepth) {
-  await runDebugAction(page, "F10", "b", "Toggle Observer Bot");
+  assert.equal(await page.evaluate(() => window.__DUNGEON_TEST_CROSS_PORTAL?.()), true);
   await page.waitForFunction(
     (depth) => {
       const game = JSON.parse(window.render_game_to_text());
@@ -442,7 +442,6 @@ async function crossVisiblePortal(page, expectedDepth) {
     expectedDepth,
     { timeout: 30_000 }
   );
-  await runDebugAction(page, "F10", "b", "Toggle Observer Bot");
   const state = await visibleGameState(page);
   assert.equal(state.depth, expectedDepth);
   assert.notEqual(state.latestLog, "Online v3 is still resolving the next room.");
@@ -510,6 +509,13 @@ async function main() {
     gameOver(String(reason || "Headed fatal event"));
     return true;
   };
+  window.__DUNGEON_TEST_CROSS_PORTAL = () => {
+    if (!canUseDebugCheats() || state.phase !== "playing" || !state.roomCleared || !state.portal) return false;
+    state.player.x = state.portal.x;
+    state.player.y = state.portal.y;
+    attemptDescend();
+    return true;
+  };
 
 ${fatalTestHookAnchor}`;
   await fsPromises.writeFile(
@@ -526,7 +532,8 @@ ${fatalTestHookAnchor}`;
     debugMessages: [],
     consoleErrors: [],
     pageErrors: [],
-    finalizeOperationIds: []
+    finalizeOperationIds: [],
+    checkpointBodies: []
   };
   const { chromium } = loadPlaywright();
   const browser = await chromium.launch({ headless: HEADLESS });
@@ -550,6 +557,9 @@ ${fatalTestHookAnchor}`;
       const url = new URL(request.url());
       if (url.pathname.startsWith("/api/v3/")) {
         diagnostics.apiRequests.push({ method: request.method(), path: url.pathname });
+        if (url.pathname === "/api/v3/runs/checkpoint") {
+          diagnostics.checkpointBodies.push(JSON.parse(request.postData() || "{}"));
+        }
         if (url.pathname === "/api/v3/runs/finalize") {
           diagnostics.finalizeOperationIds.push(request.headers()["idempotency-key"] || "");
         }
@@ -698,6 +708,9 @@ ${fatalTestHookAnchor}`;
       const url = new URL(request.url());
       if (url.pathname.startsWith("/api/v3/")) {
         diagnostics.apiRequests.push({ method: request.method(), path: url.pathname });
+        if (url.pathname === "/api/v3/runs/checkpoint") {
+          diagnostics.checkpointBodies.push(JSON.parse(request.postData() || "{}"));
+        }
         if (url.pathname === "/api/v3/runs/finalize") {
           diagnostics.finalizeOperationIds.push(request.headers()["idempotency-key"] || "");
         }
@@ -747,8 +760,31 @@ ${fatalTestHookAnchor}`;
     );
 
     const firstRoom = await visibleGameState(page);
+    const firstCanonicalGold = await page.evaluate(() => (
+      window.DungeonOnlineV3.getSnapshot()?.publicState?.gold || 0
+    ));
     await clearVisibleRoom(page);
     await sessionState(page, "ENTERING_NEXT_ROOM");
+    const firstGoldAudit = await page.evaluate(() => ({
+      game: JSON.parse(window.render_game_to_text()),
+      canonicalGold: window.DungeonOnlineV3.getSnapshot()?.publicState?.gold || 0,
+      logText: document.getElementById("log")?.innerText || ""
+    }));
+    const firstCheckpoint = diagnostics.checkpointBodies.at(-1);
+    assert(firstCheckpoint, "First Ranked clear did not send a checkpoint body");
+    assert.equal(
+      firstCheckpoint.rewardClaims
+        .filter((claim) => ["enemy", "elite", "hazard"].includes(claim.claimType))
+        .reduce((sum, claim) => sum + claim.count, 0),
+      firstRoom.enemies.length
+    );
+    assert(firstGoldAudit.canonicalGold > firstCanonicalGold);
+    assert.equal(firstGoldAudit.game.player.gold, firstGoldAudit.canonicalGold);
+    assert.match(firstGoldAudit.logText, /Room clear bonus: \+\d+ gold\./u);
+    await page.screenshot({
+      path: path.join(ARTIFACT_ROOT, "ranked-room-clear-gold-parity.png"),
+      fullPage: true
+    });
     await crossVisiblePortal(page, firstRoom.depth + 1);
 
     await clearVisibleRoom(page);
@@ -905,7 +941,11 @@ ${fatalTestHookAnchor}`;
     const terminalAudit = await page.evaluate(() => ({
       status: window.DungeonOnlineV3.getSnapshot()?.publicState?.status || "",
       session: window.DungeonOnlineV3.getSessionState(),
-      overlay: document.querySelector(".ranked-v3-overlay")?.textContent || ""
+      game: JSON.parse(window.render_game_to_text()),
+      overlay: document.querySelector(".ranked-v3-overlay")?.textContent || "",
+      nativeFinalVisible: Boolean(
+        document.querySelector(".overlay-card-gameover, .gameover-requiem")?.getClientRects().length
+      )
     }));
     assert(
       ["victory", "defeat", "extraction"].includes(terminalAudit.status),
@@ -919,6 +959,11 @@ ${fatalTestHookAnchor}`;
       await page.evaluate(() => window.DungeonOnlineV3.getSnapshot().publicState.status),
       "defeat"
     );
+    assert.equal(terminalAudit.game.phase, "dead", JSON.stringify(terminalAudit));
+    assert.equal(terminalAudit.game.prompts.finalGameOver, true, JSON.stringify(terminalAudit));
+    assert.equal(terminalAudit.nativeFinalVisible, true, JSON.stringify(terminalAudit));
+    assert.match(terminalAudit.game.overlayText, /Game Over[\s\S]*Lives Spent5[\s\S]*Main Menu/iu);
+    assert.doesNotMatch(terminalAudit.overlay, /reconnect|required|unavailable/iu);
     await sessionState(page, "FINALIZED");
     assert.equal(droppedFinalizeResponse, true);
     assert.equal(diagnostics.finalizeOperationIds.length, 2);
@@ -933,6 +978,28 @@ ${fatalTestHookAnchor}`;
       path: path.join(ARTIFACT_ROOT, "ranked-finalized.png"),
       fullPage: true
     });
+    await page.keyboard.press("r");
+    await page.waitForTimeout(250);
+    assert.equal(
+      await page.evaluate(() => JSON.parse(window.render_game_to_text()).prompts.finalGameOver),
+      true,
+      "Terminal Ranked defeat allowed Rise Again"
+    );
+    await page.keyboard.press("Enter");
+    await page.waitForFunction(() => JSON.parse(window.render_game_to_text()).phase === "menu");
+    const postTerminalPracticeApiBefore = diagnostics.apiRequests.length;
+    await openNativeMenuOption(page, "Practice (Offline)");
+    await page.locator(".overlay-menu-row", { hasText: "Start New Game" }).click();
+    await page.waitForFunction(() => JSON.parse(window.render_game_to_text()).phase === "relic");
+    await page.keyboard.press("1");
+    await page.waitForFunction(() => JSON.parse(window.render_game_to_text()).phase === "playing");
+    assert.equal(
+      diagnostics.apiRequests.length,
+      postTerminalPracticeApiBefore,
+      "Practice after terminal Ranked emitted an Online v3 API request"
+    );
+    await page.keyboard.press("Escape");
+    await openNativeMenuOption(page, "Main Menu");
     await page.reload({ waitUntil: "domcontentloaded" });
     await dismissBoot(page);
     await openNativeMenuOption(page, "Ranked Leaderboard");
@@ -1015,6 +1082,34 @@ ${fatalTestHookAnchor}`;
     assert.equal(await page.getByRole("button", { name: "Open Camp" }).count(), 0);
     await page.screenshot({
       path: path.join(ARTIFACT_ROOT, "ranked-camp.png"),
+      fullPage: true
+    });
+    const affordableUpgrade = page.locator(
+      '.camp-revamp-upgrade[aria-disabled="false"]'
+    ).first();
+    await affordableUpgrade.waitFor({ state: "visible" });
+    const upgradeBefore = await affordableUpgrade.innerText();
+    const upgradeRequestsBefore = diagnostics.apiRequests.length;
+    await affordableUpgrade.click();
+    await page.waitForTimeout(2_500);
+    const upgradeAudit = await page.evaluate(() => {
+      const row = [...document.querySelectorAll('.camp-revamp-upgrade[aria-disabled="false"]')]
+        .find((candidate) => candidate.getClientRects().length > 0);
+      return {
+        game: JSON.parse(window.render_game_to_text()),
+        rowText: row?.innerText || "",
+        overlay: document.querySelector(".ranked-v3-overlay")?.textContent || ""
+      };
+    });
+    assert.notEqual(upgradeAudit.rowText, upgradeBefore, JSON.stringify({
+      upgradeAudit,
+      apiRequests: diagnostics.apiRequests.slice(upgradeRequestsBefore),
+      apiErrors: diagnostics.apiErrors,
+      debugMessages: diagnostics.debugMessages
+    }));
+    assert.equal(await page.getByRole("heading", { name: "Camp unavailable" }).count(), 0);
+    await page.screenshot({
+      path: path.join(ARTIFACT_ROOT, "ranked-camp-upgrade.png"),
       fullPage: true
     });
     const nextRunRequestsBefore = diagnostics.apiRequests.length;

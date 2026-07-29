@@ -8,9 +8,9 @@
   "use strict";
 
   const ASSURANCE = Object.freeze({
-    status: "test_spec_only",
+    status: "active_bounded_client_attestation",
     activeCombatSecurity: false,
-    note: "Not wired into the Ranked runtime and not evidence of server-authoritative combat."
+    note: "Records bounded local reward claims; it is not evidence of server-authoritative combat."
   });
   const JOURNAL_VERSION = 1;
   const MAX_JOURNAL_COMMANDS = 4096;
@@ -89,11 +89,95 @@
     });
   }
 
+  function roomClearBaseV08(depth, roomType) {
+    const safeDepth = Math.max(0, Math.floor(Number(depth) || 0));
+    const safeRoomType = String(roomType || "combat");
+    if (safeRoomType === "merchant" || safeRoomType === "crossroads") return 0;
+    let base = 2 + Math.floor(safeDepth / 2);
+    if (safeRoomType === "treasure") base = Math.max(1, base - 1);
+    else if (safeRoomType === "vault") base = Math.max(1, base - 2);
+    else if (safeRoomType === "shrine") base += 1;
+    else if (safeRoomType === "cursed") base += 4;
+    if (safeRoomType === "boss" || safeRoomType === "final") base += 10;
+    return Math.max(1, base);
+  }
+
+  function createRewardClaimRecorder() {
+    const claims = new Map();
+    let chestCount = 0;
+    let sealedSnapshot = null;
+
+    function aggregate(claimType, claimId) {
+      if (sealedSnapshot) return false;
+      const key = `${claimType}:${claimId}`;
+      const current = claims.get(key);
+      if (current) current.count += 1;
+      else claims.set(key, { claimType, claimId, count: 1 });
+      return true;
+    }
+
+    function recordEnemy(input = {}) {
+      const enemyType = String(input.enemyType || "");
+      if (!/^[a-z][a-z0-9_]*$/u.test(enemyType)) return false;
+      const claimType = input.elite ? "elite" : "enemy";
+      return aggregate(claimType, `${claimType}:${enemyType}`);
+    }
+
+    function recordHazard() {
+      return aggregate("hazard", "hazard-kill");
+    }
+
+    function openChest() {
+      if (sealedSnapshot) return null;
+      chestCount += 1;
+      const claimId = `chest_${chestCount}`;
+      claims.set(`chest:${claimId}`, {
+        claimType: "chest",
+        claimId,
+        count: 1,
+        localEvidence: { outcome: "opened" }
+      });
+      return claimId;
+    }
+
+    function recordChestGold(claimId, baseAmount) {
+      if (sealedSnapshot) return false;
+      const claim = claims.get(`chest:${String(claimId || "")}`);
+      const amount = Number(baseAmount);
+      if (!claim || !Number.isSafeInteger(amount) || amount < 0) return false;
+      claim.localEvidence = { outcome: "gold", baseAmount: amount };
+      return true;
+    }
+
+    function snapshot() {
+      if (!sealedSnapshot) {
+        sealedSnapshot = Object.freeze(Array.from(claims.values(), (claim) =>
+          Object.freeze({
+            ...claim,
+            ...(claim.localEvidence
+              ? { localEvidence: Object.freeze({ ...claim.localEvidence }) }
+              : {})
+          })
+        ));
+      }
+      return sealedSnapshot;
+    }
+
+    return Object.freeze({
+      recordEnemy,
+      recordHazard,
+      openChest,
+      recordChestGold,
+      snapshot
+    });
+  }
   return Object.freeze({
     ASSURANCE,
     JOURNAL_VERSION,
     MAX_JOURNAL_COMMANDS,
     canonicalJson,
-    createRecorder
+    createRecorder,
+    roomClearBaseV08,
+    createRewardClaimRecorder
   });
 });
