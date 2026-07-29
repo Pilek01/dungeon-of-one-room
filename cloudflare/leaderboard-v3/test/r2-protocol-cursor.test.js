@@ -275,11 +275,11 @@ test("R2 local projection failure performs canonical resume without fallback", a
   assert.equal(client.getSnapshot().revision, 3);
   assert.equal(client.getSnapshot().token.value, "fresh-room-token");
 });
-test("R2 speculative browser proof helpers are explicitly test/spec-only", () => {
+test("R2 browser reward evidence remains explicitly non-authoritative", () => {
   assert.deepEqual(recorder.ASSURANCE, {
-    status: "test_spec_only",
+    status: "active_bounded_client_attestation",
     activeCombatSecurity: false,
-    note: "Not wired into the Ranked runtime and not evidence of server-authoritative combat."
+    note: "Records bounded local reward claims; it is not evidence of server-authoritative combat."
   });
   assert.equal(checkpoints.ASSURANCE.status, "test_spec_only");
   assert.equal(checkpoints.ASSURANCE.activeCombatSecurity, false);

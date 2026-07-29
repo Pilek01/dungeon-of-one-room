@@ -198,9 +198,10 @@ function mergeContext(options, context) {
 }
 
 export function createV08Meta1Ruleset(options = {}) {
+  const rulesetHash = options.rulesetHash || manifest.rulesetHash;
   return Object.freeze({
     rulesetId: RULESET_ID,
-    rulesetHash: manifest.rulesetHash,
+    rulesetHash,
     status: RULESET_STATUS,
 
     createInitialMetaState(input, context) {
@@ -214,7 +215,10 @@ export function createV08Meta1Ruleset(options = {}) {
         input.profileState,
         mergeContext(options, context)
       );
-      if (initial.build.relics.length > 0) {
+      const startingRelicAlreadyGranted =
+        input.profileState?.startingRelicGranted === true ||
+        Boolean(input.profileState?.lastExtractedRunId);
+      if (initial.build.relics.length > 0 || startingRelicAlreadyGranted) {
         initial.status = "active";
         return issueNextRoomDirectiveV08(initial, mergeContext(options, context));
       }

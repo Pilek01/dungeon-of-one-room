@@ -215,12 +215,30 @@ function normalizeProfileCampLedger(state) {
     throw new TypeError("PROFILE_STATE_INVALID");
   }
   const next = structuredClone(state);
+  const startedAt = next.startedAt ?? 0;
+  const updatedAt = next.updatedAt ?? startedAt + next.revision;
+  if (
+    !Number.isSafeInteger(startedAt) ||
+    startedAt < 0 ||
+    !Number.isSafeInteger(updatedAt) ||
+    updatedAt < startedAt
+  ) {
+    throw new TypeError("PROFILE_TIMESTAMPS_INVALID");
+  }
   const campGold = next.campGold ?? 0;
   if (!Number.isSafeInteger(campGold) || campGold < 0) {
     throw new TypeError("PROFILE_CAMP_GOLD_INVALID");
   }
   if (!next.goldLedger || typeof next.goldLedger !== "object") {
     throw new TypeError("PROFILE_GOLD_LEDGER_INVALID");
+  }
+  const runGold = next.gold ?? (
+    next.goldLedger.earnedServerDerived +
+    next.goldLedger.earnedBoundedAttested -
+    next.goldLedger.spentServerDerived
+  );
+  if (!Number.isSafeInteger(runGold) || runGold < 0) {
+    throw new TypeError("PROFILE_RUN_GOLD_INVALID");
   }
   const earned = next.goldLedger.campEarnedServerDerived ?? 0;
   const spent = next.goldLedger.campSpentServerDerived ?? 0;
@@ -237,6 +255,9 @@ function normalizeProfileCampLedger(state) {
     throw new TypeError("PROFILE_CAMP_GOLD_LEDGER_INVALID");
   }
   next.campGold = campGold;
+  next.gold = runGold;
+  next.startedAt = startedAt;
+  next.updatedAt = updatedAt;
   next.goldLedger.campEarnedServerDerived =
     earned >= spent && earned - spent === campGold ? earned : normalizedEarned;
   next.goldLedger.campSpentServerDerived = spent;

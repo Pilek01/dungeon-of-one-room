@@ -168,6 +168,33 @@ const commonAccepted = new Set([
   "gold-never-negative"
 ]);
 
+test("boss reward envelope accepts the v0.8 Warden kill reward", async () => {
+  const { result } = await settleWithClaims([
+    { claimType: "enemy", claimId: "enemy:warden", count: 1 }
+  ], { depth: 4 });
+  assert.equal(result.authoritativeGoldDelta, 49);
+});
+
+test("legacy boss envelope without a Warden definition is repaired at settlement", async () => {
+  const state = await issuedState({ depth: 4 });
+  state.currentRewardEnvelope.boundedClaims =
+    state.currentRewardEnvelope.boundedClaims.filter(
+      (claim) => claim.claimId !== "enemy:warden"
+    );
+  state.currentRewardEnvelope.maximumGoldDelta = 20;
+  const request = validRequest(state, {
+    claims: [{ claimType: "enemy", claimId: "enemy:warden", count: 1 }]
+  });
+  const result = await settleRoomRewardEnvelopeV3(state, request);
+  assert.equal(result.authoritativeGoldDelta, 49);
+  assert.equal(
+    state.currentRewardEnvelope.boundedClaims.some(
+      (claim) => claim.claimId === "enemy:warden"
+    ),
+    false
+  );
+});
+
 const runners = Object.fromEntries(fixtures.map((fixture) => [
   fixture.fixtureId,
   async () => {

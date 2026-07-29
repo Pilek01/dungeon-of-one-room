@@ -75,18 +75,18 @@ function claimDefinitions(roomType) {
   for (const enemyType of Object.keys(rewardBounds.enemyClaims.baseGoldByEnemyType).sort()) {
     const bossOnly = enemyType === "warden";
     if (bossOnly && !["boss", "final"].includes(roomType)) continue;
+    definitions.push({
+      claimType: "enemy",
+      claimId: `enemy:${enemyType}`,
+      maximumCount: maximumEnemies,
+      maximumAmount: null,
+      unitPolicyRef: `enemy-kill:${enemyType}`,
+      requiredRoomType: roomType,
+      requiredBuildEffect: null,
+      stackingPolicy: "shares-room-enemy-budget",
+      duplicatePolicy: "REJECT"
+    });
     if (!bossOnly) {
-      definitions.push({
-        claimType: "enemy",
-        claimId: `enemy:${enemyType}`,
-        maximumCount: maximumEnemies,
-        maximumAmount: null,
-        unitPolicyRef: `enemy-kill:${enemyType}`,
-        requiredRoomType: roomType,
-        requiredBuildEffect: null,
-        stackingPolicy: "shares-room-enemy-budget",
-        duplicatePolicy: "REJECT"
-      });
       definitions.push({
         claimType: "elite",
         claimId: `elite:${enemyType}`,
@@ -122,6 +122,27 @@ function claimSlots(roomType) {
     allowedClaim: "chest-opened",
     consumed: false
   }));
+}
+
+function repairLegacyWardenClaimEnvelope(state, envelope) {
+  if (!["boss", "final"].includes(envelope.roomType)) return;
+  if (envelope.boundedClaims.some((claim) => claim.claimId === "enemy:warden")) return;
+  const wardenClaim = claimDefinitions(envelope.roomType).find(
+    (claim) => claim.claimId === "enemy:warden"
+  );
+  if (!wardenClaim) throw new TypeError("WARDEN_REWARD_CLAIM_REQUIRED");
+  envelope.boundedClaims.push(wardenClaim);
+  envelope.maximumGoldDelta = Math.max(
+    envelope.maximumGoldDelta,
+    maximumGoldDeltaForEnvelope(
+      state.build,
+      state.runModifiers,
+      envelope.depth,
+      envelope.roomType,
+      envelope.boundedClaims,
+      envelope.claimSlots
+    )
+  );
 }
 
 function relicOfferSlots(directive, envelopeId) {
@@ -483,6 +504,7 @@ export async function settleRoomRewardEnvelopeV3(state, request, context = {}) {
 
   const next = structuredClone(state);
   const mutableEnvelope = next.currentRewardEnvelope;
+  repairLegacyWardenClaimEnvelope(next, mutableEnvelope);
   const slotById = new Map(mutableEnvelope.claimSlots.map((slot) => [slot.slotId, slot]));
   const seen = new Set();
   let enemyCount = 0;

@@ -67,6 +67,8 @@ function profileStateFromCanonicalRun(state, profileId, profileRevision = 0) {
     rulesetHash: state.rulesetHash,
     status: "active",
     revision: profileRevision,
+    startedAt: state.startedAt,
+    updatedAt: state.updatedAt,
     campGold: state.campGold,
     lives: state.lives,
     build: structuredClone(state.build),
@@ -76,6 +78,7 @@ function profileStateFromCanonicalRun(state, profileId, profileRevision = 0) {
     metaSourceConsumptions: [],
     campSession: null,
     pendingInventory: null,
+    startingRelicGranted: state.status !== "awaiting_starting_relic",
     lastExtractedRunId: state.status === "extraction" ? state.runId : null
   };
 }

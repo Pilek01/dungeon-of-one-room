@@ -166,6 +166,18 @@ test("canonical extraction creates an authenticated profile Camp and next run", 
   );
   assert.equal(wrongCredential.response.status, 401);
 
+  const unfundedProfile = await harness.repositories.profiles.get(PROFILE_ID);
+  const fundedProfile = structuredClone(unfundedProfile);
+  fundedProfile.state.campGold = 1_000;
+  fundedProfile.state.goldLedger.campEarnedServerDerived = 1_000;
+  assert.equal(
+    await harness.repositories.profiles.updateConditional(
+      fundedProfile,
+      unfundedProfile.revision
+    ),
+    true
+  );
+
   const opened = await harness.post(
     "/api/v3/profiles/camp",
     harness.profileBody({ action: "open" }),
@@ -174,11 +186,40 @@ test("canonical extraction creates an authenticated profile Camp and next run", 
   assert.equal(opened.response.status, 200);
   assert.equal(opened.payload.profile.profileId, PROFILE_ID);
   assert.equal(opened.payload.profile.campSession.active, true);
+  const upgrade = opened.payload.metaTransactionOffer.choices.find(
+    (choice) => choice.action === "upgrade" && choice.upgradeId === "vitality"
+  );
+  assert.ok(upgrade);
+  const committed = await harness.post(
+    "/api/v3/profiles/camp",
+    harness.profileBody({
+      action: "commit",
+      transactionId: upgrade.transactionId,
+      choiceId: upgrade.choiceId
+    }),
+    "r2-camp-commit-upgrade"
+  );
+  assert.equal(committed.response.status, 200, JSON.stringify(committed.payload));
+  assert.equal(committed.payload.profile.build.campUpgrades.vitality, 1);
+  const refreshed = await harness.post(
+    "/api/v3/profiles/camp",
+    harness.profileBody({ action: "open" }),
+    "r2-camp-refresh-after-upgrade"
+  );
+  assert.equal(refreshed.response.status, 200);
+  assert.equal(refreshed.payload.profile.build.campUpgrades.vitality, 1);
+  assert.ok(refreshed.payload.metaTransactionOffer);
 
   const currentProfile = await harness.repositories.profiles.get(PROFILE_ID);
   const legacyProfile = structuredClone(currentProfile);
   legacyProfile.state.goldLedger.campEarnedServerDerived = 0;
   legacyProfile.state.goldLedger.campSpentServerDerived = 0;
+  legacyProfile.state.build.relics = [];
+  legacyProfile.state.build.relicSlotBonus = 0;
+  legacyProfile.state.build.relicSlotLimit = legacyProfile.state.build.relicSlotBase;
+  legacyProfile.state.build.relicSlotsUsed = 0;
+  legacyProfile.state.build.uniqueRelicCount = 0;
+  legacyProfile.state.build.totalRelicStacks = 0;
   assert.equal(
     await harness.repositories.profiles.updateConditional(
       legacyProfile,
@@ -188,10 +229,11 @@ test("canonical extraction creates an authenticated profile Camp and next run", 
   );
 
   const nextRun = await harness.start("r2-camp-next-run");
-  assert.equal(nextRun.response.status, 201);
+  assert.equal(nextRun.response.status, 201, JSON.stringify(nextRun.payload));
   assert.equal(nextRun.payload.metaState.profileId, PROFILE_ID);
   assert.equal(nextRun.payload.metaState.status, "active");
-  assert.ok(nextRun.payload.metaState.build.relics.length > 0);
+  assert.equal(nextRun.payload.metaState.build.relics.length, 0);
+  assert.equal(nextRun.payload.metaState.startingRelicOffer, null);
   assert.equal(
     harness.repositories.snapshotProfile(PROFILE_ID).state.lastExtractedRunId,
     extracted.runId

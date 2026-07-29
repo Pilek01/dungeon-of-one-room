@@ -1,8 +1,12 @@
 import { createWorker } from "./index.js";
 import { createRulesetRegistry } from "./rulesets/registry.js";
-import { V08_META_1_PRODUCTION_RELEASE_DESCRIPTOR } from "./rulesets/releases.js";
+import {
+  V08_META_1_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR,
+  V08_META_1_PRODUCTION_RELEASE_DESCRIPTOR
+} from "./rulesets/releases.js";
 
 const productionRegistry = createRulesetRegistry([
+  V08_META_1_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR,
   V08_META_1_PRODUCTION_RELEASE_DESCRIPTOR
 ]);
 
