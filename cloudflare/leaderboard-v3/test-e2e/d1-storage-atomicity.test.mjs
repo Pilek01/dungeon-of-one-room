@@ -76,14 +76,15 @@ test("real D1 finalize batch never leaves a split run/leaderboard state", {
     const migrations = await Promise.all([
       "0001_initial.sql",
       "0002_r2_ranked_profiles.sql",
-      "0003_r2_run_recovery.sql"
+      "0003_r2_run_recovery.sql",
+      "0004_r2_leaderboard_campaign_identity.sql"
     ].map((name) => readFile(path.join(WORKER_ROOT, "migrations", name), "utf8")));
     const migrationStatements = migrations
       .flatMap((migration) => migration.split(";"))
       .map((statement) => statement.trim())
       .filter(Boolean)
       .map((statement) => db.prepare(statement));
-    assert.equal(migrationStatements.length, 10);
+    assert.equal(migrationStatements.length, 15);
     await db.batch(migrationStatements);
 
     const initial = createInitialRun({

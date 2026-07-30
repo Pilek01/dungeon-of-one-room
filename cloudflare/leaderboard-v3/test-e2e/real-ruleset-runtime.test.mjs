@@ -571,7 +571,7 @@ describe("Online v3 real ruleset Wrangler and D1 lifecycle", {
     assert.equal(await d1Query(`
       SELECT COUNT(*) AS count FROM leaderboard_entries
       WHERE run_id = '${session.runId}'
-    `).then((rows) => Number(rows[0].count)), 1);
+    `).then((rows) => Number(rows[0].count)), 0);
   }, { timeout: 45_000 });
 
   test("extraction profile persists through restart and opens canonical Camp in real D1", async () => {
