@@ -64,11 +64,11 @@
     recoveryStore.clearWriterLease();
   }
 
-  function prepareFreshRankedStart() {
+  function prepareFreshRankedStart(clearProfile = true) {
     if (recoveryStore.loadRecovery()) return false;
     resetLocalRankedSession();
     recoveryStore.clearRecovery();
-    recoveryStore.clearProfile();
+    if (clearProfile) recoveryStore.clearProfile();
     session = root.DungeonRankedV3Session.createStateMachine(
       root.DungeonRankedV3Session.STATES.abandoned
     );
@@ -847,7 +847,7 @@
       .then(() => {
         client?.clearRecovery?.();
         recoveryStore.clearRecovery();
-        prepareFreshRankedStart();
+        prepareFreshRankedStart(false);
         currentCampResponse = null;
         ui.hide();
         return startRanked(startDepth);

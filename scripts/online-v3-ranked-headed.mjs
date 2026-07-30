@@ -646,7 +646,7 @@ ${fatalTestHookAnchor}`;
     assert.notEqual(repairedRunId, staleProfile.seedRunId);
     assert.equal(
       diagnostics.apiErrors.slice(staleErrorsBefore).some((entry) => /PROFILE_UNAUTHORIZED/u.test(entry.body)),
-      true,
+      false,
       JSON.stringify(diagnostics.apiErrors.slice(staleErrorsBefore))
     );
     assert.equal(await page.getByRole("heading", { name: "Ranked reconnect required" }).count(), 0);
@@ -813,8 +813,14 @@ ${fatalTestHookAnchor}`;
     await crossVisiblePortal(page, firstRoom.depth + 3);
 
     const requestsBeforePreWardenClear = diagnostics.apiRequests.length;
+    const preWardenSourceRoom = await visibleGameState(page);
     await clearVisibleRoom(page);
-    await sessionState(page, "ENTERING_NEXT_ROOM");
+    const merchantBoundary = preWardenSourceRoom.roomType === "merchant";
+    if (merchantBoundary) {
+      await crossVisiblePortal(page, firstRoom.depth + 4);
+    } else {
+      await sessionState(page, "ENTERING_NEXT_ROOM");
+    }
     const preWardenAudit = await page.evaluate(() => {
       const snapshot = window.DungeonOnlineV3.getSnapshot();
       return {
@@ -846,7 +852,9 @@ ${fatalTestHookAnchor}`;
       fullPage: true
     });
 
-    await crossVisiblePortal(page, firstRoom.depth + 4);
+    if (!merchantBoundary) {
+      await crossVisiblePortal(page, firstRoom.depth + 4);
+    }
     assert.equal(await page.locator(".ranked-v3-choice-relic:visible").count(), 0);
     await clearVisibleRoom(page);
     await page.waitForFunction(() => [
@@ -1047,6 +1055,9 @@ ${fatalTestHookAnchor}`;
     });
     await page.locator(".ranked-v3-choice-relic").first().click();
     await sessionState(page, "ROOM_ACTIVE");
+    const extractionCampaignProfile = await page.evaluate(() => (
+      window.DungeonRankedV3Storage.createStore(localStorage).loadProfile()
+    ));
     const extractionStart = await visibleGameState(page);
     for (let step = 1; step <= 3; step += 1) {
       await clearVisibleRoom(page);
@@ -1164,6 +1175,14 @@ ${fatalTestHookAnchor}`;
       overlay: document.querySelector(".ranked-v3-overlay")?.textContent || ""
     }));
     assert.equal(nextRunAudit.session, "ROOM_ACTIVE", JSON.stringify(nextRunAudit));
+    const nextRunCampaignProfile = await page.evaluate(() => (
+      window.DungeonRankedV3Storage.createStore(localStorage).loadProfile()
+    ));
+    assert.equal(
+      nextRunCampaignProfile.profileId,
+      extractionCampaignProfile.profileId,
+      "Starting the next descent from Camp rotated the five-life campaign profile"
+    );
     assert(
       await page.evaluate(() => window.DungeonOnlineV3.getSnapshot().publicState.build.relics.length > 0),
       "Next Ranked run did not apply canonical extracted profile build"
@@ -1292,7 +1311,7 @@ ${fatalTestHookAnchor}`;
     );
     assert.equal(expectedDroppedResponseErrors.length, 4);
     assert.equal(expectedEndedRecoveryErrors.length, 1);
-    assert.equal(expectedStaleProfileErrors.length, 1);
+    assert.equal(expectedStaleProfileErrors.length, 0);
     assert.equal(expectedCampStartErrors.length, 1);
     assert.deepEqual(unexpectedConsoleErrors, []);
     assert.deepEqual(diagnostics.pageErrors, []);
@@ -1336,12 +1355,6 @@ ${fatalTestHookAnchor}`;
       `${summary.deathPresentationScenarios} death-presentation, ${summary.campLifecycleScenarios} Camp)\n`
     );
     await context.close();
-  } catch (error) {
-    const workerLogs = worker.getLogs().replaceAll(secret, "[redacted]").trim();
-    throw new Error(
-      workerLogs ? `${error.message}\nWorker logs:\n${workerLogs}` : error.message,
-      { cause: error }
-    );
     await browser.close();
     await closeServer(proxy.server);
     worker.child.kill();
@@ -1351,6 +1364,21 @@ ${fatalTestHookAnchor}`;
       await waitForExit(worker.child);
     }
     assert.equal(worker.getLogs().includes(secret), false);
+  } catch (error) {
+    const workerLogs = worker.getLogs().replaceAll(secret, "[redacted]").trim();
+    await browser.close();
+    await closeServer(proxy.server);
+    worker.child.kill();
+    await waitForExit(worker.child);
+    if (worker.child.exitCode === null) {
+      worker.child.kill("SIGKILL");
+      await waitForExit(worker.child);
+    }
+    assert.equal(worker.getLogs().includes(secret), false);
+    throw new Error(
+      workerLogs ? `${error.stack}\nWorker logs:\n${workerLogs}` : error.stack,
+      { cause: error }
+    );
   }
 }
 

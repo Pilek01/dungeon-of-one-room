@@ -155,5 +155,5 @@ test("production bridge uses native Forge and native Camp checkpoint selection",
   assert.match(builder, /onCampStartRun\?\.\(selectedDepth\)/u);
   assert.doesNotMatch(runtime, /ui\.showMessage\("Forge", "Choose the Forge operation\."/u);
   assert.match(runtime, /function onForgeMode\(mode\)/u);
-  assert.match(runtime, /function onCampStartRun\(startDepth = 0\)/u);
+  assert.match(runtime, /function onCampStartRun\(startDepth = 0\)[\s\S]*prepareFreshRankedStart\(false\)/u);
 });
