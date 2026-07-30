@@ -589,3 +589,32 @@ Verification on current local `HEAD`:
 
 This task performed no push, deploy, staging, canary, soak, rollback, or M5
 action. Production state was not mutated or re-verified by this task.
+
+## R2 local gameplay-parity repair complete (2026-07-30)
+
+`COMPLETED_LOCALLY` in commits `50a7c34` and `dd83b49`; production was not changed.
+
+Implemented:
+
+- canonical chest gold/potions/map fragments, potion use, room-clear gold, Merchant potions, first-Warden relic guarantees, and profile-scoped checkpoint unlocks;
+- persistent campaign continuity across Camp descents, including one starting relic per campaign and a forced Vault after ten fragments;
+- native Forge and Camp checkpoint flows without generic Ranked interruption screens;
+- D1-order-independent campaign validation, which removes the reproduced HTTP 500/reconnect loop after selecting a starting relic;
+- boot input lock through load/fade plus a short post-fade guard against accidental Main Menu selection.
+
+Verification:
+
+- R2 threat matrix 30/30 scenarios covered;
+- `verify:fast` 48/48;
+- `verify:phase` 736/736;
+- `verify:baseline` 3/3 plus headed v0.8 smoke;
+- `verify:full` 760/760, including Wrangler/D1 21/21 and headed v0.8 smoke;
+- visible Ranked lifecycle PASS and dedicated native Merchant headed PASS.
+
+Ruleset changed from `sha256:bfc32eb2fa252d6543e1c042cb6e45e828a8bf6237b0c30d0b9e2e0a13b99950` to `sha256:08dfa4f97d91b4f21dbfae7232246125ddbbc6a0270cf81a9e1ed012e5f5d403`.
+Source `game.js` remains `556829c909cdc9eaefb4238279457eb9b3427adef9ce494f35743542770ee7de`.
+All 172 protected Vault Guardian deletions remain untouched and unstaged.
+R1-P0-001 remains accepted; local combat authority, mode names, and gameplay parity are unchanged.
+
+No unresolved actionable R2 defect remains in this batch.
+No push, deployment, activation, migration, paid service, or M5 work was performed.

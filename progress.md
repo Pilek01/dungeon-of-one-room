@@ -1001,3 +1001,29 @@ Updated next good targets
 - Source `game.js`, ruleset hash, Worker/D1 behavior and schema, gameplay,
   mode names, combat authority, R1-P0-001, and all 172 protected deletions are
   unchanged. No push, staging, paid service, rollback, or M5 work occurred.
+
+## 2026-07-30 - R2 remaining gameplay-parity defects fixed locally
+
+- Reproduced the real starting-relic reconnect loop as Worker HTTP 500 `META_STATE_INVALID:campaign`; the validator had compared JSON property order after D1 canonical serialization.
+- Replaced order-sensitive validation with exact field/value validation and added a persisted-profile regression.
+- Added canonical chest fallback gold, potion pickup/use, map fragments, room-clear parity, and Merchant potion synchronization.
+- Persisted campaign map progress, one starting relic per campaign, first-Warden relic history, and unlocked start checkpoints across Camp descents.
+- Ten map fragments now queue one Vault and the first Warden at a new boss depth guarantees its v0.8 relic offer.
+- Added native Camp checkpoint selection and profile-authorized start depths.
+- Kept Forge, Merchant, Camp, extraction, final defeat, and Practice on native v0.8 presentation paths.
+- Extended boot input locking through load/fade with a short post-fade guard.
+- Local Worker diagnostics now expose hidden dev exceptions without changing production responses.
+
+- Dedicated native Merchant headed QA: PASS, one purchase and one portal transition, zero browser errors.
+- Visible full Ranked lifecycle: PASS for start, network loss, reload, multi-tab, reward boundary, death presentation, and Camp.
+- Threat matrix: 30/30 scenarios covered.
+- `verify:fast`: 48/48 PASS.
+- `verify:phase`: 736/736 PASS.
+- `verify:baseline`: 3/3 PASS plus headed smoke.
+- `verify:full`: 760/760 PASS, including 21/21 Wrangler/D1 E2E and headed smoke.
+- `git diff --check`: PASS.
+
+- Ruleset: `bfc32eb...99950` -> `08dfa4f9...5d403`.
+- Source `game.js`: unchanged at `556829c9...ee7de`.
+- Protected Vault Guardian deletions: 172, untouched and unstaged.
+- No push, deploy, activation, migration, paid service, or M5 work.

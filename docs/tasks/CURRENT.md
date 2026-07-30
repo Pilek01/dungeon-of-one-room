@@ -1,3 +1,45 @@
+# R2 local campaign, reward, resource, Forge, Camp, and checkpoint parity repair
+
+## Active status
+
+`COMPLETED_LOCALLY` in internal commits `50a7c34` and `dd83b49`.
+Production remains unchanged until a separate explicit deployment authorization.
+
+Implemented:
+
+- Ranked chest gold, potion pickups/usage, map fragments, room-clear gold, and Merchant potion purchases now settle into the canonical checkpoint without changing local combat authority;
+- map fragments and one-per-campaign starting relic progress survive Camp descents, ten fragments force one Vault, and the first Warden kill at each new boss depth guarantees its v0.8 relic offer;
+- defeating checkpoint Wardens unlocks the matching later start depth for that profile, and native Camp presents the available checkpoint choices;
+- Forge, Merchant, Camp, extraction, final defeat, and Practice keep the native v0.8 presentation and flow while Ranked accounting stays in the background;
+- the persisted profile campaign validator accepts canonical D1 key ordering, eliminating the real post-relic HTTP 500/reconnect loop;
+- boot input remains locked through loading and a short post-fade guard so the dismiss key cannot select Practice from the Main Menu.
+
+Verification:
+
+- focused campaign/reward regression: 7/7 PASS;
+- dedicated native Merchant headed flow: 1 purchase, 1 portal transition, zero browser errors;
+- R2 threat matrix: 30/30 scenarios covered, accepted boundary unchanged;
+- `verify:fast`: 48/48 PASS;
+- `verify:phase`: 736/736 PASS;
+- `verify:baseline`: 3/3 PASS plus headed v0.8 smoke;
+- `verify:full`: 760/760 PASS, including 21/21 local Wrangler/D1 E2E and headed v0.8 smoke;
+- visible full Ranked lifecycle: PASS for start, network loss, reload, multi-tab, rewards, death presentation, and Camp;
+- `git diff --check`: PASS.
+
+Invariants:
+
+- ruleset hash changed from `sha256:bfc32eb2fa252d6543e1c042cb6e45e828a8bf6237b0c30d0b9e2e0a13b99950` to `sha256:08dfa4f97d91b4f21dbfae7232246125ddbbc6a0270cf81a9e1ed012e5f5d403`;
+- source `game.js` remains byte-identical at `556829c909cdc9eaefb4238279457eb9b3427adef9ce494f35743542770ee7de`;
+- all 172 protected Vault Guardian deletions remain untouched and unstaged;
+- R1-P0-001 remains the accepted local-combat product boundary; Ranked/Practice names and gameplay parity are unchanged;
+- no push, deployment, production activation, D1 migration, paid service, or M5 work occurred.
+
+Internal commits:
+
+- `50a7c34` - restore Ranked campaign and reward parity;
+- `dd83b49` - restore native Ranked gameplay flow.
+
+---
 # Production Ranked gameplay-continuity and gold-parity hotfix - Online v3
 
 ## Active status
