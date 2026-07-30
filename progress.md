@@ -1041,3 +1041,22 @@ Updated next good targets
 - Source `game.js`: unchanged at `556829c9...ee7de`.
 - Protected Vault Guardian deletions: 172, untouched and unstaged.
 - No push, deploy, activation, migration, paid service, or M5 work.
+
+## 2026-07-30 - R2 terminal leaderboard lifecycle deployed
+
+- Extraction no longer publishes; only terminal defeat/victory is public, one
+  season/profile row per five-life campaign.
+- Campaign identity survives Camp descents and rotates only after terminal
+  completion or confirmed abandon.
+- Migrations `0004` and `0005` are active. Historical fanout was reduced
+  from 30 to 6 campaign rows; five legacy `extract` rows remain preserved in
+  D1 but hidden, leaving one public terminal result.
+- Final commits: `d49822d`, `b7a6885`, `57091de`, `1fa6ffd`,
+  `59512df`. Worker `deacb948-896e-444e-97f3-6fbda14a10b1` is at 100%;
+  Pages deployment is `4cab3989-14cc-491d-80b1-9fc0d8bb1ba4`.
+- Focused 10/10, threat matrix 31/31, fast 49/49, phase 740/740,
+  baseline 3/3 plus headed smoke, and full 764/764 including D1 21/21 PASS.
+- Production smoke start/abandon passed at revision 1 with zero leaderboard
+  rows; API and three public asset hashes match the verified release.
+- Source `game.js`, R1-P0-001, Ranked/Practice gameplay parity, mode names,
+  and all 172 protected deletions remain unchanged. M5 was not started.

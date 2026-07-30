@@ -1,5 +1,47 @@
 # Online v3 - Production handoff
 
+## R2 terminal leaderboard campaign lifecycle released
+
+Milestone R2 is complete and production-verified on
+`https://dungeon-of-one-room.pages.dev`.
+
+- final source commit:
+  `59512df5e8b3c218cdb723ac92e05faed61e54aa`;
+- internal commits: `d49822d`, `b7a6885`, `57091de`, `1fa6ffd`,
+  and `59512df`;
+- production Worker:
+  `deacb948-896e-444e-97f3-6fbda14a10b1` at 100%;
+- production Pages:
+  `4cab3989-14cc-491d-80b1-9fc0d8bb1ba4` from `59512df`;
+- D1 migrations: `0004_r2_leaderboard_campaign_identity.sql` and
+  `0005_r2_terminal_leaderboard_filter.sql`, with no pending migrations;
+- Time Travel bookmark before `0005`:
+  `00000154-00000000-000050b8-b585654e88e8e3846a6d9a1430709aee`.
+
+Extraction now remains a normal Camp transition and never publishes a result.
+The same profile ID spans all descents in one five-life campaign. Only terminal
+defeat or victory is publicly visible, with one row per season/profile. The
+five surviving legacy `extract` records remain recoverable in D1 but are
+hidden from list and detail; the production table currently exposes one
+`defeat` row.
+
+Final evidence: focused 10/10, threat matrix 31/31, fast 49/49, phase 740/740,
+baseline 3/3 plus headed smoke, and full 764/764 including Wrangler/D1 21/21.
+The complete headed Ranked lifecycle passed, production API is active, and
+`game.js`, Ranked runtime and protocol are byte-identical to the verified
+bundle. Production smoke `run_3da6d4aa91a241318c58bee241857909`
+completed start/abandon at revision 1 with zero leaderboard rows.
+
+Ruleset:
+`sha256:08dfa4f97d91b4f21dbfae7232246125ddbbc6a0270cf81a9e1ed012e5f5d403`
+to
+`sha256:956251f158e55a0a47f9e43d5680d9aae66a22045c833bd76b8798cdc00e012e`.
+Source `game.js` remains
+`556829c909cdc9eaefb4238279457eb9b3427adef9ce494f35743542770ee7de`.
+All 172 protected Vault Guardian deletions are untouched and unstaged.
+R1-P0-001 remains accepted; no combat-authority, gameplay, mode-name, paid
+service, or M5 change occurred.
+
 ## Ranked gameplay continuity and gold parity hotfix complete
 
 The player-reported Ranked gold deficit, broken Camp upgrades, repeated

@@ -2,59 +2,81 @@
 
 ## Active status
 
-`IN_PROGRESS_LOCALLY`. Production remains unchanged until a separate explicit
-deployment and D1 migration authorization.
+`COMPLETED_AND_PRODUCTION_VERIFIED` at
+`59512df5e8b3c218cdb723ac92e05faed61e54aa`.
 
-Confirmed defects:
+Implemented:
 
-- finalizing an extracted descent emits `insert_leaderboard`, so every Camp
-  extraction publishes another row;
-- the browser profile identity survives completed and abandoned campaigns, so
-  it identifies the installation instead of one five-life Ranked game;
-- `leaderboard_entries` is unique only by `run_id`, with no database invariant
-  limiting a season/profile pair to one published result.
+- extraction still opens native Camp but no longer publishes a leaderboard row;
+- terminal fifth-life defeat and terminal victory publish at most one result per
+  season/campaign profile;
+- one profile ID survives every extraction and Camp descent in the five-life
+  campaign, then rotates only after terminal completion or confirmed abandon;
+- D1 migration `0004` records profile identity, deterministically reduces the
+  previous 30 fanout rows to one row per campaign profile, and enforces the
+  season/profile uniqueness invariant;
+- D1 migration `0005` adds an index for terminal result queries without
+  deleting history; the public list and detail endpoints hide five preserved
+  legacy `extract` rows and currently expose one terminal `defeat`;
+- private profile credentials remain absent from public leaderboard responses.
 
-Authorized paths:
+Internal commits:
 
-- `online-v3/ranked-v3-client.js`;
-- `online-v3/ranked-v3-protocol.js`;
-- `online-v3/ranked-v3-runtime.js`;
-- `cloudflare/leaderboard-v3/src/domain/transitions.js`;
-- `cloudflare/leaderboard-v3/src/index.js`;
-- `cloudflare/leaderboard-v3/src/storage/d1-leaderboard.js`;
-- `cloudflare/leaderboard-v3/src/storage/d1-runs.js`;
-- `cloudflare/leaderboard-v3/src/rulesets/v08-meta-1/finalization-policy.js`;
-- the matching ruleset manifest, generated audit, release registry, and
-  production-entry compatibility files;
-- one new forward-only D1 migration;
-- focused finalization, leaderboard, profile/Camp, migration, client lifecycle,
-  production-release, and threat-matrix tests and fixtures;
-- `ONLINE_V3_HANDOFF.md`;
-- `progress.md`;
-- this file.
+- `d49822d` - Fix Ranked leaderboard campaign lifecycle;
+- `b7a6885` - Preserve Ranked campaign identity across Camp;
+- `57091de` - Align Ranked E2E with terminal publication;
+- `1fa6ffd` - Stabilize Ranked headed room traversal;
+- `59512df` - Hide legacy extraction leaderboard rows.
 
-Required outcome:
+Production:
 
-- extraction still finalizes the current descent so native Camp can open, but
-  does not publish a leaderboard row;
-- terminal campaign defeat after the fifth lost life, and terminal victory,
-  publish at most one row for the campaign profile in its season;
-- one fresh Ranked game receives one fresh profile ID; that ID survives all
-  extracts/Camp descents, reload and recovery, then rotates only after terminal
-  completion or confirmed abandonment;
-- the D1 schema records `profile_id`, deduplicates historical season/profile
-  rows deterministically by score, depth, gold, creation time and run ID, and
-  enforces one future row per season/profile;
-- public leaderboard responses do not expose private profile credentials or
-  add a new gameplay-visible technical flow;
-- source `game.js`, gameplay, combat authority, mode names, Practice,
-  R1-P0-001, and the 172 protected Vault Guardian deletions remain unchanged.
+- Worker `dungeon-online-v3-production` version
+  `deacb948-896e-444e-97f3-6fbda14a10b1` is active at 100%;
+- Pages deployment `4cab3989-14cc-491d-80b1-9fc0d8bb1ba4` from
+  `59512df` is live at `https://dungeon-of-one-room.pages.dev`;
+- D1 migrations `0004` and `0005` are applied with no pending migrations;
+- the pre-`0005` Time Travel bookmark is
+  `00000154-00000000-000050b8-b585654e88e8e3846a6d9a1430709aee`;
+- production smoke `run_3da6d4aa91a241318c58bee241857909`
+  completed `201 start -> 200 abandon`, revision 1, with zero leaderboard
+  rows; one response-lost preflight remains at revision 0 with zero leaderboard
+  rows and normal retention.
 
-Run focused RED/GREEN regressions, the R2 threat matrix, `verify:fast`,
-`verify:phase`, `verify:baseline`, `verify:full`, headed player-visible QA,
-and `git diff --check`. Create exact internal commits and stop. Do not push,
-deploy, activate a ruleset, apply the D1 migration, use a paid service, or
-start M5.
+Verification:
+
+- focused terminal filter/migration/D1 tests: 10/10 PASS;
+- R2 threat matrix: 31/31 scenarios covered; accepted R1-P0-001 boundary
+  unchanged;
+- `verify:fast`: 49/49 PASS
+  (`output/verification/fast-20260730T220433024Z.log`);
+- `verify:phase`: 740/740 PASS
+  (`output/verification/phase-20260730T220453165Z.log`);
+- `verify:baseline`: 3/3 PASS plus headed v0.8 smoke
+  (`output/verification/baseline-20260730T220614219Z.log`);
+- `verify:full`: 764/764 PASS, including 21/21 local Wrangler/D1 E2E and
+  headed v0.8 smoke
+  (`output/verification/full-20260730T220815423Z.log`);
+- visible headed Ranked lifecycle PASS for start, network loss, reload,
+  multi-tab, rewards, death presentation, extraction and Camp;
+- production API is active and compatible; public leaderboard contains only
+  terminal outcomes; public `game.js`, Ranked runtime and protocol match the
+  verified Pages bundle byte-for-byte;
+- `git diff --check`: PASS.
+
+Invariants:
+
+- ruleset hash changed from
+  `sha256:08dfa4f97d91b4f21dbfae7232246125ddbbc6a0270cf81a9e1ed012e5f5d403`
+  to
+  `sha256:956251f158e55a0a47f9e43d5680d9aae66a22045c833bd76b8798cdc00e012e`;
+- source `game.js` remains byte-identical at
+  `556829c909cdc9eaefb4238279457eb9b3427adef9ce494f35743542770ee7de`;
+- 30 Milestone files changed; all 172 protected Vault Guardian deletions remain
+  untouched and unstaged;
+- no server-authoritative combat, gameplay divergence, mode rename, paid
+  service, rollback, or M5 work occurred.
+
+Stop after the R2 release handoff. M5 is not started.
 
 ---
 # R2 local campaign, reward, resource, Forge, Camp, and checkpoint parity repair
