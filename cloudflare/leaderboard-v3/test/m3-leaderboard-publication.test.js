@@ -168,3 +168,16 @@ test("season and campaign profile publish at most one leaderboard row", async ()
     profileId
   );
 });
+
+
+test("legacy extraction entries are hidden from public list and detail", async () => {
+  const repositories = createMemoryRepositories();
+  const legacy = entry("run_0000000000000099", 99999, 50, { outcome: "extract" });
+  assert.equal(await publish(repositories, legacy), true);
+  const worker = createWorker({ repositories });
+  const list = await get(worker, `/api/v3/leaderboard?season=${SEASON}&limit=20`);
+  assert.equal(list.response.status, 200);
+  assert.deepEqual(list.payload.entries, []);
+  const detail = await get(worker, `/api/v3/leaderboard/${legacy.runId}`);
+  assert.equal(detail.response.status, 404);
+});

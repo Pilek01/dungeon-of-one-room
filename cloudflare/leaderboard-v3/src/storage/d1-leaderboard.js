@@ -87,7 +87,7 @@ export function createD1LeaderboardRepository(db) {
         SELECT run_id, player_name, score, depth, gold, duration_ms,
                outcome, verification_level, created_at
         FROM leaderboard_entries
-        WHERE season = ? ${cursorClause}
+        WHERE season = ? AND outcome IN ('defeat', 'victory') ${cursorClause}
         ORDER BY score DESC, created_at ASC, run_id ASC
         LIMIT ?
       `);
@@ -119,7 +119,7 @@ export function createD1LeaderboardRepository(db) {
                outcome, build_json, summary_json, verification_level,
                state_digest, created_at
         FROM leaderboard_entries
-        WHERE run_id = ?
+        WHERE run_id = ? AND outcome IN ('defeat', 'victory')
       `).bind(runId).first();
       if (!row) return null;
       return {

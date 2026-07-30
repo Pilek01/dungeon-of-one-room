@@ -216,7 +216,7 @@ export function createMemoryRepositories() {
       const limit = Math.max(1, Math.min(50, Number(options.limit) || 20));
       const cursor = decodeLeaderboardCursor(options.cursor);
       const rows = [...leaderboardRows.values()]
-        .filter((entry) => entry.season === season)
+        .filter((entry) => entry.season === season && ["defeat", "victory"].includes(entry.outcome))
         .sort(compareLeaderboardEntries)
         .filter((entry) => isAfterLeaderboardCursor(entry, cursor))
         .slice(0, limit + 1);
@@ -243,7 +243,8 @@ export function createMemoryRepositories() {
     async detail(runId) {
       metrics.reads += 1;
       metrics.statements.push("read_leaderboard_detail");
-      return clone(leaderboardRows.get(runId) || null);
+      const entry = leaderboardRows.get(runId);
+      return ["defeat", "victory"].includes(entry?.outcome) ? clone(entry) : null;
     }
   };
 

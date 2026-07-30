@@ -98,7 +98,7 @@ test("R2 migrations are additive and expose profile plus recovery retention stat
   database.close();
 });
 
-test("0004 keeps one identifiable leaderboard row per season and campaign profile", async () => {
+test("0004 and 0005 preserve legacy rows while indexing terminal leaderboard queries", async () => {
   const names = [
     "0001_initial.sql",
     "0002_r2_ranked_profiles.sql",
@@ -123,24 +123,26 @@ test("0004 keeps one identifiable leaderboard row per season and campaign profil
       run_id, season, player_name, score, depth, gold, duration_ms,
       outcome, build_json, summary_json, verification_level,
       state_digest, created_at
-    ) VALUES (?, 'season-a', 'Player', ?, ?, ?, 1000, 'defeat', '{}', '{}',
+    ) VALUES (?, 'season-a', 'Player', ?, ?, ?, 1000, ?, '{}', '{}',
       'checkpoint_verified_v3', ?, ?)
   `);
   const rows = [
-    ["run_duplicate_low", "profile_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", 100, 10, 20, 100],
-    ["run_duplicate_best", "profile_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", 100, 11, 5, 200],
-    ["run_other_profile", "profile_bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb", 90, 20, 40, 300],
-    ["run_legacy_no_profile", null, 999, 99, 99, 50]
+    ["run_duplicate_low", "profile_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", 100, 10, 20, "defeat", 100],
+    ["run_duplicate_best", "profile_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", 100, 11, 5, "defeat", 200],
+    ["run_other_profile", "profile_bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb", 90, 20, 40, "victory", 300],
+    ["run_old_extract", "profile_cccccccccccccccccccccccccccccccc", 500, 30, 80, "extract", 400],
+    ["run_legacy_no_profile", null, 999, 99, 99, "defeat", 50]
   ];
-  for (const [runId, profileId, score, depth, gold, createdAt] of rows) {
+  for (const [runId, profileId, score, depth, gold, outcome, createdAt] of rows) {
     insertRun.run(runId, profileId, `digest:${runId}`, `start:${runId}`, `request:${runId}`);
-    insertEntry.run(runId, score, depth, gold, `digest:${runId}`, createdAt);
+    insertEntry.run(runId, score, depth, gold, outcome, `digest:${runId}`, createdAt);
   }
-  const migration = await readFile(
-    new URL("../migrations/0004_r2_leaderboard_campaign_identity.sql", import.meta.url),
-    "utf8"
-  );
-  database.exec(migration);
+  for (const name of [
+    "0004_r2_leaderboard_campaign_identity.sql",
+    "0005_r2_terminal_leaderboard_filter.sql"
+  ]) {
+    database.exec(await readFile(new URL(`../migrations/${name}`, import.meta.url), "utf8"));
+  }
   const columns = database.prepare("PRAGMA table_info(leaderboard_entries)").all()
     .map((row) => row.name);
   assert(columns.includes("profile_id"));
@@ -153,6 +155,10 @@ test("0004 keeps one identifiable leaderboard row per season and campaign profil
       profile_id: "profile_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
     },
     {
+      run_id: "run_old_extract",
+      profile_id: "profile_cccccccccccccccccccccccccccccccc"
+    },
+    {
       run_id: "run_other_profile",
       profile_id: "profile_bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
     }
@@ -161,6 +167,7 @@ test("0004 keeps one identifiable leaderboard row per season and campaign profil
     SELECT name FROM sqlite_master WHERE type = 'index' ORDER BY name
   `).all().map((row) => row.name);
   assert(indexes.includes("leaderboard_entries_season_profile"));
+  assert(indexes.includes("leaderboard_entries_terminal_season_score_created"));
   assert.throws(() => database.prepare(`
     INSERT INTO leaderboard_entries (
       run_id, profile_id, season, player_name, score, depth, gold, duration_ms,
