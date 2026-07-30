@@ -223,7 +223,7 @@ const productionGameReplacements = [
 `      window.DungeonOnlineV3?.onExtraction?.(forced && !state.roomCleared ? "emergency" : "normal");`
   ],  [
     "  let bootDismissPromise = null;",
-    "  let bootDismissPromise = null;\n  let bootInputLocked = false;"
+    "  let bootDismissPromise = null;\n  let bootInputLocked = false;\n  let bootInputUnlockAt = 0;"
   ],
   [
 `  function enterMenu(menuConfig = {}) {
@@ -429,6 +429,7 @@ const productionGameReplacements = [
       }))
       .finally(() => {
         bootInputLocked = false;
+        bootInputUnlockAt = performance.now() + 250;
       });
     return bootDismissPromise;
   }`
@@ -438,7 +439,7 @@ const productionGameReplacements = [
     if (MOBILE_UNSUPPORTED_BLOCKED) return;`,
 `  window.addEventListener("keydown", (event) => {
     if (MOBILE_UNSUPPORTED_BLOCKED) return;
-    if (bootInputLocked) {
+    if (bootInputLocked || performance.now() < bootInputUnlockAt) {
       event.preventDefault();
       return;
     }`
@@ -448,7 +449,7 @@ const productionGameReplacements = [
     if (MOBILE_UNSUPPORTED_BLOCKED) return;`,
 `  window.addEventListener("pointerdown", (event) => {
     if (MOBILE_UNSUPPORTED_BLOCKED) return;
-    if (bootInputLocked) {
+    if (bootInputLocked || performance.now() < bootInputUnlockAt) {
       event.preventDefault();
       return;
     }`
@@ -515,6 +516,70 @@ const productionGameReplacements = [
     normalizeRelicInventory();`
   ],
   [
+`  function openForgeRoom() {
+    if (!forgeRoomApi) return false;`,
+`  function openRankedForgeRoom() {
+    if (!isOnForge()) return false;
+    clearForgeFlowState();
+    state.forgePrompt = { step: "mode" };
+    pushLog("Forge Chamber: 1 Temper, 2 Transmute, Esc leave.", "good");
+    markUiDirty();
+    return true;
+  }
+
+  function openForgeRoom() {
+    if (state.onlineV3Ranked) return openRankedForgeRoom();
+    if (!forgeRoomApi) return false;`
+  ],
+  [
+`  function executeForgeTemper() {
+    normalizeRelicInventory();`,
+`  function executeForgeTemper() {
+    normalizeRelicInventory();
+    if (state.onlineV3Ranked) {
+      state.forge.used = true;
+      state.forgePrompt = null;
+      markUiDirty();
+      return Boolean(window.DungeonOnlineV3?.onForgeMode?.("temper"));
+    }`
+  ],
+  [
+`  function executeForgeTransmute(relicIndex) {
+    const sacrificedRelicId = state.relics[relicIndex];`,
+`  function executeForgeTransmute(relicIndex) {
+    const sacrificedRelicId = state.relics[relicIndex];
+    if (state.onlineV3Ranked) {
+      if (!sacrificedRelicId) return false;
+      state.forge.used = true;
+      state.forgePrompt = null;
+      markUiDirty();
+      return Boolean(window.DungeonOnlineV3?.onForgeMode?.("transmute"));
+    }`
+  ],
+  [
+`      if (key === "escape" || key === "n") {
+        clearForgeFlowState();`,
+`      if (key === "escape" || key === "n") {
+        if (state.onlineV3Ranked) window.DungeonOnlineV3?.onForgeLeave?.();
+        clearForgeFlowState();`
+  ],
+  [
+`      if (!state.onlineV3NextDirective) {
+        pushLog("Online v3 is still resolving the next room.", "warn");
+        return;`,
+`      if (!state.onlineV3NextDirective) {
+        if (state.roomType === "merchant") {
+          window.DungeonOnlineV3?.onMerchantLeave?.({ enterPortal: true });
+          return;
+        }
+        if (state.roomType === "forge" && window.DungeonOnlineV3?.onForgeLeave?.({ enterPortal: true })) {
+          pushLog("Saving Forge choice and descending...", "good");
+          return;
+        }
+        pushLog("Online v3 is still resolving the next room.", "warn");
+        return;`
+  ],
+  [
 `  function openCampStartDepthPrompt() {
     if (state.phase !== "camp") return false;
     if (state.extractRelicPrompt) return false;
@@ -522,10 +587,22 @@ const productionGameReplacements = [
 `  function openCampStartDepthPrompt() {
     if (state.phase !== "camp") return false;
     if (state.extractRelicPrompt) return false;
-    if (state.onlineV3Ranked) {
-      return Boolean(window.DungeonOnlineV3?.onCampStartRun?.());
-    }
+    if (state.onlineV3Ranked) syncRankedStartDepthUnlocks(window.DungeonOnlineV3?.getSnapshot?.()?.publicState?.campaign);
     const available = getAvailableStartDepths();`
+  ],
+  [
+`    if (available.length <= 1) {
+      startRun({ carriedRelics: [...state.relics], startDepth: 0 });`,
+`    if (available.length <= 1) {
+      if (state.onlineV3Ranked) return Boolean(window.DungeonOnlineV3?.onCampStartRun?.(0));
+      startRun({ carriedRelics: [...state.relics], startDepth: 0 });`
+  ],
+  [
+`    state.campStartDepthPromptOpen = false;
+    startRun({ carriedRelics: [...state.relics], startDepth: selectedDepth });`,
+`    state.campStartDepthPromptOpen = false;
+    if (state.onlineV3Ranked) return Boolean(window.DungeonOnlineV3?.onCampStartRun?.(selectedDepth));
+    startRun({ carriedRelics: [...state.relics], startDepth: selectedDepth });`
   ],
   [
 `  function toggleMutator(index) {
@@ -538,6 +615,31 @@ const productionGameReplacements = [
       pushLog("Ranked mutators are fixed by the canonical run profile.", "bad");
       return;
     }`
+  ],
+  [
+`      startRun({ carriedRelics, resetMapFragments: true });
+      state.player.gold = Math.max(0, Number(publicState?.gold) || 0);`,
+`      const campaign = publicState?.campaign || {};
+      startRun({ carriedRelics, startDepth: Math.max(0, Number(publicState?.startDepth) || 0) });
+      state.treasureMapFragments = Math.max(0, Number(campaign.treasureMapFragments) || 0);
+      state.forcedNextRoomType = String(campaign.forcedNextRoomType || "");
+      syncRankedStartDepthUnlocks(campaign);
+      state.player.potions = Math.max(0, Number(publicState?.build?.resources?.potions) || 0);
+      state.player.maxPotions = Math.max(1, Number(publicState?.build?.resources?.maxPotions) || state.player.maxPotions);
+      state.player.gold = Math.max(0, Number(publicState?.gold) || 0);`
+  ],
+  [
+`      state.runMaxDepth = Math.max(0, Number(publicState?.maxDepth) || state.runMaxDepth);
+      markUiDirty();`,
+`      state.runMaxDepth = Math.max(0, Number(publicState?.maxDepth) || state.runMaxDepth);
+      const resources = publicState?.build?.resources || {};
+      const campaign = publicState?.campaign || {};
+      state.player.potions = Math.max(0, Number(resources.potions) || 0);
+      state.player.maxPotions = Math.max(1, Number(resources.maxPotions) || state.player.maxPotions);
+      state.treasureMapFragments = Math.max(0, Number(campaign.treasureMapFragments) || 0);
+      state.forcedNextRoomType = String(campaign.forcedNextRoomType || "");
+      syncRankedStartDepthUnlocks(campaign);
+      markUiDirty();`
   ],
   [
 `    setNextDirective(directive) {`,
@@ -567,6 +669,9 @@ const productionGameReplacements = [
       if (!wasCamp) state.campPanelView = "shop";
       state.campGold = Math.max(0, Number(profile?.campGold) || 0);
       state.lives = Math.max(0, Number(profile?.lives) || 0);
+      state.treasureMapFragments = Math.max(0, Number(profile?.campaign?.treasureMapFragments) || 0);
+      state.forcedNextRoomType = String(profile?.campaign?.forcedNextRoomType || "");
+      syncRankedStartDepthUnlocks(profile?.campaign);
       state.campUpgrades = sanitizeCampUpgrades(build.campUpgrades || {});
       state.skillTiers = sanitizeSkillTiers(build.skillTiers || {});
       const canonicalElixir = Array.isArray(build.elixirs) ? build.elixirs[0] : null;
@@ -635,6 +740,18 @@ const rankedGoldGameReplacements = [
   [
 `  const state = {`,
 `  let onlineV3RewardRecorder = null;
+  let onlineV3ActiveChestClaimId = null;
+  function syncRankedStartDepthUnlocks(campaign = {}) {
+    const unlocked = Array.isArray(campaign?.unlockedStartDepths)
+      ? campaign.unlockedStartDepths
+      : [];
+    state.startDepthUnlocks = Object.fromEntries(
+      unlocked
+        .map((depth) => Math.max(0, Math.floor(Number(depth) || 0)))
+        .filter((depth) => depth > 0)
+        .map((depth) => [String(depth), true])
+    );
+  }
 
   const state = {`
   ],
@@ -674,7 +791,7 @@ const rankedGoldGameReplacements = [
 `    chest.opened = true;
     clearVaultChestThreatState(chest);`,
 `    chest.opened = true;
-    const onlineV3ChestClaimId = onlineV3RewardRecorder?.openChest?.() || null;
+    onlineV3ActiveChestClaimId = onlineV3RewardRecorder?.openChest?.() || null;
     clearVaultChestThreatState(chest);`
   ],
   [
@@ -691,7 +808,71 @@ const rankedGoldGameReplacements = [
       const onlineV3GoldBase = raw;
       raw = Math.max(1, Math.round(raw * getTreasureSenseMultiplier()));
       const scaled = grantGold(raw);
-      onlineV3RewardRecorder?.recordChestGold?.(onlineV3ChestClaimId, onlineV3GoldBase);`
+      onlineV3RewardRecorder?.recordChestGold?.(onlineV3ActiveChestClaimId, onlineV3GoldBase);`
+  ],
+  [
+`    let rawGold = randInt(4, 8);
+    if (inTreasureRoom) {
+      rawGold = Math.round(rawGold * 6);
+    }
+    rawGold = Math.max(1, Math.round(rawGold * getTreasureSenseMultiplier()));`,
+`    let rawGold = randInt(4, 8);
+    if (inTreasureRoom) {
+      rawGold = Math.round(rawGold * 6);
+    }
+    const onlineV3GoldBase = rawGold;
+    rawGold = Math.max(1, Math.round(rawGold * getTreasureSenseMultiplier()));
+    onlineV3RewardRecorder?.recordChestGold?.(onlineV3ActiveChestClaimId, onlineV3GoldBase);`
+  ],
+  [
+`        const fallbackGold = grantGold(randInt(2, 5));
+        pushLog(` + "`Chest: no heal (Alchemist), +${fallbackGold} gold.`" + `);`,
+`        const onlineV3FallbackBase = randInt(2, 5);
+        const fallbackGold = grantGold(onlineV3FallbackBase);
+        onlineV3RewardRecorder?.recordChestFallbackGold?.(onlineV3ActiveChestClaimId, onlineV3FallbackBase);
+        pushLog(` + "`Chest: no heal (Alchemist), +${fallbackGold} gold.`" + `);`
+  ],
+  [
+`        const fallbackGold = grantGold(randInt(2, 5));
+        pushLog(` + "`Chest: no heal (Alchemist), +${fallbackGold} gold.`" + `);`,
+`        const onlineV3FallbackBase = randInt(2, 5);
+        const fallbackGold = grantGold(onlineV3FallbackBase);
+        onlineV3RewardRecorder?.recordChestFallbackGold?.(onlineV3ActiveChestClaimId, onlineV3FallbackBase);
+        pushLog(` + "`Chest: no heal (Alchemist), +${fallbackGold} gold.`" + `);`
+  ],
+  [
+`        const fallbackGold = grantGold(randInt(2, 5));
+        pushLog(` + "`Chest: potion sealed by Pact of Avarice, +${fallbackGold} gold.`" + `, "warn");`,
+`        const onlineV3FallbackBase = randInt(2, 5);
+        const fallbackGold = grantGold(onlineV3FallbackBase);
+        onlineV3RewardRecorder?.recordChestFallbackGold?.(onlineV3ActiveChestClaimId, onlineV3FallbackBase);
+        pushLog(` + "`Chest: potion sealed by Pact of Avarice, +${fallbackGold} gold.`" + `, "warn");`
+  ],
+  [
+`        grantPotion(1);
+        pushLog("Chest: +1 potion.", "good");`,
+`        grantPotion(1);
+        onlineV3RewardRecorder?.recordChestPotion?.(onlineV3ActiveChestClaimId, 1);
+        pushLog("Chest: +1 potion.", "good");`
+  ],
+  [
+`      const completions = grantTreasureMapFragment(1);`,
+`      const completions = grantTreasureMapFragment(1);
+      onlineV3RewardRecorder?.recordChestMapFragment?.(onlineV3ActiveChestClaimId, 1);`
+  ],
+  [
+`    state.player.potions -= 1;
+    state.player.autoPotionCooldown = AUTO_POTION_INTERNAL_COOLDOWN_TURNS;`,
+`    state.player.potions -= 1;
+    onlineV3RewardRecorder?.recordPotionUse?.();
+    state.player.autoPotionCooldown = AUTO_POTION_INTERNAL_COOLDOWN_TURNS;`
+  ],
+  [
+`    state.player.potions -= 1;
+    state.potionsUsedThisRun = (state.potionsUsedThisRun || 0) + 1;`,
+`    state.player.potions -= 1;
+    onlineV3RewardRecorder?.recordPotionUse?.();
+    state.potionsUsedThisRun = (state.potionsUsedThisRun || 0) + 1;`
   ],
   [
 `      revealPortalFx();
@@ -878,22 +1059,6 @@ const rankedMerchantGameReplacements = [
   }`
   ],
   [
-`    if (state.onlineV3Ranked) {
-      if (!state.onlineV3NextDirective) {
-        pushLog("Online v3 is still resolving the next room.", "warn");
-        return;
-      }`,
-`    if (state.onlineV3Ranked) {
-      if (!state.onlineV3NextDirective) {
-        if (state.roomType === "merchant") {
-          window.DungeonOnlineV3?.onMerchantLeave?.({ enterPortal: true });
-          return;
-        }
-        pushLog("Online v3 is still resolving the next room.", "warn");
-        return;
-      }`
-  ],
-  [
 `    enterNextDirective() {
       if (!state.onlineV3Ranked || !state.onlineV3NextDirective) return false;
       state.onlineV3Directive = state.onlineV3NextDirective;
@@ -978,7 +1143,7 @@ const rankedMerchantBridge = `    beginRankedMerchantRequest() {
       state.merchantSecondChancePurchases = Math.max(0, Number(merchant.secondChancePurchases) || 0);
       state.merchantReservedRelic = sanitizeMerchantReservedRelic(merchant.reservedRelic);
       state.merchantSlotsInitialized = true;
-      if (action === "potion") state.player.potions = Math.max(0, Number(resources.potions) || 0);
+      state.player.potions = Math.max(0, Number(resources.potions) || 0);
       state.player.maxPotions = Math.max(1, Number(resources.maxPotions) || state.player.maxPotions);
       if (action === "service" && request.serviceId === "fullheal") {
         state.player.maxHp = Math.max(1, Number(resources.maxHp) || state.player.maxHp);

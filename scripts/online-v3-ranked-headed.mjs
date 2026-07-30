@@ -213,11 +213,11 @@ async function dismissBoot(page) {
   if (!await boot.evaluate((element) => element.classList.contains("hidden"))) {
     await page.keyboard.press("Enter");
     await page.locator(".boot-loading").waitFor({ state: "visible" });
+    await page.keyboard.press("Enter");
     await page.screenshot({
       path: path.join(ARTIFACT_ROOT, "ranked-boot-loading.png"),
       fullPage: true
     });
-    await page.keyboard.press("Enter");
   }
   await page.waitForFunction(() => document.querySelector("#bootScreen")?.classList.contains("hidden"));
   await page.waitForTimeout(300);
@@ -405,12 +405,25 @@ async function chooseRelicWithoutFatalPrevention(page) {
   await page.locator(".ranked-v3-choice-relic").nth(choiceIndex).click();
 }
 
-async function sessionState(page, expected) {
-  await page.waitForFunction(
-    (value) => window.DungeonOnlineV3?.getSessionState?.() === value,
-    expected,
-    { timeout: 15_000 }
-  );
+async function sessionState(page, expected, diagnostics = null) {
+  try {
+    await page.waitForFunction(
+      (value) => window.DungeonOnlineV3?.getSessionState?.() === value,
+      expected,
+      { timeout: 15_000 }
+    );
+  } catch (error) {
+    const actual = await page.evaluate(() => ({
+      sessionState: window.DungeonOnlineV3?.getSessionState?.() || null,
+      snapshot: window.DungeonOnlineV3?.getSnapshot?.() || null,
+      overlayText: document.querySelector(".ranked-v3-overlay:not(.hidden)")?.innerText || "",
+      game: JSON.parse(window.render_game_to_text())
+    }));
+    throw new Error(`Expected Ranked session ${expected}: ${JSON.stringify({
+      ...actual,
+      network: diagnostics
+    })}`, { cause: error });
+  }
 }
 
 async function visibleGameState(page) {
@@ -690,7 +703,7 @@ ${fatalTestHookAnchor}`;
       fullPage: true
     });
     await chooseRelicWithoutFatalPrevention(page);
-    await sessionState(page, "ROOM_ACTIVE");
+    await sessionState(page, "ROOM_ACTIVE", diagnostics);
     const runId = await page.evaluate(() => window.DungeonOnlineV3.getSnapshot().runId);
     assert.match(runId, /^run_[a-f0-9]+$/u);
 
@@ -1323,7 +1336,12 @@ ${fatalTestHookAnchor}`;
       `${summary.deathPresentationScenarios} death-presentation, ${summary.campLifecycleScenarios} Camp)\n`
     );
     await context.close();
-  } finally {
+  } catch (error) {
+    const workerLogs = worker.getLogs().replaceAll(secret, "[redacted]").trim();
+    throw new Error(
+      workerLogs ? `${error.message}\nWorker logs:\n${workerLogs}` : error.message,
+      { cause: error }
+    );
     await browser.close();
     await closeServer(proxy.server);
     worker.child.kill();

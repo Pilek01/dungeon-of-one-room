@@ -474,11 +474,11 @@
     ]);
   }
 
-  async function startRanked() {
-    return startRankedAttempt(true);
+  async function startRanked(startDepth = 0) {
+    return startRankedAttempt(true, startDepth);
   }
 
-  async function startRankedAttempt(allowProfileRepair) {
+  async function startRankedAttempt(allowProfileRepair, startDepth = 0) {
     if (new URL(root.location.href).searchParams.has("scenario") || root.DUNGEON_DEBUG_SCENARIO_ACTIVE) {
       ui.showMessage("Ranked unavailable", "Scenario and debug overrides cannot enter Ranked.", [
         ui.button("Close", () => ui.hide())
@@ -493,6 +493,7 @@
         playerName: publicName(),
         season: String(root.DUNGEON_ONLINE_V3_SEASON || "local-m4"),
         gameVersion: String(root.DUNGEON_GAME_VERSION || root.GAME_VERSION || "v0.8.0"),
+        startDepth: Math.max(0, Math.floor(Number(startDepth) || 0)),
         clientInstallIdHash: await installationHash()
       });
       await acceptResponse(response);
@@ -505,7 +506,7 @@
         return;
       }
       if (repairProfile) {
-        await startRankedAttempt(false);
+        await startRankedAttempt(false, startDepth);
         return;
       }
       presentStartError(error);
@@ -612,21 +613,6 @@
 
   async function openMetaOffer(roomType) {
     let payload = {};
-    if (roomType === "forge") {
-      ui.showMessage("Forge", "Choose the Forge operation.", [
-        ui.button("Temper", async () => {
-          try {
-            await continueBoundary((await createClient().event("open_meta_offer", { mode: "temper" })).metaState);
-          } catch (error) { presentError(error); }
-        }),
-        ui.button("Transmute", async () => {
-          try {
-            await continueBoundary((await createClient().event("open_meta_offer", { mode: "transmute" })).metaState);
-          } catch (error) { presentError(error); }
-        })
-      ]);
-      return;
-    }
     const response = await createClient().event("open_meta_offer", payload);
     await continueBoundary(response.metaState);
   }
@@ -852,7 +838,7 @@
     return true;
   }
 
-  function onCampStartRun() {
+  function onCampStartRun(startDepth = 0) {
     if (campMutationPending) return false;
     campMutationPending = true;
     Promise.resolve()
@@ -862,7 +848,7 @@
         prepareFreshRankedStart();
         currentCampResponse = null;
         ui.hide();
-        return startRanked();
+        return startRanked(startDepth);
       })
       .catch(presentCampError)
       .finally(() => { campMutationPending = false; });
@@ -923,11 +909,35 @@
     return true;
   }
 
+
+  function onForgeMode(mode) {
+    if (!pendingRoomSummary || !["temper", "transmute"].includes(mode)) return false;
+    session.transition(root.DungeonRankedV3Session.STATES.offer);
+    createClient().event("open_meta_offer", { mode })
+      .then((response) => continueBoundary(response.metaState))
+      .catch(presentError);
+    return true;
+  }
+
+  function onForgeLeave(options = {}) {
+    if (!pendingRoomSummary) return false;
+    Promise.resolve().then(async () => {
+      const resolved = await resolveCheckpoint({ silent: true });
+      if (resolved && options.enterPortal === true) {
+        root.DungeonOnlineV3GameBridge?.enterNextDirective?.();
+      }
+    }).catch(presentError);
+    return true;
+  }
   async function onLocalRoomCleared(summary) {
     pendingRoomSummary = summary || {};
     const state = createClient().getSnapshot()?.publicState;
     const roomType = state?.currentRoomDirective?.roomType;
-    if (["forge", "pact"].includes(roomType)) {
+    if (roomType === "forge") {
+      ui.hide();
+      return;
+    }
+    if (roomType === "pact") {
       session.transition(root.DungeonRankedV3Session.STATES.offer);
       await openMetaOffer(roomType);
       return;
@@ -1116,6 +1126,8 @@
     onCampAction,
     onCampStartRun,
     leaveToMainMenu: returnToPractice,
+    onForgeMode,
+    onForgeLeave,
     getSessionState: () => session.getState(),
     getSnapshot: () => client?.getSnapshot() || null
   });
