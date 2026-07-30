@@ -149,6 +149,30 @@
       return true;
     }
 
+    function recordChestFallbackGold(claimId, baseAmount) {
+      if (sealedSnapshot) return false;
+      const claim = claims.get(`chest:${String(claimId || "")}`);
+      const amount = Number(baseAmount);
+      if (!claim || !Number.isSafeInteger(amount) || amount < 2 || amount > 5) return false;
+      claim.localEvidence = { outcome: "fallback_gold", baseAmount: amount };
+      return true;
+    }
+
+    function recordChestResource(claimId, outcome, count = 1) {
+      if (sealedSnapshot) return false;
+      const claim = claims.get(`chest:${String(claimId || "")}`);
+      const amount = Number(count);
+      if (!claim || !["potion", "map_fragment"].includes(outcome) || !Number.isSafeInteger(amount) || amount !== 1) {
+        return false;
+      }
+      claim.localEvidence = { outcome, count: amount };
+      return true;
+    }
+
+    function recordPotionUse() {
+      return aggregate("resource", "potion-use");
+    }
+
     function snapshot() {
       if (!sealedSnapshot) {
         sealedSnapshot = Object.freeze(Array.from(claims.values(), (claim) =>
@@ -168,6 +192,12 @@
       recordHazard,
       openChest,
       recordChestGold,
+      recordChestPotion: (claimId, count) =>
+        recordChestResource(claimId, "potion", count),
+      recordChestFallbackGold,
+      recordChestMapFragment: (claimId, count) =>
+        recordChestResource(claimId, "map_fragment", count),
+      recordPotionUse,
       snapshot
     });
   }

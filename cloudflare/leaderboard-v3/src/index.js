@@ -176,6 +176,11 @@ function validateStartBody(body) {
     }),
     gameVersion: requireString(body.gameVersion, "gameVersion", { maximum: 32 }),
     rulesetHash: requireString(body.rulesetHash, "rulesetHash", { maximum: 128 }),
+    startDepth: body.startDepth === undefined
+      ? 0
+      : Number.isSafeInteger(body.startDepth) && body.startDepth >= 0 && body.startDepth <= 100
+      ? body.startDepth
+      : (() => { throw new TypeError("startDepth is invalid"); })(),
     clientInstallIdHash: requireString(body.clientInstallIdHash, "clientInstallIdHash", {
       minimum: 16,
       maximum: 128,

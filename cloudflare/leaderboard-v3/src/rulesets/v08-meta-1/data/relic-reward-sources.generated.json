@@ -176,7 +176,7 @@
         "specialRestrictions": [
           "boss depth",
           "final depth excluded",
-          "profile first-drop guarantee deferred"
+          "profile-scoped first drop at each new boss depth is guaranteed"
         ],
         "rewardSlotRequired": true,
         "implementedIn3B2B2A": true,

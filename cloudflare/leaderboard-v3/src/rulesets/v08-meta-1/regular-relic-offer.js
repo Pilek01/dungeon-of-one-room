@@ -112,6 +112,11 @@ async function rollWardenDrop(state, context, tier, slotId) {
     0,
     Number(state.relicOfferState.sourceSpecificCounters.wardenDropMissStreak) || 0
   );
+  const depth = Number(state.currentRoomDirective?.depth) || 0;
+  const firstDrop = !(
+    Array.isArray(state.campaign?.wardenFirstDropDepths) &&
+    state.campaign.wardenFirstDropDepths.includes(depth)
+  );
   const hardPity = missStreak >= wardenPity.hardPityAfterMisses;
   const chance = hardPity
     ? 1
@@ -128,7 +133,8 @@ async function rollWardenDrop(state, context, tier, slotId) {
     Number.parseInt(slotId.slice(-8), 16) || 0
   );
   return {
-    hit: hardPity || roll < Math.round(chance * ONE_MILLION),
+    hit: firstDrop || hardPity || roll < Math.round(chance * ONE_MILLION),
+    firstDrop,
     missStreak,
     hardPity,
     chance
@@ -528,6 +534,11 @@ export async function issueRegularRelicOffer(metaState, rawRequest = {}, context
     mutableSlot.resolution = "no_reward";
     if (binding.sourcePolicy === policy) {
       next.relicOfferState.sourceSpecificCounters.wardenDropMissStreak = 0;
+      const depth = binding.directive.depth;
+      if (!next.campaign.wardenFirstDropDepths.includes(depth)) {
+        next.campaign.wardenFirstDropDepths.push(depth);
+        next.campaign.wardenFirstDropDepths.sort((left, right) => left - right);
+      }
     }
     return next;
   }
@@ -584,6 +595,11 @@ export async function issueRegularRelicOffer(metaState, rawRequest = {}, context
   mutableSlot.resolution = "offer_issued";
   if (binding.sourcePolicy === policy) {
     next.relicOfferState.sourceSpecificCounters.wardenDropMissStreak = 0;
+    const depth = binding.directive.depth;
+    if (!next.campaign.wardenFirstDropDepths.includes(depth)) {
+      next.campaign.wardenFirstDropDepths.push(depth);
+      next.campaign.wardenFirstDropDepths.sort((left, right) => left - right);
+    }
   }
   next.relicOfferState.offersIssuedBySource[offer.sourceId] =
     Math.max(0, Number(next.relicOfferState.offersIssuedBySource[offer.sourceId]) || 0) + 1;

@@ -209,7 +209,12 @@ export function createV08Meta1Ruleset(options = {}) {
     },
 
     async createRun(input, context) {
-      let initial = createInitialMetaStateV08(input, context);
+      const profileUnlocks = input.profileState?.campaign?.unlockedStartDepths;
+      const initialInput = {
+        ...input,
+        unlockedStartDepths: Array.isArray(profileUnlocks) ? profileUnlocks : input.unlockedStartDepths
+      };
+      let initial = createInitialMetaStateV08(initialInput, context);
       initial = await hydrateRunFromProfileV08(
         initial,
         input.profileState,

@@ -26,7 +26,13 @@ test("Ranked reward recorder aggregates elite, hazard, and bounded chest evidenc
   recorder.recordHazard();
   const firstChest = recorder.openChest();
   const secondChest = recorder.openChest();
+  const thirdChest = recorder.openChest();
+  const fourthChest = recorder.openChest();
   recorder.recordChestGold(secondChest, 7);
+  recorder.recordChestPotion(thirdChest, 1);
+  recorder.recordChestMapFragment(fourthChest, 1);
+  recorder.recordPotionUse();
+  recorder.recordPotionUse();
 
   assert.deepEqual(recorder.snapshot(), [
     { claimType: "elite", claimId: "elite:skeleton", count: 1 },
@@ -42,6 +48,23 @@ test("Ranked reward recorder aggregates elite, hazard, and bounded chest evidenc
       claimId: secondChest,
       count: 1,
       localEvidence: { outcome: "gold", baseAmount: 7 }
+    },
+    {
+      claimType: "chest",
+      claimId: thirdChest,
+      count: 1,
+      localEvidence: { outcome: "potion", count: 1 }
+    },
+    {
+      claimType: "chest",
+      claimId: fourthChest,
+      count: 1,
+      localEvidence: { outcome: "map_fragment", count: 1 }
+    },
+    {
+      claimType: "resource",
+      claimId: "potion-use",
+      count: 2
     }
   ]);
 });
@@ -58,6 +81,9 @@ test("production build wires collected claims and the visible v0.8 room-clear bo
   assert.match(builder, /recordHazard/u);
   assert.match(builder, /openChest/u);
   assert.match(builder, /recordChestGold/u);
+  assert.match(builder, /recordChestPotion/u);
+  assert.match(builder, /recordChestMapFragment/u);
+  assert.match(builder, /recordPotionUse/u);
   assert.match(builder, /roomClearBaseV08/u);
   assert.match(builder, /Room clear bonus:/u);
   assert.match(builder, /rewardClaims: onlineV3RewardRecorder\?\.snapshot\(\) \|\| \[\]/u);

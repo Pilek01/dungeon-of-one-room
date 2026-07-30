@@ -7,7 +7,10 @@ const localRegistry = createRulesetRegistry([
 ]);
 const localWorker = createWorker({
   rulesetRegistry: localRegistry,
-  rulesetEnvironment: "local"
+  rulesetEnvironment: "local",
+  onError(cause) {
+    console.error("Online v3 local Worker error", cause);
+  }
 });
 
 export default {

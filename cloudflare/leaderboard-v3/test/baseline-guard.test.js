@@ -49,7 +49,7 @@ test("M4 loads only isolated client modules while Worker source stays disconnect
     path.join(REPO_ROOT, "online-v3", "ranked-v3-runtime.js"),
     "utf8"
   );
-  const startFunction = runtime.indexOf("async function startRanked()");
+  const startFunction = runtime.indexOf("async function startRanked(");
   const entryHandler = runtime.indexOf('ui.entry.addEventListener("click", openRankedEntry)');
   assert(startFunction > 0 && entryHandler > startFunction);
   assert.match(runtime, /let client = null;/u);

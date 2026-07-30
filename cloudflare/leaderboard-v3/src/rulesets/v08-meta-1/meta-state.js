@@ -98,6 +98,57 @@ function createRelicOfferState() {
   };
 }
 
+function createCampaignState(input = {}) {
+  const source = input.campaign && typeof input.campaign === "object"
+    ? input.campaign
+    : input;
+  const treasureMapFragments = Math.max(0, Number(source.treasureMapFragments) || 0);
+  if (!Number.isSafeInteger(treasureMapFragments) || treasureMapFragments >= 10) {
+    throw new TypeError("CAMPAIGN_MAP_FRAGMENTS_INVALID");
+  }
+  const forcedNextRoomType = String(source.forcedNextRoomType || "");
+  if (!["", "vault"].includes(forcedNextRoomType)) {
+    throw new TypeError("CAMPAIGN_FORCED_ROOM_INVALID");
+  }
+  const wardenFirstDropDepths = [...new Set(
+    (Array.isArray(source.wardenFirstDropDepths) ? source.wardenFirstDropDepths : [])
+      .map(Number)
+      .filter((depth) => Number.isSafeInteger(depth) && depth > 0 && depth % progression.bossInterval === 0)
+  )].sort((left, right) => left - right);
+  const requestedUnlocks = Array.isArray(source.unlockedStartDepths)
+    ? source.unlockedStartDepths
+    : Array.isArray(input.unlockedStartDepths)
+      ? input.unlockedStartDepths
+      : [];
+  const unlockedStartDepths = [...new Set(requestedUnlocks.map(Number).filter(
+    (depth) => Number.isSafeInteger(depth) && depth !== progression.entranceStartDepth && progression.allowedStartDepths.includes(depth)
+  ))].sort((left, right) => left - right);
+  return {
+    treasureMapFragments,
+    forcedNextRoomType,
+    wardenFirstDropDepths,
+    unlockedStartDepths
+  };
+}
+
+function assertCampaignState(campaign) {
+  if (!campaign || typeof campaign !== "object" || Array.isArray(campaign)) {
+    throw new TypeError("META_STATE_INVALID:campaign");
+  }
+  const normalized = createCampaignState({ campaign });
+  const expectedKeys = Object.keys(normalized).sort();
+  const actualKeys = Object.keys(campaign).sort();
+  if (
+    JSON.stringify(actualKeys) !== JSON.stringify(expectedKeys) ||
+    campaign.treasureMapFragments !== normalized.treasureMapFragments ||
+    campaign.forcedNextRoomType !== normalized.forcedNextRoomType ||
+    JSON.stringify(campaign.wardenFirstDropDepths) !== JSON.stringify(normalized.wardenFirstDropDepths) ||
+    JSON.stringify(campaign.unlockedStartDepths) !== JSON.stringify(normalized.unlockedStartDepths)
+  ) {
+    throw new TypeError("META_STATE_INVALID:campaign");
+  }
+}
+
 export function createInitialMetaStateV08(input = {}, context = {}) {
   const runId = requireText(context.runId ?? input.runId, "RUN_ID_REQUIRED");
   const season = requireText(context.season ?? input.season, "SEASON_REQUIRED");
@@ -131,6 +182,7 @@ export function createInitialMetaStateV08(input = {}, context = {}) {
     lifeLedger: createLifeLedgerV08(),
     build: createEmptyRelicBuildV08(),
     runModifiers: createEmptyRunModifierLedgerV08(),
+    campaign: createCampaignState(input),
     pendingOffer: null,
     offerSettlementHistory: [],
     pendingRelicTransaction: null,
@@ -198,6 +250,7 @@ export function assertMetaStateV08(state) {
   if (!state.build || typeof state.build !== "object") throw new TypeError("META_STATE_INVALID:build");
   assertCanonicalRelicBuildV08(state.build);
   assertCanonicalRunModifierLedgerV08(state.runModifiers);
+  assertCampaignState(state.campaign);
   assertLifeLedgerV08(state);
   assertGoldLedgerV08(state);
   assertPendingMetaTransactionOfferV08(state.pendingInventory);

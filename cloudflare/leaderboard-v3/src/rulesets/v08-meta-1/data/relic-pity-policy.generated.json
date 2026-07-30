@@ -76,16 +76,18 @@
         "chanceCapBeforeHardPity": 0.95,
         "updateEvent": "reward slot issue attempt",
         "retryPolicy": "no increment for a slot with an existing resolution"
-      }
-    ],
-    "deferredProfileScoped": [
+      },
       {
         "pityId": "warden-first-drop-depths",
-        "legacyState": "wardenFirstDropDepths",
-        "storageKey": "dungeonOneRoomWardenFirstDropDepths",
-        "reason": "DEFERRED_PROFILE_SCOPED_PITY"
+        "sourceId": "warden-standard-drop",
+        "scope": "profile",
+        "statePath": "campaign.wardenFirstDropDepths",
+        "guarantee": "first eligible Warden kill at each boss depth",
+        "updateEvent": "reward slot resolution",
+        "retryPolicy": "depth is recorded exactly once after resolution"
       }
     ],
+    "deferredProfileScoped": [],
     "deferredGameSessionScoped": [
       {
         "pityId": "forge-room-pity",

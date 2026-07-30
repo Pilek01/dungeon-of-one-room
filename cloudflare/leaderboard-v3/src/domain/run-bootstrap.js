@@ -79,7 +79,7 @@ export async function createAuthenticatedRunBootstrap(input, context) {
     "RUN_BOOTSTRAP_NONCE_REQUIRED"
   );
   const canonical = await ruleset.createRun({
-    startDepth: 0,
+    startDepth: Math.max(0, Math.floor(Number(input?.startDepth) || 0)),
     profileState: context.profileState || null
   }, {
     runId,

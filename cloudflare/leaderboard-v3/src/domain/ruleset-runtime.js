@@ -65,6 +65,7 @@ export function publicRulesetMetaState(state, ruleset) {
     rulesetHash: state.rulesetHash,
     status: state.status,
     revision: state.revision,
+    startDepth: state.startDepth,
     depth: state.depth,
     roomIndex: state.roomIndex,
     currentRoomDirective: structuredClone(state.currentRoomDirective),
@@ -80,6 +81,7 @@ export function publicRulesetMetaState(state, ruleset) {
       lifeLosses: state.lifeLedger.lifeLosses,
       currentLife: state.lifeLedger.currentLife
     },
+    campaign: structuredClone(state.campaign),
     build: structuredClone(state.build),
     statistics: structuredClone(state.statistics),
     startingRelicOffer:

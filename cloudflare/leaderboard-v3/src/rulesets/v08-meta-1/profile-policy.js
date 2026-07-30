@@ -55,6 +55,7 @@ export async function hydrateRunFromProfileV08(state, profile, context = {}) {
   next.runModifiers = structuredClone(
     profile.runModifiers || createEmptyRunModifierLedgerV08()
   );
+  next.campaign = structuredClone(profile.campaign || next.campaign);
   return next;
 }
 
@@ -73,6 +74,7 @@ function profileStateFromCanonicalRun(state, profileId, profileRevision = 0) {
     lives: state.lives,
     build: structuredClone(state.build),
     runModifiers: structuredClone(state.runModifiers),
+    campaign: structuredClone(state.campaign),
     goldLedger: structuredClone(state.goldLedger),
     metaTransactionReceipts: [],
     metaSourceConsumptions: [],
@@ -104,6 +106,7 @@ export function publicProfileStateV08(profile) {
     campGold: profile.campGold,
     lives: profile.lives,
     build: structuredClone(profile.build),
+    campaign: structuredClone(profile.campaign),
     campSession: profile.campSession
       ? {
           sessionId: profile.campSession.sessionId,

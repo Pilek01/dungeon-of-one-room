@@ -132,7 +132,8 @@ async function roomState({
   seed = runId,
   controls = { dropRoll: 0 },
   build = null,
-  missStreak = 0
+  missStreak = 0,
+  firstDropConsumed = true
 } = {}) {
   const resolvedRuleset = ruleset();
   const resolvedContext = context(runId, seed, controls);
@@ -147,6 +148,7 @@ async function roomState({
   state.currentRewardEnvelope = null;
   if (build) state.build = build;
   state.relicOfferState.sourceSpecificCounters.wardenDropMissStreak = missStreak;
+  if (firstDropConsumed && depth % 5 === 0) state.campaign.wardenFirstDropDepths = [depth];
   state = await resolvedRuleset.issueRoomDirective(state, resolvedContext);
   return { state, resolvedRuleset, resolvedContext };
 }
@@ -364,12 +366,34 @@ test("exact v0.8 Warden rarity boundaries and all tiers are reachable", async ()
     (choice) => choice.rarity === "legendary" || choice.rarity === "mythic"
   ), false);
 });
+test("first Warden kill at each new boss depth guarantees a relic offer once", async () => {
+  const first = await issued({
+    runId: "first_warden_depth_5",
+    depth: 5,
+    firstDropConsumed: false,
+    controls: { dropRoll: 999_999, rarityRolls: [0, 0, 0] }
+  });
+  assert.ok(first.state.pendingOffer);
+  assert.deepEqual(first.state.campaign.wardenFirstDropDepths, [5]);
+
+  const repeated = await issued({
+    runId: "repeat_warden_depth_5",
+    depth: 5,
+    controls: { dropRoll: 999_999 }
+  });
+  assert.equal(repeated.state.pendingOffer, null);
+});
+
 
 test("run-scoped Warden pity updates once, hard-pities at three, and retries safely", async () => {
-  assert.equal(pityDocument.canonicalData.implemented.length, 1);
+  assert.equal(pityDocument.canonicalData.implemented.length, 2);
   assert.equal(
-    pityDocument.canonicalData.implemented[0].statePath,
+    pityDocument.canonicalData.implemented.find((entry) => entry.pityId === "warden-run-drop-miss-streak").statePath,
     "relicOfferState.sourceSpecificCounters.wardenDropMissStreak"
+  );
+  assert.equal(
+    pityDocument.canonicalData.implemented.find((entry) => entry.pityId === "warden-first-drop-depths").statePath,
+    "campaign.wardenFirstDropDepths"
   );
   const miss = await roomState({
     runId: "pity_miss",
@@ -400,13 +424,7 @@ test("run-scoped Warden pity updates once, hard-pities at three, and retries saf
   });
   assert.ok(hard.state.pendingOffer);
   assert.equal(hard.state.relicOfferState.sourceSpecificCounters.wardenDropMissStreak, 0);
-  assert.deepEqual(
-    pityDocument.canonicalData.deferredProfileScoped.map((entry) => entry.pityId),
-    ["warden-first-drop-depths"]
-  );
-  assert.ok(pityDocument.canonicalData.deferredProfileScoped.every(
-    (entry) => entry.reason === "DEFERRED_PROFILE_SCOPED_PITY"
-  ));
+  assert.deepEqual(pityDocument.canonicalData.deferredProfileScoped, []);
   assert.deepEqual(
     pityDocument.canonicalData.deferredGameSessionScoped.map((entry) => entry.pityId),
     ["forge-room-pity", "otter-room-pity"]

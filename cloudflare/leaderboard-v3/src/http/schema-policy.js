@@ -10,6 +10,7 @@ export const REGISTERED_MUTATION_FIELDS = Object.freeze({
     "rulesetId",
     "rulesetHash",
     "clientInstallIdHash",
+    "startDepth",
     "profileId",
     "profileCredential",
     "recoveryCredential",

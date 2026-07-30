@@ -1,6 +1,7 @@
 import arenaRelicOfferPolicyDocument from "./data/arena-relic-offer-policy.generated.json" with { type: "json" };
 import chestBoundsDocument from "./data/chest-reward-bounds.generated.json" with { type: "json" };
 import otterRelicOfferPolicyDocument from "./data/otter-relic-offer-policy.generated.json" with { type: "json" };
+import progressionDocument from "./data/run-progression.generated.json" with { type: "json" };
 import regularRelicOfferPolicyDocument from "./data/regular-relic-offer-policy.generated.json" with { type: "json" };
 import rewardBoundsDocument from "./data/room-reward-bounds.generated.json" with { type: "json" };
 import {
@@ -9,13 +10,14 @@ import {
   calculateMultipliedGoldV08,
   resolveGoldModifierV08
 } from "./gold-policy.js";
-import { assertCanonicalRelicBuildDigestV08 } from "./relic-policy.js";
+import { assertCanonicalRelicBuildDigestV08, computeRelicBuildDigestV08 } from "./relic-policy.js";
 import { assertCanonicalRunModifierDigestV08 } from "./run-modifiers.js";
 
 const arenaRelicOfferPolicy = arenaRelicOfferPolicyDocument.canonicalData;
 const chestBounds = chestBoundsDocument.canonicalData;
 const otterRelicOfferPolicy = otterRelicOfferPolicyDocument.canonicalData;
 const regularRelicOfferPolicy = regularRelicOfferPolicyDocument.canonicalData;
+const progression = progressionDocument.canonicalData;
 const rewardBounds = rewardBoundsDocument.canonicalData;
 const HISTORY_LIMIT = rewardBounds.boundedHistoryLimit;
 
@@ -70,7 +72,18 @@ function enemyMaximumForRoom(roomType) {
 
 function claimDefinitions(roomType) {
   const maximumEnemies = enemyMaximumForRoom(roomType);
-  if (maximumEnemies <= 0) return [];
+  const potionUse = {
+    claimType: "resource",
+    claimId: "potion-use",
+    maximumCount: 18,
+    maximumAmount: null,
+    unitPolicyRef: "local-potion-consumption",
+    requiredRoomType: roomType,
+    requiredBuildEffect: null,
+    stackingPolicy: "bounded-by-canonical-potions",
+    duplicatePolicy: "REJECT"
+  };
+  if (maximumEnemies <= 0) return [potionUse];
   const definitions = [];
   for (const enemyType of Object.keys(rewardBounds.enemyClaims.baseGoldByEnemyType).sort()) {
     const bossOnly = enemyType === "warden";
@@ -111,6 +124,7 @@ function claimDefinitions(roomType) {
     stackingPolicy: "shares-room-enemy-budget",
     duplicatePolicy: "REJECT"
   });
+  definitions.push(potionUse);
   return definitions;
 }
 
@@ -415,7 +429,7 @@ function calculateClaimAmount(state, envelope, claim, slotById) {
     if (claim.count !== 1) throw new TypeError("REWARD_CLAIM_COUNT_LIMIT");
     if (slot.consumed) throw new TypeError("REWARD_CLAIM_SLOT_CONSUMED");
     const outcome = String(claim.localEvidence?.outcome || "");
-    if (!["opened", "gold"].includes(outcome)) throw new TypeError("REWARD_CLAIM_CHEST_OUTCOME_INVALID");
+    if (!["opened", "gold", "fallback_gold", "potion", "map_fragment"].includes(outcome)) throw new TypeError("REWARD_CLAIM_CHEST_OUTCOME_INVALID");
     let amount = 0;
     if (outcome === "gold") {
       const baseAmount = requireInteger(
@@ -438,6 +452,29 @@ function calculateClaimAmount(state, envelope, claim, slotById) {
         applyTreasureSense: true
       });
     }
+    else if (outcome === "fallback_gold") {
+      const baseAmount = requireInteger(claim.localEvidence?.baseAmount, "REWARD_CLAIM_CHEST_AMOUNT_INVALID");
+      if (baseAmount < 2 || baseAmount > 5) throw new TypeError("REWARD_CLAIM_CHEST_AMOUNT_LIMIT");
+      amount += calculateMultipliedGoldV08({
+        canonicalBuild: state.build,
+        canonicalRunModifiers: state.runModifiers,
+        sourceId: "chest-fallback",
+        baseAmount
+      });
+    } else if (outcome === "potion") {
+      const count = requireInteger(claim.localEvidence?.count, "REWARD_CLAIM_CHEST_RESOURCE_INVALID");
+      if (count !== 1) throw new TypeError("REWARD_CLAIM_CHEST_RESOURCE_LIMIT");
+      const resources = state.build.resources;
+      resources.potions = Math.min(resources.maxPotions, resources.potions + 1);
+    } else if (outcome === "map_fragment") {
+      const count = requireInteger(claim.localEvidence?.count, "REWARD_CLAIM_CHEST_RESOURCE_INVALID");
+      if (count !== 1) throw new TypeError("REWARD_CLAIM_CHEST_RESOURCE_LIMIT");
+      state.campaign.treasureMapFragments += 1;
+      if (state.campaign.treasureMapFragments >= 10) {
+        state.campaign.treasureMapFragments -= 10;
+        state.campaign.forcedNextRoomType = "vault";
+      }
+    }
     if (slot.slotType === "vault-chest") {
       amount += calculateMultipliedGoldV08({
         canonicalBuild: state.build,
@@ -458,6 +495,14 @@ function calculateClaimAmount(state, envelope, claim, slotById) {
     throw new TypeError(typeKnown ? "REWARD_CLAIM_ID_UNKNOWN" : "REWARD_CLAIM_TYPE_UNKNOWN");
   }
   if (claim.count > definition.maximumCount) throw new TypeError("REWARD_CLAIM_COUNT_LIMIT");
+  if (claim.claimType === "resource") {
+    if (claim.claimId !== "potion-use") throw new TypeError("REWARD_CLAIM_ID_UNKNOWN");
+    const potions = Math.max(0, Number(state.build.resources?.potions) || 0);
+    if (claim.count > potions) throw new TypeError("REWARD_CLAIM_POTION_USE_LIMIT");
+    state.build.resources.potions = potions - claim.count;
+    return { amount: 0, authority: "BOUNDED_CLIENT_ATTESTED" };
+  }
+
   if (claim.claimType === "hazard") {
     const unit = calculateMultipliedGoldV08({
       canonicalBuild: state.build,
@@ -578,6 +623,15 @@ export async function settleRoomRewardEnvelopeV3(state, request, context = {}) {
   }
 
   next.gold = Math.max(0, expectedGold);
+  next.build.buildDigest = await computeRelicBuildDigestV08(next.build, context.cryptoProvider);
+  const unlockIndex = progression.startDepthUnlockBossDepths.indexOf(mutableEnvelope.depth);
+  if (unlockIndex >= 0) {
+    const unlockedDepth = progression.allowedStartDepths[unlockIndex + 1];
+    if (unlockedDepth && !next.campaign.unlockedStartDepths.includes(unlockedDepth)) {
+      next.campaign.unlockedStartDepths.push(unlockedDepth);
+      next.campaign.unlockedStartDepths.sort((left, right) => left - right);
+    }
+  }
   next.goldLedger.earnedServerDerived += fixedDelta;
   next.goldLedger.earnedBoundedAttested += boundedDelta;
   next.goldLedger.lastDelta = authoritativeGoldDelta;

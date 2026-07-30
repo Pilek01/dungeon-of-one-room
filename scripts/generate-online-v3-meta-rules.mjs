@@ -826,7 +826,7 @@ function buildRegularRelicOfferCanonicalData(records, textByFile) {
       allowedRarities: ["normal", "rare", "epic", "legendary", "mythic"],
       rarityWeights: "depth-tiered WARDEN_RELIC_DROP_TABLE plus mythic relative roll",
       pityStateUsed: ["warden-run-drop-miss-streak"],
-      specialRestrictions: ["boss depth", "final depth excluded", "profile first-drop guarantee deferred"],
+      specialRestrictions: ["boss depth", "final depth excluded", "profile-scoped first drop at each new boss depth is guaranteed"],
       rewardSlotRequired: true,
       implementedIn3B2B2A: true,
       deferredReason: null
@@ -1627,15 +1627,16 @@ function buildRegularRelicOfferCanonicalData(records, textByFile) {
           chanceCapBeforeHardPity: 0.95,
           updateEvent: "reward slot issue attempt",
           retryPolicy: "no increment for a slot with an existing resolution"
+        }, {
+          pityId: "warden-first-drop-depths",
+          sourceId: "warden-standard-drop",
+          scope: "profile",
+          statePath: "campaign.wardenFirstDropDepths",
+          guarantee: "first eligible Warden kill at each boss depth",
+          updateEvent: "reward slot resolution",
+          retryPolicy: "depth is recorded exactly once after resolution"
         }],
-        deferredProfileScoped: [
-          {
-            pityId: "warden-first-drop-depths",
-            legacyState: "wardenFirstDropDepths",
-            storageKey: "dungeonOneRoomWardenFirstDropDepths",
-            reason: "DEFERRED_PROFILE_SCOPED_PITY"
-          }
-        ],
+        deferredProfileScoped: [],
         deferredGameSessionScoped: [
           {
             pityId: "forge-room-pity",

@@ -183,6 +183,10 @@ async function selectRoomType(state, context, depth, roomIndex) {
     return { roomType: "boss", source: "boss-priority" };
   }
 
+  if (state.campaign?.forcedNextRoomType === "vault") {
+    return { roomType: "vault", source: "treasure-map-forced-vault" };
+  }
+
   const schedule = state.specialRoomScheduleState;
   if (canIssueOtter(state, depth)) {
     const chance = depth >= specialPolicy.otter.ultraStartDepth
@@ -343,6 +347,9 @@ export async function issueNextRoomDirectiveV08(state, context = {}) {
   next.roomIndex = roomIndex;
   next.currentRoomDirective = directive;
   next.currentRewardEnvelope = rewardEnvelope;
+  if (selection.source === "treasure-map-forced-vault") {
+    next.campaign.forcedNextRoomType = "";
+  }
   next.specialRoomScheduleState = updateScheduleForIssuedRoom(
     next.specialRoomScheduleState,
     directive.roomType,
