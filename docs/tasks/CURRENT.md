@@ -1,3 +1,31 @@
+# Local Ranked entry recovery and keyboard hotfix
+
+## Active status
+
+`COMPLETED_LOCALLY`; production, Worker, D1, and the ruleset remain unchanged.
+
+The saved-run `Start New Ranked` path now enters `RETRYING` before it requests
+canonical abandonment. A request failure can therefore enter the existing
+recoverable UI instead of stranding the player on `Ending the saved Ranked
+run...`. Ordinary Ranked action menus now support Up, Down, Left, and Right
+focus cycling, while native Enter and Space keep button activation.
+
+Authorized paths:
+
+- `online-v3/ranked-v3-runtime.js`;
+- `online-v3/ranked-v3-ui.js`;
+- `cloudflare/leaderboard-v3/test/r2-error-recovery.test.js`;
+- `scripts/online-v3-ranked-headed.mjs`;
+- `ONLINE_V3_HANDOFF.md`;
+- `progress.md`;
+- this file.
+
+Required verification: focused RED/GREEN, headed saved-run recovery and
+successful-new-run regression, `verify:fast`, `verify:phase`,
+`verify:baseline`, and `git diff --check`. Create one local atomic commit and
+stop. Do not push, deploy, activate a ruleset, change Worker/D1 behavior,
+source `game.js`, gameplay, Practice, or protected Vault Guardian files.
+
 # R2 terminal-only leaderboard publication and campaign identity repair
 
 ## Active status

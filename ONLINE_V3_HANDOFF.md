@@ -1,5 +1,26 @@
 # Online v3 - Production handoff
 
+## Local Ranked entry recovery and keyboard hotfix (2026-07-31)
+
+`COMPLETED_LOCALLY`; production remains unchanged.
+
+- A failed canonical abandon from saved-run `Start New Ranked` previously tried
+  the illegal `IDLE -> RECONNECT_REQUIRED` state transition, leaving
+  `Ending the saved Ranked run...` on screen.
+- The entry flow now moves to `RETRYING` before the canonical abandon. Failed
+  abandonments retain recovery and show recovery controls; ended or invalid
+  recoveries still clear through their existing safe path.
+- All ordinary Ranked action menus now cycle focus with all four arrow keys;
+  Enter and Space keep their native button activation.
+- Focused regression: 10/10 PASS. Headed lifecycle PASS covers saved-menu
+  arrows, a three-attempt failed abandon, canonical resync, and a successful
+  new run with a different run ID.
+- `verify:fast` 49/49, `verify:phase` 742/742, and `verify:baseline` 3/3
+  plus headed smoke all PASS.
+
+Ruleset `sha256:956251f158e55a0a47f9e43d5680d9aae66a22045c833bd76b8798cdc00e012e`
+and source `game.js` hash `556829c909cdc9eaefb4238279457eb9b3427adef9ce494f35743542770ee7de` are unchanged. No push, deploy, migration, activation, or protected Vault Guardian change occurred.
+
 ## R2 terminal leaderboard campaign lifecycle released
 
 Milestone R2 is complete and production-verified on

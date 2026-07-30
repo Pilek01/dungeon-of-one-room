@@ -676,6 +676,52 @@ ${fatalTestHookAnchor}`;
       path: path.join(ARTIFACT_ROOT, "ranked-saved-run-menu.png"),
       fullPage: true
     });
+    await page.keyboard.press("ArrowDown");
+    assert.equal(
+      await page.evaluate(() => document.activeElement?.textContent?.trim()),
+      "Continue Ranked",
+      "ArrowDown did not move focus through the saved Ranked menu"
+    );
+    await page.keyboard.press("ArrowUp");
+    assert.equal(
+      await page.evaluate(() => document.activeElement?.textContent?.trim()),
+      "Start New Ranked",
+      "ArrowUp did not move focus back through the saved Ranked menu"
+    );
+    let savedRunRestartAbandonAttempts = 0;
+    await page.route("**/api/v3/runs/abandon", async (route) => {
+      savedRunRestartAbandonAttempts += 1;
+      await route.abort("failed");
+    });
+    await page.getByRole("button", { name: "Start New Ranked", exact: true }).click();
+    await page.getByRole("heading", { name: "Ranked reconnect required" }).waitFor({
+      state: "visible",
+      timeout: 20_000
+    });
+    await sessionState(page, "RECONNECT_REQUIRED");
+    assert.equal(savedRunRestartAbandonAttempts, 3, "Saved-run restart did not exhaust the exact retry policy");
+    await page.screenshot({
+      path: path.join(ARTIFACT_ROOT, "ranked-saved-run-restart-recovery.png"),
+      fullPage: true
+    });
+    await page.unroute("**/api/v3/runs/abandon");
+    await page.getByRole("button", { name: "Resync Ranked Run" }).click();
+    await page.locator(".ranked-v3-choice-relic").first().waitFor({ state: "visible" });
+    await sessionState(page, "AWAITING_STARTING_RELIC");
+    const savedRunId = await page.evaluate(() => window.DungeonOnlineV3.getSnapshot().runId);
+    await page.reload({ waitUntil: "domcontentloaded" });
+    await dismissBoot(page);
+    await openNativeMenuOption(page, "Ranked (Online)");
+    await page.getByRole("heading", { name: "Ranked (Online)", exact: true }).waitFor({ state: "visible" });
+    await page.getByRole("button", { name: "Start New Ranked", exact: true }).click();
+    await page.locator(".ranked-v3-choice-relic").first().waitFor({ state: "visible" });
+    await sessionState(page, "AWAITING_STARTING_RELIC");
+    const freshRestartRunId = await page.evaluate(() => window.DungeonOnlineV3.getSnapshot().runId);
+    assert.notEqual(freshRestartRunId, savedRunId, "Start New Ranked reused the saved run");
+    await page.screenshot({
+      path: path.join(ARTIFACT_ROOT, "ranked-saved-run-restart-success.png"),
+      fullPage: true
+    });
     const staleCleanup = await abandonCurrentRankedAndClearLocal(page);
     assert.equal(staleCleanup.status, "abandoned");
     await page.reload({ waitUntil: "domcontentloaded" });
@@ -1318,7 +1364,7 @@ ${fatalTestHookAnchor}`;
         "Failed to load resource: the server responded with a status of 400 (Bad Request)"
       ].includes(message)
     );
-    assert.equal(expectedDroppedResponseErrors.length, 4);
+    assert.equal(expectedDroppedResponseErrors.length, 7);
     assert.equal(expectedEndedRecoveryErrors.length, 1);
     assert.equal(expectedStaleProfileErrors.length, 0);
     assert.equal(expectedCampStartErrors.length, 1);

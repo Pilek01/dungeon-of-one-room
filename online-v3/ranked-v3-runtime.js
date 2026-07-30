@@ -263,6 +263,7 @@
 
   async function startNewRanked() {
     if (recoveryStore.loadRecovery()) {
+      moveToRecoveryState(root.DungeonRankedV3Session.STATES.retrying);
       ui.setStatus("Ending the saved Ranked run...");
       try {
         await createClient().abandonCanonical();

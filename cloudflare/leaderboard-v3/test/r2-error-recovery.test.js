@@ -190,6 +190,29 @@ test("runtime exposes explicit Ranked selection and terminal abandonment recover
   assert.match(runtime, /returnToPractice[\s\S]*releaseWriter\?\.\(\)/u);
   assert.match(runtime, /clearEndedRecovery[\s\S]*releaseWriter\?\.\(\)/u);
 });
+test("saved Ranked restart can surface a failed abandonment instead of stranding the entry screen", async () => {
+  const runtime = await readFile(new URL(
+    "../../../online-v3/ranked-v3-runtime.js",
+    import.meta.url
+  ), "utf8");
+  const session = sessionApi.createStateMachine(sessionApi.STATES.idle);
+  assert.doesNotThrow(() => session.transition(sessionApi.STATES.retrying));
+  assert.doesNotThrow(() => session.transition(sessionApi.STATES.reconnect));
+  assert.match(
+    runtime,
+    /async function startNewRanked\(\) \{[\s\S]*?moveToRecoveryState\(root\.DungeonRankedV3Session\.STATES\.retrying\);[\s\S]*?ui\.setStatus\("Ending the saved Ranked run\.\.\."\)/u
+  );
+});
+test("Ranked action menus provide arrow-key focus navigation", async () => {
+  const ui = await readFile(new URL(
+    "../../../online-v3/ranked-v3-ui.js",
+    import.meta.url
+  ), "utf8");
+  assert.match(ui, /actions\.addEventListener\("keydown", \(event\) => \{/u);
+  assert.match(ui, /ArrowDown/u);
+  assert.match(ui, /ArrowUp/u);
+  assert.match(ui, /button\.focus\(\)/u);
+});
 test("Ranked message actions use the compact gothic menu treatment", async () => {
   const style = await readFile(new URL("../../../style.css", import.meta.url), "utf8");
   const ui = await readFile(new URL(

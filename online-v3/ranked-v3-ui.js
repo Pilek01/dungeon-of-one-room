@@ -104,6 +104,27 @@
       documentRef.body.classList.toggle("ranked-v3-sync-open", sync);
     }
 
+    function moveActionFocus(offset) {
+      const buttons = Array.from(actions.querySelectorAll("button:not(:disabled)"));
+      if (!buttons.length) return;
+      const currentIndex = buttons.indexOf(documentRef.activeElement);
+      const nextIndex = currentIndex < 0
+        ? (offset > 0 ? 0 : buttons.length - 1)
+        : (currentIndex + offset + buttons.length) % buttons.length;
+      const button = buttons[nextIndex];
+      button.focus();
+    }
+
+    actions.addEventListener("keydown", (event) => {
+      if (["ArrowRight", "ArrowDown"].includes(event.key)) {
+        event.preventDefault();
+        moveActionFocus(1);
+      } else if (["ArrowLeft", "ArrowUp"].includes(event.key)) {
+        event.preventDefault();
+        moveActionFocus(-1);
+      }
+    });
+
     function button(label, onClick, disabled = false) {
       const control = createElement(documentRef, "button", "ranked-v3-button", label);
       control.type = "button";

@@ -1060,3 +1060,18 @@ Updated next good targets
   rows; API and three public asset hashes match the verified release.
 - Source `game.js`, R1-P0-001, Ranked/Practice gameplay parity, mode names,
   and all 172 protected deletions remain unchanged. M5 was not started.
+
+## 2026-07-31 - Local Ranked entry recovery and keyboard hotfix
+
+- Reproduced the saved-run `Start New Ranked` trap: an abandonment failure from
+  the initial menu tried the illegal `IDLE -> RECONNECT_REQUIRED` transition,
+  leaving `Ending the saved Ranked run...` visible.
+- The runtime now enters `RETRYING` before abandonment; the recovery UI stays
+  actionable and preserves the saved run on a real failure.
+- Added arrow-key focus cycling for all ordinary Ranked action buttons.
+- Added focused and headed regressions: failed abandon exhausts three retries,
+  resyncs the same saved run, and a later successful Start New receives a new
+  run ID.
+- Focused 10/10, headed lifecycle PASS, fast 49/49, phase 742/742, baseline
+  3/3 plus headed smoke PASS. Ruleset and source `game.js` are unchanged; no
+  push, deployment, migration, activation, or protected-Vault change occurred.
