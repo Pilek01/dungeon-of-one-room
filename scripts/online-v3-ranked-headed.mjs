@@ -460,6 +460,16 @@ async function crossVisiblePortal(page, expectedDepth) {
   assert.notEqual(state.latestLog, "Online v3 is still resolving the next room.");
 }
 
+async function advanceVisibleRoom(page, expectedDepth) {
+  const sourceRoom = await visibleGameState(page);
+  await clearVisibleRoom(page);
+  if (sourceRoom.roomType !== "merchant") {
+    await sessionState(page, "ENTERING_NEXT_ROOM");
+  }
+  await crossVisiblePortal(page, expectedDepth);
+  return sourceRoom;
+}
+
 async function d1Count(runId) {
   const sql = `SELECT COUNT(*) AS count FROM leaderboard_entries WHERE run_id = '${runId}'`;
   const { stdout } = await runWrangler([
@@ -800,17 +810,13 @@ ${fatalTestHookAnchor}`;
     });
     await crossVisiblePortal(page, firstRoom.depth + 1);
 
-    await clearVisibleRoom(page);
-    await sessionState(page, "ENTERING_NEXT_ROOM");
-    await crossVisiblePortal(page, firstRoom.depth + 2);
+    await advanceVisibleRoom(page, firstRoom.depth + 2);
     await page.screenshot({
       path: path.join(ARTIFACT_ROOT, "ranked-two-player-portals.png"),
       fullPage: true
     });
 
-    await clearVisibleRoom(page);
-    await sessionState(page, "ENTERING_NEXT_ROOM");
-    await crossVisiblePortal(page, firstRoom.depth + 3);
+    await advanceVisibleRoom(page, firstRoom.depth + 3);
 
     const requestsBeforePreWardenClear = diagnostics.apiRequests.length;
     const preWardenSourceRoom = await visibleGameState(page);
@@ -1060,9 +1066,12 @@ ${fatalTestHookAnchor}`;
     ));
     const extractionStart = await visibleGameState(page);
     for (let step = 1; step <= 3; step += 1) {
-      await clearVisibleRoom(page);
-      await sessionState(page, "ENTERING_NEXT_ROOM");
-      await crossVisiblePortal(page, extractionStart.depth + step);
+      await advanceVisibleRoom(page, extractionStart.depth + step);
+    }
+    let extractionRoom = await visibleGameState(page);
+    while (extractionRoom.roomType === "merchant") {
+      await advanceVisibleRoom(page, extractionRoom.depth + 1);
+      extractionRoom = await visibleGameState(page);
     }
     let releaseCheckpoint;
     let markCheckpointStarted;
