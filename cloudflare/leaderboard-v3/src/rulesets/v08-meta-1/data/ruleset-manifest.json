@@ -347,8 +347,8 @@
     },
     {
       "file": "finalization-policy.js",
-      "byteLength": 2649,
-      "sha256": "6a2210ad03abae8bcbc644fa45ab5617f28aa050712d7874a05dedfce2c8475f"
+      "byteLength": 2827,
+      "sha256": "351e34215b5ac30df1457c1f303813657424a6c6b0f5d31bd6fa83784bc0ebec"
     },
     {
       "file": "forge-policy.js",
@@ -556,5 +556,5 @@
       "sha256": "e06c85319b457817a0fa313302d0136eb746738719ab9cc6db73eacc8d62b489"
     }
   ],
-  "rulesetHash": "sha256:08dfa4f97d91b4f21dbfae7232246125ddbbc6a0270cf81a9e1ed012e5f5d403"
+  "rulesetHash": "sha256:956251f158e55a0a47f9e43d5680d9aae66a22045c833bd76b8798cdc00e012e"
 }

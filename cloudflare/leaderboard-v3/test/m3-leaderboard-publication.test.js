@@ -8,6 +8,7 @@ const SEASON = "m3-public-season";
 function entry(runId, score, createdAt, overrides = {}) {
   return {
     runId,
+    profileId: overrides.profileId ?? `profile_${runId.slice(4).padStart(32, "0")}`,
     season: SEASON,
     playerName: `Player-${runId.slice(-2)}`,
     score,
@@ -150,5 +151,20 @@ test("run uniqueness rejects a second publication without replacing the first", 
   assert.equal(
     (await repositories.leaderboard.detail(original.runId)).score,
     original.score
+  );
+});
+
+test("season and campaign profile publish at most one leaderboard row", async () => {
+  const repositories = createMemoryRepositories();
+  const profileId = "profile_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+  const first = entry("run_0000000000000030", 100, 100, { profileId });
+  const final = entry("run_0000000000000031", 200, 200, { profileId });
+  assert.equal(await publish(repositories, first), true);
+  assert.equal(await publish(repositories, final), true);
+  assert.equal(repositories.leaderboardCount(), 1);
+  assert.equal(await repositories.leaderboard.detail(first.runId), null);
+  assert.equal(
+    (await repositories.leaderboard.detail(final.runId)).profileId,
+    profileId
   );
 });

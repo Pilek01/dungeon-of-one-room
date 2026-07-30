@@ -68,6 +68,7 @@
     if (recoveryStore.loadRecovery()) return false;
     resetLocalRankedSession();
     recoveryStore.clearRecovery();
+    recoveryStore.clearProfile();
     session = root.DungeonRankedV3Session.createStateMachine(
       root.DungeonRankedV3Session.STATES.abandoned
     );
@@ -215,6 +216,7 @@
     client?.releaseWriter?.();
     client?.clearRecovery?.();
     client?.clear();
+    recoveryStore.clearProfile();
     client = null;
     const abandonedLocalSession = root.DungeonRankedV3Session.STATES.abandoned;
     if (abandonedLocalSession !== "ABANDONED_LOCAL_SESSION") {

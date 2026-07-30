@@ -33,7 +33,8 @@ export const R2_THREAT_MATRIX = Object.freeze([
   [27, "display_xss", R2_THREAT_STATUS.fixed, "m4-client-leaderboard.test.js", /innerHTML|text-safe/u],
   [28, "oversized_json", R2_THREAT_STATUS.fixed, "payload-size.test.js", /64 KiB|payload/u],
   [29, "unknown_response_kind", R2_THREAT_STATUS.fixed, "r2-protocol-cursor.test.js", /unknown response kinds/u],
-  [30, "worker_restart_write_response", R2_THREAT_STATUS.fixed, "r2-resume.test.js", /Worker restart/u]
+  [30, "worker_restart_write_response", R2_THREAT_STATUS.fixed, "r2-resume.test.js", /Worker restart/u],
+  [31, "profile_leaderboard_fanout", R2_THREAT_STATUS.fixed, "m3-leaderboard-publication.test.js", /campaign profile publish at most one/u]
 ].map(([id, attempt, status, evidenceFile, evidencePattern]) => Object.freeze({
   id,
   attempt,

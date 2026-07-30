@@ -20,6 +20,10 @@ function recoveryStore() {
     runId: "run_a1",
     recoveryCredential: "rrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrr"
   };
+  let profile = {
+    profileId: "profile_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    profileCredential: "ppppppppppppppppppppppppppppppppppppppppppp"
+  };
   return {
     loadSession: () => structuredClone(session),
     saveSession: (value) => { session = structuredClone(value); },
@@ -27,7 +31,10 @@ function recoveryStore() {
     loadRecovery: () => structuredClone(recovery),
     saveRecovery: (value) => { recovery = structuredClone(value); },
     clearRecovery: () => { recovery = null; },
-    snapshot: () => ({ session, recovery })
+    loadProfile: () => structuredClone(profile),
+    saveProfile: (value) => { profile = structuredClone(value); },
+    clearProfile: () => { profile = null; },
+    snapshot: () => ({ session, recovery, profile })
   };
 }
 
@@ -138,6 +145,7 @@ test("client clears recovery only after acknowledged abandonment", async () => {
   await pending;
   assert.equal(store.snapshot().session, null);
   assert.equal(store.snapshot().recovery, null);
+  assert.equal(store.snapshot().profile, null);
 });
 
 test("runtime preserves recovery for Practice exit and resyncs canonical state", async () => {
@@ -163,6 +171,8 @@ test("runtime exposes explicit Ranked selection and terminal abandonment recover
   assert.doesNotMatch(runtime, /openRankedEntry\(\)\.catch/u);
   assert.match(runtime, /Cancel/u);
   assert.match(runtime, /if \(!hasRecovery\)[\s\S]*startRanked/u);
+  assert.match(runtime, /prepareFreshRankedStart[\s\S]*clearProfile/u);
+  assert.match(runtime, /extractedProfileReady[\s\S]*openCamp/u);
   assert.match(runtime, /if \(resetProfile\)[\s\S]*resetProfileIdentity/u);
   assert.match(runtime, /repairProfile[\s\S]*PROFILE_UNAUTHORIZED/u);
   assert.match(runtime, /discardFailedStart/u);

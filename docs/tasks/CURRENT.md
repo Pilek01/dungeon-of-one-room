@@ -1,3 +1,62 @@
+# R2 terminal-only leaderboard publication and campaign identity repair
+
+## Active status
+
+`IN_PROGRESS_LOCALLY`. Production remains unchanged until a separate explicit
+deployment and D1 migration authorization.
+
+Confirmed defects:
+
+- finalizing an extracted descent emits `insert_leaderboard`, so every Camp
+  extraction publishes another row;
+- the browser profile identity survives completed and abandoned campaigns, so
+  it identifies the installation instead of one five-life Ranked game;
+- `leaderboard_entries` is unique only by `run_id`, with no database invariant
+  limiting a season/profile pair to one published result.
+
+Authorized paths:
+
+- `online-v3/ranked-v3-client.js`;
+- `online-v3/ranked-v3-protocol.js`;
+- `online-v3/ranked-v3-runtime.js`;
+- `cloudflare/leaderboard-v3/src/domain/transitions.js`;
+- `cloudflare/leaderboard-v3/src/index.js`;
+- `cloudflare/leaderboard-v3/src/storage/d1-leaderboard.js`;
+- `cloudflare/leaderboard-v3/src/storage/d1-runs.js`;
+- `cloudflare/leaderboard-v3/src/rulesets/v08-meta-1/finalization-policy.js`;
+- the matching ruleset manifest, generated audit, release registry, and
+  production-entry compatibility files;
+- one new forward-only D1 migration;
+- focused finalization, leaderboard, profile/Camp, migration, client lifecycle,
+  production-release, and threat-matrix tests and fixtures;
+- `ONLINE_V3_HANDOFF.md`;
+- `progress.md`;
+- this file.
+
+Required outcome:
+
+- extraction still finalizes the current descent so native Camp can open, but
+  does not publish a leaderboard row;
+- terminal campaign defeat after the fifth lost life, and terminal victory,
+  publish at most one row for the campaign profile in its season;
+- one fresh Ranked game receives one fresh profile ID; that ID survives all
+  extracts/Camp descents, reload and recovery, then rotates only after terminal
+  completion or confirmed abandonment;
+- the D1 schema records `profile_id`, deduplicates historical season/profile
+  rows deterministically by score, depth, gold, creation time and run ID, and
+  enforces one future row per season/profile;
+- public leaderboard responses do not expose private profile credentials or
+  add a new gameplay-visible technical flow;
+- source `game.js`, gameplay, combat authority, mode names, Practice,
+  R1-P0-001, and the 172 protected Vault Guardian deletions remain unchanged.
+
+Run focused RED/GREEN regressions, the R2 threat matrix, `verify:fast`,
+`verify:phase`, `verify:baseline`, `verify:full`, headed player-visible QA,
+and `git diff --check`. Create exact internal commits and stop. Do not push,
+deploy, activate a ruleset, apply the D1 migration, use a paid service, or
+start M5.
+
+---
 # R2 local campaign, reward, resource, Forge, Camp, and checkpoint parity repair
 
 ## Active status

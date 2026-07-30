@@ -49,4 +49,6 @@ test("extract finalize requires an accepted extract event", async () => {
   );
   assert.equal(finalized.response.status, 200);
   assert.equal(finalized.payload.outcome, "extract");
+  assert.equal("leaderboardEntryId" in finalized.payload, false);
+  assert.equal(harness.repositories.leaderboardCount(), 0);
 });

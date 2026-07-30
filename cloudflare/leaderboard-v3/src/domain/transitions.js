@@ -168,6 +168,7 @@ export function finalizeRun(runState, finalizeRequest, rulesetInput) {
         ? "extract"
         : null;
   if (!outcome) throw new TypeError("FINALIZE_OUTCOME_INVALID");
+  const publishesLeaderboard = outcome !== "extract";
 
   const score = normalizeFinalScore(ruleset.computeFinalScore(runState, { outcome }));
   const summary = ruleset.buildLeaderboardSummary(runState, { outcome, score });
@@ -181,6 +182,7 @@ export function finalizeRun(runState, finalizeRequest, rulesetInput) {
   };
   const leaderboardEntry = {
     runId: runState.runId,
+    profileId: runState.profileId || runState.runId,
     season: runState.season,
     playerName: runState.playerName,
     score,
@@ -203,7 +205,9 @@ export function finalizeRun(runState, finalizeRequest, rulesetInput) {
     },
     storageEffects: [
       { type: "finalize_run", expectedRevision: runState.revision },
-      { type: "insert_leaderboard", entry: leaderboardEntry }
+      ...(publishesLeaderboard
+        ? [{ type: "insert_leaderboard", entry: leaderboardEntry }]
+        : [])
     ]
   };
 }

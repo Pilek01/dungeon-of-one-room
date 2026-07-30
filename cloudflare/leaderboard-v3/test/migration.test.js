@@ -97,3 +97,78 @@ test("R2 migrations are additive and expose profile plus recovery retention stat
   assert(indexes.includes("idx_ranked_runs_recovery_retention"));
   database.close();
 });
+
+test("0004 keeps one identifiable leaderboard row per season and campaign profile", async () => {
+  const names = [
+    "0001_initial.sql",
+    "0002_r2_ranked_profiles.sql",
+    "0003_r2_run_recovery.sql"
+  ];
+  const database = new DatabaseSync(":memory:");
+  database.exec("PRAGMA foreign_keys = ON;");
+  for (const name of names) {
+    database.exec(await readFile(new URL(`../migrations/${name}`, import.meta.url), "utf8"));
+  }
+  const insertRun = database.prepare(`
+    INSERT INTO ranked_runs (
+      run_id, profile_id, season, protocol_version, ruleset_hash, status,
+      revision, player_name, depth, room_index, gold, lives,
+      canonical_state_json, state_digest, recent_ops_json, started_at,
+      updated_at, expires_at, start_idempotency_key, start_request_digest
+    ) VALUES (?, ?, 'season-a', 'ranked-v3-checkpoint-1', 'sha256:test',
+      'finalized', 1, 'Player', 10, 10, 10, 0, '{}', ?, '[]', 1, 2, 3, ?, ?)
+  `);
+  const insertEntry = database.prepare(`
+    INSERT INTO leaderboard_entries (
+      run_id, season, player_name, score, depth, gold, duration_ms,
+      outcome, build_json, summary_json, verification_level,
+      state_digest, created_at
+    ) VALUES (?, 'season-a', 'Player', ?, ?, ?, 1000, 'defeat', '{}', '{}',
+      'checkpoint_verified_v3', ?, ?)
+  `);
+  const rows = [
+    ["run_duplicate_low", "profile_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", 100, 10, 20, 100],
+    ["run_duplicate_best", "profile_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", 100, 11, 5, 200],
+    ["run_other_profile", "profile_bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb", 90, 20, 40, 300],
+    ["run_legacy_no_profile", null, 999, 99, 99, 50]
+  ];
+  for (const [runId, profileId, score, depth, gold, createdAt] of rows) {
+    insertRun.run(runId, profileId, `digest:${runId}`, `start:${runId}`, `request:${runId}`);
+    insertEntry.run(runId, score, depth, gold, `digest:${runId}`, createdAt);
+  }
+  const migration = await readFile(
+    new URL("../migrations/0004_r2_leaderboard_campaign_identity.sql", import.meta.url),
+    "utf8"
+  );
+  database.exec(migration);
+  const columns = database.prepare("PRAGMA table_info(leaderboard_entries)").all()
+    .map((row) => row.name);
+  assert(columns.includes("profile_id"));
+  const published = database.prepare(`
+    SELECT run_id, profile_id FROM leaderboard_entries ORDER BY run_id
+  `).all().map((row) => ({ ...row }));
+  assert.deepEqual(published, [
+    {
+      run_id: "run_duplicate_best",
+      profile_id: "profile_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    },
+    {
+      run_id: "run_other_profile",
+      profile_id: "profile_bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+    }
+  ]);
+  const indexes = database.prepare(`
+    SELECT name FROM sqlite_master WHERE type = 'index' ORDER BY name
+  `).all().map((row) => row.name);
+  assert(indexes.includes("leaderboard_entries_season_profile"));
+  assert.throws(() => database.prepare(`
+    INSERT INTO leaderboard_entries (
+      run_id, profile_id, season, player_name, score, depth, gold, duration_ms,
+      outcome, build_json, summary_json, verification_level, state_digest,
+      created_at
+    ) VALUES ('run_conflict', 'profile_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+      'season-a', 'Player', 1, 1, 1, 1, 'defeat', '{}', '{}',
+      'checkpoint_verified_v3', 'digest', 999)
+  `).run(), /UNIQUE constraint failed/iu);
+  database.close();
+});

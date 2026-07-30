@@ -155,6 +155,7 @@ test("canonical extraction creates an authenticated profile Camp and next run", 
     checkpointToken: extracted.checkpointToken
   }, "r2-camp-finalize");
   assert.equal(finalized.response.status, 200);
+  assert.equal(harness.repositories.leaderboardCount(), 0);
 
   const wrongCredential = await harness.post(
     "/api/v3/profiles/camp",

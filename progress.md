@@ -1,5 +1,19 @@
 Original prompt: Create a hard-forked Dungeon 1.0 in a new folder, keep the original game untouched, and push the fork toward a major 1.0 redesign while staying compatible with the current save and leaderboard protocol.
 
+## 2026-07-30 - R2 leaderboard lifecycle defect reproduced
+
+- Confirmed that extraction finalization always emits
+  `insert_leaderboard`, although extraction is only the boundary required to
+  persist a descent and enter native Camp.
+- Confirmed that the local `profileId` currently survives completed and
+  abandoned games, while D1 enforces uniqueness only by `run_id`.
+- Therefore every extracted descent can publish a separate row and a browser
+  profile can span multiple five-life games.
+- Repair scope is now terminal-only publication, one ID per full campaign,
+  a season/profile uniqueness invariant, and deterministic cleanup of
+  historical duplicate rows. No source, production, or protected Vault
+  Guardian state has been changed.
+
 2026-07-29 - Online v3 R2 Ranked gameplay continuity and gold parity complete
 - Internal commits: `b10c523` and `ab46761`.
 - Fixed v0.8 room/enemy/elite/hazard/chest gold parity, legacy Camp upgrades,

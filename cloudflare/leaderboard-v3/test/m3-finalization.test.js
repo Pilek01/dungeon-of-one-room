@@ -33,6 +33,7 @@ function terminalState(fixture) {
   state.playerName = "M3 Final";
   state.protocolVersion = "ranked-v3-checkpoint-1";
   state.gameVersion = "0.8.1";
+  state.profileId = "profile_0123456789abcdef0123456789abcdef";
   state.expiresAt = STARTED_AT + RUN_TTL_MS;
   state.status = fixture.status;
   state.maxDepth = fixture.depth;
@@ -137,7 +138,16 @@ test("M3 finalization golden corpus has 12 exact terminal cases", () => {
     assert.equal(result.response.outcome, fixture.outcome);
     assert.equal(result.response.score, fixture.score);
     assert.equal(result.response.durationMs, fixture.durationMs);
-    assert.equal(result.storageEffects[1].entry.runId, state.runId);
+    const leaderboardEffect = result.storageEffects.find(
+      (effect) => effect.type === "insert_leaderboard"
+    );
+    if (fixture.status === "extraction") {
+      assert.equal(leaderboardEffect, undefined);
+      assert.equal("leaderboardEntryId" in result.response, false);
+    } else {
+      assert.equal(leaderboardEffect.entry.runId, state.runId);
+      assert.equal(leaderboardEffect.entry.profileId, state.profileId);
+    }
   }
 });
 
@@ -267,6 +277,12 @@ test("128 terminal seeds preserve exact outcome and bounded immutable projection
       depth * 1000 + gold * 2 + Math.floor(depth / 5) * 2500
     );
     assert(JSON.stringify(result.response).length < 16_384);
-    assert(JSON.stringify(result.storageEffects[1].entry).length < 16_384);
+    const leaderboardEffect = result.storageEffects.find(
+      (effect) => effect.type === "insert_leaderboard"
+    );
+    assert.equal(Boolean(leaderboardEffect), status !== "extraction");
+    if (leaderboardEffect) {
+      assert(JSON.stringify(leaderboardEffect.entry).length < 16_384);
+    }
   }
 });

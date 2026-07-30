@@ -6,13 +6,13 @@ import {
   R2_THREAT_STATUS
 } from "./fixtures/r2-threat-matrix.js";
 
-test("R2 rerun registry covers all 30 R1 threat scenarios with executable evidence", async () => {
-  assert.equal(R2_THREAT_MATRIX.length, 30);
+test("R2 rerun registry covers all 30 R1 scenarios plus campaign leaderboard fanout with executable evidence", async () => {
+  assert.equal(R2_THREAT_MATRIX.length, 31);
   assert.deepEqual(R2_THREAT_MATRIX.map(({ id }) => id), Array.from(
-    { length: 30 },
+    { length: 31 },
     (_, index) => index + 1
   ));
-  assert.equal(new Set(R2_THREAT_MATRIX.map(({ attempt }) => attempt)).size, 30);
+  assert.equal(new Set(R2_THREAT_MATRIX.map(({ attempt }) => attempt)).size, 31);
   for (const scenario of R2_THREAT_MATRIX) {
     assert([
       R2_THREAT_STATUS.fixed,

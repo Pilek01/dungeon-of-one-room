@@ -27,18 +27,32 @@ export function createD1LeaderboardRepository(db) {
     prepareInsert(entry) {
       return db.prepare(`
         INSERT INTO leaderboard_entries (
-          run_id, season, player_name, score, depth, gold, duration_ms,
-          outcome, build_json, summary_json, verification_level,
-          state_digest, created_at
+          run_id, profile_id, season, player_name, score, depth, gold,
+          duration_ms, outcome, build_json, summary_json,
+          verification_level, state_digest, created_at
         )
-        SELECT ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+        SELECT ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
         WHERE changes() = 1
           AND EXISTS (
           SELECT 1 FROM ranked_runs
           WHERE run_id = ? AND revision = ? AND status = 'finalized'
         )
+        ON CONFLICT(season, profile_id) DO UPDATE SET
+          run_id = excluded.run_id,
+          player_name = excluded.player_name,
+          score = excluded.score,
+          depth = excluded.depth,
+          gold = excluded.gold,
+          duration_ms = excluded.duration_ms,
+          outcome = excluded.outcome,
+          build_json = excluded.build_json,
+          summary_json = excluded.summary_json,
+          verification_level = excluded.verification_level,
+          state_digest = excluded.state_digest,
+          created_at = excluded.created_at
       `).bind(
         entry.runId,
+        entry.profileId || entry.runId,
         entry.season,
         entry.playerName,
         entry.score,

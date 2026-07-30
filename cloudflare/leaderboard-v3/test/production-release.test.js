@@ -7,6 +7,7 @@ import { createWorker } from "../src/index.js";
 import productionWorker from "../src/production-ruleset-entry.js";
 import { createRulesetRegistry, RULESET_RELEASE_STATES } from "../src/rulesets/registry.js";
 import {
+  V08_META_1_LEGACY_PRODUCTION_RELEASE_DESCRIPTOR,
   V08_META_1_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR,
   V08_META_1_PRODUCTION_RELEASE_DESCRIPTOR
 } from "../src/rulesets/releases.js";
@@ -15,8 +16,9 @@ import { createMemoryRepositories } from "./fixtures/memory-repositories.js";
 import { TEST_SECRET } from "./fixtures/harness.js";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../..");
-const EXPECTED_HASH = "sha256:08dfa4f97d91b4f21dbfae7232246125ddbbc6a0270cf81a9e1ed012e5f5d403";
-const PREVIOUS_HASH = "sha256:0bf00607056dbf3c30ffe57bbcfc77cea95b21c9ccc23aa985ec555856d1cbd6";
+const EXPECTED_HASH = "sha256:956251f158e55a0a47f9e43d5680d9aae66a22045c833bd76b8798cdc00e012e";
+const PREVIOUS_HASH = "sha256:08dfa4f97d91b4f21dbfae7232246125ddbbc6a0270cf81a9e1ed012e5f5d403";
+const LEGACY_HASH = "sha256:0bf00607056dbf3c30ffe57bbcfc77cea95b21c9ccc23aa985ec555856d1cbd6";
 
 async function rootFile(relative) {
   return readFile(path.join(ROOT, relative), "utf8");
@@ -26,6 +28,7 @@ test("production entry activates only the exact tested v08-meta-1 hash", async (
   assert.equal(manifest.rulesetHash, EXPECTED_HASH);
   assert.equal(V08_META_1_PRODUCTION_RELEASE_DESCRIPTOR.status, RULESET_RELEASE_STATES.PRODUCTION_RELEASED);
   const registry = createRulesetRegistry([
+    V08_META_1_LEGACY_PRODUCTION_RELEASE_DESCRIPTOR,
     V08_META_1_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR,
     V08_META_1_PRODUCTION_RELEASE_DESCRIPTOR
   ]);
@@ -43,6 +46,13 @@ test("production entry activates only the exact tested v08-meta-1 hash", async (
     lifecycle: "ranked"
   });
   assert.equal(previous.rulesetHash, PREVIOUS_HASH);
+  const legacy = registry.resolve({
+    rulesetId: "v08-meta-1",
+    rulesetHash: LEGACY_HASH,
+    environment: "production",
+    lifecycle: "ranked"
+  });
+  assert.equal(legacy.rulesetHash, LEGACY_HASH);
 
   const response = await productionWorker.fetch(new Request(
     "https://production.invalid/api/v3/availability?clientProtocolVersion=ranked-v3-checkpoint-1"

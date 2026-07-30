@@ -157,6 +157,16 @@ export function createMemoryRepositories() {
         return false;
       }
       storeRun(state, metadata);
+      if (leaderboardEntry.profileId) {
+        for (const [publishedRunId, published] of leaderboardRows) {
+          if (
+            published.profileId === leaderboardEntry.profileId &&
+            published.season === leaderboardEntry.season
+          ) {
+            leaderboardRows.delete(publishedRunId);
+          }
+        }
+      }
       leaderboardRows.set(state.runId, clone({
         ...leaderboardEntry,
         stateDigest: metadata.stateDigest

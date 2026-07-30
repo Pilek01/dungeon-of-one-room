@@ -1261,12 +1261,11 @@ async function handleRegisteredFinalize(request, env, options, repositories) {
   const leaderboardEffect = transition.storageEffects.find(
     (effect) => effect.type === "insert_leaderboard"
   );
-  if (!leaderboardEffect) throw new TypeError("LEADERBOARD_EFFECT_REQUIRED");
   recordMetric(env, options, "finalizations", 1, transition.nextState.outcome || "terminal");
   return persistRegisteredMutation(context, transition, repositories, {
     operationType: "finalize",
     responseKind: "finalize",
-    leaderboardEntry: leaderboardEffect.entry
+    leaderboardEntry: leaderboardEffect?.entry
   });
 }
 
@@ -1514,7 +1513,7 @@ async function handleFinalize(request, env, options, repositories) {
   return persistMutation(context, transition, repositories, {
     operationType: "finalize",
     responseKind: "finalize",
-    leaderboardEntry: leaderboardEffect.entry
+    leaderboardEntry: leaderboardEffect?.entry
   });
 }
 

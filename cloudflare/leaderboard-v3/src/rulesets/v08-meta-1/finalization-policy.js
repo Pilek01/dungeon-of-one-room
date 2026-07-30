@@ -6,7 +6,7 @@ import {
   deriveFinalDurationV08
 } from "./leaderboard-summary.js";
 
-export const FINALIZATION_POLICY_VERSION = "v08-finalization-1";
+export const FINALIZATION_POLICY_VERSION = "v08-finalization-2";
 
 function finalOutcome(status) {
   if (status === "victory") return "victory";
@@ -19,6 +19,7 @@ export function finalizeRunV08(state, context = {}) {
   assertTerminalEligibilityV08(state);
   const finalizedAt = context.finalizedAt;
   const outcome = finalOutcome(state.status);
+  const publishesLeaderboard = outcome !== "extract";
   const scoreProjection = deriveFinalScoreV08(state);
   const durationProjection = deriveFinalDurationV08(state, finalizedAt);
   const projections = buildFinalProjectionsV08(state, {
@@ -41,6 +42,7 @@ export function finalizeRunV08(state, context = {}) {
   };
   const leaderboardEntry = {
     runId: nextState.runId,
+    profileId: nextState.profileId,
     season: nextState.season,
     playerName: nextState.playerName,
     score: scoreProjection.score,
@@ -63,13 +65,15 @@ export function finalizeRunV08(state, context = {}) {
       durationMs: durationProjection.durationMs,
       durationPolicyVersion: durationProjection.durationPolicyVersion,
       verificationLevel: VERIFICATION_LEVEL,
-      leaderboardEntryId: nextState.runId,
+      ...(publishesLeaderboard ? { leaderboardEntryId: nextState.runId } : {}),
       build: structuredClone(projections.build),
       summary: structuredClone(projections.publicSummary)
     },
     storageEffects: [
       { type: "finalize_run", expectedRevision: state.revision },
-      { type: "insert_leaderboard", entry: leaderboardEntry }
+      ...(publishesLeaderboard
+        ? [{ type: "insert_leaderboard", entry: leaderboardEntry }]
+        : [])
     ]
   };
 }

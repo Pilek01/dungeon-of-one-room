@@ -15,6 +15,27 @@ function memoryStore(initial) {
   };
 }
 
+function campaignStore(initialSession) {
+  let session = structuredClone(initialSession);
+  let recovery = { runId: "run_a1", recoveryCredential: "recovery" };
+  let profile = {
+    profileId: "profile_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    profileCredential: "ppppppppppppppppppppppppppppppppppppppppppp"
+  };
+  return {
+    loadSession: () => structuredClone(session),
+    saveSession: (next) => { session = structuredClone(next); },
+    clearSession: () => { session = null; },
+    loadRecovery: () => structuredClone(recovery),
+    saveRecovery: (next) => { recovery = structuredClone(next); },
+    clearRecovery: () => { recovery = null; },
+    loadProfile: () => structuredClone(profile),
+    saveProfile: (next) => { profile = structuredClone(next); },
+    clearProfile: () => { profile = null; },
+    snapshot: () => structuredClone({ session, recovery, profile })
+  };
+}
+
 function terminalSession(pendingOperation = null) {
   return {
     runId: "run_a1",
@@ -71,6 +92,46 @@ test("M4 finalization sends only run and terminal token and clears recovery afte
   assert.equal(client.getSnapshot().token, null);
   client.clear();
   assert.equal(store.loadSession(), null);
+});
+
+test("acknowledged terminal campaign rotates its profile while extraction preserves it", async () => {
+  for (const outcome of ["defeat", "victory", "extract"]) {
+    const store = campaignStore(terminalSession());
+    const client = clientApi.createRankedClient({
+      store,
+      transport: {
+        createOperationId: () => `op_${outcome}`,
+        async request() {
+          return {
+            payload: {
+              ok: true,
+              protocolVersion: protocol.PROTOCOL_VERSION,
+              runId: "run_a1",
+              revision: 6,
+              outcome,
+              score: 1234,
+              metaState: {
+                ...terminalSession().publicState,
+                revision: 6,
+                status: "finalized"
+              }
+            }
+          };
+        }
+      }
+    });
+    await client.finalize();
+    const stored = store.snapshot();
+    if (outcome === "extract") {
+      assert.ok(stored.session);
+      assert.ok(stored.recovery);
+      assert.ok(stored.profile);
+    } else {
+      assert.equal(stored.session, null);
+      assert.equal(stored.recovery, null);
+      assert.equal(stored.profile, null);
+    }
+  }
 });
 
 test("M4 lost finalize response recovery reuses exact operation and body", async () => {

@@ -140,6 +140,24 @@
       return snapshot;
     }
 
+    function retireCampaignIdentity() {
+      const runId = snapshot?.runId || null;
+      snapshot = null;
+      mutationLocked = false;
+      store.clearSession();
+      store.clearRecovery?.();
+      store.clearProfile?.();
+      options.recoveryRecord = null;
+      options.profileIdentity = null;
+      if (runId) coordinator.release(runId);
+    }
+
+    function retireCompletedCampaign(payload) {
+      if (["defeat", "victory"].includes(String(payload?.outcome || ""))) {
+        retireCampaignIdentity();
+      }
+    }
+
     async function execute(endpoint, operation) {
       const current = requireSnapshot();
       if (!coordinator.isOwner(current.runId) && !coordinator.acquire(current.runId, current.revision)) {
@@ -331,11 +349,13 @@
       if (current.token?.kind !== protocol.TOKEN_KINDS.terminal) {
         throw new TypeError("RANKED_TERMINAL_TOKEN_REQUIRED");
       }
-      return execute(protocol.ENDPOINTS.finalize, {
+      const result = await execute(protocol.ENDPOINTS.finalize, {
         endpoint: "finalize",
         operationId,
         body: { runId: current.runId, checkpointToken: current.token.value, clientProtocolVersion: protocol.PROTOCOL_VERSION }
       });
+      retireCompletedCampaign(result);
+      return result;
     }
 
     async function camp(action, input = {}, operationId = transport.createOperationId()) {
@@ -418,9 +438,11 @@
       snapshot = null;
       store.clearSession();
       store.clearRecovery?.();
+      store.clearProfile?.();
       coordinator.release(recovery.runId);
       mutationLocked = false;
       options.recoveryRecord = null;
+      options.profileIdentity = null;
       return clone(result.payload);
     }
 
@@ -462,7 +484,9 @@
         }
         return clone(result.payload);
       }
-      return execute(endpoint, pending);
+      const result = await execute(endpoint, pending);
+      if (pending.endpoint === "finalize") retireCompletedCampaign(result);
+      return result;
     }
 
     function discardFailedStart() {
