@@ -2,8 +2,8 @@
 
 ## HD boot renderer synchronization repair (2026-07-31)
 
-COMPLETED_LOCALLY; production remains on the previously deployed Pages/Worker
-release and this fix was not pushed or deployed.
+DEPLOYED_AND_PRODUCTION_VERIFIED; production now serves this repair from the
+explicitly approved local commit.
 
 - Root cause: c12c08c changed the shared syncGraphicsUiMode path to follow the
   runtime canvas immediately. During the initial asynchronous HD preload, the
@@ -23,8 +23,17 @@ release and this fix was not pushed or deployed.
   candidate ruleset is sha256:d784208aad891119b71c52324cea358997ee376313914d5799affa68c8678ff3;
   sha256:7027a84ff06d6d9304e3d8e4343dbd6b3071c8bec734fad10b85981fa92347e8
   remains registered as the previous production release. The bridge now
-  advertises the local candidate while accepting the retained hash; no
-  production registry deployment was performed.
+  advertises the local candidate while accepting the retained hash. Commit
+  1eed59c7b3d26ce4e9eff4631e8bef2e95ad4a15 was promoted without changing the
+  protected game source or unrelated WIP.
+- Production deployment (2026-08-01): Worker version
+  03335954-0a2f-442f-b1e9-ee4b5f127589 and Pages deployment
+  c9c5a1c8 (https://c9c5a1c8.dungeon-of-one-room.pages.dev). The stable project
+  domain and the deployment URL both returned availability HTTP 200 with
+  productionActivated=true and rulesetHash sha256:d784208aad891119b71c52324cea358997ee376313914d5799affa68c8678ff3.
+  A fresh headed public-browser check reported gameGraphicsMode=hd, the app
+  hidden during boot, the Classic logo hidden, the HD brand visible, and no
+  page errors.
 - Verification: focused HD 13/13, release/R2 14/14, pages:build 3109 files,
   verify:fast 51/51, verify:phase 756/756, verify:full 780/780 including
   D1 21/21, protected baseline 3/3 plus headed baseline smoke. Protected Vault

@@ -1203,3 +1203,11 @@ Updated next good targets
   21/21, and baseline 3/3 plus headed smoke PASS. No push, deploy, D1 change,
   gameplay, Classic, Otter, portal, combat
   authority, or protected Vault Guardian WIP change occurred.
+
+## 2026-08-01 - HD boot renderer production deployment
+
+- User explicitly approved deployment of commit `1eed59c7b3d26ce4e9eff4631e8bef2e95ad4a15`.
+- Worker deployed as version `03335954-0a2f-442f-b1e9-ee4b5f127589`; Pages deployment `c9c5a1c8` at `https://c9c5a1c8.dungeon-of-one-room.pages.dev`.
+- Stable and immutable Pages URLs returned availability `200`, `productionActivated=true`, and active hash `sha256:d784208aad891119b71c52324cea358997ee376313914d5799affa68c8678ff3`.
+- Fresh headed public-browser verification found HD canvas mode, hidden app during boot, hidden Classic logo, visible HD brand, and no page errors.
+- No D1 migration, historical backfill, push, or unrelated protected-WIP change was performed.
