@@ -1092,3 +1092,14 @@ Updated next good targets
 - Threat matrix 31/31, fast 51/51, phase 748/748, baseline 3/3 plus headed
   smoke, and full 772/772 including D1 21/21 PASS. Source `game.js`, Practice,
   gameplay, R1-P0-001, M5, and all 172 protected deletions remain unchanged.
+- Implementation commit: `499a8e540cba6374a93f6fac003642dfbb02ba0e`.
+- Production Worker `fdc2cb95-b5df-4deb-93dd-b08a642bdc73` is at 100%;
+  clean Pages deployment `5797e57c-8d9d-4977-9f06-d25d74704dce` is live.
+- Independent live checks matched the clean release hashes. Production smokes
+  passed for the retained R2 hash, the current hash, and the exact depth 1-5
+  Warden checkpoint with canonical potion use and advance to depth 6.
+- The initial Pages upload was superseded after hashing exposed a generated
+  headed-QA hook; source `game.js` stayed clean and the replacement deployment
+  was rebuilt before activation.
+- No D1 migration, M5 action, combat-authority change, gameplay/mode-name
+  change, or protected Vault Guardian change occurred.

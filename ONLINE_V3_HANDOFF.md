@@ -709,3 +709,36 @@ R1-P0-001 remains accepted; local combat authority, mode names, and gameplay par
 
 No unresolved actionable R2 defect remains in this batch.
 No push, deployment, activation, migration, paid service, or M5 work was performed.
+
+## Ranked Warden checkpoint hotfix deployed (2026-07-31)
+
+Implementation commit `499a8e540cba6374a93f6fac003642dfbb02ba0e`
+fixes the depth 5 Warden reconnect caused by the room meta-scope guard comparing
+the canonical build against a stale snapshot taken before valid potion
+settlement. The guard now snapshots after settlement and still rejects later
+room-layer build mutation.
+
+- current ruleset:
+  `sha256:e4175a6cb29f576a3ad85357a433d6595eb7e9d19a6c5f47ed125ecfe9ae538e`;
+- former released hashes remain accepted only through the closed compatibility
+  allowlist, and an unknown hash remains rejected;
+- Worker deployment `fdc2cb95-b5df-4deb-93dd-b08a642bdc73` is active at 100%;
+- clean Pages deployment `5797e57c-8d9d-4977-9f06-d25d74704dce` is active at
+  `https://dungeon-of-one-room.pages.dev`;
+- the earlier Pages upload `5944b10b-45f9-433c-ad93-50cb4872384c` was
+  superseded immediately after independent hashing detected a headed-QA hook
+  in its generated bundle; the source `game.js` was never modified, the bundle
+  was rebuilt, and all live hashes now match the clean verified release;
+- production compatibility smokes passed for the retained R2 and current
+  ruleset hashes;
+- the exact production Warden smoke passed through depths 1-5 with potion use,
+  canonical potion count `3 -> 2`, a depth 6 directive, and confirmed abandon;
+- threat matrix 31/31, `verify:fast` 51/51, `verify:phase` 748/748,
+  `verify:baseline` 3/3 plus headed smoke, and `verify:full` 772/772 including
+  Wrangler/D1 21/21 all pass;
+- no D1 migration, combat-authority change, gameplay divergence, mode rename,
+  M5 work, or protected Vault Guardian change occurred.
+
+Source `game.js` remains
+`556829c909cdc9eaefb4238279457eb9b3427adef9ce494f35743542770ee7de`.
+All 172 protected Vault Guardian deletions remain untouched and unstaged.

@@ -2,7 +2,7 @@
 
 ## Active status
 
-`COMPLETED_LOCALLY_PENDING_PRODUCTION`; player reproduction and a local Worker
+`COMPLETED_AND_PRODUCTION_VERIFIED`; player reproduction and a local Worker
 probe confirmed that a Ranked room checkpoint containing the bounded
 `potion-use` claim was settled correctly, then rejected by the older room-layer
 build immutability guard with `PHASE_3B2A_META_SCOPE_VIOLATION`. A depth 5
@@ -16,6 +16,14 @@ regressions, headed Warden QA with potion use,
 the 31-scenario threat matrix, `verify:fast` 51/51, `verify:phase` 748/748,
 `verify:baseline` 3/3 plus headed smoke, and `verify:full` 772/772 including
 Wrangler/D1 21/21 all pass.
+
+Implementation commit `499a8e540cba6374a93f6fac003642dfbb02ba0e` is
+active in production. Worker deployment
+`fdc2cb95-b5df-4deb-93dd-b08a642bdc73` is at 100%, and the clean Pages
+deployment is `5797e57c-8d9d-4977-9f06-d25d74704dce`. Independent production
+smokes passed for both the retained R2 ruleset and the current ruleset,
+including an exact depth 1-5 Warden checkpoint with potion consumption,
+advance to depth 6, and confirmed abandon. No D1 migration was required.
 
 Authorized paths:
 
