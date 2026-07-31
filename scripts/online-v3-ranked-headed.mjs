@@ -890,7 +890,8 @@ ${fatalTestHookAnchor}`;
         visibleRelicChoices: [...document.querySelectorAll(".ranked-v3-choice-relic")]
           .filter((element) => element.getClientRects().length).length,
         visibleOnlineOverlay: [...document.querySelectorAll(".ranked-v3-overlay")]
-          .filter((element) => element.getClientRects().length).length
+          .filter((element) => element.getClientRects().length).length,
+        canvasGraphicsMode: document.querySelector("#game")?.dataset.graphicsMode || ""
       };
     });
     assert.equal(preWardenAudit.directive?.depth, firstRoom.depth + 4, JSON.stringify(preWardenAudit));
@@ -901,6 +902,11 @@ ${fatalTestHookAnchor}`;
     );
     assert.equal(preWardenAudit.visibleRelicChoices, 0, JSON.stringify(preWardenAudit));
     assert.equal(preWardenAudit.visibleOnlineOverlay, 0, JSON.stringify(preWardenAudit));
+    assert.equal(
+      preWardenAudit.canvasGraphicsMode,
+      "hd",
+      `Ranked pre-Warden portal must render on the HD canvas: ${JSON.stringify(preWardenAudit)}`
+    );
     assert.equal(
       diagnostics.apiRequests.length - requestsBeforePreWardenClear,
       1,

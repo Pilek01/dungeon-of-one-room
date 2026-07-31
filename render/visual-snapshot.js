@@ -288,10 +288,16 @@
 
     const nextDepth = Math.max(0, Number(visualState.depth) || 0) + 1;
     const nextRoomIsBoss = nextDepth > 0 && nextDepth % 5 === 0;
+    const rankedNextRoomType = visualState.onlineV3NextDirective?.roomType;
+    const nextRoomIsWarden = visualState.onlineV3Ranked === true
+      ? rankedNextRoomType === "boss" || rankedNextRoomType === "final"
+      : nextRoomIsBoss;
     const forcedKind = visualState.forcedNextRoomType;
-    copy.kind = !nextRoomIsBoss && SPECIAL_PORTAL_KINDS.has(forcedKind)
-      ? forcedKind
-      : "default";
+    copy.kind = nextRoomIsWarden
+      ? "warden"
+      : !nextRoomIsBoss && SPECIAL_PORTAL_KINDS.has(forcedKind)
+        ? forcedKind
+        : "default";
     return copy;
   }
 

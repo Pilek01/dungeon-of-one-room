@@ -264,7 +264,7 @@ test("derives portal appearance without exposing room routing state", () => {
   }, 100);
 
   assert.strictEqual(normal.portal.kind, "default");
-  assert.strictEqual(bossNext.portal.kind, "default");
+  assert.strictEqual(bossNext.portal.kind, "warden");
 });
 
 test("copies enemy freeze, frost, and disorientation presentation status", () => {
@@ -503,4 +503,41 @@ test("copies Vault Guardian ability state and chest countdown fields without ref
   source.chests[0].vaultCondemnTurns = 1;
   assert.strictEqual(snapshot.enemies[0].vaultLockdownTargets[0].x, 2);
   assert.strictEqual(snapshot.chests[0].vaultCondemnTurns, 3);
+});
+
+test("derives a Warden portal from local boss depth or an issued Ranked directive", () => {
+  const local = api.createVisualSnapshot({
+    depth: 4,
+    portal: { x: 1, y: 1 }
+  }, 100);
+  const rankedBoss = api.createVisualSnapshot({
+    depth: 4,
+    onlineV3Ranked: true,
+    onlineV3NextDirective: { roomType: "boss" },
+    portal: { x: 1, y: 1 }
+  }, 100);
+  const rankedFinal = api.createVisualSnapshot({
+    depth: 99,
+    onlineV3Ranked: true,
+    onlineV3NextDirective: { roomType: "final" },
+    portal: { x: 1, y: 1 }
+  }, 100);
+  const rankedUnknown = api.createVisualSnapshot({
+    depth: 4,
+    onlineV3Ranked: true,
+    portal: { x: 1, y: 1 }
+  }, 100);
+  const rankedCombat = api.createVisualSnapshot({
+    depth: 4,
+    onlineV3Ranked: true,
+    onlineV3NextDirective: { roomType: "combat" },
+    portal: { x: 1, y: 1 }
+  }, 100);
+
+  assert.deepStrictEqual(local.portal, { x: 1, y: 1, kind: "warden" });
+  assert.deepStrictEqual(rankedBoss.portal, { x: 1, y: 1, kind: "warden" });
+  assert.deepStrictEqual(rankedFinal.portal, { x: 1, y: 1, kind: "warden" });
+  assert.strictEqual(rankedUnknown.portal.kind, "default");
+  assert.strictEqual(rankedCombat.portal.kind, "default");
+  assert.strictEqual("onlineV3NextDirective" in rankedBoss, false);
 });

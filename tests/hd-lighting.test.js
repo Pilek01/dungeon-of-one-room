@@ -106,3 +106,20 @@ test("HTML and HD renderer wire lighting before the renderer and replace the no-
   assert.match(layers, /lighting:\s*drawLightingLayer/);
   assert.doesNotMatch(layers, /lighting:\s*drawNothing/);
 });
+
+test("Warden portals keep the standard portal light contract but use crimson", () => {
+  const lighting = require("../render/hd-lighting.js");
+  const base = { phase: "playing", roomCleared: true, portal: { x: 7, y: 7, active: true } };
+  const normal = lighting.collectLightingCommands(base).lights.find((light) => light.kind === "portal");
+  const warden = lighting.collectLightingCommands({
+    ...base,
+    portal: { ...base.portal, kind: "warden" }
+  }).lights.find((light) => light.kind === "portal");
+
+  assert.equal(normal.color, "#6e9cff");
+  assert.equal(warden.color, "#e34a56");
+  assert.deepEqual(
+    { x: warden.x, y: warden.y, radius: warden.radius, strength: warden.strength, priority: warden.priority },
+    { x: normal.x, y: normal.y, radius: normal.radius, strength: normal.strength, priority: normal.priority }
+  );
+});

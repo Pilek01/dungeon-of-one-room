@@ -1,3 +1,50 @@
+# HD Warden portal forewarning
+
+## Active status
+
+`COMPLETED_LOCALLY`; production, Worker/D1, Online routing, and the ruleset
+remain unchanged. This is one isolated HD presentation phase only.
+
+Authorized paths:
+
+- `assets/hd/objects/warden/portal-*.png`;
+- `art/source/warden-portal-hd/warden-portal-hd.lock.json`;
+- `render/hd-asset-manifest.js`;
+- `render/visual-snapshot.js`;
+- `render/hd-renderer-layers.js`;
+- `render/hd-lighting.js`;
+- `game.js` only for synchronizing HD HUD activation to the actual canvas renderer mode;
+- `tests/visual-snapshot.test.js`;
+- `tests/hd-lighting.test.js`;
+- `tests/warden-portal-hd.test.js`;
+- `tests/graphics-toggle.test.js`;
+- `scripts/online-v3-ranked-headed.mjs`;
+- `scripts/capture-graphics-toggle-qa.mjs`;
+- `ONLINE_V3_HANDOFF.md`;
+- `progress.md`;
+- this file.
+
+Completed outcome: when the next room is a Warden room, the existing HD portal
+keeps its ordinary shell, scale, timing, and motion while its interior is
+red/crimson. Local HD derives this only from the ordinary boss-depth boundary;
+Ranked HD derives it only from the issued canonical `boss`/`final` directive,
+without exposing that directive or inferring it from local depth. The normal
+blue portal and every Otter asset/behavior remain unchanged. The sole
+`game.js` exception makes HD HUD activation follow the actual canvas renderer
+through loading, fallback, and runtime switching, so the player cannot see HD
+HUD over a Classic canvas. Classic remains untouched.
+
+Verification: focused portal, snapshot, lighting, and graphics-toggle coverage
+passed 33/33; local headed pre-Warden HD audit and full headed Ranked lifecycle
+passed. `verify:baseline` passed 3/3 plus clean headed baseline and Ranked
+smokes. `verify:fast` and `verify:phase` halt before tests on the pre-existing
+`GENERATED_FILE_DRIFT` for
+`cloudflare/leaderboard-v3/src/rulesets/v08-meta-1/data/source-manifest.generated.json`,
+reproduced in clean `HEAD`; no ruleset generation/write was performed.
+`tests/hd-room-assets.test.js` also has two pre-existing stale portal-input
+failures, reproduced in clean `HEAD`; it remains unchanged. `git diff --check`
+passed. No push, deploy, activation, or next phase.
+
 # Ranked Warden checkpoint resource-settlement hotfix
 
 ## Active status

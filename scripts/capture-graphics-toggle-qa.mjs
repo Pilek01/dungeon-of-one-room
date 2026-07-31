@@ -45,15 +45,34 @@ function sameRunState(before, after) {
   return JSON.stringify(runSignature(before)) === JSON.stringify(runSignature(after));
 }
 
+function assertPresentationConsistency(metrics, label) {
+  const canvasMode = metrics.graphicsMode === "hd" ? "hd" : "classic";
+  const hudMode = metrics.hdHud ? "hd" : "classic";
+  if (hudMode !== canvasMode) {
+    throw new Error(`${label}: HUD is ${hudMode} while canvas is ${canvasMode}: ${JSON.stringify(metrics)}`);
+  }
+}
+
 async function readMetrics(page) {
   return page.evaluate((key) => {
     const canvas = document.querySelector("#game");
     const overlay = document.querySelector("#screenOverlay");
+    const canvasRect = canvas?.getBoundingClientRect();
+    const canvasStyle = canvas ? getComputedStyle(canvas) : null;
     return {
       graphicsMode: canvas?.dataset.graphicsMode || "",
       canvasWidth: canvas?.width || 0,
       canvasHeight: canvas?.height || 0,
+      canvasVisible: Boolean(
+        canvasRect &&
+        canvasRect.width > 0 &&
+        canvasRect.height > 0 &&
+        canvasStyle?.display !== "none" &&
+        canvasStyle?.visibility !== "hidden"
+      ),
+      mainMenuOnly: document.body.classList.contains("main-menu-only"),
       preference: localStorage.getItem(key),
+      hdHud: document.body.classList.contains("graphics-hd-ui"),
       overlayVisible: overlay?.classList.contains("visible") || false,
       overlayText: overlay?.innerText || ""
     };
@@ -78,7 +97,7 @@ async function waitForRenderer(page, mode) {
 async function waitForOverlay(page, text) {
   await page.waitForFunction((expected) => {
     const overlay = document.querySelector("#screenOverlay");
-    return overlay?.classList.contains("visible") && overlay.innerText.includes(expected);
+    return overlay?.classList.contains("visible") && overlay.innerText.toLowerCase().includes(expected.toLowerCase());
   }, text, { timeout: 10000 });
 }
 
@@ -94,8 +113,17 @@ async function capture(page, name) {
   fs.mkdirSync(target, { recursive: true });
   const state = await readState(page);
   const metrics = await readMetrics(page);
+  assertPresentationConsistency(metrics, name);
+  if (state.phase === "playing" && !metrics.canvasVisible) {
+    throw new Error(`${name}: active gameplay canvas is not player-visible: ${JSON.stringify(metrics)}`);
+  }
+  if (!metrics.canvasVisible && !metrics.mainMenuOnly) {
+    throw new Error(`${name}: canvas is hidden outside the intentional main-menu surface: ${JSON.stringify(metrics)}`);
+  }
   await page.screenshot({ path: path.join(target, "viewport.png"), fullPage: false });
-  await page.locator("#game").screenshot({ path: path.join(target, "canvas.png") });
+  if (metrics.canvasVisible) {
+    await page.locator("#game").screenshot({ path: path.join(target, "canvas.png") });
+  }
   writeJson(path.join(target, "state.json"), state);
   writeJson(path.join(target, "metrics.json"), metrics);
   checkpoints.push({ name, state, metrics });
@@ -143,6 +171,7 @@ try {
   await page.evaluate((key) => localStorage.removeItem(key), preferenceKey);
   await page.goto(scenarioUrl, { waitUntil: "domcontentloaded" });
   await waitForPlaying(page);
+  assertPresentationConsistency(await readMetrics(page), "HD scenario startup");
   await waitForRenderer(page, "hd");
   const before = await capture(page, "01-playing-hd");
 
@@ -150,6 +179,7 @@ try {
   await waitForGraphicsChoice(page, "HD");
   await capture(page, "02-menu-hd");
   await page.keyboard.press("Digit2");
+  assertPresentationConsistency(await readMetrics(page), "HD to Classic transition");
   await waitForRenderer(page, "classic");
   await waitForGraphicsChoice(page, "Classic");
   const classicMenu = await capture(page, "03-menu-classic");
@@ -162,6 +192,7 @@ try {
 
   await openGraphicsOptions(page);
   await page.keyboard.press("Digit1");
+  assertPresentationConsistency(await readMetrics(page), "Classic to HD transition");
   await waitForRenderer(page, "hd");
   await waitForGraphicsChoice(page, "HD");
   const hdMenu = await capture(page, "05-menu-hd-restored");
@@ -173,6 +204,7 @@ try {
 
   await page.reload({ waitUntil: "domcontentloaded" });
   await waitForPlaying(page);
+  assertPresentationConsistency(await readMetrics(page), "HD reload startup");
   await waitForRenderer(page, "hd");
   const hdReload = await capture(page, "07-reload-hd-persisted");
   if (hdReload.metrics.preference !== "hd") throw new Error("Reload did not retain HD preference");
@@ -182,6 +214,7 @@ try {
   await waitForRenderer(page, "classic");
   await page.reload({ waitUntil: "domcontentloaded" });
   await waitForPlaying(page);
+  assertPresentationConsistency(await readMetrics(page), "Classic reload startup");
   await waitForRenderer(page, "classic");
   const classicReload = await capture(page, "08-reload-classic-persisted");
   if (classicReload.metrics.preference !== "classic") throw new Error("Reload did not retain Classic preference");

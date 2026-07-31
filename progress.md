@@ -1103,3 +1103,20 @@ Updated next good targets
   was rebuilt before activation.
 - No D1 migration, M5 action, combat-authority change, gameplay/mode-name
   change, or protected Vault Guardian change occurred.
+## 2026-07-31 - HD Warden portal forewarning and presentation coherence
+
+- Added an HD-only, lock-backed Warden portal: ordinary portal framing,
+  geometry, timing, and motion with crimson inner animation; blue common and
+  Otter remain unchanged.
+- Local derives the cue from the normal boss-depth boundary; Ranked derives it
+  from the already-issued canonical boss/final directive without exposing it.
+- Fixed HD HUD/canvas skew: the HD HUD class now follows the actual renderer
+  during load, fallback, and mode switching. QA verifies player-visible canvas
+  parity through HD -> Classic -> HD.
+- Focused 33/33 and local/Ranked headed QA PASS. Baseline guard 3/3 plus headed
+  smokes PASS. `verify:fast`/`verify:phase` are blocked before tests by the
+  clean-HEAD-reproducible generated source-manifest drift; two `hd-room-assets`
+  portal-input failures are likewise clean-HEAD-reproducible and unchanged.
+- Ruleset remains `sha256:e4175a6cb29f576a3ad85357a433d6595eb7e9d19a6c5f47ed125ecfe9ae538e`;
+  no deployment, Worker/D1, Classic, Otter, gameplay, or protected Vault
+  Guardian change occurred.

@@ -1,0 +1,40 @@
+{
+  "formatVersion": 1,
+  "description": "HD Warden portal: the ordinary portal shell is preserved and only animated blue energy is recolored crimson.",
+  "sourceAssets": {
+    "assets/hd/objects/common/portal-frame.png": "464ac29d8ac234f274a90d9c313e2a229667747110c829710fee712434f104e6",
+    "assets/hd/objects/common/portal-inactive.png": "464ac29d8ac234f274a90d9c313e2a229667747110c829710fee712434f104e6",
+    "assets/hd/objects/common/portal-active-01.png": "81b14dbbb0b5c30b1795c15d604654e070674b835c31c0c8274ec00664801a27",
+    "assets/hd/objects/common/portal-active-02.png": "626af1e9e2a472803f48fe5235259a74f19388061c6448b42e2ebf13fca84d3e",
+    "assets/hd/objects/common/portal-active-03.png": "5da0c241618da591b1b07c587de4fb20daf781828fb42fde1b2d58f63e1e003e",
+    "assets/hd/objects/common/portal-swirl-01.png": "cc2d5da1c71f2065a8e79afadf4d3ef5a225418c946324836e289ce291cfef27",
+    "assets/hd/objects/common/portal-swirl-02.png": "173da6d4e74def50debcc8340a4308456cfd4e0e5fadb6b6f19438a349d54690",
+    "assets/hd/objects/common/portal-swirl-03.png": "e970d066fded93d8fe5cb7cf063da37c9142ac644b9fb1de08518cdd4e7b6146",
+    "assets/hd/objects/common/portal-swirl-04.png": "57557f6ffd51a85cfc47b82eaf4273be340c68a0f16ed416900cbff225a44a46",
+    "assets/hd/objects/common/portal-swirl-05.png": "b3c1fa8dc6f9e12a1058bbce88a4d933c0f680870852c0f369b4765f0d8226c5",
+    "assets/hd/objects/common/portal-swirl-06.png": "4b12cf49fb6ecee1672c5d4aceb4d4241c175b2bfc524bab3d401303cefe6abc",
+    "assets/hd/objects/common/portal-swirl-07.png": "b5ea09eb9b2e4e57bdbaa9e7ee6bc4bc01a361a9b55ae917f642eedcbd73e722",
+    "assets/hd/objects/common/portal-swirl-08.png": "26dff56f9692ca3d91b29979918972d0916ec72d2bf656876a56c47ea9293be3"
+  },
+  "outputAssets": {
+    "assets/hd/objects/warden/portal-frame.png": "464ac29d8ac234f274a90d9c313e2a229667747110c829710fee712434f104e6",
+    "assets/hd/objects/warden/portal-inactive.png": "464ac29d8ac234f274a90d9c313e2a229667747110c829710fee712434f104e6",
+    "assets/hd/objects/warden/portal-active01.png": "a656c263b4df0243ac218d9b133751b3ad911169e95a74a6073779c090a0326f",
+    "assets/hd/objects/warden/portal-active02.png": "aaef3870300bd057760af78f12511e59f880afaecc2f8f4dd97809dec6bc2ea4",
+    "assets/hd/objects/warden/portal-active03.png": "e96b414744c3cfa22ce8671d7dff840befe122fc6aaed7b0d533d17f313689c1",
+    "assets/hd/objects/warden/portal-swirl01.png": "3b886253cb3c86cc011a264f2fcc580891cb0482fee6508d703183be6c501f5c",
+    "assets/hd/objects/warden/portal-swirl02.png": "eed14ee3df20e2a32d772d8053048b62de22ae0bb89bf594f3d4acedf59f5d3e",
+    "assets/hd/objects/warden/portal-swirl03.png": "6c35f68b08fd0bd37ffbc74b1068718de955f03321bf81ac0f40ac2e67e854d8",
+    "assets/hd/objects/warden/portal-swirl04.png": "17e3765b53c557dbc426d805f84db0137133f67ab8ad40662c21c5faa8c9cc2d",
+    "assets/hd/objects/warden/portal-swirl05.png": "f8449089678f0522f65c9d4829777cd7f3f6b649bb810723c896b036837659a2",
+    "assets/hd/objects/warden/portal-swirl06.png": "427b38f5890d42e69bf64678eb2249abae6fe906d3e323670fdfc9eb9f8464af",
+    "assets/hd/objects/warden/portal-swirl07.png": "953818544565cdb6748be78c115d044ea546b4db08f8199c7038c2e54ffa8ef9",
+    "assets/hd/objects/warden/portal-swirl08.png": "91907b544f21d9237d43cb110941f55aacdac8820efb103ecc9b8030cfcd69bf"
+  },
+  "invariants": {
+    "frameAndInactive": "byte-identical copies",
+    "animatedAlpha": "preserved pixel-for-pixel",
+    "animatedColor": "changed visible pixels are crimson-dominant",
+    "swirlFrameMs": 80
+  }
+}

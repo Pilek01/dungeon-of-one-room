@@ -27250,15 +27250,15 @@
   }
 
   function syncGraphicsUiMode() {
-    document.body.classList.toggle("graphics-hd-ui", graphicsPreferenceApi.isHd(graphicsPreference));
+    document.body.classList.toggle("graphics-hd-ui", getRuntimeGraphicsMode() === "hd");
   }
 
   function applyGraphicsPreference() {
-    syncGraphicsUiMode();
     const transitionGeneration = ++graphicsTransitionGeneration;
     if (!graphicsController) {
       graphicsTransitionPending = false;
       resetLegacyCanvasMode();
+      syncGraphicsUiMode();
       markUiDirty();
       return Object.freeze({ mode: "legacy", stale: false });
     }
@@ -27267,6 +27267,7 @@
       const initialization = graphicsController.initialize(graphicsPreferenceApi.isHd(graphicsPreference));
       const isPending = Boolean(initialization && typeof initialization.then === "function");
       graphicsTransitionPending = isPending;
+      syncGraphicsUiMode();
       markUiDirty();
       if (!isPending) return initialization;
 
@@ -27274,12 +27275,14 @@
         () => {
           if (transitionGeneration !== graphicsTransitionGeneration) return;
           graphicsTransitionPending = false;
+          syncGraphicsUiMode();
           markUiDirty();
         },
         (error) => {
           if (transitionGeneration !== graphicsTransitionGeneration) return;
           graphicsTransitionPending = false;
           graphicsController.fallback(error);
+          syncGraphicsUiMode();
           markUiDirty();
         }
       );
@@ -27288,6 +27291,7 @@
       if (transitionGeneration !== graphicsTransitionGeneration) return null;
       graphicsTransitionPending = false;
       graphicsController.fallback(error);
+      syncGraphicsUiMode();
       markUiDirty();
       return null;
     }
@@ -27306,6 +27310,7 @@
       graphicsController = null;
       initialGraphicsReady = Promise.resolve();
       resetLegacyCanvasMode();
+      syncGraphicsUiMode();
       if (graphicsPreferenceApi.isHd(graphicsPreference)) {
         reportHDGraphicsDiagnostic({
           message: "HD renderer module is unavailable; using the legacy renderer fallback"
@@ -27337,6 +27342,7 @@
       graphicsTransitionPending = false;
       initialGraphicsReady = Promise.resolve();
       resetLegacyCanvasMode();
+      syncGraphicsUiMode();
       if (graphicsPreferenceApi.isHd(graphicsPreference)) {
         reportHDGraphicsDiagnostic({
           message: "HD graphics initialization failed; using the legacy renderer fallback",

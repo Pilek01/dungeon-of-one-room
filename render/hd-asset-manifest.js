@@ -493,7 +493,7 @@
     addRoomProp(`object.vault.seal.${state}`, "vault", `seal-${state}`);
     addRoomProp(`object.otter.seal.${state}`, "otter", `seal-${state}`);
   }
-  for (const group of ["vault", "otter", "forge"]) {
+  for (const group of ["vault", "otter", "forge", "warden"]) {
     for (const state of ["inactive", "active01", "active02", "active03"]) {
       addRoomProp(`object.${group}.portal.${state}`, group, `portal-${state}`);
     }

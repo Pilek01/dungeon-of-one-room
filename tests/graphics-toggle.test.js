@@ -115,8 +115,14 @@ test("browser QA exercises the real menu flow, persistence, and run preservation
   assert.match(runner, /press\("Digit3"\)/);
   assert.match(runner, /press\("Digit2"\)/);
   assert.match(runner, /graphicsMode/);
+  assert.match(runner, /hdHud/);
+  assert.match(runner, /assertPresentationConsistency/);
+  assert.match(runner, /innerText\.toLowerCase\(\)\.includes\(expected\.toLowerCase\(\)\)/);
   assert.match(runner, /canvasWidth/);
   assert.match(runner, /canvasHeight/);
+  assert.match(runner, /canvasVisible/);
+  assert.match(runner, /mainMenuOnly/);
+  assert.match(runner, /active gameplay canvas is not player-visible/);
   assert.match(runner, /dungeonOneRoomGraphicsMode/);
   assert.match(runner, /sameRunState/);
   assert.match(runner, /waitForGraphicsChoice/);
@@ -125,4 +131,42 @@ test("browser QA exercises the real menu flow, persistence, and run preservation
   assert.match(runner, /page\.reload/);
   assert.match(runner, /consoleErrors/);
   assert.match(runner, /summary\.json/);
+});
+
+test("HD HUD follows the actual canvas mode during graphics transitions", () => {
+  const game = fs.readFileSync(path.join(ROOT, "game.js"), "utf8");
+  const sync = game.match(/function syncGraphicsUiMode\(\) \{([\s\S]*?)\n  \}/);
+  assert.ok(sync, "syncGraphicsUiMode must exist");
+  assert.match(
+    sync[1],
+    /getRuntimeGraphicsMode\(\) === "hd"/,
+    "HD HUD may only activate when the active canvas renderer is HD"
+  );
+  assert.doesNotMatch(sync[1], /graphicsPreferenceApi\.isHd\(graphicsPreference\)/);
+
+  const apply = game.match(/function applyGraphicsPreference\(\) \{([\s\S]*?)\n  \}/);
+  assert.ok(apply, "applyGraphicsPreference must exist");
+  assert.match(
+    apply[1],
+    /graphicsTransitionPending = isPending;\s*\n\s*syncGraphicsUiMode\(\);/,
+    "the HUD must be reconciled immediately after the renderer transition starts"
+  );
+  assert.match(
+    apply[1],
+    /graphicsTransitionPending = false;\s*\n\s*syncGraphicsUiMode\(\);\s*\n\s*markUiDirty\(\);/,
+    "the HUD must be reconciled after an HD renderer finishes loading"
+  );
+  assert.match(
+    apply[1],
+    /graphicsController\.fallback\(error\);\s*\n\s*syncGraphicsUiMode\(\);/,
+    "the fallback path must restore a matching Classic HUD"
+  );
+
+  const initialize = game.match(/function initializeGraphicsMode\(\) \{([\s\S]*?)\n  \}/);
+  assert.ok(initialize, "initializeGraphicsMode must exist");
+  assert.match(
+    initialize[1],
+    /resetLegacyCanvasMode\(\);\s*\n\s*syncGraphicsUiMode\(\);/,
+    "an unavailable or failed HD renderer must leave a matching Classic HUD"
+  );
 });

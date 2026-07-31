@@ -75,7 +75,7 @@
       && visual.roomCleared === true
       && (visual.phase === "playing" || visual.portal.active !== false)
     ) {
-      add(makeLight("portal", visual.portal.x, visual.portal.y, 176, "#6e9cff", 0.92, 100));
+      add(makeLight("portal", visual.portal.x, visual.portal.y, 176, visual.portal.kind === "warden" ? "#e34a56" : "#6e9cff", 0.92, 100));
     }
     for (const enemy of Array.isArray(visual.enemies) ? visual.enemies : []) {
       if (!enemy) continue;

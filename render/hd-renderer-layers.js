@@ -756,7 +756,7 @@
     }
 
     if (visual.portal && visual.roomCleared === true) {
-      const kind = ["vault", "forge", "otter"].includes(visual.portal.kind)
+      const kind = ["vault", "forge", "otter", "warden"].includes(visual.portal.kind)
         ? visual.portal.kind
         : "default";
       const active = visual.phase === "playing" || visual.portal.active !== false;
@@ -773,7 +773,7 @@
       const swirlKey = `object.${portalGroup}.portal.${swirlState}`;
       const commonFrameKey = "object.common.portal.frame";
       const commonSwirlKey = `object.common.portal.${swirlState}`;
-      const portalRenderSize = kind === "default" ? TILE_SIZE * 1.5 : TILE_SIZE * 2;
+      const portalRenderSize = ["default", "warden"].includes(kind) ? TILE_SIZE * 1.5 : TILE_SIZE * 2;
       const separatedAvailable = active && getAsset(assets, frameKey) && getAsset(assets, swirlKey);
       const commonSeparatedAvailable = active && getAsset(assets, commonFrameKey) && getAsset(assets, commonSwirlKey);
       if (separatedAvailable || commonSeparatedAvailable) {

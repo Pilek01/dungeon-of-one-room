@@ -1,5 +1,35 @@
 # Online v3 - Production handoff
 
+## HD Warden portal forewarning and HD presentation coherence (2026-07-31)
+
+`COMPLETED_LOCALLY`; no deployment, Worker/D1, Online routing, or ruleset change.
+
+- Added a lock-backed HD-only Warden portal set. Its ordinary portal shell,
+  aperture, size, cadence, and motion are retained; only the active inner
+  energy is crimson. Blue common and all Otter assets/behavior are unchanged.
+- Practice uses only the ordinary boss-depth boundary. Ranked uses only its
+  already-issued canonical `boss` or `final` directive; no routing state is
+  exposed to the local visual snapshot.
+- Fixed the reported split presentation: `graphics-hd-ui` now follows the
+  active canvas renderer, including HD preload, fallback, and HD/Classic
+  switching. The browser QA requires the gameplay canvas to be player-visible
+  and in the same mode as the HUD.
+- Focused portal/snapshot/lighting/graphics tests: 33/33 PASS. Local visible
+  pre-Warden HD audit and full headed Ranked lifecycle PASS with zero page or
+  unexpected console errors. Protected baseline: 3/3 plus clean headed smoke
+  and headed Ranked smoke PASS.
+- `verify:fast` and `verify:phase` stop before tests on the existing
+  `GENERATED_FILE_DRIFT` in
+  `cloudflare/leaderboard-v3/src/rulesets/v08-meta-1/data/source-manifest.generated.json`;
+  the same failure reproduces in clean `HEAD`, so no generated ruleset file was
+  written. `hd-room-assets` has two similarly pre-existing stale portal-input
+  failures, also reproduced in clean `HEAD`; neither was weakened or changed.
+- Ruleset remains
+  `sha256:e4175a6cb29f576a3ad85357a433d6595eb7e9d19a6c5f47ed125ecfe9ae538e`.
+  Classic, gameplay, combat authority, Worker/D1, and protected Vault Guardian
+  deletions remain untouched.
+
+
 ## Ranked Warden checkpoint resource-settlement hotfix (2026-07-31)
 
 `COMPLETED_LOCALLY_PENDING_PRODUCTION`.
