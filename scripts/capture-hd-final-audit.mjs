@@ -68,11 +68,29 @@ async function captureBoot(viewportName, viewport) {
       await bootPage.goto(baseUrl, { waitUntil: "domcontentloaded" });
       await bootPage.waitForTimeout(1800);
       const bootMenuVisible = await bootPage.locator("#bootScreen").isVisible();
+      const bootGraphics = await bootPage.evaluate(() => {
+        const visible = (element) => {
+          if (!element) return false;
+          const style = getComputedStyle(element);
+          const rect = element.getBoundingClientRect();
+          return style.display !== "none" && style.visibility !== "hidden" && Number(style.opacity || 1) > 0
+            && rect.width > 0 && rect.height > 0;
+        };
+        return {
+          hdUi: document.body.classList.contains("graphics-hd-ui"),
+          appHidden: document.querySelector("#gameApp")?.classList.contains("app-hidden") || false,
+          bootLogoVisible: visible(document.querySelector("#bootScreen .boot-logo")),
+          hdBrandVisible: visible(document.querySelector("#bootScreen .boot-hd-brand"))
+        };
+      });
       const bootTarget = path.join(outputRoot, viewportName, "boot");
       fs.mkdirSync(bootTarget, { recursive: true });
       await bootPage.screenshot({ path: path.join(outputRoot, viewportName, bootViewportRelative) });
-      summary.push({ viewport: viewportName, scenario: "boot", bootMenuVisible, consoleErrors: bootErrors });
-      if (!bootMenuVisible || bootErrors.length) throw new Error(`boot audit failed for ${viewportName}`);
+      summary.push({ viewport: viewportName, scenario: "boot", bootMenuVisible, bootGraphics, consoleErrors: bootErrors });
+      if (
+        !bootMenuVisible || !bootGraphics.hdUi || !bootGraphics.appHidden
+        || bootGraphics.bootLogoVisible || !bootGraphics.hdBrandVisible || bootErrors.length
+      ) throw new Error(`boot audit failed for ${viewportName}: ${JSON.stringify({ bootMenuVisible, bootGraphics, bootErrors })}`);
       await bootPage.close();
     } finally {
       await context.close();

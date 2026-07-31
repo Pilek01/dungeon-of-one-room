@@ -139,10 +139,14 @@ test("HD HUD follows the actual canvas mode during graphics transitions", () => 
   assert.ok(sync, "syncGraphicsUiMode must exist");
   assert.match(
     sync[1],
-    /getRuntimeGraphicsMode\(\) === "hd"/,
+    /mode === "hd"/,
     "HD HUD may only activate when the active canvas renderer is HD"
   );
-  assert.doesNotMatch(sync[1], /graphicsPreferenceApi\.isHd\(graphicsPreference\)/);
+  assert.match(
+    sync[1],
+    /getRuntimeGraphicsMode\(\)/,
+    "settled HUD mode must still come from the active canvas renderer"
+  );
 
   const apply = game.match(/function applyGraphicsPreference\(\) \{([\s\S]*?)\n  \}/);
   assert.ok(apply, "applyGraphicsPreference must exist");
@@ -168,5 +172,25 @@ test("HD HUD follows the actual canvas mode during graphics transitions", () => 
     initialize[1],
     /resetLegacyCanvasMode\(\);\s*\n\s*syncGraphicsUiMode\(\);/,
     "an unavailable or failed HD renderer must leave a matching Classic HUD"
+  );
+});
+test("HD boot UI follows the requested mode while the initial renderer is pending", () => {
+  const game = fs.readFileSync(path.join(ROOT, "game.js"), "utf8");
+  const sync = game.match(/function syncGraphicsUiMode\(\) \{([\s\S]*?)\n  \}/);
+  assert.ok(sync, "syncGraphicsUiMode must exist");
+  assert.match(
+    sync[1],
+    /graphicsTransitionPending\s*&&\s*gameAppEl\?\.classList\.contains\("app-hidden"\)/,
+    "the boot screen must be allowed to show the requested renderer while the app is hidden"
+  );
+  assert.match(
+    sync[1],
+    /graphicsPreferenceApi\.isHd\(graphicsPreference\)/,
+    "the pending boot presentation must follow the selected graphics preference"
+  );
+  assert.match(
+    sync[1],
+    /getRuntimeGraphicsMode\(\)/,
+    "the settled HUD must continue to follow the actual canvas renderer"
   );
 });

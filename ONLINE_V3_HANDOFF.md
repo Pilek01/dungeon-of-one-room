@@ -1,5 +1,37 @@
 # Online v3 - Production handoff
 
+## HD boot renderer synchronization repair (2026-07-31)
+
+COMPLETED_LOCALLY; production remains on the previously deployed Pages/Worker
+release and this fix was not pushed or deployed.
+
+- Root cause: c12c08c changed the shared syncGraphicsUiMode path to follow the
+  runtime canvas immediately. During the initial asynchronous HD preload, the
+  canvas was still legacy and the app was hidden, so the Classic logo became
+  the first visible boot frame even with the HD feature enabled.
+- The minimal fix keeps the selected preference for the hidden initial boot
+  presentation, then switches to the actual renderer mode once the app is
+  visible or the transition settles. Fallback still produces a matching
+  Classic UI, and gameplay canvas/HUD parity remains intact.
+- Added a RED regression for pending HD boot UI and extended the final audit
+  to assert HD branding, hidden Classic logo, and hidden app state. The headed
+  local check captured output/playwright/hd-boot-repair/boot-headed-final.png
+  and reported graphics-hd-ui=true, boot visible, HD brand visible, Classic
+  logo hidden, canvasMode=legacy while the renderer was still settling, and
+  no page errors.
+- Generator provenance was refreshed through the canonical generator. The local
+  candidate ruleset is sha256:d784208aad891119b71c52324cea358997ee376313914d5799affa68c8678ff3;
+  sha256:7027a84ff06d6d9304e3d8e4343dbd6b3071c8bec734fad10b85981fa92347e8
+  remains registered as the previous production release. The bridge now
+  advertises the local candidate while accepting the retained hash; no
+  production registry deployment was performed.
+- Verification: focused HD 13/13, release/R2 14/14, pages:build 3109 files,
+  verify:fast 51/51, verify:phase 756/756, verify:full 780/780 including
+  D1 21/21, protected baseline 3/3 plus headed baseline smoke. Protected Vault
+  Guardian WIP, portal assets/behavior,
+  Classic gameplay, Otter, Worker/D1 data, and combat authority remain
+  untouched.
+
 ## Ranked campaign Run Score carry repair (2026-07-31)
 
 DEPLOYED_AND_PRODUCTION_VERIFIED; the verified candidate is active in

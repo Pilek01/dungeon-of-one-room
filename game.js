@@ -27250,7 +27250,10 @@
   }
 
   function syncGraphicsUiMode() {
-    document.body.classList.toggle("graphics-hd-ui", getRuntimeGraphicsMode() === "hd");
+    const mode = graphicsTransitionPending && gameAppEl?.classList.contains("app-hidden")
+      ? (graphicsPreferenceApi.isHd(graphicsPreference) ? "hd" : "classic")
+      : getRuntimeGraphicsMode();
+    document.body.classList.toggle("graphics-hd-ui", mode === "hd");
   }
 
   function applyGraphicsPreference() {

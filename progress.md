@@ -1181,3 +1181,25 @@ Updated next good targets
   testing can start with a fresh Ranked campaign.
 - No push, gameplay, Practice, Classic, Otter, local-save, combat-authority,
   schema, or protected Vault Guardian WIP change occurred.
+
+## 2026-07-31 - HD boot renderer synchronization repair
+
+- Reproduced the public regression: fresh 068ed13 sessions painted the
+  Classic logo for about eight seconds while the asynchronous HD renderer was
+  pending, despite the HD feature flag being enabled.
+- Fixed syncGraphicsUiMode so hidden initial boot follows the requested HD
+  preference, while settled HUD state continues to follow the actual canvas
+  and genuine renderer failure still falls back to Classic.
+- Added the pending-boot RED/GREEN regression and final-audit DOM assertions.
+  Headed local check: HD UI true, boot visible, HD brand visible, Classic
+  logo hidden, app hidden, no page errors.
+- Canonical generator refreshed 35 source-bound artifacts. Local candidate is
+  sha256:d784208aad891119b71c52324cea358997ee376313914d5799affa68c8678ff3;
+  previous deployed sha256:7027a84ff06d6d9304e3d8e4343dbd6b3071c8bec734fad10b85981fa92347e8
+  is retained. Registry/bridge contracts were synchronized for the candidate
+  without deploying it.
+- Focused HD 13/13 and release/R2 14/14 PASS; Pages bundle 3109 files;
+  verify:fast 51/51, verify:phase 756/756, verify:full 780/780 including D1
+  21/21, and baseline 3/3 plus headed smoke PASS. No push, deploy, D1 change,
+  gameplay, Classic, Otter, portal, combat
+  authority, or protected Vault Guardian WIP change occurred.

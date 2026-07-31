@@ -18,6 +18,10 @@ test("final screenshot audit covers boot UI, both viewports, all wall themes and
   ]) assert.match(source, new RegExp(`"${scenario}"`));
   assert.match(source, /boot\/viewport\.png/);
   assert.match(source, /bootMenuVisible/);
+  assert.match(source, /bootGraphics/);
+  assert.match(source, /hdUi/);
+  assert.match(source, /bootLogoVisible/);
+  assert.match(source, /hdBrandVisible/);
 });
 test("final screenshot audit rejects layout, console, blank-frame and color-key defects", () => {
   const source = fs.readFileSync(runnerPath, "utf8");

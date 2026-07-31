@@ -1,3 +1,54 @@
+# HD boot renderer synchronization repair
+
+## Active status
+
+COMPLETED_LOCALLY; the first-paint HD regression introduced by c12c08c is
+fixed and verified locally. The selected HD presentation is visible while the
+asynchronous renderer is pending; a real renderer failure still falls back to
+Classic. The fix remains separate from the Warden portal and Ranked score
+carry releases, and production was not redeployed.
+
+Confirmed evidence: fresh public `068ed13` sessions report
+`DUNGEON_HD_GRAPHICS_ENABLED=true` and `localStorage` without a Classic
+override, but remain `canvas=legacy` and without `graphics-hd-ui` for about
+8 seconds. Previous production `499a8e5` applied the preference before the
+async renderer settled. Do not change portal assets, portal behavior, Classic gameplay, Worker/D1, or
+protected Vault Guardian WIP. The only accepted protocol change is the local
+candidate/retained hash synchronization listed below.
+
+Authorized paths:
+
+- `game.js` only for the initial graphics-UI synchronization;
+- `tests/graphics-toggle.test.js`;
+- `tests/hd-main-menu-visibility.test.js`;
+- `scripts/capture-hd-final-audit.mjs`;
+- `tests/hd-final-audit.test.js`;
+- `cloudflare/leaderboard-v3/src/rulesets/v08-meta-1/data/*.generated.json` and
+  `cloudflare/leaderboard-v3/src/rulesets/v08-meta-1/data/ruleset-manifest.json`
+  only for the generator-required source hash refresh;
+- `cloudflare/leaderboard-v3/src/rulesets/releases.js`;
+- `cloudflare/leaderboard-v3/test/production-release.test.js`;
+- `online-v3/ranked-v3-protocol.js` only for the local candidate hash and
+  retained previous hash;
+- `ONLINE_V3_HANDOFF.md`;
+- `progress.md`;
+- this file.
+
+Completion evidence: focused HD tests 13/13 PASS; release and R2
+contract tests 14/14 PASS; headed DOM check reports graphics-hd-ui=true,
+boot visible, HD brand visible, Classic logo hidden, and no page errors while
+the app remains hidden pending renderer settlement. The local candidate
+ruleset hash is sha256:d784208aad891119b71c52324cea358997ee376313914d5799affa68c8678ff3;
+full verifier: 780/780 including D1 21/21.
+the previous deployed hash sha256:7027a84ff06d6d9304e3d8e4343dbd6b3071c8bec734fad10b85981fa92347e8
+is retained.
+
+Required verification: focused RED/GREEN boot regression, `node --check`
+changed JavaScript, headed HD boot screenshot/DOM check, `npm.cmd run
+verify:fast`, `npm.cmd run verify:phase`, clean `npm.cmd run
+verify:baseline`, `git diff --check`, and one precise local commit. No push or
+deploy without separate explicit authorization.
+
 # Ranked score carry production release
 
 ## Active status
