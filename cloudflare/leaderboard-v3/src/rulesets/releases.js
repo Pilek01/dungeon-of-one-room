@@ -11,6 +11,9 @@ export const V08_META_1_LOCAL_RELEASE_DESCRIPTOR = Object.freeze({
 });
 
 export const V08_META_1_PRODUCTION_RULESET_HASH =
+  "sha256:7027a84ff06d6d9304e3d8e4343dbd6b3071c8bec734fad10b85981fa92347e8";
+
+export const V08_META_1_SCORE_CARRY_PREVIOUS_PRODUCTION_RULESET_HASH =
   "sha256:e4175a6cb29f576a3ad85357a433d6595eb7e9d19a6c5f47ed125ecfe9ae538e";
 
 export const V08_META_1_R2_PRODUCTION_RULESET_HASH =
@@ -52,6 +55,16 @@ export const V08_META_1_WARDEN_HOTFIX_RELEASE_DESCRIPTOR = Object.freeze({
   allowedEnvironments: Object.freeze(["test", "local", "production"]),
   createRuleset: () => createV08Meta1Ruleset({
     rulesetHash: V08_META_1_WARDEN_HOTFIX_RULESET_HASH
+  })
+});
+
+export const V08_META_1_SCORE_CARRY_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR = Object.freeze({
+  ...V08_META_1_DESCRIPTOR,
+  rulesetHash: V08_META_1_SCORE_CARRY_PREVIOUS_PRODUCTION_RULESET_HASH,
+  status: RULESET_RELEASE_STATES.PRODUCTION_RELEASED,
+  allowedEnvironments: Object.freeze(["test", "local", "production"]),
+  createRuleset: () => createV08Meta1Ruleset({
+    rulesetHash: V08_META_1_SCORE_CARRY_PREVIOUS_PRODUCTION_RULESET_HASH
   })
 });
 

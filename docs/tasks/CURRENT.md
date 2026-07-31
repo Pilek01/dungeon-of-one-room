@@ -1,3 +1,37 @@
+# Ranked score carry production release
+
+## Active status
+
+ACTIVE; the user explicitly authorized deployment of the verified Ranked
+campaign score-carry change in f3764b4. This is a narrowly scoped production
+release phase, separate from the completed HD Warden portal phase and from
+unrelated protected Vault Guardian WIP.
+
+Required release: promote the verified candidate
+sha256:7027a84ff06d6d9304e3d8e4343dbd6b3071c8bec734fad10b85981fa92347e8
+as the active production ruleset and the default Pages protocol hash. Retain
+sha256:e4175a6cb29f576a3ad85357a433d6595eb7e9d19a6c5f47ed125ecfe9ae538e
+and every already released hash for saved-run compatibility. Deploy the exact
+verified Worker and Pages bundle only after the release contract passes. Do
+not change game.js, combat authority, Practice, Classic, Otter, local saves,
+the D1 schema, or historical data; do not migrate or backfill D1.
+
+Authorized paths:
+
+- cloudflare/leaderboard-v3/src/rulesets/releases.js;
+- cloudflare/leaderboard-v3/src/production-ruleset-entry.js;
+- online-v3/ranked-v3-protocol.js;
+- release/protocol tests under cloudflare/leaderboard-v3/test/;
+- docs/tasks/CURRENT.md;
+- ONLINE_V3_HANDOFF.md;
+- progress.md.
+
+Required verification: RED/GREEN release contract, generator check, syntax,
+pages:build, verify:fast, verify:phase, clean verify:baseline, and
+verify:full. Commit the exact promotion before deployment. Verify Wrangler
+authentication, deploy the production Worker first and Pages second, then
+independently verify live availability, the public Pages bundle hash, and a
+fresh canonical start/abandon smoke. No push or unrelated cleanup.
 # Ranked campaign Run Score carry repair
 
 ## Active status

@@ -11,6 +11,7 @@ import {
   V08_META_1_LOCAL_RELEASE_DESCRIPTOR,
   V08_META_1_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR,
   V08_META_1_R2_PRODUCTION_RELEASE_DESCRIPTOR,
+  V08_META_1_SCORE_CARRY_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR,
   V08_META_1_WARDEN_HOTFIX_RELEASE_DESCRIPTOR,
   V08_META_1_PRODUCTION_RELEASE_DESCRIPTOR
 } from "../src/rulesets/releases.js";
@@ -19,7 +20,8 @@ import { createMemoryRepositories } from "./fixtures/memory-repositories.js";
 import { TEST_SECRET } from "./fixtures/harness.js";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../..");
-const EXPECTED_HASH = "sha256:e4175a6cb29f576a3ad85357a433d6595eb7e9d19a6c5f47ed125ecfe9ae538e";
+const EXPECTED_HASH = "sha256:7027a84ff06d6d9304e3d8e4343dbd6b3071c8bec734fad10b85981fa92347e8";
+const SCORE_CARRY_PREVIOUS_HASH = "sha256:e4175a6cb29f576a3ad85357a433d6595eb7e9d19a6c5f47ed125ecfe9ae538e";
 const WARDEN_HOTFIX_HASH = "sha256:31124ece34ef1c82a28bb977467d169eade8b34c0c13360d7054ab1684e5fe36";
 const R2_HASH = "sha256:956251f158e55a0a47f9e43d5680d9aae66a22045c833bd76b8798cdc00e012e";
 const PREVIOUS_HASH = "sha256:08dfa4f97d91b4f21dbfae7232246125ddbbc6a0270cf81a9e1ed012e5f5d403";
@@ -29,8 +31,8 @@ async function rootFile(relative) {
   return readFile(path.join(ROOT, relative), "utf8");
 }
 
-test("production entry keeps the exact tested v08-meta-1 hash when a local candidate exists", async () => {
-  assert.notEqual(manifest.rulesetHash, EXPECTED_HASH);
+test("production entry promotes the exact tested v08-meta-1 hash and retains prior runs", async () => {
+  assert.equal(manifest.rulesetHash, EXPECTED_HASH);
   assert.equal(V08_META_1_LOCAL_RELEASE_DESCRIPTOR.rulesetHash, manifest.rulesetHash);
   assert.equal(V08_META_1_LOCAL_RELEASE_DESCRIPTOR.status, RULESET_RELEASE_STATES.LOCAL_RELEASE_CANDIDATE);
   assert.equal(V08_META_1_PRODUCTION_RELEASE_DESCRIPTOR.rulesetHash, EXPECTED_HASH);
@@ -40,6 +42,7 @@ test("production entry keeps the exact tested v08-meta-1 hash when a local candi
     V08_META_1_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR,
     V08_META_1_R2_PRODUCTION_RELEASE_DESCRIPTOR,
     V08_META_1_WARDEN_HOTFIX_RELEASE_DESCRIPTOR,
+    V08_META_1_SCORE_CARRY_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR,
     V08_META_1_PRODUCTION_RELEASE_DESCRIPTOR
   ]);
   const resolved = registry.resolve({
@@ -63,6 +66,13 @@ test("production entry keeps the exact tested v08-meta-1 hash when a local candi
     lifecycle: "ranked"
   });
   assert.equal(wardenHotfix.rulesetHash, WARDEN_HOTFIX_HASH);
+  const scoreCarryPrevious = registry.resolve({
+    rulesetId: "v08-meta-1",
+    rulesetHash: SCORE_CARRY_PREVIOUS_HASH,
+    environment: "production",
+    lifecycle: "ranked"
+  });
+  assert.equal(scoreCarryPrevious.rulesetHash, SCORE_CARRY_PREVIOUS_HASH);
   const previous = registry.resolve({
     rulesetId: "v08-meta-1",
     rulesetHash: PREVIOUS_HASH,
