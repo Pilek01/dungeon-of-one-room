@@ -513,6 +513,24 @@ async function main() {
     maxBuffer: 10 * 1024 * 1024,
     windowsHide: true
   });
+  const rulesetManifest = JSON.parse(await fsPromises.readFile(
+    path.join(WORKER_ROOT, "src", "rulesets", "v08-meta-1", "data", "ruleset-manifest.json"),
+    "utf8"
+  ));
+  const candidateRulesetHash = String(rulesetManifest.rulesetHash || "");
+  assert.match(candidateRulesetHash, /^sha256:[a-f0-9]{64}$/u);
+  const headedProtocolPath = path.join(GAME_ROOT, "online-v3", "ranked-v3-protocol.js");
+  const headedProtocol = await fsPromises.readFile(headedProtocolPath, "utf8");
+  const protocolHashPattern = /^  const RULESET_HASH = "[^"]+";$/mu;
+  assert(protocolHashPattern.test(headedProtocol));
+  await fsPromises.writeFile(
+    headedProtocolPath,
+    headedProtocol.replace(
+      protocolHashPattern,
+      `  const RULESET_HASH = ${JSON.stringify(candidateRulesetHash)};`
+    ),
+    "utf8"
+  );
   const headedConfigPath = path.join(GAME_ROOT, "config.js");
   const headedConfig = await fsPromises.readFile(headedConfigPath, "utf8");
   const debugDisabled = "window.DUNGEON_DEBUG_CHEATS_ENABLED = false;";
