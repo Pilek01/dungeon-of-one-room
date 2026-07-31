@@ -3,6 +3,7 @@ import {
   createEmptyRelicBuildV08
 } from "./relic-policy.js";
 import { createEmptyRunModifierLedgerV08 } from "./run-modifiers.js";
+import { normalizeCampaignStateV08 } from "./meta-state.js";
 
 export const PROFILE_POLICY_VERSION = "v08-ranked-profile-1";
 
@@ -55,7 +56,7 @@ export async function hydrateRunFromProfileV08(state, profile, context = {}) {
   next.runModifiers = structuredClone(
     profile.runModifiers || createEmptyRunModifierLedgerV08()
   );
-  next.campaign = structuredClone(profile.campaign || next.campaign);
+  next.campaign = normalizeCampaignStateV08({ campaign: profile.campaign || next.campaign });
   return next;
 }
 
@@ -106,7 +107,7 @@ export function publicProfileStateV08(profile) {
     campGold: profile.campGold,
     lives: profile.lives,
     build: structuredClone(profile.build),
-    campaign: structuredClone(profile.campaign),
+    campaign: normalizeCampaignStateV08({ campaign: profile.campaign }),
     campSession: profile.campSession
       ? {
           sessionId: profile.campSession.sessionId,

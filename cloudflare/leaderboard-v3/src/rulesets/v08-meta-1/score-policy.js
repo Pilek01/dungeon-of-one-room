@@ -10,8 +10,13 @@ export const SCORE_POLICY_SPEC = Object.freeze({
   authority: "SERVER_DERIVED",
   scoreVersion: SCORE_VERSION_V08,
   legacyFormula: policy.formula,
-  inputs: Object.freeze(["acceptedMaxDepth", "acceptedRunGoldEarned"]),
-  implementationStatus: "m3-canonical"
+  inputs: Object.freeze([
+    "campaignScoreCarry.highWaterDepth",
+    "campaignScoreCarry.earnedGold",
+    "acceptedActiveMaxDepth",
+    "acceptedActiveRunGoldEarned"
+  ]),
+  implementationStatus: "r2-campaign-carry"
 });
 
 function nonNegativeSafeInteger(value, code) {
@@ -37,13 +42,71 @@ export function acceptedRunGoldEarnedV08(state) {
   return total;
 }
 
+export function normalizeCampaignScoreCarryV08(value) {
+  const source = value === undefined ? {} : value;
+  if (!source || typeof source !== "object" || Array.isArray(source)) {
+    throw new TypeError("SCORE_CARRY_INVALID");
+  }
+  const highWaterDepth = nonNegativeSafeInteger(
+    source.highWaterDepth ?? 0,
+    "SCORE_CARRY_DEPTH_INVALID"
+  );
+  if (highWaterDepth > MAX_DEPTH) throw new TypeError("SCORE_CARRY_DEPTH_INVALID");
+  const earnedGold = nonNegativeSafeInteger(
+    source.earnedGold ?? 0,
+    "SCORE_CARRY_GOLD_INVALID"
+  );
+  return { highWaterDepth, earnedGold };
+}
+
+export function deriveCampaignScoreInputsV08(state) {
+  const recordedActiveMaxDepth = nonNegativeSafeInteger(
+    state?.maxDepth,
+    "SCORE_DEPTH_INVALID"
+  );
+  if (recordedActiveMaxDepth > MAX_DEPTH) throw new TypeError("SCORE_DEPTH_INVALID");
+  const recordedActiveRunGoldEarned = acceptedRunGoldEarnedV08(state);
+  const carry = normalizeCampaignScoreCarryV08(state?.campaign?.scoreCarry);
+  const extractedCarryAlreadyIncludesDescent =
+    Boolean(state?.extraction) &&
+    Object.hasOwn(state?.campaign || {}, "scoreCarry") &&
+    (
+      state?.status === "extraction" ||
+      (state?.status === "finalized" && state?.outcome === "extract")
+    );
+  const activeMaxDepth = extractedCarryAlreadyIncludesDescent ? 0 : recordedActiveMaxDepth;
+  const activeRunGoldEarned = extractedCarryAlreadyIncludesDescent
+    ? 0
+    : recordedActiveRunGoldEarned;
+  const acceptedMaxDepth = Math.max(carry.highWaterDepth, activeMaxDepth);
+  const acceptedRunGoldEarned = carry.earnedGold + activeRunGoldEarned;
+  if (!Number.isSafeInteger(acceptedRunGoldEarned)) {
+    throw new TypeError("SCORE_GOLD_OVERFLOW");
+  }
+  return {
+    acceptedMaxDepth,
+    acceptedRunGoldEarned,
+    carry,
+    active: {
+      maxDepth: activeMaxDepth,
+      earnedGold: activeRunGoldEarned
+    }
+  };
+}
+
+export function composeCampaignScoreCarryV08(state) {
+  const inputs = deriveCampaignScoreInputsV08(state);
+  return {
+    highWaterDepth: inputs.acceptedMaxDepth,
+    earnedGold: inputs.acceptedRunGoldEarned
+  };
+}
+
 export function deriveFinalScoreV08(state) {
-  const depth = nonNegativeSafeInteger(state?.maxDepth, "SCORE_DEPTH_INVALID");
-  if (depth > MAX_DEPTH) throw new TypeError("SCORE_DEPTH_INVALID");
-  const gold = acceptedRunGoldEarnedV08(state);
-  const depthPoints = depth * 1000;
-  const goldPoints = gold * 2;
-  const bossMilestonePoints = Math.floor(depth / 5) * 2500;
+  const inputs = deriveCampaignScoreInputsV08(state);
+  const depthPoints = inputs.acceptedMaxDepth * 1000;
+  const goldPoints = inputs.acceptedRunGoldEarned * 2;
+  const bossMilestonePoints = Math.floor(inputs.acceptedMaxDepth / 5) * 2500;
   const score = Math.round(depthPoints + goldPoints + bossMilestonePoints);
   if (!Number.isSafeInteger(score) || score < 0) {
     throw new TypeError("SCORE_RESULT_OVERFLOW");
@@ -52,8 +115,8 @@ export function deriveFinalScoreV08(state) {
     scoreVersion: SCORE_VERSION_V08,
     score,
     inputs: {
-      acceptedMaxDepth: depth,
-      acceptedRunGoldEarned: gold
+      acceptedMaxDepth: inputs.acceptedMaxDepth,
+      acceptedRunGoldEarned: inputs.acceptedRunGoldEarned
     },
     components: {
       depthPoints,

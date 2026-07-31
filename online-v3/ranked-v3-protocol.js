@@ -91,6 +91,34 @@
     requireOptionalArray(value.transactions, `${field}.transactions`);
   }
 
+  function validateScoreProjection(value) {
+    requireOptionalRecord(value, "score");
+    if (value === null || value === undefined) return;
+    requireText(value.scoreVersion, "score.scoreVersion");
+    requireOptionalRecord(value.inputs, "score.inputs");
+    requireOptionalRecord(value.components, "score.components");
+    for (const field of [
+      "score",
+      "inputs.acceptedMaxDepth",
+      "inputs.acceptedRunGoldEarned",
+      "components.depthPoints",
+      "components.goldPoints",
+      "components.bossMilestonePoints"
+    ]) {
+      const parts = field.split(".");
+      const numeric = parts.reduce((current, key) => current?.[key], value);
+      if (!Number.isSafeInteger(numeric) || numeric < 0) {
+        throw new TypeError(`PROTOCOL_PROJECTION_INVALID:score.${field}`);
+      }
+    }
+    const expected = value.components.depthPoints +
+      value.components.goldPoints +
+      value.components.bossMilestonePoints;
+    if (value.score !== expected) {
+      throw new TypeError("PROTOCOL_PROJECTION_INVALID:score.total");
+    }
+  }
+
   function validateMetaState(value) {
     if (!isRecord(value)) throw new TypeError("PROTOCOL_META_STATE_INVALID");
     requireText(value.runId, "metaState.runId");
@@ -125,6 +153,7 @@
     if (value.lifeState && !Number.isSafeInteger(value.lifeState.currentLife)) {
       throw new TypeError("PROTOCOL_PROJECTION_INVALID:lifeState.currentLife");
     }
+    validateScoreProjection(value.score);
     validateOfferProjection(value.startingRelicOffer, "startingRelicOffer");
     validateOfferProjection(value.relicOffer, "relicOffer");
     validateOfferProjection(value.relicReplacement, "relicReplacement");

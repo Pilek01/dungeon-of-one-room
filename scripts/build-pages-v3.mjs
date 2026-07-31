@@ -344,15 +344,28 @@ const productionGameReplacements = [
       state.turnInProgress = false;
       state.phase = publicState?.status === "victory" ? "won" : "dead";
       state.lives = Math.max(0, Number(publicState?.lives) || 0);
+      syncRankedScoreProjection(publicState);
+      const canonicalScore = publicState?.score;
+      const canonicalInputs = canonicalScore?.inputs || {};
+      const projectedScore = Number(canonicalScore?.score);
+      const projectedDepth = Number(canonicalInputs.acceptedMaxDepth);
+      const projectedGold = Number(canonicalInputs.acceptedRunGoldEarned);
+      const finalDepth = Number.isSafeInteger(projectedDepth) && projectedDepth >= 0
+        ? projectedDepth
+        : getRunMaxDepth();
+      const finalGold = Number.isSafeInteger(projectedGold) && projectedGold >= 0
+        ? projectedGold
+        : getRunGoldEarned();
+      const finalScore = Number.isSafeInteger(projectedScore) && projectedScore >= 0
+        ? projectedScore
+        : calculateScore(finalDepth, finalGold);
       if (publicState?.status === "defeat") {
-        const finalDepth = Math.max(0, Number(publicState?.maxDepth) || getRunMaxDepth());
-        const finalGold = Math.max(0, Number(publicState?.gold) || getRunGoldEarned());
         state.player.hp = 0;
         state.finalVictoryPrompt = null;
         state.finalGameOverPrompt = {
           depth: finalDepth,
           gold: finalGold,
-          score: calculateScore(finalDepth, finalGold),
+          score: finalScore,
           totalGoldCollected: Math.max(0, Number(state.totalGoldEarned) || 0),
           damageDone: Math.max(0, Number(state.damageDoneThisGame) || 0),
           damageTaken: Math.max(0, Number(state.damageTakenThisGame) || 0),
@@ -377,6 +390,14 @@ const productionGameReplacements = [
         const usedFinalTrack = playFinalGameOverTrack();
         if (!usedFinalTrack && !state.audioMuted) playSfx("death");
         pushLog("GAME OVER. All Ranked lives lost.", "bad");
+      } else if (publicState?.status === "victory") {
+        state.finalGameOverPrompt = null;
+        state.finalVictoryPrompt = {
+          depth: finalDepth,
+          gold: finalGold,
+          score: finalScore
+        };
+        pushLog("RANKED VICTORY. Canonical score confirmed.", "good");
       }
       markUiDirty();
     },`
@@ -626,12 +647,15 @@ const productionGameReplacements = [
       syncRankedStartDepthUnlocks(campaign);
       state.player.potions = Math.max(0, Number(publicState?.build?.resources?.potions) || 0);
       state.player.maxPotions = Math.max(1, Number(publicState?.build?.resources?.maxPotions) || state.player.maxPotions);
-      state.player.gold = Math.max(0, Number(publicState?.gold) || 0);`
+      state.player.gold = Math.max(0, Number(publicState?.gold) || 0);
+      syncRankedScoreProjection(publicState);`
   ],
   [
 `      state.runMaxDepth = Math.max(0, Number(publicState?.maxDepth) || state.runMaxDepth);
       markUiDirty();`,
-`      state.runMaxDepth = Math.max(0, Number(publicState?.maxDepth) || state.runMaxDepth);
+`      if (!syncRankedScoreProjection(publicState)) {
+        state.runMaxDepth = Math.max(0, Number(publicState?.maxDepth) || state.runMaxDepth);
+      }
       const resources = publicState?.build?.resources || {};
       const campaign = publicState?.campaign || {};
       state.player.potions = Math.max(0, Number(resources.potions) || 0);
@@ -751,6 +775,24 @@ const rankedGoldGameReplacements = [
         .filter((depth) => depth > 0)
         .map((depth) => [String(depth), true])
     );
+  }
+
+  function syncRankedScoreProjection(publicState) {
+    const score = publicState?.score;
+    const inputs = score?.inputs;
+    const scoreValue = Number(score?.score);
+    const depth = Number(inputs?.acceptedMaxDepth);
+    const earnedGold = Number(inputs?.acceptedRunGoldEarned);
+    if (
+      !Number.isSafeInteger(scoreValue) || scoreValue < 0 ||
+      !Number.isSafeInteger(depth) || depth < 0 ||
+      !Number.isSafeInteger(earnedGold) || earnedGold < 0
+    ) {
+      return false;
+    }
+    state.runMaxDepth = depth;
+    state.runGoldEarned = earnedGold;
+    return true;
   }
 
   const state = {`

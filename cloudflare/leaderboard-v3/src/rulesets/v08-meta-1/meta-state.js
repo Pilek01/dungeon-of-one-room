@@ -22,6 +22,7 @@ import {
   assertLifeLedgerV08,
   createLifeLedgerV08
 } from "./life-policy.js";
+import { normalizeCampaignScoreCarryV08 } from "./score-policy.js";
 import { TERMINAL_ELIGIBLE_STATUSES } from "./outcome-policy.js";
 import {
   isCompatibleRulesetHashV08,
@@ -127,12 +128,18 @@ function createCampaignState(input = {}) {
   const unlockedStartDepths = [...new Set(requestedUnlocks.map(Number).filter(
     (depth) => Number.isSafeInteger(depth) && depth !== progression.entranceStartDepth && progression.allowedStartDepths.includes(depth)
   ))].sort((left, right) => left - right);
+  const scoreCarry = normalizeCampaignScoreCarryV08(source.scoreCarry);
   return {
     treasureMapFragments,
     forcedNextRoomType,
     wardenFirstDropDepths,
-    unlockedStartDepths
+    unlockedStartDepths,
+    scoreCarry
   };
+}
+
+export function normalizeCampaignStateV08(input = {}) {
+  return createCampaignState(input);
 }
 
 function assertCampaignState(campaign) {
@@ -141,13 +148,29 @@ function assertCampaignState(campaign) {
   }
   const normalized = createCampaignState({ campaign });
   const expectedKeys = Object.keys(normalized).sort();
+  const legacyKeys = expectedKeys.filter((key) => key !== "scoreCarry");
   const actualKeys = Object.keys(campaign).sort();
+  const hasCarry = Object.hasOwn(campaign, "scoreCarry");
+  const carryKeys = hasCarry && campaign.scoreCarry && typeof campaign.scoreCarry === "object"
+    ? Object.keys(campaign.scoreCarry).sort()
+    : [];
+  const expectedCarryKeys = ["earnedGold", "highWaterDepth"];
   if (
-    JSON.stringify(actualKeys) !== JSON.stringify(expectedKeys) ||
+    (
+      JSON.stringify(actualKeys) !== JSON.stringify(expectedKeys) &&
+      JSON.stringify(actualKeys) !== JSON.stringify(legacyKeys)
+    ) ||
     campaign.treasureMapFragments !== normalized.treasureMapFragments ||
     campaign.forcedNextRoomType !== normalized.forcedNextRoomType ||
     JSON.stringify(campaign.wardenFirstDropDepths) !== JSON.stringify(normalized.wardenFirstDropDepths) ||
-    JSON.stringify(campaign.unlockedStartDepths) !== JSON.stringify(normalized.unlockedStartDepths)
+    JSON.stringify(campaign.unlockedStartDepths) !== JSON.stringify(normalized.unlockedStartDepths) ||
+    (
+      hasCarry && (
+        JSON.stringify(carryKeys) !== JSON.stringify(expectedCarryKeys) ||
+        campaign.scoreCarry.highWaterDepth !== normalized.scoreCarry.highWaterDepth ||
+        campaign.scoreCarry.earnedGold !== normalized.scoreCarry.earnedGold
+      )
+    )
   ) {
     throw new TypeError("META_STATE_INVALID:campaign");
   }

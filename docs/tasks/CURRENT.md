@@ -1,3 +1,79 @@
+# Ranked campaign Run Score carry repair
+
+## Active status
+
+COMPLETED_LOCALLY; this is a separate canonical Ranked score-carry phase.
+The completed HD Warden portal phase and its assets are explicitly out of
+scope.
+
+Confirmed cause: legacy v0.8 keeps currentRunId, runMaxDepth, and
+runGoldEarned across Extract -> Camp -> Start Next Run, resetting them only
+for a fresh or terminally completed campaign. Ranked currently persists the
+profile campaign and Camp ledger after Extract, but creates the next canonical
+descent with maxDepth = 0 and a fresh run gold ledger. It has no carried
+score high-water/earned-gold state, and the public projection/HD bridge derive
+the displayed value from the active descent instead of a canonical campaign
+score.
+
+Completed outcome: the canonical profile now persists campaign.scoreCarry with
+highWaterDepth and earnedGold. A real Extract folds the completed descent into
+that carry before profile persistence, and the existing action idempotency
+makes an Extract retry retain that single folded state. Public active/terminal
+score, finalization, leaderboard entry, HD HUD, and native Ranked
+victory/defeat presentation use carry plus the active descent. The exact
+regression is 4486 -> 4992; repeated depth traversal adds no depth score and
+spent Camp gold does not reduce earned-gold score.
+
+Profiles missing the new field normalize safely, but no request-path guess or
+D1 mutation reconstructs their earlier campaign total. The retained finalized
+Extract canonical snapshots are sufficient source evidence for a separate,
+explicitly approved D1 read/recompute/write backfill grouped by profile and
+terminal campaign boundary. No such backfill, migration, push, deploy,
+activation, or historical-data alteration occurred here.
+
+Verification completed: RED score suite 0/6 before the implementation;
+focused GREEN 22/22; generated ruleset check; pages:build; visible headed
+Extract -> Camp -> new-descent score audit; verify:fast 51/51; verify:phase
+756/756; clean verify:baseline 3/3 plus headed smoke; and verify:full 780/780
+including Wrangler/D1 21/21. Candidate ruleset rotates from
+sha256:72072daa1e807a03ffb2c6198b4c126a41fc69be7ae64c1ea8eabd198999b94c
+to sha256:7027a84ff06d6d9304e3d8e4343dbd6b3071c8bec734fad10b85981fa92347e8.
+Released registry/production remains pinned to
+sha256:e4175a6cb29f576a3ad85357a433d6595eb7e9d19a6c5f47ed125ecfe9ae538e.
+Source game.js remains byte-identical. Commit 53f7f48 is an isolated
+one-file baseline-harness prerequisite; the score change itself remains in its
+own exact local commit.
+
+Authorized paths:
+
+- `cloudflare/leaderboard-v3/src/rulesets/v08-meta-1/meta-state.js`;
+- `cloudflare/leaderboard-v3/src/rulesets/v08-meta-1/profile-policy.js`;
+- `cloudflare/leaderboard-v3/src/rulesets/v08-meta-1/score-policy.js`;
+- `cloudflare/leaderboard-v3/src/domain/ruleset-runtime.js`;
+- `online-v3/ranked-v3-protocol.js`;
+- `scripts/build-pages-v3.mjs`;
+- `scripts/online-v3-ranked-headed.mjs` only for the visible
+  Extract -> Camp -> new-descent scenario;
+- focused score-carry regression coverage under
+  `cloudflare/leaderboard-v3/test/`;
+- `cloudflare/leaderboard-v3/src/rulesets/v08-meta-1/data/ruleset-manifest.json`,
+  `cloudflare/leaderboard-v3/src/rulesets/v08-meta-1/ruleset-hash-policy.js`,
+  and `cloudflare/leaderboard-v3/src/rulesets/releases.js` only if the
+  repository generator/registry verification proves an update is necessary;
+- `ONLINE_V3_HANDOFF.md`;
+- `progress.md`;
+- this file.
+
+Required verification: preserve an observed RED test result before the
+implementation, then run focused GREEN coverage for 4486 -> 4992, no repeated
+depth points, cumulative earned gold despite spending, idempotent
+Extract/retry, terminal/leaderboard score equality, and legacy-profile
+compatibility. Also run syntax checks for changed JavaScript, `npm.cmd run
+pages:build`, a headed Extract -> Camp -> new-descent scenario, `npm.cmd run
+verify:fast`, `npm.cmd run verify:phase`, `npm.cmd run verify:baseline`,
+`npm.cmd run verify:full`, and `git diff --check` before one exact local
+commit. `game.js` must remain byte-identical.
+
 # Generator determinism and HD portal test-contract repair
 
 ## Active status

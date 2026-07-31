@@ -1,5 +1,45 @@
 # Online v3 - Production handoff
 
+## Ranked campaign Run Score carry repair (2026-07-31)
+
+COMPLETED_LOCALLY; production remains unchanged and the candidate is not
+activated.
+
+- Root cause: legacy v0.8 retains runMaxDepth and runGoldEarned across
+  Extract -> Camp -> next descent, while Ranked persisted campaign/profile
+  progress but recreated the score inputs for each canonical descent.
+- Ranked now persists campaign.scoreCarry with accepted high-water depth and
+  earned gold. The real Extract transition composes it once, retries retain
+  the already-folded state, and score policy composes carry with only the
+  active descent. A finalized Extract snapshot consequently cannot
+  double-count.
+- Public state, finalization, leaderboard, the HD build bridge/HUD, and native
+  Ranked victory/defeat presentation use the same canonical score projection.
+  The direct regression is depth 4 / earned 243 = 4486, then depth 1 /
+  earned 253 = 4992; repeated depth does not score again and Camp spending
+  never lowers earned-gold score.
+- Legacy profiles without scoreCarry normalize safely. No D1 history was
+  changed and no request-path guess is made for pre-rollout score. Retained
+  finalized Extract snapshots linked to each profile provide enough source
+  evidence to reconstruct historical campaigns, but doing so needs a separate
+  explicitly approved D1 read/recompute/write backfill grouped by terminal
+  campaign boundary.
+- Candidate ruleset:
+  sha256:72072daa1e807a03ffb2c6198b4c126a41fc69be7ae64c1ea8eabd198999b94c
+  ->
+  sha256:7027a84ff06d6d9304e3d8e4343dbd6b3071c8bec734fad10b85981fa92347e8.
+  Released production registry, protocol default, and production ruleset stay
+  on sha256:e4175a6cb29f576a3ad85357a433d6595eb7e9d19a6c5f47ed125ecfe9ae538e.
+- RED score regressions failed 6/6 before implementation; focused GREEN is
+  22/22. pages:build, a visible headed Extract -> Camp -> next-run HUD audit,
+  verify:fast 51/51, verify:phase 756/756, clean baseline 3/3 plus headed
+  smoke, and verify:full 780/780 including D1 21/21 all pass. Source game.js,
+  Practice, gameplay, local saves, Classic, Otter, combat authority,
+  Worker/D1 schema, and the protected Vault Guardian deletions are unchanged.
+- Commit 53f7f48 is a standalone one-file QA-harness prerequisite so the
+  clean baseline injects its local candidate hash only into its output bundle;
+  the canonical score implementation remains a separate exact local commit.
+
 ## Generator determinism and HD portal test-contract repair (2026-07-31)
 
 `COMPLETED_LOCALLY`; production was not changed.

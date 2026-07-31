@@ -1,4 +1,5 @@
 import sourceAuditDocument from "./data/m3-finalization-source-audit.generated.json" with { type: "json" };
+import { composeCampaignScoreCarryV08 } from "./score-policy.js";
 
 const extractionPolicy = sourceAuditDocument.canonicalData.extraction;
 
@@ -88,6 +89,10 @@ export function requestExtractionV08(state, request) {
   }
   const campGoldAwarded = Math.max(0, Math.round(next.gold));
   next.campGold += campGoldAwarded;
+  next.campaign = {
+    ...next.campaign,
+    scoreCarry: composeCampaignScoreCarryV08(next)
+  };
   clearTransientBoundary(next);
   next.status = "extraction";
   next.extraction = {

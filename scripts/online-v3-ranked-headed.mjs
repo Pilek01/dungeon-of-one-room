@@ -1214,6 +1214,10 @@ ${fatalTestHookAnchor}`;
     assert.equal(await page.locator(".ranked-v3-overlay:visible").count(), 0);
     assert.equal(await page.getByRole("button", { name: "Finalize" }).count(), 0);
     assert.equal(await page.getByRole("button", { name: "Open Camp" }).count(), 0);
+    const extractedScore = campAudit.snapshot?.publicState?.score;
+    assert(extractedScore, JSON.stringify(campAudit));
+    assert(Number.isSafeInteger(extractedScore.score), JSON.stringify(campAudit));
+
     await page.screenshot({
       path: path.join(ARTIFACT_ROOT, "ranked-camp.png"),
       fullPage: true
@@ -1297,6 +1301,24 @@ ${fatalTestHookAnchor}`;
       await page.evaluate(() => window.DungeonOnlineV3.getSnapshot().publicState.build.relics.length > 0),
       "Next Ranked run did not apply canonical extracted profile build"
     );
+    const nextRunScore = nextRunAudit.snapshot?.publicState?.score;
+    assert(nextRunScore, JSON.stringify(nextRunAudit));
+    assert.deepEqual(nextRunScore.inputs, extractedScore.inputs);
+    assert.equal(nextRunScore.score, extractedScore.score);
+    assert.deepEqual(nextRunAudit.snapshot.publicState.campaign?.scoreCarry, {
+      highWaterDepth: extractedScore.inputs.acceptedMaxDepth,
+      earnedGold: extractedScore.inputs.acceptedRunGoldEarned
+    });
+    const nextRunHud = await page.locator("#hud").innerText();
+    assert.match(
+      nextRunHud,
+      new RegExp(`Run Score\\s+${nextRunScore.score}\\b`, "u"),
+      nextRunHud
+    );
+    await page.screenshot({
+      path: path.join(ARTIFACT_ROOT, "ranked-camp-next-run-score.png"),
+      fullPage: true
+    });
 
     const abandonedRunId = nextRunAudit.snapshot.runId;
     const ownerForAbandon = page;

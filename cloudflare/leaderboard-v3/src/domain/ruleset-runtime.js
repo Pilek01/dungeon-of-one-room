@@ -55,6 +55,7 @@ export function publicRulesetMetaState(state, ruleset) {
   const pendingReplacement = state.pendingRelicTransaction
     ? ruleset.projectPublicRelicReplacement(state)
     : null;
+  const score = ruleset.computeFinalScore(state);
   return {
     runId: state.runId,
     profileId: state.profileId || null,
@@ -74,6 +75,7 @@ export function publicRulesetMetaState(state, ruleset) {
     campGold: state.campGold,
     lives: state.lives,
     maxDepth: state.maxDepth,
+    score: structuredClone(score),
     lifeState: {
       maximumLives: state.lifeLedger.maximumLives,
       fatalEvents: state.lifeLedger.fatalEvents,

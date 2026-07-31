@@ -176,7 +176,8 @@ test("fresh Ranked profile starts with the exact v0.8 campaign defaults", () => 
     treasureMapFragments: 0,
     forcedNextRoomType: "",
     wardenFirstDropDepths: [],
-    unlockedStartDepths: []
+    unlockedStartDepths: [],
+    scoreCarry: { highWaterDepth: 0, earnedGold: 0 }
   });
 });
 

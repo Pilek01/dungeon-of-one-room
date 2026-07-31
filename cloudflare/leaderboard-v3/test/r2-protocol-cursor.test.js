@@ -203,6 +203,29 @@ test("R2 client fails closed on malformed nested projections and unknown respons
     }
   };
   assert.equal(protocol.validateMutationResponse(base).metaState.status, "active");
+  const withCanonicalScore = {
+    ...base,
+    metaState: {
+      ...base.metaState,
+      score: {
+        scoreVersion: "v08-score-1",
+        score: 4492,
+        inputs: { acceptedMaxDepth: 4, acceptedRunGoldEarned: 246 },
+        components: { depthPoints: 4000, goldPoints: 492, bossMilestonePoints: 0 }
+      }
+    }
+  };
+  assert.equal(protocol.validateMutationResponse(withCanonicalScore).metaState.score.score, 4492);
+  assert.throws(
+    () => protocol.validateMutationResponse({
+      ...withCanonicalScore,
+      metaState: {
+        ...withCanonicalScore.metaState,
+        score: { ...withCanonicalScore.metaState.score, score: 1 }
+      }
+    }),
+    /PROTOCOL_PROJECTION_INVALID:score\.total/u
+  );
   assert.throws(
     () => protocol.validateMutationResponse({
       ...base,

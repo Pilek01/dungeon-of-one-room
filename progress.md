@@ -1135,3 +1135,31 @@ Updated next good targets
 - Full HD assets 26/26, fast 51/51, phase 749/749, and baseline 3/3 plus
   headed smoke PASS. No deploy, activation, Worker/D1, gameplay, Classic,
   Otter, or protected Vault Guardian change occurred.
+
+## 2026-07-31 - Ranked campaign Run Score carry repair
+
+- Confirmed the legacy/Ranked divergence: v0.8 retains run depth and earned-gold
+  score inputs through Extract -> Camp -> next descent, while Ranked previously
+  recreated both from zero.
+- Added six RED regressions; before implementation they failed 6/6, including
+  4486 -> 4992. Focused campaign/finalization/protocol GREEN is 22/22.
+- Added canonical profile campaign.scoreCarry, folds it exactly once in the
+  real Extract transition, and composes public/final/leaderboard score from
+  carry plus the active descent. A finalized Extract snapshot retains its
+  already-folded score without double counting. Depth high-water and earned
+  gold accumulate through Camp, while spent gold does not lower score.
+- Added safe normalization for profiles without the new field, public protocol
+  validation, build-bridge score synchronization, and a headed Extract -> Camp
+  -> next-run HUD audit that asserts the same canonical public score.
+- The generator/check and Pages build pass. Candidate ruleset rotates
+  72072daa...9b94c -> 7027a84f...347e8; released production remains
+  e4175a6c...e538e and was neither activated nor modified.
+- verify:fast 51/51, verify:phase 756/756, clean baseline 3/3 plus headed
+  smoke, and verify:full 780/780 including D1 21/21 pass. Source game.js
+  is byte-identical; Practice, Classic, Otter, gameplay, local saves, combat
+  authority, schema, deployment, and protected Vault Guardian deletions remain
+  untouched.
+- 53f7f48 is the separate one-file clean-baseline harness prerequisite. No
+  D1 history was changed. Historical finalized Extract snapshots could support
+  a full score reconstruction, but an explicit D1 read/recompute/write
+  backfill decision is required before that operation.
