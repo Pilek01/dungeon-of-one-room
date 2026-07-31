@@ -2,8 +2,8 @@
 
 ## Ranked campaign Run Score carry repair (2026-07-31)
 
-COMPLETED_LOCALLY; production remains unchanged and the candidate is not
-activated.
+DEPLOYED_AND_PRODUCTION_VERIFIED; the verified candidate is active in
+production.
 
 - Root cause: legacy v0.8 retains runMaxDepth and runGoldEarned across
   Extract -> Camp -> next descent, while Ranked persisted campaign/profile
@@ -18,18 +18,16 @@ activated.
   The direct regression is depth 4 / earned 243 = 4486, then depth 1 /
   earned 253 = 4992; repeated depth does not score again and Camp spending
   never lowers earned-gold score.
-- Legacy profiles without scoreCarry normalize safely. No D1 history was
-  changed and no request-path guess is made for pre-rollout score. Retained
-  finalized Extract snapshots linked to each profile provide enough source
-  evidence to reconstruct historical campaigns, but doing so needs a separate
-  explicitly approved D1 read/recompute/write backfill grouped by terminal
-  campaign boundary.
-- Candidate ruleset:
+- Legacy profiles without scoreCarry normalize safely. The user confirmed old
+  campaigns are test-only, so no D1 read/recompute/write backfill is needed;
+  testing proceeds with a fresh campaign instead.
+- Candidate ruleset promoted to active production:
   sha256:72072daa1e807a03ffb2c6198b4c126a41fc69be7ae64c1ea8eabd198999b94c
   ->
   sha256:7027a84ff06d6d9304e3d8e4343dbd6b3071c8bec734fad10b85981fa92347e8.
-  Released production registry, protocol default, and production ruleset stay
-  on sha256:e4175a6cb29f576a3ad85357a433d6595eb7e9d19a6c5f47ed125ecfe9ae538e.
+  The prior production hash
+  sha256:e4175a6cb29f576a3ad85357a433d6595eb7e9d19a6c5f47ed125ecfe9ae538e
+  and every older released hash remain registered for saved-run compatibility.
 - RED score regressions failed 6/6 before implementation; focused GREEN is
   22/22. pages:build, a visible headed Extract -> Camp -> next-run HUD audit,
   verify:fast 51/51, verify:phase 756/756, clean baseline 3/3 plus headed
@@ -39,6 +37,17 @@ activated.
 - Commit 53f7f48 is a standalone one-file QA-harness prerequisite so the
   clean baseline injects its local candidate hash only into its output bundle;
   the canonical score implementation remains a separate exact local commit.
+- Production promotion commit 068ed1391570ee06b8eddfc3efe61a3b65efc7de
+  deployed Worker version 0b81687c-2686-4ecb-b949-c870703cbee8 and Pages
+  production deployment 4909c859-19b6-4a7f-ac78-f7e9870676e7
+  (https://4909c859.dungeon-of-one-room.pages.dev). Live availability reports
+  the promoted hash with productionActivated=true. The public main Pages
+  bundle matched the local promoted bundle after CRLF normalization and the
+  harmless UTF-8 BOM removal performed by Pages upload.
+- Fresh production smoke through the public Pages API returned start 201 and
+  immediate abandon 200 on the promoted hash; it published no leaderboard
+  entry. No D1 migration, history backfill, push, gameplay/Classic/Otter
+  change, or protected Vault Guardian WIP change occurred.
 
 ## Generator determinism and HD portal test-contract repair (2026-07-31)
 

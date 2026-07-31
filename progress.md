@@ -1163,3 +1163,21 @@ Updated next good targets
   D1 history was changed. Historical finalized Extract snapshots could support
   a full score reconstruction, but an explicit D1 read/recompute/write
   backfill decision is required before that operation.
+
+## 2026-07-31 - Ranked score-carry production release
+
+- Promoted commit `068ed1391570ee06b8eddfc3efe61a3b65efc7de`: active production
+  ruleset is now `sha256:7027a84ff06d6d9304e3d8e4343dbd6b3071c8bec734fad10b85981fa92347e8`.
+  The prior `e4175a6c...e538e` and all older released hashes remain supported
+  for saved-run compatibility.
+- Deployed Worker version `0b81687c-2686-4ecb-b949-c870703cbee8`, then Pages
+  production deployment `4909c859-19b6-4a7f-ac78-f7e9870676e7` from the exact
+  promotion commit. Public availability reports the active hash and
+  `productionActivated: true`; the public bundle matches the local build after
+  expected CRLF/BOM upload normalization.
+- Fresh canonical production smoke passed start `201` -> abandon `200` on the
+  active hash, with no leaderboard publication. No D1 migration or historical
+  backfill occurred. The user confirmed old test campaigns need no recovery;
+  testing can start with a fresh Ranked campaign.
+- No push, gameplay, Practice, Classic, Otter, local-save, combat-authority,
+  schema, or protected Vault Guardian WIP change occurred.

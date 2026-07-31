@@ -2,10 +2,10 @@
 
 ## Active status
 
-ACTIVE; the user explicitly authorized deployment of the verified Ranked
-campaign score-carry change in f3764b4. This is a narrowly scoped production
-release phase, separate from the completed HD Warden portal phase and from
-unrelated protected Vault Guardian WIP.
+COMPLETED_AND_PRODUCTION_VERIFIED; the user explicitly authorized deployment
+of the verified Ranked campaign score-carry change in f3764b4. The narrowly
+scoped production release is complete and remains separate from the completed
+HD Warden portal phase and unrelated protected Vault Guardian WIP.
 
 Required release: promote the verified candidate
 sha256:7027a84ff06d6d9304e3d8e4343dbd6b3071c8bec734fad10b85981fa92347e8
@@ -32,6 +32,17 @@ verify:full. Commit the exact promotion before deployment. Verify Wrangler
 authentication, deploy the production Worker first and Pages second, then
 independently verify live availability, the public Pages bundle hash, and a
 fresh canonical start/abandon smoke. No push or unrelated cleanup.
+
+Completed release: promotion commit
+068ed1391570ee06b8eddfc3efe61a3b65efc7de activated
+sha256:7027a84ff06d6d9304e3d8e4343dbd6b3071c8bec734fad10b85981fa92347e8.
+Worker version 0b81687c-2686-4ecb-b949-c870703cbee8 and Pages production
+deployment 4909c859-19b6-4a7f-ac78-f7e9870676e7 are live. Availability and
+the public Pages bundle match the promoted protocol/hash; a fresh canonical
+start returned 201, its immediate abandon returned 200, and no leaderboard
+entry was published. No D1 migration or history backfill occurred. The user
+confirmed old test campaigns need no reconstruction and will start a fresh
+campaign for testing.
 # Ranked campaign Run Score carry repair
 
 ## Active status
