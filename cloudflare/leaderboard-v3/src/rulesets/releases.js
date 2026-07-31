@@ -10,6 +10,9 @@ export const V08_META_1_LOCAL_RELEASE_DESCRIPTOR = Object.freeze({
   allowedEnvironments: Object.freeze(["test", "local"])
 });
 
+export const V08_META_1_PRODUCTION_RULESET_HASH =
+  "sha256:e4175a6cb29f576a3ad85357a433d6595eb7e9d19a6c5f47ed125ecfe9ae538e";
+
 export const V08_META_1_R2_PRODUCTION_RULESET_HASH =
   "sha256:956251f158e55a0a47f9e43d5680d9aae66a22045c833bd76b8798cdc00e012e";
 
@@ -64,6 +67,10 @@ export const V08_META_1_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR = Object.freeze({
 
 export const V08_META_1_PRODUCTION_RELEASE_DESCRIPTOR = Object.freeze({
   ...V08_META_1_DESCRIPTOR,
+  rulesetHash: V08_META_1_PRODUCTION_RULESET_HASH,
   status: RULESET_RELEASE_STATES.PRODUCTION_RELEASED,
-  allowedEnvironments: Object.freeze(["test", "local", "production"])
+  allowedEnvironments: Object.freeze(["test", "local", "production"]),
+  createRuleset: () => createV08Meta1Ruleset({
+    rulesetHash: V08_META_1_PRODUCTION_RULESET_HASH
+  })
 });

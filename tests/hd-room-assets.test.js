@@ -667,7 +667,7 @@ test("special room props map snapshot states and seals remain below hazards", ()
     [{ roomType: "forge", forge: { x: 4, y: 4, awakened: true, used: false }, nowMs: 200 }, "objects", "object.forge.ready02"],
     [{ roomType: "pact", pact: { x: 4, y: 4, awakened: true, used: true } }, "objects", "object.pact.used"],
     [{ roomType: "vault", roomCleared: false }, "decals", "object.vault.seal.blocked"],
-    [{ roomType: "vault", roomCleared: true, portal: { x: 4, y: 4, active: true }, nowMs: 200 }, "objects", "object.vault.portal.frame"],
+    [{ roomType: "vault", roomCleared: true, portal: { x: 4, y: 4, active: true, kind: "vault" }, nowMs: 200 }, "objects", "object.vault.portal.frame"],
     [{ roomType: "otter", roomCleared: false }, "decals", "object.otter.seal.blocked"],
     [{ roomType: "otter", roomCleared: true }, "decals", "object.otter.seal.cleared"],
     [{ roomType: "otter", roomCleared: false, otterChest: { x: 4, y: 4, opened: false } }, "objects", "object.otter.chest.ready"],
@@ -725,7 +725,7 @@ test("cleared forge rooms choose the orange forge portal before the common fallb
   layers.drawObjectsLayer(context, {
     roomType: "forge",
     roomCleared: true,
-    portal: { x: 7, y: 7, active: true },
+    portal: { x: 7, y: 7, active: true, kind: "forge" },
     nowMs: 0
   }, fakeAssets([
     "object.forge.portal.active01",
@@ -740,8 +740,9 @@ test("optional props skip or use a semantically valid common fallback while crit
   const optionalContext = drawingContext();
   layers.drawObjectsLayer(optionalContext, {
     roomType: "vault", roomCleared: true, portal: { x: 4, y: 4, active: true }, nowMs: 0
-  }, fakeAssets(["object.common.portal.active01"]));
+  }, fakeAssets(["object.vault.portal.active01", "object.common.portal.active01"]));
   assert.ok(optionalContext.calls.some((call) => call.key === "object.common.portal.active01"));
+  assert.equal(optionalContext.calls.some((call) => call.key === "object.vault.portal.active01"), false);
 
   const loader = require(path.join(root, "render", "hd-asset-loader.js"));
   const outcome = await loader.loadAssets([

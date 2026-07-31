@@ -8,6 +8,7 @@ import productionWorker from "../src/production-ruleset-entry.js";
 import { createRulesetRegistry, RULESET_RELEASE_STATES } from "../src/rulesets/registry.js";
 import {
   V08_META_1_LEGACY_PRODUCTION_RELEASE_DESCRIPTOR,
+  V08_META_1_LOCAL_RELEASE_DESCRIPTOR,
   V08_META_1_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR,
   V08_META_1_R2_PRODUCTION_RELEASE_DESCRIPTOR,
   V08_META_1_WARDEN_HOTFIX_RELEASE_DESCRIPTOR,
@@ -28,8 +29,11 @@ async function rootFile(relative) {
   return readFile(path.join(ROOT, relative), "utf8");
 }
 
-test("production entry activates only the exact tested v08-meta-1 hash", async () => {
-  assert.equal(manifest.rulesetHash, EXPECTED_HASH);
+test("production entry keeps the exact tested v08-meta-1 hash when a local candidate exists", async () => {
+  assert.notEqual(manifest.rulesetHash, EXPECTED_HASH);
+  assert.equal(V08_META_1_LOCAL_RELEASE_DESCRIPTOR.rulesetHash, manifest.rulesetHash);
+  assert.equal(V08_META_1_LOCAL_RELEASE_DESCRIPTOR.status, RULESET_RELEASE_STATES.LOCAL_RELEASE_CANDIDATE);
+  assert.equal(V08_META_1_PRODUCTION_RELEASE_DESCRIPTOR.rulesetHash, EXPECTED_HASH);
   assert.equal(V08_META_1_PRODUCTION_RELEASE_DESCRIPTOR.status, RULESET_RELEASE_STATES.PRODUCTION_RELEASED);
   const registry = createRulesetRegistry([
     V08_META_1_LEGACY_PRODUCTION_RELEASE_DESCRIPTOR,

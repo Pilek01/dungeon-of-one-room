@@ -24,7 +24,23 @@ const PROTECTED_PATHS = [
   "assets"
 ];
 
-test("non-M4 Practice baseline paths still match f98820c", () => {
+const ALLOWED_HD_WARDEN_PORTAL_PATHS = new Set([
+  "assets/hd/objects/warden/portal-active01.png",
+  "assets/hd/objects/warden/portal-active02.png",
+  "assets/hd/objects/warden/portal-active03.png",
+  "assets/hd/objects/warden/portal-frame.png",
+  "assets/hd/objects/warden/portal-inactive.png",
+  "assets/hd/objects/warden/portal-swirl01.png",
+  "assets/hd/objects/warden/portal-swirl02.png",
+  "assets/hd/objects/warden/portal-swirl03.png",
+  "assets/hd/objects/warden/portal-swirl04.png",
+  "assets/hd/objects/warden/portal-swirl05.png",
+  "assets/hd/objects/warden/portal-swirl06.png",
+  "assets/hd/objects/warden/portal-swirl07.png",
+  "assets/hd/objects/warden/portal-swirl08.png"
+]);
+
+test("non-M4 Practice protected paths match f98820c outside the committed HD Warden portal set", () => {
   const changed = execFileSync(
     "git",
     [
@@ -38,7 +54,11 @@ test("non-M4 Practice baseline paths still match f98820c", () => {
     ],
     { cwd: REPO_ROOT, encoding: "utf8" }
   ).trim();
-  assert.equal(changed, "");
+  const unexpected = changed
+    .split(/\r?\n/u)
+    .filter(Boolean)
+    .filter((relative) => !ALLOWED_HD_WARDEN_PORTAL_PATHS.has(relative));
+  assert.deepEqual(unexpected, []);
 });
 
 test("M4 loads only isolated client modules while Worker source stays disconnected", async () => {

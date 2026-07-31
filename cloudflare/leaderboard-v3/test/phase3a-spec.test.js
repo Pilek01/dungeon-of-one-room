@@ -4,6 +4,7 @@ import { execFileSync } from "node:child_process";
 import { readFile, readdir } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { canonicalizeTextBytes } from "../../../scripts/generate-online-v3-meta-rules.mjs";
 
 const WORKER_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const REPO_ROOT = path.resolve(WORKER_ROOT, "..", "..");
@@ -104,6 +105,13 @@ test("golden fixture manifest and corpus follow the Phase 3B1 schema", async () 
     assert.ok(manifest.scenarios.includes(fixture.fixtureId));
     assert.equal(fixture.expectedRulesetHash, "manifest.rulesetHash");
   }
+});
+
+test("generator canonicalizes CRLF and LF text bytes before provenance hashing", () => {
+  const lf = canonicalizeTextBytes(Buffer.from("const source = true;\n", "utf8"));
+  const crlf = canonicalizeTextBytes(Buffer.from("const source = true;\r\n", "utf8"));
+  assert.deepEqual([...crlf], [...lf]);
+  assert.equal(crlf.byteLength, lf.byteLength);
 });
 
 test("generator --check detects no generated data drift", () => {

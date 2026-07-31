@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import { readFile, readdir, writeFile } from "node:fs/promises";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const RULESET_ROOT = path.join(
@@ -17,6 +17,11 @@ const CHECK_ONLY = process.argv.includes("--check");
 const RULESET_ID = "v08-meta-1";
 const RULESET_STATUS = "test-only";
 const BASELINE_COMMIT = "f98820c99066d810169e100beb23a54a332734bd";
+
+export function canonicalizeTextBytes(bytes) {
+  const normalizedText = Buffer.from(bytes).toString("utf8").replace(/\r\n?/gu, "\n");
+  return Buffer.from(normalizedText, "utf8");
+}
 
 const SOURCE_INPUTS = Object.freeze([
   {
@@ -1722,7 +1727,8 @@ async function readSources() {
   const records = [];
   const textByFile = new Map();
   for (const entry of SOURCE_INPUTS) {
-    const bytes = await readFile(path.join(REPO_ROOT, entry.file));
+    const sourceBytes = await readFile(path.join(REPO_ROOT, entry.file));
+    const bytes = canonicalizeTextBytes(sourceBytes);
     const text = bytes.toString("utf8");
     for (const symbol of entry.symbols) {
       if (!text.includes(symbol)) {
@@ -3432,7 +3438,8 @@ async function buildRulesetManifest() {
   const files = [];
   const schemas = [];
   for (const relative of await listRulesetFiles()) {
-    const bytes = await readFile(path.join(RULESET_ROOT, relative));
+    const sourceBytes = await readFile(path.join(RULESET_ROOT, relative));
+    const bytes = canonicalizeTextBytes(sourceBytes);
     files.push({
       file: relative,
       byteLength: bytes.byteLength,
@@ -3472,11 +3479,17 @@ async function writeOrCheck(relative, value) {
   await writeFile(destination, expected, "utf8");
 }
 
-const { records, textByFile } = await readSources();
-const generated = buildCanonicalData(records, textByFile);
-for (const relative of GENERATED_FILES) {
-  await writeOrCheck(relative, generated.get(relative));
+async function main() {
+  const { records, textByFile } = await readSources();
+  const generated = buildCanonicalData(records, textByFile);
+  for (const relative of GENERATED_FILES) {
+    await writeOrCheck(relative, generated.get(relative));
+  }
+  const rulesetManifest = await buildRulesetManifest();
+  await writeOrCheck("ruleset-manifest.json", rulesetManifest);
+  console.log(CHECK_ONLY ? "Online v3 meta generator check: PASS" : "Online v3 meta manifests generated.");
 }
-const rulesetManifest = await buildRulesetManifest();
-await writeOrCheck("ruleset-manifest.json", rulesetManifest);
-console.log(CHECK_ONLY ? "Online v3 meta generator check: PASS" : "Online v3 meta manifests generated.");
+
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  await main();
+}

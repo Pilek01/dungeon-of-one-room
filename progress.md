@@ -1120,3 +1120,18 @@ Updated next good targets
 - Ruleset remains `sha256:e4175a6cb29f576a3ad85357a433d6595eb7e9d19a6c5f47ed125ecfe9ae538e`;
   no deployment, Worker/D1, Classic, Otter, gameplay, or protected Vault
   Guardian change occurred.
+
+## 2026-07-31 - Generator determinism and HD portal test-contract repair
+
+- Canonicalized CRLF/LF text bytes for generator provenance and ruleset
+  manifest hashing; independent CRLF and forced-LF checkouts now agree.
+- Regenerated 35 provenance/manifest artifacts. Candidate ruleset is
+  `sha256:72072daa1e807a03ffb2c6198b4c126a41fc69be7ae64c1ea8eabd198999b94c`;
+  production remains pinned to released `e417` and the candidate is local-only.
+- Updated stale HD portal test fixtures to pass `portal.kind`, retained common
+  fallback coverage, and narrowed the baseline exception to the existing 13
+  Warden HD portal assets. R2 tests now reject a local-only hash in the
+  production client contract.
+- Full HD assets 26/26, fast 51/51, phase 749/749, and baseline 3/3 plus
+  headed smoke PASS. No deploy, activation, Worker/D1, gameplay, Classic,
+  Otter, or protected Vault Guardian change occurred.

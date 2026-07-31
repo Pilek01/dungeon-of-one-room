@@ -4,6 +4,7 @@ import { createHash } from "node:crypto";
 import { readFile, readdir } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { canonicalizeTextBytes } from "../../../scripts/generate-online-v3-meta-rules.mjs";
 
 const WORKER_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const RULESET_ROOT = path.join(WORKER_ROOT, "src", "rulesets", "v08-meta-1");
@@ -44,7 +45,7 @@ async function listFiles(root, relative = "") {
   return files.sort();
 }
 
-test("canonical ruleset manifest hashes every module and data byte exactly", async () => {
+test("canonical ruleset manifest hashes every normalized module and data byte exactly", async () => {
   const manifest = JSON.parse(
     await readFile(path.join(DATA_ROOT, "ruleset-manifest.json"), "utf8")
   );
@@ -59,7 +60,8 @@ test("canonical ruleset manifest hashes every module and data byte exactly", asy
   const actualFiles = await listFiles(RULESET_ROOT);
   assert.deepEqual(manifest.files.map((entry) => entry.file), actualFiles);
   for (const entry of manifest.files) {
-    const bytes = await readFile(path.join(RULESET_ROOT, entry.file));
+    const sourceBytes = await readFile(path.join(RULESET_ROOT, entry.file));
+    const bytes = canonicalizeTextBytes(sourceBytes);
     assert.equal(entry.byteLength, bytes.byteLength, entry.file);
     assert.equal(entry.sha256, sha256(bytes), entry.file);
   }

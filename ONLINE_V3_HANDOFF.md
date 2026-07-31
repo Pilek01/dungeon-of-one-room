@@ -1,5 +1,29 @@
 # Online v3 - Production handoff
 
+## Generator determinism and HD portal test-contract repair (2026-07-31)
+
+`COMPLETED_LOCALLY`; production was not changed.
+
+- The generator now normalizes CRLF/LF before hashing source provenance and
+  every text ruleset file. The current CRLF checkout and an independent
+  forced-LF checkout both pass `--check` with the same output.
+- 35 generated provenance/manifest artifacts were rebuilt. Canonical policy
+  data is unchanged; the local test-only candidate rotates from
+  `sha256:e4175a6cb29f576a3ad85357a433d6595eb7e9d19a6c5f47ed125ecfe9ae538e`
+  to
+  `sha256:72072daa1e807a03ffb2c6198b4c126a41fc69be7ae64c1ea8eabd198999b94c`.
+- The released production descriptor, protocol default, and compatibility path
+  remain on `e417`; the candidate is local-only and cannot be mistaken for an
+  active production ruleset.
+- HD renderer tests now use the real `portal.kind` snapshot contract for Vault
+  and Forge while retaining the common fallback. The baseline guard allows
+  only the already committed thirteen Warden HD portal files, and R2 tests
+  explicitly reject the inactive local hash from the production client.
+- Full HD assets: 26/26 PASS. `verify:fast`: 51/51 PASS. `verify:phase`:
+  749/749 PASS. `verify:baseline`: 3/3 plus headed baseline smoke PASS.
+  No deploy, push, activation, Worker/D1 mutation, gameplay, Classic, Otter,
+  or protected Vault Guardian change occurred.
+
 ## HD Warden portal forewarning and HD presentation coherence (2026-07-31)
 
 `COMPLETED_LOCALLY`; no deployment, Worker/D1, Online routing, or ruleset change.

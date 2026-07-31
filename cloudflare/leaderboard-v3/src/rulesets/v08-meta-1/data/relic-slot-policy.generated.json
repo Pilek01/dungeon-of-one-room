@@ -5,13 +5,13 @@
   "sources": [
     {
       "file": "boss-campaign.js",
-      "byteLength": 8061,
-      "sha256": "ad885efec2e4bce42514c80a77a9a2cbf0f7310f396f423f5e95da16af60940d"
+      "byteLength": 8058,
+      "sha256": "a0dd505008e16b4c5cd7b948c43ddd49297b20f52bed2818b4651884754cf03a"
     },
     {
       "file": "game.js",
-      "byteLength": 1298616,
-      "sha256": "556829c909cdc9eaefb4238279457eb9b3427adef9ce494f35743542770ee7de"
+      "byteLength": 1298755,
+      "sha256": "bcb1d6455299e870942f37f9d818e786a2c765216e4b201a73339c70daffc1d2"
     },
     {
       "file": "loot-tables.js",

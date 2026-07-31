@@ -8,7 +8,10 @@ import {
 } from "../src/domain/leaderboard-cursor.js";
 import { createWorker } from "../src/index.js";
 import { createRulesetRegistry } from "../src/rulesets/registry.js";
-import { V08_META_1_LOCAL_RELEASE_DESCRIPTOR } from "../src/rulesets/releases.js";
+import {
+  V08_META_1_LOCAL_RELEASE_DESCRIPTOR,
+  V08_META_1_PRODUCTION_RELEASE_DESCRIPTOR
+} from "../src/rulesets/releases.js";
 import manifest from "../src/rulesets/v08-meta-1/data/ruleset-manifest.json" with { type: "json" };
 import { createMemoryRepositories } from "./fixtures/memory-repositories.js";
 import { TEST_SECRET } from "./fixtures/harness.js";
@@ -22,6 +25,16 @@ const checkpoints = require("../../../online-v3/ranked-v3-checkpoints.js");
 function registeredWorker() {
   return createWorker({
     rulesetRegistry: createRulesetRegistry([V08_META_1_LOCAL_RELEASE_DESCRIPTOR]),
+    rulesetEnvironment: "local",
+    repositories: createMemoryRepositories(),
+    now: () => 1_800_000_000_000,
+    randomUUID: () => "00000000-0000-4000-8000-000000000001"
+  });
+}
+
+function registeredProductionWorker() {
+  return createWorker({
+    rulesetRegistry: createRulesetRegistry([V08_META_1_PRODUCTION_RELEASE_DESCRIPTOR]),
     rulesetEnvironment: "local",
     repositories: createMemoryRepositories(),
     now: () => 1_800_000_000_000,
@@ -69,9 +82,20 @@ test("R2 registered mutations reject unknown fields and protocol mismatch", asyn
   assert.equal((await mismatch.json()).error.code, "PROTOCOL_VERSION_MISMATCH");
 });
 
-test("R2 client schema accepts canonical registered bootstrap and first room projections", async () => {
-  const worker = registeredWorker();
-  const startedResponse = await postStart(worker, startBody());
+test("R2 client schema accepts released bootstrap and rejects a local-only candidate", async () => {
+  const localWorker = registeredWorker();
+  const localStartedResponse = await postStart(localWorker, startBody());
+  assert.equal(localStartedResponse.status, 201);
+  const localStarted = await localStartedResponse.json();
+  assert.throws(
+    () => protocol.validateMutationResponse(localStarted),
+    /PROTOCOL_RULESET_HASH_UNSUPPORTED/u
+  );
+
+  const worker = registeredProductionWorker();
+  const startedResponse = await postStart(worker, startBody({
+    rulesetHash: V08_META_1_PRODUCTION_RELEASE_DESCRIPTOR.rulesetHash
+  }));
   assert.equal(startedResponse.status, 201);
   const started = await startedResponse.json();
   protocol.validateMutationResponse(started);
@@ -135,8 +159,10 @@ test("R2 public seek cursor is versioned, strict, and malformed input returns 40
   assert.equal((await response.json()).error.code, "LEADERBOARD_CURSOR_INVALID");
 });
 
-test("R2 client accepts released save hashes and rejects unknown hashes", () => {
-  assert.equal(protocol.RULESET_HASH, manifest.rulesetHash);
+test("R2 client accepts released save hashes and rejects local-only or unknown hashes", () => {
+  assert.equal(protocol.RULESET_HASH, V08_META_1_PRODUCTION_RELEASE_DESCRIPTOR.rulesetHash);
+  assert.notEqual(protocol.RULESET_HASH, manifest.rulesetHash);
+  assert.equal(protocol.isSupportedRulesetHash(manifest.rulesetHash), false);
   for (const hash of protocol.SUPPORTED_RULESET_HASHES) {
     assert.equal(protocol.isSupportedRulesetHash(hash), true);
   }
