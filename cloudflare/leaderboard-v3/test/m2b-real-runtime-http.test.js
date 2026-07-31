@@ -264,6 +264,41 @@ test("real room checkpoint consumes one directive and returns the next sequentia
   assert.deepEqual(retry.payload, cleared.payload);
 });
 
+test("HTTP depth 5 Warden checkpoint accepts bounded potion use", async () => {
+  const harness = createRealHarness();
+  const started = (await harness.start("warden-potion-start")).payload;
+  let session = (await harness.select(started, 0, "warden-potion-select")).payload;
+
+  for (let depth = 1; depth < 5; depth += 1) {
+    assert.equal(session.metaState.currentRoomDirective.depth, depth);
+    const checkpointed = await harness.checkpoint(
+      session,
+      `warden-potion-checkpoint-${depth}`
+    );
+    assert.equal(checkpointed.response.status, 200);
+    session = checkpointed.payload;
+  }
+
+  assert.equal(session.metaState.currentRoomDirective.roomType, "boss");
+  assert.equal(session.metaState.currentRoomDirective.depth, 5);
+  const checkpointed = await harness.checkpoint(
+    session,
+    "warden-potion-checkpoint-5",
+    {
+      rewardClaims: [
+        { claimType: "enemy", claimId: "enemy:warden", count: 1 },
+        { claimType: "resource", claimId: "potion-use", count: 1 }
+      ]
+    }
+  );
+
+  assert.equal(checkpointed.response.status, 200);
+  assert.equal(checkpointed.payload.metaState.depth, 5);
+  assert.equal(checkpointed.payload.metaState.build.resources.potions, 2);
+  assert.equal(checkpointed.payload.metaState.currentRoomDirective.depth, 6);
+  assert.equal(harness.lastCause(), null);
+});
+
 test("registry dispatch is exact and production remains fail closed", async () => {
   for (const [overrides, expectedCode] of [
     [{ rulesetId: "unknown" }, "RULESET_ID_UNSUPPORTED"],

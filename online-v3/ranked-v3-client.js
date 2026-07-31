@@ -177,7 +177,7 @@
         validated = protocol.validateMutationResponse(result.payload, {
           runId: snapshot.runId || undefined,
           rulesetId: protocol.RULESET_ID,
-          rulesetHash: protocol.RULESET_HASH
+          rulesetHash: current.publicState?.rulesetHash || current.rulesetHash
         });
       } catch (cause) {
         if (/^(PROTOCOL_|LEADERBOARD_|RANKED_CAMP_)/u.test(String(cause?.message || ""))) {
@@ -198,6 +198,8 @@
         ...snapshot,
         runId: validated.metaState.runId,
         revision: validated.metaState.revision,
+        rulesetId: validated.metaState.rulesetId,
+        rulesetHash: validated.metaState.rulesetHash,
         token: validated.token,
         publicState: clone(validated.metaState),
         pendingOperation: null,
@@ -360,11 +362,17 @@
 
     async function camp(action, input = {}, operationId = transport.createOperationId()) {
       const profile = ensureProfileIdentity(store, options);
+      const recovery = store.loadRecovery?.() || options.recoveryRecord;
+      const rulesetHash = snapshot?.publicState?.rulesetHash || snapshot?.rulesetHash ||
+        recovery?.rulesetHash || protocol.RULESET_HASH;
+      if (!protocol.isSupportedRulesetHash(rulesetHash)) {
+        throw new TypeError("RANKED_RULESET_MISMATCH");
+      }
       const body = {
         profileId: profile.profileId,
         profileCredential: profile.profileCredential,
         rulesetId: protocol.RULESET_ID,
-        rulesetHash: protocol.RULESET_HASH,
+        rulesetHash,
         clientProtocolVersion: protocol.PROTOCOL_VERSION,
         action,
         ...(action === "commit"
@@ -382,6 +390,11 @@
         throw new TypeError("RANKED_RECOVERY_CREDENTIAL_MISSING");
       }
       const current = snapshot;
+      const rulesetHash = recovery.rulesetHash || current?.publicState?.rulesetHash ||
+        current?.rulesetHash || protocol.RULESET_HASH;
+      if (!protocol.isSupportedRulesetHash(rulesetHash)) {
+        throw new TypeError("RANKED_RULESET_MISMATCH");
+      }
       const body = {
         operationId,
         runId: String(input.runId || recovery.runId),
@@ -393,15 +406,15 @@
       const validated = protocol.validateMutationResponse(result.payload, {
         runId: body.runId,
         rulesetId: protocol.RULESET_ID,
-        rulesetHash: protocol.RULESET_HASH
+        rulesetHash
       });
       persist({
         schemaVersion: 1,
         mode: "ranked",
         runId: validated.metaState.runId,
         revision: validated.metaState.revision,
-        rulesetId: protocol.RULESET_ID,
-        rulesetHash: protocol.RULESET_HASH,
+        rulesetId: validated.metaState.rulesetId,
+        rulesetHash: validated.metaState.rulesetHash,
         token: validated.token,
         publicState: clone(validated.metaState),
         pendingOperation: null,
@@ -422,6 +435,11 @@
       if (!coordinator.isOwner(recovery.runId) && !coordinator.acquire(recovery.runId, snapshot?.revision || 0)) {
         throw new TypeError("RANKED_WRITER_LEASE_HELD");
       }
+      const rulesetHash = recovery.rulesetHash || snapshot?.publicState?.rulesetHash ||
+        snapshot?.rulesetHash || protocol.RULESET_HASH;
+      if (!protocol.isSupportedRulesetHash(rulesetHash)) {
+        throw new TypeError("RANKED_RULESET_MISMATCH");
+      }
       const body = {
         operationId,
         runId: recovery.runId,
@@ -433,7 +451,7 @@
       protocol.validateMutationResponse(result.payload, {
         runId: recovery.runId,
         rulesetId: protocol.RULESET_ID,
-        rulesetHash: protocol.RULESET_HASH
+        rulesetHash
       });
       snapshot = null;
       store.clearSession();

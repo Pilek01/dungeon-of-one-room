@@ -247,6 +247,69 @@ test("M4 failed-start cleanup refuses to erase a canonical Ranked run", () => {
   assert.equal(store.snapshot().session.runId, "run_live");
 });
 
+test("M4 recovery keeps the saved released ruleset hash", async () => {
+  const savedHash = "sha256:956251f158e55a0a47f9e43d5680d9aae66a22045c833bd76b8798cdc00e012e";
+  const store = rankedIdentityStore({
+    recovery: {
+      runId: "run_a1",
+      recoveryCredential: "rrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrr",
+      rulesetId: protocol.RULESET_ID,
+      rulesetHash: savedHash
+    }
+  });
+  let calls = 0;
+  const client = clientApi.createRankedClient({
+    store,
+    transport: {
+      createOperationId: () => "op_resume_saved_hash",
+      async request(endpoint) {
+        calls += 1;
+        assert.equal(endpoint.path, protocol.ENDPOINTS.resume.path);
+        return {
+          payload: {
+            ok: true,
+            protocolVersion: protocol.PROTOCOL_VERSION,
+            acceptedBoundary: "run_resumed",
+            runId: "run_a1",
+            revision: 0,
+            bootstrapToken: "bootstrap-secret",
+            metaState: {
+              ...meta("awaiting_starting_relic", 0),
+              rulesetHash: savedHash
+            }
+          }
+        };
+      }
+    }
+  });
+
+  await client.resumeCanonical();
+  assert.equal(calls, 1);
+  assert.equal(client.getSnapshot().rulesetHash, savedHash);
+  assert.equal(client.getSnapshot().publicState.rulesetHash, savedHash);
+});
+
+test("M4 recovery rejects an unknown saved ruleset hash before transport", async () => {
+  const store = rankedIdentityStore({
+    recovery: {
+      runId: "run_a1",
+      recoveryCredential: "rrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrr",
+      rulesetId: protocol.RULESET_ID,
+      rulesetHash: "sha256:" + "f".repeat(64)
+    }
+  });
+  const client = clientApi.createRankedClient({
+    store,
+    transport: {
+      createOperationId: () => "op_resume_unknown_hash",
+      async request() {
+        throw new Error("transport must not be called");
+      }
+    }
+  });
+  await assert.rejects(client.resumeCanonical(), /RANKED_RULESET_MISMATCH/u);
+});
+
 test("M4 starting relic selection accepts only bootstrap token and first directive", async () => {
   const directive = {
     directiveId: "directive_a",

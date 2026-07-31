@@ -412,7 +412,6 @@ export async function consumeRoomDirectiveV08(state, operation = {}, context = {
   if (!state.currentRoomDirective) throw new TypeError("ROOM_DIRECTIVE_REQUIRED");
   const directive = assertOperationMatches(state, operation);
   const livesBefore = state.lives;
-  const buildBefore = JSON.stringify(state.build);
   const fixedDelta = state.currentRewardEnvelope.fixedAwards.reduce(
     (sum, award) => sum + award.amount,
     0
@@ -431,6 +430,7 @@ export async function consumeRoomDirectiveV08(state, operation = {}, context = {
   };
   const settlement = await settleRoomRewardEnvelopeV3(state, rewardClaim, context);
   const next = settlement.state;
+  const settledBuild = JSON.stringify(next.build);
   next.depth = directive.depth;
   next.maxDepth = Math.max(next.maxDepth, directive.depth);
   next.revision += 1;
@@ -461,7 +461,7 @@ export async function consumeRoomDirectiveV08(state, operation = {}, context = {
 
   if (
     next.lives !== livesBefore ||
-    JSON.stringify(next.build) !== buildBefore
+    JSON.stringify(next.build) !== settledBuild
   ) {
     throw new Error("PHASE_3B2A_META_SCOPE_VIOLATION");
   }

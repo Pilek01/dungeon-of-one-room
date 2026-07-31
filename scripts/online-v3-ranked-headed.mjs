@@ -539,6 +539,13 @@ async function main() {
     attemptDescend();
     return true;
   };
+  window.__DUNGEON_TEST_USE_POTION = () => {
+    if (!canUseDebugCheats() || state.phase !== "playing" || state.player.potions <= 0) return false;
+    const before = state.player.potions;
+    state.player.hp = Math.max(1, state.player.maxHp - 1);
+    drinkPotion();
+    return state.player.potions === before - 1;
+  };
 
 ${fatalTestHookAnchor}`;
   await fsPromises.writeFile(
@@ -908,6 +915,11 @@ ${fatalTestHookAnchor}`;
       await crossVisiblePortal(page, firstRoom.depth + 4);
     }
     assert.equal(await page.locator(".ranked-v3-choice-relic:visible").count(), 0);
+    const wardenPotionsBefore = await page.evaluate(() => (
+      window.DungeonOnlineV3.getSnapshot()?.publicState?.build?.resources?.potions || 0
+    ));
+    assert(wardenPotionsBefore > 0, "Warden potion regression requires a canonical potion");
+    assert.equal(await page.evaluate(() => window.__DUNGEON_TEST_USE_POTION?.()), true);
     await clearVisibleRoom(page);
     await page.waitForFunction(() => [
       "AWAITING_REWARD_OR_TRANSACTION",
@@ -923,6 +935,25 @@ ${fatalTestHookAnchor}`;
     } else {
       await sessionState(page, "ENTERING_NEXT_ROOM");
     }
+    const wardenCheckpoint = diagnostics.checkpointBodies.at(-1);
+    assert(wardenCheckpoint, "Warden clear did not send a checkpoint body");
+    assert.deepEqual(
+      wardenCheckpoint.rewardClaims.filter((claim) => claim.claimType === "resource"),
+      [{ claimType: "resource", claimId: "potion-use", count: 1 }]
+    );
+    const postWardenAudit = await page.evaluate(() => ({
+      session: window.DungeonOnlineV3.getSessionState(),
+      potions: window.DungeonOnlineV3.getSnapshot()?.publicState?.build?.resources?.potions || 0,
+      reconnectVisible: [...document.querySelectorAll(".ranked-v3-overlay h1, .ranked-v3-overlay h2")]
+        .some((element) => element.getClientRects().length && /reconnect required/iu.test(element.textContent || "")),
+      game: JSON.parse(window.render_game_to_text())
+    }));
+    assert.equal(postWardenAudit.potions, wardenPotionsBefore - 1, JSON.stringify(postWardenAudit));
+    assert.equal(postWardenAudit.reconnectVisible, false, JSON.stringify(postWardenAudit));
+    await page.screenshot({
+      path: path.join(ARTIFACT_ROOT, "ranked-warden-potion-checkpoint.png"),
+      fullPage: true
+    });
     await crossVisiblePortal(page, firstRoom.depth + 5);
 
     const livesBeforeDeath = await page.evaluate(() => (
@@ -1375,6 +1406,7 @@ ${fatalTestHookAnchor}`;
       runId,
       rankedLifecycleScenarios: 1,
       rewardBoundaryScenarios: 1,
+      wardenPotionCheckpointScenarios: 1,
       deathPresentationScenarios: 1,
       networkLossScenarios: 1,
       reloadRecoveryScenarios: 1,

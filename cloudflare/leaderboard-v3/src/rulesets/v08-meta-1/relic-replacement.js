@@ -1,4 +1,4 @@
-import manifest from "./data/ruleset-manifest.json" with { type: "json" };
+import { isCompatibleRulesetHashV08 } from "./ruleset-hash-policy.js";
 import slotPolicyDocument from "./data/relic-slot-policy.generated.json" with { type: "json" };
 import {
   applyRelicReplacementBuildV08,
@@ -340,7 +340,7 @@ function validateBinding(metaState, transaction, context) {
   if (
     transaction.runId !== metaState.runId ||
     transaction.rulesetHash !== metaState.rulesetHash ||
-    transaction.rulesetHash !== manifest.rulesetHash ||
+    !isCompatibleRulesetHashV08(transaction.rulesetHash) ||
     context.runId && context.runId !== metaState.runId ||
     context.rulesetHash && context.rulesetHash !== metaState.rulesetHash
   ) {

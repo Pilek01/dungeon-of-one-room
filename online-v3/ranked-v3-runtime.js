@@ -384,7 +384,7 @@
 
   async function acceptResponse(response) {
     const state = response.metaState;
-    if (!state || state.rulesetHash !== protocol.RULESET_HASH) {
+    if (!state || !protocol.isSupportedRulesetHash(state.rulesetHash)) {
       throw new TypeError("RANKED_RULESET_MISMATCH");
     }
     if (state.status === "awaiting_starting_relic") {

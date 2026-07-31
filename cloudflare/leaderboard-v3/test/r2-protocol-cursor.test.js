@@ -135,6 +135,17 @@ test("R2 public seek cursor is versioned, strict, and malformed input returns 40
   assert.equal((await response.json()).error.code, "LEADERBOARD_CURSOR_INVALID");
 });
 
+test("R2 client accepts released save hashes and rejects unknown hashes", () => {
+  assert.equal(protocol.RULESET_HASH, manifest.rulesetHash);
+  for (const hash of protocol.SUPPORTED_RULESET_HASHES) {
+    assert.equal(protocol.isSupportedRulesetHash(hash), true);
+  }
+  assert.equal(
+    protocol.isSupportedRulesetHash("sha256:" + "f".repeat(64)),
+    false
+  );
+});
+
 test("R2 client fails closed on malformed nested projections and unknown response kinds", () => {
   const base = {
     ok: true,

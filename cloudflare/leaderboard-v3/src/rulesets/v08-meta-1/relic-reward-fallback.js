@@ -1,5 +1,5 @@
 import fallbackDocument from "./data/relic-reward-fallback-policy.generated.json" with { type: "json" };
-import manifest from "./data/ruleset-manifest.json" with { type: "json" };
+import { isCompatibleRulesetHashV08 } from "./ruleset-hash-policy.js";
 import { assertGoldLedgerV08, resolveGoldModifierV08 } from "./gold-policy.js";
 import { assertMetaStateV08, cloneMetaStateV08 } from "./meta-state.js";
 import {
@@ -58,7 +58,7 @@ function findBinding(metaState, input) {
   const directive = metaState.currentRoomDirective;
   const envelope = metaState.currentRewardEnvelope;
   if (!directive || !envelope) return reject("SOURCE_UNAVAILABLE");
-  if (metaState.rulesetHash !== manifest.rulesetHash) return reject("RULESET_HASH_MISMATCH");
+  if (!isCompatibleRulesetHashV08(metaState.rulesetHash)) return reject("RULESET_HASH_MISMATCH");
   if (input.sourceDirectiveId !== directive.directiveId) return reject("RELIC_REWARD_DIRECTIVE_MISMATCH");
   if (input.rewardEnvelopeId !== envelope.envelopeId) return reject("RELIC_REWARD_ENVELOPE_ID_MISMATCH");
   if (

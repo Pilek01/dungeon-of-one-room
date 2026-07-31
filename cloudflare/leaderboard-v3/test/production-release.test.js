@@ -9,6 +9,8 @@ import { createRulesetRegistry, RULESET_RELEASE_STATES } from "../src/rulesets/r
 import {
   V08_META_1_LEGACY_PRODUCTION_RELEASE_DESCRIPTOR,
   V08_META_1_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR,
+  V08_META_1_R2_PRODUCTION_RELEASE_DESCRIPTOR,
+  V08_META_1_WARDEN_HOTFIX_RELEASE_DESCRIPTOR,
   V08_META_1_PRODUCTION_RELEASE_DESCRIPTOR
 } from "../src/rulesets/releases.js";
 import manifest from "../src/rulesets/v08-meta-1/data/ruleset-manifest.json" with { type: "json" };
@@ -16,7 +18,9 @@ import { createMemoryRepositories } from "./fixtures/memory-repositories.js";
 import { TEST_SECRET } from "./fixtures/harness.js";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../..");
-const EXPECTED_HASH = "sha256:956251f158e55a0a47f9e43d5680d9aae66a22045c833bd76b8798cdc00e012e";
+const EXPECTED_HASH = "sha256:e4175a6cb29f576a3ad85357a433d6595eb7e9d19a6c5f47ed125ecfe9ae538e";
+const WARDEN_HOTFIX_HASH = "sha256:31124ece34ef1c82a28bb977467d169eade8b34c0c13360d7054ab1684e5fe36";
+const R2_HASH = "sha256:956251f158e55a0a47f9e43d5680d9aae66a22045c833bd76b8798cdc00e012e";
 const PREVIOUS_HASH = "sha256:08dfa4f97d91b4f21dbfae7232246125ddbbc6a0270cf81a9e1ed012e5f5d403";
 const LEGACY_HASH = "sha256:0bf00607056dbf3c30ffe57bbcfc77cea95b21c9ccc23aa985ec555856d1cbd6";
 
@@ -30,6 +34,8 @@ test("production entry activates only the exact tested v08-meta-1 hash", async (
   const registry = createRulesetRegistry([
     V08_META_1_LEGACY_PRODUCTION_RELEASE_DESCRIPTOR,
     V08_META_1_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR,
+    V08_META_1_R2_PRODUCTION_RELEASE_DESCRIPTOR,
+    V08_META_1_WARDEN_HOTFIX_RELEASE_DESCRIPTOR,
     V08_META_1_PRODUCTION_RELEASE_DESCRIPTOR
   ]);
   const resolved = registry.resolve({
@@ -39,6 +45,20 @@ test("production entry activates only the exact tested v08-meta-1 hash", async (
     lifecycle: "ranked"
   });
   assert.equal(resolved.rulesetHash, EXPECTED_HASH);
+  const r2 = registry.resolve({
+    rulesetId: "v08-meta-1",
+    rulesetHash: R2_HASH,
+    environment: "production",
+    lifecycle: "ranked"
+  });
+  assert.equal(r2.rulesetHash, R2_HASH);
+  const wardenHotfix = registry.resolve({
+    rulesetId: "v08-meta-1",
+    rulesetHash: WARDEN_HOTFIX_HASH,
+    environment: "production",
+    lifecycle: "ranked"
+  });
+  assert.equal(wardenHotfix.rulesetHash, WARDEN_HOTFIX_HASH);
   const previous = registry.resolve({
     rulesetId: "v08-meta-1",
     rulesetHash: PREVIOUS_HASH,
@@ -71,6 +91,94 @@ test("production availability reports the activated ruleset", async () => {
   assert.equal(body.productionActivated, true);
   assert.equal(body.rulesetId, "v08-meta-1");
   assert.equal(body.rulesetHash, EXPECTED_HASH);
+});
+
+test("production registry starts and abandons the retained R2 ruleset hash", async () => {
+  const worker = createWorker({
+    rulesetRegistry: createRulesetRegistry([
+      V08_META_1_R2_PRODUCTION_RELEASE_DESCRIPTOR,
+      V08_META_1_PRODUCTION_RELEASE_DESCRIPTOR
+    ]),
+    rulesetEnvironment: "production",
+    repositories: createMemoryRepositories()
+  });
+  const recoveryCredential = "rrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrr";
+  const startResponse = await worker.fetch(new Request(
+    "https://production.invalid/api/v3/runs/start",
+    {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "Idempotency-Key": "retained-r2-start"
+      },
+      body: JSON.stringify({
+        playerName: "Retained R2",
+        season: "season-1",
+        gameVersion: "0.8.1",
+        rulesetId: "v08-meta-1",
+        rulesetHash: R2_HASH,
+        clientInstallIdHash: "install_retained_r2_123456",
+        profileId: "profile_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        profileCredential: "ppppppppppppppppppppppppppppppppppppppppppp",
+        recoveryCredential,
+        clientProtocolVersion: "ranked-v3-checkpoint-1"
+      })
+    }
+  ), {
+    RANKED_V3_HMAC_SECRET: TEST_SECRET,
+    RANKED_V3_ABUSE_CONTROL: {
+      async limit() {
+        return { success: true };
+      }
+    }
+  });
+  const started = await startResponse.json();
+  assert.equal(startResponse.status, 201, JSON.stringify(started));
+  assert.equal(started.metaState.rulesetHash, R2_HASH);
+
+  const selectResponse = await worker.fetch(new Request(
+    "https://production.invalid/api/v3/runs/event",
+    {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "Idempotency-Key": "retained-r2-select"
+      },
+      body: JSON.stringify({
+        runId: started.runId,
+        type: "select_starting_relic",
+        bootstrapToken: started.bootstrapToken,
+        offerId: started.metaState.startingRelicOffer.offerId,
+        choiceId: started.metaState.startingRelicOffer.publicChoices[0].choiceId
+      })
+    }
+  ), { RANKED_V3_HMAC_SECRET: TEST_SECRET });
+  const selected = await selectResponse.json();
+  assert.equal(selectResponse.status, 200, JSON.stringify(selected));
+  assert.equal(selected.metaState.status, "active");
+  assert.equal(selected.metaState.rulesetHash, R2_HASH);
+  const operationId = "op_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+  const abandonResponse = await worker.fetch(new Request(
+    "https://production.invalid/api/v3/runs/abandon",
+    {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "Idempotency-Key": operationId
+      },
+      body: JSON.stringify({
+        operationId,
+        runId: selected.runId,
+        recoveryCredential,
+        clientProtocolVersion: "ranked-v3-checkpoint-1",
+        lastKnownRevision: selected.metaState.revision
+      })
+    }
+  ), { RANKED_V3_HMAC_SECRET: TEST_SECRET });
+  const abandoned = await abandonResponse.json();
+  assert.equal(abandonResponse.status, 200, JSON.stringify(abandoned));
+  assert.equal(abandoned.metaState.status, "abandoned");
+  assert.equal(abandoned.metaState.rulesetHash, R2_HASH);
 });
 
 test("production Ranked start uses the edge limiter with a profile-scoped key", async () => {

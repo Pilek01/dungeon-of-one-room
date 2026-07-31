@@ -362,8 +362,8 @@
     },
     {
       "file": "index.js",
-      "byteLength": 13360,
-      "sha256": "e311470078ae1d7a7342c2fde0e55dc4409333d0390816a83b88f9408539c316"
+      "byteLength": 13423,
+      "sha256": "aad1d14b1b866ad2b6d90e75f108d82ee1c39a5526d5d174c5ccf04d3a436851"
     },
     {
       "file": "leaderboard-summary.js",
@@ -382,13 +382,13 @@
     },
     {
       "file": "meta-state.js",
-      "byteLength": 11595,
-      "sha256": "a90db1be53768ddc9b0ea9517404abc656c74d18a2c4457f67254afb105da689"
+      "byteLength": 11791,
+      "sha256": "b75b88b69b3c3acb5863a38404286cbc002e1ae753e8e3bc7124d6c0cd0b53c5"
     },
     {
       "file": "meta-transaction.js",
-      "byteLength": 17944,
-      "sha256": "ef685c6980ed3848b4cad3125131fff0fba6bbaffc20b46237d181785c5c4612"
+      "byteLength": 17948,
+      "sha256": "7fa0596e4344e29e02cc9bf33eb050b8c090ddfbbd4d01f8ef348c4dc4f3d09b"
     },
     {
       "file": "outcome-policy.js",
@@ -423,12 +423,12 @@
     {
       "file": "relic-replacement.js",
       "byteLength": 19631,
-      "sha256": "ca01a80e64361a9e641040738c4146f8a1a58635c0d88ea05b358c8020265f09"
+      "sha256": "b463903aef312203d382882a063e06adf298d2db458c45a837dc6a141a9e8986"
     },
     {
       "file": "relic-reward-fallback.js",
       "byteLength": 12990,
-      "sha256": "744fb75cd19211d60b90beb5fdf5fd0f483b08c2971b36eea4a3f1c3f505adb7"
+      "sha256": "f38f3a4fffa3a31874801facd185bd5ebed8599568d81787d129d8cfb31493c1"
     },
     {
       "file": "reward-policy.js",
@@ -447,8 +447,13 @@
     },
     {
       "file": "room-policy.js",
-      "byteLength": 15459,
-      "sha256": "fdd2cd1508fbc6edbc6c0891345fd5ccdd65260fc479a5cfd0b15c9c8878dca6"
+      "byteLength": 15460,
+      "sha256": "117790c68085365b82bdd0b21e1509063cec26ebe0a482306bb4ae00403e3c0b"
+    },
+    {
+      "file": "ruleset-hash-policy.js",
+      "byteLength": 890,
+      "sha256": "a73ce2a5503ce65a21eb013a3fd70a17e8f759c5445bf9014dab72a542c381cf"
     },
     {
       "file": "run-modifiers.js",
@@ -462,8 +467,8 @@
     },
     {
       "file": "starting-relic-offer.js",
-      "byteLength": 9881,
-      "sha256": "994726515d11e47f5b011caaac85e8340a685d4a1bf4cbe69f9d4fade92b6c9c"
+      "byteLength": 9819,
+      "sha256": "35b8cd00a9812e2dd6c17c26caef3288daa3e23f7b2cae04b0da1342f8f0dc5e"
     },
     {
       "file": "test/m1-camp-pact-golden-fixtures.json",
@@ -556,5 +561,5 @@
       "sha256": "e06c85319b457817a0fa313302d0136eb746738719ab9cc6db73eacc8d62b489"
     }
   ],
-  "rulesetHash": "sha256:956251f158e55a0a47f9e43d5680d9aae66a22045c833bd76b8798cdc00e012e"
+  "rulesetHash": "sha256:e4175a6cb29f576a3ad85357a433d6595eb7e9d19a6c5f47ed125ecfe9ae538e"
 }

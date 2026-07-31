@@ -9,7 +9,15 @@
 
   const PROTOCOL_VERSION = "ranked-v3-checkpoint-1";
   const RULESET_ID = "v08-meta-1";
-  const RULESET_HASH = "sha256:956251f158e55a0a47f9e43d5680d9aae66a22045c833bd76b8798cdc00e012e";
+  const RULESET_HASH = "sha256:e4175a6cb29f576a3ad85357a433d6595eb7e9d19a6c5f47ed125ecfe9ae538e";
+  const SUPPORTED_RULESET_HASHES = Object.freeze([
+    RULESET_HASH,
+    "sha256:31124ece34ef1c82a28bb977467d169eade8b34c0c13360d7054ab1684e5fe36",
+    "sha256:956251f158e55a0a47f9e43d5680d9aae66a22045c833bd76b8798cdc00e012e",
+    "sha256:08dfa4f97d91b4f21dbfae7232246125ddbbc6a0270cf81a9e1ed012e5f5d403",
+    "sha256:0bf00607056dbf3c30ffe57bbcfc77cea95b21c9ccc23aa985ec555856d1cbd6"
+  ]);
+  const supportedRulesetHashes = new Set(SUPPORTED_RULESET_HASHES);
   const API_PREFIX = "/api/v3";
   const TOKEN_KINDS = Object.freeze({
     bootstrap: "run_bootstrap",
@@ -57,6 +65,10 @@
     if (value !== PROTOCOL_VERSION) throw new TypeError("PROTOCOL_VERSION_MISMATCH");
   }
 
+  function isSupportedRulesetHash(value) {
+    return supportedRulesetHashes.has(String(value || ""));
+  }
+
   function requireOptionalRecord(value, field) {
     if (value !== null && value !== undefined && !isRecord(value)) {
       throw new TypeError(`PROTOCOL_PROJECTION_INVALID:${field}`);
@@ -84,6 +96,8 @@
     requireText(value.runId, "metaState.runId");
     requireText(value.rulesetId, "metaState.rulesetId");
     requireText(value.rulesetHash, "metaState.rulesetHash");
+    if (value.rulesetId !== RULESET_ID) throw new TypeError("PROTOCOL_RULESET_ID_MISMATCH");
+    if (!isSupportedRulesetHash(value.rulesetHash)) throw new TypeError("PROTOCOL_RULESET_HASH_UNSUPPORTED");
     requireProtocolVersion(value.protocolVersion);
     if (!Number.isSafeInteger(value.revision) || value.revision < 0) {
       throw new TypeError("PROTOCOL_FIELD_INVALID:metaState.revision");
@@ -235,6 +249,8 @@
     PROTOCOL_VERSION,
     RULESET_ID,
     RULESET_HASH,
+    SUPPORTED_RULESET_HASHES,
+    isSupportedRulesetHash,
     API_PREFIX,
     TOKEN_KINDS,
     ENDPOINTS,

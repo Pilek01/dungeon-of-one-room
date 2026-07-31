@@ -1,9 +1,9 @@
-import manifest from "./data/ruleset-manifest.json" with { type: "json" };
 import {
   computeRelicOfferStateDigestV08,
   deriveRelicOfferOpaqueIdV08
 } from "./relic-offer-common.js";
 import { assertGoldLedgerV08 } from "./gold-policy.js";
+import { isCompatibleRulesetHashV08 } from "./ruleset-hash-policy.js";
 
 export const META_TRANSACTION_POLICY_VERSION = "v08-meta-transaction-1";
 export const META_TRANSACTION_RECEIPT_LIMIT = 64;
@@ -115,7 +115,7 @@ export async function issueMetaTransactionOfferV08(metaState, rawSpec, context =
     throw new TypeError("META_TRANSACTION_RELIC_REPLACEMENT_PENDING");
   }
   if (
-    metaState.rulesetHash !== manifest.rulesetHash ||
+    !isCompatibleRulesetHashV08(metaState.rulesetHash) ||
     context.runId && context.runId !== metaState.runId ||
     context.rulesetHash && context.rulesetHash !== metaState.rulesetHash
   ) {
@@ -239,7 +239,7 @@ function validateContextBinding(metaState, offer, context) {
   if (
     offer.runId !== metaState.runId ||
     offer.rulesetHash !== metaState.rulesetHash ||
-    offer.rulesetHash !== manifest.rulesetHash ||
+    !isCompatibleRulesetHashV08(offer.rulesetHash) ||
     context.runId && context.runId !== metaState.runId ||
     context.rulesetHash && context.rulesetHash !== metaState.rulesetHash
   ) {

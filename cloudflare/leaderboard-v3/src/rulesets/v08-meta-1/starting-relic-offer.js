@@ -1,4 +1,3 @@
-import manifest from "./data/ruleset-manifest.json" with { type: "json" };
 import startingPolicyDocument from "./data/starting-relic-policy.generated.json" with { type: "json" };
 import { assertMetaStateV08, cloneMetaStateV08 } from "./meta-state.js";
 import {
@@ -185,7 +184,10 @@ export async function selectStartingRelic(metaState, request = {}, context = {})
   if (offer.runId !== metaState.runId || request.runId && request.runId !== metaState.runId) {
     throw new TypeError("STARTING_RELIC_OFFER_RUN_MISMATCH");
   }
-  if (offer.rulesetHash !== metaState.rulesetHash || request.rulesetHash && request.rulesetHash !== manifest.rulesetHash) {
+  if (
+    offer.rulesetHash !== metaState.rulesetHash ||
+    request.rulesetHash && request.rulesetHash !== metaState.rulesetHash
+  ) {
     throw new TypeError("STARTING_RELIC_OFFER_RULESET_MISMATCH");
   }
   if (offer.consumed) throw new TypeError("STARTING_RELIC_OFFER_ALREADY_CONSUMED");

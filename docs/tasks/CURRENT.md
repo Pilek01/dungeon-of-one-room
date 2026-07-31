@@ -1,3 +1,56 @@
+# Ranked Warden checkpoint resource-settlement hotfix
+
+## Active status
+
+`COMPLETED_LOCALLY_PENDING_PRODUCTION`; player reproduction and a local Worker
+probe confirmed that a Ranked room checkpoint containing the bounded
+`potion-use` claim was settled correctly, then rejected by the older room-layer
+build immutability guard with `PHASE_3B2A_META_SCOPE_VIOLATION`. A depth 5
+Warden checkpoint without that claim succeeded.
+
+The room-layer guard now snapshots the canonical build after validated reward
+settlement and still rejects any later room-layer build mutation. The current
+ruleset is rotated while the production R2 hash remains registered for saved
+runs through a closed released-hash allowlist. Focused Worker/HTTP/client
+regressions, headed Warden QA with potion use,
+the 31-scenario threat matrix, `verify:fast` 51/51, `verify:phase` 748/748,
+`verify:baseline` 3/3 plus headed smoke, and `verify:full` 772/772 including
+Wrangler/D1 21/21 all pass.
+
+Authorized paths:
+
+- `cloudflare/leaderboard-v3/src/rulesets/v08-meta-1/room-policy.js`;
+- `cloudflare/leaderboard-v3/src/rulesets/v08-meta-1/index.js`;
+- `cloudflare/leaderboard-v3/src/rulesets/v08-meta-1/meta-state.js`;
+- `cloudflare/leaderboard-v3/src/rulesets/v08-meta-1/meta-transaction.js`;
+- `cloudflare/leaderboard-v3/src/rulesets/v08-meta-1/relic-replacement.js`;
+- `cloudflare/leaderboard-v3/src/rulesets/v08-meta-1/relic-reward-fallback.js`;
+- `cloudflare/leaderboard-v3/src/rulesets/v08-meta-1/starting-relic-offer.js`;
+- `cloudflare/leaderboard-v3/src/rulesets/v08-meta-1/ruleset-hash-policy.js`;
+- `cloudflare/leaderboard-v3/src/local-ruleset-entry.js`;
+- `online-v3/ranked-v3-protocol.js`;
+- `online-v3/ranked-v3-client.js`;
+- `online-v3/ranked-v3-runtime.js`;
+- focused Worker/ruleset/client regression coverage under
+  `cloudflare/leaderboard-v3/test/`;
+- ruleset manifest/release descriptors only if verification proves a ruleset
+  hash update is required;
+- `scripts/online-v3-ranked-headed.mjs` only if needed for visible Warden QA;
+- `ONLINE_V3_HANDOFF.md`;
+- `progress.md`;
+- this file.
+
+Required outcome: preserve the room-layer meta-scope guard while comparing
+against the already validated reward-settlement result, accept bounded
+canonical potion consumption and pickup at the checkpoint, keep sequential
+depth and Warden reward behavior unchanged, and retain compatibility with the
+currently saved production ruleset. Run focused RED/GREEN, threat-matrix
+rerun, `verify:fast`, `verify:phase`, `verify:baseline`, `verify:full`, headed
+Warden QA, and `git diff --check`; create one exact internal commit. Production
+deployment is authorized only after all gates pass. Do not change local combat
+authority, gameplay, Practice, mode names, source `game.js`, D1 schema, M5, or
+the 172 protected Vault Guardian deletions.
+
 # Local Ranked entry recovery and keyboard hotfix
 
 ## Active status

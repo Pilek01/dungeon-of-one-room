@@ -23,6 +23,10 @@ import {
   createLifeLedgerV08
 } from "./life-policy.js";
 import { TERMINAL_ELIGIBLE_STATUSES } from "./outcome-policy.js";
+import {
+  isCompatibleRulesetHashV08,
+  requireCompatibleRulesetHashV08
+} from "./ruleset-hash-policy.js";
 
 const progression = progressionDocument.canonicalData;
 
@@ -153,6 +157,9 @@ export function createInitialMetaStateV08(input = {}, context = {}) {
   const runId = requireText(context.runId ?? input.runId, "RUN_ID_REQUIRED");
   const season = requireText(context.season ?? input.season, "SEASON_REQUIRED");
   const startedAt = requireTimestamp(context.startedAt ?? context.now, "STARTED_AT_INVALID");
+  const rulesetHash = requireCompatibleRulesetHashV08(
+    input.rulesetHash || manifest.rulesetHash
+  );
   const startDepth = normalizeStartDepth(input);
   const firstDirectiveDepth = startDepth === progression.entranceStartDepth
     ? progression.firstPlayableDepth
@@ -160,7 +167,7 @@ export function createInitialMetaStateV08(input = {}, context = {}) {
 
   return {
     rulesetId: RULESET_ID,
-    rulesetHash: manifest.rulesetHash,
+    rulesetHash,
     runId,
     season,
     status: "awaiting_starting_relic",
@@ -220,7 +227,7 @@ export function cloneMetaStateV08(state) {
 export function assertMetaStateV08(state) {
   if (!state || typeof state !== "object") throw new TypeError("META_STATE_INVALID");
   if (state.rulesetId !== RULESET_ID) throw new TypeError("RULESET_ID_MISMATCH");
-  if (state.rulesetHash !== manifest.rulesetHash) throw new TypeError("RULESET_HASH_MISMATCH");
+  if (!isCompatibleRulesetHashV08(state.rulesetHash)) throw new TypeError("RULESET_HASH_MISMATCH");
   if (
     ![
       "awaiting_starting_relic",

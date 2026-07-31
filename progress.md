@@ -1075,3 +1075,20 @@ Updated next good targets
 - Focused 10/10, headed lifecycle PASS, fast 49/49, phase 742/742, baseline
   3/3 plus headed smoke PASS. Ruleset and source `game.js` are unchanged; no
   push, deployment, migration, activation, or protected-Vault change occurred.
+
+## 2026-07-31 - Ranked Warden checkpoint resource-settlement hotfix
+
+- Reproduced the exact depth 5 Warden failure locally: a legal `potion-use`
+  reward claim was settled, then rejected by the room layer's stale
+  pre-settlement build snapshot.
+- The meta-scope invariant now snapshots after validated settlement while
+  continuing to reject any later room-layer build mutation.
+- Added direct ruleset, real HTTP, protocol/client compatibility, and headed
+  Warden regressions. The headed run consumed a potion, advanced to depth 6,
+  and displayed no reconnect overlay.
+- Retained the former production ruleset hash for active saved runs while
+  rotating new starts to
+  `sha256:e4175a6cb29f576a3ad85357a433d6595eb7e9d19a6c5f47ed125ecfe9ae538e`.
+- Threat matrix 31/31, fast 51/51, phase 748/748, baseline 3/3 plus headed
+  smoke, and full 772/772 including D1 21/21 PASS. Source `game.js`, Practice,
+  gameplay, R1-P0-001, M5, and all 172 protected deletions remain unchanged.

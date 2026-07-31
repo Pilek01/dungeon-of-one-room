@@ -12,7 +12,7 @@ import {
   profileStateFromRunV08,
   publicProfileStateV08
 } from "../src/rulesets/v08-meta-1/profile-policy.js";
-import { issueNextRoomDirectiveV08 } from "../src/rulesets/v08-meta-1/room-policy.js";
+import { consumeRoomDirectiveV08, issueNextRoomDirectiveV08 } from "../src/rulesets/v08-meta-1/room-policy.js";
 import { settleRoomRewardEnvelopeV3 } from "../src/rulesets/v08-meta-1/reward-policy.js";
 
 const context = Object.freeze({
@@ -134,6 +134,40 @@ test("defeating the depth 10 Warden unlocks depth 11 and only that profile may s
   );
   assert.equal(started.startDepth, 11);
   assert.equal(started.currentRoomDirective?.depth, 11);
+});
+
+test("depth 5 Warden checkpoint accepts bounded potion use before advancing", async () => {
+  let state = initial();
+  state.status = "active";
+  state.depth = 4;
+  state.roomIndex = 4;
+  state.build.resources.potions = 2;
+  state.build.buildDigest = await computeRelicBuildDigestV08(state.build, webcrypto);
+  state = await issueNextRoomDirectiveV08(state, context);
+  assert.equal(state.currentRoomDirective.roomType, "boss");
+  assert.equal(state.currentRoomDirective.depth, 5);
+
+  const directive = state.currentRoomDirective;
+  const next = await consumeRoomDirectiveV08(state, {
+    runId: state.runId,
+    rulesetHash: state.rulesetHash,
+    revision: state.revision,
+    directiveId: directive.directiveId,
+    roomNonce: directive.roomNonce,
+    roomIndex: directive.roomIndex,
+    depth: directive.depth,
+    roomType: directive.roomType,
+    completionAttestation: "local-room-completed",
+    rewardClaim: rewardRequest(state, [
+      { claimType: "enemy", claimId: "enemy:warden", count: 1 },
+      { claimType: "resource", claimId: "potion-use", count: 1 }
+    ])
+  }, context);
+
+  assert.equal(next.depth, 5);
+  assert.equal(next.build.resources.potions, 1);
+  assert.equal(next.currentRoomDirective.depth, 6);
+  assert.equal(next.currentRoomDirective.roomIndex, 6);
 });
 
 test("fresh Ranked profile starts with the exact v0.8 campaign defaults", () => {

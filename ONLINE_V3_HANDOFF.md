@@ -1,5 +1,33 @@
 # Online v3 - Production handoff
 
+## Ranked Warden checkpoint resource-settlement hotfix (2026-07-31)
+
+`COMPLETED_LOCALLY_PENDING_PRODUCTION`.
+
+- Root cause: reward settlement legally consumed a potion before the older
+  room-layer meta-scope guard compared the build against its pre-settlement
+  snapshot, causing `PHASE_3B2A_META_SCOPE_VIOLATION`.
+- The guard now compares against the already validated, canonical settlement
+  result and still rejects any later room-layer mutation.
+- Regression coverage includes the real HTTP depth 5 Warden checkpoint with
+  `enemy:warden` plus `potion-use`, canonical potion decrement, sequential
+  advance to depth 6, and no reconnect overlay in headed QA.
+- The ruleset rotates from
+  `sha256:956251f158e55a0a47f9e43d5680d9aae66a22045c833bd76b8798cdc00e012e`
+  to
+  `sha256:e4175a6cb29f576a3ad85357a433d6595eb7e9d19a6c5f47ed125ecfe9ae538e`.
+  The previous production hash remains registered end-to-end so an active
+  saved Ranked run is not invalidated by deployment. The briefly uploaded
+  `sha256:31124ece34ef1c82a28bb977467d169eade8b34c0c13360d7054ab1684e5fe36`
+  Worker hash is also retained; its compatibility smoke exposed and prevented
+  an incomplete Pages release.
+- Threat matrix 31/31, `verify:fast` 51/51, `verify:phase` 748/748,
+  `verify:baseline` 3/3 plus headed smoke, and `verify:full` 772/772 including
+  Wrangler/D1 21/21 all pass.
+- Source `game.js`, Practice, combat authority, gameplay, mode names, D1
+  schema, R1-P0-001, M5, and all 172 protected Vault Guardian deletions are
+  unchanged.
+
 ## Local Ranked entry recovery and keyboard hotfix (2026-07-31)
 
 `COMPLETED_LOCALLY`; production remains unchanged.
