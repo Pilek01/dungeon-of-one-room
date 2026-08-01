@@ -1,3 +1,21 @@
+## 2026-08-01 - Online Ranked boundary state and test controls repair
+
+- Completed the separate Online-only repair for fresh-campaign reset
+  semantics, canonical Camp mutators, canonical elixir charges, test music,
+  and password-gated deployed Observer Bot.
+- New campaigns reset highscore/depth and chest active effects through
+  resetMetaProgressForFreshStart(); Extract -> Camp -> Start Next Run keeps
+  campaign state intact.
+- Canonical elixir accounting preserves 3/5 -> 2/5 after one use and a
+  nonterminal death; retries are idempotent. Camp mutators are server-issued
+  and projected into the profile/next run.
+- Candidate ruleset hash: sha256:2ac2eb5499892cc49258c5b674beab846cb41906a5ef86a658d5e90325505a0d.
+  Retained production hash: sha256:d784208aad891119b71c52324cea358997ee376313914d5799affa68c8678ff3.
+  Candidate remains local/test-only; no deploy, push, D1 migration, or backfill.
+- Verification: focused 20/20; verify:fast 51/51; verify:phase 762/762;
+  verify:baseline 3/3 plus headed smoke; verify:full 786/786 including
+  Wrangler/D1 21/21; headed Ranked lifecycle PASS; Pages build 3109 files.
+
 Original prompt: Create a hard-forked Dungeon 1.0 in a new folder, keep the original game untouched, and push the fork toward a major 1.0 redesign while staying compatible with the current save and leaderboard protocol.
 
 ## 2026-07-30 - R2 leaderboard lifecycle defect reproduced

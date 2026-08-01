@@ -10,11 +10,17 @@ import {
   getRelicCatalogEntryV08
 } from "./relic-policy.js";
 import { deriveRelicOfferOpaqueIdV08 } from "./relic-offer-common.js";
-import { deriveRunModifierEffects } from "./run-modifiers.js";
+import {
+  applyCanonicalRunModifierSelection,
+  deriveRunModifierEffects,
+  V08_RUN_MODIFIER_DATA
+} from "./run-modifiers.js";
 
 const policy = campPolicyDocument.canonicalData;
 const upgradeById = new Map(policy.upgrades.map((entry) => [entry.id, entry]));
 const elixirById = new Map(policy.elixirs.map((entry) => [entry.id, entry]));
+const mutatorCatalog = V08_RUN_MODIFIER_DATA.catalog;
+const maximumActiveMutators = V08_RUN_MODIFIER_DATA.selection.maximumActiveModifiers;
 
 export const CAMP_POLICY_SPEC = Object.freeze({
   moduleFile: "camp-policy.js",
@@ -23,7 +29,8 @@ export const CAMP_POLICY_SPEC = Object.freeze({
     "upgrade",
     "elixir-buy-refill",
     "elixir-discard",
-    "relic-sale"
+    "relic-sale",
+    "mutator-add"
   ]),
   offerBinding: "runId+rulesetHash+revision+state/build digest+campSessionId",
   implementationStatus: "m1-test-only"
@@ -216,6 +223,31 @@ function elixirChoices(metaState) {
   return choices;
 }
 
+function mutatorChoices(metaState) {
+  const activeIds = metaState.runModifiers.active
+    .map((entry) => entry.modifierId)
+    .sort();
+  if (activeIds.length >= maximumActiveMutators) return [];
+  return mutatorCatalog.modifiers
+    .filter((modifier) => !activeIds.includes(modifier.modifierId))
+    .map((modifier) => ({
+      kind: "camp_mutator_add",
+      label: "Enable " + modifier.displayName,
+      publicData: {
+        action: "mutator_add",
+        mutatorId: modifier.modifierId,
+        displayName: modifier.displayName,
+        currentActiveCount: activeIds.length,
+        maximumActiveMutators
+      },
+      privateData: {
+        action: "mutator_add",
+        mutatorId: modifier.modifierId,
+        expectedActiveIds: activeIds
+      }
+    }));
+}
+
 function relicSaleChoices(metaState) {
   return metaState.build.relics.map((entry) => {
     const relic = getRelicCatalogEntryV08(entry.relicId);
@@ -258,7 +290,8 @@ export async function issueCampTransactionsV08(metaState, context = {}) {
   const choices = [
     ...upgradeChoices(metaState, session),
     ...elixirChoices(metaState),
-    ...relicSaleChoices(metaState)
+    ...relicSaleChoices(metaState),
+    ...mutatorChoices(metaState)
   ];
   if (!choices.length) return structuredClone(metaState);
   return issueMetaTransactionOfferV08(metaState, {
@@ -410,6 +443,33 @@ export async function commitCampTransactionV08(metaState, request, context = {})
         nextState: state,
         publicResult: { action, elixirId: active.definition.id, refund },
         authoritativeReward: { campGold: refund }
+      };
+    }
+    if (action === "mutator_add") {
+      const currentIds = state.runModifiers.active
+        .map((entry) => entry.modifierId)
+        .sort();
+      if (JSON.stringify(currentIds) !== JSON.stringify(choice.privateData.expectedActiveIds)) {
+        throw new TypeError("CAMP_MUTATOR_TARGET_STALE");
+      }
+      if (currentIds.length >= maximumActiveMutators) {
+        throw new TypeError("CAMP_MUTATOR_LIMIT");
+      }
+      const nextState = await applyCanonicalRunModifierSelection(
+        state,
+        {
+          modifierIds: [...currentIds, choice.privateData.mutatorId],
+          activationSource: "server-issued-mid-run"
+        },
+        { ...context, authority: "TRUSTED_RULESET_DOMAIN" }
+      );
+      return {
+        nextState,
+        publicResult: {
+          action,
+          mutatorId: choice.privateData.mutatorId,
+          activeCount: nextState.runModifiers.activeCount
+        }
       };
     }
     if (action === "relic_sale") {

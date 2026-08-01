@@ -57,6 +57,7 @@ import {
   deriveFinalDurationV08
 } from "./leaderboard-summary.js";
 import { finalizeRunV08 } from "./finalization-policy.js";
+import { projectPublicRunModifiers } from "./run-modifiers.js";
 import {
   createInitialProfileStateV08,
   hydrateRunFromProfileV08,
@@ -244,6 +245,10 @@ export function createV08Meta1Ruleset(options = {}) {
 
     publicProfileState(profile) {
       return publicProfileStateV08(profile);
+    },
+
+    projectPublicRunModifiers(state) {
+      return projectPublicRunModifiers(state);
     },
 
     async selectStartingRelic(state, request, context = {}) {

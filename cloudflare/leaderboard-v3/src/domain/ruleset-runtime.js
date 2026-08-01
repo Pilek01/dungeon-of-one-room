@@ -76,6 +76,9 @@ export function publicRulesetMetaState(state, ruleset) {
     lives: state.lives,
     maxDepth: state.maxDepth,
     score: structuredClone(score),
+    runModifiers: typeof ruleset.projectPublicRunModifiers === "function"
+      ? ruleset.projectPublicRunModifiers(state)
+      : null,
     lifeState: {
       maximumLives: state.lifeLedger.maximumLives,
       fatalEvents: state.lifeLedger.fatalEvents,
@@ -325,11 +328,12 @@ export async function applyRulesetEvent(state, body, ruleset, context = {}) {
       );
       break;
     case "report_fatal_event": {
-      const request = exactPayload(
-        body.payload,
-        ["classification"],
-        "FATAL_EVENT_PAYLOAD_INVALID"
-      );
+      const fatalPayload = body.payload === undefined ? {} : requireObject(body.payload, "FATAL_EVENT_PAYLOAD_INVALID");
+      const fatalFields = Object.keys(fatalPayload).sort();
+      const fatalAllowed = fatalFields.length === 1 && fatalFields[0] === "classification" ||
+        fatalFields.length === 2 && fatalFields[0] === "classification" && fatalFields[1] === "elixirUsage";
+      if (!fatalAllowed) throw new TypeError("FATAL_EVENT_PAYLOAD_INVALID_FIELDS");
+      const request = fatalPayload;
       const result = await ruleset.reportFatalEvent(
         structuredClone(state),
         request,

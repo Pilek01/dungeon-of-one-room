@@ -28,12 +28,32 @@ function exactFatalEventRequest(request) {
     !request ||
     typeof request !== "object" ||
     Array.isArray(request) ||
-    Object.keys(request).sort().join(",") !== "classification" ||
+    !["classification", "classification,elixirUsage"].includes(Object.keys(request).sort().join(",")) ||
     request.classification !== "local_fatal_event"
   ) {
     throw new TypeError("FATAL_EVENT_CLASSIFICATION_INVALID");
   }
   return request;
+}
+
+function normalizeElixirUsage(state, request) {
+  if (request.elixirUsage === undefined) return null;
+  const usage = request.elixirUsage;
+  if (!usage || typeof usage !== "object" || Array.isArray(usage) ||
+      Object.keys(usage).sort().join(",") !== "count,elixirId") {
+    throw new TypeError("FATAL_ELIXIR_USAGE_INVALID");
+  }
+  const elixirId = String(usage.elixirId || "");
+  const count = usage.count;
+  if (!elixirId || !Number.isSafeInteger(count) || count < 1 || count > 5) {
+    throw new TypeError("FATAL_ELIXIR_USAGE_INVALID");
+  }
+  const loadout = Array.isArray(state.build?.elixirs) ? state.build.elixirs : [];
+  if (loadout.length !== 1 || loadout[0]?.elixirId !== elixirId ||
+      !Number.isSafeInteger(loadout[0]?.charges) || count > loadout[0].charges) {
+    throw new TypeError("FATAL_ELIXIR_USAGE_UNAVAILABLE");
+  }
+  return { elixirId, count };
 }
 
 function appendHistory(history, entry) {
@@ -155,6 +175,10 @@ export async function applyFatalEventV08(state, request, context = {}) {
   if (state.status !== "active") throw new TypeError("RUN_NOT_ACTIVE");
   const next = structuredClone(state);
   const before = structuredClone(state);
+  const elixirUsage = normalizeElixirUsage(next, request);
+  if (elixirUsage) {
+    next.build.elixirs[0].charges -= elixirUsage.count;
+  }
   next.lifeLedger.fatalEvents += 1;
 
   let resolution;
@@ -197,7 +221,8 @@ export async function applyFatalEventV08(state, request, context = {}) {
     resolution,
     livesBefore: before.lives,
     livesAfter: next.lives,
-    lostRelicId
+    lostRelicId,
+    elixirUsage
   };
   next.lifeLedger.history = appendHistory(next.lifeLedger.history, receipt);
   assertLifeLedgerV08(next);

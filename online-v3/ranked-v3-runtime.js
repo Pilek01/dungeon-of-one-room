@@ -27,6 +27,9 @@
   let extractedProfileReady = false;
   let currentCampResponse = null;
   let campMutationPending = false;
+  let pendingFreshCampaign = false;
+  let pendingElixirUsage = null;
+  let pendingBotPassword = null;
   let currentMerchantOffer = null;
   let merchantMutationPending = false;
   const recoveryStore = root.DungeonRankedV3Storage.createStore(root.localStorage);
@@ -57,6 +60,9 @@
   function resetLocalRankedSession() {
     pendingExtractionMode = null;
     extractedProfileReady = false;
+    pendingFreshCampaign = false;
+    pendingElixirUsage = null;
+    pendingBotPassword = null;
     client?.releaseWriter?.();
     client?.clear?.();
     client = null;
@@ -75,12 +81,40 @@
     return true;
   }
 
+  function markFreshCampaign() {
+    pendingFreshCampaign = true;
+  }
+  function recordElixirUsage(payload = {}) {
+    if (!root.DungeonOnlineV3GameBridge?.isRanked?.()) return false;
+    const elixirId = String(payload.elixirId || "");
+    if (!elixirId) return false;
+    if (pendingElixirUsage && pendingElixirUsage.elixirId !== elixirId) return false;
+    pendingElixirUsage = {
+      elixirId,
+      count: Math.min(5, Math.max(0, Number(pendingElixirUsage?.count) || 0) + 1)
+    };
+    return true;
+  }
+  function appendElixirUsageClaim(claims) {
+    const next = Array.isArray(claims) ? claims.map((claim) => ({ ...claim })) : [];
+    if (!pendingElixirUsage || pendingElixirUsage.count <= 0) return next;
+    next.push({
+      claimType: "resource",
+      claimId: "elixir-use",
+      count: pendingElixirUsage.count,
+      localEvidence: { elixirId: pendingElixirUsage.elixirId }
+    });
+    return next;
+  }
+
   function returnFromFailedStartToMainMenu() {
     resetLocalRankedSession();
     currentCampResponse = null;
     session = root.DungeonRankedV3Session.createStateMachine(
       root.DungeonRankedV3Session.STATES.abandoned
     );
+    pendingFreshCampaign = false;
+    pendingElixirUsage = null;
     root.DungeonOnlineV3GameBridge?.returnToPractice?.();
     ui.hide();
   }
@@ -192,6 +226,9 @@
   }
 
   function returnToPractice() {
+    pendingFreshCampaign = false;
+    pendingElixirUsage = null;
+    pendingBotPassword = null;
     if (session.getState() === root.DungeonRankedV3Session.STATES.finalized) {
       clearEndedRecovery();
       return;
@@ -213,6 +250,9 @@
   }
 
   function clearEndedRecovery() {
+    pendingFreshCampaign = false;
+    pendingElixirUsage = null;
+    pendingBotPassword = null;
     client?.releaseWriter?.();
     client?.clearRecovery?.();
     client?.clear();
@@ -229,6 +269,7 @@
 
   async function startAfterEndedRecovery() {
     clearEndedRecovery();
+    markFreshCampaign();
     await startRanked();
   }
 
@@ -249,10 +290,14 @@
 
   async function startFromUnrecoverableRecovery() {
     clearEndedRecovery();
+    markFreshCampaign();
     await startRanked();
   }
 
   async function abandonCanonical() {
+    pendingFreshCampaign = false;
+    pendingElixirUsage = null;
+    pendingBotPassword = null;
     ui.setStatus("Abandoning your Ranked run...");
     await createClient().abandonCanonical();
     client = null;
@@ -276,6 +321,7 @@
         clearEndedRecovery();
       }
     }
+    markFreshCampaign();
     await startRanked();
   }
 
@@ -365,6 +411,7 @@
       session.transition(root.DungeonRankedV3Session.STATES.retrying);
       ui.setStatus("Retrying the exact operation...");
       const response = await createClient().retryPending();
+      pendingElixirUsage = null;
       await acceptResponse(response);
     } catch (error) {
       presentError(error);
@@ -420,8 +467,16 @@
       if (!bridge || typeof bridge.startRanked !== "function") {
         throw new TypeError("RANKED_GAME_BRIDGE_UNAVAILABLE");
       }
-      bridge.startRanked(directive, state);
+      const newCampaign = pendingFreshCampaign;
+      bridge.startRanked(directive, state, { newCampaign });
+      pendingFreshCampaign = false;
       session.transition(root.DungeonRankedV3Session.STATES.active);
+      if (pendingBotPassword !== null) {
+        const password = pendingBotPassword;
+        pendingBotPassword = null;
+        const unlocked = await bridge.unlockRankedTestBot?.(password);
+        if (!unlocked) ui.showMessage("Observer Bot locked", "The test password was not accepted.", [ui.button("Close", () => ui.hide())]);
+      }
       return;
     }
     if (["victory", "defeat", "extraction"].includes(state.status)) {
@@ -793,6 +848,9 @@
       if (action === "relic_sale") {
         return data.action === "relic_sale" && data.relicId === request.relicId;
       }
+      if (action === "mutator_add") {
+        return data.action === "mutator_add" && data.mutatorId === request.mutatorId;
+      }
       return false;
     }) || null;
   }
@@ -849,6 +907,8 @@
         client?.clearRecovery?.();
         recoveryStore.clearRecovery();
         prepareFreshRankedStart(false);
+        pendingFreshCampaign = false;
+        pendingElixirUsage = null;
         currentCampResponse = null;
         ui.hide();
         return startRanked(startDepth);
@@ -887,9 +947,10 @@
       const response = await createClient().checkpoint({
         turnCount: summary?.turnCount,
         elapsedMs: Math.max(0, Date.now() - startedAt),
-        rewardClaims: summary?.rewardClaims || [],
+        rewardClaims: appendElixirUsageClaim(summary?.rewardClaims || []),
         commands: []
       });
+      pendingElixirUsage = null;
       const state = response.metaState;
       root.DungeonOnlineV3GameBridge.syncCanonicalProjection(state);
       if (["victory", "defeat", "extraction"].includes(state.status)) {
@@ -990,9 +1051,10 @@
       ui.showSync("Checking your fate...");
       const previousState = createClient().getSnapshot()?.publicState;
       const previousDirectiveId = previousState?.currentRoomDirective?.directiveId || null;
-      const response = await createClient().event("report_fatal_event", {
-        classification: "local_fatal_event"
-      });
+      const fatalPayload = { classification: "local_fatal_event" };
+      if (pendingElixirUsage && pendingElixirUsage.count > 0) fatalPayload.elixirUsage = { ...pendingElixirUsage };
+      const response = await createClient().event("report_fatal_event", fatalPayload);
+      pendingElixirUsage = null;
       const state = response.metaState;
       root.DungeonOnlineV3GameBridge.syncCanonicalProjection(state);
       if (["defeat", "victory", "extraction"].includes(state.status)) {
@@ -1044,6 +1106,7 @@
   }
 
   async function resumeRanked() {
+    pendingFreshCampaign = false;
     try {
       moveToRecoveryState(root.DungeonRankedV3Session.STATES.retrying);
       ui.showMessage("Recovering Ranked", "Loading your last saved room...");
@@ -1053,11 +1116,47 @@
     }
   }
 
+  async function startRankedWithObserverBot() {
+    const password = typeof root.prompt === "function" ? root.prompt("Observer Bot password") : "";
+    if (password === null) return;
+    prepareFreshRankedStart();
+    pendingBotPassword = String(password || "");
+    markFreshCampaign();
+    await startRanked();
+  }
+  async function continueRankedWithObserverBot() {
+    const password = typeof root.prompt === "function" ? root.prompt("Observer Bot password") : "";
+    if (password === null) return;
+    pendingBotPassword = String(password || "");
+    await resumeRanked();
+  }
+  async function unlockTestBot() {
+    const password = typeof root.prompt === "function" ? root.prompt("Observer Bot password") : "";
+    if (password === null) return false;
+    const unlocked = await root.DungeonOnlineV3GameBridge?.unlockRankedTestBot?.(password);
+    if (!unlocked) ui.setStatus("The test password was not accepted.");
+    else ui.hide();
+    return Boolean(unlocked);
+  }
   function openRankedEntry() {
     const hasRecovery = Boolean(recoveryStore.loadRecovery());
+    const testBotEnabled = root.DUNGEON_ONLINE_TEST_BOT_ENABLED === true;
     if (!hasRecovery) {
-      prepareFreshRankedStart();
-      startRanked();
+      if (testBotEnabled) {
+        ui.showMenu("Ranked (Online)", "Start a connected Ranked descent.", [
+          ui.button("Start Ranked", () => {
+            prepareFreshRankedStart();
+            markFreshCampaign();
+            startRanked().catch(presentError);
+          }),
+          ui.button("Start + Observer Bot", () => startRankedWithObserverBot().catch(presentError)),
+          ui.button("Cancel", () => ui.hide())
+        ]);
+      } else {
+        prepareFreshRankedStart();
+        markFreshCampaign();
+        startRanked();
+      }
       return;
     }
     ui.showMenu(
@@ -1066,6 +1165,9 @@
       [
         ui.button("Start New Ranked", () => startNewRanked().catch(presentError)),
         ui.button("Continue Ranked", () => resumeRanked().catch(presentError)),
+        ...(testBotEnabled ? [
+          ui.button("Continue + Observer Bot", () => continueRankedWithObserverBot().catch(presentError))
+        ] : []),
         ui.button("Cancel", () => ui.hide())
       ]
     );
@@ -1128,6 +1230,8 @@
     onExtraction,
     onCampAction,
     onCampStartRun,
+    onElixirUsed: recordElixirUsage,
+    unlockTestBot,
     leaveToMainMenu: returnToPractice,
     onForgeMode,
     onForgeLeave,

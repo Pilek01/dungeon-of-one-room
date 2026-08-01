@@ -82,7 +82,16 @@ test("R2 registered mutations reject unknown fields and protocol mismatch", asyn
   assert.equal((await mismatch.json()).error.code, "PROTOCOL_VERSION_MISMATCH");
 });
 
-test("R2 client schema accepts promoted bootstrap and rejects an unknown hash", async () => {
+test("R2 client schema accepts released bootstrap and rejects a local-only candidate", async () => {
+  const localWorker = registeredWorker();
+  const localStartedResponse = await postStart(localWorker, startBody());
+  assert.equal(localStartedResponse.status, 201);
+  const localStarted = await localStartedResponse.json();
+  assert.throws(
+    () => protocol.validateMutationResponse(localStarted),
+    /PROTOCOL_RULESET_HASH_UNSUPPORTED/u
+  );
+
   const worker = registeredProductionWorker();
   const startedResponse = await postStart(worker, startBody({
     rulesetHash: V08_META_1_PRODUCTION_RELEASE_DESCRIPTOR.rulesetHash
@@ -90,12 +99,6 @@ test("R2 client schema accepts promoted bootstrap and rejects an unknown hash", 
   assert.equal(startedResponse.status, 201);
   const started = await startedResponse.json();
   protocol.validateMutationResponse(started);
-  const forgedHash = structuredClone(started);
-  forgedHash.metaState.rulesetHash = "sha256:" + "f".repeat(64);
-  assert.throws(
-    () => protocol.validateMutationResponse(forgedHash),
-    /PROTOCOL_RULESET_HASH_UNSUPPORTED/u
-  );
   const selectedResponse = await worker.fetch(new Request("https://r2.invalid/api/v3/runs/event", {
     method: "POST",
     headers: {
@@ -156,14 +159,10 @@ test("R2 public seek cursor is versioned, strict, and malformed input returns 40
   assert.equal((await response.json()).error.code, "LEADERBOARD_CURSOR_INVALID");
 });
 
-test("R2 client accepts the promoted and retained release hashes", () => {
+test("R2 client accepts released save hashes and rejects local-only or unknown hashes", () => {
   assert.equal(protocol.RULESET_HASH, V08_META_1_PRODUCTION_RELEASE_DESCRIPTOR.rulesetHash);
-  assert.equal(protocol.RULESET_HASH, manifest.rulesetHash);
-  assert.equal(protocol.isSupportedRulesetHash(manifest.rulesetHash), true);
-  assert.equal(
-    protocol.isSupportedRulesetHash("sha256:e4175a6cb29f576a3ad85357a433d6595eb7e9d19a6c5f47ed125ecfe9ae538e"),
-    true
-  );
+  assert.notEqual(protocol.RULESET_HASH, manifest.rulesetHash);
+  assert.equal(protocol.isSupportedRulesetHash(manifest.rulesetHash), false);
   for (const hash of protocol.SUPPORTED_RULESET_HASHES) {
     assert.equal(protocol.isSupportedRulesetHash(hash), true);
   }
@@ -172,7 +171,6 @@ test("R2 client accepts the promoted and retained release hashes", () => {
     false
   );
 });
-
 test("R2 client fails closed on malformed nested projections and unknown response kinds", () => {
   const base = {
     ok: true,

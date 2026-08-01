@@ -152,8 +152,8 @@
   "files": [
     {
       "file": "camp-policy.js",
-      "byteLength": 13829,
-      "sha256": "15c9c19283ccb15a1c9f2fdc064e0dd6023fba6da6903ac2eecab8c3335ba294"
+      "byteLength": 15787,
+      "sha256": "1590e648b0196480d03f6ec1c138f3ce2e9bc04626351195cb5cc76ee7e0eb29"
     },
     {
       "file": "constants.js",
@@ -362,8 +362,8 @@
     },
     {
       "file": "index.js",
-      "byteLength": 13422,
-      "sha256": "f27a14210bbebcb4ab911135cc0be26eb7a5435121e0d9a30a1a3e8afeab1c33"
+      "byteLength": 13580,
+      "sha256": "762262d74618a5426ad82b07f2dfbcedebf6e64f14b017985db05d0fcbb21ad5"
     },
     {
       "file": "leaderboard-summary.js",
@@ -372,8 +372,8 @@
     },
     {
       "file": "life-policy.js",
-      "byteLength": 6349,
-      "sha256": "6f127af1215f26f554c9283cf00443e6d8610ebc7828f6e9cdbb21d07147468d"
+      "byteLength": 7419,
+      "sha256": "907c8be8d83eff036ff5362c9ed73f05c97e6a253d027b43d359a6194b715ed8"
     },
     {
       "file": "merchant-policy.js",
@@ -402,8 +402,8 @@
     },
     {
       "file": "profile-policy.js",
-      "byteLength": 3949,
-      "sha256": "c5f23811f651c1b9339d9ffe923b97e8e6d22cf6dbf17ba91c2cac9af0df5973"
+      "byteLength": 4102,
+      "sha256": "7469e5244a0ce47652a3a3ace921e1a4967da6fae496d1c11b647ec340351e1e"
     },
     {
       "file": "regular-relic-offer.js",
@@ -432,8 +432,8 @@
     },
     {
       "file": "reward-policy.js",
-      "byteLength": 26769,
-      "sha256": "74add7ed908e915e92fbe491c19e7318e94b2b4cc69ffca2af82a3fc9fd1059b"
+      "byteLength": 27771,
+      "sha256": "b1a4d0f463108a58d2cf2a5203b90bc86352126494efa4387f8d388d4804f942"
     },
     {
       "file": "rng.js",
@@ -452,8 +452,8 @@
     },
     {
       "file": "ruleset-hash-policy.js",
-      "byteLength": 967,
-      "sha256": "b82af610473099e333cbba4849b49dd719c9225493e03c0e43b6c9e13a63afc6"
+      "byteLength": 1044,
+      "sha256": "b199ab809d9faf0b40888e17ac7110917f4cc3ac6b80c2b37a8b7a470f62f1ee"
     },
     {
       "file": "run-modifiers.js",
@@ -561,5 +561,5 @@
       "sha256": "cfce80fea7bd5d1328020055f2012bcaeaf9b61e5438e437bf948a4288fb8bf0"
     }
   ],
-  "rulesetHash": "sha256:d784208aad891119b71c52324cea358997ee376313914d5799affa68c8678ff3"
+  "rulesetHash": "sha256:2ac2eb5499892cc49258c5b674beab846cb41906a5ef86a658d5e90325505a0d"
 }

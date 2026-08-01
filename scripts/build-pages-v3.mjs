@@ -2,6 +2,7 @@ import { cp, mkdir, readFile, readdir, rm, writeFile } from "node:fs/promises";
 import { execFileSync } from "node:child_process";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { createHash } from "node:crypto";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const output = path.join(root, "output", "pages-dist");
@@ -44,6 +45,12 @@ for (const [source, replacement] of [
   if (!config.includes(source)) throw new Error(`Missing production config source: ${source}`);
   config = config.replace(source, replacement);
 }
+const botPassword = String(process.env.DUNGEON_ONLINE_TEST_BOT_PASSWORD || "");
+const botPasswordHash = botPassword
+  ? "sha256:" + createHash("sha256").update(botPassword, "utf8").digest("hex")
+  : "";
+config += "\nwindow.DUNGEON_ONLINE_TEST_BOT_ENABLED = " + JSON.stringify(Boolean(botPasswordHash)) + ";\n";
+config += "window.DUNGEON_ONLINE_TEST_BOT_PASSWORD_HASH = " + JSON.stringify(botPasswordHash) + ";\n";
 await writeFile(configPath, config, "utf8");
 
 const indexPath = path.join(output, "index.html");
@@ -218,6 +225,63 @@ menuRenderSource = menuRenderSource.replace(mainMenuRow, productionMenuRow);
 game = `${game.slice(0, menuRenderStart)}${menuRenderSource}${game.slice(menuRenderEnd)}`;
 
 const productionGameReplacements = [
+  [
+`  function syncBgmWithState(force = false) {
+    if (isSimulationActive() && state.simulation.suppressAudio) {`,
+`  function syncBgmWithState(force = false) {
+    if (window.DUNGEON_ONLINE_TEST_MUSIC_OFF === true) {
+      ensureBgmTracks();
+      stopAllBgm(false);
+      stopSplashTrack(false);
+      return;
+    }
+    if (isSimulationActive() && state.simulation.suppressAudio) {`
+  ],
+  [
+`    state.onlineV3Ranked = true;
+      state.onlineV3Directive = directive;`,
+`    state.onlineV3Ranked = true;
+      syncRankedRunModifiers(publicState);
+      state.onlineV3Directive = directive;`
+  ],
+  [
+`  function canUseDebugCheats() {
+    return DEBUG_CHEATS_ENABLED;
+  }`,
+`  function canUseDebugCheats() {
+    return DEBUG_CHEATS_ENABLED || Boolean(state.onlineV3Ranked && state.onlineV3TestBotUnlocked);
+  }`
+  ],
+  [
+`    if (canUseDebugCheats() && key === DEBUG_MENU_TOGGLE_KEY) {
+      toggleDebugCheatMenu(null, { botOnly: false });
+      return;
+    }`,
+`    if (canUseDebugCheats() && key === DEBUG_MENU_TOGGLE_KEY) {
+      toggleDebugCheatMenu(null, { botOnly: Boolean(state.onlineV3Ranked && state.onlineV3TestBotUnlocked) });
+      return;
+    }`
+  ],
+  [
+`    state.elixirLoadout.charges = Math.max(0, charges - 1);`,
+`    state.elixirLoadout.charges = Math.max(0, charges - 1);
+    window.DungeonOnlineV3?.onElixirUsed?.({
+      elixirId: elixir.id,
+      charges: state.elixirLoadout.charges
+    });`
+  ],
+  [
+`    startRanked(directive, publicState) {`,
+`    startRanked(directive, publicState, options = {}) {
+      if (options.newCampaign === true) resetMetaProgressForFreshStart();`
+  ],
+  [
+`    returnToPractice() {
+      state.onlineV3Ranked = false;`,
+`    returnToPractice() {
+      state.onlineV3TestBotUnlocked = false;
+      state.onlineV3Ranked = false;`
+  ],
   [
 `      window.DungeonOnlineV3?.onExtraction?.(forced ? "emergency" : "normal");`,
 `      window.DungeonOnlineV3?.onExtraction?.(forced && !state.roomCleared ? "emergency" : "normal");`
@@ -633,7 +697,12 @@ const productionGameReplacements = [
     const mutator = MUTATORS[index];
     if (!mutator) return;
     if (state.onlineV3Ranked && state.phase === "camp") {
-      pushLog("Ranked mutators are fixed by the canonical run profile.", "bad");
+      if (state.activeMutators[mutator.id]) {
+        pushLog(mutator.name + " cannot be deactivated in Ranked.", "bad");
+        return;
+      }
+      const accepted = window.DungeonOnlineV3?.onCampAction?.({ action: "mutator_add", mutatorId: mutator.id });
+      if (!accepted) pushLog("That Ranked mutator is not currently available.", "bad");
       return;
     }`
   ],
@@ -663,6 +732,7 @@ const productionGameReplacements = [
       state.treasureMapFragments = Math.max(0, Number(campaign.treasureMapFragments) || 0);
       state.forcedNextRoomType = String(campaign.forcedNextRoomType || "");
       syncRankedStartDepthUnlocks(campaign);
+      syncRankedRunModifiers(publicState);
       markUiDirty();`
   ],
   [
@@ -673,6 +743,22 @@ const productionGameReplacements = [
       state.merchantMenuOpen = false;
       state.turnInProgress = true;
       markUiDirty();
+    },
+    async unlockRankedTestBot(password) {
+      if (!state.onlineV3Ranked || window.DUNGEON_ONLINE_TEST_BOT_ENABLED !== true) return false;
+      const expected = String(window.DUNGEON_ONLINE_TEST_BOT_PASSWORD_HASH || "");
+      if (!expected || !window.crypto?.subtle) return false;
+      const bytes = new TextEncoder().encode(String(password || ""));
+      const digest = await window.crypto.subtle.digest("SHA-256", bytes);
+      const actual = "sha256:" + Array.from(new Uint8Array(digest), (value) => value.toString(16).padStart(2, "0")).join("");
+      if (actual !== expected) return false;
+      state.onlineV3TestBotUnlocked = true;
+      state.audioMuted = true;
+      setStorageItem(STORAGE_AUDIO_MUTED, "1");
+      syncBgmWithState(true);
+      pushLog("Observer Bot unlocked for this Ranked test session. Press F10.", "warn");
+      markUiDirty();
+      return true;
     },
     enterRankedCamp(profile, offer) {
       const wasCamp = state.phase === "camp";
@@ -707,6 +793,7 @@ const productionGameReplacements = [
       ).filter(Boolean);
       normalizeRelicInventory();
       const choices = Array.isArray(offer?.choices) ? offer.choices : [];
+      syncRankedRunModifiers({ runModifiers: profile?.runModifiers }, offer);
       const pricedUpgrade = choices.find((choice) => choice?.action === "upgrade");
       const pricedDef = CAMP_UPGRADES.find((entry) => entry.id === pricedUpgrade?.upgradeId);
       const pricedLevel = Math.max(0, Number(pricedUpgrade?.currentLevel) || 0);
@@ -792,7 +879,30 @@ const rankedGoldGameReplacements = [
     }
     state.runMaxDepth = depth;
     state.runGoldEarned = earnedGold;
+    state.highscore = depth;
     return true;
+  }
+
+  function syncRankedRunModifiers(publicState, offer = null) {
+    const activeIds = new Set(
+      (Array.isArray(publicState?.runModifiers?.active) ? publicState.runModifiers.active : [])
+        .map((entry) => String(entry?.modifierId || ""))
+        .filter(Boolean)
+    );
+    const offerChoices = Array.isArray(offer?.choices) ? offer.choices : [];
+    const availableIds = new Set(
+      offerChoices
+        .map((choice) => choice?.publicData || choice)
+        .filter((choice) => choice?.action === "mutator_add")
+        .map((choice) => String(choice.mutatorId || ""))
+        .filter(Boolean)
+    );
+    state.activeMutators = Object.fromEntries(
+      MUTATORS.map((mutator) => [mutator.id, activeIds.has(mutator.id)])
+    );
+    state.unlockedMutators = Object.fromEntries(
+      MUTATORS.map((mutator) => [mutator.id, activeIds.has(mutator.id) || availableIds.has(mutator.id)])
+    );
   }
 
   const state = {`

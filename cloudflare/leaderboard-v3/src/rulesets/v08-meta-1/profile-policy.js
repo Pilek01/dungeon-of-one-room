@@ -2,7 +2,10 @@ import {
   computeRelicBuildDigestV08,
   createEmptyRelicBuildV08
 } from "./relic-policy.js";
-import { createEmptyRunModifierLedgerV08 } from "./run-modifiers.js";
+import {
+  createEmptyRunModifierLedgerV08,
+  projectPublicRunModifiers
+} from "./run-modifiers.js";
 import { normalizeCampaignStateV08 } from "./meta-state.js";
 
 export const PROFILE_POLICY_VERSION = "v08-ranked-profile-1";
@@ -107,6 +110,7 @@ export function publicProfileStateV08(profile) {
     campGold: profile.campGold,
     lives: profile.lives,
     build: structuredClone(profile.build),
+    runModifiers: projectPublicRunModifiers({ runModifiers: profile.runModifiers || createEmptyRunModifierLedgerV08() }),
     campaign: normalizeCampaignStateV08({ campaign: profile.campaign }),
     campSession: profile.campSession
       ? {

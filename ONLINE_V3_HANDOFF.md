@@ -1,5 +1,49 @@
 # Online v3 - Production handoff
 
+## Online Ranked boundary state and test controls repair (2026-08-01)
+
+COMPLETED_LOCALLY; candidate is verified locally and remains a local release
+candidate. No Pages/Worker deploy or push was performed.
+
+- Root cause confirmed: the production bridge did not distinguish a fresh
+  Ranked campaign from Extract -> Camp -> Start Next Run, so the local
+  highscore and chest-derived active effects leaked across campaigns; the
+  Worker also lacked a canonical Camp mutator-add path and an accepted
+  elixir-use ledger for nonterminal death/checkpoint boundaries.
+- A fresh campaign now calls resetMetaProgressForFreshStart() exactly at the
+  new-campaign boundary. Next Run preserves the active campaign state, while
+  the new campaign starts with highscore/depth and chest active effects
+  cleared.
+- Ranked Camp now exposes only a server-issued mutator addition and carries
+  the canonical active modifier projection into the next run/profile.
+- Elixir use is accepted once in the canonical Worker, decremented before a
+  nonterminal life transition, and replay-safe at Extract/checkpoint retry;
+  a 3/5 loadout remains 2/5 after using one elixir and dying.
+- Test music disables BGM only in the headed test harness (SFX remain active).
+  The deployed Observer Bot menu is gated by the build-time
+  DUNGEON_ONLINE_TEST_BOT_PASSWORD hash; with no password it is not exposed.
+- Local candidate ruleset hash is
+  sha256:2ac2eb5499892cc49258c5b674beab846cb41906a5ef86a658d5e90325505a0d.
+  The deployed/retained production hash remains
+  sha256:d784208aad891119b71c52324cea358997ee376313914d5799affa68c8678ff3;
+  the candidate was not promoted.
+- Old test campaigns were intentionally not backfilled or migrated. No D1
+  schema/data migration, history rewrite, push, or deploy was performed.
+
+Verification:
+
+- boundary regressions: 6/6 PASS; score-carry regressions: 14/14 PASS;
+- release/R2/boundary focused set: 20/20 PASS;
+- pages:build: 3109 files; verify:fast: 51/51 PASS;
+- verify:phase: 762/762 PASS;
+- verify:baseline: 3/3 guard tests plus headed smoke PASS;
+- verify:full: 786/786 PASS, including Wrangler/D1 21/21 and headed smoke;
+- headed Ranked lifecycle: PASS (lifecycle, network loss, reload, multi-tab,
+  reward boundary, death presentation, and Camp);
+- source game.js, Classic, Practice, Otter, portal files, combat authority,
+  and protected Vault Guardian WIP remain untouched.
+
+
 ## HD boot renderer synchronization repair (2026-07-31)
 
 DEPLOYED_AND_PRODUCTION_VERIFIED; production now serves this repair from the

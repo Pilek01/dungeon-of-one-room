@@ -1,3 +1,60 @@
+# Online Ranked campaign boundary and test controls repair
+
+## Active status
+
+COMPLETED_LOCALLY; this separate Online-only repair phase is verified. It is explicitly
+independent from the HD Warden portal, HD boot, and Ranked score-carry work.
+The scope is limited to fresh-campaign reset semantics, canonical Ranked
+mutator choices, canonical elixir charge accounting across checkpoints and
+fatal events, and a gated deployed-test Observer Bot path. Music is disabled
+only in the headed test harness and when the gated test bot is unlocked.
+
+Do not modify `game.js`, Classic, Practice gameplay, Otter, combat authority,
+local saves, assets, portal files, D1 schema/data, migrations/backfills, or
+production/deploy configuration outside the explicitly listed test-bot hash
+injection. Do not push or deploy in this phase.
+
+Authorized paths:
+
+- `docs/tasks/CURRENT.md`;
+- `ONLINE_V3_HANDOFF.md`;
+- `progress.md`;
+- `scripts/build-pages-v3.mjs`;
+- `scripts/online-v3-ranked-headed.mjs`;
+- `online-v3/ranked-v3-runtime.js`;
+- `online-v3/ranked-v3-client.js`;
+- `online-v3/ranked-v3-protocol.js`;
+- `cloudflare/leaderboard-v3/src/domain/ruleset-runtime.js`;
+- `cloudflare/leaderboard-v3/src/rulesets/v08-meta-1/camp-policy.js`;
+- `cloudflare/leaderboard-v3/src/rulesets/v08-meta-1/life-policy.js`;
+- `cloudflare/leaderboard-v3/src/rulesets/v08-meta-1/reward-policy.js`;
+- `cloudflare/leaderboard-v3/src/rulesets/v08-meta-1/profile-policy.js`;
+- `cloudflare/leaderboard-v3/src/rulesets/v08-meta-1/run-modifiers.js`;
+- `cloudflare/leaderboard-v3/src/rulesets/v08-meta-1/meta-state.js`;
+- ruleset release/hash/projection files only when required by the repository
+  generator for the above Worker changes;
+- focused Online Ranked regression tests under
+  `cloudflare/leaderboard-v3/test/` and `tests/`.
+
+Required process: add RED regressions before implementation; preserve old
+profiles without new fields; use `resetMetaProgressForFreshStart()` only at a
+new campaign boundary through the production bridge; keep Extract -> Camp ->
+Start Next Run state intact; account elixir use once and idempotently in the
+canonical Worker; expose only server-issued mutator additions; gate the
+Observer Bot with a deploy-time password hash and never re-enable global
+debug cheats. Verify focused RED/GREEN, syntax, Pages build, headed Ranked
+flow with music muted, all repository verification gates required by
+`AGENTS.md`, and `git diff --check`. Create one precise local commit. Deploy
+requires a separate explicit authorization after verification.
+
+Completion evidence: focused boundary 6/6 and release/R2/boundary 20/20;
+verify:fast 51/51; verify:phase 762/762; verify:baseline 3/3 plus headed
+smoke; verify:full 786/786 including Wrangler/D1 21/21; headed Ranked lifecycle
+PASS; Pages build 3109 files. Candidate hash is
+sha256:2ac2eb5499892cc49258c5b674beab846cb41906a5ef86a658d5e90325505a0d;
+production hash sha256:d784208aad891119b71c52324cea358997ee376313914d5799affa68c8678ff3
+remains retained. No deploy, push, D1 migration, or backfill occurred.
+
 # HD boot renderer synchronization repair
 
 ## Active status

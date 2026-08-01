@@ -83,7 +83,18 @@ function claimDefinitions(roomType) {
     stackingPolicy: "bounded-by-canonical-potions",
     duplicatePolicy: "REJECT"
   };
-  if (maximumEnemies <= 0) return [potionUse];
+  const elixirUse = {
+    claimType: "resource",
+    claimId: "elixir-use",
+    maximumCount: 5,
+    maximumAmount: null,
+    unitPolicyRef: "local-elixir-consumption",
+    requiredRoomType: roomType,
+    requiredBuildEffect: null,
+    stackingPolicy: "bounded-by-canonical-elixir-charges",
+    duplicatePolicy: "REJECT"
+  };
+  if (maximumEnemies <= 0) return [potionUse, elixirUse];
   const definitions = [];
   for (const enemyType of Object.keys(rewardBounds.enemyClaims.baseGoldByEnemyType).sort()) {
     const bossOnly = enemyType === "warden";
@@ -124,7 +135,7 @@ function claimDefinitions(roomType) {
     stackingPolicy: "shares-room-enemy-budget",
     duplicatePolicy: "REJECT"
   });
-  definitions.push(potionUse);
+  definitions.push(potionUse, elixirUse);
   return definitions;
 }
 
@@ -496,6 +507,19 @@ function calculateClaimAmount(state, envelope, claim, slotById) {
   }
   if (claim.count > definition.maximumCount) throw new TypeError("REWARD_CLAIM_COUNT_LIMIT");
   if (claim.claimType === "resource") {
+    if (claim.claimId === "elixir-use") {
+      const elixirId = String(claim.localEvidence?.elixirId || "");
+      const loadout = Array.isArray(state.build.elixirs) ? state.build.elixirs : [];
+      if (!elixirId || loadout.length !== 1 || loadout[0]?.elixirId !== elixirId) {
+        throw new TypeError("REWARD_CLAIM_ELIXIR_USE_INVALID");
+      }
+      const charges = loadout[0].charges;
+      if (!Number.isSafeInteger(charges) || claim.count > charges) {
+        throw new TypeError("REWARD_CLAIM_ELIXIR_USE_LIMIT");
+      }
+      loadout[0].charges = charges - claim.count;
+      return { amount: 0, authority: "BOUNDED_CLIENT_ATTESTED" };
+    }
     if (claim.claimId !== "potion-use") throw new TypeError("REWARD_CLAIM_ID_UNKNOWN");
     const potions = Math.max(0, Number(state.build.resources?.potions) || 0);
     if (claim.count > potions) throw new TypeError("REWARD_CLAIM_POTION_USE_LIMIT");

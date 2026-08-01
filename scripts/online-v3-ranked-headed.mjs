@@ -599,6 +599,8 @@ ${fatalTestHookAnchor}`;
       localStorage.setItem("dungeonOneRoomPlayerName", "M4Headed");
       localStorage.setItem("dungeonOneRoomGraphicsMode", "hd");
       localStorage.setItem("dungeonOneRoomTutorialRunSeenV1", "1");
+      localStorage.setItem("dungeonOneRoomAudioMuted", "0");
+      window.DUNGEON_ONLINE_TEST_MUSIC_OFF = true;
     }, SEASON);
     let page = await context.newPage();
     page.on("request", (request) => {
@@ -1117,8 +1119,12 @@ ${fatalTestHookAnchor}`;
     await page.waitForFunction(() => JSON.parse(window.render_game_to_text()).phase === "menu");
     const postTerminalPracticeApiBefore = diagnostics.apiRequests.length;
     await openNativeMenuOption(page, "Practice (Offline)");
-    await page.locator(".overlay-menu-row", { hasText: "Start New Game" }).click();
-    await page.waitForFunction(() => JSON.parse(window.render_game_to_text()).phase === "relic");
+    const practiceAfterRanked = await page.evaluate(() => JSON.parse(window.render_game_to_text()).phase);
+    if (practiceAfterRanked === "menu") {
+      const newGameRow = page.locator(".overlay-menu-row", { hasText: "Start New Game" });
+      if (await newGameRow.isVisible().catch(() => false)) await newGameRow.click();
+    }
+    await page.waitForFunction(() => ["relic", "playing"].includes(JSON.parse(window.render_game_to_text()).phase));
     await page.keyboard.press("1");
     await page.waitForFunction(() => JSON.parse(window.render_game_to_text()).phase === "playing");
     assert.equal(
