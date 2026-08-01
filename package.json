@@ -7,7 +7,11 @@
     "verify:guard": "node scripts/verify-online-v3.mjs guard",
     "verify:fast": "node scripts/verify-online-v3.mjs guard",
     "verify:phase": "node scripts/verify-online-v3.mjs phase",
+    "verify:ui-current": "node scripts/verify-online-v3.mjs ui-current",
     "verify:baseline": "node scripts/verify-online-v3.mjs baseline",
-    "verify:full": "node scripts/verify-online-v3.mjs full"
+    "verify:baseline-committed": "node scripts/verify-online-v3.mjs baseline",
+    "verify:ranked-headed": "node scripts/verify-online-v3.mjs ranked-headed",
+    "verify:full": "node scripts/verify-online-v3.mjs full",
+    "verify:release": "node scripts/verify-online-v3.mjs full"
   }
 }

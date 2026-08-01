@@ -57,6 +57,27 @@ password it is not exposed.
 These totals are point-in-time release evidence. They do not require rerunning
 the same suites for unrelated small changes.
 
+## Browser QA workflow
+
+Package B separates fast, current-tree browser checks from committed release
+coverage without reducing release scope:
+
+- `verify:ui-current -- --scenario boot|hd|save` runs one affected baseline
+  surface from the current working tree;
+- `verify:ranked-headed -- --scenario recovery|lifecycle|camp` runs one
+  affected Ranked browser surface from the current working tree;
+- `verify:baseline` runs the complete protected baseline from committed
+  `HEAD`, without Ranked;
+- `verify:full` / `verify:release` still runs phase checks, the complete
+  committed baseline, complete committed Ranked lifecycle, and Wrangler/D1.
+
+Ranked QA uses the marked `output/pages-test-dist` bundle. The deployable
+`output/pages-dist` contains no QA marker or test-only boot-readiness hook.
+Passing receipts are scenario-specific and reusable when their fingerprint is
+unchanged. The latest fresh full headed timings were 24.5 seconds for
+the baseline and 71.0 seconds for Ranked, with zero unexpected console/page
+errors. Package C has not started.
+
 ## Protected working tree
 
 At this snapshot, preserve without staging or editing:

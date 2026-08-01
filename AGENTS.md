@@ -68,14 +68,22 @@ Verification must be proportional to the changed behavior and paths.
   replace the focused test for changed behavior.
 - Run `npm run verify:phase` once before completion only for Worker, ruleset,
   protocol, shared Ranked runtime, or cross-subsystem changes.
-- Run `npm run verify:baseline` only when protected game, UI, loading,
+- For a visible current-working-tree change, run exactly the affected browser
+  scenario: `npm run verify:ui-current -- --scenario boot|hd|save`.
+- Run `npm run verify:baseline` (alias
+  `verify:baseline-committed`) only when protected game, UI, loading,
   renderer, build integration, or baseline-sensitive paths changed, or for a
-  milestone/release. Its headed smoke tests committed `HEAD`, not uncommitted
-  working-tree changes.
-- Run `npm run verify:full` only for a milestone, D1/Wrangler change, staging,
-  release, deployment, or an explicit current-prompt requirement.
-- `verify:full` already includes the phase and baseline checks. When full is
-  required, it replaces separate `verify:phase` and `verify:baseline` runs.
+  milestone/release. It tests the complete baseline scenario from committed
+  `HEAD`; it no longer includes the Ranked lifecycle.
+- For Ranked browser behavior, run exactly the affected current-tree scenario:
+  `npm run verify:ranked-headed -- --scenario recovery|lifecycle|camp`.
+  Use `--scenario all` only for a milestone or release.
+- Run `npm run verify:full` (alias `verify:release`) only for a milestone,
+  D1/Wrangler change, staging, release, deployment, or an explicit
+  current-prompt requirement.
+- `verify:full` includes phase, committed baseline, the complete committed
+  Ranked lifecycle, and Wrangler/D1 checks. When full is required, it replaces
+  separate lower-level runs.
 - Do not rerun a passing command unless files relevant to that command changed
   after it ran or the user explicitly requests a rerun.
 - Verification receipts reuse an identical PASS. Use `--force` only when the

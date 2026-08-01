@@ -5,11 +5,21 @@ import { fileURLToPath } from "node:url";
 import { createHash } from "node:crypto";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const output = path.join(root, "output", "pages-dist");
+const targetIndex = process.argv.indexOf("--target");
+const target = targetIndex >= 0 ? process.argv[targetIndex + 1] : "release";
+const outputName = target === "release"
+  ? "pages-dist"
+  : target === "test"
+    ? "pages-test-dist"
+    : "";
+if (!outputName || (targetIndex >= 0 && !process.argv[targetIndex + 1])) {
+  throw new Error("Usage: node scripts/build-pages-v3.mjs [--target release|test]");
+}
+const output = path.join(root, "output", outputName);
 const outputRoot = path.join(root, "output") + path.sep;
 
-if (!output.startsWith(outputRoot) || path.basename(output) !== "pages-dist") {
-  throw new Error("Refusing to build Pages outside output/pages-dist.");
+if (!output.startsWith(outputRoot) || path.basename(output) !== outputName) {
+  throw new Error(`Refusing to build Pages outside output/${outputName}.`);
 }
 
 await rm(output, { recursive: true, force: true });
@@ -1358,4 +1368,12 @@ async function countFiles(directory) {
   return count;
 }
 
-console.log(`Online v3 Pages bundle ready: ${await countFiles(output)} files`);
+if (target === "test") {
+  await writeFile(
+    path.join(output, "QA_ONLY_BUILD.txt"),
+    "QA-only instrumented build. Never deploy this directory.\n",
+    "utf8"
+  );
+}
+
+console.log(`Online v3 ${target} Pages bundle ready: ${await countFiles(output)} files`);

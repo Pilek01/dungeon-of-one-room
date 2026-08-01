@@ -14,10 +14,31 @@ const require = createRequire(import.meta.url);
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const WORKER_ROOT = path.join(ROOT, "cloudflare", "leaderboard-v3");
 const OUTPUT_ROOT = path.join(ROOT, "output");
-const GAME_ROOT = path.join(OUTPUT_ROOT, "pages-dist");
-const ARTIFACT_ROOT = path.join(OUTPUT_ROOT, "online-v3-m4-ranked-headed");
+const GAME_ROOT = path.join(OUTPUT_ROOT, "pages-test-dist");
+
+function optionValue(name) {
+  const index = process.argv.indexOf(name);
+  return index >= 0 ? process.argv[index + 1] : "";
+}
+
+const HAS_SCENARIO_OPTION = process.argv.includes("--scenario");
+const SCENARIO = HAS_SCENARIO_OPTION ? optionValue("--scenario") : "all";
+const SCENARIOS = new Set(["all", "recovery", "lifecycle", "camp"]);
+if (!SCENARIOS.has(SCENARIO)) {
+  throw new Error(
+    "Usage: node scripts/online-v3-ranked-headed.mjs [--headless] " +
+    "[--scenario all|recovery|lifecycle|camp]"
+  );
+}
+const BASE_ARTIFACT_ROOT = path.join(OUTPUT_ROOT, "online-v3-ranked-headed");
+const ARTIFACT_ROOT = SCENARIO === "all"
+  ? BASE_ARTIFACT_ROOT
+  : path.join(BASE_ARTIFACT_ROOT, SCENARIO);
 const PERSIST_ROOT = path.join(ARTIFACT_ROOT, "state");
 const XDG_ROOT = path.join(ARTIFACT_ROOT, "xdg");
+const RUN_RECOVERY = SCENARIO === "all" || SCENARIO === "recovery";
+const RUN_LIFECYCLE = SCENARIO === "all" || SCENARIO === "lifecycle";
+const RUN_CAMP = SCENARIO === "all" || SCENARIO === "camp";
 const CONFIG = path.join(WORKER_ROOT, "wrangler.local.jsonc");
 const WORKER_NODE_MODULES = process.env.DUNGEON_ONLINE_V3_WORKER_NODE_MODULES ||
   path.join(WORKER_ROOT, "node_modules");
@@ -208,19 +229,38 @@ async function closeServer(server) {
   await new Promise((resolve) => server.close(resolve));
 }
 
+async function waitForBootAdvance(page) {
+  await page.waitForFunction(() => {
+    let phase = "";
+    try {
+      phase = JSON.parse(window.render_game_to_text?.() || "{}").phase || "";
+    } catch {
+      // The render hook can be between boot states for one frame.
+    }
+    const boot = document.querySelector("#bootScreen");
+    const loading = document.querySelector(".boot-loading");
+    return phase === "menu" ||
+      Boolean(boot?.classList.contains("hidden")) ||
+      Boolean(loading?.getClientRects().length);
+  });
+}
+
 async function dismissBoot(page) {
   const boot = page.locator("#bootScreen");
   if (!await boot.evaluate((element) => element.classList.contains("hidden"))) {
     await page.keyboard.press("Enter");
-    await page.locator(".boot-loading").waitFor({ state: "visible" });
-    await page.keyboard.press("Enter");
-    await page.screenshot({
-      path: path.join(ARTIFACT_ROOT, "ranked-boot-loading.png"),
-      fullPage: true
-    });
+    await waitForBootAdvance(page);
+    const loading = page.locator(".boot-loading");
+    if (await loading.isVisible().catch(() => false)) {
+      await page.screenshot({
+        path: path.join(ARTIFACT_ROOT, "ranked-boot-loading.png"),
+        fullPage: true
+      });
+      await page.keyboard.press("Enter");
+    }
   }
   await page.waitForFunction(() => document.querySelector("#bootScreen")?.classList.contains("hidden"));
-  await page.waitForTimeout(300);
+  await page.waitForFunction(() => window.__DUNGEON_TEST_BOOT_INPUT_READY?.() === true);
   const readiness = await page.evaluate(() => ({
     phase: (() => {
       try { return JSON.parse(window.render_game_to_text?.() || "{}").phase || ""; }
@@ -246,6 +286,14 @@ async function openNativeMenuOption(page, title) {
 async function openRankedChoice(page, choice) {
   await openNativeMenuOption(page, "Ranked (Online)");
   if (choice === "Start New Ranked") {
+    await page.waitForFunction((buttonName) => {
+      const session = window.DungeonOnlineV3?.getSessionState?.() || "IDLE";
+      const relicVisible = [...document.querySelectorAll(".ranked-v3-choice-relic")]
+        .some((element) => element.getClientRects().length > 0);
+      const buttonVisible = [...document.querySelectorAll("button")]
+        .some((element) => element.getClientRects().length > 0 && element.textContent?.trim() === buttonName);
+      return session !== "IDLE" || relicVisible || buttonVisible;
+    }, choice, { timeout: 15_000 });
     const savedRunChoice = page.getByRole("button", { name: choice, exact: true });
     if (await savedRunChoice.isVisible().catch(() => false)) {
       await savedRunChoice.click();
@@ -405,6 +453,43 @@ async function chooseRelicWithoutFatalPrevention(page) {
   await page.locator(".ranked-v3-choice-relic").nth(choiceIndex).click();
 }
 
+async function waitForStartingRelic(page, label) {
+  let timedOut = false;
+  try {
+    await page.waitForFunction(() => {
+      const relic = [...document.querySelectorAll(".ranked-v3-choice-relic")]
+        .some((element) => element.getClientRects().length > 0);
+      const overlay = document.querySelector(".ranked-v3-overlay")?.textContent || "";
+      return relic || /unavailable|reconnect|required|ended/iu.test(overlay);
+    }, null, { timeout: 30_000 });
+  } catch (error) {
+    if (error?.name !== "TimeoutError") throw error;
+    timedOut = true;
+  }
+  const audit = await page.evaluate(() => ({
+    session: window.DungeonOnlineV3?.getSessionState?.() || "",
+    snapshot: window.DungeonOnlineV3?.getSnapshot?.() || null,
+    overlay: document.querySelector(".ranked-v3-overlay")?.textContent || "",
+    relicVisible: [...document.querySelectorAll(".ranked-v3-choice-relic")]
+      .some((element) => element.getClientRects().length > 0),
+    game: JSON.parse(window.render_game_to_text?.() || "{}")
+  }));
+  if (!audit.relicVisible) {
+    audit.timedOut = timedOut;
+    await fsPromises.writeFile(
+      path.join(ARTIFACT_ROOT, `${label}-diagnostic.json`),
+      `${JSON.stringify(audit, null, 2)}\n`,
+      "utf8"
+    );
+    await page.screenshot({
+      path: path.join(ARTIFACT_ROOT, `${label}-diagnostic.png`),
+      fullPage: true
+    });
+    throw new Error(`${label} did not reach the starting relic: ${JSON.stringify(audit)}`);
+  }
+  return audit;
+}
+
 async function sessionState(page, expected, diagnostics = null) {
   try {
     await page.waitForFunction(
@@ -507,12 +592,21 @@ async function main() {
     PERSIST_ROOT
   ]);
 
-  await execFileAsync(process.execPath, [path.join(ROOT, "scripts", "build-pages-v3.mjs")], {
+  await execFileAsync(process.execPath, [
+    path.join(ROOT, "scripts", "build-pages-v3.mjs"),
+    "--target",
+    "test"
+  ], {
     cwd: ROOT,
     env: environment(),
     maxBuffer: 10 * 1024 * 1024,
     windowsHide: true
   });
+  assert.equal(
+    fs.existsSync(path.join(GAME_ROOT, "QA_ONLY_BUILD.txt")),
+    true,
+    "Ranked headed QA must use the isolated QA-only Pages bundle"
+  );
   const rulesetManifest = JSON.parse(await fsPromises.readFile(
     path.join(WORKER_ROOT, "src", "rulesets", "v08-meta-1", "data", "ruleset-manifest.json"),
     "utf8"
@@ -544,7 +638,9 @@ async function main() {
   const headedGame = await fsPromises.readFile(headedGamePath, "utf8");
   const fatalTestHookAnchor = "  window.render_game_to_text = renderGameToText;";
   assert(headedGame.includes(fatalTestHookAnchor));
-  const fatalTestHook = `  window.__DUNGEON_TEST_TRIGGER_FATAL = (reason = "Headed fatal event") => {
+  const fatalTestHook = `  window.__DUNGEON_TEST_BOOT_INPUT_READY = () =>
+    !bootInputLocked && performance.now() >= bootInputUnlockAt;
+  window.__DUNGEON_TEST_TRIGGER_FATAL = (reason = "Headed fatal event") => {
     if (!canUseDebugCheats() || state.phase !== "playing") return false;
     state.player.hp = 0;
     gameOver(String(reason || "Headed fatal event"));
@@ -631,6 +727,7 @@ ${fatalTestHookAnchor}`;
     });
     page.on("pageerror", (error) => diagnostics.pageErrors.push(String(error?.stack || error)));
 
+    let runId = "";
     await page.goto(`${proxy.baseUrl}/`, { waitUntil: "domcontentloaded" });
     await page.waitForFunction(() => typeof window.render_game_to_text === "function");
     await dismissBoot(page);
@@ -644,6 +741,7 @@ ${fatalTestHookAnchor}`;
       fullPage: true
     });
 
+    if (RUN_RECOVERY) {
     const storagePressure = await seedRankedStoragePressure(page);
     assert.equal(storagePressure.errorName, "QuotaExceededError", JSON.stringify(storagePressure));
     assert.equal(storagePressure.errorCode, 22, JSON.stringify(storagePressure));
@@ -674,7 +772,7 @@ ${fatalTestHookAnchor}`;
     const staleProfile = await seedStaleRankedProfile(page);
     const staleErrorsBefore = diagnostics.apiErrors.length;
     await openRankedChoice(page, "Start New Ranked");
-    await page.locator(".ranked-v3-choice-relic").first().waitFor({ state: "visible" });
+    await waitForStartingRelic(page, "stale-profile");
     const repairedProfile = await page.evaluate(() => (
       window.DungeonRankedV3Storage.createStore(localStorage).loadProfile()
     ));
@@ -758,9 +856,20 @@ ${fatalTestHookAnchor}`;
     await openNativeMenuOption(page, "Practice (Offline)");
     await page.waitForFunction(() => JSON.parse(window.render_game_to_text()).phase === "relic");
     await page.keyboard.press("1");
-    await page.waitForFunction(() => JSON.parse(window.render_game_to_text()).phase === "playing");
+    await page.waitForFunction(() => {
+      const game = JSON.parse(window.render_game_to_text());
+      const overlay = document.querySelector("#screenOverlay");
+      return game.phase === "playing" && !overlay?.getClientRects().length;
+    });
     await page.keyboard.press("Escape");
-    const pauseMenuText = await page.locator(".overlay-menu").innerText();
+    await page.waitForFunction(() => {
+      const game = JSON.parse(window.render_game_to_text());
+      const menu = document.querySelector("#screenOverlay .overlay-menu");
+      return game.phase === "menu" &&
+        Boolean(menu?.getClientRects().length) &&
+        /Main Menu[\s\S]*Continue/u.test(menu.textContent || "");
+    });
+    const pauseMenuText = await page.locator("#screenOverlay .overlay-menu:visible").innerText();
     assert.match(pauseMenuText, /Main Menu[\s\S]*Continue/u);
     assert.doesNotMatch(pauseMenuText, /Practice \(Offline\)/u);
     await page.screenshot({
@@ -775,7 +884,9 @@ ${fatalTestHookAnchor}`;
     assert.equal(diagnostics.apiRequests.length, practiceApiBefore, "Practice emitted an Online v3 API request");
     await page.keyboard.press("Escape");
     await openNativeMenuOption(page, "Main Menu");
+    }
 
+    if (RUN_LIFECYCLE) {
     await openRankedChoice(page, "Start New Ranked");
     await page.locator(".ranked-v3-choice-relic").first().waitFor({ state: "visible" });
     assert.equal(await page.locator(".ranked-v3-entry:visible").count(), 0);
@@ -787,7 +898,7 @@ ${fatalTestHookAnchor}`;
     });
     await chooseRelicWithoutFatalPrevention(page);
     await sessionState(page, "ROOM_ACTIVE", diagnostics);
-    const runId = await page.evaluate(() => window.DungeonOnlineV3.getSnapshot().runId);
+    runId = await page.evaluate(() => window.DungeonOnlineV3.getSnapshot().runId);
     assert.match(runId, /^run_[a-f0-9]+$/u);
 
     const requestsBeforeCombatWait = diagnostics.apiRequests.length;
@@ -1153,7 +1264,9 @@ ${fatalTestHookAnchor}`;
       path: path.join(ARTIFACT_ROOT, "ranked-leaderboard-detail.png"),
       fullPage: true
     });
+    }
 
+    if (RUN_CAMP) {
     await page.reload({ waitUntil: "domcontentloaded" });
     await dismissBoot(page);
     await openRankedChoice(page, "Start New Ranked");
@@ -1204,7 +1317,10 @@ ${fatalTestHookAnchor}`;
     releaseCheckpoint();
     await sessionState(page, "FINALIZED");
     await page.unroute("**/api/v3/runs/checkpoint");
-    await page.waitForTimeout(3_000);
+    await page.waitForFunction(() => {
+      const game = JSON.parse(window.render_game_to_text());
+      return game.phase === "camp" || Boolean(document.querySelector(".camp-revamp"));
+    }, null, { timeout: 15_000 });
     const campAudit = await page.evaluate(() => ({
       game: JSON.parse(window.render_game_to_text()),
       session: window.DungeonOnlineV3.getSessionState(),
@@ -1235,9 +1351,50 @@ ${fatalTestHookAnchor}`;
     const upgradeBefore = await affordableUpgrade.innerText();
     const upgradeRequestsBefore = diagnostics.apiRequests.length;
     await affordableUpgrade.click();
-    await page.waitForTimeout(2_500);
+    let upgradeWaitTimedOut = false;
+    try {
+      await page.waitForFunction((before) => {
+        const row = [...document.querySelectorAll(".camp-revamp-upgrade")]
+          .find((candidate) => candidate.getClientRects().length > 0);
+        const savingVisible = [...document.querySelectorAll(".ranked-v3-overlay")]
+          .some((overlay) =>
+            overlay.getClientRects().length > 0 &&
+            /Saving progress/iu.test(overlay.textContent || "")
+          );
+        return Boolean(row && row.innerText !== before && !savingVisible);
+      }, upgradeBefore, { timeout: 15_000 });
+    } catch (error) {
+      if (error?.name !== "TimeoutError") throw error;
+      upgradeWaitTimedOut = true;
+    }
+    if (upgradeWaitTimedOut) {
+      const diagnostic = await page.evaluate(() => ({
+        game: JSON.parse(window.render_game_to_text()),
+        session: window.DungeonOnlineV3?.getSessionState?.() || "",
+        snapshot: window.DungeonOnlineV3?.getSnapshot?.() || null,
+        overlay: document.querySelector(".ranked-v3-overlay")?.textContent || "",
+        rows: [...document.querySelectorAll(".camp-revamp-upgrade")].map((row) => ({
+          text: row.innerText || "",
+          disabled: row.getAttribute("aria-disabled"),
+          visible: Boolean(row.getClientRects().length)
+        }))
+      }));
+      diagnostic.apiRequests = diagnostics.apiRequests.slice(upgradeRequestsBefore);
+      diagnostic.apiErrors = diagnostics.apiErrors;
+      diagnostic.debugMessages = diagnostics.debugMessages.slice(-20);
+      await fsPromises.writeFile(
+        path.join(ARTIFACT_ROOT, "camp-upgrade-diagnostic.json"),
+        `${JSON.stringify(diagnostic, null, 2)}\n`,
+        "utf8"
+      );
+      await page.screenshot({
+        path: path.join(ARTIFACT_ROOT, "camp-upgrade-diagnostic.png"),
+        fullPage: true
+      });
+      throw new Error(`Camp upgrade did not update: ${JSON.stringify(diagnostic)}`);
+    }
     const upgradeAudit = await page.evaluate(() => {
-      const row = [...document.querySelectorAll('.camp-revamp-upgrade[aria-disabled="false"]')]
+      const row = [...document.querySelectorAll(".camp-revamp-upgrade")]
         .find((candidate) => candidate.getClientRects().length > 0);
       return {
         game: JSON.parse(window.render_game_to_text()),
@@ -1288,7 +1445,15 @@ ${fatalTestHookAnchor}`;
       })
     );
 
-    await page.waitForTimeout(1_000);
+    await page.waitForFunction(() => {
+      const game = JSON.parse(window.render_game_to_text?.() || "{}");
+      const hud = document.querySelector("#hud");
+      const onlineOverlayVisible = [...document.querySelectorAll(".ranked-v3-overlay")]
+        .some((overlay) => overlay.getClientRects().length > 0);
+      return game.phase === "playing" &&
+        Boolean(hud?.getClientRects().length) &&
+        !onlineOverlayVisible;
+    }, null, { timeout: 15_000 });
     const nextRunAudit = await page.evaluate(() => ({
       session: window.DungeonOnlineV3.getSessionState(),
       snapshot: window.DungeonOnlineV3.getSnapshot(),
@@ -1426,6 +1591,7 @@ ${fatalTestHookAnchor}`;
       path: path.join(ARTIFACT_ROOT, "ranked-camp-error-main-menu.png"),
       fullPage: true
     });
+    }
 
     const expectedDroppedResponseErrors = diagnostics.consoleErrors.filter(
       (message) => message === "Failed to load resource: net::ERR_FAILED"
@@ -1447,33 +1613,38 @@ ${fatalTestHookAnchor}`;
         "Failed to load resource: the server responded with a status of 400 (Bad Request)"
       ].includes(message)
     );
-    assert.equal(expectedDroppedResponseErrors.length, 7);
-    assert.equal(expectedEndedRecoveryErrors.length, 1);
+    const expectedDroppedErrors =
+      (RUN_RECOVERY ? 3 : 0) +
+      (RUN_LIFECYCLE ? 1 : 0) +
+      (RUN_CAMP ? 3 : 0);
+    assert.equal(expectedDroppedResponseErrors.length, expectedDroppedErrors);
+    assert.equal(expectedEndedRecoveryErrors.length, RUN_CAMP ? 1 : 0);
     assert.equal(expectedStaleProfileErrors.length, 0);
-    assert.equal(expectedCampStartErrors.length, 1);
+    assert.equal(expectedCampStartErrors.length, RUN_CAMP ? 1 : 0);
     assert.deepEqual(unexpectedConsoleErrors, []);
     assert.deepEqual(diagnostics.pageErrors, []);
     const summary = {
       mode: HEADLESS ? "headless" : "headed",
-      runId,
-      rankedLifecycleScenarios: 1,
-      rewardBoundaryScenarios: 1,
-      wardenPotionCheckpointScenarios: 1,
-      deathPresentationScenarios: 1,
-      networkLossScenarios: 1,
-      reloadRecoveryScenarios: 1,
-      multiTabTakeoverScenarios: 1,
-      campLifecycleScenarios: 1,
-      nextRunProfileScenarios: 1,
-      checkpointExtractionScenarios: 1,
-      campErrorMainMenuScenarios: 1,
-      endedRecoveryRestartScenarios: 1,
-      staleProfileRepairScenarios: 1,
-      storageQuotaRecoveryScenarios: 1,
+      scenario: SCENARIO,
+      runId: runId || null,
+      rankedLifecycleScenarios: RUN_LIFECYCLE ? 1 : 0,
+      rewardBoundaryScenarios: RUN_LIFECYCLE ? 1 : 0,
+      wardenPotionCheckpointScenarios: RUN_LIFECYCLE ? 1 : 0,
+      deathPresentationScenarios: RUN_LIFECYCLE ? 1 : 0,
+      networkLossScenarios: RUN_LIFECYCLE ? 1 : 0,
+      reloadRecoveryScenarios: RUN_LIFECYCLE ? 1 : 0,
+      multiTabTakeoverScenarios: RUN_LIFECYCLE ? 1 : 0,
+      campLifecycleScenarios: RUN_CAMP ? 1 : 0,
+      nextRunProfileScenarios: RUN_CAMP ? 1 : 0,
+      checkpointExtractionScenarios: RUN_CAMP ? 1 : 0,
+      campErrorMainMenuScenarios: RUN_CAMP ? 1 : 0,
+      endedRecoveryRestartScenarios: RUN_CAMP ? 1 : 0,
+      staleProfileRepairScenarios: RUN_RECOVERY ? 1 : 0,
+      storageQuotaRecoveryScenarios: RUN_RECOVERY ? 1 : 0,
       activeCombatApiRequests: 0,
       finalizeAttempts: diagnostics.finalizeOperationIds.length,
       uniqueFinalizeOperationIds: new Set(diagnostics.finalizeOperationIds).size,
-      leaderboardRowsForRun: await d1Count(runId),
+      leaderboardRowsForRun: RUN_LIFECYCLE ? await d1Count(runId) : null,
       apiRequests: diagnostics.apiRequests,
       consoleErrors: unexpectedConsoleErrors.length,
       expectedDroppedResponseConsoleErrors: expectedDroppedResponseErrors.length,
@@ -1488,7 +1659,7 @@ ${fatalTestHookAnchor}`;
       "utf8"
     );
     process.stdout.write(
-      `Online v3 Ranked headed lifecycle PASS (${summary.rankedLifecycleScenarios} lifecycle, ` +
+      `Online v3 Ranked headed PASS (scenario ${SCENARIO}; ${summary.rankedLifecycleScenarios} lifecycle, ` +
       `${summary.networkLossScenarios} network-loss, ${summary.reloadRecoveryScenarios} reload, ` +
       `${summary.multiTabTakeoverScenarios} multi-tab, ${summary.rewardBoundaryScenarios} reward-boundary, ` +
       `${summary.deathPresentationScenarios} death-presentation, ${summary.campLifecycleScenarios} Camp)\n`

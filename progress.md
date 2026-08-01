@@ -1232,3 +1232,26 @@ Updated next good targets
 - Stable and immutable Pages URLs returned availability `200`, `productionActivated=true`, and active hash `sha256:d784208aad891119b71c52324cea358997ee376313914d5799affa68c8678ff3`.
 - Fresh headed public-browser verification found HD canvas mode, hidden app during boot, hidden Classic logo, visible HD brand, and no page errors.
 - No D1 migration, historical backfill, push, or unrelated protected-WIP change was performed.
+
+## 2026-08-02 - Package B headed QA optimization
+
+- Original prompt for this package: `Pakiet B - zdecydowanie tak`.
+- Completed the browser-QA split: baseline and Ranked now have independent
+  focused current-tree scenarios, while release verification retains both
+  complete committed-HEAD browser runs.
+- Added `boot|hd|save` baseline scenarios and `recovery|lifecycle|camp` Ranked
+  scenarios. Avoidable timeouts now wait for observable UI/runtime state;
+  short negative-observation windows remain where absence of network activity
+  is the behavior under test.
+- Ranked QA builds only `output/pages-test-dist`, marked `QA_ONLY_BUILD.txt`.
+  The normal 3109-file release output contains neither that marker nor the
+  QA-only boot-readiness hook.
+- Baseline reports no longer repeat all protected WIP paths: ordinary changes
+  remain explicit, while Vault and `.wrangler` entries are counted. The
+  dedicated compact status command remains the fingerprint authority.
+- Fresh full headed results: baseline 24.5 s and Ranked 71.0 s. Both passed
+  with zero unexpected console or page errors; the focused scenario entry
+  points also passed during implementation. Representative boot, pause, Camp,
+  next-run, and Final Defeat screenshots were inspected.
+- No game, Worker, D1, schema, ruleset, production, deployment, or protected
+  Vault Guardian change occurred. Package C was not started.

@@ -8,10 +8,25 @@ import { fileURLToPath } from "node:url";
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const WORKER = path.join(ROOT, "cloudflare", "leaderboard-v3");
 const OUTPUT_ROOT = path.join(ROOT, "output", "verification");
+function optionValue(name) {
+  const index = process.argv.indexOf(name);
+  return index >= 0 ? process.argv[index + 1] : "";
+}
+
 const REQUESTED_MODE = process.argv[2];
-const MODE = REQUESTED_MODE === "fast" ? "guard" : REQUESTED_MODE;
+const MODE = REQUESTED_MODE === "fast"
+  ? "guard"
+  : REQUESTED_MODE === "release"
+    ? "full"
+    : REQUESTED_MODE;
 const FORCE = process.argv.includes("--force");
-const MODES = new Set(["guard", "phase", "baseline", "full"]);
+const MODES = new Set(["guard", "phase", "ui-current", "baseline", "ranked-headed", "full"]);
+const SCENARIOS_BY_MODE = Object.freeze({
+  "ui-current": new Set(["all", "boot", "hd", "save"]),
+  "ranked-headed": new Set(["all", "recovery", "lifecycle", "camp"])
+});
+const HAS_SCENARIO_OPTION = process.argv.includes("--scenario");
+const SCENARIO = HAS_SCENARIO_OPTION ? optionValue("--scenario") : "all";
 const RECEIPT_SCHEMA = 1;
 const NPM_CLI = process.env.npm_execpath || path.join(path.dirname(process.execPath), "node_modules", "npm", "bin", "npm-cli.js");
 const SAFE_ROOT = ROOT.replaceAll("\\", "/");
@@ -22,7 +37,19 @@ const CORE_FAST_TESTS = Object.freeze([
 ]);
 
 if (!MODES.has(MODE)) {
-  console.error("Usage: node scripts/verify-online-v3.mjs <guard|fast|phase|baseline|full> [--force]");
+  console.error(
+    "Usage: node scripts/verify-online-v3.mjs " +
+    "<guard|fast|phase|ui-current|baseline|ranked-headed|full|release> " +
+    "[--scenario <name>] [--force]"
+  );
+  process.exit(2);
+}
+if (SCENARIOS_BY_MODE[MODE] && !SCENARIOS_BY_MODE[MODE].has(SCENARIO)) {
+  console.error(`Unsupported ${MODE} scenario: ${SCENARIO}`);
+  process.exit(2);
+}
+if (!SCENARIOS_BY_MODE[MODE] && HAS_SCENARIO_OPTION) {
+  console.error(`verify:${MODE} does not accept --scenario`);
   process.exit(2);
 }
 
@@ -124,6 +151,7 @@ async function verificationInput() {
   const hash = createHash("sha256");
   const environment = {
     mode: MODE,
+    scenario: SCENARIOS_BY_MODE[MODE] ? SCENARIO : null,
     node: process.version,
     platform: process.platform,
     arch: process.arch,
@@ -152,6 +180,7 @@ async function verificationInput() {
   return {
     schema: RECEIPT_SCHEMA,
     mode: MODE,
+    scenario: SCENARIOS_BY_MODE[MODE] ? SCENARIO : null,
     head: headOutput.trim(),
     branch: branchOutput.trim() || "(detached)",
     dirtyEntries: nulEntries(statusOutput).length,
@@ -164,7 +193,12 @@ async function verificationInput() {
 }
 
 function receiptPathFor(mode) {
-  return path.join(OUTPUT_ROOT, `receipt-${mode}.json`);
+  const scenarioSuffix = SCENARIOS_BY_MODE[mode] ? `-${SCENARIO}` : "";
+  return path.join(OUTPUT_ROOT, `receipt-${mode}${scenarioSuffix}.json`);
+}
+
+function modeLabel() {
+  return SCENARIOS_BY_MODE[MODE] ? `${MODE}:${SCENARIO}` : MODE;
 }
 
 async function reusableReceipt(input) {
@@ -266,11 +300,12 @@ async function guardTests() {
   );
 }
 
-async function cleanBaselineSmoke() {
+async function cleanCommittedBrowser(script, args, display) {
   const tempRoot = path.resolve(os.tmpdir());
-  const checkout = path.join(tempRoot, `dungeon-online-v3-baseline-${process.pid}-${Date.now()}`);
-  if (!checkout.startsWith(`${tempRoot}${path.sep}`) || !path.basename(checkout).startsWith("dungeon-online-v3-baseline-")) {
-    return { code: 1, output: "Unsafe temporary baseline path.\n", display: "clean headed baseline smoke" };
+  const slug = display.replace(/[^a-z0-9]+/giu, "-").replace(/^-|-$/gu, "");
+  const checkout = path.join(tempRoot, `dungeon-online-v3-${slug}-${process.pid}-${Date.now()}`);
+  if (!checkout.startsWith(`${tempRoot}${path.sep}`) || !path.basename(checkout).startsWith("dungeon-online-v3-")) {
+    return { code: 1, output: "Unsafe temporary browser-check path.\n", display };
   }
   const chunks = [];
   const add = await runProcess("git", [
@@ -278,26 +313,18 @@ async function cleanBaselineSmoke() {
     "worktree", "add", "--detach", checkout, "HEAD"
   ]);
   chunks.push(`$ ${add.display}\n${add.output}`);
-  if (add.code !== 0) return { code: add.code, output: chunks.join(""), display: "clean headed baseline smoke" };
+  if (add.code !== 0) return { code: add.code, output: chunks.join(""), display };
 
   let result;
   try {
-    result = await runProcess(process.execPath, ["scripts/online-v3-baseline-smoke.mjs"], { cwd: checkout });
+    result = await runProcess(process.execPath, [script, ...args], {
+      cwd: checkout,
+      env: {
+        ...process.env,
+        DUNGEON_ONLINE_V3_WORKER_NODE_MODULES: path.join(WORKER, "node_modules")
+      }
+    });
     chunks.push(`$ ${result.display}\n${result.output}`);
-    if (result.code === 0) {
-      result = await runProcess(
-        process.execPath,
-        ["scripts/online-v3-ranked-headed.mjs"],
-        {
-          cwd: checkout,
-          env: {
-            ...process.env,
-            DUNGEON_ONLINE_V3_WORKER_NODE_MODULES: path.join(WORKER, "node_modules")
-          }
-        }
-      );
-      chunks.push(`$ ${result.display}\n${result.output}`);
-    }
   } finally {
     const remove = await runProcess("git", [
       "-c", `safe.directory=${SAFE_ROOT}`,
@@ -310,14 +337,39 @@ async function cleanBaselineSmoke() {
   return {
     code: result?.code ?? 1,
     output: chunks.join(""),
-    display: "clean headed baseline smoke"
+    display
   };
 }
+
+const cleanBaselineSmoke = () => cleanCommittedBrowser(
+  "scripts/online-v3-baseline-smoke.mjs",
+  ["--scenario", "all"],
+  "clean committed baseline smoke"
+);
+const cleanRankedHeaded = () => cleanCommittedBrowser(
+  "scripts/online-v3-ranked-headed.mjs",
+  ["--scenario", "all"],
+  "clean committed Ranked lifecycle"
+);
 
 const generator = () => runProcess(process.execPath, ["scripts/generate-online-v3-meta-rules.mjs", "--check"]);
 const diffCheck = () => runProcess("git", ["-c", `safe.directory=${SAFE_ROOT}`, "diff", "--check"]);
 const workerUnit = () => runProcess(process.execPath, [NPM_CLI, "run", "validate:unit"], { cwd: WORKER, display: "npm run validate:unit" });
 const workerE2e = () => runProcess(process.execPath, [NPM_CLI, "run", "test:e2e:local"], { cwd: WORKER, display: "npm run test:e2e:local" });
+const uiCurrent = () => runProcess(
+  process.execPath,
+  ["scripts/online-v3-baseline-smoke.mjs", "--scenario", SCENARIO]
+);
+const rankedHeadedCurrent = () => runProcess(
+  process.execPath,
+  ["scripts/online-v3-ranked-headed.mjs", "--scenario", SCENARIO],
+  {
+    env: {
+      ...process.env,
+      DUNGEON_ONLINE_V3_WORKER_NODE_MODULES: path.join(WORKER, "node_modules")
+    }
+  }
+);
 const protectedGuard = () => runProcess(
   process.execPath,
   ["--test", "--test-concurrency=1", "test/baseline-guard.test.js"],
@@ -337,9 +389,17 @@ const actions = {
     ["changed JavaScript syntax", changedJavaScriptCheck],
     ["whitespace diff", diffCheck]
   ],
+  "ui-current": [
+    ["current working-tree browser scenario", uiCurrent],
+    ["whitespace diff", diffCheck]
+  ],
   baseline: [
     ["protected baseline guard", protectedGuard],
-    ["headed game baseline smoke", cleanBaselineSmoke],
+    ["clean committed game baseline", cleanBaselineSmoke],
+    ["whitespace diff", diffCheck]
+  ],
+  "ranked-headed": [
+    ["current working-tree Ranked browser scenario", rankedHeadedCurrent],
     ["whitespace diff", diffCheck]
   ],
   full: [
@@ -348,7 +408,8 @@ const actions = {
     ["changed JavaScript syntax", changedJavaScriptCheck],
     ["local Wrangler and D1 E2E", workerE2e],
     ["protected baseline guard", protectedGuard],
-    ["headed game baseline smoke", cleanBaselineSmoke],
+    ["clean committed game baseline", cleanBaselineSmoke],
+    ["clean committed Ranked lifecycle", cleanRankedHeaded],
     ["whitespace diff", diffCheck]
   ]
 };
@@ -359,7 +420,7 @@ const previousReceipt = await reusableReceipt(input);
 if (previousReceipt) {
   const relativeReceipt = path.relative(ROOT, receiptPathFor(MODE)).split(path.sep).join("/");
   console.log(
-    `[REUSED] verify:${MODE} | identical input passed ${previousReceipt.finishedAt} | ` +
+    `[REUSED] verify:${modeLabel()} | identical input passed ${previousReceipt.finishedAt} | ` +
     `${totalsText(previousReceipt.totals)} | ${relativeReceipt} | use --force to rerun`
   );
   process.exit(0);
@@ -371,7 +432,8 @@ const logPath = path.join(OUTPUT_ROOT, `${MODE}-${stamp}.log`);
 const relativeLog = path.relative(ROOT, logPath).replaceAll("\\", "/");
 await fs.writeFile(
   logPath,
-  `Online v3 verification\nmode: ${MODE}\nstarted: ${new Date().toISOString()}\n` +
+  `Online v3 verification\nmode: ${MODE}\n` +
+  `scenario: ${SCENARIOS_BY_MODE[MODE] ? SCENARIO : "n/a"}\nstarted: ${new Date().toISOString()}\n` +
   `head: ${input.head}\nbranch: ${input.branch}\ndirty entries: ${input.dirtyEntries}\n` +
   `node: ${input.node}\nplatform: ${input.platform}\nwrangler: ${input.wranglerVersion}\n` +
   `playwright: ${input.playwrightVersion}\nfingerprint: ${input.fingerprint}\n` +
@@ -420,6 +482,6 @@ const receiptPath = await writeReceipt(input, {
   log: relativeLog
 });
 console.log(
-  `[PASS] verify:${MODE} | ${durationSeconds.toFixed(1)}s | ${totalsText(combined)} | ` +
+  `[PASS] verify:${modeLabel()} | ${durationSeconds.toFixed(1)}s | ${totalsText(combined)} | ` +
   `${relativeLog} | receipt ${path.relative(ROOT, receiptPath).split(path.sep).join("/")}`
 );

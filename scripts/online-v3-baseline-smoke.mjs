@@ -10,12 +10,32 @@ import { fileURLToPath } from "node:url";
 
 const require = createRequire(import.meta.url);
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+function optionValue(name) {
+  const index = process.argv.indexOf(name);
+  return index >= 0 ? process.argv[index + 1] : "";
+}
+
 const HEADLESS = process.argv.includes("--headless");
-const ARTIFACT_ROOT = path.join(
+const HAS_SCENARIO_OPTION = process.argv.includes("--scenario");
+const SCENARIO = HAS_SCENARIO_OPTION ? optionValue("--scenario") : "all";
+const SCENARIOS = new Set(["all", "boot", "hd", "save"]);
+if (!SCENARIOS.has(SCENARIO)) {
+  throw new Error(
+    "Usage: node scripts/online-v3-baseline-smoke.mjs [--headless] " +
+    "[--scenario all|boot|hd|save]"
+  );
+}
+const BASE_ARTIFACT_ROOT = path.join(
   ROOT,
   "output",
   HEADLESS ? "online-v3-phase1-headless" : "online-v3-baseline"
 );
+const ARTIFACT_ROOT = SCENARIO === "all"
+  ? BASE_ARTIFACT_ROOT
+  : path.join(BASE_ARTIFACT_ROOT, SCENARIO);
+const RUN_BOOT = SCENARIO === "all" || SCENARIO === "boot";
+const RUN_HD = SCENARIO === "all" || SCENARIO === "hd";
+const RUN_SAVE = SCENARIO === "all" || SCENARIO === "save";
 const STORAGE_PREFIX = "dungeonOneRoom";
 const RUN_SAVE_KEY = "dungeonOneRoomRunSave";
 const GRAPHICS_KEY = "dungeonOneRoomGraphicsMode";
@@ -75,7 +95,15 @@ async function verifyPhaseGuardrails() {
   const statusLines = gitOutput(["status", "--porcelain", "--untracked-files=all"])
     .split(/\r?\n/u)
     .filter(Boolean);
-  const changedPaths = statusLines.map((line) => line.slice(3).replaceAll("\\", "/"));
+  const allChangedPaths = statusLines.map((line) => line.slice(3).replaceAll("\\", "/"));
+  const protectedVaultPaths = allChangedPaths.filter((relative) => (
+    relative.startsWith("Dungeon-v0.8.1-Vault-Guardian-Codex-Pack/")
+  ));
+  const localWranglerPaths = allChangedPaths.filter((relative) => relative.startsWith(".wrangler/"));
+  const changedPaths = allChangedPaths.filter((relative) => (
+    !relative.startsWith("Dungeon-v0.8.1-Vault-Guardian-Codex-Pack/")
+    && !relative.startsWith(".wrangler/")
+  ));
 
   const endpointPaths = [];
   for (const relative of ONLINE_V3_FILES) {
@@ -133,6 +161,8 @@ async function verifyPhaseGuardrails() {
 
   return {
     changedPaths,
+    protectedVaultPathCount: protectedVaultPaths.length,
+    localWranglerPathCount: localWranglerPaths.length,
     onlineV3Files: ONLINE_V3_FILES.length,
     endpoints: endpointPaths,
     practiceSynchronousNoop: true,
@@ -222,6 +252,22 @@ async function waitForState(page, predicate, label, timeoutMs = 12_000) {
   throw new Error(`Timed out waiting for ${label}. Last state: ${JSON.stringify(lastState)}`);
 }
 
+async function waitForBootAdvance(page) {
+  await page.waitForFunction(() => {
+    let phase = "";
+    try {
+      phase = JSON.parse(window.render_game_to_text?.() || "{}").phase || "";
+    } catch {
+      // The render hook can be between boot states for one frame.
+    }
+    const boot = document.getElementById("bootScreen");
+    const loading = document.querySelector(".boot-loading");
+    return phase === "menu" ||
+      Boolean(boot?.classList.contains("hidden")) ||
+      Boolean(loading?.getClientRects().length);
+  });
+}
+
 async function screenshot(page, name) {
   const outputPath = path.join(ARTIFACT_ROOT, name);
   await page.screenshot({ path: outputPath, fullPage: true });
@@ -309,14 +355,16 @@ async function openScenario(browser, baseUrl, diagnostics, label, scenario, mode
 }
 
 async function dismissBootToMenu(page) {
-  for (let attempt = 0; attempt < 5; attempt += 1) {
-    const current = await readState(page);
-    if (current?.phase === "menu") {
-      await page.waitForFunction(() => document.getElementById("bootScreen")?.classList.contains("hidden"));
-      return current;
+  const current = await readState(page);
+  if (current?.phase !== "menu") {
+    const boot = page.locator("#bootScreen");
+    if (!await boot.evaluate((element) => element.classList.contains("hidden"))) {
+      await page.keyboard.press("Enter");
+      await waitForBootAdvance(page);
+      if (!await boot.evaluate((element) => element.classList.contains("hidden"))) {
+        await page.keyboard.press("Enter");
+      }
     }
-    await page.keyboard.press("Enter");
-    await page.waitForTimeout(180);
   }
   const state = await waitForState(page, (value) => value.phase === "menu", "main menu");
   await page.waitForFunction(() => document.getElementById("bootScreen")?.classList.contains("hidden"));
@@ -361,6 +409,7 @@ function extractStaticReference(gameSource, indexSource) {
 }
 
 async function main() {
+  await fsPromises.rm(ARTIFACT_ROOT, { recursive: true, force: true });
   await fsPromises.mkdir(ARTIFACT_ROOT, { recursive: true });
   const guardrails = await verifyPhaseGuardrails();
   const gameSource = await fsPromises.readFile(path.join(ROOT, "game.js"), "utf8");
@@ -385,6 +434,7 @@ async function main() {
   };
   const results = {
     runnerMode: HEADLESS ? "headless" : "headed",
+    scenario: SCENARIO,
     baseUrl,
     gameVersion: "",
     httpStatus: 0,
@@ -396,6 +446,7 @@ async function main() {
 
   const browser = await chromium.launch({ headless: HEADLESS });
   try {
+    if (RUN_BOOT) {
     const bootContext = await createContext(browser, { seed: false });
     const bootPage = await bootContext.newPage();
     attachDiagnostics(bootPage, diagnostics, "boot");
@@ -408,7 +459,7 @@ async function main() {
     assert.equal(await bootPage.locator("#bootScreen").isVisible(), true);
     results.screenshots.push(await screenshot(bootPage, "01-boot.png"));
     await bootPage.keyboard.press("Enter");
-    await bootPage.waitForTimeout(120);
+    await waitForBootAdvance(bootPage);
     const mutedBefore = await bootPage.evaluate(() => localStorage.getItem("dungeonOneRoomAudioMuted"));
     await bootPage.keyboard.press("m");
     const mutedAfter = await bootPage.evaluate(() => localStorage.getItem("dungeonOneRoomAudioMuted"));
@@ -416,7 +467,9 @@ async function main() {
     assert.notEqual(mutedBefore, mutedAfter, "Audio toggle must persist a changed mute flag");
     results.checks.audioToggle = { before: mutedBefore, after: mutedAfter };
     await bootContext.close();
+    }
 
+    if (RUN_HD) {
     const classic = await openScenario(
       browser,
       baseUrl,
@@ -538,10 +591,12 @@ async function main() {
     results.screenshots.push(await screenshot(observer.page, "06-observer-bot.png"));
     results.checks.observerBot = { enabled: true };
     await observer.page.keyboard.press("F10");
-    await observer.page.waitForTimeout(500);
+    await observer.page.waitForFunction(() => JSON.parse(window.render_game_to_text()).phase === "playing");
     results.checks.observerBot.after = await readState(observer.page);
     await observer.context.close();
+    }
 
+    if (RUN_SAVE) {
     const save = await openScenario(browser, baseUrl, diagnostics, "save", "descent_hd", "hd");
     const savedRaw = await save.page.evaluate((key) => localStorage.getItem(key), RUN_SAVE_KEY);
     assert(savedRaw, "Scenario start must create a Continue snapshot");
@@ -617,6 +672,7 @@ async function main() {
         Object.keys(localStorage).filter((key) => key.startsWith(prefix)).sort(), STORAGE_PREFIX)
     };
     await save.context.close();
+    }
 
     assert.deepEqual(diagnostics.apiRequests, [], "Practice emitted an /api request");
     assert.deepEqual(diagnostics.consoleErrors, [], "Browser console errors detected");
@@ -641,7 +697,7 @@ async function main() {
   await writeJson("baseline-smoke-summary.json", results);
   await fsPromises.rm(path.join(ARTIFACT_ROOT, "baseline-smoke-failure.json"), { force: true });
   process.stdout.write(
-    `Online v3 baseline smoke PASS (${HEADLESS ? "headless" : "headed"})\n` +
+    `Online v3 baseline smoke PASS (${HEADLESS ? "headless" : "headed"}, scenario ${SCENARIO})\n` +
     `Artifacts: ${ARTIFACT_ROOT}\n`
   );
 }
