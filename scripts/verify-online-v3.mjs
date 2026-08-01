@@ -1,4 +1,5 @@
 import { spawn } from "node:child_process";
+import { createHash } from "node:crypto";
 import { promises as fs } from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -7,11 +8,13 @@ import { fileURLToPath } from "node:url";
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const WORKER = path.join(ROOT, "cloudflare", "leaderboard-v3");
 const OUTPUT_ROOT = path.join(ROOT, "output", "verification");
-const MODE = process.argv[2];
-const MODES = new Set(["fast", "phase", "baseline", "full"]);
+const REQUESTED_MODE = process.argv[2];
+const MODE = REQUESTED_MODE === "fast" ? "guard" : REQUESTED_MODE;
+const FORCE = process.argv.includes("--force");
+const MODES = new Set(["guard", "phase", "baseline", "full"]);
+const RECEIPT_SCHEMA = 1;
 const NPM_CLI = process.env.npm_execpath || path.join(path.dirname(process.execPath), "node_modules", "npm", "bin", "npm-cli.js");
 const SAFE_ROOT = ROOT.replaceAll("\\", "/");
-const CURRENT_PHASE_TEST_PREFIX = "m4-";
 const CORE_FAST_TESTS = Object.freeze([
   "test/baseline-guard.test.js",
   "test/ruleset-manifest.test.js",
@@ -19,7 +22,7 @@ const CORE_FAST_TESTS = Object.freeze([
 ]);
 
 if (!MODES.has(MODE)) {
-  console.error("Usage: node scripts/verify-online-v3.mjs <fast|phase|baseline|full>");
+  console.error("Usage: node scripts/verify-online-v3.mjs <guard|fast|phase|baseline|full> [--force]");
   process.exit(2);
 }
 
@@ -57,6 +60,144 @@ async function runProcess(command, args, options = {}) {
     output: chunks.join(""),
     display: options.display || displayCommand(command, args)
   };
+}
+
+async function requiredGitOutput(args) {
+  const result = await runProcess("git", [
+    "-c", `safe.directory=${SAFE_ROOT}`,
+    ...args
+  ]);
+  if (result.code !== 0) {
+    throw new Error(`${result.display} failed:\n${result.output}`);
+  }
+  return result.output;
+}
+
+async function readPackageVersion(candidates) {
+  for (const candidate of candidates.filter(Boolean)) {
+    try {
+      const manifest = JSON.parse(await fs.readFile(candidate, "utf8"));
+      if (manifest?.version) return String(manifest.version);
+    } catch (error) {
+      if (error?.code !== "ENOENT") throw error;
+    }
+  }
+  return "unavailable";
+}
+
+function nulEntries(value) {
+  return value.split("\0").filter(Boolean);
+}
+
+async function verificationInput() {
+  const [headOutput, branchOutput, statusOutput, rawDiffOutput, changedOutput, untrackedOutput] =
+    await Promise.all([
+      requiredGitOutput(["rev-parse", "HEAD"]),
+      requiredGitOutput(["branch", "--show-current"]),
+      requiredGitOutput([
+        "status", "--porcelain=v1", "-z", "--untracked-files=all",
+        "--", ".", ":(exclude).wrangler"
+      ]),
+      requiredGitOutput(["diff", "--raw", "-z", "HEAD", "--"]),
+      requiredGitOutput(["diff", "--name-only", "-z", "--diff-filter=ACMR", "HEAD", "--"]),
+      requiredGitOutput([
+        "ls-files", "--others", "--exclude-standard", "-z",
+        "--", ".", ":(exclude).wrangler"
+      ])
+    ]);
+  const playwrightRoot = process.env.DUNGEON_PLAYWRIGHT_NODE_MODULES;
+  const workerModulesRoot = process.env.DUNGEON_ONLINE_V3_WORKER_NODE_MODULES;
+  const [wranglerVersion, playwrightVersion] = await Promise.all([
+    readPackageVersion([
+      path.join(WORKER, "node_modules", "wrangler", "package.json")
+    ]),
+    readPackageVersion([
+      playwrightRoot && path.join(playwrightRoot, "playwright", "package.json"),
+      path.join(process.env.USERPROFILE || "", ".codex", "skills", "develop-web-game", "node_modules", "playwright", "package.json"),
+      path.join(ROOT, "node_modules", "playwright", "package.json")
+    ])
+  ]);
+  const files = [...new Set([
+    ...nulEntries(changedOutput),
+    ...nulEntries(untrackedOutput)
+  ])].sort();
+  const hash = createHash("sha256");
+  const environment = {
+    mode: MODE,
+    node: process.version,
+    platform: process.platform,
+    arch: process.arch,
+    osRelease: os.release(),
+    wranglerVersion,
+    playwrightVersion,
+    playwrightRoot: playwrightRoot || "",
+    workerModulesRoot: workerModulesRoot || ""
+  };
+  hash.update(JSON.stringify(environment));
+  hash.update("\0status\0");
+  hash.update(statusOutput);
+  hash.update("\0raw-diff\0");
+  hash.update(rawDiffOutput);
+  for (const relative of files) {
+    hash.update("\0file\0");
+    hash.update(relative);
+    hash.update("\0");
+    try {
+      hash.update(await fs.readFile(path.join(ROOT, relative)));
+    } catch (error) {
+      if (!["ENOENT", "EISDIR"].includes(error?.code)) throw error;
+      hash.update(`[${error?.code || "unreadable"}]`);
+    }
+  }
+  return {
+    schema: RECEIPT_SCHEMA,
+    mode: MODE,
+    head: headOutput.trim(),
+    branch: branchOutput.trim() || "(detached)",
+    dirtyEntries: nulEntries(statusOutput).length,
+    node: process.version,
+    platform: `${process.platform}-${process.arch}-${os.release()}`,
+    wranglerVersion,
+    playwrightVersion,
+    fingerprint: `sha256:${hash.digest("hex")}`
+  };
+}
+
+function receiptPathFor(mode) {
+  return path.join(OUTPUT_ROOT, `receipt-${mode}.json`);
+}
+
+async function reusableReceipt(input) {
+  if (FORCE) return null;
+  try {
+    const receipt = JSON.parse(await fs.readFile(receiptPathFor(MODE), "utf8"));
+    if (
+      receipt?.schema === RECEIPT_SCHEMA &&
+      receipt?.mode === MODE &&
+      receipt?.result === "PASS" &&
+      receipt?.fingerprint === input.fingerprint
+    ) {
+      return receipt;
+    }
+  } catch (error) {
+    if (error?.code !== "ENOENT" && !(error instanceof SyntaxError)) throw error;
+  }
+  return null;
+}
+
+async function writeReceipt(input, details) {
+  const receiptPath = receiptPathFor(MODE);
+  const temporaryPath = `${receiptPath}.${process.pid}.tmp`;
+  const receipt = {
+    ...input,
+    ...details,
+    schema: RECEIPT_SCHEMA,
+    mode: MODE,
+    result: "PASS"
+  };
+  await fs.writeFile(temporaryPath, `${JSON.stringify(receipt, null, 2)}\n`, "utf8");
+  await fs.rename(temporaryPath, receiptPath);
+  return receiptPath;
 }
 
 function tapTotals(output) {
@@ -117,16 +258,10 @@ async function changedJavaScriptCheck() {
   return { code: 0, output: chunks.join(""), display: "node --check <changed JavaScript>" };
 }
 
-async function fastTests() {
-  const entries = await fs.readdir(path.join(WORKER, "test"));
-  const current = entries
-    .filter((name) => name.startsWith(CURRENT_PHASE_TEST_PREFIX) && name.endsWith(".test.js"))
-    .map((name) => `test/${name}`)
-    .sort();
-  const files = [...CORE_FAST_TESTS, ...current];
+async function guardTests() {
   return runProcess(
     process.execPath,
-    ["--test", "--test-concurrency=1", ...files],
+    ["--test", "--test-concurrency=1", ...CORE_FAST_TESTS],
     { cwd: WORKER }
   );
 }
@@ -190,9 +325,9 @@ const protectedGuard = () => runProcess(
 );
 
 const actions = {
-  fast: [
+  guard: [
     ["generator drift", generator],
-    ["current ruleset checks", fastTests],
+    ["core safety checks (not feature regressions)", guardTests],
     ["changed JavaScript syntax", changedJavaScriptCheck],
     ["whitespace diff", diffCheck]
   ],
@@ -219,10 +354,30 @@ const actions = {
 };
 
 await fs.mkdir(OUTPUT_ROOT, { recursive: true });
+const input = await verificationInput();
+const previousReceipt = await reusableReceipt(input);
+if (previousReceipt) {
+  const relativeReceipt = path.relative(ROOT, receiptPathFor(MODE)).split(path.sep).join("/");
+  console.log(
+    `[REUSED] verify:${MODE} | identical input passed ${previousReceipt.finishedAt} | ` +
+    `${totalsText(previousReceipt.totals)} | ${relativeReceipt} | use --force to rerun`
+  );
+  process.exit(0);
+}
+if (FORCE) await fs.rm(receiptPathFor(MODE), { force: true });
+
 const stamp = timestamp();
 const logPath = path.join(OUTPUT_ROOT, `${MODE}-${stamp}.log`);
 const relativeLog = path.relative(ROOT, logPath).replaceAll("\\", "/");
-await fs.writeFile(logPath, `Online v3 verification\nmode: ${MODE}\nstarted: ${new Date().toISOString()}\n\n`, "utf8");
+await fs.writeFile(
+  logPath,
+  `Online v3 verification\nmode: ${MODE}\nstarted: ${new Date().toISOString()}\n` +
+  `head: ${input.head}\nbranch: ${input.branch}\ndirty entries: ${input.dirtyEntries}\n` +
+  `node: ${input.node}\nplatform: ${input.platform}\nwrangler: ${input.wranglerVersion}\n` +
+  `playwright: ${input.playwrightVersion}\nfingerprint: ${input.fingerprint}\n` +
+  `forced: ${FORCE}\n\n`,
+  "utf8"
+);
 
 const combined = { tests: 0, pass: 0, fail: 0, skipped: 0, suites: 0 };
 const modeStarted = Date.now();
@@ -251,9 +406,20 @@ for (const [name, action] of actions[MODE]) {
   }
 }
 
+const durationSeconds = Number(((Date.now() - modeStarted) / 1000).toFixed(1));
 await fs.appendFile(
   logPath,
-  `RESULT: PASS\nduration: ${seconds(modeStarted)}\n${totalsText(combined)}\nfinished: ${new Date().toISOString()}\n`,
+  `RESULT: PASS\nduration: ${durationSeconds.toFixed(1)}s\n${totalsText(combined)}\nfinished: ${new Date().toISOString()}\n`,
   "utf8"
 );
-console.log(`[PASS] verify:${MODE} | ${seconds(modeStarted)} | ${totalsText(combined)} | ${relativeLog}`);
+const finishedAt = new Date().toISOString();
+const receiptPath = await writeReceipt(input, {
+  finishedAt,
+  durationSeconds,
+  totals: combined,
+  log: relativeLog
+});
+console.log(
+  `[PASS] verify:${MODE} | ${durationSeconds.toFixed(1)}s | ${totalsText(combined)} | ` +
+  `${relativeLog} | receipt ${path.relative(ROOT, receiptPath).split(path.sep).join("/")}`
+);

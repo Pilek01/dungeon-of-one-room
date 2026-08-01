@@ -1,5 +1,7 @@
 # Current task — Phase <id>
 
+Status: ACTIVE
+
 ## Task name
 
 <Short name>
@@ -34,9 +36,14 @@ Stop and report instead of guessing when:
 
 ## Verification
 
-- `npm run verify:phase`
-- `npm run verify:baseline`
-- `npm run verify:full` only when this phase requires it
+- Focused test(s): `<exact command>`
+- `npm run verify:phase` only for Worker/ruleset/protocol/shared-runtime or
+  cross-subsystem changes.
+- `npm run verify:baseline` only for protected game/UI/loading/renderer/build
+  integration or milestone/release work.
+- `npm run verify:full` only for milestone, D1/Wrangler, staging, release, or
+  deployment work; it replaces separate phase and baseline runs.
+- Do not rerun a passing gate unless relevant files changed after it ran.
 
 ## Commit message
 
@@ -44,8 +51,9 @@ Stop and report instead of guessing when:
 
 ## Required final report
 
-- Commit and scope
-- Unresolved items
-- Test totals and baseline result
-- Ruleset hash before/after
-- Changed-file count and next phase
+- Implemented scope and unresolved items
+- Exact checks executed and their totals
+- Changed-file count
+- Commit only when created
+- Ruleset hash or baseline result only when relevant
+- Next phase only when phased work continues

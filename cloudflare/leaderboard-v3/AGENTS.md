@@ -29,13 +29,15 @@ These rules extend the repository root `AGENTS.md`.
 - `v08-meta-1` remains disconnected and test-only until an explicit release
   task authorizes activation.
 - Active endpoints continue using the fixture ruleset unless
-  `docs/tasks/CURRENT.md` explicitly permits a change.
+  the current user prompt explicitly permits a change and, when
+  `docs/tasks/CURRENT.md` is `Status: ACTIVE`, that file permits it too.
 
 ## Protected Worker surfaces
 
 Do not change D1, `recent_ops`, active endpoints, protocol contracts, or
-Wrangler configuration unless `docs/tasks/CURRENT.md` explicitly permits the
-exact paths and behavior.
+Wrangler configuration unless the current user prompt explicitly permits the
+exact paths and behavior and, when `docs/tasks/CURRENT.md` is
+`Status: ACTIVE`, that file permits them too.
 
 Run the verification levels required by the root instructions and current
 task. Do not weaken schemas, assertions, fixtures, or fail-closed behavior.
