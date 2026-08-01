@@ -11,7 +11,10 @@
   and projected into the profile/next run.
 - Candidate ruleset hash: sha256:2ac2eb5499892cc49258c5b674beab846cb41906a5ef86a658d5e90325505a0d.
   Retained production hash: sha256:d784208aad891119b71c52324cea358997ee376313914d5799affa68c8678ff3.
-  Candidate remains local/test-only; no deploy, push, D1 migration, or backfill.
+  Candidate remains local/test-only; no ruleset activation, push, D1 migration,
+  or backfill. Production Worker version 18cd3024-9ebf-44bf-9b4d-160f45e396bf
+  is active at 100%; Pages deployment 0bc8fdd5 is live and both URLs served
+  HTTP 200 availability with productionActivated=true and bot gate enabled.
 - Verification: focused 20/20; verify:fast 51/51; verify:phase 762/762;
   verify:baseline 3/3 plus headed smoke; verify:full 786/786 including
   Wrangler/D1 21/21; headed Ranked lifecycle PASS; Pages build 3109 files.

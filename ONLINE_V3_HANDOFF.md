@@ -2,8 +2,8 @@
 
 ## Online Ranked boundary state and test controls repair (2026-08-01)
 
-COMPLETED_LOCALLY; candidate is verified locally and remains a local release
-candidate. No Pages/Worker deploy or push was performed.
+DEPLOYED_AND_PRODUCTION_VERIFIED; the implementation commit is active in
+production. No push was performed.
 
 - Root cause confirmed: the production bridge did not distinguish a fresh
   Ranked campaign from Extract -> Camp -> Start Next Run, so the local
@@ -28,7 +28,9 @@ candidate. No Pages/Worker deploy or push was performed.
   sha256:d784208aad891119b71c52324cea358997ee376313914d5799affa68c8678ff3;
   the candidate was not promoted.
 - Old test campaigns were intentionally not backfilled or migrated. No D1
-  schema/data migration, history rewrite, push, or deploy was performed.
+  schema/data migration or history rewrite was performed. Explicit deploy used
+  Worker version `18cd3024-9ebf-44bf-9b4d-160f45e396bf` at 100% and Pages
+  deployment `0bc8fdd5` (`https://0bc8fdd5.dungeon-of-one-room.pages.dev`).
 
 Verification:
 
