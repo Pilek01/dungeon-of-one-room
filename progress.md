@@ -1301,3 +1301,23 @@ Updated next good targets
   screenshots were inspected; unexpected console errors and page errors are
   zero.
 - No push, deploy, D1 migration, backfill, or ruleset activation was performed.
+
+## 2026-08-02 - Acolyte support-first AI
+
+- Reclassified Acolytes as support units. They now anchor to the highest-priority
+  heal or buff target, stay within support range, and close distance when an
+  ally needs help outside that range.
+- Preserved the solo-enemy fallback: an Acolyte with no ally still uses its
+  existing ranged attack behavior. Skeleton and other enemy roles are
+  unchanged.
+- Added focused positioning and integration regressions. Focused Acolyte and
+  pit coverage passed 12/12; production-release and R2 boundary coverage passed
+  14/14; `verify:guard` passed 14/14; `verify:phase` passed 776/776; the
+  committed protected baseline passed 3/3 and its complete headed smoke.
+- Regenerated v08-meta-1 provenance after the protected `game.js` change.
+  Local candidate hash:
+  `sha256:146cd50a456c293c0e0c9a837c8205fc13364d62e2b0e3b0c1e0f221e3daec65`.
+  The production hash remains unchanged and the local candidate is explicitly
+  rejected by the production client.
+- No merge, push, deployment, migration, backfill, or ruleset activation was
+  performed.
