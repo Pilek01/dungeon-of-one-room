@@ -138,6 +138,20 @@ function run() {
     assert.match(css, /\.forge-choice\.disabled/);
   }
 
+  {
+    const root = path.resolve(__dirname, "..");
+    const game = fs.readFileSync(path.join(root, "game.js"), "utf8");
+    const roomClearStart = game.indexOf("function checkRoomClearBonus()");
+    const rankedCheckpoint = game.indexOf("window.DungeonOnlineV3?.onLocalRoomCleared?.(", roomClearStart);
+    const forgeAwakening = game.indexOf("state.forge.awakened = true;", roomClearStart);
+    assert.ok(roomClearStart >= 0, "room-clear handler is present");
+    assert.ok(rankedCheckpoint > roomClearStart, "Ranked checkpoint request is present");
+    assert.ok(
+      forgeAwakening > roomClearStart && forgeAwakening < rankedCheckpoint,
+      "a cleared Ranked Forge awakens before its checkpoint is requested"
+    );
+  }
+
   console.log("forge-room tests: OK");
 }
 

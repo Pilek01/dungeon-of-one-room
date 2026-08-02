@@ -15650,6 +15650,18 @@
     }
     state.roomCleared = true;
     if (state.onlineV3Ranked) {
+      if (state.roomType === "forge" && state.forge && !state.forge.used) {
+        state.forge.awakened = true;
+        spawnParticles(state.forge.x, state.forge.y, "#ff9d52", 16, 1.15);
+        spawnShockwaveRing(state.forge.x, state.forge.y, {
+          color: "#ff8b45",
+          core: "#ffe0ba",
+          maxRadius: TILE * 2.1,
+          life: 240
+        });
+        setShake(1.9);
+        pushLog("The forge awakens. Step in and press E to Temper or Transmute a relic.", "good");
+      }
       state.runMaxDepth = Math.max(state.runMaxDepth, state.depth);
       clearCombatShield();
       revealPortalFx();

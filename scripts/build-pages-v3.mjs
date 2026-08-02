@@ -470,6 +470,7 @@ const productionGameReplacements = [
           reason: String(state.simulation.lastGameOverReason || "All lives lost.")
         };
         state.finalGameOverSelection = 0;
+        syncBgmWithState();
         stopDeathTrack(true);
         const usedFinalTrack = playFinalGameOverTrack();
         if (!usedFinalTrack && !state.audioMuted) playSfx("death");

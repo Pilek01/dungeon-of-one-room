@@ -345,6 +345,10 @@ test("production menu separates Practice pause, Practice save, and Ranked save c
     builder,
     /holdTerminal\(publicState\)[\s\S]*?finalGameOverPrompt = \{[\s\S]*?playFinalGameOverTrack\(\)/u
   );
+  assert.match(
+    builder,
+    /holdTerminal\(publicState\)[\s\S]*?state\.phase = publicState\?\.status === "victory" \? "won" : "dead";[\s\S]*?syncBgmWithState\(\);[\s\S]*?playFinalGameOverTrack\(\)/u
+  );
   assert.match(builder, /data-menu-new-game-index[\s\S]*activateMenuNewGameConfirmSelection/u);
   assert.doesNotMatch(runtime, /options\.get\("continue"\),/u);
   assert.match(runtime, /Start New Ranked/u);
