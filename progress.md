@@ -1347,3 +1347,19 @@ Updated next good targets
   The committed protected baseline passes 3/3 and its complete headed smoke.
 - No push, deployment, D1 migration/backfill, or ruleset activation was
   performed.
+
+## 2026-08-02 - Acolyte, music, and record archive production release
+
+- Pushed verified commit `1c9518d` to `origin/main` by fast-forward.
+- `verify:full` passed 800/800, including Wrangler/D1 21/21, the clean
+  committed baseline, and the clean committed Ranked lifecycle.
+- Built a clean 3109-file Pages bundle with no QA marker or boot hook and
+  deployed 3108 files as production deployment
+  `aed78800-ae85-47f6-b66f-17abb6473f64`.
+- The immutable deployment URL and stable project alias return HTTP 200 and
+  active compatible availability. Three changed public assets match the local
+  release bundle byte-for-byte.
+- The existing Worker version and active production ruleset
+  `sha256:bc0d548d204557d0cc0ec7f8a358e18246778a13b27c58f5c6cdd73e73621711`
+  remain correct. Remote D1 reports no pending migrations; no migration,
+  backfill, Worker rollout, or ruleset activation was performed.

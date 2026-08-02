@@ -24,11 +24,12 @@ Do not describe the system as server-authoritative combat or cheat-proof.
 
 ## Current production snapshot
 
-- Latest deployed source commit: `cc84cf1` on local `main`.
-- Latest merged Online Ranked feature commit: `c72e30d`.
+- Latest deployed source commit: `1c9518d` on `origin/main`.
+- Latest production game/UI feature commit: `57f6846`.
 - Production Worker version:
   `19b9174c-f720-4484-8f7b-c0918215c29b` at 100%.
-- Production Pages deployment: `b8255226`.
+- Production Pages deployment:
+  `aed78800-ae85-47f6-b66f-17abb6473f64`.
 - Active production ruleset:
   `sha256:bc0d548d204557d0cc0ec7f8a358e18246778a13b27c58f5c6cdd73e73621711`.
 - Retained previous ruleset:
@@ -37,22 +38,24 @@ Do not describe the system as server-authoritative combat or cheat-proof.
   mutator backfill was performed: ranked profiles import the authoritative
   Practice unlock state on first use, which cannot be reconstructed in D1.
 
-The latest production repair separates a fresh Ranked campaign from
-Extract -> Camp -> Start Next Run, preserves next-run campaign state, resets
-fresh-campaign score/chest effects, supports only server-issued Camp mutator
-additions, and accounts elixir use once across checkpoint/death retries. The
-deployed Observer Bot remains gated by the preserved build-time password hash;
-no plaintext password was read or stored during this release.
+The latest Pages release adds support-first Acolyte behavior, the Game Over
+music repair, and the unified Gothic Ranked Leaderboard / Practice Records
+archive. Main-menu and Ranked-terminal leaderboard routes now use the same
+canonical online table; Practice terminal results remain local. The Worker,
+D1 schema/data, active ruleset, and Observer Bot gate are unchanged.
 
 ## Latest release evidence
 
-- Focused activation and R2 protocol set: 14/14 PASS.
+- Focused leaderboard, production-package, and M4 renderer set: 20/20 PASS.
 - `verify:full`: 800/800 PASS, including Wrangler/D1 21/21, clean committed
   baseline, and clean committed Ranked lifecycle.
 - Pages build: 3109 files; 3108 uploaded by Wrangler.
-- Independent live checks: HTTP 200, availability active, activated ruleset
-  hash matches, Observer Bot gate preserved, and protocol asset matches on
-  both the deployment URL and the project alias.
+- Independent live checks: HTTP 200 and active compatible availability on the
+  deployment URL and project alias. `game.js`, the Ranked leaderboard module,
+  and `style.css` match the clean local bundle byte-for-byte on both URLs.
+- Remote D1 reports `No migrations to apply`. No migration, backfill, Worker
+  rollout, or ruleset activation was needed; production remains on
+  `sha256:bc0d548d204557d0cc0ec7f8a358e18246778a13b27c58f5c6cdd73e73621711`.
 
 These totals are point-in-time release evidence. They do not require rerunning
 the same suites for unrelated small changes.
@@ -74,19 +77,14 @@ coverage without reducing release scope:
 Ranked QA uses the marked `output/pages-test-dist` bundle. The deployable
 `output/pages-dist` contains no QA marker or test-only boot-readiness hook.
 Passing receipts are scenario-specific and reusable when their fingerprint is
-unchanged. The latest fresh full headed timings were 24.5 seconds for
-the baseline and 71.0 seconds for Ranked, with zero unexpected console/page
+unchanged. The latest fresh full headed timings were 28.0 seconds for
+the baseline and 87.3 seconds for Ranked, with zero unexpected console/page
 errors. Package C has not started.
 
 ## Protected working tree
 
-At this snapshot, preserve without staging or editing:
-
-- 172 tracked deletions under
-  `Dungeon-v0.8.1-Vault-Guardian-Codex-Pack/`, fingerprint
-  `sha256:067236e55ded3f10dfc46bfe7fb3014e177ffba2636d256e58ce367e7a5a08bf`;
-- 3 untracked entries under `.wrangler/`, fingerprint
-  `sha256:81967eb2b72c4c4d0685a9879b8e802f101d9599b0deac97174634a55c9a6eb3`.
+At this snapshot there are no protected Vault Guardian WIP entries, no local
+`.wrangler` entries, and no ordinary working-tree changes.
 
 Always confirm with `npm run status:compact`. Before staging or committing,
 also inspect the full `git status --short`.
