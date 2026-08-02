@@ -24,35 +24,35 @@ Do not describe the system as server-authoritative combat or cheat-proof.
 
 ## Current production snapshot
 
-- Latest production-recording source commit: `9d6a179` on `main`.
-- Latest Online Ranked boundary implementation: `fe439c8`.
+- Latest deployed source commit: `cc84cf1` on local `main`.
+- Latest merged Online Ranked feature commit: `c72e30d`.
 - Production Worker version:
-  `18cd3024-9ebf-44bf-9b4d-160f45e396bf` at 100%.
-- Production Pages deployment: `0bc8fdd5`.
-- Production/retained ruleset:
+  `19b9174c-f720-4484-8f7b-c0918215c29b` at 100%.
+- Production Pages deployment: `b8255226`.
+- Active production ruleset:
+  `sha256:bc0d548d204557d0cc0ec7f8a358e18246778a13b27c58f5c6cdd73e73621711`.
+- Retained previous ruleset:
   `sha256:d784208aad891119b71c52324cea358997ee376313914d5799affa68c8678ff3`.
-- Local unpromoted candidate:
-  `sha256:2ac2eb5499892cc49258c5b674beab846cb41906a5ef86a658d5e90325505a0d`.
-- No old test campaign backfill, D1 data migration, or history rewrite was
-  performed for the latest repair.
+- D1 migrations were already current (`No migrations to apply`). No D1
+  mutator backfill was performed: ranked profiles import the authoritative
+  Practice unlock state on first use, which cannot be reconstructed in D1.
 
 The latest production repair separates a fresh Ranked campaign from
 Extract -> Camp -> Start Next Run, preserves next-run campaign state, resets
 fresh-campaign score/chest effects, supports only server-issued Camp mutator
 additions, and accounts elixir use once across checkpoint/death retries. The
-deployed Observer Bot remains gated by a build-time password hash; with no
-password it is not exposed.
+deployed Observer Bot remains gated by the preserved build-time password hash;
+no plaintext password was read or stored during this release.
 
 ## Latest release evidence
 
-- Focused boundary regressions: 6/6 PASS.
-- Release/R2/boundary focused set: 20/20 PASS.
-- `verify:fast`: 51/51 PASS under the historical pre-optimization suite.
-- `verify:phase`: 762/762 PASS.
-- `verify:baseline`: 3/3 guard tests plus headed smoke PASS.
-- `verify:full`: 786/786 PASS, including Wrangler/D1 21/21.
-- Headed Ranked lifecycle PASS.
-- Pages build: 3109 files.
+- Focused activation and R2 protocol set: 14/14 PASS.
+- `verify:full`: 800/800 PASS, including Wrangler/D1 21/21, clean committed
+  baseline, and clean committed Ranked lifecycle.
+- Pages build: 3109 files; 3108 uploaded by Wrangler.
+- Independent live checks: HTTP 200, availability active, activated ruleset
+  hash matches, Observer Bot gate preserved, and protocol asset matches on
+  both the deployment URL and the project alias.
 
 These totals are point-in-time release evidence. They do not require rerunning
 the same suites for unrelated small changes.
