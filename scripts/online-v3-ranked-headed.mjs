@@ -808,9 +808,15 @@ ${fatalTestHookAnchor}`;
     const repairedRunId = await page.evaluate(() => window.DungeonOnlineV3.getSnapshot().runId);
     assert.notEqual(repairedProfile.profileId, staleProfile.profileId);
     assert.notEqual(repairedRunId, staleProfile.seedRunId);
+    const staleRepairErrors = diagnostics.apiErrors.slice(staleErrorsBefore)
+      .filter((entry) => (
+        entry.status === 401 &&
+        entry.path === "/api/v3/runs/start" &&
+        /PROFILE_UNAUTHORIZED/u.test(entry.body)
+      ));
     assert.equal(
-      diagnostics.apiErrors.slice(staleErrorsBefore).some((entry) => /PROFILE_UNAUTHORIZED/u.test(entry.body)),
-      false,
+      staleRepairErrors.length,
+      1,
       JSON.stringify(diagnostics.apiErrors.slice(staleErrorsBefore))
     );
     assert.equal(await page.getByRole("heading", { name: "Ranked reconnect required" }).count(), 0);
@@ -1828,7 +1834,7 @@ ${fatalTestHookAnchor}`;
       (RUN_CAMP ? 3 : 0);
     assert.equal(expectedDroppedResponseErrors.length, expectedDroppedErrors);
     assert.equal(expectedEndedRecoveryErrors.length, RUN_CAMP ? 1 : 0);
-    assert.equal(expectedStaleProfileErrors.length, 0);
+    assert.equal(expectedStaleProfileErrors.length, RUN_RECOVERY ? 1 : 0);
     assert.equal(expectedCampStartErrors.length, RUN_CAMP ? 1 : 0);
     assert.deepEqual(unexpectedConsoleErrors, []);
     assert.deepEqual(diagnostics.pageErrors, []);
