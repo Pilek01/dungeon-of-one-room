@@ -1,3 +1,4 @@
+import { applyMutatorProgressDeltaV08 } from "./mutator-progression.js";
 import merchantPolicyDocument from "./data/merchant-transaction-policy.generated.json" with { type: "json" };
 import {
   commitMetaTransactionV08,
@@ -534,6 +535,9 @@ export async function commitMerchantTransactionV08(metaState, request, context =
       authoritativeCost = spendCanonicalGoldV08(next, data.cost, data.currency);
       next.build.resources.potions += 1;
       next.build.merchant.potionsBought += 1;
+      next.mutatorProgress = applyMutatorProgressDeltaV08(next.mutatorProgress, {
+        totalMerchantPots: next.mutatorProgress.totalMerchantPots + 1
+      });
       const nextPotion = next.pendingInventory.choices.find(
         (entry) =>
           entry.privateData?.action === "potion" &&

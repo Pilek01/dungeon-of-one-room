@@ -27,7 +27,7 @@
       "momentum",
       "resilience"
     ],
-    "profileUnlockState": "DEFERRED_PROFILE_STATE",
+    "profileUnlockState": "CANONICAL_PROFILE_PROGRESS",
     "gameSessionState": "DEFERRED_GAME_SESSION_STATE",
     "clientUnlockClaims": "UNTRUSTED",
     "scopeRows": [
@@ -37,7 +37,7 @@
         "selectionScope": "RUN_SCOPED",
         "runtimeScope": "RUN_SCOPED",
         "serverRepresentation": "CANONICAL_ACTIVE_LEDGER",
-        "deferredDependency": "DEFERRED_PROFILE_UNLOCK_VALIDATION"
+        "deferredDependency": "NONE"
       },
       {
         "modifierId": "ascension",
@@ -45,7 +45,7 @@
         "selectionScope": "RUN_SCOPED",
         "runtimeScope": "RUN_SCOPED",
         "serverRepresentation": "CANONICAL_ACTIVE_LEDGER",
-        "deferredDependency": "DEFERRED_PROFILE_UNLOCK_VALIDATION"
+        "deferredDependency": "NONE"
       },
       {
         "modifierId": "berserker",
@@ -53,7 +53,7 @@
         "selectionScope": "RUN_SCOPED",
         "runtimeScope": "RUN_SCOPED",
         "serverRepresentation": "CANONICAL_ACTIVE_LEDGER",
-        "deferredDependency": "DEFERRED_PROFILE_UNLOCK_VALIDATION"
+        "deferredDependency": "NONE"
       },
       {
         "modifierId": "bulwark",
@@ -61,7 +61,7 @@
         "selectionScope": "RUN_SCOPED",
         "runtimeScope": "RUN_SCOPED",
         "serverRepresentation": "CANONICAL_ACTIVE_LEDGER",
-        "deferredDependency": "DEFERRED_PROFILE_UNLOCK_VALIDATION"
+        "deferredDependency": "NONE"
       },
       {
         "modifierId": "elitist",
@@ -69,7 +69,7 @@
         "selectionScope": "RUN_SCOPED",
         "runtimeScope": "RUN_SCOPED",
         "serverRepresentation": "CANONICAL_ACTIVE_LEDGER",
-        "deferredDependency": "DEFERRED_PROFILE_UNLOCK_VALIDATION"
+        "deferredDependency": "NONE"
       },
       {
         "modifierId": "famine",
@@ -77,7 +77,7 @@
         "selectionScope": "RUN_SCOPED",
         "runtimeScope": "RUN_SCOPED",
         "serverRepresentation": "CANONICAL_ACTIVE_LEDGER",
-        "deferredDependency": "DEFERRED_PROFILE_UNLOCK_VALIDATION"
+        "deferredDependency": "NONE"
       },
       {
         "modifierId": "greed",
@@ -85,7 +85,7 @@
         "selectionScope": "RUN_SCOPED",
         "runtimeScope": "RUN_SCOPED",
         "serverRepresentation": "CANONICAL_ACTIVE_LEDGER",
-        "deferredDependency": "DEFERRED_PROFILE_UNLOCK_VALIDATION"
+        "deferredDependency": "NONE"
       },
       {
         "modifierId": "hunter",
@@ -93,7 +93,7 @@
         "selectionScope": "RUN_SCOPED",
         "runtimeScope": "RUN_SCOPED",
         "serverRepresentation": "CANONICAL_ACTIVE_LEDGER",
-        "deferredDependency": "DEFERRED_PROFILE_UNLOCK_VALIDATION"
+        "deferredDependency": "NONE"
       },
       {
         "modifierId": "momentum",
@@ -101,7 +101,7 @@
         "selectionScope": "RUN_SCOPED",
         "runtimeScope": "RUN_SCOPED",
         "serverRepresentation": "CANONICAL_ACTIVE_LEDGER",
-        "deferredDependency": "DEFERRED_PROFILE_UNLOCK_VALIDATION"
+        "deferredDependency": "NONE"
       },
       {
         "modifierId": "resilience",
@@ -109,7 +109,7 @@
         "selectionScope": "RUN_SCOPED",
         "runtimeScope": "RUN_SCOPED",
         "serverRepresentation": "CANONICAL_ACTIVE_LEDGER",
-        "deferredDependency": "DEFERRED_PROFILE_UNLOCK_VALIDATION"
+        "deferredDependency": "NONE"
       }
     ],
     "legacyRunModFields": [

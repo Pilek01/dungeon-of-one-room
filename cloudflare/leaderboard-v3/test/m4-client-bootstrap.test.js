@@ -75,8 +75,18 @@ test("M4 Ranked start persists exact pending action before sending", async () =>
       }
     }
   });
-  await client.start({ playerName: "M4", clientInstallIdHash: "install-hash-1234" });
+  await client.start({
+    playerName: "M4",
+    clientInstallIdHash: "install-hash-1234",
+    newCampaign: true,
+    practiceMutatorImport: {
+      metrics: { totalKills: 200 },
+      historicalUnlockedMutatorIds: ["berserker"]
+    }
+  });
   assert.equal(observed.pendingOperation.operationId, "op_start");
+  assert.equal(observed.pendingOperation.body.newCampaign, true);
+  assert.equal(observed.pendingOperation.body.practiceMutatorImport.metrics.totalKills, 200);
   assert.equal(client.getSnapshot().token.kind, "run_bootstrap");
   assert.equal(client.getSnapshot().pendingOperation, null);
 });

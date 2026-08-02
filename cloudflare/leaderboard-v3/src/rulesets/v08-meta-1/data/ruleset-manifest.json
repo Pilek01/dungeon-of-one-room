@@ -152,8 +152,8 @@
   "files": [
     {
       "file": "camp-policy.js",
-      "byteLength": 15787,
-      "sha256": "1590e648b0196480d03f6ec1c138f3ce2e9bc04626351195cb5cc76ee7e0eb29"
+      "byteLength": 17132,
+      "sha256": "d1e58f391e1d22972997263d70e13e238508a5199085e0090a3c3729c94a3d63"
     },
     {
       "file": "constants.js",
@@ -297,8 +297,8 @@
     },
     {
       "file": "data/run-modifier-catalog.generated.json",
-      "byteLength": 19297,
-      "sha256": "c4c11fec9e74e4b1dd865417e9c526c075a9426410f99d39d61a219d0eb9b893"
+      "byteLength": 19037,
+      "sha256": "8ef3161b6ca37956d44c1b60477767a73a4cdde6efb3237b0fdbfef813d64762"
     },
     {
       "file": "data/run-modifier-effects.generated.json",
@@ -307,13 +307,13 @@
     },
     {
       "file": "data/run-modifier-metadata.generated.json",
-      "byteLength": 4698,
-      "sha256": "d696f6918729eb52d4120cdf6909fed1a43730d8ac4c1d6341cf82e2f467a4e1"
+      "byteLength": 4402,
+      "sha256": "459d5933f24c8f83b331cbc09004d751a8f4f700a2e05c5f74ccc7bb464839ef"
     },
     {
       "file": "data/run-modifier-selection-policy.generated.json",
-      "byteLength": 1118,
-      "sha256": "a2ccd006dff61f30b867045264dce5a5e0d972c9d3ab9b6de88ebd75a5df1992"
+      "byteLength": 1120,
+      "sha256": "0c41b2360deac0ebec2c063453a9146635f1eb2ee37d61d84393c6c65faee105"
     },
     {
       "file": "data/run-progression.generated.json",
@@ -362,8 +362,8 @@
     },
     {
       "file": "index.js",
-      "byteLength": 13580,
-      "sha256": "762262d74618a5426ad82b07f2dfbcedebf6e64f14b017985db05d0fcbb21ad5"
+      "byteLength": 14671,
+      "sha256": "00e583c99405a4cf8d86839d19b4fe6a92552d1673a909f604dca24818d9b276"
     },
     {
       "file": "leaderboard-summary.js",
@@ -377,23 +377,28 @@
     },
     {
       "file": "merchant-policy.js",
-      "byteLength": 21035,
-      "sha256": "9673e6ff9d5479fabacdeea8a09028203cda64b88492d8bae4fbe5f52e6ec986"
+      "byteLength": 21270,
+      "sha256": "2b06b1e35233079c790b4de21ca30acbde1426363b1f33ad3bd498c3d32eb13d"
     },
     {
       "file": "meta-state.js",
-      "byteLength": 12748,
-      "sha256": "9517cfabf8c120e88d4a49973c1fbe48d4f10909efbf36c2cdf4dba50d0a8788"
+      "byteLength": 13393,
+      "sha256": "51aa51b22cf21462e4ab0e0864975e4703cc10e5895d19e4d0774f416e31575b"
     },
     {
       "file": "meta-transaction.js",
-      "byteLength": 17948,
-      "sha256": "7fa0596e4344e29e02cc9bf33eb050b8c090ddfbbd4d01f8ef348c4dc4f3d09b"
+      "byteLength": 18174,
+      "sha256": "80288cc9fb46e33d78d41c45b3fbec187a8b5a149a51d9214e2a691e55549513"
+    },
+    {
+      "file": "mutator-progression.js",
+      "byteLength": 5572,
+      "sha256": "8dd608fdcecf2ccb54a08fc7a794f91d6e4e1d998ffdc0fbeec1807fa3a284dc"
     },
     {
       "file": "outcome-policy.js",
-      "byteLength": 3489,
-      "sha256": "97829a91fa525362c819c787a38f3abdc30b4af9d388ae1f36a8d8f08f61f1fc"
+      "byteLength": 3837,
+      "sha256": "6ef642aa444154cfb58206f72f109360e427a30093e4cbf999ac2c108bf2c043"
     },
     {
       "file": "pact-policy.js",
@@ -402,8 +407,8 @@
     },
     {
       "file": "profile-policy.js",
-      "byteLength": 4102,
-      "sha256": "7469e5244a0ce47652a3a3ace921e1a4967da6fae496d1c11b647ec340351e1e"
+      "byteLength": 5390,
+      "sha256": "bb5851d7e898305e28514a44cb0fc9b07690140f277da85bdf32b13dafe1e814"
     },
     {
       "file": "regular-relic-offer.js",
@@ -432,8 +437,8 @@
     },
     {
       "file": "reward-policy.js",
-      "byteLength": 27771,
-      "sha256": "b1a4d0f463108a58d2cf2a5203b90bc86352126494efa4387f8d388d4804f942"
+      "byteLength": 29077,
+      "sha256": "f83b01f8e86908e259bfafa693b4feb28ad1a391acffb714625bbb5c6b0d0315"
     },
     {
       "file": "rng.js",
@@ -457,8 +462,8 @@
     },
     {
       "file": "run-modifiers.js",
-      "byteLength": 13939,
-      "sha256": "0a22f99c3e513788013447b839d4a4f873db15205ea4b8400b992de745a188f5"
+      "byteLength": 13999,
+      "sha256": "ef934e4dcfdc94d71b9636d493e7bd4ec5c26e414fbc799850156dd62a29ff1f"
     },
     {
       "file": "score-policy.js",
@@ -561,5 +566,5 @@
       "sha256": "cfce80fea7bd5d1328020055f2012bcaeaf9b61e5438e437bf948a4288fb8bf0"
     }
   ],
-  "rulesetHash": "sha256:2ac2eb5499892cc49258c5b674beab846cb41906a5ef86a658d5e90325505a0d"
+  "rulesetHash": "sha256:bc0d548d204557d0cc0ec7f8a358e18246778a13b27c58f5c6cdd73e73621711"
 }

@@ -707,11 +707,8 @@ const productionGameReplacements = [
     const mutator = MUTATORS[index];
     if (!mutator) return;
     if (state.onlineV3Ranked && state.phase === "camp") {
-      if (state.activeMutators[mutator.id]) {
-        pushLog(mutator.name + " cannot be deactivated in Ranked.", "bad");
-        return;
-      }
-      const accepted = window.DungeonOnlineV3?.onCampAction?.({ action: "mutator_add", mutatorId: mutator.id });
+      const action = state.activeMutators[mutator.id] ? "mutator_remove" : "mutator_add";
+      const accepted = window.DungeonOnlineV3?.onCampAction?.({ action, mutatorId: mutator.id });
       if (!accepted) pushLog("That Ranked mutator is not currently available.", "bad");
       return;
     }`
@@ -803,7 +800,10 @@ const productionGameReplacements = [
       ).filter(Boolean);
       normalizeRelicInventory();
       const choices = Array.isArray(offer?.choices) ? offer.choices : [];
-      syncRankedRunModifiers({ runModifiers: profile?.runModifiers }, offer);
+      syncRankedRunModifiers({
+        runModifiers: profile?.runModifiers,
+        mutatorProgress: profile?.mutatorProgress
+      });
       const pricedUpgrade = choices.find((choice) => choice?.action === "upgrade");
       const pricedDef = CAMP_UPGRADES.find((entry) => entry.id === pricedUpgrade?.upgradeId);
       const pricedLevel = Math.max(0, Number(pricedUpgrade?.currentLevel) || 0);
@@ -859,6 +859,40 @@ for (const [sourceText, replacement] of productionGameReplacements) {
 }
 const rankedGoldGameReplacements = [
   [
+`  window.DungeonOnlineV3GameBridge = Object.freeze({`,
+`  window.DungeonOnlineV3GameBridge = Object.freeze({
+    getPracticeMutatorImport() {
+      return {
+        metrics: {
+          totalKills: Math.max(0, Math.floor(Number(state.totalKills) || 0)),
+          eliteKills: Math.max(0, Math.floor(Number(state.eliteKills) || 0)),
+          depthHighscore: Math.max(0, Math.floor(Number(state.highscore) || 0)),
+          totalGoldEarned: Math.max(0, Math.floor(Number(state.totalGoldEarned) || 0)),
+          totalMerchantPots: Math.max(0, Math.floor(Number(state.totalMerchantPots) || 0)),
+          shieldUsesThisGame: Math.max(0, Math.floor(Number(state.shieldUsesThisRun) || 0)),
+          potionFreeExtract: Math.max(0, Math.floor(Number(state.potionFreeExtract) || 0))
+        },
+        historicalUnlockedMutatorIds: MUTATORS
+          .filter((mutator) => Boolean(state.unlockedMutators?.[mutator.id]))
+          .map((mutator) => mutator.id)
+      };
+    },`
+  ],
+  [
+`  function persistMutatorState() {
+    setStorageItem(STORAGE_MUT_UNLOCK, JSON.stringify(state.unlockedMutators));`,
+`  function persistMutatorState() {
+    if (state.onlineV3Ranked) return;
+    setStorageItem(STORAGE_MUT_UNLOCK, JSON.stringify(state.unlockedMutators));`
+  ],
+  [
+`  function saveMetaProgress() {
+    state.highscore = Math.max(state.highscore, getRunMaxDepth());`,
+`  function saveMetaProgress() {
+    if (state.onlineV3Ranked) return;
+    state.highscore = Math.max(state.highscore, getRunMaxDepth());`
+  ],
+  [
 `  const state = {`,
 `  let onlineV3RewardRecorder = null;
   let onlineV3ActiveChestClaimId = null;
@@ -893,25 +927,24 @@ const rankedGoldGameReplacements = [
     return true;
   }
 
-  function syncRankedRunModifiers(publicState, offer = null) {
+  function syncRankedRunModifiers(publicState) {
     const activeIds = new Set(
       (Array.isArray(publicState?.runModifiers?.active) ? publicState.runModifiers.active : [])
         .map((entry) => String(entry?.modifierId || ""))
         .filter(Boolean)
     );
-    const offerChoices = Array.isArray(offer?.choices) ? offer.choices : [];
-    const availableIds = new Set(
-      offerChoices
-        .map((choice) => choice?.publicData || choice)
-        .filter((choice) => choice?.action === "mutator_add")
-        .map((choice) => String(choice.mutatorId || ""))
+    const unlockedIds = new Set(
+      (Array.isArray(publicState?.mutatorProgress?.unlockedMutatorIds)
+        ? publicState.mutatorProgress.unlockedMutatorIds
+        : [])
+        .map((id) => String(id || ""))
         .filter(Boolean)
     );
     state.activeMutators = Object.fromEntries(
       MUTATORS.map((mutator) => [mutator.id, activeIds.has(mutator.id)])
     );
     state.unlockedMutators = Object.fromEntries(
-      MUTATORS.map((mutator) => [mutator.id, activeIds.has(mutator.id) || availableIds.has(mutator.id)])
+      MUTATORS.map((mutator) => [mutator.id, unlockedIds.has(mutator.id)])
     );
   }
 
@@ -1035,6 +1068,13 @@ const rankedGoldGameReplacements = [
 `    state.player.potions -= 1;
     onlineV3RewardRecorder?.recordPotionUse?.();
     state.potionsUsedThisRun = (state.potionsUsedThisRun || 0) + 1;`
+  ],
+  [
+`      state.shieldUsesThisRun = (state.shieldUsesThisRun || 0) + 1;
+      syncMutatorUnlocks();`,
+`      state.shieldUsesThisRun = (state.shieldUsesThisRun || 0) + 1;
+      onlineV3RewardRecorder?.recordShieldUse?.();
+      syncMutatorUnlocks();`
   ],
   [
 `      revealPortalFx();

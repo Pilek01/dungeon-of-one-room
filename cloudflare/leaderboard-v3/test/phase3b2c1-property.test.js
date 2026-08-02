@@ -113,15 +113,15 @@ test("illegal selection cannot mutate gold, depth, lives or relic build", async 
   );
 });
 
-test("scope classification is complete and preserves deferred profile dependencies", () => {
+test("scope classification is complete and binds canonical profile progression", () => {
   const rows = metadataDocument.canonicalData.scopeRows;
   assert.deepEqual(rows.map((entry) => entry.modifierId).sort(), modifierIds);
   assert.ok(rows.every((entry) => (
     entry.selectionScope === "RUN_SCOPED" &&
     entry.runtimeScope === "RUN_SCOPED" &&
-    entry.deferredDependency === "DEFERRED_PROFILE_UNLOCK_VALIDATION"
+    entry.deferredDependency === "NONE"
   )));
-  assert.equal(metadataDocument.canonicalData.profileUnlockState, "DEFERRED_PROFILE_STATE");
+  assert.equal(metadataDocument.canonicalData.profileUnlockState, "CANONICAL_PROFILE_PROGRESS");
   assert.equal(metadataDocument.canonicalData.gameSessionState, "DEFERRED_GAME_SESSION_STATE");
 });
 

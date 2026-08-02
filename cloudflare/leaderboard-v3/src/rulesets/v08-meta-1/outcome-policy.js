@@ -1,5 +1,6 @@
 import sourceAuditDocument from "./data/m3-finalization-source-audit.generated.json" with { type: "json" };
 import { composeCampaignScoreCarryV08 } from "./score-policy.js";
+import { applyMutatorProgressDeltaV08 } from "./mutator-progression.js";
 
 const extractionPolicy = sourceAuditDocument.canonicalData.extraction;
 
@@ -88,6 +89,15 @@ export function requestExtractionV08(state, request) {
     next.gold = Math.max(0, Math.floor(walletBefore * (1 - lossRatio)));
   }
   const campGoldAwarded = Math.max(0, Math.round(next.gold));
+  if (
+    request.mode === "normal" &&
+    next.depth >= 10 &&
+    next.mutatorRunTracking.potionUses === 0
+  ) {
+    next.mutatorProgress = applyMutatorProgressDeltaV08(next.mutatorProgress, {
+      potionFreeExtract: next.mutatorProgress.potionFreeExtract + 1
+    });
+  }
   next.campGold += campGoldAwarded;
   next.campaign = {
     ...next.campaign,

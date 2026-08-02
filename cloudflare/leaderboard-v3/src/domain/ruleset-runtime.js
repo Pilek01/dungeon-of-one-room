@@ -79,6 +79,9 @@ export function publicRulesetMetaState(state, ruleset) {
     runModifiers: typeof ruleset.projectPublicRunModifiers === "function"
       ? ruleset.projectPublicRunModifiers(state)
       : null,
+    mutatorProgress: typeof ruleset.projectPublicMutatorProgress === "function"
+      ? ruleset.projectPublicMutatorProgress(state)
+      : null,
     lifeState: {
       maximumLives: state.lifeLedger.maximumLives,
       fatalEvents: state.lifeLedger.fatalEvents,

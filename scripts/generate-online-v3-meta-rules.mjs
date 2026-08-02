@@ -1905,10 +1905,10 @@ function buildRunModifierCanonicalData(records, textByFile) {
     enemyEffects: effectsById[modifierId].enemy || {},
     scoreEffects: { scoreMultiplier: 1, directEffect: false },
     leaderboardMetadata: ["modifierId", "stacks"],
-    profileDependency: "DEFERRED_PROFILE_UNLOCK_VALIDATION",
+    profileDependency: "CANONICAL_PROFILE_PROGRESS",
     serverCanRepresentExactly: true,
     implementedInThisPhase: true,
-    deferredReason: "DEFERRED_PROFILE_STATE",
+    deferredReason: "NONE",
     sourceEvidence: [
       "mutator-data.js:MUTATORS",
       "mutator-data.js:getMutatorUnlockStatus",
@@ -1922,11 +1922,11 @@ function buildRunModifierCanonicalData(records, textByFile) {
     maximumActiveModifiers: 3,
     canonicalOrdering: "modifierId-ascending",
     duplicatePolicy: "REJECT",
-    replacementPolicy: "REJECT_REMOVAL_OR_REPLACEMENT",
-    midRunPolicy: "ALLOW_TRUSTED_ADDITIONS_ONLY",
+    replacementPolicy: "ALLOW_TRUSTED_CAMP_REMOVAL",
+    midRunPolicy: "ALLOW_TRUSTED_CAMP_ADDITIONS_AND_REMOVALS",
     trustedAuthority: "TRUSTED_RULESET_DOMAIN",
     trustedActivationSources: ["server-issued-mid-run", "server-issued-run-start"],
-    unlockValidation: "DEFERRED_PROFILE_UNLOCK_VALIDATION",
+    unlockValidation: "CANONICAL_PROFILE_PROGRESS",
     derivedEffectsVersion: effectsVersion
   };
   const emptyLedgerDigest = `sha256:${sha256(canonicalJson({
@@ -1973,7 +1973,7 @@ function buildRunModifierCanonicalData(records, textByFile) {
       ...common,
       canonicalData: {
         activeBaselineModifierIds: activeReadIds,
-        profileUnlockState: "DEFERRED_PROFILE_STATE",
+        profileUnlockState: "CANONICAL_PROFILE_PROGRESS",
         gameSessionState: "DEFERRED_GAME_SESSION_STATE",
         clientUnlockClaims: "UNTRUSTED",
         scopeRows: catalog.map((entry) => ({
@@ -1984,7 +1984,7 @@ function buildRunModifierCanonicalData(records, textByFile) {
           selectionScope: "RUN_SCOPED",
           runtimeScope: "RUN_SCOPED",
           serverRepresentation: "CANONICAL_ACTIVE_LEDGER",
-          deferredDependency: "DEFERRED_PROFILE_UNLOCK_VALIDATION"
+          deferredDependency: "NONE"
         })),
         legacyRunModFields: [
           "campGoldBonus", "chestHealPenalty", "eliteChance", "eliteGoldMult",

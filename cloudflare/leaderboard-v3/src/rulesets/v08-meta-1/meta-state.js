@@ -13,6 +13,10 @@ import {
   assertCanonicalRunModifierLedgerV08,
   createEmptyRunModifierLedgerV08
 } from "./run-modifiers.js";
+import {
+  createEmptyMutatorProgressV08,
+  normalizeMutatorProgressV08
+} from "./mutator-progression.js";
 import { assertPendingRelicTransactionV08 } from "./relic-replacement.js";
 import {
   assertMetaTransactionReceiptsV08,
@@ -212,6 +216,8 @@ export function createInitialMetaStateV08(input = {}, context = {}) {
     lifeLedger: createLifeLedgerV08(),
     build: createEmptyRelicBuildV08(),
     runModifiers: createEmptyRunModifierLedgerV08(),
+    mutatorProgress: createEmptyMutatorProgressV08(),
+    mutatorRunTracking: { potionUses: 0 },
     campaign: createCampaignState(input),
     pendingOffer: null,
     offerSettlementHistory: [],
@@ -280,6 +286,17 @@ export function assertMetaStateV08(state) {
   if (!state.build || typeof state.build !== "object") throw new TypeError("META_STATE_INVALID:build");
   assertCanonicalRelicBuildV08(state.build);
   assertCanonicalRunModifierLedgerV08(state.runModifiers);
+  normalizeMutatorProgressV08(state.mutatorProgress, {
+    activeModifierIds: state.runModifiers.active.map((entry) => entry.modifierId)
+  });
+  if (
+    !state.mutatorRunTracking ||
+    Object.keys(state.mutatorRunTracking).join(",") !== "potionUses" ||
+    !Number.isSafeInteger(state.mutatorRunTracking.potionUses) ||
+    state.mutatorRunTracking.potionUses < 0
+  ) {
+    throw new TypeError("META_STATE_INVALID:mutatorRunTracking");
+  }
   assertCampaignState(state.campaign);
   assertLifeLedgerV08(state);
   assertGoldLedgerV08(state);

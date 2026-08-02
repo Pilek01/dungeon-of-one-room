@@ -7,7 +7,9 @@ import { beginCampSessionV08, commitCampTransactionV08, issueCampTransactionsV08
 import { issueNextRoomDirectiveV08 } from "../src/rulesets/v08-meta-1/room-policy.js";
 import { settleRoomRewardEnvelopeV3 } from "../src/rulesets/v08-meta-1/reward-policy.js";
 import { applyFatalEventV08 } from "../src/rulesets/v08-meta-1/life-policy.js";
-import { publicProfileStateV08, profileStateFromRunV08 } from "../src/rulesets/v08-meta-1/profile-policy.js";
+import { requestExtractionV08 } from "../src/rulesets/v08-meta-1/outcome-policy.js";
+import { hydrateRunFromProfileV08, publicProfileStateV08, profileStateFromRunV08 } from "../src/rulesets/v08-meta-1/profile-policy.js";
+import { applyMutatorProgressDeltaV08 } from "../src/rulesets/v08-meta-1/mutator-progression.js";
 import manifest from "../src/rulesets/v08-meta-1/data/ruleset-manifest.json" with { type: "json" };
 
 const SECRET = "online-boundary-repair:0123456789abcdef0123456789abcdef";
@@ -83,6 +85,7 @@ test("Online Ranked Camp exposes a server-issued mutator addition and carries it
   state.campGold = 100;
   state.goldLedger.campEarnedServerDerived = 100;
   state.build.resources.highestUnlockedDepth = 50;
+  state.mutatorProgress = applyMutatorProgressDeltaV08(state.mutatorProgress, { totalKills: 200 });
   let current = await beginCampSessionV08(state, context);
   current = await issueCampTransactionsV08(current, context);
   const choice = current.pendingInventory?.choices.find((entry) => entry.privateData?.action === "mutator_add");
@@ -94,6 +97,88 @@ test("Online Ranked Camp exposes a server-issued mutator addition and carries it
   assert.deepEqual(committed.runModifiers.active.map((entry) => entry.modifierId), [choice.privateData.mutatorId]);
   const profile = profileStateFromRunV08({ ...committed, status: "extraction" }, "profile_mutator_repair", 1);
   assert.equal(publicProfileStateV08(profile).runModifiers.active[0].modifierId, choice.privateData.mutatorId);
+});
+
+test("Online Ranked Camp offers only unlocked additions and always allows active removal", async () => {
+  const { state, context } = initialState("run_mutator_toggle_repair");
+  state.mutatorProgress = applyMutatorProgressDeltaV08(state.mutatorProgress, { totalKills: 200 });
+  let current = await beginCampSessionV08(state, context);
+  current = await issueCampTransactionsV08(current, context);
+  const addChoices = current.pendingInventory.choices.filter((entry) => entry.privateData?.action === "mutator_add");
+  assert.deepEqual(addChoices.map((entry) => entry.privateData.mutatorId), ["berserker"]);
+  current = await commitCampTransactionV08(current, {
+    transactionId: addChoices[0].transactionId,
+    choiceId: addChoices[0].choiceId
+  }, context);
+  current = await issueCampTransactionsV08(current, context);
+  const remove = current.pendingInventory.choices.find((entry) => entry.privateData?.action === "mutator_remove");
+  assert.equal(remove.privateData.mutatorId, "berserker");
+  current = await commitCampTransactionV08(current, {
+    transactionId: remove.transactionId,
+    choiceId: remove.choiceId
+  }, context);
+  assert.deepEqual(current.runModifiers.active, []);
+  assert.deepEqual(current.mutatorProgress.unlockedMutatorIds, ["berserker"]);
+});
+
+test("Ranked profile persists canonical unlock progress and legacy active modifiers hydrate unlocked", async () => {
+  const { state, context } = initialState("run_mutator_profile_progress");
+  state.mutatorProgress = applyMutatorProgressDeltaV08(state.mutatorProgress, { totalKills: 200 });
+  const profile = profileStateFromRunV08(
+    { ...state, status: "extraction" },
+    "profile_mutator_progress",
+    2
+  );
+  assert.deepEqual(publicProfileStateV08(profile).mutatorProgress.unlockedMutatorIds, ["berserker"]);
+
+  delete profile.mutatorProgress;
+  profile.runModifiers.active = [{
+    modifierId: "greed",
+    stacks: 1,
+    activatedRevision: 1,
+    activationSource: "server-issued-mid-run"
+  }];
+  profile.runModifiers.activeCount = 1;
+  const hydrated = await hydrateRunFromProfileV08(state, profile, context);
+  assert.deepEqual(hydrated.mutatorProgress.unlockedMutatorIds, ["greed"]);
+});
+
+test("accepted checkpoint advances kill, elite, gold, depth, shield and potion tracking exactly once", async () => {
+  const { state, context } = initialState("run_mutator_checkpoint_progress");
+  const issued = await issueNextRoomDirectiveV08(state, context);
+  const request = rewardRequest(issued, [
+    { claimType: "enemy", claimId: "enemy:slime", count: 1 },
+    { claimType: "elite", claimId: "elite:slime", count: 1 },
+    { claimType: "resource", claimId: "shield-use", count: 18 },
+    { claimType: "resource", claimId: "potion-use", count: 1 }
+  ]);
+  const settled = await settleRoomRewardEnvelopeV3(issued, request, context);
+  assert.equal(settled.state.mutatorProgress.totalKills, 2);
+  assert.equal(settled.state.mutatorProgress.eliteKills, 1);
+  assert.equal(settled.state.mutatorProgress.depthHighscore, issued.currentRewardEnvelope.depth);
+  assert.equal(settled.state.mutatorProgress.totalGoldEarned, settled.authoritativeGoldDelta);
+  assert.equal(settled.state.mutatorProgress.shieldUsesThisGame, 18);
+  assert.equal(settled.state.mutatorRunTracking.potionUses, 1);
+  assert.equal(settled.state.mutatorProgress.unlockedMutatorIds.includes("resilience"), false);
+  const replay = await settleRoomRewardEnvelopeV3(settled.state, request, context);
+  assert.equal(replay.state.mutatorProgress.totalKills, 2);
+  assert.equal(replay.state.mutatorProgress.shieldUsesThisGame, 18);
+});
+
+test("Famine unlocks only after normal depth-10 extraction with no potion use", () => {
+  const { state } = initialState("run_mutator_famine_progress");
+  state.depth = 10;
+  state.statistics.roomsCompleted = 1;
+  const extracted = requestExtractionV08(state, { mode: "normal" }).nextState;
+  assert.equal(extracted.mutatorProgress.potionFreeExtract, 1);
+  assert.ok(extracted.mutatorProgress.unlockedMutatorIds.includes("famine"));
+
+  const used = initialState("run_mutator_famine_blocked").state;
+  used.depth = 10;
+  used.statistics.roomsCompleted = 1;
+  used.mutatorRunTracking.potionUses = 1;
+  const blocked = requestExtractionV08(used, { mode: "normal" }).nextState;
+  assert.equal(blocked.mutatorProgress.potionFreeExtract, 0);
 });
 
 test("fatal event accepts one bounded elixir use and preserves 3/5 after a nonterminal death", async () => {

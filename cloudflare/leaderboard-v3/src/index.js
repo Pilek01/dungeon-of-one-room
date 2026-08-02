@@ -189,6 +189,42 @@ function validateStartBody(body) {
   };
 }
 
+function validatePracticeMutatorImport(value) {
+  if (value === undefined || value === null) return null;
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    throw new TypeError("practiceMutatorImport is invalid");
+  }
+  const allowedFields = ["historicalUnlockedMutatorIds", "metrics"];
+  if (Object.keys(value).some((field) => !allowedFields.includes(field))) {
+    throw new TypeError("practiceMutatorImport fields are invalid");
+  }
+  const metrics = value.metrics;
+  if (!metrics || typeof metrics !== "object" || Array.isArray(metrics)) {
+    throw new TypeError("practiceMutatorImport metrics are invalid");
+  }
+  const maximumByMetric = {
+    totalKills: 10_000_000,
+    eliteKills: 10_000_000,
+    depthHighscore: 100,
+    totalGoldEarned: 1_000_000_000,
+    totalMerchantPots: 1_000_000,
+    shieldUsesThisGame: 1_000_000,
+    potionFreeExtract: 100_000
+  };
+  const normalizedMetrics = {};
+  for (const [metric, amount] of Object.entries(metrics)) {
+    if (!Object.hasOwn(maximumByMetric, metric) || !Number.isSafeInteger(amount) || amount < 0 || amount > maximumByMetric[metric]) {
+      throw new TypeError("practiceMutatorImport metrics are invalid");
+    }
+    normalizedMetrics[metric] = amount;
+  }
+  const ids = value.historicalUnlockedMutatorIds;
+  if (!Array.isArray(ids) || ids.length > 10 || ids.some((id) => typeof id !== "string" || id.length < 1 || id.length > 32)) {
+    throw new TypeError("practiceMutatorImport IDs are invalid");
+  }
+  return { metrics: normalizedMetrics, historicalUnlockedMutatorIds: [...new Set(ids)] };
+}
+
 function validateRegisteredStartBody(body) {
   rejectUnknownRequestFields(body, "start");
   return {
@@ -211,7 +247,13 @@ function validateRegisteredStartBody(body) {
     ),
     clientProtocolVersion: body.clientProtocolVersion === undefined
       ? PROTOCOL_VERSION
-      : requireString(body.clientProtocolVersion, "clientProtocolVersion", { maximum: 64 })
+      : requireString(body.clientProtocolVersion, "clientProtocolVersion", { maximum: 64 }),
+    practiceMutatorImport: validatePracticeMutatorImport(body.practiceMutatorImport),
+    newCampaign: body.newCampaign === undefined
+      ? false
+      : typeof body.newCampaign === "boolean"
+        ? body.newCampaign
+        : (() => { throw new TypeError("newCampaign is invalid"); })()
   };
 }
 
@@ -1026,6 +1068,26 @@ async function handleRegisteredStart(request, env, options, repositories) {
   }
   const now = options.now();
   const profileAccess = await loadRankedProfile(body, repositories, now);
+  if (body.practiceMutatorImport && profileAccess.existing && !body.newCampaign) {
+    const importedState = ruleset.applyPracticeMutatorImportToProfile(
+      profileAccess.existing.state,
+      body.practiceMutatorImport,
+      { now }
+    );
+    if (JSON.stringify(importedState) !== JSON.stringify(profileAccess.existing.state)) {
+      const importedProfile = {
+        ...profileAccess.existing,
+        revision: profileAccess.existing.revision + 1,
+        state: importedState,
+        updatedAt: now,
+        expiresAt: now + PROFILE_TTL_MS
+      };
+      if (!await repositories.profiles.updateConditional(importedProfile, profileAccess.existing.revision)) {
+        throw new HttpError(409, "PROFILE_REVISION_CONFLICT", "Ranked profile changed before Practice import committed.");
+      }
+      profileAccess.existing = importedProfile;
+    }
+  }
   const activeRuns = await repositories.profiles.countActiveRuns(body.profileId, now);
   recordMetric(env, options, "active_runs", activeRuns, "start");
   if (activeRuns >= MAX_ACTIVE_RUNS_PER_PROFILE) {
@@ -1074,6 +1136,20 @@ async function handleRegisteredStart(request, env, options, repositories) {
     boundaryField = "checkpointToken";
   }
   let profile = profileAccess.existing;
+  if (profile && body.newCampaign) {
+    const resetState = ruleset.createInitialProfileState(state, body.profileId);
+    const resetProfile = {
+      ...profile,
+      revision: profile.revision + 1,
+      state: resetState,
+      updatedAt: now,
+      expiresAt: now + PROFILE_TTL_MS
+    };
+    if (!await repositories.profiles.updateConditional(resetProfile, profile.revision)) {
+      throw new HttpError(409, "PROFILE_REVISION_CONFLICT", "Ranked profile changed before campaign reset committed.");
+    }
+    profile = resetProfile;
+  }
   if (!profile) {
     profile = {
       profileId: body.profileId,

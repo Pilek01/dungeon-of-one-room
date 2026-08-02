@@ -30,7 +30,8 @@ export const CAMP_POLICY_SPEC = Object.freeze({
     "elixir-buy-refill",
     "elixir-discard",
     "relic-sale",
-    "mutator-add"
+    "mutator-add",
+    "mutator-remove"
   ]),
   offerBinding: "runId+rulesetHash+revision+state/build digest+campSessionId",
   implementationStatus: "m1-test-only"
@@ -227,25 +228,48 @@ function mutatorChoices(metaState) {
   const activeIds = metaState.runModifiers.active
     .map((entry) => entry.modifierId)
     .sort();
-  if (activeIds.length >= maximumActiveMutators) return [];
-  return mutatorCatalog.modifiers
-    .filter((modifier) => !activeIds.includes(modifier.modifierId))
+  const unlockedIds = new Set(metaState.mutatorProgress.unlockedMutatorIds);
+  const additions = activeIds.length >= maximumActiveMutators
+    ? []
+    : mutatorCatalog.modifiers
+        .filter((modifier) =>
+          unlockedIds.has(modifier.modifierId) && !activeIds.includes(modifier.modifierId)
+        )
+        .map((modifier) => ({
+          kind: "camp_mutator_add",
+          label: "Enable " + modifier.displayName,
+          publicData: {
+            action: "mutator_add",
+            mutatorId: modifier.modifierId,
+            displayName: modifier.displayName,
+            currentActiveCount: activeIds.length,
+            maximumActiveMutators
+          },
+          privateData: {
+            action: "mutator_add",
+            mutatorId: modifier.modifierId,
+            expectedActiveIds: activeIds
+          }
+        }));
+  const removals = mutatorCatalog.modifiers
+    .filter((modifier) => activeIds.includes(modifier.modifierId))
     .map((modifier) => ({
-      kind: "camp_mutator_add",
-      label: "Enable " + modifier.displayName,
+      kind: "camp_mutator_remove",
+      label: "Disable " + modifier.displayName,
       publicData: {
-        action: "mutator_add",
+        action: "mutator_remove",
         mutatorId: modifier.modifierId,
         displayName: modifier.displayName,
         currentActiveCount: activeIds.length,
         maximumActiveMutators
       },
       privateData: {
-        action: "mutator_add",
+        action: "mutator_remove",
         mutatorId: modifier.modifierId,
         expectedActiveIds: activeIds
       }
     }));
+  return [...additions, ...removals];
 }
 
 function relicSaleChoices(metaState) {
@@ -445,20 +469,30 @@ export async function commitCampTransactionV08(metaState, request, context = {})
         authoritativeReward: { campGold: refund }
       };
     }
-    if (action === "mutator_add") {
+    if (action === "mutator_add" || action === "mutator_remove") {
       const currentIds = state.runModifiers.active
         .map((entry) => entry.modifierId)
         .sort();
       if (JSON.stringify(currentIds) !== JSON.stringify(choice.privateData.expectedActiveIds)) {
         throw new TypeError("CAMP_MUTATOR_TARGET_STALE");
       }
-      if (currentIds.length >= maximumActiveMutators) {
+      const mutatorId = choice.privateData.mutatorId;
+      if (action === "mutator_add" && !state.mutatorProgress.unlockedMutatorIds.includes(mutatorId)) {
+        throw new TypeError("CAMP_MUTATOR_LOCKED");
+      }
+      if (action === "mutator_add" && currentIds.length >= maximumActiveMutators) {
         throw new TypeError("CAMP_MUTATOR_LIMIT");
       }
+      if (action === "mutator_remove" && !currentIds.includes(mutatorId)) {
+        throw new TypeError("CAMP_MUTATOR_NOT_ACTIVE");
+      }
+      const modifierIds = action === "mutator_add"
+        ? [...currentIds, mutatorId]
+        : currentIds.filter((id) => id !== mutatorId);
       const nextState = await applyCanonicalRunModifierSelection(
         state,
         {
-          modifierIds: [...currentIds, choice.privateData.mutatorId],
+          modifierIds,
           activationSource: "server-issued-mid-run"
         },
         { ...context, authority: "TRUSTED_RULESET_DOMAIN" }
@@ -467,7 +501,7 @@ export async function commitCampTransactionV08(metaState, request, context = {})
         nextState,
         publicResult: {
           action,
-          mutatorId: choice.privateData.mutatorId,
+          mutatorId,
           activeCount: nextState.runModifiers.activeCount
         }
       };

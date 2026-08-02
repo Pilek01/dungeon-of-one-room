@@ -54,7 +54,7 @@ function createHarness() {
     };
   }
 
-  async function start(operationId) {
+  async function start(operationId, extra = {}) {
     return post("/api/v3/runs/start", {
       playerName: "R2 Camp",
       season: "r2-local",
@@ -64,12 +64,40 @@ function createHarness() {
       clientInstallIdHash: "install_0123456789abcdef",
       profileId: PROFILE_ID,
       profileCredential: PROFILE_CREDENTIAL,
-      recoveryCredential: "rrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrr"
+      recoveryCredential: "rrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrr",
+      ...extra
     }, operationId);
   }
 
   return { post, profileBody, start, repositories };
 }
+
+test("Practice import is consumed once and fresh Ranked resets progress without rotating profile", async () => {
+  const harness = createHarness();
+  const first = await harness.start("r2-mutator-import-first", {
+    newCampaign: true,
+    practiceMutatorImport: {
+      metrics: { totalKills: 200 },
+      historicalUnlockedMutatorIds: ["resilience"]
+    }
+  });
+  assert.equal(first.response.status, 201);
+  assert.deepEqual(first.payload.profile.mutatorProgress.unlockedMutatorIds, ["berserker", "resilience"]);
+  assert.equal(first.payload.profile.mutatorProgress.importConsumed, true);
+
+  const second = await harness.start("r2-mutator-import-second", {
+    newCampaign: true,
+    practiceMutatorImport: {
+      metrics: {},
+      historicalUnlockedMutatorIds: ["greed", "resilience"]
+    }
+  });
+  assert.equal(second.response.status, 201);
+  assert.equal(second.payload.profile.profileId, first.payload.profile.profileId);
+  assert.deepEqual(second.payload.profile.mutatorProgress.unlockedMutatorIds, []);
+  assert.equal(second.payload.profile.mutatorProgress.importConsumed, true);
+  assert.ok(second.payload.bootstrapToken);
+});
 
 test("ordinary Ranked room cannot open Camp", async () => {
   const harness = createHarness();

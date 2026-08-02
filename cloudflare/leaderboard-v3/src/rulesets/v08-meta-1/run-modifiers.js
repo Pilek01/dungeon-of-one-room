@@ -310,7 +310,10 @@ export async function applyCanonicalRunModifierSelection(
   if (activationSource === "server-issued-run-start" && currentIds.length > 0) {
     throw new TypeError("RUN_MODIFIER_RUN_START_ALREADY_SET");
   }
-  if (currentIds.some((id) => !requestedIds.includes(id))) {
+  if (
+    activationSource !== "server-issued-mid-run" &&
+    currentIds.some((id) => !requestedIds.includes(id))
+  ) {
     throw new TypeError("RUN_MODIFIER_REMOVAL_FORBIDDEN");
   }
   const next = structuredClone(metaState);

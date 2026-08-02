@@ -59,6 +59,12 @@ import {
 import { finalizeRunV08 } from "./finalization-policy.js";
 import { projectPublicRunModifiers } from "./run-modifiers.js";
 import {
+  applyPracticeMutatorImportV08,
+  projectPublicMutatorProgressV08,
+  resetMutatorCampaignProgressV08
+} from "./mutator-progression.js";
+import {
+  applyPracticeMutatorImportToProfileV08,
   createInitialProfileStateV08,
   hydrateRunFromProfileV08,
   profileStateFromRunV08,
@@ -213,26 +219,47 @@ export function createV08Meta1Ruleset(options = {}) {
     },
 
     async createRun(input, context) {
-      const profileUnlocks = input.profileState?.campaign?.unlockedStartDepths;
+      const profileUnlocks = input.newCampaign
+        ? null
+        : input.profileState?.campaign?.unlockedStartDepths;
       const initialInput = {
         ...input,
         rulesetHash,
         unlockedStartDepths: Array.isArray(profileUnlocks) ? profileUnlocks : input.unlockedStartDepths
       };
       let initial = createInitialMetaStateV08(initialInput, context);
-      initial = await hydrateRunFromProfileV08(
-        initial,
-        input.profileState,
-        mergeContext(options, context)
-      );
-      const startingRelicAlreadyGranted =
+      if (input.newCampaign && input.profileState) {
+        initial.profileId = input.profileState.profileId;
+        initial.mutatorProgress = resetMutatorCampaignProgressV08(
+          input.profileState.mutatorProgress
+        );
+      } else {
+        initial = await hydrateRunFromProfileV08(
+          initial,
+          input.profileState,
+          mergeContext(options, context)
+        );
+      }
+      if (input.practiceMutatorImport && !initial.mutatorProgress.importConsumed) {
+        initial.mutatorProgress = applyPracticeMutatorImportV08(
+          initial.mutatorProgress,
+          input.practiceMutatorImport,
+          { importedAt: context.now }
+        );
+      }
+      const startingRelicAlreadyGranted = !input.newCampaign && (
         input.profileState?.startingRelicGranted === true ||
-        Boolean(input.profileState?.lastExtractedRunId);
+        Boolean(input.profileState?.lastExtractedRunId)
+      );
       if (initial.build.relics.length > 0 || startingRelicAlreadyGranted) {
         initial.status = "active";
         return issueNextRoomDirectiveV08(initial, mergeContext(options, context));
       }
       return issueStartingRelicOfferV08(initial, mergeContext(options, context));
+    },
+
+    applyPracticeMutatorImportToProfile(profile, payload, context = {}) {
+      return applyPracticeMutatorImportToProfileV08(profile, payload, context);
     },
 
     createInitialProfileState(state, profileId) {
@@ -249,6 +276,10 @@ export function createV08Meta1Ruleset(options = {}) {
 
     projectPublicRunModifiers(state) {
       return projectPublicRunModifiers(state);
+    },
+
+    projectPublicMutatorProgress(state) {
+      return projectPublicMutatorProgressV08(state.mutatorProgress);
     },
 
     async selectStartingRelic(state, request, context = {}) {

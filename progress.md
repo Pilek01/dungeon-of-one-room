@@ -1255,3 +1255,28 @@ Updated next good targets
   next-run, and Final Defeat screenshots were inspected.
 - No game, Worker, D1, schema, ruleset, production, deployment, or protected
   Vault Guardian change occurred. Package C was not started.
+
+## 2026-08-02 - Ranked Practice-parity mutator progression candidate
+
+- Added server-canonical Ranked mutator progression with all ten exact Practice
+  thresholds, a bounded one-time Practice import, and a fresh-campaign reset
+  that preserves the import receipt while Start Next Run preserves campaign
+  progress.
+- Ranked Camp now issues additions only for canonically unlocked mutators and
+  always issues removals for active mutators. The generated bridge toggles both
+  directions and projects unlocks from profile progress, never transient Camp
+  offers. Online saves no longer write mutator/meta progress into Practice.
+- Canonical checkpoint and transaction events advance kills, elite kills,
+  depth, earned gold, Merchant potions, bounded shield uses, and potion-free
+  normal extraction. Shield claims remain capped at 18 per room and accumulate
+  toward the Practice threshold of 60.
+- Candidate ruleset hash: `sha256:bc0d548d204557d0cc0ec7f8a358e18246778a13b27c58f5c6cdd73e73621711`.
+  Focused integration: 36/36 PASS; `verify:guard`: 14/14 PASS;
+  `verify:phase`: 773/773 PASS. `verify:full` passed Worker 773/773,
+  Wrangler/D1 21/21, baseline guard 3/3, and clean committed game baseline;
+  it remained FAIL because the clean committed Ranked browser harness detached
+  the Ranked menu row during click. Focused current-tree Camp QA could not
+  start because local Workerd returned SQLite `SQLITE_CANTOPEN` before browser
+  launch, so visible Camp QA remains unresolved rather than claimed PASS.
+- No commit, push, deploy, D1 migration, backfill, or ruleset activation was
+  performed.

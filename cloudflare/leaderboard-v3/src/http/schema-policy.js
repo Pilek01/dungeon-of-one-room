@@ -14,7 +14,9 @@ export const REGISTERED_MUTATION_FIELDS = Object.freeze({
     "profileId",
     "profileCredential",
     "recoveryCredential",
-    "clientProtocolVersion"
+    "clientProtocolVersion",
+    "practiceMutatorImport",
+    "newCampaign"
   ]),
   bootstrapEvent: Object.freeze([
     "runId",
