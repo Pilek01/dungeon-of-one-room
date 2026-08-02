@@ -1344,6 +1344,6 @@ Updated next good targets
 - Regenerated test-only v08-meta-1 provenance after the protected `game.js`
   change. Local candidate hash:
   `sha256:9943c47912764a83eac2b06cc0524471fccd2b49e80c364ef5d894856f724ea6`.
-  Committed protected-baseline verification remains to run after the commit.
+  The committed protected baseline passes 3/3 and its complete headed smoke.
 - No push, deployment, D1 migration/backfill, or ruleset activation was
   performed.
