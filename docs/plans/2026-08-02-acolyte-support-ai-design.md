@@ -37,4 +37,3 @@ player is allowed only when no legal support target exists.
 - Focused gameplay tests cover the actual cast priority and target lifecycle.
 - Run JavaScript syntax checks, `git diff --check`, the proportional baseline
   guard, and a headed gameplay scenario with screenshot/state inspection.
-
