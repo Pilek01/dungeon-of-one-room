@@ -45,6 +45,7 @@ const WORKER_NODE_MODULES = process.env.DUNGEON_ONLINE_V3_WORKER_NODE_MODULES ||
 const WRANGLER = path.join(WORKER_NODE_MODULES, "wrangler", "bin", "wrangler.js");
 const DATABASE = "dungeon-online-v3-local";
 const SEASON = "m4-headed";
+const TEST_BOT_PASSWORD = "ranked-headed-observer-bot";
 const HEADLESS = process.argv.includes("--headless");
 const execFileAsync = promisify(execFile);
 
@@ -286,18 +287,22 @@ async function openNativeMenuOption(page, title) {
 async function openRankedChoice(page, choice) {
   await openNativeMenuOption(page, "Ranked (Online)");
   if (choice === "Start New Ranked") {
-    await page.waitForFunction((buttonName) => {
+    await page.waitForFunction((buttonNames) => {
       const session = window.DungeonOnlineV3?.getSessionState?.() || "IDLE";
       const relicVisible = [...document.querySelectorAll(".ranked-v3-choice-relic")]
         .some((element) => element.getClientRects().length > 0);
       const buttonVisible = [...document.querySelectorAll("button")]
-        .some((element) => element.getClientRects().length > 0 && element.textContent?.trim() === buttonName);
+        .some((element) => element.getClientRects().length > 0 &&
+          buttonNames.includes(element.textContent?.trim() || ""));
       return session !== "IDLE" || relicVisible || buttonVisible;
-    }, choice, { timeout: 15_000 });
+    }, [choice, "Start Ranked"], { timeout: 15_000 });
     const savedRunChoice = page.getByRole("button", { name: choice, exact: true });
     if (await savedRunChoice.isVisible().catch(() => false)) {
       await savedRunChoice.click();
+      return;
     }
+    const freshStartChoice = page.getByRole("button", { name: "Start Ranked", exact: true });
+    if (await freshStartChoice.isVisible().catch(() => false)) await freshStartChoice.click();
     return;
   }
   await page.getByRole("heading", { name: "Ranked (Online)", exact: true }).waitFor({ state: "visible" });
@@ -598,7 +603,9 @@ async function main() {
     "test"
   ], {
     cwd: ROOT,
-    env: environment(),
+    env: environment({
+      DUNGEON_ONLINE_TEST_BOT_PASSWORD: TEST_BOT_PASSWORD
+    }),
     maxBuffer: 10 * 1024 * 1024,
     windowsHide: true
   });
@@ -659,6 +666,28 @@ async function main() {
     state.player.hp = Math.max(1, state.player.maxHp - 1);
     drinkPotion();
     return state.player.potions === before - 1;
+  };
+  window.__DUNGEON_TEST_TOGGLE_OBSERVER_BOT = () => {
+    if (!canUseDebugCheats() || state.phase !== "playing") return false;
+    if (state.onlineV3Ranked && !state.onlineV3TestBotUnlocked) return false;
+    return toggleObserverBot();
+  };
+  window.__DUNGEON_TEST_IS_TURN_INPUT_LOCKED = () => (
+    canUseDebugCheats() && isTurnInputLocked()
+  );
+  window.__DUNGEON_TEST_CLEAR_VISIBLE_ROOM = () => {
+    if (!canUseDebugCheats() || state.phase !== "playing") return false;
+    if (state.roomCleared) return true;
+    if (!Array.isArray(state.enemies) || state.enemies.length <= 0) return false;
+    const before = state.enemies.length;
+    for (const enemy of [...state.enemies]) {
+      killEnemy(enemy, "headed observer clear");
+    }
+    checkRoomClearBonus();
+    pushLog("Headed QA: room cleared (" + before + " enemies).", "warn");
+    saveAfterDebugCheat();
+    markUiDirty();
+    return state.roomCleared;
   };
 
 ${fatalTestHookAnchor}`;
@@ -887,6 +916,119 @@ ${fatalTestHookAnchor}`;
     }
 
     if (RUN_LIFECYCLE) {
+    assert.equal(
+      await page.evaluate(() => window.DUNGEON_ONLINE_TEST_BOT_ENABLED === true),
+      true,
+      "Ranked lifecycle QA bundle must enable the password-gated Observer Bot"
+    );
+    await page.evaluate((password) => {
+      window.prompt = () => password;
+    }, TEST_BOT_PASSWORD);
+    await openNativeMenuOption(page, "Ranked (Online)");
+    await page.getByRole("button", { name: "Start + Observer Bot", exact: true }).click();
+    await page.locator(".ranked-v3-choice-relic").first().waitFor({ state: "visible" });
+    await chooseRelicWithoutFatalPrevention(page);
+    await sessionState(page, "ROOM_ACTIVE", diagnostics);
+    assert.equal(
+      await page.evaluate(() => window.__DUNGEON_TEST_TOGGLE_OBSERVER_BOT?.()),
+      true
+    );
+    await page.waitForFunction(() => (
+      window.DungeonOnlineV3GameBridge?.isRankedTestBotActive?.() === true
+    ));
+
+    const observerBotRequestsBefore = diagnostics.apiRequests.length;
+    assert.equal(
+      await page.evaluate(() => window.__DUNGEON_TEST_TOGGLE_OBSERVER_BOT?.()),
+      true
+    );
+    await page.waitForFunction(() => (
+      window.DungeonOnlineV3GameBridge?.isRankedTestBotActive?.() === false
+    ));
+    let forgeRoom = await visibleGameState(page);
+    for (let room = 0; room < 21 && forgeRoom.roomType !== "forge"; room += 1) {
+      const sourceRoom = forgeRoom;
+      if (!sourceRoom.roomCleared) {
+        assert.equal(
+          await page.evaluate(() => window.__DUNGEON_TEST_CLEAR_VISIBLE_ROOM?.()),
+          true,
+          `QA hook could not clear canonical room: ${JSON.stringify(sourceRoom)}`
+        );
+        await page.waitForFunction(() => JSON.parse(window.render_game_to_text()).roomCleared === true);
+      }
+      if (sourceRoom.roomType !== "merchant") {
+        await page.waitForFunction(() => [
+          "AWAITING_REWARD_OR_TRANSACTION",
+          "ENTERING_NEXT_ROOM"
+        ].includes(window.DungeonOnlineV3?.getSessionState?.()));
+        if (await page.locator(".ranked-v3-choice-relic:visible").count() > 0) {
+          await chooseRelicWithoutFatalPrevention(page);
+        }
+        await sessionState(page, "ENTERING_NEXT_ROOM");
+      }
+      await crossVisiblePortal(page, sourceRoom.depth + 1);
+      forgeRoom = await visibleGameState(page);
+    }
+    assert.equal(
+      forgeRoom.roomType,
+      "forge",
+      `Canonical Ranked schedule did not issue Forge by depth 21: ${JSON.stringify(forgeRoom)}`
+    );
+
+    assert.equal(
+      await page.evaluate(() => window.__DUNGEON_TEST_TOGGLE_OBSERVER_BOT?.()),
+      true
+    );
+    await page.waitForFunction(() => (
+      window.DungeonOnlineV3GameBridge?.isRankedTestBotActive?.() === true
+    ));
+    assert.equal(
+      await page.evaluate(() => window.__DUNGEON_TEST_CLEAR_VISIBLE_ROOM?.()),
+      true
+    );
+    await page.waitForFunction((depth) => {
+      const game = JSON.parse(window.render_game_to_text());
+      return game.depth >= depth && game.roomType !== "forge" &&
+        window.DungeonOnlineV3?.getSessionState?.() === "ROOM_ACTIVE";
+    }, forgeRoom.depth + 1, { timeout: 45_000 });
+    const observerBotForgeAudit = await page.evaluate(() => ({
+      game: JSON.parse(window.render_game_to_text()),
+      session: window.DungeonOnlineV3?.getSessionState?.() || "",
+      active: window.DungeonOnlineV3GameBridge?.isRankedTestBotActive?.() === true,
+      boundaryPending: window.DungeonOnlineV3?.isObserverBotBoundaryPending?.() === true,
+      overlay: document.querySelector(".ranked-v3-overlay")?.textContent || "",
+      logText: document.getElementById("log")?.innerText || ""
+    }));
+    assert.equal(observerBotForgeAudit.session, "ROOM_ACTIVE", JSON.stringify(observerBotForgeAudit));
+    assert.equal(observerBotForgeAudit.active, true, JSON.stringify(observerBotForgeAudit));
+    assert.equal(observerBotForgeAudit.boundaryPending, false, JSON.stringify(observerBotForgeAudit));
+    assert.doesNotMatch(
+      `${observerBotForgeAudit.game.latestLog || ""}\n${observerBotForgeAudit.logText}`,
+      /Online v3 is still resolving the next room\./u,
+      JSON.stringify(observerBotForgeAudit)
+    );
+    assert.doesNotMatch(observerBotForgeAudit.overlay, /reconnect|required|unavailable/iu);
+    assert(
+      diagnostics.apiRequests.slice(observerBotRequestsBefore)
+        .filter((entry) => entry.path === "/api/v3/runs/checkpoint").length >= 2,
+      "Observer Bot Forge lifecycle did not checkpoint both room boundaries"
+    );
+    await page.screenshot({
+      path: path.join(ARTIFACT_ROOT, "ranked-observer-bot-after-forge-portal.png"),
+      fullPage: true
+    });
+    assert.equal(
+      await page.evaluate(() => window.__DUNGEON_TEST_TOGGLE_OBSERVER_BOT?.()),
+      true
+    );
+    await page.waitForFunction(() => (
+      window.__DUNGEON_TEST_IS_TURN_INPUT_LOCKED?.() === false
+    ));
+    await page.keyboard.press("Escape");
+    await page.waitForFunction(() => (
+      JSON.parse(window.render_game_to_text()).phase === "menu"
+    ));
+
     await openRankedChoice(page, "Start New Ranked");
     await page.locator(".ranked-v3-choice-relic").first().waitFor({ state: "visible" });
     assert.equal(await page.locator(".ranked-v3-entry:visible").count(), 0);
@@ -1634,6 +1776,7 @@ ${fatalTestHookAnchor}`;
       networkLossScenarios: RUN_LIFECYCLE ? 1 : 0,
       reloadRecoveryScenarios: RUN_LIFECYCLE ? 1 : 0,
       multiTabTakeoverScenarios: RUN_LIFECYCLE ? 1 : 0,
+      observerBotForgePortalScenarios: RUN_LIFECYCLE ? 1 : 0,
       campLifecycleScenarios: RUN_CAMP ? 1 : 0,
       nextRunProfileScenarios: RUN_CAMP ? 1 : 0,
       checkpointExtractionScenarios: RUN_CAMP ? 1 : 0,

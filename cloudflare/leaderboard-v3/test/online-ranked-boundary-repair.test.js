@@ -142,3 +142,27 @@ test("deployed test bot remains password-gated and test music is muted", async (
   assert.match(runtime, /Observer Bot/u);
   assert.match(headed, /dungeonOneRoomAudioMuted/u);
 });
+
+test("Ranked Observer Bot owns canonical offers and waits for the full boundary", async () => {
+  const builder = await readFile(new URL("../../../scripts/build-pages-v3.mjs", import.meta.url), "utf8");
+  const runtime = await readFile(new URL("../../../online-v3/ranked-v3-runtime.js", import.meta.url), "utf8");
+
+  assert.match(runtime, /let observerBotBoundaryPending = false;/u);
+  assert.match(runtime, /function isRankedObserverBotActive\(\)/u);
+  assert.match(runtime, /function runObserverBotBoundary\(task\)/u);
+  assert.match(runtime, /selectStartingRelic|select_relic/u);
+  assert.match(runtime, /commit_relic_replacement/u);
+  assert.match(runtime, /commit_meta_transaction/u);
+  assert.match(
+    runtime,
+    /function onForgeMode\(mode\)[\s\S]*runObserverBotBoundary[\s\S]*open_meta_offer/u
+  );
+  assert.match(runtime, /isObserverBotBoundaryPending/u);
+
+  assert.match(builder, /isRankedTestBotActive\(\)/u);
+  assert.match(builder, /DungeonOnlineV3\?\.isObserverBotBoundaryPending\?\.\(\)/u);
+  assert.match(
+    builder,
+    /function runObserverBotStep\(\)[\s\S]*isObserverBotBoundaryPending[\s\S]*state\.phase/u
+  );
+});
