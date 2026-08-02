@@ -1275,8 +1275,11 @@ Updated next good targets
   `verify:phase`: 773/773 PASS. `verify:full` passed Worker 773/773,
   Wrangler/D1 21/21, baseline guard 3/3, and clean committed game baseline;
   it remained FAIL because the clean committed Ranked browser harness detached
-  the Ranked menu row during click. Focused current-tree Camp QA could not
-  start because local Workerd returned SQLite `SQLITE_CANTOPEN` before browser
-  launch, so visible Camp QA remains unresolved rather than claimed PASS.
-- No commit, push, deploy, D1 migration, backfill, or ruleset activation was
-  performed.
+  the Ranked menu row during click.
+- Focused current-tree Camp QA now passes from a shortened Windows worktree.
+  The visible flow imports the exact Practice threshold for Berserker, proves
+  only Berserker is unlocked, then performs two canonical Camp refreshes and
+  verifies `OFF -> ACTIVE -> OFF` while the mutator remains unlocked. Both
+  screenshots were inspected; unexpected console errors and page errors are
+  zero.
+- No push, deploy, D1 migration, backfill, or ruleset activation was performed.
