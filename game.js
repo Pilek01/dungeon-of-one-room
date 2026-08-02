@@ -18912,6 +18912,23 @@
     return buffCandidates[0]?.enemy || null;
   }
 
+  function getAcolyteSupportAnchor(caster) {
+    if (!caster || state.phase !== "playing") return null;
+    const healTarget = getAcolyteHealTarget(caster, Number.POSITIVE_INFINITY);
+    if (healTarget) return healTarget;
+    const buffTarget = getAcolyteBuffTarget(caster, Number.POSITIVE_INFINITY);
+    if (buffTarget) return buffTarget;
+    const supportCandidates = state.enemies
+      .filter((enemy) => enemy && enemy !== caster && enemy.type !== "acolyte")
+      .map((enemy) => ({
+        enemy,
+        dist: manhattan(enemy.x, enemy.y, caster.x, caster.y),
+        priority: getAcolyteSupportPriority(enemy)
+      }))
+      .sort((a, b) => b.priority - a.priority || a.dist - b.dist);
+    return supportCandidates[0]?.enemy || null;
+  }
+
   function getAcolyteCastPlan(caster, options = {}) {
     const canAttackCast = Boolean(options.canAttackCast);
     const wantsCast = options.wantsCast !== false;
@@ -18919,11 +18936,17 @@
     if (healTarget) {
       return { type: "heal", target: healTarget };
     }
+    if (getAcolyteHealTarget(caster, Number.POSITIVE_INFINITY)) {
+      return { type: "none", target: null };
+    }
 
     const buffTarget = getAcolyteBuffTarget(caster, ACOLYTE_SUPPORT_RANGE);
     const teamBuffLocked = Boolean(state.enemyAcolyteBuffCastThisTurn);
     if (buffTarget && !teamBuffLocked) {
       return { type: "buff", target: buffTarget };
+    }
+    if (getAcolyteBuffTarget(caster, Number.POSITIVE_INFINITY)) {
+      return { type: "none", target: null };
     }
     if (!canAttackCast) return { type: "none", target: null };
 
@@ -19225,6 +19248,9 @@
     const unopenedChests = state.chests
       .filter((chest) => !chest.opened)
       .map((chest) => ({ x: chest.x, y: chest.y }));
+    const supportAnchor = enemy?.type === "acolyte"
+      ? getAcolyteSupportAnchor(enemy)
+      : null;
     const plan = enemyDirector.decidePlan({
       enemy,
       player: {
@@ -19248,7 +19274,9 @@
       playerLowHp: state.player.hp <= LOW_HP_THRESHOLD,
       playerDistance: distance,
       depth: Math.max(0, Number(state.depth) || 0),
-      blackboard: state.enemyBlackboard
+      blackboard: state.enemyBlackboard,
+      supportTarget: supportAnchor ? { x: supportAnchor.x, y: supportAnchor.y } : null,
+      supportRange: ACOLYTE_SUPPORT_RANGE
     });
     if (!plan || typeof plan !== "object") {
       return {
@@ -19287,6 +19315,9 @@
     for (const enemy of state.enemies) {
       if (!enemy || !state.enemies.includes(enemy)) continue;
       const distance = manhattan(enemy.x, enemy.y, state.player.x, state.player.y);
+      const supportAnchor = enemy.type === "acolyte"
+        ? getAcolyteSupportAnchor(enemy)
+        : null;
       const plan = enemyDirector.decidePlan({
         enemy,
         player: {
@@ -19311,6 +19342,8 @@
         playerDistance: distance,
         depth: Math.max(0, Number(state.depth) || 0),
         blackboard: board,
+        supportTarget: supportAnchor ? { x: supportAnchor.x, y: supportAnchor.y } : null,
+        supportRange: ACOLYTE_SUPPORT_RANGE,
         previewOnly: true
       });
       plans.push({
@@ -19668,6 +19701,18 @@
         enemy.acolyteCastType = "";
         return;
       }
+    }
+
+    if (enemy.type === "acolyte" && aiPlan.intent === "support") {
+      if (
+        aiPlan.moveTo &&
+        (aiPlan.moveTo.x !== enemy.x || aiPlan.moveTo.y !== enemy.y) &&
+        !enemyTileBlocked(aiPlan.moveTo.x, aiPlan.moveTo.y, enemy)
+      ) {
+        const supportMove = applyEnemyMoveStep(enemy, aiPlan.moveTo);
+        if (supportMove.removed) return;
+      }
+      return;
     }
 
     if (enemy.type === "blacksmith_guardian") {

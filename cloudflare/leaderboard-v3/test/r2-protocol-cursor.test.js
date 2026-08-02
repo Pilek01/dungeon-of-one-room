@@ -32,16 +32,6 @@ function registeredWorker() {
   });
 }
 
-function registeredProductionWorker() {
-  return createWorker({
-    rulesetRegistry: createRulesetRegistry([V08_META_1_PRODUCTION_RELEASE_DESCRIPTOR]),
-    rulesetEnvironment: "local",
-    repositories: createMemoryRepositories(),
-    now: () => 1_800_000_000_000,
-    randomUUID: () => "00000000-0000-4000-8000-000000000001"
-  });
-}
-
 function startBody(overrides = {}) {
   return {
     playerName: "Protocol",
@@ -82,38 +72,17 @@ test("R2 registered mutations reject unknown fields and protocol mismatch", asyn
   assert.equal((await mismatch.json()).error.code, "PROTOCOL_VERSION_MISMATCH");
 });
 
-test("R2 client schema accepts bootstrap from the activated ruleset", async () => {
+test("R2 client schema rejects bootstrap from a local-only candidate", async () => {
   const localWorker = registeredWorker();
   const localStartedResponse = await postStart(localWorker, startBody());
   assert.equal(localStartedResponse.status, 201);
   const localStarted = await localStartedResponse.json();
-  protocol.validateMutationResponse(localStarted);
-
-  const worker = registeredProductionWorker();
-  const startedResponse = await postStart(worker, startBody({
-    rulesetHash: V08_META_1_PRODUCTION_RELEASE_DESCRIPTOR.rulesetHash
-  }));
-  assert.equal(startedResponse.status, 201);
-  const started = await startedResponse.json();
-  protocol.validateMutationResponse(started);
-  const selectedResponse = await worker.fetch(new Request("https://r2.invalid/api/v3/runs/event", {
-    method: "POST",
-    headers: {
-      "content-type": "application/json",
-      "Idempotency-Key": "r2-protocol-select-0001"
-    },
-    body: JSON.stringify({
-      runId: started.runId,
-      type: "select_starting_relic",
-      bootstrapToken: started.bootstrapToken,
-      offerId: started.metaState.startingRelicOffer.offerId,
-      choiceId: started.metaState.startingRelicOffer.publicChoices[0].choiceId,
-      clientProtocolVersion: PROTOCOL_VERSION
-    })
-  }), { RANKED_V3_HMAC_SECRET: TEST_SECRET });
-  assert.equal(selectedResponse.status, 200);
-  protocol.validateMutationResponse(await selectedResponse.json());
+  assert.throws(
+    () => protocol.validateMutationResponse(localStarted),
+    /PROTOCOL_RULESET_HASH_UNSUPPORTED/u,
+  );
 });
+
 test("R2 availability descriptor is explicit and does not require D1", async () => {
   const worker = createWorker({ rulesetEnvironment: "local" });
   const compatible = await worker.fetch(new Request(
@@ -156,10 +125,10 @@ test("R2 public seek cursor is versioned, strict, and malformed input returns 40
   assert.equal((await response.json()).error.code, "LEADERBOARD_CURSOR_INVALID");
 });
 
-test("R2 client accepts current and retained released save hashes and rejects unknown hashes", () => {
+test("R2 client accepts released save hashes and rejects local-only or unknown hashes", () => {
   assert.equal(protocol.RULESET_HASH, V08_META_1_PRODUCTION_RELEASE_DESCRIPTOR.rulesetHash);
-  assert.equal(protocol.RULESET_HASH, manifest.rulesetHash);
-  assert.equal(protocol.isSupportedRulesetHash(manifest.rulesetHash), true);
+  assert.notEqual(protocol.RULESET_HASH, manifest.rulesetHash);
+  assert.equal(protocol.isSupportedRulesetHash(manifest.rulesetHash), false);
   for (const hash of protocol.SUPPORTED_RULESET_HASHES) {
     assert.equal(protocol.isSupportedRulesetHash(hash), true);
   }

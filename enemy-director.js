@@ -22,7 +22,7 @@
   function roleForEnemy(enemy) {
     if (!enemy || !enemy.type) return "swarm";
     if (enemy.type === "skeleton") return "ranged";
-    if (enemy.type === "acolyte") return "ranged";
+    if (enemy.type === "acolyte") return "support";
     if (enemy.type === "warden") return "zoning";
     if (enemy.type === "brute") return "bruiser";
     if (enemy.type === "skitter") return "bruiser";
@@ -155,6 +155,10 @@
       Math.random() < Math.max(0, Math.min(1, Number(antiStrafeProfile.forceCutoffChance) || 0));
     const wantsPressure = playerLowHp && !playerShieldActive;
 
+    if (role === "support" && context.supportTarget) {
+      return "support";
+    }
+
     if (focusMode === "intercept") {
       if (role === "zoning" || role === "ranged") {
         if (enemy.aiming || canCastNow) return "cast";
@@ -218,7 +222,9 @@
       meleeSlotsLimit,
       playerShieldActive,
       blackboard,
-      depth
+      depth,
+      supportTarget,
+      supportRange
     } = context;
 
     const focusMode = String(blackboard?.focusMode || "normal");
@@ -241,9 +247,20 @@
     const onSpike = spikes.has(`${tile.x},${tile.y}`);
     const meleeRange = distance === 1;
     const tileThreat = Number(blackboard?.threatMap?.[`${tile.x},${tile.y}`]) || 0;
+    const safeSupportRange = Math.max(1, Number(supportRange) || 4);
+    const supportDistance = supportTarget
+      ? manhattan(tile.x, tile.y, supportTarget.x, supportTarget.y)
+      : Number.POSITIVE_INFINITY;
 
     let score = 0;
-    if (intent === "chase") {
+    if (intent === "support" && supportTarget) {
+      const desiredDistance = Math.max(1, safeSupportRange - 2);
+      if (supportDistance <= safeSupportRange) {
+        score += 52 - Math.abs(supportDistance - desiredDistance) * 4;
+      } else {
+        score += 8 - (supportDistance - safeSupportRange) * 20;
+      }
+    } else if (intent === "chase") {
       score += 36 - distance * 10;
       score += flankBonus;
     } else if (intent === "flank") {
@@ -273,25 +290,27 @@
       }
     }
     score -= tileThreat * 0.22;
-    score -= allyDensity * 3.5;
+    if (role !== "support") score -= allyDensity * 3.5;
 
     if (playerShieldActive && (role === "zoning" || role === "ranged") && castFromTile) {
       score -= 12;
     }
 
-    if (focusMode === "pressure" && distance <= 2) score += 3;
-    if (focusMode === "intercept") {
-      score += Math.max(0, 12 - distance * 4);
-      if (castFromPredicted) score += 5;
-    }
-    if (hardAntiStrafe) {
-      if (intent === "cutoff") score += antiStrafeProfile.cutoffBonus;
-      if (intent === "cast") score += antiStrafeProfile.castBonus;
-      if (castFromPredicted && (role === "zoning" || role === "ranged")) {
-        score += antiStrafeProfile.predictedCastBonus;
+    if (role !== "support") {
+      if (focusMode === "pressure" && distance <= 2) score += 3;
+      if (focusMode === "intercept") {
+        score += Math.max(0, 12 - distance * 4);
+        if (castFromPredicted) score += 5;
       }
-      if (portalDistance <= 2) score += antiStrafeProfile.portalBonus;
-      score += Math.max(0, antiStrafeProfile.interceptDistanceBonusBase - distance * antiStrafeProfile.interceptDistanceBonusStep);
+      if (hardAntiStrafe) {
+        if (intent === "cutoff") score += antiStrafeProfile.cutoffBonus;
+        if (intent === "cast") score += antiStrafeProfile.castBonus;
+        if (castFromPredicted && (role === "zoning" || role === "ranged")) {
+          score += antiStrafeProfile.predictedCastBonus;
+        }
+        if (portalDistance <= 2) score += antiStrafeProfile.portalBonus;
+        score += Math.max(0, antiStrafeProfile.interceptDistanceBonusBase - distance * antiStrafeProfile.interceptDistanceBonusStep);
+      }
     }
     if (focusMode === "bait" && castFromTile) score -= 3;
 
@@ -329,6 +348,13 @@
     const antiStrafeProfile = getAntiStrafePressureProfile(depth);
 
     const role = roleForEnemy(enemy);
+    const supportTarget =
+      Number.isFinite(Number(input.supportTarget?.x)) &&
+      Number.isFinite(Number(input.supportTarget?.y))
+        ? { x: Number(input.supportTarget.x), y: Number(input.supportTarget.y) }
+        : null;
+    const supportRange = Math.max(1, Number(input.supportRange) || 4);
+    const movementRole = role === "support" && !supportTarget ? "ranged" : role;
     const lane = blackboard?.roleAssignments?.get(enemy) || "support";
     const currentDistance = manhattan(enemy.x, enemy.y, player.x, player.y);
     const canSeePlayer =
@@ -341,13 +367,14 @@
     } else {
       ensureMemory(enemy);
     }
-    const intent = chooseIntent(role, enemy, currentDistance, canCastNow, canSeePlayer, {
+    const intent = chooseIntent(movementRole, enemy, currentDistance, canCastNow, canSeePlayer, {
       playerLowHp,
       playerShieldActive,
       focusMode: blackboard?.focusMode || "normal",
       lane,
       hardAntiStrafe: Boolean(blackboard?.antiStrafe?.active),
-      antiStrafeProfile
+      antiStrafeProfile,
+      supportTarget
     });
 
     const candidates = [];
@@ -363,7 +390,7 @@
         player,
         portal,
         intent,
-        role,
+        role: movementRole,
         currentDistance,
         enemies,
         spikes,
@@ -372,21 +399,35 @@
         meleeSlotsLimit,
         playerShieldActive,
         blackboard,
-        depth
+        depth,
+        supportTarget,
+        supportRange
       });
       candidates.push({
         tile,
         score,
-        onSpike: spikes.has(`${tile.x},${tile.y}`)
+        onSpike: spikes.has(`${tile.x},${tile.y}`),
+        supportDistance: supportTarget
+          ? manhattan(tile.x, tile.y, supportTarget.x, supportTarget.y)
+          : Number.POSITIVE_INFINITY
       });
     }
 
     let bestTile = { x: enemy.x, y: enemy.y };
     let bestScore = Number.NEGATIVE_INFINITY;
     const hasNonSpikeCandidate = candidates.some((candidate) => !candidate.onSpike);
-    const preferredCandidates = hasNonSpikeCandidate
+    let preferredCandidates = hasNonSpikeCandidate
       ? candidates.filter((candidate) => !candidate.onSpike)
       : candidates;
+    if (movementRole === "support" && supportTarget) {
+      const currentSupportDistance = manhattan(enemy.x, enemy.y, supportTarget.x, supportTarget.y);
+      const supportSafeCandidates = currentSupportDistance <= supportRange
+        ? preferredCandidates.filter((candidate) => candidate.supportDistance <= supportRange)
+        : preferredCandidates.filter((candidate) => candidate.supportDistance < currentSupportDistance);
+      if (supportSafeCandidates.length > 0) {
+        preferredCandidates = supportSafeCandidates;
+      }
+    }
     for (const candidate of preferredCandidates) {
       if (candidate.score > bestScore) {
         bestScore = candidate.score;
@@ -395,6 +436,7 @@
     }
 
     if (
+      movementRole !== "support" &&
       !canSeePlayer &&
       (enemy.aiMemoryTtl || 0) > 0 &&
       bestTile.x === enemy.x &&

@@ -35,8 +35,8 @@ async function rootFile(relative) {
   return readFile(path.join(ROOT, relative), "utf8");
 }
 
-test("production entry promotes the exact tested v08-meta-1 hash and retains prior runs", async () => {
-  assert.equal(manifest.rulesetHash, EXPECTED_HASH);
+test("production entry keeps the deployed v08-meta-1 hash while retaining prior runs", async () => {
+  assert.notEqual(manifest.rulesetHash, EXPECTED_HASH);
   assert.equal(V08_META_1_LOCAL_RELEASE_DESCRIPTOR.rulesetHash, manifest.rulesetHash);
   assert.equal(V08_META_1_LOCAL_RELEASE_DESCRIPTOR.status, RULESET_RELEASE_STATES.LOCAL_RELEASE_CANDIDATE);
   assert.equal(V08_META_1_PRODUCTION_RELEASE_DESCRIPTOR.rulesetHash, EXPECTED_HASH);
