@@ -1,6 +1,6 @@
 # Online v3 - Current handoff
 
-Updated: 2026-08-02
+Updated: 2026-08-03
 
 ## Task authority
 
@@ -24,12 +24,21 @@ Do not describe the system as server-authoritative combat or cheat-proof.
 
 ## Current production snapshot
 
-- Latest deployed source commit: `1c9518d` on `origin/main`.
-- Latest production game/UI feature commit: `57f6846`.
+- Latest deployed source commit: `566455c` on `origin/main`.
+- `57f6846` remains the functional game/UI commit for the unified Gothic
+  Ranked Leaderboard and Practice Records archive.
+- `origin/main` remains at the deployed `566455c`. Local `HEAD -> main`
+  contains only additional repository-hygiene and documentation commits and is
+  ahead because no push is authorized, so the two refs are not currently
+  synchronized.
 - Production Worker version:
   `19b9174c-f720-4484-8f7b-c0918215c29b` at 100%.
 - Production Pages deployment:
-  `aed78800-ae85-47f6-b66f-17abb6473f64`.
+  `37b06f98-c602-4825-a336-9b391ee88e4a`.
+- Automatic production Pages deployments
+  `d46c6bb5-4dfd-47ae-8045-ce87e371a7f3` and
+  `59fc0e6c-491e-4e7b-9b63-c17cad9bf247` failed. The active working Pages
+  deployment was uploaded manually afterward.
 - Active production ruleset:
   `sha256:bc0d548d204557d0cc0ec7f8a358e18246778a13b27c58f5c6cdd73e73621711`.
 - Retained previous ruleset:
@@ -42,7 +51,9 @@ The latest Pages release adds support-first Acolyte behavior, the Game Over
 music repair, and the unified Gothic Ranked Leaderboard / Practice Records
 archive. Main-menu and Ranked-terminal leaderboard routes now use the same
 canonical online table; Practice terminal results remain local. The Worker,
-D1 schema/data, active ruleset, and Observer Bot gate are unchanged.
+D1 schema/data, and active ruleset are unchanged. The Observer Bot gate was
+not preserved in the deployed Pages bundle: the current production config has
+the bot disabled because its build-time password was absent.
 
 ## Latest release evidence
 
