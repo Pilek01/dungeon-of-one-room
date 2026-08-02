@@ -32,6 +32,8 @@
   let pendingBotPassword = null;
   let currentMerchantOffer = null;
   let merchantMutationPending = false;
+  let observerBotBoundaryPending = false;
+  let observerBotAutomationHalted = false;
   const recoveryStore = root.DungeonRankedV3Storage.createStore(root.localStorage);
 
   function publicName() {
@@ -57,12 +59,65 @@
     return client;
   }
 
+  function isRankedObserverBotActive() {
+    const active = Boolean(root.DungeonOnlineV3GameBridge?.isRankedTestBotActive?.());
+    if (!active) {
+      observerBotBoundaryPending = false;
+      observerBotAutomationHalted = false;
+    }
+    return active;
+  }
+
+  function isObserverBotBoundaryPending() {
+    return Boolean(
+      isRankedObserverBotActive() &&
+      (observerBotBoundaryPending || observerBotAutomationHalted)
+    );
+  }
+
+  async function runObserverBotBoundary(task) {
+    if (!isRankedObserverBotActive()) return task();
+    if (observerBotAutomationHalted) return false;
+    const nested = observerBotBoundaryPending;
+    if (!nested) observerBotBoundaryPending = true;
+    try {
+      return await task();
+    } catch (error) {
+      observerBotAutomationHalted = true;
+      presentError(error);
+      return false;
+    } finally {
+      if (!nested) observerBotBoundaryPending = false;
+    }
+  }
+
+  function stableObserverBotChoice(entries, idField, preferAction = false) {
+    const available = Array.isArray(entries)
+      ? entries.filter((entry) =>
+          entry &&
+          (!entry.status || entry.status === "available") &&
+          String(entry[idField] || "")
+        )
+      : [];
+    const actionable = preferAction
+      ? available.filter((entry) => String(entry.kind || "") !== "leave")
+      : available;
+    const pool = actionable.length > 0 ? actionable : available;
+    return pool.sort((left, right) => {
+      const leftId = String(left[idField] || "");
+      const rightId = String(right[idField] || "");
+      return leftId < rightId ? -1 : leftId > rightId ? 1 : 0;
+    })[0] || null;
+  }
+
   function resetLocalRankedSession() {
     pendingExtractionMode = null;
     extractedProfileReady = false;
     pendingFreshCampaign = false;
     pendingElixirUsage = null;
     pendingBotPassword = null;
+    observerBotBoundaryPending = false;
+    observerBotAutomationHalted = false;
     client?.releaseWriter?.();
     client?.clear?.();
     client = null;
@@ -337,6 +392,7 @@
   }
 
   function presentError(error) {
+    if (isRankedObserverBotActive()) observerBotAutomationHalted = true;
     const code = String(error?.code || "");
     const conflict = error?.conflict || error?.status === 409;
     const writerHeld = ["RANKED_WRITER_LEASE_HELD", "RANKED_MUTATION_LOCKED"].includes(String(error?.message || ""));
@@ -595,10 +651,23 @@
 
   async function presentReplacement(replacement) {
     session.transition(root.DungeonRankedV3Session.STATES.offer);
+    const choices = offers.replacementChoices(replacement);
+    if (isRankedObserverBotActive()) {
+      ui.hide();
+      const choice = stableObserverBotChoice(choices, "replacementChoiceId");
+      return runObserverBotBoundary(async () => {
+        if (choice) return commitReplacement(replacement, choice.replacementChoiceId);
+        if (!replacement.cancelAllowed) throw new TypeError("RANKED_BOT_REPLACEMENT_UNAVAILABLE");
+        const response = await createClient().event("cancel_relic_replacement", {
+          transactionId: replacement.transactionId
+        });
+        return continueBoundary(response.metaState);
+      });
+    }
     ui.showChoices(
       "Choose a relic to replace",
       `Incoming: ${displayRelicName(replacement.incoming?.relicId)}.`,
-      offers.replacementChoices(replacement),
+      choices,
       (choiceId) => commitReplacement(replacement, choiceId).catch(presentError)
     );
     if (replacement.cancelAllowed) {
@@ -616,24 +685,29 @@
     }
   }
 
+  async function selectRelicOffer(offer, choiceId) {
+    const response = await createClient().event("select_relic", {
+      offerId: offer.offerId,
+      choiceId
+    });
+    root.DungeonOnlineV3GameBridge.syncCanonicalProjection(response.metaState);
+    await continueBoundary(response.metaState);
+  }
+
   async function presentRelicOffer(offer) {
     session.transition(root.DungeonRankedV3Session.STATES.offer);
+    const choices = offers.relicChoices(offer);
+    if (isRankedObserverBotActive()) {
+      ui.hide();
+      const choice = stableObserverBotChoice(choices, "choiceId");
+      if (!choice) throw new TypeError("RANKED_BOT_RELIC_CHOICE_UNAVAILABLE");
+      return runObserverBotBoundary(() => selectRelicOffer(offer, choice.choiceId));
+    }
     ui.showChoices(
       "Choose a Relic",
       "Choose one relic to carry into the next room.",
-      offers.relicChoices(offer),
-      async (choiceId) => {
-        try {
-          const response = await createClient().event("select_relic", {
-            offerId: offer.offerId,
-            choiceId
-          });
-          root.DungeonOnlineV3GameBridge.syncCanonicalProjection(response.metaState);
-          await continueBoundary(response.metaState);
-        } catch (error) {
-          presentError(error);
-        }
-      }
+      choices,
+      (choiceId) => selectRelicOffer(offer, choiceId).catch(presentError)
     );
   }
 
@@ -656,12 +730,20 @@
     await continueBoundary(response.metaState);
   }
 
-  function presentMetaOffer(offer) {
+  async function presentMetaOffer(offer) {
     session.transition(root.DungeonRankedV3Session.STATES.offer);
+    const choices = offers.metaChoices(offer).filter((choice) => !choice.disabled);
+    if (isRankedObserverBotActive()) {
+      ui.hide();
+      const choice = stableObserverBotChoice(offer.choices, "choiceId", true);
+      return runObserverBotBoundary(() =>
+        choice ? commitMetaChoice(offer, choice.choiceId) : resolveCheckpoint({ silent: true })
+      );
+    }
     ui.showChoices(
       `${offer.sourceType || "Ranked"} choices`,
       "Choose how to shape your build.",
-      offers.metaChoices(offer).filter((choice) => !choice.disabled),
+      choices,
       (choiceId) => commitMetaChoice(offer, choiceId).catch(presentError)
     );
     ui.overlay.querySelector(".ranked-v3-actions")?.append(
@@ -976,6 +1058,14 @@
 
   function onForgeMode(mode) {
     if (!pendingRoomSummary || !["temper", "transmute"].includes(mode)) return false;
+    if (isRankedObserverBotActive()) {
+      void runObserverBotBoundary(async () => {
+        session.transition(root.DungeonRankedV3Session.STATES.offer);
+        const response = await createClient().event("open_meta_offer", { mode });
+        await continueBoundary(response.metaState);
+      });
+      return true;
+    }
     session.transition(root.DungeonRankedV3Session.STATES.offer);
     createClient().event("open_meta_offer", { mode })
       .then((response) => continueBoundary(response.metaState))
@@ -984,6 +1074,7 @@
   }
 
   function onForgeLeave(options = {}) {
+    if (isObserverBotBoundaryPending()) return true;
     if (!pendingRoomSummary) return false;
     Promise.resolve().then(async () => {
       const resolved = await resolveCheckpoint({ silent: true });
@@ -1001,19 +1092,24 @@
       ui.hide();
       return;
     }
-    if (roomType === "pact") {
+    const finishBoundary = async () => {
+      if (roomType === "pact") {
+        session.transition(root.DungeonRankedV3Session.STATES.offer);
+        await openMetaOffer(roomType);
+        return;
+      }
+      if (offers.pendingRewardSlots(state, {
+        roomClearPending: Boolean(pendingRoomSummary)
+      }).length > 0) {
+        await continueBoundary(state);
+        return;
+      }
       session.transition(root.DungeonRankedV3Session.STATES.offer);
-      await openMetaOffer(roomType);
-      return;
-    }
-    if (offers.pendingRewardSlots(state, {
-      roomClearPending: Boolean(pendingRoomSummary)
-    }).length > 0) {
-      await continueBoundary(state);
-      return;
-    }
-    session.transition(root.DungeonRankedV3Session.STATES.offer);
-    await resolveCheckpoint();
+      await resolveCheckpoint();
+    };
+    return isRankedObserverBotActive()
+      ? runObserverBotBoundary(finishBoundary)
+      : finishBoundary();
   }
 
   async function onRoomEntered(directive) {
@@ -1030,8 +1126,13 @@
     }
     if (directive.roomType !== "crossroads") return;
     pendingRoomSummary = { turnCount: 0, rewardClaims: [] };
-    session.transition(root.DungeonRankedV3Session.STATES.offer);
-    await openMetaOffer(directive.roomType);
+    const openBoundary = async () => {
+      session.transition(root.DungeonRankedV3Session.STATES.offer);
+      await openMetaOffer(directive.roomType);
+    };
+    return isRankedObserverBotActive()
+      ? runObserverBotBoundary(openBoundary)
+      : openBoundary();
   }
 
   async function acceptFinal() {
@@ -1235,6 +1336,7 @@
     leaveToMainMenu: returnToPractice,
     onForgeMode,
     onForgeLeave,
+    isObserverBotBoundaryPending,
     getSessionState: () => session.getState(),
     getSnapshot: () => client?.getSnapshot() || null
   });

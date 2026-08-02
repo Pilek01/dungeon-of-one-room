@@ -1255,3 +1255,22 @@ Updated next good targets
   next-run, and Final Defeat screenshots were inspected.
 - No game, Worker, D1, schema, ruleset, production, deployment, or protected
   Vault Guardian change occurred. Package C was not started.
+
+## 2026-08-02 - Ranked Observer Bot canonical boundary repair
+
+- Added one shared Ranked automation boundary so the Observer Bot pauses local
+  movement, special-room actions, and portal descent while Online v3 resolves
+  a canonical offer or checkpoint.
+- The Ranked runtime now selects stable legal server-issued relic,
+  replacement, and meta choices; Forge completes open, choice, and checkpoint
+  under the same boundary. Errors halt the bot and remain visible in the
+  existing recovery UI.
+- Added focused VM behavior coverage for relic/replacement and Forge ordering,
+  plus generated-bridge contract coverage. Focused tests passed 9/9.
+- Headed Ranked lifecycle passed the real Bot -> canonical Forge -> offer ->
+  checkpoint -> portal path, then completed the existing lifecycle coverage
+  with zero unexpected console or page errors. The post-portal screenshot was
+  inspected.
+- verify:guard 14/14, verify:phase 765/765, and the committed protected
+  baseline 3/3 all passed. No push, deployment, ruleset activation, or
+  protected Vault Guardian change was performed.

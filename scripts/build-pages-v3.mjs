@@ -263,6 +263,16 @@ const productionGameReplacements = [
   }`
   ],
   [
+`  function runObserverBotStep() {
+    if (!isObserverBotActive()) return false;`,
+`  function runObserverBotStep() {
+    if (!isObserverBotActive()) return false;
+    if (state.onlineV3Ranked && window.DungeonOnlineV3?.isObserverBotBoundaryPending?.()) {
+      state.observerBot.lastDecision = "online_v3_wait";
+      return false;
+    }`
+  ],
+  [
 `    if (canUseDebugCheats() && key === DEBUG_MENU_TOGGLE_KEY) {
       toggleDebugCheatMenu(null, { botOnly: false });
       return;
@@ -753,6 +763,9 @@ const productionGameReplacements = [
       state.merchantMenuOpen = false;
       state.turnInProgress = true;
       markUiDirty();
+    },
+    isRankedTestBotActive() {
+      return Boolean(state.onlineV3Ranked && state.onlineV3TestBotUnlocked && isObserverBotActive());
     },
     async unlockRankedTestBot(password) {
       if (!state.onlineV3Ranked || window.DUNGEON_ONLINE_TEST_BOT_ENABLED !== true) return false;
