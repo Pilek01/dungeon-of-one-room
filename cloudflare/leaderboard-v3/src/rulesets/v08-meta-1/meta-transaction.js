@@ -4,6 +4,7 @@ import {
 } from "./relic-offer-common.js";
 import { assertGoldLedgerV08 } from "./gold-policy.js";
 import { isCompatibleRulesetHashV08 } from "./ruleset-hash-policy.js";
+import { applyMutatorProgressDeltaV08 } from "./mutator-progression.js";
 
 export const META_TRANSACTION_POLICY_VERSION = "v08-meta-transaction-1";
 export const META_TRANSACTION_RECEIPT_LIMIT = 64;
@@ -344,6 +345,9 @@ export function awardCanonicalGoldV08(state, amount, currency = "run_gold") {
   } else {
     throw new TypeError(`META_TRANSACTION_CURRENCY_UNKNOWN:${currency}`);
   }
+  state.mutatorProgress = applyMutatorProgressDeltaV08(state.mutatorProgress, {
+    totalGoldEarned: state.mutatorProgress.totalGoldEarned + award
+  });
   assertGoldLedgerV08(state);
   return { total: award, currency };
 }

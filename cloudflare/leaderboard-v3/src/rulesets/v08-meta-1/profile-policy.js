@@ -7,6 +7,12 @@ import {
   projectPublicRunModifiers
 } from "./run-modifiers.js";
 import { normalizeCampaignStateV08 } from "./meta-state.js";
+import {
+  applyPracticeMutatorImportV08,
+  createEmptyMutatorProgressV08,
+  normalizeMutatorProgressV08,
+  projectPublicMutatorProgressV08
+} from "./mutator-progression.js";
 
 export const PROFILE_POLICY_VERSION = "v08-ranked-profile-1";
 
@@ -59,6 +65,9 @@ export async function hydrateRunFromProfileV08(state, profile, context = {}) {
   next.runModifiers = structuredClone(
     profile.runModifiers || createEmptyRunModifierLedgerV08()
   );
+  next.mutatorProgress = normalizeMutatorProgressV08(profile.mutatorProgress, {
+    activeModifierIds: next.runModifiers.active.map((entry) => entry.modifierId)
+  });
   next.campaign = normalizeCampaignStateV08({ campaign: profile.campaign || next.campaign });
   return next;
 }
@@ -78,6 +87,10 @@ function profileStateFromCanonicalRun(state, profileId, profileRevision = 0) {
     lives: state.lives,
     build: structuredClone(state.build),
     runModifiers: structuredClone(state.runModifiers),
+    mutatorProgress: normalizeMutatorProgressV08(
+      state.mutatorProgress || createEmptyMutatorProgressV08(),
+      { activeModifierIds: state.runModifiers.active.map((entry) => entry.modifierId) }
+    ),
     campaign: structuredClone(state.campaign),
     goldLedger: structuredClone(state.goldLedger),
     metaTransactionReceipts: [],
@@ -87,6 +100,20 @@ function profileStateFromCanonicalRun(state, profileId, profileRevision = 0) {
     startingRelicGranted: state.status !== "awaiting_starting_relic",
     lastExtractedRunId: state.status === "extraction" ? state.runId : null
   };
+}
+
+export function applyPracticeMutatorImportToProfileV08(profile, payload, context = {}) {
+  const next = structuredClone(profile);
+  next.mutatorProgress = normalizeMutatorProgressV08(next.mutatorProgress, {
+    activeModifierIds: (next.runModifiers?.active || []).map((entry) => entry.modifierId)
+  });
+  if (next.mutatorProgress.importConsumed) return next;
+  next.mutatorProgress = applyPracticeMutatorImportV08(
+    next.mutatorProgress,
+    payload,
+    { importedAt: context.now }
+  );
+  return next;
 }
 
 export function createInitialProfileStateV08(state, profileId) {
@@ -111,6 +138,11 @@ export function publicProfileStateV08(profile) {
     lives: profile.lives,
     build: structuredClone(profile.build),
     runModifiers: projectPublicRunModifiers({ runModifiers: profile.runModifiers || createEmptyRunModifierLedgerV08() }),
+    mutatorProgress: projectPublicMutatorProgressV08(
+      normalizeMutatorProgressV08(profile.mutatorProgress, {
+        activeModifierIds: (profile.runModifiers?.active || []).map((entry) => entry.modifierId)
+      })
+    ),
     campaign: normalizeCampaignStateV08({ campaign: profile.campaign }),
     campSession: profile.campSession
       ? {

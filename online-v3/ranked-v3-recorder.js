@@ -173,6 +173,10 @@
       return aggregate("resource", "potion-use");
     }
 
+    function recordShieldUse() {
+      return aggregate("resource", "shield-use");
+    }
+
     function snapshot() {
       if (!sealedSnapshot) {
         sealedSnapshot = Object.freeze(Array.from(claims.values(), (claim) =>
@@ -198,6 +202,7 @@
       recordChestMapFragment: (claimId, count) =>
         recordChestResource(claimId, "map_fragment", count),
       recordPotionUse,
+      recordShieldUse,
       snapshot
     });
   }

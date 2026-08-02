@@ -12,6 +12,7 @@ import {
 } from "./gold-policy.js";
 import { assertCanonicalRelicBuildDigestV08, computeRelicBuildDigestV08 } from "./relic-policy.js";
 import { assertCanonicalRunModifierDigestV08 } from "./run-modifiers.js";
+import { applyMutatorProgressDeltaV08 } from "./mutator-progression.js";
 
 const arenaRelicOfferPolicy = arenaRelicOfferPolicyDocument.canonicalData;
 const chestBounds = chestBoundsDocument.canonicalData;
@@ -83,6 +84,17 @@ function claimDefinitions(roomType) {
     stackingPolicy: "bounded-by-canonical-potions",
     duplicatePolicy: "REJECT"
   };
+  const shieldUse = {
+    claimType: "resource",
+    claimId: "shield-use",
+    maximumCount: 18,
+    maximumAmount: null,
+    unitPolicyRef: "local-shield-consumption",
+    requiredRoomType: roomType,
+    requiredBuildEffect: null,
+    stackingPolicy: "bounded-room-attestation",
+    duplicatePolicy: "REJECT"
+  };
   const elixirUse = {
     claimType: "resource",
     claimId: "elixir-use",
@@ -94,7 +106,7 @@ function claimDefinitions(roomType) {
     stackingPolicy: "bounded-by-canonical-elixir-charges",
     duplicatePolicy: "REJECT"
   };
-  if (maximumEnemies <= 0) return [potionUse, elixirUse];
+  if (maximumEnemies <= 0) return [potionUse, elixirUse, shieldUse];
   const definitions = [];
   for (const enemyType of Object.keys(rewardBounds.enemyClaims.baseGoldByEnemyType).sort()) {
     const bossOnly = enemyType === "warden";
@@ -135,7 +147,7 @@ function claimDefinitions(roomType) {
     stackingPolicy: "shares-room-enemy-budget",
     duplicatePolicy: "REJECT"
   });
-  definitions.push(potionUse, elixirUse);
+  definitions.push(potionUse, elixirUse, shieldUse);
   return definitions;
 }
 
@@ -507,6 +519,9 @@ function calculateClaimAmount(state, envelope, claim, slotById) {
   }
   if (claim.count > definition.maximumCount) throw new TypeError("REWARD_CLAIM_COUNT_LIMIT");
   if (claim.claimType === "resource") {
+    if (claim.claimId === "shield-use") {
+      return { amount: 0, authority: "BOUNDED_CLIENT_ATTESTED" };
+    }
     if (claim.claimId === "elixir-use") {
       const elixirId = String(claim.localEvidence?.elixirId || "");
       const loadout = Array.isArray(state.build.elixirs) ? state.build.elixirs : [];
@@ -578,6 +593,8 @@ export async function settleRoomRewardEnvelopeV3(state, request, context = {}) {
   const seen = new Set();
   let enemyCount = 0;
   let eliteCount = 0;
+  let potionUseCount = 0;
+  let shieldUseCount = 0;
   let boundedDelta = 0;
   const evidence = new Set();
   for (const claim of request.claims) {
@@ -588,6 +605,8 @@ export async function settleRoomRewardEnvelopeV3(state, request, context = {}) {
       enemyCount += requireInteger(claim.count, "REWARD_CLAIM_COUNT_INVALID");
     }
     if (claim.claimType === "elite") eliteCount += claim.count;
+    if (claim.claimType === "resource" && claim.claimId === "potion-use") potionUseCount += claim.count;
+    if (claim.claimType === "resource" && claim.claimId === "shield-use") shieldUseCount += claim.count;
     const result = calculateClaimAmount(next, mutableEnvelope, claim, slotById);
     boundedDelta += result.amount;
     const evidenceId = typeof claim.localEvidence?.evidenceId === "string"
@@ -656,6 +675,14 @@ export async function settleRoomRewardEnvelopeV3(state, request, context = {}) {
       next.campaign.unlockedStartDepths.sort((left, right) => left - right);
     }
   }
+  next.mutatorRunTracking.potionUses += potionUseCount;
+  next.mutatorProgress = applyMutatorProgressDeltaV08(next.mutatorProgress, {
+    totalKills: next.mutatorProgress.totalKills + enemyCount,
+    eliteKills: next.mutatorProgress.eliteKills + eliteCount,
+    depthHighscore: Math.max(next.mutatorProgress.depthHighscore, mutableEnvelope.depth),
+    totalGoldEarned: next.mutatorProgress.totalGoldEarned + authoritativeGoldDelta,
+    shieldUsesThisGame: next.mutatorProgress.shieldUsesThisGame + shieldUseCount
+  });
   next.goldLedger.earnedServerDerived += fixedDelta;
   next.goldLedger.earnedBoundedAttested += boundedDelta;
   next.goldLedger.lastDelta = authoritativeGoldDelta;

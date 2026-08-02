@@ -85,10 +85,10 @@
           "modifierId",
           "stacks"
         ],
-        "profileDependency": "DEFERRED_PROFILE_UNLOCK_VALIDATION",
+        "profileDependency": "CANONICAL_PROFILE_PROGRESS",
         "serverCanRepresentExactly": true,
         "implementedInThisPhase": true,
-        "deferredReason": "DEFERRED_PROFILE_STATE",
+        "deferredReason": "NONE",
         "sourceEvidence": [
           "mutator-data.js:MUTATORS",
           "mutator-data.js:getMutatorUnlockStatus",
@@ -155,10 +155,10 @@
           "modifierId",
           "stacks"
         ],
-        "profileDependency": "DEFERRED_PROFILE_UNLOCK_VALIDATION",
+        "profileDependency": "CANONICAL_PROFILE_PROGRESS",
         "serverCanRepresentExactly": true,
         "implementedInThisPhase": true,
-        "deferredReason": "DEFERRED_PROFILE_STATE",
+        "deferredReason": "NONE",
         "sourceEvidence": [
           "mutator-data.js:MUTATORS",
           "mutator-data.js:getMutatorUnlockStatus",
@@ -217,10 +217,10 @@
           "modifierId",
           "stacks"
         ],
-        "profileDependency": "DEFERRED_PROFILE_UNLOCK_VALIDATION",
+        "profileDependency": "CANONICAL_PROFILE_PROGRESS",
         "serverCanRepresentExactly": true,
         "implementedInThisPhase": true,
-        "deferredReason": "DEFERRED_PROFILE_STATE",
+        "deferredReason": "NONE",
         "sourceEvidence": [
           "mutator-data.js:MUTATORS",
           "mutator-data.js:getMutatorUnlockStatus",
@@ -279,10 +279,10 @@
           "modifierId",
           "stacks"
         ],
-        "profileDependency": "DEFERRED_PROFILE_UNLOCK_VALIDATION",
+        "profileDependency": "CANONICAL_PROFILE_PROGRESS",
         "serverCanRepresentExactly": true,
         "implementedInThisPhase": true,
-        "deferredReason": "DEFERRED_PROFILE_STATE",
+        "deferredReason": "NONE",
         "sourceEvidence": [
           "mutator-data.js:MUTATORS",
           "mutator-data.js:getMutatorUnlockStatus",
@@ -346,10 +346,10 @@
           "modifierId",
           "stacks"
         ],
-        "profileDependency": "DEFERRED_PROFILE_UNLOCK_VALIDATION",
+        "profileDependency": "CANONICAL_PROFILE_PROGRESS",
         "serverCanRepresentExactly": true,
         "implementedInThisPhase": true,
-        "deferredReason": "DEFERRED_PROFILE_STATE",
+        "deferredReason": "NONE",
         "sourceEvidence": [
           "mutator-data.js:MUTATORS",
           "mutator-data.js:getMutatorUnlockStatus",
@@ -412,10 +412,10 @@
           "modifierId",
           "stacks"
         ],
-        "profileDependency": "DEFERRED_PROFILE_UNLOCK_VALIDATION",
+        "profileDependency": "CANONICAL_PROFILE_PROGRESS",
         "serverCanRepresentExactly": true,
         "implementedInThisPhase": true,
-        "deferredReason": "DEFERRED_PROFILE_STATE",
+        "deferredReason": "NONE",
         "sourceEvidence": [
           "mutator-data.js:MUTATORS",
           "mutator-data.js:getMutatorUnlockStatus",
@@ -483,10 +483,10 @@
           "modifierId",
           "stacks"
         ],
-        "profileDependency": "DEFERRED_PROFILE_UNLOCK_VALIDATION",
+        "profileDependency": "CANONICAL_PROFILE_PROGRESS",
         "serverCanRepresentExactly": true,
         "implementedInThisPhase": true,
-        "deferredReason": "DEFERRED_PROFILE_STATE",
+        "deferredReason": "NONE",
         "sourceEvidence": [
           "mutator-data.js:MUTATORS",
           "mutator-data.js:getMutatorUnlockStatus",
@@ -549,10 +549,10 @@
           "modifierId",
           "stacks"
         ],
-        "profileDependency": "DEFERRED_PROFILE_UNLOCK_VALIDATION",
+        "profileDependency": "CANONICAL_PROFILE_PROGRESS",
         "serverCanRepresentExactly": true,
         "implementedInThisPhase": true,
-        "deferredReason": "DEFERRED_PROFILE_STATE",
+        "deferredReason": "NONE",
         "sourceEvidence": [
           "mutator-data.js:MUTATORS",
           "mutator-data.js:getMutatorUnlockStatus",
@@ -616,10 +616,10 @@
           "modifierId",
           "stacks"
         ],
-        "profileDependency": "DEFERRED_PROFILE_UNLOCK_VALIDATION",
+        "profileDependency": "CANONICAL_PROFILE_PROGRESS",
         "serverCanRepresentExactly": true,
         "implementedInThisPhase": true,
-        "deferredReason": "DEFERRED_PROFILE_STATE",
+        "deferredReason": "NONE",
         "sourceEvidence": [
           "mutator-data.js:MUTATORS",
           "mutator-data.js:getMutatorUnlockStatus",
@@ -682,10 +682,10 @@
           "modifierId",
           "stacks"
         ],
-        "profileDependency": "DEFERRED_PROFILE_UNLOCK_VALIDATION",
+        "profileDependency": "CANONICAL_PROFILE_PROGRESS",
         "serverCanRepresentExactly": true,
         "implementedInThisPhase": true,
-        "deferredReason": "DEFERRED_PROFILE_STATE",
+        "deferredReason": "NONE",
         "sourceEvidence": [
           "mutator-data.js:MUTATORS",
           "mutator-data.js:getMutatorUnlockStatus",

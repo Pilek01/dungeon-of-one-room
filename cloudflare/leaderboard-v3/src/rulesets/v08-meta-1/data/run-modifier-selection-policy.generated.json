@@ -19,14 +19,14 @@
     "maximumActiveModifiers": 3,
     "canonicalOrdering": "modifierId-ascending",
     "duplicatePolicy": "REJECT",
-    "replacementPolicy": "REJECT_REMOVAL_OR_REPLACEMENT",
-    "midRunPolicy": "ALLOW_TRUSTED_ADDITIONS_ONLY",
+    "replacementPolicy": "ALLOW_TRUSTED_CAMP_REMOVAL",
+    "midRunPolicy": "ALLOW_TRUSTED_CAMP_ADDITIONS_AND_REMOVALS",
     "trustedAuthority": "TRUSTED_RULESET_DOMAIN",
     "trustedActivationSources": [
       "server-issued-mid-run",
       "server-issued-run-start"
     ],
-    "unlockValidation": "DEFERRED_PROFILE_UNLOCK_VALIDATION",
+    "unlockValidation": "CANONICAL_PROFILE_PROGRESS",
     "derivedEffectsVersion": "v08-run-modifier-effects-1",
     "emptyLedgerDigest": "sha256:23ffdc5abeaa4936196dc0c63ea7a7bca385f7a53044cf3d0b782c526f0c9d1b"
   }

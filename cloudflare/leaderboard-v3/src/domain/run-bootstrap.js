@@ -80,7 +80,9 @@ export async function createAuthenticatedRunBootstrap(input, context) {
   );
   const canonical = await ruleset.createRun({
     startDepth: Math.max(0, Math.floor(Number(input?.startDepth) || 0)),
-    profileState: context.profileState || null
+    profileState: context.profileState || null,
+    practiceMutatorImport: input?.practiceMutatorImport || null,
+    newCampaign: input?.newCampaign === true
   }, {
     runId,
     season: requireText(input?.season, "SEASON_REQUIRED"),

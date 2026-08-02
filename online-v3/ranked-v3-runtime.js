@@ -125,7 +125,7 @@
     recoveryStore.clearWriterLease();
   }
 
-  function prepareFreshRankedStart(clearProfile = true) {
+  function prepareFreshRankedStart(clearProfile = false) {
     if (recoveryStore.loadRecovery()) return false;
     resetLocalRankedSession();
     recoveryStore.clearRecovery();
@@ -608,6 +608,8 @@
         season: String(root.DUNGEON_ONLINE_V3_SEASON || "local-m4"),
         gameVersion: String(root.DUNGEON_GAME_VERSION || root.GAME_VERSION || "v0.8.0"),
         startDepth: Math.max(0, Math.floor(Number(startDepth) || 0)),
+        practiceMutatorImport: root.DungeonOnlineV3GameBridge?.getPracticeMutatorImport?.() || null,
+        newCampaign: pendingFreshCampaign,
         clientInstallIdHash: await installationHash()
       });
       await acceptResponse(response);
@@ -930,8 +932,8 @@
       if (action === "relic_sale") {
         return data.action === "relic_sale" && data.relicId === request.relicId;
       }
-      if (action === "mutator_add") {
-        return data.action === "mutator_add" && data.mutatorId === request.mutatorId;
+      if (action === "mutator_add" || action === "mutator_remove") {
+        return data.action === action && data.mutatorId === request.mutatorId;
       }
       return false;
     }) || null;
