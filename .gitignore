@@ -7,3 +7,5 @@ art/work/
 *.log
 .DS_Store
 Thumbs.db
+
+.wrangler/
