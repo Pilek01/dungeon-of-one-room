@@ -1721,7 +1721,11 @@
         ) || 0
       )
     );
-    const outcome = rawEntry.outcome === "extract" ? "extract" : "death";
+    const outcome = rawEntry.outcome === "victory"
+      ? "victory"
+      : rawEntry.outcome === "death"
+        ? "death"
+        : "legacy";
     const ts = Math.max(0, Number(rawEntry.ts) || Date.now());
     const mutatorIds = Array.isArray(rawEntry.mutatorIds)
       ? rawEntry.mutatorIds.filter((id) => typeof id === "string")
@@ -1732,6 +1736,13 @@
         : typeof rawEntry.game_version === "string" && rawEntry.game_version.trim()
           ? rawEntry.game_version.trim()
           : GAME_VERSION;
+    const durationMs = Math.max(0, Number(rawEntry.durationMs ?? rawEntry.duration_ms) || 0);
+    const build = rawEntry.build && typeof rawEntry.build === "object"
+      ? JSON.parse(JSON.stringify(rawEntry.build))
+      : null;
+    const summary = rawEntry.summary && typeof rawEntry.summary === "object"
+      ? JSON.parse(JSON.stringify(rawEntry.summary))
+      : null;
     return {
       id: String(rawEntry.id || `${ts}-${Math.random().toString(36).slice(2, 8)}`),
       runId: String(rawEntry.runId || rawEntry.id || `${ts}-${Math.random().toString(36).slice(2, 8)}`),
@@ -1751,6 +1762,10 @@
       livesLeft,
       mutatorCount: Math.max(0, Number(rawEntry.mutatorCount) || mutatorIds.length || 0),
       mutatorIds,
+      durationMs,
+      build,
+      summary,
+      hasDetails: Boolean(build && summary),
       version: rawVersion,
       season: normalizeSeasonId(rawEntry.season || "", "legacy")
     };
@@ -1969,6 +1984,8 @@
     currentRunTokenExpiresAt: 0,
     currentRunSubmitSeq: 1,
     runLeaderboardSubmitted: false,
+    campaignStartedAt: 0,
+    campaignRoomsCompleted: 0,
     lastBossClearDepthThisRun: 0,
     sessionChestAttackFlat: 0,
     sessionChestAttackDepthBuckets: {},
@@ -1987,6 +2004,7 @@
     menuNewGameConfirmIndex: 2,
     hasContinueRun: false,
     leaderboardModalOpen: false,
+    practiceRecordDetailRunId: "",
     leaderboardSortMode: "score", // "score" | "depth"
     leaderboardScope: "current", // "current" | "legacy"
     nameModalOpen: false,
@@ -3925,30 +3943,46 @@
     state.runGoldEarned = 0;
     state.runStartDepth = 0;
     state.runLeaderboardSubmitted = false;
+    state.campaignStartedAt = Date.now();
+    state.campaignRoomsCompleted = 0;
     startRun({ resetMapFragments: true, startingRelicDraft: true });
   }
 
+  function getTerminalRecordsLabel() {
+    return state.onlineV3Ranked ? "Leaderboard" : "Practice Records";
+  }
+
+  function openTerminalRecords() {
+    const ranked = Boolean(state.onlineV3Ranked);
+    enterMenu();
+    if (ranked) {
+      window.DungeonOnlineV3?.openLeaderboard?.();
+      return;
+    }
+    openPracticeRecordsModal();
+  }
+
   function openLeaderboardModal() {
+    openPracticeRecordsModal();
+  }
+
+  function openPracticeRecordsModal() {
     state.leaderboardModalOpen = true;
+    state.practiceRecordDetailRunId = "";
     state.leaderboardSortMode = "score";
     state.leaderboardScope = "current";
-    if (isOnlineLeaderboardEnabled()) {
-      refreshOnlineLeaderboard(true);
-    }
     markUiDirty();
   }
 
   function closeLeaderboardModal() {
     if (!state.leaderboardModalOpen) return;
     state.leaderboardModalOpen = false;
+    state.practiceRecordDetailRunId = "";
     markUiDirty();
   }
 
   function toggleLeaderboardSortMode() {
     state.leaderboardSortMode = state.leaderboardSortMode === "score" ? "depth" : "score";
-    if (isOnlineLeaderboardEnabled()) {
-      refreshOnlineLeaderboard(true);
-    }
     markUiDirty();
   }
 
@@ -4450,24 +4484,75 @@
     return MUTATORS.filter((mutator) => state.activeMutators[mutator.id]).map((mutator) => mutator.id);
   }
 
-  function recordRunOnLeaderboard(outcome) {
+  function clonePracticeRecordValue(value, fallback) {
+    try {
+      return JSON.parse(JSON.stringify(value));
+    } catch {
+      return fallback;
+    }
+  }
+
+  function buildPracticeRecordBuild() {
+    const relicCounts = new Map();
+    for (const relicId of Array.isArray(state.relics) ? state.relics : []) {
+      const id = String(relicId || "").trim();
+      if (!id) continue;
+      relicCounts.set(id, (relicCounts.get(id) || 0) + 1);
+    }
+    return {
+      relics: [...relicCounts.entries()].map(([relicId, stacks]) => ({ relicId, stacks })),
+      skillTiers: clonePracticeRecordValue(state.skillTiers, {}),
+      campUpgrades: clonePracticeRecordValue(state.campUpgrades, {}),
+      pacts: Array.isArray(state.activePacts) ? [...state.activePacts] : [],
+      elixir: clonePracticeRecordValue(state.elixirLoadout, { type: "", charges: 0 }),
+      runModifiers: clonePracticeRecordValue(state.runMods, {}),
+      player: {
+        maxHp: Math.max(0, Number(state.player?.maxHp) || 0),
+        attack: Math.max(0, Number(state.player?.attack) || 0),
+        armor: Math.max(0, Number(state.player?.armor) || 0),
+        critChance: Math.max(0, Number(state.player?.critChance) || 0),
+        dodgeChance: Math.max(0, Number(state.player?.dodgeChance) || 0)
+      }
+    };
+  }
+
+  function buildPracticeTerminalSummary(overrides = {}) {
+    const durationMs = state.campaignStartedAt > 0
+      ? Math.max(0, Date.now() - state.campaignStartedAt)
+      : 0;
+    return {
+      durationMs,
+      roomsCompleted: Math.max(0, Number(state.campaignRoomsCompleted) || 0),
+      bossesCompleted: Math.max(0, Number(state.wardensKilledThisGame) || 0),
+      livesRemaining: Math.max(0, Number(state.lives) || 0),
+      maximumLives: MAX_LIVES,
+      totalGoldCollected: Math.max(0, Number(state.totalGoldEarned) || 0),
+      damageDone: Math.max(0, Number(state.damageDoneThisGame) || 0),
+      damageTaken: Math.max(0, Number(state.damageTakenThisGame) || 0),
+      potionsUsed: Math.max(0, Number(state.potionsUsedThisGame) || 0),
+      elixirsUsed: Math.max(0, Number(state.elixirsUsedThisGame) || 0),
+      wardensKilled: Math.max(0, Number(state.wardensKilledThisGame) || 0),
+      totalKills: Math.max(0, Number(state.totalKills) || 0),
+      eliteKills: Math.max(0, Number(state.eliteKills) || 0),
+      deaths: Math.max(0, Number(state.deaths) || 0),
+      merchantPotions: Math.max(0, Number(state.totalMerchantPots) || 0),
+      potionFreeExtracts: Math.max(0, Number(state.potionFreeExtract) || 0),
+      shieldUses: Math.max(0, Number(state.shieldUsesThisRun) || 0),
+      ...clonePracticeRecordValue(overrides, {})
+    };
+  }
+
+  function recordRunOnLeaderboard(outcome, summaryOverrides = {}) {
     if (TEST_MODE_ENABLED) {
       state.runLeaderboardSubmitted = true;
       return;
     }
     if (state.runLeaderboardSubmitted && state.currentRunId) return;
+    const terminalOutcome = outcome === "victory" ? "victory" : outcome === "death" ? "death" : "";
+    if (!terminalOutcome) return;
     const depth = getRunMaxDepth();
     const gold = getRunGoldEarned();
     const turns = Math.max(0, Number(state.turn) || 0);
-    if (turns < LEADERBOARD_MIN_TURNS) {
-      state.runLeaderboardSubmitted = true;
-      return;
-    }
-    if (depth <= 0 && gold <= 0) {
-      state.runLeaderboardSubmitted = true;
-      return;
-    }
-
     const runId = String(state.currentRunId || makeRunId());
     state.currentRunId = runId;
     const submitSeq = Math.max(1, Number(state.currentRunSubmitSeq) || 1);
@@ -4475,37 +4560,33 @@
     const ts = Date.now();
     const mutatorIds = getActiveMutatorIds();
     const startDepth = Math.max(0, Number(state.runStartDepth) || 0);
+    const summary = buildPracticeTerminalSummary(summaryOverrides);
+    const durationMs = Math.max(0, Number(summary.durationMs) || 0);
     const entry = {
-      id: `${ts}-${Math.random().toString(36).slice(2, 8)}`,
+      id: String(ts) + "-" + Math.random().toString(36).slice(2, 8),
       runId,
-      runToken: sanitizeRunToken(state.currentRunToken),
-      finalizeNonce: "",
-      finalizeExpiresAt: 0,
       submitSeq,
       playerName: sanitizePlayerName(state.playerName) || "Anonymous",
       ts,
       endedAt: new Date(ts).toISOString(),
-      outcome: outcome === "extract" ? "extract" : "death",
+      outcome: terminalOutcome,
       depth,
       gold,
       turns,
       startDepth,
       score: calculateScore(depth, gold),
-      livesLeft: Math.max(
-        0,
-        Math.floor(
-          Number(state.lives) || 0
-        ) - (outcome === "death" ? 1 : 0)
-      ),
+      livesLeft: Math.max(0, Math.floor(Number(state.lives) || 0)),
       mutatorCount: mutatorIds.length,
       mutatorIds,
+      durationMs,
+      build: buildPracticeRecordBuild(),
+      summary,
       version: GAME_VERSION,
       game_version: GAME_VERSION,
-      season: ONLINE_LEADERBOARD_SEASON
+      season: "practice"
     };
 
     upsertLeaderboardEntry(entry);
-    queueLeaderboardEntryForOnline(entry);
     state.runLeaderboardSubmitted = true;
   }
 
@@ -4546,6 +4627,9 @@
     state.currentRunTokenExpiresAt = 0;
     state.currentRunSubmitSeq = 1;
     state.runLeaderboardSubmitted = false;
+    state.campaignStartedAt = 0;
+    state.campaignRoomsCompleted = 0;
+    state.practiceRecordDetailRunId = "";
     state.lastBossClearDepthThisRun = 0;
     state.wardenRelicMissStreak = 0;
     state.wardenFirstDropDepths = {};
@@ -4684,6 +4768,8 @@
       currentRunTokenExpiresAt: state.currentRunTokenExpiresAt,
       currentRunSubmitSeq: state.currentRunSubmitSeq,
       runLeaderboardSubmitted: state.runLeaderboardSubmitted,
+      campaignStartedAt: state.campaignStartedAt,
+      campaignRoomsCompleted: state.campaignRoomsCompleted,
       lastBossClearDepthThisRun: state.lastBossClearDepthThisRun,
       wardenRelicMissStreak: state.wardenRelicMissStreak,
       wardenFirstDropDepths: state.wardenFirstDropDepths,
@@ -4927,6 +5013,9 @@
     state.currentRunTokenExpiresAt = Math.max(0, Number(snapshot.currentRunTokenExpiresAt) || 0);
     state.currentRunSubmitSeq = Math.max(1, Number(snapshot.currentRunSubmitSeq) || 1);
     state.runLeaderboardSubmitted = Boolean(snapshot.runLeaderboardSubmitted);
+    state.campaignStartedAt = Math.max(0, Number(snapshot.campaignStartedAt) || Date.now());
+    state.campaignRoomsCompleted = Math.max(0, Number(snapshot.campaignRoomsCompleted) || 0);
+    state.practiceRecordDetailRunId = "";
     const snapshotBossClearDepth = Number(snapshot.lastBossClearDepthThisRun);
     state.lastBossClearDepthThisRun = Math.max(
       0,
@@ -7432,11 +7521,15 @@
       {
         key: "3",
         title: "Leaderboard",
-        desc: isOnlineLeaderboardEnabled()
-          ? "Open Top 20 online ranking (with local fallback)."
-          : "Open Top 20 local ranking.",
+        desc: "Open the current Online Ranked season.",
         disabled: false,
-        action: () => openLeaderboardModal()
+        action: () => {
+          if (window.DungeonOnlineV3?.openLeaderboard) {
+            window.DungeonOnlineV3.openLeaderboard();
+            return;
+          }
+          pushLog("Online Ranked leaderboard is unavailable.", "bad");
+        }
       },
       {
         key: "4",
@@ -7647,10 +7740,6 @@
     if (!preserveRunContext) {
       syncBgmWithState();
       playSplashTrack();
-    }
-    if (isOnlineLeaderboardEnabled()) {
-      flushPendingLeaderboardQueue();
-      refreshOnlineLeaderboard(false);
     }
     markUiDirty();
   }
@@ -10097,7 +10186,6 @@
       state.campPanelView = "shop";
       clearElixirCombatState();
       state.campVisitShopCostMult = Number(state.runMods?.shopCostMult) || 1;
-      recordRunOnLeaderboard("extract");
       const baseGold = Math.max(0, Math.round(state.player.gold));
       const relicReturn = getRelicReturnSummary(state.relics);
       const gainedCampGold = baseGold;
@@ -13895,6 +13983,7 @@
       state.otterRoomsSeenThisRun = 0;
     }
     state.currentRunSubmitSeq = Math.max(1, Number(state.currentRunSubmitSeq) || 1);
+    if (!(state.campaignStartedAt > 0)) state.campaignStartedAt = Date.now();
     state.turn = 0;
     state.runStartDepth = selectedStartDepth;
     state.roomIndex = 0;
@@ -14177,7 +14266,7 @@
     const finalGold = getRunGoldEarned();
     const finalScore = calculateScore(finalDepth, finalGold);
 
-    recordRunOnLeaderboard("extract");
+    recordRunOnLeaderboard("victory");
     state.phase = "won";
     state.turnInProgress = false;
     state.playerShieldBrokeThisTurn = false;
@@ -14220,7 +14309,7 @@
     }
     pushLog(`DEPTH ${MAX_DEPTH} CONQUERED!`, "good");
     pushLog("Abyss shattered. You are the champion of the dungeon.", "good");
-    pushLog("Victory achieved. 1 = Main Menu, 2 = Leaderboard.", "good");
+    pushLog(`Victory achieved. 1 = Main Menu, 2 = ${getTerminalRecordsLabel()}.`, "good");
     appendObserverBotTrace("run_victory", {
       finalDepth,
       finalGold,
@@ -14289,7 +14378,6 @@
       reason: String(reason || "")
     }, { force: isObserverBotActive() });
     registerObserverBotDepthFailure(state.depth, reason);
-    recordRunOnLeaderboard("death");
     const lostRelic = loseRandomRelicOnDeath();
     const lostRelicOverlayName = formatRelicNameForOverlay(lostRelic);
     state.lastDeathRelicLossText = lostRelic
@@ -14344,6 +14432,21 @@
       const finalWardensKilled = Math.max(0, Number(state.wardensKilledThisGame) || 0);
       const finalDepthHighscore = Math.max(0, Number(state.highscore) || 0, finalDepth);
       const finalBestGold = Math.max(0, Number(state.bestGold) || 0, Math.max(0, Number(state.player.gold) || 0));
+      recordRunOnLeaderboard("death", {
+        totalGoldCollected: finalTotalGoldCollected,
+        damageDone: finalDamageDone,
+        damageTaken: finalDamageTaken,
+        potionsUsed: finalPotionsUsed,
+        elixirsUsed: finalElixirsUsed,
+        wardensKilled: finalWardensKilled,
+        bossesCompleted: finalWardensKilled,
+        totalKills: finalTotalKills,
+        eliteKills: finalEliteKills,
+        deaths: finalDeathsThisGame,
+        merchantPotions: finalTotalMerchantPots,
+        potionFreeExtracts: finalPotionFreeExtracts,
+        shieldUses: finalShieldUses
+      });
       pushLog("All lives lost. Fresh start triggered.", "bad");
       resetMetaProgressForFreshStart();
       state.finalGameOverPrompt = {
@@ -14368,7 +14471,7 @@
       };
       state.finalGameOverSelection = 0;
       pushLog(`Progress reset. Lives restored to ${MAX_LIVES}.`, "good");
-      pushLog("GAME OVER. Choose Main Menu or Leaderboard.", "bad");
+      pushLog(`GAME OVER. Choose Main Menu or ${getTerminalRecordsLabel()}.`, "bad");
       stopDeathTrack(true);
       const usedFinalTrack = playFinalGameOverTrack();
       if (!usedFinalTrack && !state.audioMuted) {
@@ -15649,6 +15752,7 @@
       );
     }
     state.roomCleared = true;
+    state.campaignRoomsCompleted = Math.max(0, Number(state.campaignRoomsCompleted) || 0) + 1;
     if (state.onlineV3Ranked) {
       if (state.roomType === "forge" && state.forge && !state.forge.used) {
         state.forge.awakened = true;
@@ -21824,14 +21928,14 @@
       );
       actionsEl.textContent = graphicsPreferenceApi.isHd(graphicsPreference)
         ? `VICTORY! Depth ${finalDepth} cleared (${finalScore} pts). Use arrows and Enter.`
-        : `VICTORY! Depth ${finalDepth} cleared (${finalScore} pts). 1 = Main Menu, 2 = Leaderboard.`;
+        : `VICTORY! Depth ${finalDepth} cleared (${finalScore} pts). 1 = Main Menu, 2 = ${getTerminalRecordsLabel()}.`;
       return;
     }
     if (state.phase === "dead") {
       if (state.finalGameOverPrompt) {
         actionsEl.textContent = graphicsPreferenceApi.isHd(graphicsPreference)
           ? "GAME OVER: all lives lost. Use arrows and Enter."
-          : "GAME OVER: all lives lost. 1 = Main Menu, 2 = Leaderboard.";
+          : `GAME OVER: all lives lost. 1 = Main Menu, 2 = ${getTerminalRecordsLabel()}.`;
       } else {
         actionsEl.textContent = `Lives: ${state.lives}/${MAX_LIVES}. R - Continue (Next Life). Esc - menu.`;
       }
@@ -22535,59 +22639,173 @@
     return `<h3>Mutators (${active.length}/3)</h3>${rows}${unlockedNotice}`;
   }
 
-  function buildLeaderboardRows(limit = LEADERBOARD_MODAL_LIMIT) {
-    const entries = getSortedLeaderboardEntries(limit);
-    if (entries.length === 0) {
-      if (isOnlineLeaderboardEnabled() && (state.onlineLeaderboardLoading || state.onlineSyncInFlight)) {
-        return `<small class="leaderboard-note">Loading online leaderboard...</small>`;
-      }
-      if (state.leaderboardScope === "current") {
-        return `<small class="leaderboard-note">No runs in current season yet.</small>`;
-      }
-      if (isOnlineLeaderboardEnabled() && state.onlineLeaderboardUpdatedAt > 0) {
-        return `<small class="leaderboard-note">No finished runs recorded online yet.</small>`;
-      }
-      return `<small class="leaderboard-note">No finished runs yet.</small>`;
+  function formatPracticeRecordDuration(durationMs) {
+    const totalSeconds = Math.max(0, Math.floor((Number(durationMs) || 0) / 1000));
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+    if (hours > 0) return String(hours) + "h " + String(minutes).padStart(2, "0") + "m";
+    return String(minutes) + "m " + String(seconds).padStart(2, "0") + "s";
+  }
+
+  function getPracticeRecordMutatorTooltip(entry) {
+    const ids = Array.isArray(entry?.mutatorIds) ? entry.mutatorIds : [];
+    if (ids.length === 0) return "No mutators used.";
+    return ids.map((id) => {
+      const mutator = MUTATORS.find((item) => item.id === id);
+      if (!mutator) return String(id);
+      return "[" + mutator.key + "] " + mutator.name + ": " + mutator.bonus + " / " + mutator.drawback;
+    }).join(" | ");
+  }
+
+  function buildPracticeRecordDetail(entry) {
+    if (!entry) return "";
+    const safeName = escapeHtmlAttr(entry.playerName || "Anonymous");
+    const safeRunId = escapeHtmlAttr(entry.runId || entry.id || "unknown");
+    const backButton = '<button class="record-archive-back" type="button" data-practice-record-back>Back to Practice Records</button>';
+    if (!entry.hasDetails || !entry.build || !entry.summary) {
+      return [
+        '<section class="record-archive-detail record-archive-detail-legacy">',
+        '<header class="record-archive-detail-header">',
+        '<div><span class="record-archive-kicker">Practice Archive</span><h3>' + safeName + '</h3></div>',
+        '<strong>' + Math.max(0, Number(entry.score) || 0) + ' pts</strong>',
+        '</header>',
+        '<p class="record-archive-legacy-note">Build Chronicle unavailable for this legacy Practice record. Its original rank, score, depth and gold remain preserved.</p>',
+        '<div class="record-archive-detail-metrics">',
+        '<span><small>Depth</small><strong>' + Math.max(0, Number(entry.depth) || 0) + '</strong></span>',
+        '<span><small>Gold</small><strong>' + Math.max(0, Number(entry.gold) || 0) + '</strong></span>',
+        '<span><small>Recorded</small><strong>' + escapeHtmlAttr(formatLeaderboardTimestamp(entry.ts)) + '</strong></span>',
+        '</div>',
+        backButton,
+        '</section>'
+      ].join("");
     }
 
-    const rows = entries.map((entry, index) => {
-      const outcomeLabel = entry.outcome === "extract" ? "EXTRACT" : "DEATH";
-      const mutatorLabel = entry.mutatorCount > 0 ? `Mut ${entry.mutatorCount}` : "No Mut";
-      const versionLabel = state.leaderboardScope === "legacy"
-        ? `Ver ${entry.version || "unknown"}`
-        : "";
+    const build = entry.build;
+    const summary = entry.summary;
+    const relics = Array.isArray(build.relics) ? build.relics : [];
+    const relicHtml = relics.length > 0
+      ? relics.map((item) => {
+        const relic = getRelicById(item.relicId);
+        const name = escapeHtmlAttr(relic ? getRelicUiName(relic) : item.relicId);
+        const iconSrc = escapeHtmlAttr(String(relic?.icon || relic?.iconSrc || ""));
+        const stacks = Math.max(1, Number(item.stacks) || 1);
+        return [
+          '<div class="record-archive-relic">',
+          iconSrc ? '<img src="' + iconSrc + '" alt="" aria-hidden="true">' : '<span class="record-archive-relic-fallback" aria-hidden="true">?</span>',
+          '<span><strong>' + name + '</strong>' + (stacks > 1 ? '<small>Stack x' + stacks + '</small>' : '') + '</span>',
+          '</div>'
+        ].join("");
+      }).join("")
+      : '<p class="record-archive-empty">No relics carried at the end.</p>';
+
+    const tierLabels = { 0: "Base", 1: "Rare", 2: "Epic", 3: "Legendary" };
+    const skillHtml = Object.entries(build.skillTiers || {}).map(([skillId, tier]) =>
+      '<span><small>' + escapeHtmlAttr(skillId) + '</small><strong>' + escapeHtmlAttr(tierLabels[tier] || ("Tier " + tier)) + '</strong></span>'
+    ).join("") || '<p class="record-archive-empty">No skill upgrades recorded.</p>';
+    const upgradeHtml = Object.entries(build.campUpgrades || {}).filter(([, level]) => Number(level) > 0).map(([upgradeId, level]) =>
+      '<span><small>' + escapeHtmlAttr(upgradeId) + '</small><strong>Lv ' + Math.max(0, Number(level) || 0) + '</strong></span>'
+    ).join("") || '<p class="record-archive-empty">No camp upgrades recorded.</p>';
+
+    const tooltip = escapeHtmlAttr(getPracticeRecordMutatorTooltip(entry));
+    const mutatorCount = Array.isArray(entry.mutatorIds) ? entry.mutatorIds.length : 0;
+    const pactText = Array.isArray(build.pacts) && build.pacts.length > 0 ? build.pacts.join(", ") : "None";
+    const elixirText = build.elixir?.type
+      ? build.elixir.type + " (" + Math.max(0, Number(build.elixir.charges) || 0) + " charges)"
+      : "None";
+    const outcomeLabel = entry.outcome === "victory" ? "Victory" : "Final Defeat";
+
+    return [
+      '<section class="record-archive-detail">',
+      '<header class="record-archive-detail-header">',
+      '<div><span class="record-archive-kicker">Build Chronicle | ' + outcomeLabel + '</span><h3>' + safeName + '</h3><small>Run ' + safeRunId + '</small></div>',
+      '<strong>' + Math.max(0, Number(entry.score) || 0) + ' pts</strong>',
+      '</header>',
+      '<div class="record-archive-detail-metrics">',
+      '<span><small>Depth</small><strong>' + Math.max(0, Number(entry.depth) || 0) + '</strong></span>',
+      '<span><small>Gold</small><strong>' + Math.max(0, Number(entry.gold) || 0) + '</strong></span>',
+      '<span><small>Time Played</small><strong>' + escapeHtmlAttr(formatPracticeRecordDuration(entry.durationMs)) + '</strong></span>',
+      '<span><small>Rooms</small><strong>' + Math.max(0, Number(summary.roomsCompleted) || 0) + '</strong></span>',
+      '<span><small>Bosses</small><strong>' + Math.max(0, Number(summary.bossesCompleted) || 0) + '</strong></span>',
+      '<span><small>Lives</small><strong>' + Math.max(0, Number(summary.livesRemaining) || 0) + '/' + Math.max(1, Number(summary.maximumLives) || MAX_LIVES) + '</strong></span>',
+      '</div>',
+      '<div class="record-archive-detail-section"><h4>Relics</h4><div class="record-archive-relic-grid">' + relicHtml + '</div></div>',
+      '<div class="record-archive-detail-columns">',
+      '<div class="record-archive-detail-section"><h4>Skills</h4><div class="record-archive-build-grid">' + skillHtml + '</div></div>',
+      '<div class="record-archive-detail-section"><h4>Camp Upgrades</h4><div class="record-archive-build-grid">' + upgradeHtml + '</div></div>',
+      '</div>',
+      '<div class="record-archive-detail-section"><h4>Run Loadout</h4><div class="record-archive-build-grid">',
+      '<span class="record-archive-mutators" tabindex="0" data-record-tooltip="' + tooltip + '" title="' + tooltip + '"><small>Mutators</small><strong>' + mutatorCount + '</strong></span>',
+      '<span><small>Pact</small><strong>' + escapeHtmlAttr(pactText) + '</strong></span>',
+      '<span><small>Elixir</small><strong>' + escapeHtmlAttr(elixirText) + '</strong></span>',
+      '</div></div>',
+      '<div class="record-archive-detail-section"><h4>Final Chronicle</h4><div class="record-archive-stat-grid">',
+      '<span><small>Damage Done</small><strong>' + Math.max(0, Number(summary.damageDone) || 0) + '</strong></span>',
+      '<span><small>Damage Taken</small><strong>' + Math.max(0, Number(summary.damageTaken) || 0) + '</strong></span>',
+      '<span><small>Total Kills</small><strong>' + Math.max(0, Number(summary.totalKills) || 0) + '</strong></span>',
+      '<span><small>Elite Kills</small><strong>' + Math.max(0, Number(summary.eliteKills) || 0) + '</strong></span>',
+      '<span><small>Potions Used</small><strong>' + Math.max(0, Number(summary.potionsUsed) || 0) + '</strong></span>',
+      '<span><small>Elixirs Used</small><strong>' + Math.max(0, Number(summary.elixirsUsed) || 0) + '</strong></span>',
+      '<span><small>Gold Collected</small><strong>' + Math.max(0, Number(summary.totalGoldCollected) || 0) + '</strong></span>',
+      '<span><small>Deaths</small><strong>' + Math.max(0, Number(summary.deaths) || 0) + '</strong></span>',
+      '</div></div>',
+      backButton,
+      '</section>'
+    ].join("");
+  }
+
+  function buildPracticeRecordsRows(limit = LEADERBOARD_MODAL_LIMIT) {
+    const entries = sortLeaderboardEntries(state.leaderboard, state.leaderboardSortMode, limit);
+    if (entries.length === 0) {
+      return '<p class="record-archive-empty">No completed Practice campaigns recorded yet.</p>';
+    }
+    const podium = entries.slice(0, 3).map((entry, index) => {
       const rank = index + 1;
-      const rankClass = rank <= 3 ? ` leaderboard-rank-${rank}` : "";
-      const rankBadge = rank === 1 ? "I"
-        : rank === 2 ? "II"
-          : rank === 3 ? "III"
-            : String(rank);
-      const topBadge = rank === 1
-        ? `<span class="leaderboard-top-badge leaderboard-top-badge-r1">Champion</span>`
-        : rank === 2
-          ? `<span class="leaderboard-top-badge leaderboard-top-badge-r2">Top 2</span>`
-          : rank === 3
-            ? `<span class="leaderboard-top-badge leaderboard-top-badge-r3">Top 3</span>`
-            : "";
+      const id = escapeHtmlAttr(entry.runId || entry.id || "");
+      const name = escapeHtmlAttr(entry.playerName || "Anonymous");
       return [
-        `<div class="leaderboard-entry${rankClass}">`,
-        `<div class="leaderboard-rank">#${rankBadge}</div>`,
-        `<div class="leaderboard-main">`,
-        `<div class="leaderboard-name-row"><strong class="leaderboard-name">${entry.playerName}</strong>${topBadge}</div>`,
-        `<div class="leaderboard-stats">`,
-        `<span>${entry.score} pts</span>`,
-        `<span>Depth ${entry.depth}</span>`,
-        `<span>Gold ${entry.gold}</span>`,
-        `<span>Lives ${Math.max(0, Math.floor(Number(entry.livesLeft ?? 0) || 0))}/${MAX_LIVES}</span>`,
-        `<span>${outcomeLabel}</span>`,
-        versionLabel ? `<span>${versionLabel}</span>` : "",
-        `</div>`,
-        `<small class="leaderboard-meta">${formatLeaderboardTimestamp(entry.ts)} | ${mutatorLabel}</small>`,
-        `</div>`,
-        `</div>`
+        '<article class="record-archive-podium-card" data-record-rank="' + rank + '">',
+        '<img class="record-archive-skull record-archive-skull-rank-' + rank + '" src="assets/hd/environment/descent/floor-skull.png" alt="" aria-hidden="true">',
+        '<span class="record-archive-rank">#' + rank + '</span>',
+        '<button class="record-archive-name" type="button" data-practice-record-run-id="' + id + '">' + name + '</button>',
+        '<div class="record-archive-podium-score">' + Math.max(0, Number(entry.score) || 0) + ' pts</div>',
+        '<div class="record-archive-facts"><span><small>Depth</small><strong>' + Math.max(0, Number(entry.depth) || 0) + '</strong></span><span><small>Gold</small><strong>' + Math.max(0, Number(entry.gold) || 0) + '</strong></span></div>',
+        '<button class="record-archive-inspect" type="button" data-practice-record-run-id="' + id + '">Inspect build</button>',
+        '</article>'
       ].join("");
     }).join("");
-    return rows;
+    const ledger = entries.slice(3).map((entry, index) => {
+      const rank = index + 4;
+      const id = escapeHtmlAttr(entry.runId || entry.id || "");
+      return [
+        '<article class="record-archive-ledger-row">',
+        '<span class="record-archive-rank">#' + rank + '</span>',
+        '<button class="record-archive-name" type="button" data-practice-record-run-id="' + id + '">' + escapeHtmlAttr(entry.playerName || "Anonymous") + '</button>',
+        '<strong class="record-archive-score">' + Math.max(0, Number(entry.score) || 0) + ' pts</strong>',
+        '<span><small>Depth</small> ' + Math.max(0, Number(entry.depth) || 0) + '</span>',
+        '<span><small>Gold</small> ' + Math.max(0, Number(entry.gold) || 0) + '</span>',
+        '<button class="record-archive-inspect" type="button" data-practice-record-run-id="' + id + '">Inspect build</button>',
+        '</article>'
+      ].join("");
+    }).join("");
+    return [
+      '<div class="record-archive-podium">' + podium + '</div>',
+      ledger ? '<div class="record-archive-ledger" aria-label="Practice ranking positions four and below">' + ledger + '</div>' : ''
+    ].join("");
+  }
+
+  function buildPracticeRecordsModalHtml() {
+    const selected = state.practiceRecordDetailRunId
+      ? state.leaderboard.find((entry) => String(entry.runId || entry.id || "") === state.practiceRecordDetailRunId)
+      : null;
+    const content = selected ? buildPracticeRecordDetail(selected) : buildPracticeRecordsRows();
+    return [
+      '<div class="overlay-card overlay-card-wide overlay-card-leaderboard record-archive-shell">',
+      '<header class="record-archive-masthead"><span class="record-archive-kicker">Local Hall of Descent</span><h2 class="overlay-title">Practice Records</h2><p class="overlay-sub">Completed local campaigns | canonical Practice score</p></header>',
+      '<div class="record-archive">' + content + '</div>',
+      '<p class="overlay-hint">' + (selected ? 'Esc/Enter - back to records' : 'T - sort Points/Depth | Esc - close') + '</p>',
+      '</div>'
+    ].join("");
   }
 
   function buildMutatorPanel() {
@@ -22623,7 +22841,7 @@
 
     if (state.phase === "won") {
       const finalDepth = Math.max(0, Number(state.finalVictoryPrompt?.depth) || MAX_DEPTH);
-      mutatorsEl.innerHTML = `<h3>Victory</h3><small>Depth ${finalDepth} conquered. 1 menu | 2 leaderboard</small>`;
+      mutatorsEl.innerHTML = `<h3>Victory</h3><small>Depth ${finalDepth} conquered. 1 menu | 2 ${getTerminalRecordsLabel()}</small>`;
       return;
     }
 
@@ -22830,21 +23048,8 @@
     }
 
     if (state.leaderboardModalOpen && state.phase === "menu") {
-      const modeLabel = state.leaderboardSortMode === "depth" ? "Depth" : "Points";
-      const scopeLabel = state.leaderboardScope === "legacy" ? "Legacy" : "Current Season";
-      const rows = buildLeaderboardRows(LEADERBOARD_MODAL_LIMIT);
-      const sourceLabel = getLeaderboardSourceLabel();
-      const statusNote = getLeaderboardStatusNote();
       screenOverlayEl.className = "screen-overlay visible";
-      screenOverlayEl.innerHTML = [
-        `<div class="overlay-card overlay-card-wide overlay-card-leaderboard">`,
-        `<h2 class="overlay-title">Leaderboard</h2>`,
-        `<p class="overlay-sub">Top ${Math.min(LEADERBOARD_MODAL_LIMIT, LEADERBOARD_LIMIT)} | Scope: ${scopeLabel} | Sort: ${modeLabel} | Source: ${sourceLabel}</p>`,
-        statusNote ? `<p class="overlay-sub">${statusNote}</p>` : "",
-        `<div class="overlay-menu leaderboard-modal-list">${rows}</div>`,
-        `<p class="overlay-hint">T - switch Points/Depth | V - switch Current/Legacy | Esc/Enter - close</p>`,
-        `</div>`
-      ].join("");
+      screenOverlayEl.innerHTML = buildPracticeRecordsModalHtml();
       return;
     }
 
@@ -23061,7 +23266,7 @@
           `</div>`,
           `<div class="gameover-requiem-action${selection === 1 ? " selected" : ""}" data-hd-key="2" role="button" tabindex="0" aria-selected="${selection === 1 ? "true" : "false"}">`,
           `<span class="gameover-requiem-key">2</span>`,
-          `<div><strong>Leaderboard</strong><small>See where this descent stands.</small></div>`,
+          `<div><strong>${getTerminalRecordsLabel()}</strong><small>See where this descent stands.</small></div>`,
           `</div>`
         ].join("");
         screenOverlayEl.className = "screen-overlay visible";
@@ -23128,7 +23333,7 @@
         `</div>`,
         `<div class="overlay-menu-row${selection === 1 ? " selected" : ""}">`,
         `<div class="overlay-menu-key">2</div>`,
-        `<div><strong>Leaderboard</strong><br /><span>Show ranking for this run, then continue in menu.</span></div>`,
+        `<div><strong>${getTerminalRecordsLabel()}</strong><br /><span>Show ranking for this run, then continue in menu.</span></div>`,
         `</div>`
       ].join("");
       screenOverlayEl.className = "screen-overlay visible";
@@ -23156,7 +23361,7 @@
         `</div>`,
         `</div>`,
         `<div class="overlay-menu">${rows}</div>`,
-        `<p class="overlay-hint">W/S or Arrows - move | Enter - select | 1 Main Menu | 2 Leaderboard | Esc Main Menu</p>`,
+        `<p class="overlay-hint">W/S or Arrows - move | Enter - select | 1 Main Menu | 2 ${getTerminalRecordsLabel()} | Esc Main Menu</p>`,
         `</div>`
       ].join("");
       return;
@@ -23176,7 +23381,7 @@
         `</div>`,
         `<div class="overlay-menu-row" data-hd-key="2" role="button" tabindex="0">`,
         `<div class="overlay-menu-key">${isHdGraphics() ? "&#8617;" : "2"}</div>`,
-        `<div><strong>Leaderboard</strong><br /><span>Show ranking and your winning score.</span></div>`,
+        `<div><strong>${getTerminalRecordsLabel()}</strong><br /><span>Show ranking and your winning score.</span></div>`,
         `</div>`
       ].join("");
       screenOverlayEl.className = "screen-overlay visible";
@@ -23186,7 +23391,7 @@
         `<p class="overlay-sub">Depth ${MAX_DEPTH} completed. The Final Chamber is broken.</p>`,
         `<p class="overlay-sub">Final run: ${finalScore} pts | Depth ${finalDepth} | Gold ${finalGold}</p>`,
         `<div class="overlay-menu">${rows}</div>`,
-        `<p class="overlay-hint">${isHdGraphics() ? "Arrows - move | Enter - select | Esc - Main Menu" : "1 / Enter / Esc - Main Menu | 2 - Leaderboard"}</p>`,
+        `<p class="overlay-hint">${isHdGraphics() ? "Arrows - move | Enter - select | Esc - Main Menu" : `1 / Enter / Esc - Main Menu | 2 - ${getTerminalRecordsLabel()}`}</p>`,
         `</div>`
       ].join("");
       return;
@@ -31645,27 +31850,22 @@
     }
 
     if (state.leaderboardModalOpen && state.phase === "menu") {
+      if (state.practiceRecordDetailRunId && (key === "escape" || isConfirm)) {
+        state.practiceRecordDetailRunId = "";
+        markUiDirty();
+        return;
+      }
       if (key === "t" || key === "tab") {
         toggleLeaderboardSortMode();
         return;
       }
-      if (key === "v") {
-        toggleLeaderboardScope();
-        return;
-      }
       if (key === "arrowleft") {
         state.leaderboardSortMode = "score";
-        if (isOnlineLeaderboardEnabled()) {
-          refreshOnlineLeaderboard(true);
-        }
         markUiDirty();
         return;
       }
       if (key === "arrowright") {
         state.leaderboardSortMode = "depth";
-        if (isOnlineLeaderboardEnabled()) {
-          refreshOnlineLeaderboard(true);
-        }
         markUiDirty();
         return;
       }
@@ -31898,14 +32098,12 @@
         return;
       }
       if (key === "2") {
-        enterMenu();
-        openLeaderboardModal();
+        openTerminalRecords();
         return;
       }
       if (isConfirm) {
         if ((Number(state.finalGameOverSelection) || 0) === 1) {
-          enterMenu();
-          openLeaderboardModal();
+          openTerminalRecords();
           return;
         }
         enterMenu();
@@ -31920,8 +32118,7 @@
 
     if (state.phase === "won" && state.finalVictoryPrompt) {
       if (key === "2") {
-        enterMenu();
-        openLeaderboardModal();
+        openTerminalRecords();
         return;
       }
       if (key === "1" || key === "escape" || isConfirm) {
@@ -32603,6 +32800,18 @@
     };
 
     screenOverlayEl.addEventListener("click", (event) => {
+      const practiceBack = event.target?.closest?.("[data-practice-record-back]");
+      if (practiceBack && screenOverlayEl.contains(practiceBack)) {
+        state.practiceRecordDetailRunId = "";
+        markUiDirty();
+        return;
+      }
+      const practiceRecord = event.target?.closest?.("[data-practice-record-run-id]");
+      if (practiceRecord && screenOverlayEl.contains(practiceRecord)) {
+        state.practiceRecordDetailRunId = String(practiceRecord.dataset.practiceRecordRunId || "");
+        markUiDirty();
+        return;
+      }
       const row = event.target?.closest?.(".merchant-row[data-merchant-key]");
       if (row && screenOverlayEl.contains(row)) {
         activateMerchantRow(row);
@@ -32645,6 +32854,22 @@
 
     screenOverlayEl.addEventListener("keydown", (event) => {
       if (event.key !== "Enter" && event.key !== " ") return;
+      const practiceBack = event.target?.closest?.("[data-practice-record-back]");
+      if (practiceBack && screenOverlayEl.contains(practiceBack)) {
+        event.preventDefault();
+        event.stopPropagation();
+        state.practiceRecordDetailRunId = "";
+        markUiDirty();
+        return;
+      }
+      const practiceRecord = event.target?.closest?.("[data-practice-record-run-id]");
+      if (practiceRecord && screenOverlayEl.contains(practiceRecord)) {
+        event.preventDefault();
+        event.stopPropagation();
+        state.practiceRecordDetailRunId = String(practiceRecord.dataset.practiceRecordRunId || "");
+        markUiDirty();
+        return;
+      }
       const row = event.target?.closest?.(".merchant-row[data-merchant-key]");
       if (row && screenOverlayEl.contains(row)) {
         event.preventDefault();

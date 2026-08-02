@@ -80,9 +80,11 @@ test("Ranked ledger shows only the five requested facts and elevates top three",
   }).rows;
 
   const archive = ui.renderList(documentRef, rows, (runId) => opened.push(runId));
-  assert.equal(archive.className, "record-archive ranked-v3-leaderboard-list");
-  assert.equal(visit(archive, (node) => node.className === "record-archive-podium-card").length, 3);
-  assert.equal(visit(archive, (node) => node.className === "record-archive-ledger-row").length, 1);
+  assert.equal(archive.className, "record-archive ranked-v3-record-archive ranked-v3-leaderboard-list");
+  const hasClass = (node, className) => String(node.className).split(/\s+/u).includes(className);
+  assert.equal(visit(archive, (node) => hasClass(node, "record-archive-podium-card")).length, 3);
+  assert.equal(visit(archive, (node) => hasClass(node, "record-archive-ledger-row")).length, 1);
+  assert.equal(visit(archive, (node) => hasClass(node, "ranked-v3-leaderboard-row")).length, 4);
 
   const facts = visit(archive, (node) => node.attributes.get("data-record-field"));
   assert.deepEqual(
@@ -118,6 +120,9 @@ test("Build Chronicle exposes exact active mutators through a focusable tooltip"
         durationMs: 80000,
         roomsCompleted: 19,
         bossesCompleted: 3,
+        damageDone: 1234,
+        damageTaken: 456,
+        totalKills: 77,
         lives: { remaining: 0, maximum: 5 }
       }
     }
@@ -129,5 +134,8 @@ test("Build Chronicle exposes exact active mutators through a focusable tooltip"
   assert.equal(tooltip[0].attributes.get("tabindex"), "0");
   assert.match(tooltip[0].attributes.get("data-record-tooltip"), /Greed.*\+50% gold.*Enemies hit harder/iu);
   assert.match(allText(chronicle), /Crown Concord/iu);
+  const relicIcons = visit(chronicle, (node) => node.tagName === "img" && /crownconcord\.png$/u.test(node.src || ""));
+  assert.equal(relicIcons.length, 1);
   assert.match(allText(chronicle), /Time Played.*1m 20s.*Rooms Cleared.*19.*Bosses Defeated.*3/isu);
+  assert.match(allText(chronicle), /Final Chronicle.*Damage Done.*1234.*Damage Taken.*456.*Total Kills.*77/isu);
 });

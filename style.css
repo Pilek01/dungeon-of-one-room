@@ -5002,3 +5002,156 @@ body.ranked-v3-modal-open #screenOverlay {
     animation: none;
   }
 }
+
+/* Shared Ranked Leaderboard and Practice Records archive. */
+.record-archive {
+  --record-gold: #e7c26f;
+  --record-silver: #c9d5df;
+  --record-bronze: #cd9264;
+  display: grid;
+  gap: 18px;
+  text-align: left;
+}
+.record-archive-podium { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.record-archive-podium-card, .record-archive-ledger-row, .record-archive-chronicle, .record-archive-build-section {
+  border: 1px solid #4e5559;
+  background: linear-gradient(145deg, #242a2ddd, #090b0ee8), url("assets/hd/ui/abyssal-gothic/panel-texture.png") center/220px;
+  box-shadow: inset 0 0 0 1px #050607, inset 0 0 22px #000b;
+}
+.record-archive-podium-card { display:grid; justify-items:center; gap:6px; padding:14px 10px; text-align:center; }
+.record-archive-podium-card.ranked-v3-leaderboard-row { grid-template-columns:1fr; }
+.record-archive-podium-card .ranked-v3-leaderboard-details-button { grid-column:1; grid-row:auto; }
+.record-archive-podium-card[data-record-rank="1"] { border-color: var(--record-gold); }
+.record-archive-podium-card[data-record-rank="2"] { border-color: var(--record-silver); }
+.record-archive-podium-card[data-record-rank="3"] { border-color: var(--record-bronze); }
+.record-archive-skull { width:58px; height:58px; object-fit:contain; filter: sepia(.75) saturate(1.7) brightness(1.18); }
+.record-archive-skull-rank-2 { filter: grayscale(1) brightness(1.65); }
+.record-archive-skull-rank-3 { filter: sepia(.9) saturate(1.2) hue-rotate(330deg) brightness(.95); }
+.record-archive-podium-title, .record-archive-kicker { margin:0; color:var(--record-gold); font:700 .68rem/1.2 "Courier New",monospace; letter-spacing:1.5px; text-transform:uppercase; }
+.record-archive-name { border:0; padding:0; color:#f3e7cf; background:transparent; font:600 1rem/1.1 "Copperplate Gothic Light",Georgia,serif; cursor:pointer; }
+.record-archive-podium-facts, .record-archive-chronicle-facts { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:5px; width:100%; }
+.record-archive-ledger { display:grid; gap:7px; }
+.record-archive-ledger-row { display:grid; grid-template-columns:70px minmax(120px,1fr) repeat(3,minmax(76px,auto)) auto; gap:10px; align-items:center; padding:10px 12px; }
+.record-archive-fact { display:grid; gap:2px; }
+.record-archive-fact-label { color:#9d978d; font:600 .58rem/1 "Courier New",monospace; letter-spacing:.8px; text-transform:uppercase; }
+.record-archive-fact-value { color:#e2d6c3; font:600 .82rem/1.15 Georgia,serif; }
+.record-archive-mutators { position:relative; width:max-content; max-width:100%; padding:7px 10px; border:1px solid #6e624d; color:#e3cf9c; font:.7rem/1.25 "Courier New",monospace; cursor:help; }
+.record-archive-mutators:hover::after, .record-archive-mutators:focus-visible::after { content:attr(data-record-tooltip); position:absolute; z-index:3; right:0; bottom:calc(100% + 7px); width:min(330px,80vw); padding:9px; border:1px solid #a88a53; color:#f3e7cf; background:#080a0df8; box-shadow:0 8px 24px #000d; white-space:normal; }
+.record-archive-header { padding-bottom:10px; border-bottom:1px solid #554b3b; }
+.record-archive-player { margin:3px 0; color:#f0e2cc; font:600 1.65rem/1 "Copperplate Gothic Light",Georgia,serif; }
+.record-archive-score { margin:0; color:var(--record-gold); }
+.record-archive-chronicle, .record-archive-build-section { padding:13px; }
+.record-archive-section-title { margin:0 0 9px; color:#d8bd83; font:600 .78rem/1.2 "Copperplate Gothic Light",Georgia,serif; letter-spacing:1px; text-transform:uppercase; }
+.record-archive-build-list { margin:0; padding-left:18px; color:#bcb4aa; }
+@media (max-width:760px) { .record-archive-podium { grid-template-columns:1fr; } .record-archive-ledger-row { grid-template-columns:repeat(2,minmax(0,1fr)); } .record-archive-ledger-row .ranked-v3-leaderboard-details-button { grid-column:1/-1; width:100%; } }
+@media (prefers-reduced-motion:reduce) { .record-archive * { transition:none!important; animation:none!important; } }
+
+
+/* Practice Records detail extensions. */
+.record-archive-shell {
+  width: min(1100px, 94vw);
+  max-height: min(860px, 92vh);
+  overflow: auto;
+  border-color: #6b5940;
+  background:
+    radial-gradient(circle at 50% -20%, #8c6b2a22, transparent 42%),
+    linear-gradient(145deg, #171a1ddd, #050608f2);
+}
+.record-archive-masthead { display:grid; justify-items:center; gap:5px; margin-bottom:18px; text-align:center; }
+.record-archive-masthead .overlay-title { margin:0; font-family:"Copperplate Gothic Light",Georgia,serif; letter-spacing:4px; text-shadow:0 2px 0 #000,0 0 22px #d8a94b45; }
+.record-archive-rank { color:#c7bda9; font:700 .8rem/1 "Courier New",monospace; letter-spacing:1px; }
+.record-archive-podium-card[data-record-rank="1"] .record-archive-rank,
+.record-archive-podium-card[data-record-rank="1"] .record-archive-podium-score { color:var(--record-gold); }
+.record-archive-podium-card[data-record-rank="2"] .record-archive-rank,
+.record-archive-podium-card[data-record-rank="2"] .record-archive-podium-score { color:var(--record-silver); }
+.record-archive-podium-card[data-record-rank="3"] .record-archive-rank,
+.record-archive-podium-card[data-record-rank="3"] .record-archive-podium-score { color:var(--record-bronze); }
+.record-archive-podium-score { font:700 1.05rem/1 Georgia,serif; text-shadow:0 1px 0 #000; }
+.record-archive-facts { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:6px; width:100%; }
+.record-archive-facts span,
+.record-archive-detail-metrics span,
+.record-archive-build-grid > span,
+.record-archive-stat-grid > span { display:grid; gap:3px; min-width:0; }
+.record-archive-facts small,
+.record-archive-detail small,
+.record-archive-ledger-row small { color:#918a7e; font:600 .58rem/1.1 "Courier New",monospace; letter-spacing:.8px; text-transform:uppercase; }
+.record-archive-facts strong,
+.record-archive-detail strong { color:#e7dac4; font-family:Georgia,serif; }
+.record-archive-inspect,
+.record-archive-back {
+  border:1px solid #716246;
+  padding:8px 12px;
+  color:#e7d9bc;
+  background:linear-gradient(#252119,#0c0d0f);
+  font:700 .68rem/1 "Courier New",monospace;
+  letter-spacing:.7px;
+  text-transform:uppercase;
+  cursor:pointer;
+}
+.record-archive-name:hover,
+.record-archive-name:focus-visible,
+.record-archive-inspect:hover,
+.record-archive-inspect:focus-visible,
+.record-archive-back:hover,
+.record-archive-back:focus-visible { color:#fff2c7; border-color:#c8a457; text-shadow:0 0 12px #d9ad4e88; }
+.record-archive-ledger-row > span { color:#b9b0a1; font:.72rem/1.2 "Courier New",monospace; }
+.record-archive-ledger-row .record-archive-score { color:#d9bd7e; font-family:Georgia,serif; }
+.record-archive-detail { display:grid; gap:14px; }
+.record-archive-detail-header {
+  display:flex;
+  justify-content:space-between;
+  gap:16px;
+  align-items:end;
+  padding:15px;
+  border:1px solid #65583f;
+  background:linear-gradient(135deg,#24211cdd,#090b0eea);
+  box-shadow:inset 0 0 24px #000b;
+}
+.record-archive-detail-header h3 { margin:4px 0; color:#f0e2cc; font:600 1.65rem/1 "Copperplate Gothic Light",Georgia,serif; }
+.record-archive-detail-header > strong { color:var(--record-gold); font-size:1.25rem; }
+.record-archive-detail-metrics { display:grid; grid-template-columns:repeat(6,minmax(0,1fr)); gap:7px; }
+.record-archive-detail-metrics span,
+.record-archive-build-grid > span,
+.record-archive-stat-grid > span { padding:9px; border:1px solid #403a31; background:#0b0d10c9; }
+.record-archive-detail-section { padding:13px; border:1px solid #4e4940; background:linear-gradient(145deg,#1d2022d9,#080a0de8); box-shadow:inset 0 0 20px #000a; }
+.record-archive-detail-section h4 { margin:0 0 10px; color:#d8bd83; font:600 .8rem/1.2 "Copperplate Gothic Light",Georgia,serif; letter-spacing:1px; text-transform:uppercase; }
+.record-archive-detail-columns { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+.record-archive-build-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:7px; }
+.record-archive-stat-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:7px; }
+.record-archive-relic-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:8px; }
+.record-archive-relic { display:flex; align-items:center; gap:8px; min-width:0; padding:8px; border:1px solid #4b4235; background:#090b0ed9; }
+.record-archive-relic img,
+.record-archive-relic-fallback { width:38px; height:38px; flex:0 0 38px; object-fit:contain; }
+.record-archive-relic-fallback { display:grid; place-items:center; color:#806f51; }
+.record-archive-relic span { display:grid; gap:3px; min-width:0; }
+.record-archive-relic strong { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:.78rem; }
+.record-archive-empty,
+.record-archive-legacy-note { margin:0; padding:18px; border:1px dashed #554b3b; color:#aaa093; text-align:center; }
+.record-archive-detail-legacy { min-height:300px; align-content:center; }
+[data-record-tooltip] { position:relative; cursor:help; }
+[data-record-tooltip]:hover::after,
+[data-record-tooltip]:focus-visible::after {
+  content:attr(data-record-tooltip);
+  position:absolute;
+  z-index:20;
+  right:0;
+  bottom:calc(100% + 8px);
+  width:min(390px,80vw);
+  padding:10px 12px;
+  border:1px solid #b38d4d;
+  color:#f4e9d3;
+  background:#050609fa;
+  box-shadow:0 10px 30px #000e;
+  font:600 .68rem/1.45 "Courier New",monospace;
+  white-space:normal;
+}
+@media (max-width:900px) {
+  .record-archive-detail-metrics { grid-template-columns:repeat(3,minmax(0,1fr)); }
+  .record-archive-relic-grid,
+  .record-archive-stat-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+}
+@media (max-width:760px) {
+  .record-archive-detail-columns { grid-template-columns:1fr; }
+  .record-archive-build-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .record-archive-detail-header { align-items:start; flex-direction:column; }
+}

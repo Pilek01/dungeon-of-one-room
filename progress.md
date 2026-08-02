@@ -1321,3 +1321,29 @@ Updated next good targets
   rejected by the production client.
 - No merge, push, deployment, migration, backfill, or ruleset activation was
   performed.
+
+
+## 2026-08-02 - Unified Ranked Leaderboard and Practice Records
+
+- Main-menu Leaderboard now targets only the canonical Online Ranked season.
+  Ranked terminal screens route to that same table; Practice terminal screens
+  route to local Practice Records without adding another main-menu button.
+- Local Practice entries are created only on final defeat or Depth 100 victory.
+  Extract and ordinary life loss no longer record a result. New terminal
+  entries preserve duration, completed rooms, build, active mutators, and the
+  Game Over statistics; old records remain visible with an explicit unavailable
+  Build Chronicle notice.
+- Ranked and Practice share the Gothic record archive: gold/silver/bronze skull
+  podium, ledger rows limited to Rank, Name, Score, Depth, and Gold, clickable
+  names plus Inspect build, real relic icons, final statistics, and a
+  keyboard-focusable exact mutator tooltip.
+- Focused local, production-package, and M4 renderer regressions pass 20/20.
+  The current-tree HD browser scenario and Ranked lifecycle both pass; Ranked
+  opened the redesigned list and Build Chronicle. `verify:phase` passes
+  776/776 and `verify:guard` passes 14/14.
+- Regenerated test-only v08-meta-1 provenance after the protected `game.js`
+  change. Local candidate hash:
+  `sha256:9943c47912764a83eac2b06cc0524471fccd2b49e80c364ef5d894856f724ea6`.
+  Committed protected-baseline verification remains to run after the commit.
+- No push, deployment, D1 migration/backfill, or ruleset activation was
+  performed.

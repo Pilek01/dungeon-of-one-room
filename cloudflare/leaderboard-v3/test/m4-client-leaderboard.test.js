@@ -18,7 +18,9 @@ function fakeDocument() {
         className: "",
         textContent: "",
         children: [],
+        attributes: new Map(),
         append(...children) { this.children.push(...children); },
+        setAttribute(name, value) { this.attributes.set(String(name), String(value)); },
         addEventListener(type, handler) { this.listener = { type, handler }; }
       };
     }
@@ -113,8 +115,11 @@ test("M4 leaderboard rendering is text-safe and never uses innerHTML", () => {
     outcome: "defeat"
   })];
   const rendered = leaderboardUi.renderList(documentRef, rows, () => {});
-  assert.equal(rendered.children[0].children[0].textContent, "#1 <img src=x onerror=alert(1)> - 5");
-  assert.equal("innerHTML" in rendered.children[0], false);
+  const text = (node) => [node.textContent, ...(node.children || []).map(text)].join(" ");
+  const visible = text(rendered);
+  assert.match(visible, /Champion.*Rank.*#1.*<img src=x onerror=alert\(1\)>.*Score.*5/su);
+  const allNodes = (node) => [node, ...(node.children || []).flatMap(allNodes)];
+  assert.equal(allNodes(rendered).some((node) => "innerHTML" in node), false);
 });
 
 test("M4 leaderboard detail rejects non-canonical run IDs before transport", async () => {
@@ -144,7 +149,7 @@ test("M4 leaderboard renders player-facing relic names without protocol metadata
   const rendered = leaderboardUi.renderDetail(documentRef, detail);
   const text = (node) => [node.textContent, ...(node.children || []).map(text)].join(" ");
   const visible = text(rendered);
-  assert.match(visible, /Fang Charm x2/u);
+  assert.match(visible, /Fang Charm.*Stack x2/su);
   assert.doesNotMatch(visible, /v08-meta-1|v08-score-1|\bfang\b/u);
 });
 test("M4 Ranked relic choices resolve catalog name, description, rarity, and icon", () => {

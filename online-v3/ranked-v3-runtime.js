@@ -242,12 +242,12 @@
 
   async function openLeaderboardDetail(runId) {
     try {
-      ui.showMessage("Ranked Build", "Loading this descent...");
+      ui.showMessage("Build Chronicle", "Loading this descent...");
       const detail = leaderboardUi.createDetailViewModel(
         await createLeaderboardClient().detail(runId)
       );
       ui.showContent(
-        "Ranked Build",
+        "Build Chronicle",
         displaySeason(detail.season),
         leaderboardUi.renderDetail(root.document, detail),
         [

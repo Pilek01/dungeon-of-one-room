@@ -1402,11 +1402,11 @@ ${fatalTestHookAnchor}`;
       await page.locator(".ranked-v3-leaderboard-row").first().textContent(),
       /M4Headed/u
     );
-    await page.getByRole("button", { name: "Build details" }).first().click();
+    await page.getByRole("button", { name: "Inspect build" }).first().click();
     await page.locator(".ranked-v3-leaderboard-detail").waitFor({ state: "visible" });
     assert.match(
       await page.locator(".ranked-v3-leaderboard-detail").textContent(),
-      /Relics/u
+      /Relic Build/u
     );
     await page.screenshot({
       path: path.join(ARTIFACT_ROOT, "ranked-leaderboard-detail.png"),
