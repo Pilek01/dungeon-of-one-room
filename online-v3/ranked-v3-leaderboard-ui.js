@@ -64,10 +64,12 @@
     });
   }
 
-  function createDetailViewModel(payload = {}) {
+  function createDetailViewModel(payload = {}, options = {}) {
     const entry = payload.entry && typeof payload.entry === "object" ? payload.entry : {};
+    const listedRank = Number.isInteger(options.rank) && options.rank > 0 ? options.rank : null;
     return Object.freeze({
       ...toLeaderboardRow(entry),
+      rank: listedRank,
       season: String(entry.season || ""),
       build: normalizeBuild(entry.build),
       summary: Object.freeze(entry.summary && typeof entry.summary === "object" ? { ...entry.summary } : {})
@@ -84,20 +86,26 @@
         .filter(Boolean)
         .join(" ");
     }).join(" | ") || "No mutators were active in this run.";
+    const optional = (key, label, format = integer) =>
+      Object.hasOwn(summary, key) && summary[key] !== null && summary[key] !== undefined
+        ? Object.freeze({ key, label, value: format(summary[key]) })
+        : null;
+    const chronicleFacts = [
+      optional("durationMs", "Time Played", archiveUi.formatDuration),
+      optional("roomsCompleted", "Rooms Cleared"),
+      optional("bossesCompleted", "Bosses Defeated"),
+      optional("finalDepth", "Highest Depth"),
+      optional("goldEarned", "Gold Earned"),
+      optional("score", "Final Score"),
+      optional("livesRemaining", "Lives Remaining")
+    ].filter(Boolean);
 
     return Object.freeze({
       runId: detail.runId,
       rank: detail.rank,
       playerName: detail.playerName,
       score: detail.score,
-      chronicleFacts: Object.freeze([
-        { key: "time-played", label: "Time Played", value: archiveUi.formatDuration(detail.durationMs || summary.durationMs) },
-        { key: "rooms-cleared", label: "Rooms Cleared", value: integer(summary.roomsCompleted) },
-        { key: "bosses-defeated", label: "Bosses Defeated", value: integer(summary.bossesCompleted) },
-        { key: "depth", label: "Highest Depth", value: detail.depth },
-        { key: "gold", label: "Gold Earned", value: detail.gold },
-        { key: "score", label: "Final Score", value: detail.score }
-      ]),
+      chronicleFacts: Object.freeze(chronicleFacts),
       mutators: Object.freeze({
         label: active.length ? "Mutators " + active.length : "No mutators used",
         tooltip
@@ -116,17 +124,7 @@
         { title: "Camp Upgrades", values: Object.entries(detail.build.campUpgrades).map(([id, level]) => humanize(id) + ": " + integer(level)) },
         { title: "Elixirs", values: detail.build.elixirs.map((item) => humanize(item?.elixirId || item?.id || "")) }
       ]),
-      terminalTitle: "Final Chronicle",
-      terminalFacts: Object.freeze([
-        { key: "damage-done", label: "Damage Done", value: integer(summary.damageDone) },
-        { key: "damage-taken", label: "Damage Taken", value: integer(summary.damageTaken) },
-        { key: "total-kills", label: "Total Kills", value: integer(summary.totalKills) },
-        { key: "elite-kills", label: "Elite Kills", value: integer(summary.eliteKills) },
-        { key: "potions-used", label: "Potions Used", value: integer(summary.potionsUsed) },
-        { key: "elixirs-used", label: "Elixirs Used", value: integer(summary.elixirsUsed) },
-        { key: "gold-collected", label: "Gold Collected", value: integer(summary.totalGoldCollected) },
-        { key: "deaths", label: "Deaths", value: integer(summary.deaths) }
-      ])
+      terminalFacts: Object.freeze([])
     });
   }
 
@@ -134,11 +132,10 @@
     if (!archiveUi) throw new Error("Record archive renderer is unavailable.");
     return archiveUi.renderList(documentRef, { context: "ranked", rows }, {
       onInspect(row) {
-        if (typeof open === "function") open(row.runId);
+        if (typeof open === "function") open(row);
       }
     });
   }
-
   function renderDetail(documentRef, detail) {
     if (!archiveUi) throw new Error("Record archive renderer is unavailable.");
     return archiveUi.renderDetail(documentRef, detailModel(detail));
