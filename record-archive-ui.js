@@ -19,6 +19,12 @@
     inspect: "record-archive-inspect-button"
   });
 
+  const PODIUM_MEDALLIONS = Object.freeze({
+    1: "assets/hd/ui/leaderboard/skull-medallion-gold.png",
+    2: "assets/hd/ui/leaderboard/skull-medallion-silver.png",
+    3: "assets/hd/ui/leaderboard/skull-medallion-bronze.png"
+  });
+
   function integer(value) {
     return Math.max(0, Math.floor(Number(value) || 0));
   }
@@ -98,8 +104,8 @@
       const card = element(documentRef, "article", elevated ? SELECTORS.podiumCard : SELECTORS.ledgerRow);
       card.setAttribute("data-record-rank", String(rank));
       if (elevated) {
-        const medallion = element(documentRef, "img", `record-archive-skull record-archive-skull-rank-${rank}`);
-        medallion.src = String(row.medallionSrc || "assets/hd/environment/descent/floor-skull.png");
+        const medallion = element(documentRef, "img", "record-archive-skull");
+        medallion.src = PODIUM_MEDALLIONS[rank];
         medallion.alt = `Rank ${rank} skull`;
         card.append(
           medallion,
