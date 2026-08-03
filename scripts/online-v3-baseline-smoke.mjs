@@ -41,6 +41,33 @@ const RUN_SAVE_KEY = "dungeonOneRoomRunSave";
 const GRAPHICS_KEY = "dungeonOneRoomGraphicsMode";
 const PLAYER_NAME_KEY = "dungeonOneRoomPlayerName";
 const LIVES_KEY = "dungeonOneRoomLives";
+const PRACTICE_ARCHIVE_STORAGE_KEY = "dungeonOneRoomLeaderboardV1";
+const PRACTICE_ARCHIVE_FIXTURES = Object.freeze([
+  Object.freeze({
+    id: "practice-archive-1", runId: "practice-archive-1", submitSeq: 1,
+    playerName: "Practice Crown", ts: 1_700_000_001_000, outcome: "victory",
+    score: 90_000, depth: 28, gold: 9_000, startDepth: 0, turns: 410, livesLeft: 2,
+    mutatorIds: ["greed"], durationMs: 600_000, season: "practice", version: "v0.8.0",
+    build: { relics: [{ relicId: "crownconcord", stacks: 1 }], pacts: ["blood_pact"], skillTiers: { slash: 2 }, campUpgrades: { vitality: 1 }, elixir: { type: "iron_guard" } },
+    summary: { roomsCompleted: 28, bossesCompleted: 5, finalDepth: 28, goldEarned: 9_000, livesRemaining: 2, damageDone: 840, damageTaken: 120, totalKills: 65, eliteKills: 5, potionsUsed: 2, elixirsUsed: 1, totalGoldCollected: 9_000, deaths: 3 }
+  }),
+  Object.freeze({
+    id: "practice-archive-2", runId: "practice-archive-2", submitSeq: 1,
+    playerName: "Practice Silver", ts: 1_700_000_002_000, outcome: "death",
+    score: 80_000, depth: 24, gold: 7_000, startDepth: 0, turns: 350, livesLeft: 0,
+    mutatorIds: [], durationMs: 480_000, season: "practice", version: "v0.8.0",
+    build: { relics: [{ relicId: "fang", stacks: 2 }], pacts: [], skillTiers: {}, campUpgrades: {}, elixir: { type: "fury_tonic" } },
+    summary: { roomsCompleted: 24, bossesCompleted: 4, finalDepth: 24, goldEarned: 7_000, livesRemaining: 0, damageDone: 640, damageTaken: 210, totalKills: 52, eliteKills: 4, potionsUsed: 3, elixirsUsed: 1, totalGoldCollected: 7_000, deaths: 5 }
+  }),
+  Object.freeze({
+    id: "practice-archive-3", runId: "practice-archive-3", submitSeq: 1,
+    playerName: "Practice Bronze", ts: 1_700_000_003_000, outcome: "death",
+    score: 70_000, depth: 20, gold: 5_000, startDepth: 0, turns: 280, livesLeft: 0,
+    mutatorIds: ["berserker"], durationMs: 360_000, season: "practice", version: "v0.8.0",
+    build: { relics: [{ relicId: "raven_edge", stacks: 1 }], pacts: [], skillTiers: {}, campUpgrades: {}, elixir: null },
+    summary: { roomsCompleted: 20, bossesCompleted: 4, finalDepth: 20, goldEarned: 5_000, livesRemaining: 0, damageDone: 500, damageTaken: 260, totalKills: 43, eliteKills: 3, potionsUsed: 1, elixirsUsed: 0, totalGoldCollected: 5_000, deaths: 5 }
+  })
+]);
 const TUTORIAL_KEYS = [
   "dungeonOneRoomTutorialRunSeenV1",
   "dungeonOneRoomTutorialCampSeenV1",
@@ -157,7 +184,7 @@ async function verifyPhaseGuardrails() {
   assert(Object.values(storage.STORAGE_KEYS).every((key) => key.startsWith("dungeonRankedV3")));
 
   const leaderboardUi = require(path.join(ROOT, "online-v3", "ranked-v3-leaderboard-ui.js"));
-  assert(Object.values(leaderboardUi.SELECTORS).every((selector) => selector.startsWith("ranked-v3-")));
+  assert(Object.values(leaderboardUi.SELECTORS).every((selector) => selector.startsWith("record-archive-v2")));
 
   return {
     changedPaths,
@@ -331,8 +358,21 @@ function attachDiagnostics(page, bucket, label) {
   });
 }
 
-async function openScenario(browser, baseUrl, diagnostics, label, scenario, mode = "hd") {
+async function openScenario(browser, baseUrl, diagnostics, label, scenario, mode = "hd", options = {}) {
   const context = await createContext(browser, { seed: seedStorage(mode) });
+  if (options.practiceTerminalRecord === true) {
+    const configSource = await fsPromises.readFile(path.join(ROOT, "config.js"), "utf8");
+    const localPracticeConfig = configSource.replace(
+      "window.DUNGEON_TEST_MODE = true;",
+      "window.DUNGEON_TEST_MODE = false;"
+    );
+    assert.notEqual(localPracticeConfig, configSource, "QA config must disable only test mode for the terminal Practice record.");
+    await context.route("**/config.js", (route) => route.fulfill({
+      status: 200,
+      contentType: "text/javascript; charset=utf-8",
+      body: localPracticeConfig
+    }));
+  }
   const page = await context.newPage();
   attachDiagnostics(page, diagnostics, label);
   const response = await page.goto(`${baseUrl}/?scenario=${encodeURIComponent(scenario)}`, {
@@ -597,7 +637,7 @@ async function main() {
     }
 
     if (RUN_SAVE) {
-    const save = await openScenario(browser, baseUrl, diagnostics, "save", "descent_hd", "hd");
+    const save = await openScenario(browser, baseUrl, diagnostics, "save", "descent_hd", "hd", { practiceTerminalRecord: true });
     const savedRaw = await save.page.evaluate((key) => localStorage.getItem(key), RUN_SAVE_KEY);
     assert(savedRaw, "Scenario start must create a Continue snapshot");
     const savedSnapshot = JSON.parse(savedRaw);
@@ -611,6 +651,10 @@ async function main() {
     const resumed = await waitForState(save.page, (value) => value.phase === "playing", "continued run");
     assert.equal(resumed.depth, savedDepth);
     results.checks.saveContinue = { savedDepth, resumedDepth: resumed.depth };
+
+    await save.page.evaluate(({ key, records }) => {
+      localStorage.setItem(key, JSON.stringify(records));
+    }, { key: PRACTICE_ARCHIVE_STORAGE_KEY, records: PRACTICE_ARCHIVE_FIXTURES });
 
     const defeatSnapshotRaw = await save.page.evaluate((key) => localStorage.getItem(key), RUN_SAVE_KEY);
     const defeatSnapshot = JSON.parse(defeatSnapshotRaw);
@@ -665,6 +709,32 @@ async function main() {
     assert.match(finalDefeatSummary.overlayText, /All lives lost|Last Light Extinguished|Game Over/iu);
     await writeJson("final-defeat-summary.json", finalDefeatSummary);
     results.screenshots.push(await screenshot(save.page, "08-final-defeat.png"));
+
+    const practiceApiBeforeRecords = diagnostics.apiRequests.length;
+    await save.page.keyboard.press("2");
+    const practiceArchive = save.page.locator("[data-practice-record-archive] > .record-archive-v2.record-archive-list");
+    await practiceArchive.waitFor({ state: "visible" });
+    assert.equal(await practiceArchive.locator(".record-archive-podium-card").count(), 3);
+    assert.equal(await practiceArchive.locator(".record-archive-ledger-row").count() >= 1, true);
+    const practiceListText = await practiceArchive.innerText();
+    for (const name of ["Practice Crown", "Practice Silver", "Practice Bronze", "BaselineQA"]) {
+      assert.match(practiceListText, new RegExp(name));
+    }
+    assert.doesNotMatch(practiceListText, /Outcome|Time Played/u);
+    await save.page.screenshot({ path: path.join(ARTIFACT_ROOT, "practice-records-list-desktop.png"), fullPage: true });
+    await save.page.setViewportSize({ width: 640, height: 1080 });
+    await save.page.screenshot({ path: path.join(ARTIFACT_ROOT, "practice-records-list-narrow.png"), fullPage: true });
+    await save.page.setViewportSize({ width: 1920, height: 1080 });
+    await practiceArchive.locator('[data-record-rank="4"] .record-archive-name').click();
+    const practiceDetail = save.page.locator("[data-practice-record-archive] > .record-archive-v2.record-archive-detail");
+    await practiceDetail.waitFor({ state: "visible" });
+    const practiceDetailText = await practiceDetail.innerText();
+    assert.match(practiceDetailText, /Rank #4[\s\S]*BaselineQA/iu);
+    assert.match(practiceDetailText, /Time Played|Run Chronicle/iu);
+    assert.doesNotMatch(practiceDetailText, /Rank #1/u);
+    await save.page.screenshot({ path: path.join(ARTIFACT_ROOT, "practice-records-detail-rank4.png"), fullPage: true });
+    assert.equal(diagnostics.apiRequests.length, practiceApiBeforeRecords, "Practice Records emitted an /api request");
+    results.checks.practiceRecordArchive = { podium: 3, rank: 4, localApiRequests: 0 };
     results.checks.finalDefeat = {
       phase: defeated.phase,
       prompt: defeated.prompts.finalGameOver,

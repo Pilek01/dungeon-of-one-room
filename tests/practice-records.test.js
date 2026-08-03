@@ -70,6 +70,22 @@ test("Practice adapter keeps records local, sorted, and explicit about legacy de
   assert.match(detail.mutators.tooltip, /Greed.*\+50% gold.*Enemies hit harder/u);
   assert.equal(detail.chronicleFacts.find((fact) => fact.key === "time-played").value, "0s");
 
+  const fourth = adapter.createDetailModel({
+    ...entries[3],
+    build: { relics: [{ relicId: "fang", stacks: 2 }], pacts: ["blood-pact"], skillTiers: {}, campUpgrades: {}, elixir: { type: "iron_guard" } },
+    durationMs: 125000,
+    summary: { roomsCompleted: 6, bossesCompleted: 1, livesRemaining: 0, damageDone: 12, deaths: 5 },
+    mutatorIds: ["greed"]
+  }, {
+    rank: 4,
+    describeRelic: (id) => ({ name: id === "fang" ? "Fang Charm" : id, icon: "" }),
+    describeMutator: () => ({ key: "G", name: "Greed", bonus: "+50% gold", drawback: "Enemies hit harder" })
+  });
+  assert.equal(fourth.rank, 4);
+  assert.equal(fourth.chronicleFacts.find((fact) => fact.key === "time-played").value, "2m 05s");
+  assert.deepEqual(fourth.terminalFacts.map((fact) => fact.key), ["damageDone", "deaths"]);
+  assert.match(fourth.mutators.tooltip, /Greed.*\+50% gold.*Enemies hit harder/u);
+
   const legacy = adapter.createDetailModel(entries[3], { rank: 4 });
   assert.match(legacy.notice, /unavailable/i);
   assert.equal(legacy.rank, 4);

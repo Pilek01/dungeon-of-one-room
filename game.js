@@ -22692,9 +22692,9 @@
   function buildPracticeRecordsModalHtml() {
     const detailOpen = Boolean(state.practiceRecordDetailRunId);
     return [
-      '<div class="overlay-card overlay-card-wide overlay-card-leaderboard record-archive-shell">',
+      '<div class="overlay-card overlay-card-wide overlay-card-leaderboard record-archive-v2 record-archive-shell">',
       '<header class="record-archive-masthead"><span class="record-archive-kicker">Local Hall of Descent</span><h2 class="overlay-title">Practice Records</h2><p class="overlay-sub">Completed local campaigns | canonical Practice score</p></header>',
-      '<div class="record-archive" data-practice-record-archive></div>',
+      '<div class="record-archive-v2" data-practice-record-archive></div>',
       '<p class="overlay-hint">' + (detailOpen ? 'Esc/Enter - back to records' : 'T - sort Points/Depth | Esc - close') + '</p>',
       '</div>'
     ].join("");

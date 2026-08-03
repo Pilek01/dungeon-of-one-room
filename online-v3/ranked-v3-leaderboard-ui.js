@@ -9,6 +9,11 @@
   const archiveUi = root?.DungeonRecordArchiveUi ||
     (typeof module === "object" && module.exports ? require("../record-archive-ui.js") : null);
 
+  const SELECTORS = Object.freeze({ archive: "record-archive-v2" });
+  if (archiveUi?.SELECTORS?.archive && archiveUi.SELECTORS.archive !== SELECTORS.archive) {
+    throw new Error("Record archive selector root must remain record-archive-v2.");
+  }
+
   function integer(value) {
     return Math.max(0, Math.floor(Number(value) || 0));
   }
@@ -142,7 +147,7 @@
   }
 
   return Object.freeze({
-    SELECTORS: archiveUi?.SELECTORS || Object.freeze({}),
+    SELECTORS,
     normalizeBuild,
     toLeaderboardRow,
     createLeaderboardViewModel,

@@ -246,7 +246,8 @@
     try {
       ui.showMessage("Build Chronicle", "Loading this descent...");
       const detail = leaderboardUi.createDetailViewModel(
-        await createLeaderboardClient().detail(runId)
+        await createLeaderboardClient().detail(runId),
+        { rank: selectedRow.rank, listedRow: selectedRow }
       );
       ui.showContent(
         "Build Chronicle",

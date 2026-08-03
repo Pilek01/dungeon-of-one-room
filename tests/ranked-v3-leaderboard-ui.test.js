@@ -85,10 +85,19 @@ test("Ranked ledger shows only the five requested facts and elevates top three",
 
   const archive = ui.renderList(documentRef, rows, (runId) => opened.push(runId));
   assert.equal(archive.className, "record-archive-v2 record-archive-list");
+  assert.deepEqual(ui.SELECTORS, { archive: "record-archive-v2" });
   const hasClass = (node, className) => String(node.className).split(/\s+/u).includes(className);
   assert.equal(visit(archive, (node) => hasClass(node, "record-archive-podium-card")).length, 3);
   assert.equal(visit(archive, (node) => hasClass(node, "record-archive-ledger-row")).length, 1);
   assert.equal(visit(archive, (node) => node.attributes.get("data-record-rank")).length, 4);
+  assert.deepEqual(
+    visit(archive, (node) => node.tagName === "img").map((node) => node.src),
+    [
+      "assets/hd/ui/leaderboard/skull-medallion-gold.png",
+      "assets/hd/ui/leaderboard/skull-medallion-silver.png",
+      "assets/hd/ui/leaderboard/skull-medallion-bronze.png"
+    ]
+  );
 
   const facts = visit(archive, (node) => node.attributes.get("data-record-field"));
   assert.deepEqual(
@@ -196,4 +205,6 @@ test("Ranked detail preserves the selected rank and omits an unlisted rank", () 
   const unlistedText = allText(ui.renderDetail(createDocument(), unlisted));
   assert.equal(unlisted.rank, null);
   assert.doesNotMatch(unlistedText, /Rank #/u);
+  const runtimeSource = readFileSync(path.resolve(__dirname, "..", "online-v3", "ranked-v3-runtime.js"), "utf8");
+  assert.match(runtimeSource, /rank:\s*selectedRow\.rank/u);
 });
