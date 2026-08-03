@@ -52,12 +52,12 @@ test("creates a detached launcher-owned worktree and installs selected Worker de
 
   assert.deepEqual(fixture.calls[0], [
     "git",
-    ["worktree", "add", "--detach", fixture.paths.worktree, HASH_A],
+    ["-c", "core.longpaths=true", "worktree", "add", "--detach", fixture.paths.worktree, HASH_A],
     { cwd: fixture.repoRoot }
   ]);
   assert.deepEqual(fixture.calls.at(-1), [
-    "npm.cmd",
-    ["ci"],
+    process.env.ComSpec || process.env.COMSPEC || "cmd.exe",
+    ["/d", "/s", "/c", "npm.cmd ci"],
     { cwd: path.join(fixture.paths.worktree, "cloudflare", "leaderboard-v3") }
   ]);
   assert.equal(
@@ -94,4 +94,3 @@ test("rejects a cached launcher path at another commit rather than reusing it", 
   );
   assert.equal(fixture.calls.some(([, args]) => args.includes("checkout") || args.includes("merge")), false);
 });
-

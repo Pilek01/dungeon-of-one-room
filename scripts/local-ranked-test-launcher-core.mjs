@@ -129,7 +129,7 @@ export async function prepareRevision(selectedCommit, options = {}) {
 
   if (!await pathExists(paths.worktree)) {
     await mkdir(path.dirname(paths.worktree), { recursive: true });
-    await execFile("git", ["worktree", "add", "--detach", paths.worktree, hash], { cwd: repoRoot });
+    await execFile("git", ["-c", "core.longpaths=true", "worktree", "add", "--detach", paths.worktree, hash], { cwd: repoRoot });
   } else {
     const result = await execFile(
       "git",
@@ -145,7 +145,7 @@ export async function prepareRevision(selectedCommit, options = {}) {
   const workerRoot = path.join(paths.worktree, "cloudflare", "leaderboard-v3");
   const wranglerPath = path.join(workerRoot, "node_modules", "wrangler", "bin", "wrangler.js");
   if (!await pathExists(wranglerPath)) {
-    await execFile("npm.cmd", ["ci"], { cwd: workerRoot });
+    await execFile(process.env.ComSpec || process.env.COMSPEC || "cmd.exe", ["/d", "/s", "/c", "npm.cmd ci"], { cwd: workerRoot });
   }
 
   return Object.freeze({
@@ -262,6 +262,27 @@ export async function buildSelectedTestBundle(prepared, options = {}) {
   return Object.freeze({ rulesetHash, protocolPath });
 }
 
+export async function applyLocalMigrations(prepared, options = {}) {
+  const execFile = options.execFile || execFileAsync;
+  const workerRoot = path.resolve(String(prepared?.workerRoot || ""));
+  const workerEnv = options.workerEnv || process.env;
+  await execFile(process.execPath, [
+    prepared.wranglerPath,
+    "d1",
+    "migrations",
+    "apply",
+    "dungeon-online-v3-local",
+    "--local",
+    "--config",
+    path.join(workerRoot, "wrangler.local.jsonc"),
+    "--persist-to",
+    prepared.stateRoot
+  ], {
+    cwd: workerRoot,
+    env: workerEnv,
+    windowsHide: true
+  });
+}
 export async function acquireLoopbackPort() {
   const server = net.createServer();
   await new Promise((resolve, reject) => {
@@ -313,12 +334,42 @@ function awaitChildExit(child) {
   return new Promise((resolve) => child.once?.("exit", resolve) || resolve());
 }
 
+function defaultIsPidAlive(pid) {
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch (error) {
+    return error?.code !== "ESRCH";
+  }
+}
+export async function forceStopLocalWorker(child, options = {}) {
+  const forceSignal = () => child?.kill?.("SIGKILL");
+  const platform = options.platform || process.platform;
+  const pid = Number(child?.pid);
+  if (platform !== "win32" || !Number.isInteger(pid) || pid < 1) {
+    forceSignal();
+    return false;
+  }
+  const execFile = options.execFile || execFileAsync;
+  const isPidAlive = options.isPidAlive || defaultIsPidAlive;
+  try {
+    await execFile("taskkill.exe", ["/PID", String(pid), "/T", "/F"], { windowsHide: true });
+    return true;
+  } catch {
+    if (!isPidAlive(pid)) return true;
+    forceSignal();
+    return false;
+  }
+}
+
 export async function startLocalRankedTest(selectedCommit, options = {}) {
   const prepare = options.prepareRevision || prepareRevision;
   const build = options.buildSelectedTestBundle || buildSelectedTestBundle;
   const acquirePort = options.acquirePort || acquireLoopbackPort;
   const spawn = options.spawn || nodeSpawn;
   const waitForReady = options.waitForLocalReady || waitForLocalReady;
+  const applyMigrations = options.applyLocalMigrations || applyLocalMigrations;
+  const forceStop = options.forceStopLocalWorker || forceStopLocalWorker;
   const baseEnv = options.baseEnv || process.env;
   const prepared = await prepare(selectedCommit, { repoRoot: options.repoRoot });
   const bundle = await build(prepared, {
@@ -331,6 +382,7 @@ export async function startLocalRankedTest(selectedCommit, options = {}) {
     port,
     secret: options.secret
   });
+  await applyMigrations(prepared, { workerEnv: launch.workerEnv });
   const child = spawn(launch.command, launch.args, {
     cwd: prepared.workerRoot,
     env: launch.workerEnv,
@@ -347,6 +399,7 @@ export async function startLocalRankedTest(selectedCommit, options = {}) {
   attachLogStream(child.stdout, append);
   attachLogStream(child.stderr, append);
   let stopped = false;
+  let forceStopped = false;
   const exitHandler = () => {
     if (!stopped && child.exitCode === null) child.kill();
   };
@@ -357,7 +410,14 @@ export async function startLocalRankedTest(selectedCommit, options = {}) {
     stopped = true;
     process.removeListener("exit", exitHandler);
     if (child.exitCode === null) child.kill();
-    await Promise.race([awaitChildExit(child), wait(1_000)]);
+    await Promise.race([awaitChildExit(child), wait(5_000)]);
+    if (child.exitCode === null) {
+      forceStopped = await forceStop(child);
+      await Promise.race([awaitChildExit(child), wait(5_000)]);
+    }
+    if (child.exitCode === null && !forceStopped) {
+      throw new Error("Local Worker did not exit after Stop.");
+    }
   }
 
   try {
@@ -371,6 +431,8 @@ export async function startLocalRankedTest(selectedCommit, options = {}) {
     url: launch.url,
     prepared,
     bundle,
+    workerArgs: launch.workerArgs,
+    hasExited: () => forceStopped || (child.exitCode !== null && child.exitCode !== undefined),
     getLogs: () => logs,
     stop
   });

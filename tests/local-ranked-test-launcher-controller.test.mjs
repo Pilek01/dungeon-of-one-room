@@ -4,6 +4,8 @@ import path from "node:path";
 import test from "node:test";
 
 import {
+  forceStopLocalWorker,
+  applyLocalMigrations,
   buildSelectedTestBundle,
   startLocalRankedTest
 } from "../scripts/local-ranked-test-launcher-core.mjs";
@@ -70,17 +72,23 @@ test("starts only the tracked loopback Worker and stops that child", async () =>
   child.killed = false;
   child.kill = () => {
     child.killed = true;
-    child.exitCode = 0;
-    child.emit("exit", 0);
+    setTimeout(() => {
+      child.exitCode = 0;
+      child.emit("exit", 0);
+    }, 1_100);
     return true;
   };
 
   let spawnCall = null;
+  let migrationCall = null;
   const controller = await startLocalRankedTest({ hash: HASH_A }, {
     baseEnv: { PATH: "fixture" },
     secret: "s".repeat(64),
     prepareRevision: async () => prepared,
     buildSelectedTestBundle: async () => {},
+    applyLocalMigrations: async (candidate, options) => {
+      migrationCall = [candidate, options];
+    },
     acquirePort: async () => 9234,
     waitForLocalReady: async (url) => {
       assert.equal(url, "http://127.0.0.1:9234");
@@ -91,6 +99,16 @@ test("starts only the tracked loopback Worker and stops that child", async () =>
     }
   });
 
+  assert.deepEqual(migrationCall, [
+    prepared,
+    {
+      workerEnv: {
+        PATH: "fixture",
+        CLOUDFLARE_INCLUDE_PROCESS_ENV: "true",
+        RANKED_V3_HMAC_SECRET: "s".repeat(64)
+      }
+    }
+  ]);
   assert.deepEqual(spawnCall, [
     process.execPath,
     [
@@ -122,6 +140,132 @@ test("starts only the tracked loopback Worker and stops that child", async () =>
     }
   ]);
   assert.equal(controller.url, "http://127.0.0.1:9234");
+  assert.deepEqual(controller.workerArgs, spawnCall[1].slice(1));
+  assert.equal(controller.hasExited(), false);
   await controller.stop();
   assert.equal(child.killed, true);
+  assert.equal(controller.hasExited(), true);
+});
+test("applies D1 migrations only to the selected local state before launch", async () => {
+  const calls = [];
+  const workerEnv = Object.freeze({
+    PATH: "fixture",
+    CLOUDFLARE_INCLUDE_PROCESS_ENV: "true",
+    RANKED_V3_HMAC_SECRET: "s".repeat(64)
+  });
+
+  await applyLocalMigrations(prepared, {
+    workerEnv,
+    async execFile(command, args, options) {
+      calls.push([command, args, options]);
+      return { stdout: "", stderr: "" };
+    }
+  });
+
+  assert.deepEqual(calls, [[
+    process.execPath,
+    [
+      prepared.wranglerPath,
+      "d1",
+      "migrations",
+      "apply",
+      "dungeon-online-v3-local",
+      "--local",
+      "--config",
+      path.join(prepared.workerRoot, "wrangler.local.jsonc"),
+      "--persist-to",
+      prepared.stateRoot
+    ],
+    { cwd: prepared.workerRoot, env: workerEnv, windowsHide: true }
+  ]]);
+});
+test("escalates a non-exiting local Worker to SIGKILL during stop", async () => {
+  const child = new EventEmitter();
+  child.exitCode = null;
+  const signals = [];
+  child.kill = (signal) => {
+    signals.push(signal || "SIGTERM");
+    if (signal === "SIGKILL") {
+      child.exitCode = 0;
+      child.emit("exit", 0);
+    }
+    return true;
+  };
+
+  const controller = await startLocalRankedTest({ hash: HASH_A }, {
+    prepareRevision: async () => prepared,
+    buildSelectedTestBundle: async () => {},
+    applyLocalMigrations: async () => {},
+    acquirePort: async () => 9235,
+    waitForLocalReady: async () => {},
+    spawn: () => child
+  });
+
+  await controller.stop();
+  assert.deepEqual(signals, ["SIGTERM", "SIGKILL"]);
+  assert.equal(controller.hasExited(), true);
+});
+test("forces only the tracked Windows Worker process tree", async () => {
+  const calls = [];
+  const terminated = await forceStopLocalWorker({ pid: 9234 }, {
+    platform: "win32",
+    async execFile(command, args, options) {
+      calls.push([command, args, options]);
+      return { stdout: "", stderr: "" };
+    }
+  });
+
+  assert.equal(terminated, true);
+  assert.deepEqual(calls, [[
+    "taskkill.exe",
+    ["/PID", "9234", "/T", "/F"],
+    { windowsHide: true }
+  ]]);
+});
+test("reports stopped after confirmed Windows tree termination before Node emits exit", async () => {
+  const child = new EventEmitter();
+  child.exitCode = null;
+  child.pid = 9235;
+  child.kill = () => true;
+  let forcedChild = null;
+
+  const controller = await startLocalRankedTest({ hash: HASH_A }, {
+    prepareRevision: async () => prepared,
+    buildSelectedTestBundle: async () => {},
+    applyLocalMigrations: async () => {},
+    acquirePort: async () => 9236,
+    waitForLocalReady: async () => {},
+    spawn: () => child,
+    forceStopLocalWorker: async (candidate) => {
+      forcedChild = candidate;
+      return true;
+    }
+  });
+
+  await controller.stop();
+  assert.equal(forcedChild, child);
+  assert.equal(controller.hasExited(), true);
+});
+test("treats a vanished tracked Windows PID as stopped after taskkill reports not found", async () => {
+  const signals = [];
+  const child = {
+    pid: 9237,
+    kill(signal) {
+      signals.push(signal);
+      return true;
+    }
+  };
+  const notFound = new Error("process not found");
+  notFound.code = 128;
+
+  const terminated = await forceStopLocalWorker(child, {
+    platform: "win32",
+    async execFile() {
+      throw notFound;
+    },
+    isPidAlive: () => false
+  });
+
+  assert.equal(terminated, true);
+  assert.deepEqual(signals, []);
 });
