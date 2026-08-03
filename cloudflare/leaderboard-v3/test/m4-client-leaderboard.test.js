@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { createRequire } from "node:module";
+import { readFile } from "node:fs/promises";
 
 const require = createRequire(import.meta.url);
 globalThis.DungeonRelicData = {
@@ -172,4 +173,13 @@ test("M4 Ranked relic choices resolve catalog name, description, rarity, and ico
 test("M4 Ranked choice copy hides protocol-style separators", () => {
   assert.equal(rankedUi.playerText("Upgrade crit_chance to 1"), "Upgrade crit chance to 1");
   assert.equal(rankedUi.playerText("buy_iron-1"), "Buy iron 1");
+});
+test("M4 archive consumers load the shared renderer before the adapter and game", async () => {
+  const index = await readFile(new URL("../../../index.html", import.meta.url), "utf8");
+  const renderer = index.indexOf('<script src="record-archive-ui.js"></script>');
+  const adapter = index.indexOf('<script src="online-v3/ranked-v3-leaderboard-ui.js"></script>');
+  const game = index.indexOf('<script src="game.js"></script>');
+  assert(renderer >= 0);
+  assert(renderer < adapter);
+  assert(adapter < game);
 });
