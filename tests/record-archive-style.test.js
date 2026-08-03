@@ -17,6 +17,8 @@ test("record archive styles are isolated in a v2 stylesheet", () => {
   assert.doesNotMatch(baseCss, /\/\* Shared Ranked Leaderboard and Practice Records archive\.\*\//);
   assert.doesNotMatch(renderer, /ranked-v3-leaderboard-details-button/);
   assert.match(game, /record-archive-v2" data-practice-record-archive/u);
+  assert.match(game, /state\.phase === "menu" && state\.leaderboardModalOpen/u);
+  assert.match(archiveCss, /\.screen-overlay\.visible:has\(\.record-archive-v2\.record-archive-shell\)/u);
   assert.doesNotMatch(game, /class="record-archive" data-practice-record-archive/u);
   assert.match(archiveCss, /grid-template-areas/);
   assert.match(archiveCss, /:focus-visible/);

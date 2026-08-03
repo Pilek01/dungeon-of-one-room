@@ -22776,9 +22776,10 @@
   function buildScreenOverlay() {
     if (!screenOverlayEl) return;
     syncStartDepthOverlayPortal(Boolean(
-      state.phase === "camp" &&
-      state.campStartDepthPromptOpen &&
-      graphicsPreferenceApi.isHd(graphicsPreference)
+      (state.phase === "camp" &&
+        state.campStartDepthPromptOpen &&
+        graphicsPreferenceApi.isHd(graphicsPreference)) ||
+      (state.phase === "menu" && state.leaderboardModalOpen)
     ));
 
     if (MOBILE_UNSUPPORTED_BLOCKED) {

@@ -721,8 +721,52 @@ async function main() {
       assert.match(practiceListText, new RegExp(name));
     }
     assert.doesNotMatch(practiceListText, /Outcome|Time Played/u);
+    const practiceDesktopLayout = await save.page.evaluate(() => {
+      const box = (selector) => {
+        const rect = document.querySelector(selector)?.getBoundingClientRect();
+        return rect ? { x: rect.x, y: rect.y, width: rect.width, height: rect.height } : null;
+      };
+      return {
+        viewport: { width: window.innerWidth, height: window.innerHeight },
+        screenOverlay: box("#screenOverlay"),
+        shell: box(".record-archive-shell")
+      };
+    });
+    await writeJson("practice-records-desktop-layout.json", practiceDesktopLayout);
+    assert.equal(
+      practiceDesktopLayout.screenOverlay?.width === practiceDesktopLayout.viewport.width &&
+      practiceDesktopLayout.screenOverlay?.height === practiceDesktopLayout.viewport.height &&
+      practiceDesktopLayout.shell?.width >= 1_000 &&
+      practiceDesktopLayout.shell?.y >= 0 &&
+      practiceDesktopLayout.shell.y + practiceDesktopLayout.shell.height <= practiceDesktopLayout.viewport.height,
+      true,
+      JSON.stringify(practiceDesktopLayout)
+    );
     await save.page.screenshot({ path: path.join(ARTIFACT_ROOT, "practice-records-list-desktop.png"), fullPage: true });
     await save.page.setViewportSize({ width: 640, height: 1080 });
+    const practiceNarrowLayout = await save.page.evaluate(() => {
+      const box = (selector) => {
+        const rect = document.querySelector(selector)?.getBoundingClientRect();
+        return rect ? { x: rect.x, y: rect.y, width: rect.width, height: rect.height } : null;
+      };
+      return {
+        viewport: { width: window.innerWidth, height: window.innerHeight },
+        screenOverlay: box("#screenOverlay"),
+        shell: box(".record-archive-shell")
+      };
+    });
+    await writeJson("practice-records-narrow-layout.json", practiceNarrowLayout);
+    assert.equal(
+      practiceNarrowLayout.screenOverlay?.x === 0 &&
+      practiceNarrowLayout.screenOverlay?.y === 0 &&
+      practiceNarrowLayout.screenOverlay?.width === practiceNarrowLayout.viewport.width &&
+      practiceNarrowLayout.screenOverlay?.height === practiceNarrowLayout.viewport.height &&
+      practiceNarrowLayout.shell?.width >= 500 &&
+      practiceNarrowLayout.shell?.y >= 0 &&
+      practiceNarrowLayout.shell.y + practiceNarrowLayout.shell.height <= practiceNarrowLayout.viewport.height,
+      true,
+      JSON.stringify(practiceNarrowLayout)
+    );
     await save.page.screenshot({ path: path.join(ARTIFACT_ROOT, "practice-records-list-narrow.png"), fullPage: true });
     await save.page.setViewportSize({ width: 1920, height: 1080 });
     await practiceArchive.locator('[data-record-rank="4"] .record-archive-name').click();

@@ -7,7 +7,8 @@
   color:#e7dac4;
   text-align:left;
 }
-.record-archive-v2.record-archive-shell { width:min(1100px,94vw); max-height:min(860px,92vh); overflow:auto; border-color:#6b5940; background:radial-gradient(circle at 50% -20%,#8c6b2a22,transparent 42%),linear-gradient(145deg,#171a1ddd,#050608f2); }
+.record-archive-v2.record-archive-shell { box-sizing:border-box; width:min(1100px,94vw)!important; height:min(860px,calc(100vh - 48px))!important; max-height:min(860px,92vh)!important; overflow:auto!important; border-color:#6b5940; background:radial-gradient(circle at 50% -20%,#8c6b2a22,transparent 42%),linear-gradient(145deg,#171a1ddd,#050608f2); }
+.screen-overlay.visible:has(.record-archive-v2.record-archive-shell) { position:fixed!important; inset:0!important; z-index:20!important; width:100vw!important; height:100vh!important; box-sizing:border-box; padding:24px 12px; overflow:auto; }
 .record-archive-v2 .record-archive-masthead { display:grid; justify-items:center; gap:5px; margin-bottom:18px; text-align:center; }
 .record-archive-v2 .record-archive-masthead .overlay-title { margin:0; font-family:"Copperplate Gothic Light",Georgia,serif; letter-spacing:4px; text-shadow:0 2px 0 #000,0 0 22px #d8a94b45; }
 .record-archive-v2 .record-archive-podium { display:grid; grid-template-columns:1fr 1.18fr 1fr; grid-template-areas:"silver champion bronze"; gap:12px; align-items:end; }
@@ -58,6 +59,7 @@
 .record-archive-v2 .record-archive-relic-fallback { width:38px; height:38px; flex:0 0 38px; object-fit:contain; }
 .record-archive-v2 .record-archive-legacy-note { margin:0; padding:18px; border:1px dashed #554b3b; color:#aaa093; text-align:center; }
 @media (max-width:760px) {
+  .record-archive-v2.record-archive-shell { width:min(94vw,600px)!important; height:auto!important; max-height:92vh!important; }
   .record-archive-v2 .record-archive-podium { grid-template-columns:1fr; grid-template-areas:"champion" "silver" "bronze"; }
   .record-archive-v2 .record-archive-podium-card[data-record-rank="1"] { transform:none; }
   .record-archive-v2 .record-archive-ledger-row { grid-template-columns:1fr 1fr; grid-template-areas:"rank name" "score depth" "gold gold" "action action"; }

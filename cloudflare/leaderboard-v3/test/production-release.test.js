@@ -259,7 +259,7 @@ test("production Ranked start uses the edge limiter with a profile-scoped key", 
 });
 
 test("Pages release stays same-origin and disconnects all v2 bindings", async () => {
-  const [pages, proxy, builder, config, game, ui, runtime, leaderboardUi, style, workerConfig] = await Promise.all([
+  const [pages, proxy, builder, config, game, ui, runtime, leaderboardUi, recordArchiveUi, style, archiveStyle, workerConfig] = await Promise.all([
     rootFile("wrangler.jsonc"),
     rootFile("functions/api/v3/[[path]].js"),
     rootFile("scripts/build-pages-v3.mjs"),
@@ -268,7 +268,9 @@ test("Pages release stays same-origin and disconnects all v2 bindings", async ()
     rootFile("online-v3/ranked-v3-ui.js"),
     rootFile("online-v3/ranked-v3-runtime.js"),
     rootFile("online-v3/ranked-v3-leaderboard-ui.js"),
+    rootFile("record-archive-ui.js"),
     rootFile("style.css"),
+    rootFile("style-record-archive.css"),
     rootFile("cloudflare/leaderboard-v3/wrangler.production.toml")
   ]);
   const pagesConfig = JSON.parse(pages);
@@ -304,9 +306,10 @@ test("Pages release stays same-origin and disconnects all v2 bindings", async ()
   assert.match(runtime, /title: "Ranked \(Online\)"/u);
   assert.match(runtime, /title: "Ranked Leaderboard"/u);
   assert.match(runtime, /"Build Chronicle"/u);
-  assert.match(leaderboardUi, /record-archive-podium/u);
-  assert.match(leaderboardUi, /record-archive-relic-grid/u);
-  assert.match(leaderboardUi, /data-record-tooltip/u);
+  assert.match(leaderboardUi, /DungeonRecordArchiveUi|record-archive-ui\.js/u);
+  assert.match(recordArchiveUi, /record-archive-podium/u);
+  assert.match(recordArchiveUi, /record-archive-relic-grid/u);
+  assert.match(recordArchiveUi, /data-record-tooltip/u);
   assert.match(runtime, /await resolveCheckpoint\(\);/u);
   assert.doesNotMatch(runtime, /Resolve checkpoint|server-issued opaque choice/u);
   assert.doesNotMatch(runtime, /ui\.(?:showMessage|showChoices)\("Ranked (?:run finalized|Camp)"|ui\.button\("(?:Open Camp|Finalize)"|`Ranked \$\{state\.status\}`/u);
@@ -325,7 +328,7 @@ test("Pages release stays same-origin and disconnects all v2 bindings", async ()
   assert.match(builder, /DungeonOnlineV3\?\.onRoomEntered\?\.\(state\.onlineV3Directive\)/u);
   assert.match(style, /\.ranked-v3-entry,[\s\S]*display: none !important;/u);
   assert.match(style, /body\.ranked-v3-modal-open #screenOverlay/u);
-  assert.match(style, /\[data-record-tooltip\]:focus-visible::after/u);
+  assert.match(archiveStyle, /\.record-archive-v2 \.record-archive-mutators:focus-visible::after/u);
   assert.doesNotMatch(style, /#32204c|#9b70d8/u);
   assert.match(builder, /\.boot-screen\.loading \.boot-loading/u);
   assert.match(builder, /hdBootLoadingProgress/u);

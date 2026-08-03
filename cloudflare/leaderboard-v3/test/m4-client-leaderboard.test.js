@@ -118,7 +118,8 @@ test("M4 leaderboard rendering is text-safe and never uses innerHTML", () => {
   const rendered = leaderboardUi.renderList(documentRef, rows, () => {});
   const text = (node) => [node.textContent, ...(node.children || []).map(text)].join(" ");
   const visible = text(rendered);
-  assert.match(visible, /Champion.*Rank.*#1.*<img src=x onerror=alert\(1\)>.*Score.*5/su);
+  assert.match(visible, /Champion.*<img src=x onerror=alert\(1\)>.*Score.*5/su);
+  assert.doesNotMatch(visible, /\bRank\b|#1/u);
   const allNodes = (node) => [node, ...(node.children || []).flatMap(allNodes)];
   assert.equal(allNodes(rendered).some((node) => "innerHTML" in node), false);
 });
