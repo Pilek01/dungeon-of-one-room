@@ -22639,175 +22639,66 @@
     return `<h3>Mutators (${active.length}/3)</h3>${rows}${unlockedNotice}`;
   }
 
-  function formatPracticeRecordDuration(durationMs) {
-    const totalSeconds = Math.max(0, Math.floor((Number(durationMs) || 0) / 1000));
-    const hours = Math.floor(totalSeconds / 3600);
-    const minutes = Math.floor((totalSeconds % 3600) / 60);
-    const seconds = totalSeconds % 60;
-    if (hours > 0) return String(hours) + "h " + String(minutes).padStart(2, "0") + "m";
-    return String(minutes) + "m " + String(seconds).padStart(2, "0") + "s";
+  function practiceArchiveOptions() {
+    return {
+      sortMode: state.leaderboardSortMode,
+      limit: LEADERBOARD_MODAL_LIMIT
+    };
   }
 
-  function getPracticeRecordMutatorTooltip(entry) {
-    const ids = Array.isArray(entry?.mutatorIds) ? entry.mutatorIds : [];
-    if (ids.length === 0) return "No mutators used.";
-    return ids.map((id) => {
+  function renderPracticeRecordsMount() {
+    const mount = screenOverlayEl.querySelector("[data-practice-record-archive]");
+    const adapter = window.DungeonPracticeRecordsAdapter;
+    const archiveUi = window.DungeonRecordArchiveUi;
+    if (!mount || !adapter || !archiveUi) return;
+    const options = practiceArchiveOptions();
+    const selected = state.practiceRecordDetailRunId
+      ? adapter.findRankedEntry(state.leaderboard, state.practiceRecordDetailRunId, options)
+      : null;
+    const describeRelic = (id) => {
+      const relic = getRelicById(id);
+      return {
+        name: relic ? getRelicUiName(relic) : String(id || "Unknown relic"),
+        icon: String(relic?.icon || relic?.iconSrc || "")
+      };
+    };
+    const describeMutator = (id) => {
       const mutator = MUTATORS.find((item) => item.id === id);
-      if (!mutator) return String(id);
-      return "[" + mutator.key + "] " + mutator.name + ": " + mutator.bonus + " / " + mutator.drawback;
-    }).join(" | ");
-  }
-
-  function buildPracticeRecordDetail(entry) {
-    if (!entry) return "";
-    const safeName = escapeHtmlAttr(entry.playerName || "Anonymous");
-    const safeRunId = escapeHtmlAttr(entry.runId || entry.id || "unknown");
-    const backButton = '<button class="record-archive-back" type="button" data-practice-record-back>Back to Practice Records</button>';
-    if (!entry.hasDetails || !entry.build || !entry.summary) {
-      return [
-        '<section class="record-archive-detail record-archive-detail-legacy">',
-        '<header class="record-archive-detail-header">',
-        '<div><span class="record-archive-kicker">Practice Archive</span><h3>' + safeName + '</h3></div>',
-        '<strong>' + Math.max(0, Number(entry.score) || 0) + ' pts</strong>',
-        '</header>',
-        '<p class="record-archive-legacy-note">Build Chronicle unavailable for this legacy Practice record. Its original rank, score, depth and gold remain preserved.</p>',
-        '<div class="record-archive-detail-metrics">',
-        '<span><small>Depth</small><strong>' + Math.max(0, Number(entry.depth) || 0) + '</strong></span>',
-        '<span><small>Gold</small><strong>' + Math.max(0, Number(entry.gold) || 0) + '</strong></span>',
-        '<span><small>Recorded</small><strong>' + escapeHtmlAttr(formatLeaderboardTimestamp(entry.ts)) + '</strong></span>',
-        '</div>',
-        backButton,
-        '</section>'
-      ].join("");
-    }
-
-    const build = entry.build;
-    const summary = entry.summary;
-    const relics = Array.isArray(build.relics) ? build.relics : [];
-    const relicHtml = relics.length > 0
-      ? relics.map((item) => {
-        const relic = getRelicById(item.relicId);
-        const name = escapeHtmlAttr(relic ? getRelicUiName(relic) : item.relicId);
-        const iconSrc = escapeHtmlAttr(String(relic?.icon || relic?.iconSrc || ""));
-        const stacks = Math.max(1, Number(item.stacks) || 1);
-        return [
-          '<div class="record-archive-relic">',
-          iconSrc ? '<img src="' + iconSrc + '" alt="" aria-hidden="true">' : '<span class="record-archive-relic-fallback" aria-hidden="true">?</span>',
-          '<span><strong>' + name + '</strong>' + (stacks > 1 ? '<small>Stack x' + stacks + '</small>' : '') + '</span>',
-          '</div>'
-        ].join("");
-      }).join("")
-      : '<p class="record-archive-empty">No relics carried at the end.</p>';
-
-    const tierLabels = { 0: "Base", 1: "Rare", 2: "Epic", 3: "Legendary" };
-    const skillHtml = Object.entries(build.skillTiers || {}).map(([skillId, tier]) =>
-      '<span><small>' + escapeHtmlAttr(skillId) + '</small><strong>' + escapeHtmlAttr(tierLabels[tier] || ("Tier " + tier)) + '</strong></span>'
-    ).join("") || '<p class="record-archive-empty">No skill upgrades recorded.</p>';
-    const upgradeHtml = Object.entries(build.campUpgrades || {}).filter(([, level]) => Number(level) > 0).map(([upgradeId, level]) =>
-      '<span><small>' + escapeHtmlAttr(upgradeId) + '</small><strong>Lv ' + Math.max(0, Number(level) || 0) + '</strong></span>'
-    ).join("") || '<p class="record-archive-empty">No camp upgrades recorded.</p>';
-
-    const tooltip = escapeHtmlAttr(getPracticeRecordMutatorTooltip(entry));
-    const mutatorCount = Array.isArray(entry.mutatorIds) ? entry.mutatorIds.length : 0;
-    const pactText = Array.isArray(build.pacts) && build.pacts.length > 0 ? build.pacts.join(", ") : "None";
-    const elixirText = build.elixir?.type
-      ? build.elixir.type + " (" + Math.max(0, Number(build.elixir.charges) || 0) + " charges)"
-      : "None";
-    const outcomeLabel = entry.outcome === "victory" ? "Victory" : "Final Defeat";
-
-    return [
-      '<section class="record-archive-detail">',
-      '<header class="record-archive-detail-header">',
-      '<div><span class="record-archive-kicker">Build Chronicle | ' + outcomeLabel + '</span><h3>' + safeName + '</h3><small>Run ' + safeRunId + '</small></div>',
-      '<strong>' + Math.max(0, Number(entry.score) || 0) + ' pts</strong>',
-      '</header>',
-      '<div class="record-archive-detail-metrics">',
-      '<span><small>Depth</small><strong>' + Math.max(0, Number(entry.depth) || 0) + '</strong></span>',
-      '<span><small>Gold</small><strong>' + Math.max(0, Number(entry.gold) || 0) + '</strong></span>',
-      '<span><small>Time Played</small><strong>' + escapeHtmlAttr(formatPracticeRecordDuration(entry.durationMs)) + '</strong></span>',
-      '<span><small>Rooms</small><strong>' + Math.max(0, Number(summary.roomsCompleted) || 0) + '</strong></span>',
-      '<span><small>Bosses</small><strong>' + Math.max(0, Number(summary.bossesCompleted) || 0) + '</strong></span>',
-      '<span><small>Lives</small><strong>' + Math.max(0, Number(summary.livesRemaining) || 0) + '/' + Math.max(1, Number(summary.maximumLives) || MAX_LIVES) + '</strong></span>',
-      '</div>',
-      '<div class="record-archive-detail-section"><h4>Relics</h4><div class="record-archive-relic-grid">' + relicHtml + '</div></div>',
-      '<div class="record-archive-detail-columns">',
-      '<div class="record-archive-detail-section"><h4>Skills</h4><div class="record-archive-build-grid">' + skillHtml + '</div></div>',
-      '<div class="record-archive-detail-section"><h4>Camp Upgrades</h4><div class="record-archive-build-grid">' + upgradeHtml + '</div></div>',
-      '</div>',
-      '<div class="record-archive-detail-section"><h4>Run Loadout</h4><div class="record-archive-build-grid">',
-      '<span class="record-archive-mutators" tabindex="0" data-record-tooltip="' + tooltip + '" title="' + tooltip + '"><small>Mutators</small><strong>' + mutatorCount + '</strong></span>',
-      '<span><small>Pact</small><strong>' + escapeHtmlAttr(pactText) + '</strong></span>',
-      '<span><small>Elixir</small><strong>' + escapeHtmlAttr(elixirText) + '</strong></span>',
-      '</div></div>',
-      '<div class="record-archive-detail-section"><h4>Final Chronicle</h4><div class="record-archive-stat-grid">',
-      '<span><small>Damage Done</small><strong>' + Math.max(0, Number(summary.damageDone) || 0) + '</strong></span>',
-      '<span><small>Damage Taken</small><strong>' + Math.max(0, Number(summary.damageTaken) || 0) + '</strong></span>',
-      '<span><small>Total Kills</small><strong>' + Math.max(0, Number(summary.totalKills) || 0) + '</strong></span>',
-      '<span><small>Elite Kills</small><strong>' + Math.max(0, Number(summary.eliteKills) || 0) + '</strong></span>',
-      '<span><small>Potions Used</small><strong>' + Math.max(0, Number(summary.potionsUsed) || 0) + '</strong></span>',
-      '<span><small>Elixirs Used</small><strong>' + Math.max(0, Number(summary.elixirsUsed) || 0) + '</strong></span>',
-      '<span><small>Gold Collected</small><strong>' + Math.max(0, Number(summary.totalGoldCollected) || 0) + '</strong></span>',
-      '<span><small>Deaths</small><strong>' + Math.max(0, Number(summary.deaths) || 0) + '</strong></span>',
-      '</div></div>',
-      backButton,
-      '</section>'
-    ].join("");
-  }
-
-  function buildPracticeRecordsRows(limit = LEADERBOARD_MODAL_LIMIT) {
-    const entries = sortLeaderboardEntries(state.leaderboard, state.leaderboardSortMode, limit);
-    if (entries.length === 0) {
-      return '<p class="record-archive-empty">No completed Practice campaigns recorded yet.</p>';
-    }
-    const podium = entries.slice(0, 3).map((entry, index) => {
-      const rank = index + 1;
-      const id = escapeHtmlAttr(entry.runId || entry.id || "");
-      const name = escapeHtmlAttr(entry.playerName || "Anonymous");
-      return [
-        '<article class="record-archive-podium-card" data-record-rank="' + rank + '">',
-        '<img class="record-archive-skull record-archive-skull-rank-' + rank + '" src="assets/hd/environment/descent/floor-skull.png" alt="" aria-hidden="true">',
-        '<span class="record-archive-rank">#' + rank + '</span>',
-        '<button class="record-archive-name" type="button" data-practice-record-run-id="' + id + '">' + name + '</button>',
-        '<div class="record-archive-podium-score">' + Math.max(0, Number(entry.score) || 0) + ' pts</div>',
-        '<div class="record-archive-facts"><span><small>Depth</small><strong>' + Math.max(0, Number(entry.depth) || 0) + '</strong></span><span><small>Gold</small><strong>' + Math.max(0, Number(entry.gold) || 0) + '</strong></span></div>',
-        '<button class="record-archive-inspect" type="button" data-practice-record-run-id="' + id + '">Inspect build</button>',
-        '</article>'
-      ].join("");
-    }).join("");
-    const ledger = entries.slice(3).map((entry, index) => {
-      const rank = index + 4;
-      const id = escapeHtmlAttr(entry.runId || entry.id || "");
-      return [
-        '<article class="record-archive-ledger-row">',
-        '<span class="record-archive-rank">#' + rank + '</span>',
-        '<button class="record-archive-name" type="button" data-practice-record-run-id="' + id + '">' + escapeHtmlAttr(entry.playerName || "Anonymous") + '</button>',
-        '<strong class="record-archive-score">' + Math.max(0, Number(entry.score) || 0) + ' pts</strong>',
-        '<span><small>Depth</small> ' + Math.max(0, Number(entry.depth) || 0) + '</span>',
-        '<span><small>Gold</small> ' + Math.max(0, Number(entry.gold) || 0) + '</span>',
-        '<button class="record-archive-inspect" type="button" data-practice-record-run-id="' + id + '">Inspect build</button>',
-        '</article>'
-      ].join("");
-    }).join("");
-    return [
-      '<div class="record-archive-podium">' + podium + '</div>',
-      ledger ? '<div class="record-archive-ledger" aria-label="Practice ranking positions four and below">' + ledger + '</div>' : ''
-    ].join("");
+      return mutator
+        ? { key: mutator.key, name: mutator.name, bonus: mutator.bonus, drawback: mutator.drawback }
+        : { name: String(id || "Unknown mutator") };
+    };
+    const content = selected
+      ? archiveUi.renderDetail(document, adapter.createDetailModel(selected, {
+        rank: selected.rank,
+        describeRelic,
+        describeMutator
+      }), {
+        backLabel: "Back to Practice Records",
+        onBack() {
+          state.practiceRecordDetailRunId = "";
+          markUiDirty();
+        }
+      })
+      : archiveUi.renderList(document, adapter.createListModel(state.leaderboard, options), {
+        onInspect(row) {
+          state.practiceRecordDetailRunId = row.runId;
+          markUiDirty();
+        }
+      });
+    mount.replaceChildren(content);
   }
 
   function buildPracticeRecordsModalHtml() {
-    const selected = state.practiceRecordDetailRunId
-      ? state.leaderboard.find((entry) => String(entry.runId || entry.id || "") === state.practiceRecordDetailRunId)
-      : null;
-    const content = selected ? buildPracticeRecordDetail(selected) : buildPracticeRecordsRows();
+    const detailOpen = Boolean(state.practiceRecordDetailRunId);
     return [
       '<div class="overlay-card overlay-card-wide overlay-card-leaderboard record-archive-shell">',
       '<header class="record-archive-masthead"><span class="record-archive-kicker">Local Hall of Descent</span><h2 class="overlay-title">Practice Records</h2><p class="overlay-sub">Completed local campaigns | canonical Practice score</p></header>',
-      '<div class="record-archive">' + content + '</div>',
-      '<p class="overlay-hint">' + (selected ? 'Esc/Enter - back to records' : 'T - sort Points/Depth | Esc - close') + '</p>',
+      '<div class="record-archive" data-practice-record-archive></div>',
+      '<p class="overlay-hint">' + (detailOpen ? 'Esc/Enter - back to records' : 'T - sort Points/Depth | Esc - close') + '</p>',
       '</div>'
     ].join("");
   }
-
   function buildMutatorPanel() {
     if (state.phase === "boot") {
       mutatorsEl.innerHTML = "";
@@ -23050,6 +22941,7 @@
     if (state.leaderboardModalOpen && state.phase === "menu") {
       screenOverlayEl.className = "screen-overlay visible";
       screenOverlayEl.innerHTML = buildPracticeRecordsModalHtml();
+      renderPracticeRecordsMount();
       return;
     }
 
@@ -32800,18 +32692,7 @@
     };
 
     screenOverlayEl.addEventListener("click", (event) => {
-      const practiceBack = event.target?.closest?.("[data-practice-record-back]");
-      if (practiceBack && screenOverlayEl.contains(practiceBack)) {
-        state.practiceRecordDetailRunId = "";
-        markUiDirty();
-        return;
-      }
-      const practiceRecord = event.target?.closest?.("[data-practice-record-run-id]");
-      if (practiceRecord && screenOverlayEl.contains(practiceRecord)) {
-        state.practiceRecordDetailRunId = String(practiceRecord.dataset.practiceRecordRunId || "");
-        markUiDirty();
-        return;
-      }
+
       const row = event.target?.closest?.(".merchant-row[data-merchant-key]");
       if (row && screenOverlayEl.contains(row)) {
         activateMerchantRow(row);
@@ -32854,22 +32735,7 @@
 
     screenOverlayEl.addEventListener("keydown", (event) => {
       if (event.key !== "Enter" && event.key !== " ") return;
-      const practiceBack = event.target?.closest?.("[data-practice-record-back]");
-      if (practiceBack && screenOverlayEl.contains(practiceBack)) {
-        event.preventDefault();
-        event.stopPropagation();
-        state.practiceRecordDetailRunId = "";
-        markUiDirty();
-        return;
-      }
-      const practiceRecord = event.target?.closest?.("[data-practice-record-run-id]");
-      if (practiceRecord && screenOverlayEl.contains(practiceRecord)) {
-        event.preventDefault();
-        event.stopPropagation();
-        state.practiceRecordDetailRunId = String(practiceRecord.dataset.practiceRecordRunId || "");
-        markUiDirty();
-        return;
-      }
+
       const row = event.target?.closest?.(".merchant-row[data-merchant-key]");
       if (row && screenOverlayEl.contains(row)) {
         event.preventDefault();

@@ -110,3 +110,12 @@ test("shared archive renderer has no Ranked, Practice, API, or storage lookup", 
   const source = readFileSync(path.resolve(__dirname, "..", "record-archive-ui.js"), "utf8");
   assert.doesNotMatch(source, /fetch\(|localStorage|DungeonRanked|DungeonPractice|\/api\//u);
 });
+test("shared archive renderer displays an explicit unavailable-detail notice", () => {
+  const ui = loadArchiveUi();
+  const rendered = ui.renderDetail(createDocument(), {
+    playerName: "Legacy",
+    score: 0,
+    notice: "Build Chronicle unavailable for this legacy Practice record."
+  });
+  assert.equal(visit(rendered, (node) => /unavailable/i.test(node.textContent)).length, 1);
+});

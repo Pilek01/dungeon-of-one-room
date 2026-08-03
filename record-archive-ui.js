@@ -134,6 +134,9 @@
     if (record.runId) identity.append(element(documentRef, "small", "", `Run ${record.runId}`));
     header.append(identity, element(documentRef, "p", "record-archive-score", `${integer(record.score)} pts`));
     rootNode.append(header);
+    if (record.notice) {
+      rootNode.append(element(documentRef, "p", "record-archive-legacy-note", record.notice));
+    }
 
     const chronicle = element(documentRef, "section", "record-archive-chronicle record-archive-detail-section");
     chronicle.append(element(documentRef, "h3", "record-archive-section-title", "Run Chronicle"));
