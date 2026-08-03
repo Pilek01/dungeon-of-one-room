@@ -3,6 +3,8 @@
   "private": true,
   "scripts": {
     "pages:build": "node scripts/build-pages-v3.mjs",
+    "approve:record-archive-visuals": "node scripts/approve-record-archive-visuals.mjs",
+    "verify:record-archive-visuals": "node scripts/verify-record-archive-visuals.mjs",
     "status:compact": "node scripts/online-v3-status.mjs",
     "verify:guard": "node scripts/verify-online-v3.mjs guard",
     "verify:fast": "node scripts/verify-online-v3.mjs guard",

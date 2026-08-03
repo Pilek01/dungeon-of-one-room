@@ -3,6 +3,7 @@ import { execFileSync } from "node:child_process";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { observerBotReleaseConfig } from "./pages-release-preflight.mjs";
+import { RELEASE_RECEIPT_FILE, sanitizedReleaseReceipt, verifyRecordArchiveVisualApproval } from "./record-archive-visual-receipt.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const targetIndex = process.argv.indexOf("--target");
@@ -23,6 +24,7 @@ if (!output.startsWith(outputRoot) || path.basename(output) !== outputName) {
 }
 
 const observerBotConfig = observerBotReleaseConfig(process.env, target);
+const visualApproval = target === "release" ? await verifyRecordArchiveVisualApproval({ root }) : null;
 
 await rm(output, { recursive: true, force: true });
 await mkdir(output, { recursive: true });
@@ -1424,6 +1426,14 @@ if (target === "test") {
   await writeFile(
     path.join(output, "QA_ONLY_BUILD.txt"),
     "QA-only instrumented build. Never deploy this directory.\n",
+    "utf8"
+  );
+}
+
+if (visualApproval) {
+  await writeFile(
+    path.join(output, RELEASE_RECEIPT_FILE),
+    `${JSON.stringify(sanitizedReleaseReceipt(visualApproval), null, 2)}\n`,
     "utf8"
   );
 }

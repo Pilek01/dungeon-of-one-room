@@ -353,6 +353,7 @@ const cleanRankedHeaded = () => cleanCommittedBrowser(
 );
 
 const generator = () => runProcess(process.execPath, ["scripts/generate-online-v3-meta-rules.mjs", "--check"]);
+const recordArchiveVisuals = () => runProcess(process.execPath, ["scripts/verify-record-archive-visuals.mjs"]);
 const diffCheck = () => runProcess("git", ["-c", `safe.directory=${SAFE_ROOT}`, "diff", "--check"]);
 const workerUnit = () => runProcess(process.execPath, [NPM_CLI, "run", "validate:unit"], { cwd: WORKER, display: "npm run validate:unit" });
 const workerE2e = () => runProcess(process.execPath, [NPM_CLI, "run", "test:e2e:local"], { cwd: WORKER, display: "npm run test:e2e:local" });
@@ -403,6 +404,7 @@ const actions = {
     ["whitespace diff", diffCheck]
   ],
   full: [
+    ["reviewed record archive visuals", recordArchiveVisuals],
     ["generator drift", generator],
     ["Worker unit, fixture, property, and regression suite", workerUnit],
     ["changed JavaScript syntax", changedJavaScriptCheck],
