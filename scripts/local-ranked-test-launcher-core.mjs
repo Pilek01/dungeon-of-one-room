@@ -1,4 +1,7 @@
+import { execFile as nodeExecFile } from "node:child_process";
+import { promises as fs } from "node:fs";
 import path from "node:path";
+import { promisify } from "node:util";
 
 const FULL_COMMIT_HASH = /^[0-9a-f]{40}$/u;
 
@@ -98,3 +101,52 @@ export function launcherPaths(repoRoot, value) {
   });
 }
 
+
+const execFileAsync = promisify(nodeExecFile);
+
+async function defaultPathExists(candidate) {
+  try {
+    await fs.access(candidate);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+export async function prepareRevision(selectedCommit, options = {}) {
+  const hash = requireFullCommitHash(selectedCommit?.hash);
+  const repoRoot = path.resolve(String(options.repoRoot || process.cwd()));
+  const paths = launcherPaths(repoRoot, hash);
+  const execFile = options.execFile || execFileAsync;
+  const pathExists = options.pathExists || defaultPathExists;
+  const mkdir = options.mkdir || fs.mkdir;
+
+  if (!await pathExists(paths.worktree)) {
+    await mkdir(path.dirname(paths.worktree), { recursive: true });
+    await execFile("git", ["worktree", "add", "--detach", paths.worktree, hash], { cwd: repoRoot });
+  } else {
+    const result = await execFile(
+      "git",
+      ["-C", paths.worktree, "rev-parse", "HEAD"],
+      { cwd: repoRoot }
+    );
+    const actualHash = String(result?.stdout || "").trim().toLowerCase();
+    if (actualHash !== hash) {
+      throw new Error("Cached launcher worktree does not match the selected commit.");
+    }
+  }
+
+  const workerRoot = path.join(paths.worktree, "cloudflare", "leaderboard-v3");
+  const wranglerPath = path.join(workerRoot, "node_modules", "wrangler", "bin", "wrangler.js");
+  if (!await pathExists(wranglerPath)) {
+    await execFile("npm.cmd", ["ci"], { cwd: workerRoot });
+  }
+
+  return Object.freeze({
+    ...paths,
+    workerRoot,
+    bundleRoot: path.join(paths.worktree, "output", "pages-test-dist"),
+    manifestPath: path.join(workerRoot, "src", "rulesets", "v08-meta-1", "data", "ruleset-manifest.json"),
+    wranglerPath
+  });
+}
