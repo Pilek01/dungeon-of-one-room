@@ -2,7 +2,7 @@ import { cp, mkdir, readFile, readdir, rm, writeFile } from "node:fs/promises";
 import { execFileSync } from "node:child_process";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { createHash } from "node:crypto";
+import { observerBotReleaseConfig } from "./pages-release-preflight.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const targetIndex = process.argv.indexOf("--target");
@@ -21,6 +21,8 @@ const outputRoot = path.join(root, "output") + path.sep;
 if (!output.startsWith(outputRoot) || path.basename(output) !== outputName) {
   throw new Error(`Refusing to build Pages outside output/${outputName}.`);
 }
+
+const observerBotConfig = observerBotReleaseConfig(process.env, target);
 
 await rm(output, { recursive: true, force: true });
 await mkdir(output, { recursive: true });
@@ -55,12 +57,8 @@ for (const [source, replacement] of [
   if (!config.includes(source)) throw new Error(`Missing production config source: ${source}`);
   config = config.replace(source, replacement);
 }
-const botPassword = String(process.env.DUNGEON_ONLINE_TEST_BOT_PASSWORD || "");
-const botPasswordHash = botPassword
-  ? "sha256:" + createHash("sha256").update(botPassword, "utf8").digest("hex")
-  : "";
-config += "\nwindow.DUNGEON_ONLINE_TEST_BOT_ENABLED = " + JSON.stringify(Boolean(botPasswordHash)) + ";\n";
-config += "window.DUNGEON_ONLINE_TEST_BOT_PASSWORD_HASH = " + JSON.stringify(botPasswordHash) + ";\n";
+config += "\nwindow.DUNGEON_ONLINE_TEST_BOT_ENABLED = " + JSON.stringify(observerBotConfig.enabled) + ";\n";
+config += "window.DUNGEON_ONLINE_TEST_BOT_PASSWORD_HASH = " + JSON.stringify(observerBotConfig.passwordHash) + ";\n";
 await writeFile(configPath, config, "utf8");
 
 const indexPath = path.join(output, "index.html");

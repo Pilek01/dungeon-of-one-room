@@ -11,6 +11,7 @@ import { requestExtractionV08 } from "../src/rulesets/v08-meta-1/outcome-policy.
 import { hydrateRunFromProfileV08, publicProfileStateV08, profileStateFromRunV08 } from "../src/rulesets/v08-meta-1/profile-policy.js";
 import { applyMutatorProgressDeltaV08 } from "../src/rulesets/v08-meta-1/mutator-progression.js";
 import manifest from "../src/rulesets/v08-meta-1/data/ruleset-manifest.json" with { type: "json" };
+import { observerBotReleaseConfig } from "../../../scripts/pages-release-preflight.mjs";
 
 const SECRET = "online-boundary-repair:0123456789abcdef0123456789abcdef";
 const CONTEXT = Object.freeze({
@@ -221,7 +222,16 @@ test("deployed test bot remains password-gated and test music is muted", async (
   const builder = await readFile(new URL("../../../scripts/build-pages-v3.mjs", import.meta.url), "utf8");
   const runtime = await readFile(new URL("../../../online-v3/ranked-v3-runtime.js", import.meta.url), "utf8");
   const headed = await readFile(new URL("../../../scripts/online-v3-ranked-headed.mjs", import.meta.url), "utf8");
-  assert.match(builder, /DUNGEON_ONLINE_TEST_BOT_PASSWORD_HASH/u);
+  const releaseConfig = observerBotReleaseConfig({
+    DUNGEON_ONLINE_TEST_BOT_PASSWORD: "boundary-observer-password"
+  }, "release");
+  assert.equal(releaseConfig.enabled, true);
+  assert.match(releaseConfig.passwordHash, /^sha256:[a-f0-9]{64}$/u);
+  assert.doesNotMatch(JSON.stringify(releaseConfig), /boundary-observer-password/u);
+  assert.throws(
+    () => observerBotReleaseConfig({}, "release"),
+    /DUNGEON_ONLINE_TEST_BOT_PASSWORD is required for release builds/u
+  );
   assert.match(builder, /unlockRankedTestBot/u);
   assert.match(builder, /canUseDebugCheats/u);
   assert.match(runtime, /Observer Bot/u);
