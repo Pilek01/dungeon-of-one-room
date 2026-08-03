@@ -13,8 +13,9 @@ public leaderboard.
 ## User flow
 
 1. The user double-clicks `Launch-Local-Ranked-Test.cmd`.
-2. A native Windows dialog opens and discovers the local branch whose tip has
-   the newest committer timestamp. Remote refs are not considered.
+2. A native Windows dialog opens and discovers the eligible local branch whose tip has the newest
+   committer timestamp. It excludes the branch hosting the launcher itself; remote refs are
+   not considered.
 3. The dialog lists the five newest commits reachable from that branch, with
    commit date, short hash, and subject.
 4. The user selects one commit and starts it either normally or with the
@@ -42,8 +43,8 @@ selection, path, port, and argument decisions have direct automated tests.
 `scripts/local-ranked-test-launcher-core.mjs` exposes pure helpers plus a
 small CLI protocol for the PowerShell UI:
 
-- enumerate local branch tips from `refs/heads`, sort by committer timestamp,
-  and select the newest branch;
+- enumerate local branch tips from `refs/heads`, exclude the launcher host branch,
+  sort the remaining tips by committer timestamp, and select the newest branch;
 - list the newest five commits on that branch;
 - validate a selected full commit hash against that list;
 - derive only safe, launcher-owned cache paths below
@@ -93,7 +94,8 @@ credential, or deployment control.
 - Missing Git, Node, Worker dependencies, manifest, build output, or Worker
   readiness yields an actionable error in the launcher window and leaves the
   user's worktrees untouched.
-- The launcher rejects a commit outside its displayed five-entry list.
+- The launcher rejects a commit outside its displayed five-entry list and never selects
+  the branch hosting the launcher itself.
 - The Worker command is fixed to `--local`, `wrangler.local.jsonc`, and
   `127.0.0.1`; tunnel, remote preview, production configuration, Pages deploy,
   and Worker deploy are out of scope.
