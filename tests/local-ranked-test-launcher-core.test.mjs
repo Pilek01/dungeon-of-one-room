@@ -82,4 +82,14 @@ test("derives launcher paths only below the launcher output root", () => {
   assert.equal(paths.stateRoot, path.join(paths.cacheRoot, "state", HASH_A));
   assert.throws(() => launcherPaths(root, "../main"), /full commit hash/u);
 });
+test("parses the line-delimited NUL records emitted by git for-each-ref", () => {
+  const branches = parseBranchTips(
+    `main\x00${HASH_A}\x002026-08-03T01:35:36+02:00\n` +
+    `codex/observer-bot-record-archive-repair\x00${HASH_B}\x002026-08-03T18:33:48+02:00\n`
+  );
 
+  assert.deepEqual(branches.map((branch) => branch.name), [
+    "main",
+    "codex/observer-bot-record-archive-repair"
+  ]);
+});

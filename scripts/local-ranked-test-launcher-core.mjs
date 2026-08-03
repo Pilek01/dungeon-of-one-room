@@ -4,6 +4,7 @@ import { promises as fs } from "node:fs";
 import net from "node:net";
 import path from "node:path";
 import { promisify } from "node:util";
+import { fileURLToPath } from "node:url";
 
 const FULL_COMMIT_HASH = /^[0-9a-f]{40}$/u;
 
@@ -40,14 +41,17 @@ function safeChildPath(root, ...segments) {
 }
 
 export function parseBranchTips(value) {
-  const fields = nullFields(value);
   const branches = [];
+  const rows = String(value || "").split(/\r?\n/u);
 
-  for (let index = 0; index + 2 < fields.length; index += 3) {
-    const [name, hash, date] = fields.slice(index, index + 3);
-    const timestamp = validTimestamp(date);
-    if (!name || !FULL_COMMIT_HASH.test(hash) || timestamp === null) continue;
-    branches.push(freezeRecord({ name, hash, date, timestamp }));
+  for (const row of rows) {
+    const fields = nullFields(row);
+    for (let index = 0; index + 2 < fields.length; index += 3) {
+      const [name, hash, date] = fields.slice(index, index + 3);
+      const timestamp = validTimestamp(date);
+      if (!name || !FULL_COMMIT_HASH.test(hash) || timestamp === null) continue;
+      branches.push(freezeRecord({ name, hash, date, timestamp }));
+    }
   }
 
   return Object.freeze(branches);
@@ -370,4 +374,104 @@ export async function startLocalRankedTest(selectedCommit, options = {}) {
     getLogs: () => logs,
     stop
   });
+}
+export async function listLocalCandidates(options = {}) {
+  const execFile = options.execFile || execFileAsync;
+  const repoRoot = path.resolve(String(options.repoRoot || process.cwd()));
+  const commandOptions = { cwd: repoRoot, maxBuffer: 256 * 1024 };
+  const hostResult = await execFile("git", ["branch", "--show-current"], commandOptions);
+  const excludedBranchName = String(hostResult?.stdout || "").trim();
+  if (!excludedBranchName) {
+    throw new Error("Local launcher must run from its named host branch.");
+  }
+  const branchResult = await execFile(
+    "git",
+    ["for-each-ref", "refs/heads", "--format=%(refname:short)%00%(objectname)%00%(committerdate:iso-strict)"],
+    commandOptions
+  );
+  const branch = chooseNewestBranch(parseBranchTips(branchResult?.stdout), { excludedBranchName });
+  const historyResult = await execFile(
+    "git",
+    ["log", branch.name, "-5", "--format=%H%x00%cI%x00%s%x00"],
+    commandOptions
+  );
+  const commits = parseCommitHistory(historyResult?.stdout);
+  if (!commits.length) {
+    throw new Error("The selected local branch has no eligible commits.");
+  }
+  return Object.freeze({ excludedBranchName, branch, commits });
+}
+
+function readCliOption(args, name) {
+  const index = args.indexOf(name);
+  return index >= 0 ? args[index + 1] : null;
+}
+
+function writeJsonLine(value) {
+  process.stdout.write(`${JSON.stringify(value)}\n`);
+}
+
+function launchErrorMessage(error) {
+  const message = String(error?.message || "Unknown local launcher error.");
+  return redactLaunchLog(message, [process.env.RANKED_V3_HMAC_SECRET, process.env.DUNGEON_ONLINE_TEST_BOT_PASSWORD]);
+}
+
+export async function runLauncherCli(args = process.argv.slice(2), options = {}) {
+  const command = args[0];
+  const emit = options.emit || writeJsonLine;
+  const repoRoot = options.repoRoot || process.cwd();
+  if (command === "list" && args.includes("--json")) {
+    return listLocalCandidates({ repoRoot, execFile: options.execFile });
+  }
+  if (command !== "start" || !args.includes("--json-events")) {
+    throw new Error("Use either 'list --json' or 'start --commit <full-hash> --json-events'.");
+  }
+
+  try {
+    const candidates = await listLocalCandidates({ repoRoot, execFile: options.execFile });
+    const selectedCommit = selectListedCommit(candidates.commits, readCliOption(args, "--commit"));
+    emit({ type: "starting", branch: candidates.branch.name, commit: selectedCommit.hash });
+    const controller = await startLocalRankedTest(selectedCommit, {
+      repoRoot,
+      observerPassword: process.env.DUNGEON_ONLINE_TEST_BOT_PASSWORD,
+      baseEnv: options.baseEnv || process.env,
+      prepareRevision: options.prepareRevision,
+      buildSelectedTestBundle: options.buildSelectedTestBundle,
+      acquirePort: options.acquirePort,
+      spawn: options.spawn,
+      waitForLocalReady: options.waitForLocalReady
+    });
+    emit({ type: "ready", url: controller.url, commit: selectedCommit.hash });
+    return controller;
+  } catch (error) {
+    emit({ type: "failed", message: launchErrorMessage(error) });
+    throw error;
+  }
+}
+
+async function runCliEntrypoint() {
+  let controller = null;
+  try {
+    if (process.argv[2] === "list") {
+      writeJsonLine(await runLauncherCli());
+      return;
+    }
+    controller = await runLauncherCli();
+    const stop = async () => {
+      await controller.stop();
+      writeJsonLine({ type: "stopped" });
+      process.exit(0);
+    };
+    process.once("SIGINT", stop);
+    process.once("SIGTERM", stop);
+  } catch (error) {
+    if (process.argv[2] !== "start") {
+      writeJsonLine({ type: "failed", message: launchErrorMessage(error) });
+    }
+    process.exitCode = 1;
+  }
+}
+
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  void runCliEntrypoint();
 }
