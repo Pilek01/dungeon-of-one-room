@@ -1,5 +1,7 @@
-import { execFile as nodeExecFile } from "node:child_process";
+import { execFile as nodeExecFile, spawn as nodeSpawn } from "node:child_process";
+import { randomBytes } from "node:crypto";
 import { promises as fs } from "node:fs";
+import net from "node:net";
 import path from "node:path";
 import { promisify } from "node:util";
 
@@ -148,5 +150,224 @@ export async function prepareRevision(selectedCommit, options = {}) {
     bundleRoot: path.join(paths.worktree, "output", "pages-test-dist"),
     manifestPath: path.join(workerRoot, "src", "rulesets", "v08-meta-1", "data", "ruleset-manifest.json"),
     wranglerPath
+  });
+}
+function requireRulesetHash(value) {
+  const hash = String(value || "");
+  if (!/^sha256:.+/u.test(hash)) {
+    throw new TypeError("A sha256 ruleset hash is required.");
+  }
+  return hash;
+}
+
+export function patchProtocolRulesetHash(source, value) {
+  const rulesetHash = requireRulesetHash(value);
+  const pattern = /^  const RULESET_HASH = "[^"]+";$/gmu;
+  const matches = String(source || "").match(pattern) || [];
+  if (matches.length !== 1) {
+    throw new Error("Expected exactly one RULESET_HASH declaration in the test bundle.");
+  }
+  return String(source).replace(pattern, `  const RULESET_HASH = ${JSON.stringify(rulesetHash)};`);
+}
+
+export function createTestBuildEnvironment(baseEnv = {}, observerPassword = "") {
+  const environment = { ...baseEnv };
+  delete environment.DUNGEON_ONLINE_TEST_BOT_PASSWORD;
+  if (String(observerPassword || "")) {
+    environment.DUNGEON_ONLINE_TEST_BOT_PASSWORD = String(observerPassword);
+  }
+  return Object.freeze(environment);
+}
+
+function requireLoopbackPort(value) {
+  const port = Number(value);
+  if (!Number.isInteger(port) || port < 1 || port > 65535) {
+    throw new TypeError("A valid loopback port is required.");
+  }
+  return port;
+}
+
+export function createWorkerLaunchPlan(prepared, options = {}) {
+  const workerRoot = path.resolve(String(prepared?.workerRoot || ""));
+  const bundleRoot = path.resolve(String(prepared?.bundleRoot || ""));
+  const stateRoot = path.resolve(String(prepared?.stateRoot || ""));
+  const wranglerPath = path.resolve(String(prepared?.wranglerPath || ""));
+  const port = requireLoopbackPort(options.port);
+  const secret = String(options.secret || randomBytes(48).toString("base64"));
+  if (new TextEncoder().encode(secret).byteLength < 32) {
+    throw new TypeError("Worker signing secret must contain at least 32 UTF-8 bytes.");
+  }
+  const workerEnv = { ...(options.baseEnv || {}) };
+  delete workerEnv.DUNGEON_ONLINE_TEST_BOT_PASSWORD;
+  workerEnv.CLOUDFLARE_INCLUDE_PROCESS_ENV = "true";
+  workerEnv.RANKED_V3_HMAC_SECRET = secret;
+  const configPath = path.join(workerRoot, "wrangler.local.jsonc");
+  const workerArgs = Object.freeze([
+    "dev",
+    "--local",
+    "--config",
+    configPath,
+    "--persist-to",
+    stateRoot,
+    "--ip",
+    "127.0.0.1",
+    "--port",
+    String(port),
+    "--assets",
+    bundleRoot,
+    "--log-level",
+    "error"
+  ]);
+  return Object.freeze({
+    command: process.execPath,
+    args: Object.freeze([wranglerPath, ...workerArgs]),
+    workerArgs,
+    workerEnv: Object.freeze(workerEnv),
+    url: `http://127.0.0.1:${port}`
+  });
+}
+
+export function redactLaunchLog(value, secrets = []) {
+  const uniqueSecrets = [...new Set(secrets.map((secret) => String(secret || "")).filter(Boolean))]
+    .sort((left, right) => right.length - left.length);
+  return uniqueSecrets.reduce(
+    (text, secret) => text.split(secret).join("[redacted]"),
+    String(value || "")
+  );
+}
+export async function buildSelectedTestBundle(prepared, options = {}) {
+  const execFile = options.execFile || execFileAsync;
+  const readFile = options.readFile || fs.readFile;
+  const writeFile = options.writeFile || fs.writeFile;
+  const environment = createTestBuildEnvironment(
+    options.baseEnv || process.env,
+    options.observerPassword
+  );
+
+  await execFile(
+    process.execPath,
+    ["scripts/build-pages-v3.mjs", "--target", "test"],
+    { cwd: prepared.worktree, env: environment }
+  );
+  const manifest = JSON.parse(await readFile(prepared.manifestPath, "utf8"));
+  const rulesetHash = requireRulesetHash(manifest?.rulesetHash);
+  const protocolPath = path.join(prepared.bundleRoot, "online-v3", "ranked-v3-protocol.js");
+  const protocolSource = await readFile(protocolPath, "utf8");
+  await writeFile(protocolPath, patchProtocolRulesetHash(protocolSource, rulesetHash), "utf8");
+
+  return Object.freeze({ rulesetHash, protocolPath });
+}
+
+export async function acquireLoopbackPort() {
+  const server = net.createServer();
+  await new Promise((resolve, reject) => {
+    server.once("error", reject);
+    server.listen(0, "127.0.0.1", resolve);
+  });
+  const address = server.address();
+  await new Promise((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
+  if (!address || typeof address === "string") {
+    throw new Error("Unable to acquire a loopback port.");
+  }
+  return address.port;
+}
+
+function wait(milliseconds) {
+  return new Promise((resolve) => setTimeout(resolve, milliseconds));
+}
+
+export async function waitForLocalReady(url, options = {}) {
+  const fetchImpl = options.fetchImpl || globalThis.fetch;
+  const sleep = options.sleep || wait;
+  const timeoutMs = Number(options.timeoutMs || 15_000);
+  const deadline = Date.now() + timeoutMs;
+  let lastError = null;
+
+  while (Date.now() < deadline) {
+    try {
+      const response = await fetchImpl(`${url}/api/v3/availability`);
+      if (response?.ok) return;
+      lastError = new Error(`Local Worker returned HTTP ${response?.status || "unknown"}.`);
+    } catch (error) {
+      lastError = error;
+    }
+    await sleep(100);
+  }
+
+  const detail = String(lastError?.message || "no response");
+  throw new Error(`Local Worker did not become ready within ${timeoutMs}ms: ${detail}`);
+}
+
+function attachLogStream(stream, append) {
+  if (!stream?.on) return;
+  stream.setEncoding?.("utf8");
+  stream.on("data", append);
+}
+
+function awaitChildExit(child) {
+  if (child.exitCode !== null && child.exitCode !== undefined) return Promise.resolve();
+  return new Promise((resolve) => child.once?.("exit", resolve) || resolve());
+}
+
+export async function startLocalRankedTest(selectedCommit, options = {}) {
+  const prepare = options.prepareRevision || prepareRevision;
+  const build = options.buildSelectedTestBundle || buildSelectedTestBundle;
+  const acquirePort = options.acquirePort || acquireLoopbackPort;
+  const spawn = options.spawn || nodeSpawn;
+  const waitForReady = options.waitForLocalReady || waitForLocalReady;
+  const baseEnv = options.baseEnv || process.env;
+  const prepared = await prepare(selectedCommit, { repoRoot: options.repoRoot });
+  const bundle = await build(prepared, {
+    baseEnv,
+    observerPassword: options.observerPassword
+  });
+  const port = await acquirePort();
+  const launch = createWorkerLaunchPlan(prepared, {
+    baseEnv,
+    port,
+    secret: options.secret
+  });
+  const child = spawn(launch.command, launch.args, {
+    cwd: prepared.workerRoot,
+    env: launch.workerEnv,
+    stdio: ["ignore", "pipe", "pipe"],
+    windowsHide: true
+  });
+  let logs = "";
+  const append = (chunk) => {
+    logs = redactLaunchLog(
+      `${logs}${String(chunk || "")}`.slice(-20_000),
+      [launch.workerEnv.RANKED_V3_HMAC_SECRET, options.observerPassword]
+    );
+  };
+  attachLogStream(child.stdout, append);
+  attachLogStream(child.stderr, append);
+  let stopped = false;
+  const exitHandler = () => {
+    if (!stopped && child.exitCode === null) child.kill();
+  };
+  process.once("exit", exitHandler);
+
+  async function stop() {
+    if (stopped) return;
+    stopped = true;
+    process.removeListener("exit", exitHandler);
+    if (child.exitCode === null) child.kill();
+    await Promise.race([awaitChildExit(child), wait(1_000)]);
+  }
+
+  try {
+    await waitForReady(launch.url, { fetchImpl: options.fetchImpl });
+  } catch (error) {
+    await stop();
+    throw error;
+  }
+
+  return Object.freeze({
+    url: launch.url,
+    prepared,
+    bundle,
+    getLogs: () => logs,
+    stop
   });
 }
