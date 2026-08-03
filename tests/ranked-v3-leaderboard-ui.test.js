@@ -84,7 +84,7 @@ test("Ranked ledger shows only the five requested facts and elevates top three",
   }).rows;
 
   const archive = ui.renderList(documentRef, rows, (runId) => opened.push(runId));
-  assert.equal(archive.className, "record-archive record-archive-list");
+  assert.equal(archive.className, "record-archive-v2 record-archive-list");
   const hasClass = (node, className) => String(node.className).split(/\s+/u).includes(className);
   assert.equal(visit(archive, (node) => hasClass(node, "record-archive-podium-card")).length, 3);
   assert.equal(visit(archive, (node) => hasClass(node, "record-archive-ledger-row")).length, 1);
@@ -157,7 +157,7 @@ test("Ranked adapter delegates list DOM to the shared archive renderer", () => {
     gold: 3
   }], () => {});
 
-  assert.equal(rendered.className, "record-archive record-archive-list");
+  assert.equal(rendered.className, "record-archive-v2 record-archive-list");
   const source = readFileSync(path.resolve(__dirname, "..", "online-v3", "ranked-v3-leaderboard-ui.js"), "utf8");
   assert.doesNotMatch(source, /record-archive-podium|record-archive-ledger/u);
 });

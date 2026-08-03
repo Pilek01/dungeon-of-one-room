@@ -1,0 +1,70 @@
+.record-archive-v2 {
+  --record-gold: #e7c26f;
+  --record-silver: #c9d5df;
+  --record-bronze: #cd9264;
+  display:grid;
+  gap:18px;
+  color:#e7dac4;
+  text-align:left;
+}
+.record-archive-v2 .record-archive-podium { display:grid; grid-template-columns:1fr 1.18fr 1fr; grid-template-areas:"silver champion bronze"; gap:12px; align-items:end; }
+.record-archive-v2 .record-archive-podium-card,
+.record-archive-v2 .record-archive-ledger-row,
+.record-archive-v2 .record-archive-chronicle,
+.record-archive-v2 .record-archive-build-section { border:1px solid #504535; background:linear-gradient(145deg,#1b1d20ef,#07080af5),url("assets/hd/ui/abyssal-gothic/panel-texture.png") center/220px; box-shadow:inset 0 0 0 1px #030404,inset 0 0 24px #000d; }
+.record-archive-v2 .record-archive-podium-card { display:grid; justify-items:center; gap:7px; padding:15px 11px; text-align:center; }
+.record-archive-v2 .record-archive-podium-card[data-record-rank="1"] { grid-area:champion; min-height:250px; border-color:var(--record-gold); transform:translateY(-14px); }
+.record-archive-v2 .record-archive-podium-card[data-record-rank="2"] { grid-area:silver; border-color:var(--record-silver); }
+.record-archive-v2 .record-archive-podium-card[data-record-rank="3"] { grid-area:bronze; border-color:var(--record-bronze); }
+.record-archive-v2 .record-archive-skull { width:82px; height:82px; object-fit:contain; }
+.record-archive-v2 .record-archive-podium-card[data-record-rank="1"] .record-archive-skull { width:116px; height:116px; }
+.record-archive-v2 .record-archive-podium-title,
+.record-archive-v2 .record-archive-kicker { margin:0; color:var(--record-gold); font:700 .7rem/1.2 "Copperplate Gothic Light",Georgia,serif; letter-spacing:1.8px; text-transform:uppercase; }
+.record-archive-v2 .record-archive-name { border:0; padding:0; color:#f3e7cf; background:transparent; font:600 1rem/1.1 Georgia,serif; cursor:pointer; }
+.record-archive-v2 .record-archive-ledger { display:grid; gap:7px; }
+.record-archive-v2 .record-archive-ledger-row { display:grid; grid-template-columns:72px minmax(11rem,1fr) 110px 88px 88px 150px; grid-template-areas:"rank name score depth gold action"; gap:10px; align-items:center; padding:10px 12px; }
+.record-archive-v2 .record-archive-ledger-row > :nth-child(1) { grid-area:rank; }
+.record-archive-v2 .record-archive-ledger-row > :nth-child(2) { grid-area:name; }
+.record-archive-v2 .record-archive-ledger-row > :nth-child(3) { grid-area:score; }
+.record-archive-v2 .record-archive-ledger-row > :nth-child(4) { grid-area:depth; }
+.record-archive-v2 .record-archive-ledger-row > :nth-child(5) { grid-area:gold; }
+.record-archive-v2 .record-archive-ledger-row > :nth-child(6) { grid-area:action; }
+.record-archive-v2 .record-archive-fact { display:grid; gap:2px; }
+.record-archive-v2 .record-archive-fact-label { color:#9d978d; font:600 .58rem/1 "Courier New",monospace; letter-spacing:.8px; text-transform:uppercase; }
+.record-archive-v2 .record-archive-fact-value { color:#e2d6c3; font:600 .84rem/1.15 Georgia,serif; }
+.record-archive-v2 .record-archive-inspect-button,
+.record-archive-v2 .record-archive-back { border:1px solid #716246; padding:8px 12px; color:#e7d9bc; background:linear-gradient(#252119,#0c0d0f); font:700 .68rem/1 "Courier New",monospace; letter-spacing:.7px; text-transform:uppercase; cursor:pointer; }
+.record-archive-v2 .record-archive-name:focus-visible,
+.record-archive-v2 .record-archive-inspect-button:focus-visible,
+.record-archive-v2 .record-archive-back:focus-visible { outline:2px solid #e7c26f; outline-offset:3px; }
+.record-archive-v2 .record-archive-mutators { position:relative; width:max-content; max-width:100%; padding:7px 10px; border:1px solid #6e624d; color:#e3cf9c; cursor:help; }
+.record-archive-v2 .record-archive-mutators:hover::after,
+.record-archive-v2 .record-archive-mutators:focus-visible::after { content:attr(data-record-tooltip); position:absolute; z-index:20; right:0; bottom:calc(100% + 8px); width:min(390px,80vw); padding:10px 12px; border:1px solid #b38d4d; color:#f4e9d3; background:#050609fa; box-shadow:0 10px 30px #000e; white-space:normal; }
+.record-archive-v2 .record-archive-detail { display:grid; gap:14px; }
+.record-archive-v2 .record-archive-detail-header { display:flex; justify-content:space-between; gap:16px; align-items:end; padding:16px; border:1px solid #65583f; background:linear-gradient(135deg,#24211cdd,#090b0eea); }
+.record-archive-v2 .record-archive-player { margin:3px 0; color:#f0e2cc; font:600 1.65rem/1 Georgia,serif; }
+.record-archive-v2 .record-archive-score { margin:0; color:var(--record-gold); font-size:1.25rem; }
+.record-archive-v2 .record-archive-chronicle,
+.record-archive-v2 .record-archive-build-section { padding:13px; }
+.record-archive-v2 .record-archive-section-title { margin:0 0 9px; color:#d8bd83; font:600 .8rem/1.2 Georgia,serif; letter-spacing:1px; text-transform:uppercase; }
+.record-archive-v2 .record-archive-chronicle-facts,
+.record-archive-v2 .record-archive-stat-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:7px; }
+.record-archive-v2 .record-archive-relic-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:8px; }
+.record-archive-v2 .record-archive-relic { display:flex; align-items:center; gap:8px; min-width:0; padding:8px; border:1px solid #4b4235; background:#090b0ed9; }
+.record-archive-v2 .record-archive-relic-icon,
+.record-archive-v2 .record-archive-relic-fallback { width:38px; height:38px; flex:0 0 38px; object-fit:contain; }
+.record-archive-v2 .record-archive-legacy-note { margin:0; padding:18px; border:1px dashed #554b3b; color:#aaa093; text-align:center; }
+@media (max-width:760px) {
+  .record-archive-v2 .record-archive-podium { grid-template-columns:1fr; grid-template-areas:"champion" "silver" "bronze"; }
+  .record-archive-v2 .record-archive-podium-card[data-record-rank="1"] { transform:none; }
+  .record-archive-v2 .record-archive-ledger-row { grid-template-columns:1fr 1fr; grid-template-areas:"rank name" "score depth" "gold gold" "action action"; }
+  .record-archive-v2 .record-archive-inspect-button { width:100%; }
+  .record-archive-v2 .record-archive-detail-header { align-items:start; flex-direction:column; }
+  .record-archive-v2 .record-archive-chronicle-facts,
+  .record-archive-v2 .record-archive-stat-grid,
+  .record-archive-v2 .record-archive-relic-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+}
+@media (prefers-reduced-motion:reduce) {
+  .record-archive-v2,
+  .record-archive-v2 * { transition:none!important; animation:none!important; }
+}

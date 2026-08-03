@@ -74,6 +74,9 @@ test("shared archive renderer exposes top three, five ledger facts, and immutabl
   const hasClass = (node, className) => String(node.className).split(/\s+/u).includes(className);
   assert.equal(visit(rendered, (node) => hasClass(node, "record-archive-podium-card")).length, 3);
   assert.equal(visit(rendered, (node) => hasClass(node, "record-archive-ledger-row")).length, 1);
+  const champion = visit(rendered, (node) => node.attributes.get("data-record-rank") === "1")[0];
+  assert.equal(visit(champion, (node) => node.textContent === "Champion").length, 1);
+  assert.equal(visit(champion, (node) => node.textContent === "Rank 1" || node.textContent === "#1").length, 0);
   assert.deepEqual(
     [...new Set(visit(rendered, (node) => node.attributes.get("data-record-field"))
       .map((node) => node.attributes.get("data-record-field")))].sort(),

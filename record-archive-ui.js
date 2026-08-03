@@ -7,7 +7,7 @@
   "use strict";
 
   const SELECTORS = Object.freeze({
-    archive: "record-archive",
+    archive: "record-archive-v2",
     list: "record-archive-list",
     detail: "record-archive-detail",
     podium: "record-archive-podium",
@@ -72,14 +72,17 @@
     return node;
   }
 
-  function rowFacts(documentRef, row, onInspect) {
-    return [
-      fact(documentRef, { key: "rank", label: "Rank", value: `#${integer(row.rank)}` }),
+  function rowFacts(documentRef, row, onInspect, options = {}) {
+    const facts = [
       nameControl(documentRef, row, onInspect),
       fact(documentRef, { key: "score", label: "Score", value: integer(row.score) }),
       fact(documentRef, { key: "depth", label: "Depth", value: integer(row.depth) }),
       fact(documentRef, { key: "gold", label: "Gold", value: integer(row.gold) })
     ];
+    if (options.includeRank !== false) {
+      facts.unshift(fact(documentRef, { key: "rank", label: "Rank", value: `#${integer(row.rank)}` }));
+    }
+    return facts;
   }
 
   function renderList(documentRef, archive = {}, options = {}) {
@@ -103,7 +106,7 @@
           element(documentRef, "p", "record-archive-podium-title", rank === 1 ? "Champion" : `Rank ${rank}`)
         );
       }
-      card.append(...rowFacts(documentRef, row, onInspect), inspectControl(documentRef, row, onInspect));
+      card.append(...rowFacts(documentRef, row, onInspect, { includeRank: !elevated }), inspectControl(documentRef, row, onInspect));
       (elevated ? podium : ledger).append(card);
     }
 
