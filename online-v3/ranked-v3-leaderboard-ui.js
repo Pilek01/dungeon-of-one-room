@@ -39,6 +39,21 @@
       canGoNext: page < pageCount
     });
   };
+  async function collectLeaderboardRows(list, options = {}) {
+    const rows = [];
+    const seenCursors = new Set();
+    const season = String(options.season || "");
+    let cursor = "";
+    while (rows.length < MAX_ROWS) {
+      const payload = await list({ season, limit: 50, cursor });
+      const page = createLeaderboardViewModel(payload, rows.length);
+      rows.push(...page.rows.slice(0, MAX_ROWS - rows.length));
+      if (rows.length >= MAX_ROWS || !page.cursor || page.cursor === cursor || seenCursors.has(page.cursor)) break;
+      seenCursors.add(page.cursor);
+      cursor = page.cursor;
+    }
+    return Object.freeze(rows);
+  }
   const createDetailViewModel = (payload = {}) => { const entry = payload.entry && typeof payload.entry === "object" ? payload.entry : {}; return Object.freeze({ ...toLeaderboardRow(entry), season: String(entry.season || ""), build: Object.freeze(normalizeBuild(entry.build)), summary: Object.freeze(entry.summary && typeof entry.summary === "object" ? { ...entry.summary } : {}) }); };
   function name(documentRef, row, open) { const node = element(documentRef, "button", "record-archive-name", row.playerName); node.type = "button"; node.setAttribute("data-record-field", "name"); node.addEventListener("click", () => open(row.runId), { once: true }); return node; }
   function inspect(documentRef, row, open) { const node = element(documentRef, "button", SELECTORS.detailsButton, "Inspect build"); node.type = "button"; node.addEventListener("click", () => open(row.runId), { once: true }); return node; }
@@ -234,5 +249,5 @@
     rootNode.append(art, overlay);
     return rootNode;
   }
-  return Object.freeze({ SELECTORS, normalizeBuild, toLeaderboardRow, createLeaderboardViewModel, createLeaderboardPresentation, createDetailViewModel, renderList, renderDetail });
+  return Object.freeze({ SELECTORS, normalizeBuild, toLeaderboardRow, createLeaderboardViewModel, createLeaderboardPresentation, collectLeaderboardRows, createDetailViewModel, renderList, renderDetail });
 });

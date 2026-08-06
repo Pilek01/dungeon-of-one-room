@@ -20,7 +20,7 @@
   let client = null;
   let leaderboardClient = null;
   let leaderboardRows = [];
-  let leaderboardCursor = null;
+  let leaderboardPage = 1;
   let startedAt = 0;
   let pendingRoomSummary = null;
   let pendingExtractionMode = null;
@@ -186,16 +186,6 @@
     return leaderboardClient;
   }
 
-  function leaderboardControls() {
-    const controls = [
-      ui.button("Close", () => ui.hide())
-    ];
-    if (leaderboardCursor) {
-      controls.unshift(ui.button("Load next page", () => openLeaderboard(false)));
-    }
-    return controls;
-  }
-
   function showLeaderboardRows() {
     if (!leaderboardRows.length) {
       ui.showMessage("Ranked Leaderboard", "No Ranked results have been published this season.", [
@@ -203,43 +193,41 @@
       ]);
       return;
     }
-    const content = leaderboardUi.renderList(
-      root.document,
-      leaderboardRows,
-      (runId) => openLeaderboardDetail(runId)
-    );
+    const presentation = leaderboardUi.createLeaderboardPresentation(leaderboardRows, leaderboardPage);
+    leaderboardPage = presentation.page;
+    const content = leaderboardUi.renderList(root.document, presentation, {
+      onOpen: (runId) => openLeaderboardDetail(runId),
+      onPage: (page) => {
+        leaderboardPage = page;
+        showLeaderboardRows();
+      },
+      onClose: () => ui.hide()
+    });
     ui.showContent(
       "Ranked Leaderboard",
       "The strongest descents of the current season.",
-      content,
-      leaderboardControls()
+      content
     );
   }
-
   async function openLeaderboard(reset = true) {
     try {
       if (reset) {
         leaderboardRows = [];
-        leaderboardCursor = null;
+        leaderboardPage = 1;
       }
       ui.showMessage("Ranked Leaderboard", "Loading season results...");
-      const payload = await createLeaderboardClient().list({
-        season: String(root.DUNGEON_ONLINE_V3_SEASON || "local-m4"),
-        limit: 20,
-        cursor: reset ? "" : leaderboardCursor
-      });
-      const page = leaderboardUi.createLeaderboardViewModel(payload, leaderboardRows.length);
-      leaderboardRows = leaderboardRows.concat(page.rows);
-      leaderboardCursor = page.cursor;
+      leaderboardRows = await leaderboardUi.collectLeaderboardRows(
+        (request) => createLeaderboardClient().list(request),
+        { season: String(root.DUNGEON_ONLINE_V3_SEASON || "local-m4") }
+      );
       showLeaderboardRows();
     } catch {
       ui.showMessage("Leaderboard unavailable", "Season results could not be loaded.", [
-        ui.button("Retry", () => openLeaderboard(reset)),
+        ui.button("Retry", () => openLeaderboard(true)),
         ui.button("Close", () => ui.hide())
       ]);
     }
   }
-
   async function openLeaderboardDetail(runId) {
     try {
       ui.showMessage("Build Chronicle", "Loading this descent...");
@@ -249,11 +237,10 @@
       ui.showContent(
         "Build Chronicle",
         displaySeason(detail.season),
-        leaderboardUi.renderDetail(root.document, detail),
-        [
-          ui.button("Back to leaderboard", showLeaderboardRows),
-          ui.button("Close", () => ui.hide())
-        ]
+        leaderboardUi.renderDetail(root.document, detail, {
+          onBack: showLeaderboardRows,
+          onClose: () => ui.hide()
+        })
       );
     } catch {
       ui.showMessage("Build details unavailable", "This Ranked build could not be loaded.", [

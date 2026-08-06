@@ -142,6 +142,32 @@ test("Ranked presentation keeps the Top 3 while paging ranks 4 through 73", () =
   assert.deepEqual(finalPage.ledger.map((row) => row.rank), [67, 68, 69, 70, 71, 72, 73]);
   assert.equal(finalPage.canGoNext, false);
 });
+test("Ranked collection follows opaque cursors once and caps the authoritative order at 73", async () => {
+  const ui = loadUi();
+  const calls = [];
+  const makeEntries = (start, count) => Array.from({ length: count }, (_, index) => ({
+    runId: `run_${String(start + index).padStart(8, "0")}`,
+    playerName: `Player ${start + index}`,
+    score: 100000 - start - index,
+    depth: 80 - start - index,
+    gold: start + index
+  }));
+  const rows = await ui.collectLeaderboardRows(async (request) => {
+    calls.push(request);
+    return request.cursor
+      ? { season: "season-a", entries: makeEntries(51, 23), cursor: "third-page-must-not-load" }
+      : { season: "season-a", entries: makeEntries(1, 50), cursor: "opaque+/cursor==" };
+  }, { season: "season-a" });
+
+  assert.deepEqual(calls, [
+    { season: "season-a", limit: 50, cursor: "" },
+    { season: "season-a", limit: 50, cursor: "opaque+/cursor==" }
+  ]);
+  assert.equal(rows.length, 73);
+  assert.deepEqual(rows.slice(0, 3).map((row) => row.runId), ["run_00000001", "run_00000002", "run_00000003"]);
+  assert.deepEqual(rows.slice(-3).map((row) => row.runId), ["run_00000071", "run_00000072", "run_00000073"]);
+  assert.deepEqual(rows.slice(-3).map((row) => row.rank), [71, 72, 73]);
+});
 test("Ranked inspect plate renders only the approved build and Chronicle fields", () => {
   const ui = loadUi();
   const documentRef = createDocument();
