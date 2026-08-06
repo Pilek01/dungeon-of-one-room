@@ -711,7 +711,7 @@ ${fatalTestHookAnchor}`;
   const { chromium } = loadPlaywright();
   const browser = await chromium.launch({ headless: HEADLESS });
   try {
-    const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+    const context = await browser.newContext({ viewport: { width: 1536, height: 1080 } });
     await context.addInitScript((season) => {
       window.DUNGEON_ONLINE_V3_SEASON = season;
       window.DUNGEON_ONLINE_V3_DEBUG = true;
@@ -1397,16 +1397,21 @@ ${fatalTestHookAnchor}`;
     await dismissBoot(page);
     await openNativeMenuOption(page, "Ranked Leaderboard");
 
-    await page.locator(".ranked-v3-leaderboard-row").waitFor({ state: "visible" });
+    const leaderboardRecord = page.locator(".ranked-v3-leaderboard-row[data-record-rank]");
+    await leaderboardRecord.waitFor({ state: "visible" });
     assert.match(
-      await page.locator(".ranked-v3-leaderboard-row").first().textContent(),
+      await leaderboardRecord.first().textContent(),
       /M4Headed/u
     );
+    await page.screenshot({
+      path: path.join(ARTIFACT_ROOT, "ranked-leaderboard.png"),
+      fullPage: true
+    });
     await page.getByRole("button", { name: "Inspect build" }).first().click();
     await page.locator(".ranked-v3-leaderboard-detail").waitFor({ state: "visible" });
     assert.match(
       await page.locator(".ranked-v3-leaderboard-detail").textContent(),
-      /Relic Build/u
+      /Build Loadout/u
     );
     await page.screenshot({
       path: path.join(ARTIFACT_ROOT, "ranked-leaderboard-detail.png"),
