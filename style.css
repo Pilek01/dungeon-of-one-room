@@ -5155,3 +5155,242 @@ body.ranked-v3-modal-open #screenOverlay {
   .record-archive-build-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
   .record-archive-detail-header { align-items:start; flex-direction:column; }
 }
+
+/* Ranked desktop reference plates. Practice Records remain on .record-archive-* rules above. */
+.ranked-v3-card-reference-plate {
+  width: min(1536px, calc(100vw - 32px));
+  max-height: none;
+  padding: 0;
+  overflow: visible;
+  background: transparent;
+  box-shadow: none;
+}
+.ranked-v3-card-reference-plate > .ranked-v3-eyebrow,
+.ranked-v3-card-reference-plate > .ranked-v3-title,
+.ranked-v3-card-reference-plate > .ranked-v3-status,
+.ranked-v3-card-reference-plate > .ranked-v3-actions { display: none; }
+.ranked-v3-card-reference-plate .ranked-v3-body-reference-plate { width: 100%; margin: 0; }
+.ranked-v3-reference-plate {
+  --ranked-plate-ivory: #eadfce;
+  --ranked-plate-copy: #c4ad8c;
+  --ranked-plate-gold: #d9ad60;
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1536 / 1080;
+  overflow: hidden;
+  color: var(--ranked-plate-ivory);
+  text-align: left;
+  text-shadow: 0 2px 2px #000;
+}
+.ranked-v3-reference-plate-title {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+.ranked-v3-reference-plate-art {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 100% 100%;
+}
+.ranked-v3-reference-plate--leaderboard .ranked-v3-reference-plate-art { background-image: url("assets/hd/ui/ranked-reference-plates/ranked-leaderboard-desktop-plate.png"); }
+.ranked-v3-reference-plate--inspect .ranked-v3-reference-plate-art { background-image: url("assets/hd/ui/ranked-reference-plates/ranked-build-inspect-desktop-plate.png"); }
+.ranked-v3-reference-plate-overlay { position: absolute; inset: 0; z-index: 1; }
+.ranked-v3-reference-plate button {
+  border: 0;
+  color: inherit;
+  font: inherit;
+  text-shadow: inherit;
+  cursor: pointer;
+}
+.ranked-v3-reference-plate button:focus-visible {
+  z-index: 5;
+  outline: 2px solid #f6d889;
+  outline-offset: 3px;
+  box-shadow: 0 0 0 4px #120e09cc, 0 0 18px #d9ad60aa;
+}
+.ranked-v3-reference-plate button:disabled { cursor: not-allowed; opacity: .42; }
+
+@media (min-width: 761px) {
+  .ranked-v3-reference-plate--leaderboard .ranked-v3-leaderboard-heading {
+    position: absolute;
+    top: 10.6%;
+    left: 22%;
+    right: 22%;
+    display: grid;
+    justify-items: center;
+    gap: .22em;
+    text-align: center;
+  }
+  .ranked-v3-leaderboard-kicker { margin: 0; color: #bc9b68; font: 700 clamp(.5rem, .7vw, .72rem)/1 "Courier New", monospace; letter-spacing: .38em; text-transform: uppercase; }
+  .ranked-v3-leaderboard-display-title { margin: 0; color: #e7d7c0; font: 600 clamp(1.7rem, 3.6vw, 4rem)/1 "Copperplate Gothic Light", Georgia, serif; letter-spacing: .18em; text-transform: uppercase; }
+  .ranked-v3-leaderboard-season { margin: 0; color: #b99868; font: 600 clamp(.62rem, 1vw, .95rem)/1.2 "Copperplate Gothic Light", Georgia, serif; letter-spacing: .3em; text-transform: uppercase; }
+  .ranked-v3-leaderboard-podium {
+    position: absolute;
+    top: 25.4%;
+    left: 14.1%;
+    right: 14.1%;
+    height: 29.2%;
+    display: grid;
+    grid-template-columns: 1fr 1.18fr 1fr;
+    align-items: stretch;
+    gap: 4.4%;
+  }
+  .ranked-v3-reference-plate .ranked-v3-leaderboard-row {
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+  .ranked-v3-podium-slot {
+    display: grid;
+    grid-template-columns: 1fr;
+    align-content: end;
+    justify-items: center;
+    gap: .45em;
+    min-width: 0;
+    padding: 10% 8% 8%;
+    text-align: center;
+  }
+  .ranked-v3-podium-slot:nth-child(1) { grid-column: 2; grid-row: 1; padding-bottom: 2%; }
+  .ranked-v3-podium-slot:nth-child(2) { grid-column: 1; grid-row: 1; }
+  .ranked-v3-podium-slot:nth-child(3) { grid-column: 3; grid-row: 1; }
+  .ranked-v3-leaderboard-slot-identity { display: grid; justify-items: center; gap: .28em; min-width: 0; }
+  .ranked-v3-leaderboard-rank { color: var(--ranked-plate-gold); font: 600 clamp(.76rem, 1.35vw, 1.52rem)/1 Georgia, serif; }
+  .ranked-v3-podium-slot:nth-child(2) .ranked-v3-leaderboard-rank { color: #d5d7d5; }
+  .ranked-v3-podium-slot:nth-child(3) .ranked-v3-leaderboard-rank { color: #c98961; }
+  .ranked-v3-reference-plate .record-archive-name { max-width: 100%; overflow: hidden; color: #e9ddca; text-overflow: ellipsis; white-space: nowrap; background: transparent; font: 600 clamp(.63rem, 1.2vw, 1.28rem)/1.1 "Copperplate Gothic Light", Georgia, serif; }
+  .ranked-v3-podium-slot .ranked-v3-leaderboard-score { color: var(--ranked-plate-gold); font: 600 clamp(.72rem, 1.2vw, 1.22rem)/1 Georgia, serif; }
+  .ranked-v3-podium-slot .ranked-v3-leaderboard-depth,
+  .ranked-v3-podium-slot .ranked-v3-leaderboard-gold { color: #b89b73; font: 600 clamp(.43rem, .66vw, .68rem)/1.1 "Courier New", monospace; letter-spacing: .12em; text-transform: uppercase; }
+  .ranked-v3-podium-slot .ranked-v3-leaderboard-details-button { margin-top: .28em; padding: .35em .56em; color: #caaa74; background: transparent; font: 600 clamp(.43rem, .63vw, .68rem)/1 Georgia, serif; }
+  .ranked-v3-leaderboard-ledger {
+    position: absolute;
+    top: 58.2%;
+    left: 10.3%;
+    right: 10.3%;
+    height: 28.7%;
+    display: grid;
+    grid-template-rows: 11% 1fr;
+  }
+  .ranked-v3-leaderboard-columns,
+  .ranked-v3-ledger-slot {
+    display: grid;
+    grid-template-columns: 9% 30% 17% 11% 17% 16%;
+    align-items: center;
+  }
+  .ranked-v3-leaderboard-columns { color: #d8bd86; font: 600 clamp(.46rem, .72vw, .75rem)/1 "Copperplate Gothic Light", Georgia, serif; letter-spacing: .13em; text-transform: uppercase; }
+  .ranked-v3-leaderboard-column:nth-child(3),
+  .ranked-v3-leaderboard-column:nth-child(4),
+  .ranked-v3-leaderboard-column:nth-child(5),
+  .ranked-v3-leaderboard-column:nth-child(6) { text-align: center; }
+  .ranked-v3-leaderboard-ledger-rows { display: grid; grid-template-rows: repeat(7, minmax(0, 1fr)); }
+  .ranked-v3-ledger-slot { min-width: 0; padding: 0 .8%; color: #c5b69f; font: 600 clamp(.5rem, .84vw, .88rem)/1 Georgia, serif; }
+  .ranked-v3-ledger-slot .ranked-v3-leaderboard-slot-identity { display: contents; }
+  .ranked-v3-ledger-slot .ranked-v3-leaderboard-rank { grid-column: 1; color: #c6aa78; text-align: center; }
+  .ranked-v3-ledger-slot .record-archive-name { grid-column: 2; justify-self: start; font-size: clamp(.5rem, .9vw, .96rem); }
+  .ranked-v3-ledger-slot .ranked-v3-leaderboard-score { grid-column: 3; color: var(--ranked-plate-gold); text-align: center; }
+  .ranked-v3-ledger-slot .ranked-v3-leaderboard-depth { grid-column: 4; text-align: center; }
+  .ranked-v3-ledger-slot .ranked-v3-leaderboard-gold { grid-column: 5; text-align: center; }
+  .ranked-v3-reference-plate .ranked-v3-leaderboard-details-button { grid-column: 6; grid-row: auto; justify-self: center; padding: .32em .48em; color: #c9a874; background: transparent; font: 600 clamp(.46rem, .7vw, .74rem)/1 Georgia, serif; }
+  .ranked-v3-leaderboard-pager {
+    position: absolute;
+    left: 25%;
+    right: 25%;
+    bottom: 7.1%;
+    display: grid;
+    grid-template-columns: auto 1fr 1fr auto auto;
+    align-items: center;
+    gap: 1.5%;
+    color: #ba9b6d;
+    text-align: center;
+  }
+  .ranked-v3-leaderboard-pager p { margin: 0; font: 600 clamp(.44rem, .68vw, .73rem)/1 "Courier New", monospace; letter-spacing: .06em; }
+  .ranked-v3-leaderboard-page-control,
+  .ranked-v3-leaderboard-close,
+  .ranked-v3-inspect-back,
+  .ranked-v3-inspect-close { padding: .55em .85em; color: #e1c992; background: linear-gradient(180deg, #2c2721aa, #090908aa); border: 1px solid #79603e !important; font: 600 clamp(.44rem, .7vw, .76rem)/1 "Copperplate Gothic Light", Georgia, serif !important; letter-spacing: .08em; text-transform: uppercase; }
+
+  .ranked-v3-reference-plate--inspect .ranked-v3-inspect-header {
+    position: absolute;
+    top: 12.2%;
+    left: 14.3%;
+    right: 21.8%;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto auto auto;
+    align-items: end;
+    column-gap: 2.2%;
+  }
+  .ranked-v3-inspect-header p,
+  .ranked-v3-inspect-header h3 { margin: 0; }
+  .ranked-v3-inspect-rank { color: #c4a16c; font: 600 clamp(.55rem, .92vw, .96rem)/1 Georgia, serif; }
+  .ranked-v3-inspect-player { min-width: 0; overflow: hidden; color: #e7d9c2; text-overflow: ellipsis; white-space: nowrap; font: 600 clamp(1.2rem, 2.4vw, 2.7rem)/1 "Copperplate Gothic Light", Georgia, serif; }
+  .ranked-v3-inspect-score { color: var(--ranked-plate-gold); font: 600 clamp(.84rem, 1.7vw, 1.85rem)/1 Georgia, serif; }
+  .ranked-v3-inspect-depth,
+  .ranked-v3-inspect-gold { color: #c1a780; font: 600 clamp(.54rem, .88vw, .92rem)/1 "Courier New", monospace; letter-spacing: .09em; text-transform: uppercase; }
+  .ranked-v3-inspect-loadout { position: absolute; top: 31.5%; left: 14.7%; width: 47.5%; }
+  .ranked-v3-inspect-section-title { margin: 0 0 2.8%; color: #cfb17e; font: 600 clamp(.66rem, 1.05vw, 1.08rem)/1 "Copperplate Gothic Light", Georgia, serif; letter-spacing: .2em; text-align: center; text-transform: uppercase; }
+  .ranked-v3-inspect-equipment-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 2.4%; }
+  .ranked-v3-inspect-equipment-slot { min-width: 0; min-height: 0; aspect-ratio: 1 / 1.24; display: grid; grid-template-rows: 1fr auto; justify-items: center; gap: 4%; padding: 8%; text-align: center; }
+  .ranked-v3-inspect-equipment-slot[aria-hidden="true"] { opacity: 0; }
+  .ranked-v3-inspect-equipment-icon { width: 72%; max-height: 100%; object-fit: contain; filter: drop-shadow(0 5px 4px #000); }
+  .ranked-v3-inspect-equipment-fallback { display: grid; place-items: center; width: 55%; aspect-ratio: 1; color: #66573e; font-size: clamp(.7rem, 1.5vw, 1.55rem); }
+  .ranked-v3-inspect-equipment-label { display: grid; gap: .28em; min-width: 0; color: #d8c29a; font: 600 clamp(.42rem, .7vw, .75rem)/1.1 Georgia, serif; }
+  .ranked-v3-inspect-equipment-label strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .ranked-v3-inspect-equipment-label small { color: #9b815d; font: 600 .86em/1 "Courier New", monospace; }
+  .ranked-v3-inspect-chronicle { position: absolute; top: 30.2%; right: 13.6%; width: 25.2%; }
+  .ranked-v3-inspect-chronicle-rows { display: grid; gap: 0; border-top: 1px solid #67553c99; }
+  .ranked-v3-inspect-chronicle-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; min-height: clamp(1.4rem, 3.05vw, 3.15rem); border-bottom: 1px solid #67553c99; color: #d7c29e; font: 600 clamp(.5rem, .82vw, .86rem)/1 Georgia, serif; }
+  .ranked-v3-inspect-chronicle-label { padding-right: 8%; }
+  .ranked-v3-inspect-chronicle-value { color: #e6c681; text-align: right; }
+  .ranked-v3-inspect-mutators { max-width: 100%; padding: .32em .42em; color: #e6c681; background: transparent; font: inherit; text-align: right; }
+  .ranked-v3-inspect-terminal { position: absolute; right: 13.6%; bottom: 17.6%; width: 25.2%; min-height: 13%; display: grid; align-content: center; justify-items: center; gap: 10%; padding: 4%; text-align: center; }
+  .ranked-v3-inspect-terminal h3,
+  .ranked-v3-inspect-terminal p { margin: 0; }
+  .ranked-v3-inspect-terminal-title { color: #c56f5a; font: 600 clamp(.72rem, 1.16vw, 1.22rem)/1 "Copperplate Gothic Light", Georgia, serif; letter-spacing: .15em; text-transform: uppercase; }
+  .ranked-v3-inspect-terminal-cause { color: #c4a880; font: 600 clamp(.5rem, .78vw, .82rem)/1.25 Georgia, serif; }
+  .ranked-v3-inspect-actions { position: absolute; left: 31%; right: 31%; bottom: 7.4%; display: grid; grid-template-columns: 1fr auto; gap: 4%; align-items: center; }
+  .ranked-v3-inspect-back { min-height: 2.8em; }
+  .ranked-v3-inspect-close { min-height: 2.8em; }
+}
+
+@media (max-width: 760px) {
+  .ranked-v3-card-reference-plate { width: min(100%, 680px); max-height: none; padding: 18px; background: #080a0ee8; box-shadow: 0 18px 48px #000; }
+  .ranked-v3-reference-plate { aspect-ratio: auto; overflow: visible; }
+  .ranked-v3-reference-plate-art { display: none; }
+  .ranked-v3-reference-plate-overlay { position: static; display: grid; gap: 14px; }
+  .ranked-v3-leaderboard-heading,
+  .ranked-v3-inspect-header { display: grid; gap: 6px; text-align: center; }
+  .ranked-v3-leaderboard-display-title,
+  .ranked-v3-inspect-player { margin: 0; color: #e7d9c2; font-family: "Copperplate Gothic Light", Georgia, serif; }
+  .ranked-v3-leaderboard-podium,
+  .ranked-v3-inspect-equipment-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .ranked-v3-podium-slot,
+  .ranked-v3-ledger-slot,
+  .ranked-v3-inspect-equipment-slot,
+  .ranked-v3-inspect-chronicle-row { padding: 10px; border: 1px solid #51452f; background: #0d1015; }
+  .ranked-v3-leaderboard-ledger-rows,
+  .ranked-v3-inspect-chronicle-rows { display: grid; gap: 6px; }
+  .ranked-v3-leaderboard-columns { display: none; }
+  .ranked-v3-ledger-slot { display: grid; gap: 5px; }
+  .ranked-v3-ledger-slot[aria-hidden="true"] { display: none; }
+  .ranked-v3-inspect-equipment-slot[aria-hidden="true"] { min-height: 76px; }
+  .ranked-v3-inspect-equipment-label { display: grid; gap: 3px; text-align: center; }
+  .ranked-v3-inspect-equipment-icon { width: 56px; height: 56px; object-fit: contain; }
+  .ranked-v3-leaderboard-pager,
+  .ranked-v3-inspect-actions { display: grid; grid-template-columns: 1fr; gap: 8px; }
+  .ranked-v3-inspect-terminal { padding: 14px; border: 1px solid #67553c; text-align: center; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ranked-v3-reference-plate,
+  .ranked-v3-reference-plate * { animation: none !important; transition: none !important; }
+}

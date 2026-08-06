@@ -18,5 +18,7 @@ test("shared record archive styles cover podium, ledger, tooltip and accessibili
   assert.match(css, /\[data-record-tooltip\]:focus-visible/);
   assert.match(css, /@media \(max-width:/);
   assert.match(css, /prefers-reduced-motion/);
-  assert.match(rankedUi, /floor-skull\.png/);
+  assert.doesNotMatch(rankedUi, /floor-skull\.png/u);
+  assert.match(css, /\.record-archive-shell/u);
+  assert.match(css, /\.record-archive-detail-section/u);
 });

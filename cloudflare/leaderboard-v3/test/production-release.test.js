@@ -304,9 +304,11 @@ test("Pages release stays same-origin and disconnects all v2 bindings", async ()
   assert.match(runtime, /title: "Ranked \(Online\)"/u);
   assert.match(runtime, /title: "Ranked Leaderboard"/u);
   assert.match(runtime, /"Build Chronicle"/u);
-  assert.match(leaderboardUi, /record-archive-podium/u);
-  assert.match(leaderboardUi, /record-archive-relic-grid/u);
+  assert.match(leaderboardUi, /ranked-v3-reference-plate--leaderboard/u);
+  assert.match(leaderboardUi, /ranked-v3-reference-plate--inspect/u);
+  assert.match(leaderboardUi, /ranked-v3-reference-plate-art/u);
   assert.match(leaderboardUi, /data-record-tooltip/u);
+  assert.doesNotMatch(leaderboardUi, /floor-skull\.png/u);
   assert.match(runtime, /await resolveCheckpoint\(\);/u);
   assert.doesNotMatch(runtime, /Resolve checkpoint|server-issued opaque choice/u);
   assert.doesNotMatch(runtime, /ui\.(?:showMessage|showChoices)\("Ranked (?:run finalized|Camp)"|ui\.button\("(?:Open Camp|Finalize)"|`Ranked \$\{state\.status\}`/u);
