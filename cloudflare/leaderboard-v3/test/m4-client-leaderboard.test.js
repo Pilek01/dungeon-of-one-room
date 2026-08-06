@@ -114,11 +114,18 @@ test("M4 leaderboard rendering is text-safe and never uses innerHTML", () => {
     score: 5,
     outcome: "defeat"
   })];
-  const rendered = leaderboardUi.renderList(documentRef, rows, () => {});
+  const rendered = leaderboardUi.renderList(
+    documentRef,
+    leaderboardUi.createLeaderboardPresentation(rows, 1),
+    { onOpen() {}, onPage() {}, onClose() {} }
+  );
   const text = (node) => [node.textContent, ...(node.children || []).map(text)].join(" ");
   const visible = text(rendered);
-  assert.match(visible, /Champion.*Rank.*#1.*<img src=x onerror=alert\(1\)>.*Score.*5/su);
+  assert.match(visible, /Ranked Leaderboard.*#1.*<img src=x onerror=alert\(1\)>.*5 pts.*Page 1 \/ 1/su);
   const allNodes = (node) => [node, ...(node.children || []).flatMap(allNodes)];
+  const art = allNodes(rendered).filter((node) => String(node.className).split(/\s+/u).includes("ranked-v3-reference-plate-art"));
+  assert.equal(art.length, 1);
+  assert.equal(art[0].attributes.get("aria-hidden"), "true");
   assert.equal(allNodes(rendered).some((node) => "innerHTML" in node), false);
 });
 

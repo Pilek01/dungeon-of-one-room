@@ -66,41 +66,56 @@ function loadUi() {
   return require(modulePath);
 }
 
-test("Ranked ledger shows only the five requested facts and elevates top three", () => {
+test("Ranked leaderboard plate keeps Top 3 and renders seven interactive ledger slots", () => {
   const ui = loadUi();
   const documentRef = createDocument();
   const opened = [];
+  const pages = [];
+  const closed = [];
   const rows = ui.createLeaderboardViewModel({
-    entries: [
-      { runId: "run_aaaaaaaa", playerName: "Ada", score: 43060, depth: 19, gold: 8550, outcome: "defeat", durationMs: 80000 },
-      { runId: "run_bbbbbbbb", playerName: "Bryn", score: 30056, depth: 18, gold: 1778, outcome: "victory", durationMs: 90000 },
-      { runId: "run_cccccccc", playerName: "Cato", score: 29000, depth: 17, gold: 1200 },
-      { runId: "run_dddddddd", playerName: "Dara", score: 28000, depth: 16, gold: 1000 }
-    ]
+    entries: Array.from({ length: 17 }, (_, index) => ({
+      runId: `run_${String(index + 1).padStart(8, "0")}`,
+      playerName: index === 10 ? "<img src=x onerror=alert(1)>" : `Player ${index + 1}`,
+      score: 43_600 - index,
+      depth: 19 - index,
+      gold: 8_550 - index
+    }))
   }).rows;
-
-  const archive = ui.renderList(documentRef, rows, (runId) => opened.push(runId));
-  assert.equal(archive.className, "record-archive ranked-v3-record-archive ranked-v3-leaderboard-list");
+  const presentation = ui.createLeaderboardPresentation(rows, 2);
+  const plate = ui.renderList(documentRef, presentation, {
+    onOpen: (runId) => opened.push(runId),
+    onPage: (page) => pages.push(page),
+    onClose: () => closed.push(true)
+  });
   const hasClass = (node, className) => String(node.className).split(/\s+/u).includes(className);
-  assert.equal(visit(archive, (node) => hasClass(node, "record-archive-podium-card")).length, 3);
-  assert.equal(visit(archive, (node) => hasClass(node, "record-archive-ledger-row")).length, 1);
-  assert.equal(visit(archive, (node) => hasClass(node, "ranked-v3-leaderboard-row")).length, 4);
 
-  const facts = visit(archive, (node) => node.attributes.get("data-record-field"));
-  assert.deepEqual(
-    [...new Set(facts.map((node) => node.attributes.get("data-record-field")))].sort(),
-    ["depth", "gold", "name", "rank", "score"]
-  );
-  assert.doesNotMatch(allText(archive), /defeat|victory|80s|90s/iu);
+  assert.equal(hasClass(plate, "ranked-v3-reference-plate"), true);
+  assert.equal(hasClass(plate, "ranked-v3-reference-plate--leaderboard"), true);
+  assert.equal(hasClass(plate, "ranked-v3-leaderboard-list"), true);
+  const art = visit(plate, (node) => hasClass(node, "ranked-v3-reference-plate-art"));
+  assert.equal(art.length, 1);
+  assert.equal(art[0].attributes.get("aria-hidden"), "true");
+  assert.equal(visit(plate, (node) => hasClass(node, "ranked-v3-podium-slot")).length, 3);
+  assert.equal(visit(plate, (node) => hasClass(node, "ranked-v3-ledger-slot")).length, 7);
 
-  const adaControls = visit(archive, (node) => node.tagName === "button" && node.textContent === "Ada");
-  const inspectControls = visit(archive, (node) => node.tagName === "button" && node.textContent === "Inspect build");
-  assert.equal(adaControls.length, 1);
-  assert.equal(inspectControls.length, 4);
-  adaControls[0].click();
-  assert.deepEqual(opened, ["run_aaaaaaaa"]);
+  const playerEleven = visit(plate, (node) => node.tagName === "button" && node.textContent === "<img src=x onerror=alert(1)>");
+  assert.equal(playerEleven.length, 1);
+  playerEleven[0].click();
+  assert.deepEqual(opened, ["run_00000011"]);
+  assert.match(allText(plate), /Page 2 \/ 2.*Ranks 11-17/isu);
+  assert.doesNotMatch(allText(plate), /defeat|victory|duration/iu);
+
+  const previous = visit(plate, (node) => node.tagName === "button" && node.textContent === "Previous page");
+  const next = visit(plate, (node) => node.tagName === "button" && node.textContent === "Next page");
+  const close = visit(plate, (node) => node.tagName === "button" && node.textContent === "Close");
+  assert.equal(previous.length, 1);
+  assert.equal(next.length, 1);
+  assert.equal(next[0].disabled, true);
+  previous[0].click();
+  close[0].click();
+  assert.deepEqual(pages, [1]);
+  assert.deepEqual(closed, [true]);
 });
-
 test("Ranked presentation keeps the Top 3 while paging ranks 4 through 73", () => {
   const ui = loadUi();
   const entries = Array.from({ length: 73 }, (_, index) => ({

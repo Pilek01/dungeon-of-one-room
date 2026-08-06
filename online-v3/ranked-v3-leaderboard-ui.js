@@ -5,7 +5,7 @@
   if (typeof module === "object" && module.exports) module.exports = api;
 })(typeof globalThis === "object" ? globalThis : null, function leaderboardUi(root) {
   "use strict";
-  const SELECTORS = Object.freeze({ archive: "ranked-v3-record-archive", list: "ranked-v3-leaderboard-list", row: "ranked-v3-leaderboard-row", detailsButton: "ranked-v3-leaderboard-details-button", detail: "ranked-v3-leaderboard-detail", build: "ranked-v3-leaderboard-build" });
+  const SELECTORS = Object.freeze({ archive: "ranked-v3-record-archive", list: "ranked-v3-leaderboard-list", row: "ranked-v3-leaderboard-row", detailsButton: "ranked-v3-leaderboard-details-button", detail: "ranked-v3-leaderboard-detail", build: "ranked-v3-leaderboard-build", plate: "ranked-v3-reference-plate", leaderboardPlate: "ranked-v3-reference-plate--leaderboard", art: "ranked-v3-reference-plate-art", overlay: "ranked-v3-reference-plate-overlay", podiumSlot: "ranked-v3-podium-slot", ledgerSlot: "ranked-v3-ledger-slot" });
   const MAX_ROWS = 73;
   const PODIUM_SIZE = 3;
   const LEDGER_ROWS_PER_PAGE = 7;
@@ -44,7 +44,88 @@
   function name(documentRef, row, open) { const node = element(documentRef, "button", "record-archive-name", row.playerName); node.type = "button"; node.setAttribute("data-record-field", "name"); node.addEventListener("click", () => open(row.runId), { once: true }); return node; }
   function inspect(documentRef, row, open) { const node = element(documentRef, "button", SELECTORS.detailsButton, "Inspect build"); node.type = "button"; node.addEventListener("click", () => open(row.runId), { once: true }); return node; }
   function facts(documentRef, row, open) { return [fact(documentRef, "rank", "Rank", `#${row.rank}`), name(documentRef, row, open), fact(documentRef, "score", "Score", row.score), fact(documentRef, "depth", "Depth", row.depth), fact(documentRef, "gold", "Gold", row.gold)]; }
-  function renderList(documentRef, rows, open) { const rootNode = element(documentRef, "div", `record-archive ${SELECTORS.archive} ${SELECTORS.list}`); const source = Array.isArray(rows) ? rows : []; const podium = element(documentRef, "section", "record-archive-podium"); const ledger = element(documentRef, "section", "record-archive-ledger"); for (const row of source) { const top = row.rank <= 3; const card = element(documentRef, "article", SELECTORS.row + " " + (top ? "record-archive-podium-card" : "record-archive-ledger-row")); if (top) card.setAttribute("data-record-rank", String(row.rank)); if (top) { const skull = element(documentRef, "img", `record-archive-skull record-archive-skull-rank-${row.rank}`); skull.src = "assets/hd/environment/descent/floor-skull.png"; skull.alt = `Rank ${row.rank} skull`; card.append(skull, element(documentRef, "p", "record-archive-podium-title", row.rank === 1 ? "Champion" : `Rank ${row.rank}`)); } card.append(...facts(documentRef, row, open), inspect(documentRef, row, open)); (top ? podium : ledger).append(card); } if (podium.children.length) rootNode.append(podium); if (ledger.children.length) rootNode.append(ledger); return rootNode; }
+  function listHandlers(value) {
+    if (typeof value === "function") return { onOpen: value, onPage: () => {}, onClose: () => {} };
+    const source = value && typeof value === "object" ? value : {};
+    return {
+      onOpen: typeof source.onOpen === "function" ? source.onOpen : () => {},
+      onPage: typeof source.onPage === "function" ? source.onPage : () => {},
+      onClose: typeof source.onClose === "function" ? source.onClose : () => {}
+    };
+  }
+
+  function control(documentRef, className, value, handler, disabled = false) {
+    const node = element(documentRef, "button", className, value);
+    node.type = "button";
+    node.disabled = Boolean(disabled);
+    if (!node.disabled) node.addEventListener("click", handler, { once: true });
+    return node;
+  }
+
+  function leaderboardSlot(documentRef, row, slotClass, open) {
+    const slot = element(documentRef, "article", `${slotClass} ${SELECTORS.row}`);
+    if (!row) {
+      slot.setAttribute("aria-hidden", "true");
+      return slot;
+    }
+    slot.setAttribute("data-record-rank", String(row.rank));
+    const identity = element(documentRef, "div", "ranked-v3-leaderboard-slot-identity");
+    identity.append(
+      element(documentRef, "span", "ranked-v3-leaderboard-rank", `#${row.rank}`),
+      name(documentRef, row, open)
+    );
+    slot.append(
+      identity,
+      element(documentRef, "span", "ranked-v3-leaderboard-score", `${row.score} pts`),
+      element(documentRef, "span", "ranked-v3-leaderboard-depth", `Depth ${row.depth}`),
+      element(documentRef, "span", "ranked-v3-leaderboard-gold", `Gold ${row.gold}`),
+      inspect(documentRef, row, open)
+    );
+    return slot;
+  }
+
+  function renderList(documentRef, presentationInput, handlerInput) {
+    const presentation = presentationInput && !Array.isArray(presentationInput) && Array.isArray(presentationInput.podium) && Array.isArray(presentationInput.ledger)
+      ? presentationInput
+      : createLeaderboardPresentation(Array.isArray(presentationInput) ? presentationInput : [], 1);
+    const handlers = listHandlers(handlerInput);
+    const rootNode = element(documentRef, "section", `${SELECTORS.plate} ${SELECTORS.leaderboardPlate} ${SELECTORS.list}`);
+    rootNode.append(element(documentRef, "h2", "ranked-v3-reference-plate-title", "Ranked Leaderboard"));
+    const art = element(documentRef, "div", SELECTORS.art);
+    art.setAttribute("aria-hidden", "true");
+    const overlay = element(documentRef, "div", SELECTORS.overlay + " ranked-v3-leaderboard-overlay");
+    const heading = element(documentRef, "header", "ranked-v3-leaderboard-heading");
+    heading.append(
+      element(documentRef, "p", "ranked-v3-leaderboard-kicker", "Ranked Descent"),
+      element(documentRef, "p", "ranked-v3-leaderboard-display-title", "Ranked Leaderboard"),
+      element(documentRef, "p", "ranked-v3-leaderboard-season", "Current Season")
+    );
+    const podium = element(documentRef, "section", "ranked-v3-leaderboard-podium");
+    for (let rank = 1; rank <= PODIUM_SIZE; rank += 1) {
+      const row = presentation.podium.find((candidate) => candidate.rank === rank) || null;
+      podium.append(leaderboardSlot(documentRef, row, SELECTORS.podiumSlot, handlers.onOpen));
+    }
+    const ledger = element(documentRef, "section", "ranked-v3-leaderboard-ledger");
+    const columnHeadings = element(documentRef, "div", "ranked-v3-leaderboard-columns");
+    for (const label of ["Rank", "Name", "Score", "Depth", "Gold", "Build"]) columnHeadings.append(element(documentRef, "span", "ranked-v3-leaderboard-column", label));
+    const ledgerRows = element(documentRef, "div", "ranked-v3-leaderboard-ledger-rows");
+    for (let index = 0; index < LEDGER_ROWS_PER_PAGE; index += 1) {
+      ledgerRows.append(leaderboardSlot(documentRef, presentation.ledger[index] || null, SELECTORS.ledgerSlot, handlers.onOpen));
+    }
+    ledger.append(columnHeadings, ledgerRows);
+    const pager = element(documentRef, "nav", "ranked-v3-leaderboard-pager");
+    pager.setAttribute("aria-label", "Leaderboard pages");
+    pager.append(
+      control(documentRef, "ranked-v3-leaderboard-page-control", "Previous page", () => handlers.onPage(presentation.page - 1), !presentation.canGoPrevious),
+      element(documentRef, "p", "ranked-v3-leaderboard-page-label", presentation.pageLabel),
+      element(documentRef, "p", "ranked-v3-leaderboard-range-label", presentation.rangeLabel),
+      control(documentRef, "ranked-v3-leaderboard-page-control", "Next page", () => handlers.onPage(presentation.page + 1), !presentation.canGoNext),
+      control(documentRef, "ranked-v3-leaderboard-close", "Close", handlers.onClose)
+    );
+    overlay.append(heading, podium, ledger, pager);
+    rootNode.append(art, overlay);
+    return rootNode;
+  }
   function section(documentRef, rootNode, title, values) {
     const block = element(documentRef, "section", SELECTORS.build + " record-archive-build-section record-archive-detail-section");
     block.append(element(documentRef, "h3", "record-archive-section-title", title));
