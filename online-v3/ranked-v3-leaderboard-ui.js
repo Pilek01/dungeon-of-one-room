@@ -6,6 +6,10 @@
 })(typeof globalThis === "object" ? globalThis : null, function leaderboardUi(root) {
   "use strict";
   const SELECTORS = Object.freeze({ archive: "ranked-v3-record-archive", list: "ranked-v3-leaderboard-list", row: "ranked-v3-leaderboard-row", detailsButton: "ranked-v3-leaderboard-details-button", detail: "ranked-v3-leaderboard-detail", build: "ranked-v3-leaderboard-build" });
+  const MAX_ROWS = 73;
+  const PODIUM_SIZE = 3;
+  const LEDGER_ROWS_PER_PAGE = 7;
+  const MAX_LEDGER_PAGES = 10;
   const integer = (value) => Math.max(0, Math.floor(Number(value) || 0));
   const humanize = (value) => String(value || "").replace(/[_-]+/gu, " ").replace(/\b\w/gu, (letter) => letter.toUpperCase()) || "None";
   const duration = (value) => { const seconds = Math.floor(integer(value) / 1000); return seconds >= 60 ? `${Math.floor(seconds / 60)}m ${String(seconds % 60).padStart(2, "0")}s` : `${seconds}s`; };
@@ -13,7 +17,28 @@
   const relicName = (id) => String(root?.DungeonRelicData?.RELICS?.find((relic) => relic.id === id)?.name || humanize(id));
   const normalizeBuild = (value) => { const build = value && typeof value === "object" ? value : {}; return { relics: Array.isArray(build.relics) ? build.relics.map((relic) => ({ relicId: String(relic?.relicId || relic?.id || ""), stacks: Math.max(1, integer(relic?.stacks)) })).filter((relic) => relic.relicId) : [], pacts: Array.isArray(build.pacts) ? build.pacts.filter((id) => typeof id === "string") : [], skillTiers: build.skillTiers && typeof build.skillTiers === "object" ? { ...build.skillTiers } : {}, campUpgrades: build.campUpgrades && typeof build.campUpgrades === "object" ? { ...build.campUpgrades } : {}, elixirs: Array.isArray(build.elixirs) ? build.elixirs.map((item) => ({ ...item })) : [], runModifiers: Array.isArray(build.runModifiers?.active) ? build.runModifiers.active.map((item) => ({ ...item })) : [] }; };
   const toLeaderboardRow = (entry, index = 0) => Object.freeze({ runId: String(entry?.runId || ""), rank: Math.max(1, integer(entry?.rank) || index + 1), playerName: String(entry?.playerName || "Anonymous"), score: integer(entry?.score), depth: integer(entry?.depth), gold: integer(entry?.gold), durationMs: integer(entry?.durationMs), outcome: String(entry?.outcome || ""), verificationLevel: String(entry?.verificationLevel || ""), createdAt: integer(entry?.createdAt) });
-  const createLeaderboardViewModel = (payload = {}, rankOffset = 0) => Object.freeze({ season: String(payload.season || ""), status: String(payload.status || "ready"), cursor: typeof payload.cursor === "string" && payload.cursor ? payload.cursor : null, rows: Object.freeze((Array.isArray(payload.entries) ? payload.entries : []).slice(0, 20).map((entry, index) => toLeaderboardRow(entry, rankOffset + index))) });
+  const createLeaderboardViewModel = (payload = {}, rankOffset = 0) => Object.freeze({ season: String(payload.season || ""), status: String(payload.status || "ready"), cursor: typeof payload.cursor === "string" && payload.cursor ? payload.cursor : null, rows: Object.freeze((Array.isArray(payload.entries) ? payload.entries : []).slice(0, MAX_ROWS).map((entry, index) => toLeaderboardRow(entry, rankOffset + index))) });
+  const createLeaderboardPresentation = (rows = [], requestedPage = 1) => {
+    const source = (Array.isArray(rows) ? rows : []).slice(0, MAX_ROWS);
+    const podium = source.slice(0, PODIUM_SIZE);
+    const ledgerSource = source.slice(PODIUM_SIZE);
+    const pageCount = Math.min(MAX_LEDGER_PAGES, Math.max(1, Math.ceil(ledgerSource.length / LEDGER_ROWS_PER_PAGE)));
+    const page = Math.min(pageCount, Math.max(1, integer(requestedPage) || 1));
+    const offset = (page - 1) * LEDGER_ROWS_PER_PAGE;
+    const ledger = ledgerSource.slice(offset, offset + LEDGER_ROWS_PER_PAGE);
+    const firstRank = ledger[0]?.rank || 0;
+    const lastRank = ledger.at(-1)?.rank || 0;
+    return Object.freeze({
+      podium: Object.freeze(podium),
+      ledger: Object.freeze(ledger),
+      page,
+      pageCount,
+      pageLabel: `Page ${page} / ${pageCount}`,
+      rangeLabel: ledger.length ? `Ranks ${firstRank}-${lastRank}` : "No ranked entries",
+      canGoPrevious: page > 1,
+      canGoNext: page < pageCount
+    });
+  };
   const createDetailViewModel = (payload = {}) => { const entry = payload.entry && typeof payload.entry === "object" ? payload.entry : {}; return Object.freeze({ ...toLeaderboardRow(entry), season: String(entry.season || ""), build: Object.freeze(normalizeBuild(entry.build)), summary: Object.freeze(entry.summary && typeof entry.summary === "object" ? { ...entry.summary } : {}) }); };
   function fact(documentRef, field, label, value) { const node = element(documentRef, "div", "record-archive-fact"); node.setAttribute("data-record-field", field); node.append(element(documentRef, "span", "record-archive-fact-label", label), element(documentRef, "strong", "record-archive-fact-value", value)); return node; }
   function name(documentRef, row, open) { const node = element(documentRef, "button", "record-archive-name", row.playerName); node.type = "button"; node.setAttribute("data-record-field", "name"); node.addEventListener("click", () => open(row.runId), { once: true }); return node; }
@@ -126,5 +151,5 @@
     summaryStats(documentRef, rootNode, summary);
     return rootNode;
   }
-  return Object.freeze({ SELECTORS, normalizeBuild, toLeaderboardRow, createLeaderboardViewModel, createDetailViewModel, renderList, renderDetail });
+  return Object.freeze({ SELECTORS, normalizeBuild, toLeaderboardRow, createLeaderboardViewModel, createLeaderboardPresentation, createDetailViewModel, renderList, renderDetail });
 });

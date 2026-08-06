@@ -101,6 +101,32 @@ test("Ranked ledger shows only the five requested facts and elevates top three",
   assert.deepEqual(opened, ["run_aaaaaaaa"]);
 });
 
+test("Ranked presentation keeps the Top 3 while paging ranks 4 through 73", () => {
+  const ui = loadUi();
+  const entries = Array.from({ length: 73 }, (_, index) => ({
+    runId: `run_${String(index + 1).padStart(8, "0")}`,
+    playerName: `Player ${index + 1}`,
+    score: 100_000 - index,
+    depth: 73 - index,
+    gold: index * 10
+  }));
+  const rows = ui.createLeaderboardViewModel({ entries }).rows;
+
+  const pageTwo = ui.createLeaderboardPresentation(rows, 2);
+  assert.deepEqual(pageTwo.podium.map((row) => row.rank), [1, 2, 3]);
+  assert.deepEqual(pageTwo.ledger.map((row) => row.rank), [11, 12, 13, 14, 15, 16, 17]);
+  assert.equal(pageTwo.page, 2);
+  assert.equal(pageTwo.pageCount, 10);
+  assert.equal(pageTwo.pageLabel, "Page 2 / 10");
+  assert.equal(pageTwo.rangeLabel, "Ranks 11-17");
+  assert.equal(pageTwo.canGoPrevious, true);
+  assert.equal(pageTwo.canGoNext, true);
+
+  const finalPage = ui.createLeaderboardPresentation(rows, 99);
+  assert.equal(finalPage.page, 10);
+  assert.deepEqual(finalPage.ledger.map((row) => row.rank), [67, 68, 69, 70, 71, 72, 73]);
+  assert.equal(finalPage.canGoNext, false);
+});
 test("Build Chronicle exposes exact active mutators through a focusable tooltip", () => {
   const ui = loadUi();
   const documentRef = createDocument();
