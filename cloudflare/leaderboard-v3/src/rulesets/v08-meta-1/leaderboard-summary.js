@@ -65,6 +65,15 @@ function publicRelics(build) {
   }));
 }
 
+function terminalDefeatPresentationCause(state, outcome) {
+  if (outcome !== "defeat") return null;
+  const receipt = Array.isArray(state?.lifeLedger?.history)
+    ? state.lifeLedger.history.slice().reverse().find((entry) => entry?.resolution === "terminal_defeat")
+    : null;
+  const cause = receipt?.presentationCause;
+  return typeof cause === "string" && cause ? cause : null;
+}
+
 export function buildFinalProjectionsV08(state, final) {
   const outcome = requireOutcome(final?.outcome);
   const score = final?.scoreProjection;
@@ -90,6 +99,7 @@ export function buildFinalProjectionsV08(state, final) {
     buildDigest: state.build.buildDigest
   };
   const goldEarned = score.inputs.acceptedRunGoldEarned;
+  const presentationCause = terminalDefeatPresentationCause(state, outcome);
   const summary = {
     outcome,
     finalDepth: score.inputs.acceptedMaxDepth,
@@ -117,7 +127,8 @@ export function buildFinalProjectionsV08(state, final) {
     metaTransactionsCompleted: state.metaTransactionReceipts.length,
     rulesetId: state.rulesetId,
     rulesetHash: state.rulesetHash,
-    verificationLevel: VERIFICATION_LEVEL
+    verificationLevel: VERIFICATION_LEVEL,
+    ...(presentationCause ? { presentationCause } : {})
   };
   return {
     build,

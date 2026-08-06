@@ -78,7 +78,12 @@ function createRealHarness(options = {}) {
     return { response, payload: await response.json() };
   }
 
-  async function terminalDefeat(prefix = "m3") {
+  async function get(path) {
+    const response = await worker.fetch(new Request(`https://m3.invalid${path}`), env);
+    return { response, payload: await response.json() };
+  }
+
+  async function terminalDefeat(prefix = "m3", presentationCause = "") {
     const started = (await call("/api/v3/runs/start", {
       playerName: "M3Runtime",
       season: "m3-season",
@@ -97,7 +102,7 @@ function createRealHarness(options = {}) {
       offerId: started.metaState.startingRelicOffer.offerId,
       choiceId: started.metaState.startingRelicOffer.publicChoices[0].choiceId
     }, `${prefix}-select`)).payload;
-    for (let index = 0; index < 8 && session.metaState.status === "active"; index += 1) {
+    for (let index = 0; index < 8 && session?.metaState?.status === "active"; index += 1) {
       const directive = session.metaState.currentRoomDirective;
       session = (await call("/api/v3/runs/event", {
         runId: session.runId,
@@ -105,8 +110,11 @@ function createRealHarness(options = {}) {
         roomDirectiveId: directive.directiveId,
         roomNonce: directive.roomNonce,
         type: "report_fatal_event",
-        payload: { classification: "local_fatal_event" }
+        payload: { classification: "local_fatal_event", ...(presentationCause ? { presentationCause } : {}) }
       }, `${prefix}-fatal-${index}`)).payload;
+    }
+    if (!session?.metaState) {
+      throw new TypeError(`TERMINAL_DEFEAT_FAILED:${String(session?.error?.code || "UNKNOWN")}`);
     }
     assert.equal(session.metaState.status, "defeat");
     assert.equal(decodeBoundaryToken(session.checkpointToken).payload.boundaryKind, "run_terminal");
@@ -116,6 +124,7 @@ function createRealHarness(options = {}) {
   return {
     repositories,
     call,
+    get,
     terminalDefeat,
     advance(ms) {
       now += ms;
@@ -151,6 +160,32 @@ test("M3 finalization golden corpus has 12 exact terminal cases", () => {
   }
 });
 
+test("terminal defeat summary projects only the stored presentation cause", () => {
+  const defeat = terminalState({ status: "defeat", depth: 12, gold: 34 });
+  defeat.lifeLedger.history.push({ resolution: "terminal_defeat", presentationCause: "Defeated by The Hollow Seraph" });
+  const caused = finalizeRunV08(defeat, { finalizedAt: STARTED_AT + 1000 });
+  assert.equal(caused.nextState.finalization.summary.presentationCause, "Defeated by The Hollow Seraph");
+  const legacy = terminalState({ status: "defeat", depth: 12, gold: 34 });
+  const legacyResult = finalizeRunV08(legacy, { finalizedAt: STARTED_AT + 1000 });
+  assert.equal(Object.hasOwn(legacyResult.nextState.finalization.summary, "presentationCause"), false);
+  const victory = terminalState({ status: "victory", depth: 100, gold: 34 });
+  victory.lifeLedger.history.push({ resolution: "terminal_defeat", presentationCause: "Must not surface" });
+  const victoryResult = finalizeRunV08(victory, { finalizedAt: STARTED_AT + 1000 });
+  assert.equal(Object.hasOwn(victoryResult.nextState.finalization.summary, "presentationCause"), false);
+});
+
+test("detail endpoint returns the finalized display-only defeat cause without a schema field", async () => {
+  const harness = createRealHarness();
+  const terminal = await harness.terminalDefeat("presentation", "Defeated by The Hollow Seraph");
+  const finalized = await harness.call("/api/v3/runs/finalize", {
+    runId: terminal.runId,
+    checkpointToken: terminal.checkpointToken
+  }, "presentation-finalize");
+  assert.equal(finalized.response.status, 200);
+  const detail = await harness.get(`/api/v3/leaderboard/${terminal.runId}`);
+  assert.equal(detail.response.status, 200);
+  assert.equal(detail.payload.entry.summary.presentationCause, "Defeated by The Hollow Seraph");
+});
 test("HTTP finalization is terminal-token-bound, server-derived and exactly retryable", async () => {
   const harness = createRealHarness();
   const terminal = await harness.terminalDefeat("exact");

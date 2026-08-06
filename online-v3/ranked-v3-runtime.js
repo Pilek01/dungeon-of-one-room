@@ -36,6 +36,14 @@
   let observerBotAutomationHalted = false;
   const recoveryStore = root.DungeonRankedV3Storage.createStore(root.localStorage);
 
+  function normalizePresentationCause(value) {
+    if (typeof value !== "string") return "";
+    return value
+      .replace(/[\u0000-\u001f\u007f]/gu, " ")
+      .replace(/\s+/gu, " ")
+      .trim()
+      .slice(0, 160);
+  }
   function publicName() {
     return String(root.localStorage.getItem("dungeonOneRoomPlayerName") || "Anonymous").slice(0, 18);
   }
@@ -1143,6 +1151,8 @@
       const previousDirectiveId = previousState?.currentRoomDirective?.directiveId || null;
       const fatalPayload = { classification: "local_fatal_event" };
       if (pendingElixirUsage && pendingElixirUsage.count > 0) fatalPayload.elixirUsage = { ...pendingElixirUsage };
+      const presentationCause = normalizePresentationCause(context?.reason);
+      if (presentationCause) fatalPayload.presentationCause = presentationCause;
       const response = await createClient().event("report_fatal_event", fatalPayload);
       pendingElixirUsage = null;
       const state = response.metaState;
