@@ -12,7 +12,7 @@
   const MAX_LEDGER_PAGES = 10;
   const integer = (value) => Math.max(0, Math.floor(Number(value) || 0));
   const humanize = (value) => String(value || "").replace(/[_-]+/gu, " ").replace(/\b\w/gu, (letter) => letter.toUpperCase()) || "None";
-  const duration = (value) => { const seconds = Math.floor(integer(value) / 1000); return seconds >= 60 ? `${Math.floor(seconds / 60)}m ${String(seconds % 60).padStart(2, "0")}s` : `${seconds}s`; };
+  const duration = (value) => { const seconds = Math.floor(integer(value) / 1000); const hours = Math.floor(seconds / 3600); const minutes = Math.floor((seconds % 3600) / 60); return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(seconds % 60).padStart(2, "0")}`; };
   const element = (documentRef, tag, className, value = "") => { const node = documentRef.createElement(tag); node.className = className; node.textContent = String(value); return node; };
   const relicName = (id) => String(root?.DungeonRelicData?.RELICS?.find((relic) => relic.id === id)?.name || humanize(id));
   const normalizeBuild = (value) => { const build = value && typeof value === "object" ? value : {}; return { relics: Array.isArray(build.relics) ? build.relics.map((relic) => ({ relicId: String(relic?.relicId || relic?.id || ""), stacks: Math.max(1, integer(relic?.stacks)) })).filter((relic) => relic.relicId) : [], pacts: Array.isArray(build.pacts) ? build.pacts.filter((id) => typeof id === "string") : [], skillTiers: build.skillTiers && typeof build.skillTiers === "object" ? { ...build.skillTiers } : {}, campUpgrades: build.campUpgrades && typeof build.campUpgrades === "object" ? { ...build.campUpgrades } : {}, elixirs: Array.isArray(build.elixirs) ? build.elixirs.map((item) => ({ ...item })) : [], runModifiers: Array.isArray(build.runModifiers?.active) ? build.runModifiers.active.map((item) => ({ ...item })) : [] }; };
@@ -40,10 +40,8 @@
     });
   };
   const createDetailViewModel = (payload = {}) => { const entry = payload.entry && typeof payload.entry === "object" ? payload.entry : {}; return Object.freeze({ ...toLeaderboardRow(entry), season: String(entry.season || ""), build: Object.freeze(normalizeBuild(entry.build)), summary: Object.freeze(entry.summary && typeof entry.summary === "object" ? { ...entry.summary } : {}) }); };
-  function fact(documentRef, field, label, value) { const node = element(documentRef, "div", "record-archive-fact"); node.setAttribute("data-record-field", field); node.append(element(documentRef, "span", "record-archive-fact-label", label), element(documentRef, "strong", "record-archive-fact-value", value)); return node; }
   function name(documentRef, row, open) { const node = element(documentRef, "button", "record-archive-name", row.playerName); node.type = "button"; node.setAttribute("data-record-field", "name"); node.addEventListener("click", () => open(row.runId), { once: true }); return node; }
   function inspect(documentRef, row, open) { const node = element(documentRef, "button", SELECTORS.detailsButton, "Inspect build"); node.type = "button"; node.addEventListener("click", () => open(row.runId), { once: true }); return node; }
-  function facts(documentRef, row, open) { return [fact(documentRef, "rank", "Rank", `#${row.rank}`), name(documentRef, row, open), fact(documentRef, "score", "Score", row.score), fact(documentRef, "depth", "Depth", row.depth), fact(documentRef, "gold", "Gold", row.gold)]; }
   function listHandlers(value) {
     if (typeof value === "function") return { onOpen: value, onPage: () => {}, onClose: () => {} };
     const source = value && typeof value === "object" ? value : {};
@@ -126,110 +124,114 @@
     rootNode.append(art, overlay);
     return rootNode;
   }
-  function section(documentRef, rootNode, title, values) {
-    const block = element(documentRef, "section", SELECTORS.build + " record-archive-build-section record-archive-detail-section");
-    block.append(element(documentRef, "h3", "record-archive-section-title", title));
-    const list = element(documentRef, "ul", "record-archive-build-list");
-    for (const value of values.length ? values : ["None recorded"]) list.append(element(documentRef, "li", "", value));
-    block.append(list);
-    rootNode.append(block);
+  function grouped(value) { return integer(value).toLocaleString("en-US"); }
+
+  function inspectHandlers(value) {
+    const source = value && typeof value === "object" ? value : {};
+    return {
+      onBack: typeof source.onBack === "function" ? source.onBack : () => {},
+      onClose: typeof source.onClose === "function" ? source.onClose : () => {}
+    };
   }
 
-  function relicBuild(documentRef, rootNode, relics) {
-    const block = element(documentRef, "section", SELECTORS.build + " record-archive-build-section record-archive-detail-section");
-    block.append(element(documentRef, "h3", "record-archive-section-title", "Relic Build"));
-    const grid = element(documentRef, "div", "record-archive-relic-grid");
-    for (const relic of relics.length ? relics : [{ relicId: "", stacks: 0 }]) {
-      if (!relic.relicId) {
-        grid.append(element(documentRef, "p", "record-archive-empty", "No relics recorded."));
-        continue;
-      }
-      const definition = root?.DungeonRelicData?.RELICS?.find((item) => item.id === relic.relicId);
-      const card = element(documentRef, "div", "record-archive-relic");
-      const iconSrc = String(definition?.icon || definition?.iconSrc || "");
-      if (iconSrc) {
-        const icon = element(documentRef, "img", "record-archive-relic-icon");
-        icon.src = iconSrc;
-        icon.alt = "";
-        card.append(icon);
-      } else {
-        card.append(element(documentRef, "span", "record-archive-relic-fallback", "?"));
-      }
-      const label = element(documentRef, "span", "");
-      label.append(
-        element(documentRef, "strong", "", relicName(relic.relicId)),
-        element(documentRef, "small", "", relic.stacks > 1 ? "Stack x" + relic.stacks : "Carried")
-      );
-      card.append(label);
-      grid.append(card);
+  function equipmentSlot(documentRef, relic, index) {
+    const slot = element(documentRef, "article", "ranked-v3-inspect-equipment-slot");
+    if (!relic) {
+      slot.setAttribute("aria-hidden", "true");
+      return slot;
     }
-    block.append(grid);
-    rootNode.append(block);
+    slot.setAttribute("data-relic-index", String(index));
+    const definition = root?.DungeonRelicData?.RELICS?.find((item) => item.id === relic.relicId);
+    const iconSrc = String(definition?.icon || definition?.iconSrc || "");
+    if (iconSrc) {
+      const icon = element(documentRef, "img", "ranked-v3-inspect-equipment-icon");
+      icon.src = iconSrc;
+      icon.alt = "";
+      slot.append(icon);
+    } else {
+      slot.append(element(documentRef, "span", "ranked-v3-inspect-equipment-fallback", "?"));
+    }
+    const label = element(documentRef, "span", "ranked-v3-inspect-equipment-label");
+    label.append(
+      element(documentRef, "strong", "", relicName(relic.relicId)),
+      element(documentRef, "small", "", relic.stacks > 1 ? `Stack x${relic.stacks}` : "Carried")
+    );
+    slot.append(label);
+    return slot;
   }
 
-  function summaryStats(documentRef, rootNode, summary) {
-    const values = [
-      ["Damage Done", summary.damageDone],
-      ["Damage Taken", summary.damageTaken],
-      ["Total Kills", summary.totalKills],
-      ["Elite Kills", summary.eliteKills],
-      ["Potions Used", summary.potionsUsed],
-      ["Elixirs Used", summary.elixirsUsed],
-      ["Gold Collected", summary.totalGoldCollected],
-      ["Deaths", summary.deaths]
-    ];
-    const block = element(documentRef, "section", SELECTORS.build + " record-archive-build-section record-archive-detail-section");
-    block.append(element(documentRef, "h3", "record-archive-section-title", "Final Chronicle"));
-    const grid = element(documentRef, "div", "record-archive-stat-grid");
-    for (const [label, value] of values) grid.append(fact(documentRef, humanize(label).toLowerCase().replace(/\s+/gu, "-"), label, integer(value)));
-    block.append(grid);
-    rootNode.append(block);
-  }
-
-  function renderDetail(documentRef, detail) {
-    const rootNode = element(documentRef, "div", "record-archive " + SELECTORS.archive + " " + SELECTORS.detail + " record-archive-chronicle-page record-archive-detail");
-    const header = element(documentRef, "header", "record-archive-header record-archive-detail-header");
-    const identity = element(documentRef, "div", "");
-    identity.append(
-      element(documentRef, "p", "record-archive-kicker", "Build Chronicle | Rank #" + detail.rank),
-      element(documentRef, "h3", "record-archive-player", detail.playerName),
-      element(documentRef, "small", "", detail.runId ? "Run " + detail.runId : "")
-    );
-    header.append(identity, element(documentRef, "p", "record-archive-score", detail.score + " pts"));
-
-    const chronicle = element(documentRef, "section", "record-archive-chronicle record-archive-detail-section");
-    chronicle.append(element(documentRef, "h3", "record-archive-section-title", "Run Chronicle"));
-    const summary = detail.summary || {};
-    const metrics = element(documentRef, "div", "record-archive-chronicle-facts record-archive-detail-metrics");
-    metrics.append(
-      fact(documentRef, "time-played", "Time Played", duration(detail.durationMs || summary.durationMs)),
-      fact(documentRef, "rooms-cleared", "Rooms Cleared", integer(summary.roomsCompleted)),
-      fact(documentRef, "bosses-defeated", "Bosses Defeated", integer(summary.bossesCompleted)),
-      fact(documentRef, "depth", "Highest Depth", detail.depth),
-      fact(documentRef, "gold", "Gold Earned", detail.gold),
-      fact(documentRef, "score", "Final Score", detail.score)
-    );
-    const active = detail.build.runModifiers || [];
-    const tooltip = active.map((modifier) => {
+  function mutatorTooltip(active) {
+    if (!Array.isArray(active) || !active.length) return "No mutators used";
+    return active.map((modifier) => {
       const id = String(modifier?.modifierId || modifier?.id || "");
       const found = root?.DungeonMutatorData?.MUTATORS?.find((item) => item.id === id);
-      return [found?.key ? "[" + found.key + "]" : "", found?.name || humanize(id), found?.bonus, found?.drawback].filter(Boolean).join(" ");
-    }).join(" | ") || "No mutators were active in this run.";
-    const mutators = element(documentRef, "div", "record-archive-mutators", active.length ? "Mutators " + active.length : "No mutators used");
+      return [found?.key ? `[${found.key}]` : "", found?.name || humanize(id), found?.bonus, found?.drawback].filter(Boolean).join(" ");
+    }).join(" | ");
+  }
+
+  function chronicleRow(documentRef, label, value) {
+    const row = element(documentRef, "article", "ranked-v3-inspect-chronicle-row");
+    row.append(element(documentRef, "span", "ranked-v3-inspect-chronicle-label", label));
+    row.append(typeof value === "string" ? element(documentRef, "span", "ranked-v3-inspect-chronicle-value", value) : value);
+    return row;
+  }
+  function renderDetail(documentRef, detail, handlerInput) {
+    const handlers = inspectHandlers(handlerInput);
+    const summary = detail.summary || {};
+    const active = detail.build.runModifiers || [];
+    const cause = String(summary.presentationCause || "").trim();
+    const isVictory = String(detail.outcome || "").toLowerCase() === "victory";
+    const rootNode = element(documentRef, "section", `${SELECTORS.plate} ranked-v3-reference-plate--inspect ${SELECTORS.detail}`);
+    rootNode.append(element(documentRef, "h2", "ranked-v3-reference-plate-title", "Inspect Build"));
+    const art = element(documentRef, "div", SELECTORS.art);
+    art.setAttribute("aria-hidden", "true");
+    const overlay = element(documentRef, "div", `${SELECTORS.overlay} ranked-v3-inspect-overlay`);
+    const header = element(documentRef, "header", "ranked-v3-inspect-header");
+    header.append(
+      element(documentRef, "p", "ranked-v3-inspect-rank", `Rank #${detail.rank}`),
+      element(documentRef, "h3", "ranked-v3-inspect-player", detail.playerName),
+      element(documentRef, "p", "ranked-v3-inspect-score", `${grouped(detail.score)} pts`),
+      element(documentRef, "p", "ranked-v3-inspect-depth", `Depth ${detail.depth}`),
+      element(documentRef, "p", "ranked-v3-inspect-gold", `Gold ${grouped(detail.gold)}`)
+    );
+    const loadout = element(documentRef, "section", "ranked-v3-inspect-loadout");
+    loadout.append(element(documentRef, "h3", "ranked-v3-inspect-section-title", "Build Loadout"));
+    const equipment = element(documentRef, "div", "ranked-v3-inspect-equipment-grid");
+    const relics = detail.build.relics.slice(0, 10);
+    for (let index = 0; index < 10; index += 1) equipment.append(equipmentSlot(documentRef, relics[index] || null, index));
+    loadout.append(equipment);
+    const chronicle = element(documentRef, "section", "ranked-v3-inspect-chronicle");
+    chronicle.append(element(documentRef, "h3", "ranked-v3-inspect-section-title", "Run Chronicle"));
+    const metrics = element(documentRef, "div", "ranked-v3-inspect-chronicle-rows");
+    const mutators = element(documentRef, "button", "ranked-v3-inspect-mutators", active.length ? `${active.length} active` : "No mutators used");
+    mutators.type = "button";
     mutators.setAttribute("tabindex", "0");
+    const tooltip = mutatorTooltip(active);
     mutators.setAttribute("data-record-tooltip", tooltip);
     mutators.setAttribute("aria-label", tooltip);
-    chronicle.append(metrics, mutators);
-    rootNode.append(header, chronicle);
-
-    relicBuild(documentRef, rootNode, detail.build.relics);
-    const buildColumns = element(documentRef, "div", "record-archive-detail-columns");
-    section(documentRef, buildColumns, "Pacts", detail.build.pacts.map(humanize));
-    section(documentRef, buildColumns, "Skill Tiers", Object.entries(detail.build.skillTiers).map(([id, level]) => humanize(id) + ": " + integer(level)));
-    rootNode.append(buildColumns);
-    section(documentRef, rootNode, "Camp Upgrades", Object.entries(detail.build.campUpgrades).map(([id, level]) => humanize(id) + ": " + integer(level)));
-    section(documentRef, rootNode, "Elixirs", detail.build.elixirs.map((elixir) => humanize(elixir.elixirId || elixir.id)));
-    summaryStats(documentRef, rootNode, summary);
+    const earnedGold = summary.gold && typeof summary.gold === "object" ? summary.gold.earned : (summary.goldEarned ?? detail.gold);
+    metrics.append(
+      chronicleRow(documentRef, "Time Played", duration(summary.durationMs ?? detail.durationMs)),
+      chronicleRow(documentRef, "Rooms Cleared", grouped(summary.roomsCompleted)),
+      chronicleRow(documentRef, "Bosses Defeated", grouped(summary.bossesCompleted)),
+      chronicleRow(documentRef, "Mutators", mutators),
+      chronicleRow(documentRef, "Highest Depth", grouped(detail.depth)),
+      chronicleRow(documentRef, "Gold Earned", grouped(earnedGold)),
+      chronicleRow(documentRef, "Final Score", grouped(detail.score))
+    );
+    chronicle.append(metrics);
+    const terminal = element(documentRef, "section", "ranked-v3-inspect-terminal");
+    terminal.append(
+      element(documentRef, "h3", "ranked-v3-inspect-terminal-title", isVictory ? "Victory" : "Game Over"),
+      element(documentRef, "p", "ranked-v3-inspect-terminal-cause", isVictory ? "Run completed" : (cause || "Cause not recorded."))
+    );
+    const actions = element(documentRef, "nav", "ranked-v3-inspect-actions");
+    actions.append(
+      control(documentRef, "ranked-v3-inspect-back", "Back to Leaderboard", handlers.onBack),
+      control(documentRef, "ranked-v3-inspect-close", "Close", handlers.onClose)
+    );
+    overlay.append(header, loadout, chronicle, terminal, actions);
+    rootNode.append(art, overlay);
     return rootNode;
   }
   return Object.freeze({ SELECTORS, normalizeBuild, toLeaderboardRow, createLeaderboardViewModel, createLeaderboardPresentation, createDetailViewModel, renderList, renderDetail });

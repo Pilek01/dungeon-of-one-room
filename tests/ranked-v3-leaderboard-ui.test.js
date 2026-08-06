@@ -52,7 +52,7 @@ function loadUi() {
   const modulePath = path.resolve(__dirname, "..", "online-v3", "ranked-v3-leaderboard-ui.js");
   delete require.cache[modulePath];
   global.DungeonRelicData = {
-    RELICS: [{ id: "crownconcord", name: "Crown Concord", icon: "assets/hd/ui/relics/crownconcord.png" }]
+    RELICS: [{ id: "crownconcord", name: "Crown Concord", icon: "assets/hd/ui/relics/crownconcord.png" }, { id: "second-relic", name: "Second Relic" }]
   };
   global.DungeonMutatorData = {
     MUTATORS: [{
@@ -142,41 +142,97 @@ test("Ranked presentation keeps the Top 3 while paging ranks 4 through 73", () =
   assert.deepEqual(finalPage.ledger.map((row) => row.rank), [67, 68, 69, 70, 71, 72, 73]);
   assert.equal(finalPage.canGoNext, false);
 });
-test("Build Chronicle exposes exact active mutators through a focusable tooltip", () => {
+test("Ranked inspect plate renders only the approved build and Chronicle fields", () => {
   const ui = loadUi();
   const documentRef = createDocument();
+  const returned = [];
+  const closed = [];
   const detail = ui.createDetailViewModel({
     entry: {
       runId: "run_aaaaaaaa",
       playerName: "Ada",
-      score: 43060,
+      rank: 1,
+      score: 43600,
       depth: 19,
-      gold: 8550,
-      createdAt: 0,
+      gold: 700,
+      outcome: "defeat",
       build: {
-        relics: [{ relicId: "crownconcord", stacks: 1 }],
+        relics: [
+          { relicId: "crownconcord", stacks: 2 },
+          { relicId: "second-relic", stacks: 1 },
+          { relicId: "third-relic", stacks: 1 },
+          { relicId: "fourth-relic", stacks: 1 },
+          { relicId: "fifth-relic", stacks: 1 },
+          { relicId: "sixth-relic", stacks: 1 },
+          { relicId: "seventh-relic", stacks: 1 },
+          { relicId: "eighth-relic", stacks: 1 },
+          { relicId: "ninth-relic", stacks: 1 },
+          { relicId: "tenth-relic", stacks: 1 },
+          { relicId: "ignored-relic", stacks: 1 }
+        ],
+        pacts: ["glass-cannon"],
+        skillTiers: { dash: 2 },
+        campUpgrades: { hp: 1 },
+        elixirs: [{ elixirId: "haste" }],
         runModifiers: { active: [{ modifierId: "greed", stacks: 1 }] }
       },
       summary: {
-        durationMs: 80000,
-        roomsCompleted: 19,
-        bossesCompleted: 3,
-        damageDone: 1234,
-        damageTaken: 456,
-        totalKills: 77,
-        lives: { remaining: 0, maximum: 5 }
+        durationMs: 3723000,
+        roomsCompleted: 312,
+        bossesCompleted: 7,
+        gold: { earned: 8550 },
+        presentationCause: "Defeated by The Hollow Seraph",
+        rulesetId: "v08-meta-1",
+        scoreVersion: "v08-score-1"
       }
     }
   });
+  const plate = ui.renderDetail(documentRef, detail, {
+    onBack: () => returned.push(true),
+    onClose: () => closed.push(true)
+  });
+  const hasClass = (node, className) => String(node.className).split(/\s+/u).includes(className);
+  const text = allText(plate);
 
-  const chronicle = ui.renderDetail(documentRef, detail);
-  const tooltip = visit(chronicle, (node) => node.className === "record-archive-mutators");
+  assert.equal(hasClass(plate, "ranked-v3-reference-plate"), true);
+  assert.equal(hasClass(plate, "ranked-v3-reference-plate--inspect"), true);
+  const art = visit(plate, (node) => hasClass(node, "ranked-v3-reference-plate-art"));
+  assert.equal(art.length, 1);
+  assert.equal(art[0].attributes.get("aria-hidden"), "true");
+  const slots = visit(plate, (node) => hasClass(node, "ranked-v3-inspect-equipment-slot"));
+  assert.equal(slots.length, 10);
+  assert.equal(slots.filter((slot) => slot.attributes.get("aria-hidden") === "true").length, 0);
+  assert.ok(text.indexOf("Crown Concord") < text.indexOf("Second Relic"));
+  assert.doesNotMatch(text, /Ignored Relic/iu);
+
+  const chronicleRows = visit(plate, (node) => hasClass(node, "ranked-v3-inspect-chronicle-row"));
+  assert.deepEqual(chronicleRows.map((row) => row.children[0].textContent), [
+    "Time Played", "Rooms Cleared", "Bosses Defeated", "Mutators", "Highest Depth", "Gold Earned", "Final Score"
+  ]);
+  assert.match(text, /01:02:03.*312.*7.*19.*8,550.*43,600/isu);
+  const tooltip = visit(plate, (node) => hasClass(node, "ranked-v3-inspect-mutators"));
   assert.equal(tooltip.length, 1);
   assert.equal(tooltip[0].attributes.get("tabindex"), "0");
-  assert.match(tooltip[0].attributes.get("data-record-tooltip"), /Greed.*\+50% gold.*Enemies hit harder/iu);
-  assert.match(allText(chronicle), /Crown Concord/iu);
-  const relicIcons = visit(chronicle, (node) => node.tagName === "img" && /crownconcord\.png$/u.test(node.src || ""));
-  assert.equal(relicIcons.length, 1);
-  assert.match(allText(chronicle), /Time Played.*1m 20s.*Rooms Cleared.*19.*Bosses Defeated.*3/isu);
-  assert.match(allText(chronicle), /Final Chronicle.*Damage Done.*1234.*Damage Taken.*456.*Total Kills.*77/isu);
+  assert.match(tooltip[0].attributes.get("data-record-tooltip"), /\[G\].*Greed.*\+50% gold.*Enemies hit harder/iu);
+  assert.match(text, /Game Over.*Defeated by The Hollow Seraph/isu);
+  assert.doesNotMatch(text, /Pacts|Skill Tiers|Camp Upgrades|Elixirs|Final Chronicle|Damage Done|v08-meta-1|v08-score-1/iu);
+
+  const back = visit(plate, (node) => node.tagName === "button" && node.textContent === "Back to Leaderboard");
+  const close = visit(plate, (node) => node.tagName === "button" && node.textContent === "Close");
+  back[0].click();
+  close[0].click();
+  assert.deepEqual(returned, [true]);
+  assert.deepEqual(closed, [true]);
+});
+
+test("Ranked inspect plate never invents a missing defeat cause", () => {
+  const ui = loadUi();
+  const detail = ui.createDetailViewModel({
+    entry: { playerName: "Legacy", outcome: "defeat", summary: {} }
+  });
+  const plate = ui.renderDetail(createDocument(), detail);
+  const slots = visit(plate, (node) => String(node.className).split(/\s+/u).includes("ranked-v3-inspect-equipment-slot"));
+  assert.equal(slots.length, 10);
+  assert.equal(slots.filter((slot) => slot.attributes.get("aria-hidden") === "true").length, 10);
+  assert.match(allText(plate), /Game Over.*Cause not recorded\./isu);
 });

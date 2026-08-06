@@ -156,6 +156,12 @@ test("M4 leaderboard renders player-facing relic names without protocol metadata
   const rendered = leaderboardUi.renderDetail(documentRef, detail);
   const text = (node) => [node.textContent, ...(node.children || []).map(text)].join(" ");
   const visible = text(rendered);
+  const allNodes = (node) => [node, ...(node.children || []).flatMap(allNodes)];
+  const hasClass = (node, className) => String(node.className).split(/\s+/u).includes(className);
+  assert.equal(hasClass(rendered, "ranked-v3-reference-plate--inspect"), true);
+  const art = allNodes(rendered).filter((node) => hasClass(node, "ranked-v3-reference-plate-art"));
+  assert.equal(art.length, 1);
+  assert.equal(art[0].attributes.get("aria-hidden"), "true");
   assert.match(visible, /Fang Charm.*Stack x2/su);
   assert.doesNotMatch(visible, /v08-meta-1|v08-score-1|\bfang\b/u);
 });
