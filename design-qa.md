@@ -307,3 +307,65 @@ final result: passed
 - Contract test: `node tests/hd-merchant-screen.test.js` passed; `node --check game.js` and `git diff --check` passed.
 
 final result: passed
+
+## 2026-08-07 - Ranked Leaderboard and Inspect reference plates
+
+**Source visual truth**
+
+- Leaderboard: C:\Users\Kamil\.codex\generated_images\019fbd02-789b-75b0-a741-d3e80ca2eedc\exec-0243c83e-6db0-445c-afeb-7d7f6b7b154d.png
+- Inspect Build: C:\Users\Kamil\.codex\generated_images\019fbd02-789b-75b0-a741-d3e80ca2eedc\exec-ba4d184b-18fa-43a1-9f46-34a5e2d330e6.png
+
+**Implementation evidence**
+
+- Leaderboard page 1: output/online-v3-ranked-headed/lifecycle/ranked-leaderboard.png
+- Inspect Build: output/online-v3-ranked-headed/lifecycle/ranked-leaderboard-detail.png
+- Leaderboard page 2: output/online-v3-ranked-headed/lifecycle/ranked-leaderboard-page-2.png
+- Leaderboard page 10: output/online-v3-ranked-headed/lifecycle/ranked-leaderboard-page-10.png
+- Normalized comparisons: output/verification/ranked-reference-repair/final-leaderboard-full.jpg, final-inspect-full.jpg, and final-pages-1-2-10.jpg.
+- Browser viewport and implementation capture: 1536 x 1080 CSS px at device scale 1.
+- Source captures: 1487 x 1058 px. They were normalized to 1536 x 1080 before comparison so crop and density differences did not create false findings.
+- State: true HD Ranked lifecycle, 73 authoritative fixture records, page 1 ranks 4-10, persistent Top 3, and a stored terminal defeat detail containing ten real relic icons and three real mutators.
+
+**Full-view comparison evidence**
+
+- Both surfaces use one uncropped 1536 x 1080 raster plate with the approved stone frame, candle alcoves, skull ornamentation, medal mounts, panels, and dark-metal palette.
+- Dynamic copy is ordinary interactive DOM text over blank plate regions; no player name, rank, score, stat, item name, or action label is baked into the plate.
+- Leaderboard title, permanent Top 3, seven-row ledger, and footer controls retain the reference hierarchy without horizontal or vertical viewport overflow.
+- Inspect Build aligns the crowned rank medal, player summary, two-by-five live relic loadout, seven Chronicle rows, terminal result, Back, and Close controls with the reference regions.
+
+**Focused region comparison evidence**
+
+- Typography was measured in the browser after visual comparison. Rank 1 name is at least 25 px, its score at least 42 px, ledger copy at least 17 px, Inspect player name at least 60 px, Inspect score at least 45 px, Chronicle copy at least 17 px, and Back at least 20 px.
+- The pts unit is independently scaled below the score number, matching the reference hierarchy.
+- Page 2 starts at rank 11 and page 10 ends at rank 73 while the same Top 3 remain visible. Next is disabled on page 10.
+- Returning from Inspect restores the exact ledger page that opened it.
+- Inspect contains only Time Played, Rooms Cleared, Bosses Defeated, Mutators, Highest Depth, Gold Earned, and Final Score. Pacts, skills, camp upgrades, elixirs, and damage-stat sections are not rendered.
+- The Mutators control is keyboard focusable and exposes all active mutator names, keys, bonuses, and drawbacks through the existing tooltip contract.
+- The terminal panel shows the stored display-only cause "Defeated by The Hollow Seraph"; legacy records use the truthful "Cause not recorded" fallback.
+
+**Findings and comparison history**
+
+1. [P1] The first headed capture mixed Classic rendering with HD overlay CSS and therefore invalidated visual conclusions.
+   Fix: the Ranked headed scenario now waits for the complete HD preload, checks the runtime mode, canvas class, and HD body class, and refuses to continue in Classic. A bounded reload handles only transient Chromium decode failures.
+2. [P1] The first Inspect repair rendered the score as a generic inline span, so it escaped the positioned header and appeared in the upper-left corner.
+   Fix: the shared score renderer now supports the correct semantic block tag for Inspect while preserving separate number and unit nodes.
+3. [P2] The first reference-plate pass used live typography that was 10-15 percent too small.
+   Fix: browser-measured RED thresholds were added, then optical sizes were calibrated at 1536 x 1080 and verified GREEN.
+4. [P2] Single-stack relics displayed redundant "Carried" copy and the Mutators row displayed "3 active", both diverging from the reference.
+   Fix: single-stack slots show only the live item name; stack text appears only above one, and the Chronicle shows the compact count with full information in the tooltip.
+5. No actionable P0, P1, or P2 findings remain.
+
+**Required fidelity surfaces**
+
+- Fonts and typography: Georgia and Copperplate-compatible fallbacks, lighter engraving weights, locale-grouped values, restrained tracking, and separate score units reproduce the reference hierarchy without clipping.
+- Spacing and layout rhythm: the full plate, podium, seven ledger rows, ten loadout slots, Chronicle, terminal block, and footer stay aligned at the tested desktop viewport.
+- Colors and visual tokens: muted ivory, tarnished gold, silver, bronze, charcoal, and restrained defeat red remain consistent with the source plates.
+- Image quality and asset fidelity: the two cleaned plate assets are true 1536 x 1080 PNGs with non-empty skull and crown regions. Relic slots use real game catalogue icons rather than placeholders or CSS drawings.
+- Copy and content: all displayed names, ranks, values, relics, mutators, terminal text, page labels, and actions are live. The permanent Top 3 and pages 1-10 reflect authoritative server order.
+- Accessibility and behavior: player names, Inspect, pagination, Back, Close, and Mutators are actual controls; focus-visible and reduced-motion rules remain present.
+
+**Follow-up polish**
+
+- P3: the original Inspect example includes tiny decorative Chronicle pictograms. The cleaned plate keeps the engraved rows text-first because no matching in-project raster icon set exists; this does not reduce readability or interaction.
+
+final result: passed

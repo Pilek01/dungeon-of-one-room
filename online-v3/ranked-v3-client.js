@@ -80,7 +80,7 @@
     async function list(input = {}) {
       const query = new URLSearchParams({
         season: String(input.season || "local-m4"),
-        limit: String(Math.min(20, Math.max(1, Math.floor(Number(input.limit) || 20))))
+        limit: String(Math.min(50, Math.max(1, Math.floor(Number(input.limit) || 20))))
       });
       if (input.cursor) query.set("cursor", String(input.cursor));
       const result = await transport.request({

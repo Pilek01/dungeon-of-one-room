@@ -97,6 +97,12 @@ test("Ranked leaderboard plate keeps Top 3 and renders seven interactive ledger 
   assert.equal(art[0].attributes.get("aria-hidden"), "true");
   assert.equal(visit(plate, (node) => hasClass(node, "ranked-v3-podium-slot")).length, 3);
   assert.equal(visit(plate, (node) => hasClass(node, "ranked-v3-ledger-slot")).length, 7);
+  const scoreValues = visit(plate, (node) => hasClass(node, "ranked-v3-score-value"));
+  const scoreUnits = visit(plate, (node) => hasClass(node, "ranked-v3-score-unit"));
+  assert.equal(scoreValues.length, 10);
+  assert.equal(scoreUnits.length, 10);
+  assert.equal(scoreValues[0].textContent, "43,600");
+  assert.equal(scoreUnits[0].textContent, "pts");
 
   const playerEleven = visit(plate, (node) => node.tagName === "button" && node.textContent === "<img src=x onerror=alert(1)>");
   assert.equal(playerEleven.length, 1);
@@ -229,7 +235,7 @@ test("Ranked inspect plate renders only the approved build and Chronicle fields"
   assert.equal(slots.length, 10);
   assert.equal(slots.filter((slot) => slot.attributes.get("aria-hidden") === "true").length, 0);
   assert.ok(text.indexOf("Crown Concord") < text.indexOf("Second Relic"));
-  assert.doesNotMatch(text, /Ignored Relic/iu);
+  assert.doesNotMatch(text, /Ignored Relic|Carried/iu);
 
   const chronicleRows = visit(plate, (node) => hasClass(node, "ranked-v3-inspect-chronicle-row"));
   assert.deepEqual(chronicleRows.map((row) => row.children[0].textContent), [
@@ -239,6 +245,7 @@ test("Ranked inspect plate renders only the approved build and Chronicle fields"
   const tooltip = visit(plate, (node) => hasClass(node, "ranked-v3-inspect-mutators"));
   assert.equal(tooltip.length, 1);
   assert.equal(tooltip[0].attributes.get("tabindex"), "0");
+  assert.equal(tooltip[0].textContent, "1");
   assert.match(tooltip[0].attributes.get("data-record-tooltip"), /\[G\].*Greed.*\+50% gold.*Enemies hit harder/iu);
   assert.match(text, /Game Over.*Defeated by The Hollow Seraph/isu);
   assert.doesNotMatch(text, /Pacts|Skill Tiers|Camp Upgrades|Elixirs|Final Chronicle|Damage Done|v08-meta-1|v08-score-1/iu);

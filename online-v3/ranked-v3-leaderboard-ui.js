@@ -55,8 +55,21 @@
     return Object.freeze(rows);
   }
   const createDetailViewModel = (payload = {}) => { const entry = payload.entry && typeof payload.entry === "object" ? payload.entry : {}; return Object.freeze({ ...toLeaderboardRow(entry), season: String(entry.season || ""), build: Object.freeze(normalizeBuild(entry.build)), summary: Object.freeze(entry.summary && typeof entry.summary === "object" ? { ...entry.summary } : {}) }); };
-  function name(documentRef, row, open) { const node = element(documentRef, "button", "record-archive-name", row.playerName); node.type = "button"; node.setAttribute("data-record-field", "name"); node.addEventListener("click", () => open(row.runId), { once: true }); return node; }
-  function inspect(documentRef, row, open) { const node = element(documentRef, "button", SELECTORS.detailsButton, "Inspect build"); node.type = "button"; node.addEventListener("click", () => open(row.runId), { once: true }); return node; }
+  function name(documentRef, row, open) {
+    const node = element(documentRef, "button", "record-archive-name", row.playerName);
+    node.type = "button";
+    node.setAttribute("data-record-field", "name");
+    node.setAttribute("aria-label", `${row.playerName}, inspect build`);
+    node.addEventListener("click", () => open(row.runId), { once: true });
+    return node;
+  }
+  function inspect(documentRef, row, open) {
+    const node = element(documentRef, "button", SELECTORS.detailsButton, "Inspect build");
+    node.type = "button";
+    node.setAttribute("aria-label", `Inspect build for ${row.playerName}`);
+    node.addEventListener("click", () => open(row.runId), { once: true });
+    return node;
+  }
   function listHandlers(value) {
     if (typeof value === "function") return { onOpen: value, onPage: () => {}, onClose: () => {} };
     const source = value && typeof value === "object" ? value : {};
@@ -75,8 +88,18 @@
     return node;
   }
 
-  function leaderboardSlot(documentRef, row, slotClass, open) {
+  function scoreDisplay(documentRef, className, value, tagName = "span") {
+    const node = element(documentRef, tagName, className);
+    node.append(
+      element(documentRef, "span", "ranked-v3-score-value", grouped(value)),
+      element(documentRef, "span", "ranked-v3-score-unit", "pts")
+    );
+    return node;
+  }
+
+  function leaderboardSlot(documentRef, row, slotClass, open, layout = "ledger") {
     const slot = element(documentRef, "article", `${slotClass} ${SELECTORS.row}`);
+    slot.setAttribute("data-record-layout", layout);
     if (!row) {
       slot.setAttribute("aria-hidden", "true");
       return slot;
@@ -84,16 +107,28 @@
     slot.setAttribute("data-record-rank", String(row.rank));
     const identity = element(documentRef, "div", "ranked-v3-leaderboard-slot-identity");
     identity.append(
-      element(documentRef, "span", "ranked-v3-leaderboard-rank", `#${row.rank}`),
+      element(documentRef, "span", "ranked-v3-leaderboard-rank", String(row.rank)),
       name(documentRef, row, open)
     );
-    slot.append(
-      identity,
-      element(documentRef, "span", "ranked-v3-leaderboard-score", `${row.score} pts`),
-      element(documentRef, "span", "ranked-v3-leaderboard-depth", `Depth ${row.depth}`),
-      element(documentRef, "span", "ranked-v3-leaderboard-gold", `Gold ${row.gold}`),
-      inspect(documentRef, row, open)
-    );
+    const score = scoreDisplay(documentRef, "ranked-v3-leaderboard-score", row.score);
+    if (layout === "podium") {
+      const meta = element(documentRef, "div", "ranked-v3-podium-meta");
+      meta.append(
+        element(documentRef, "span", "ranked-v3-leaderboard-depth", `Depth ${grouped(row.depth)}`),
+        element(documentRef, "span", "ranked-v3-podium-divider", "|"),
+        element(documentRef, "span", "ranked-v3-leaderboard-gold", `Gold ${grouped(row.gold)}`)
+      );
+      meta.children[1]?.setAttribute("aria-hidden", "true");
+      slot.append(identity, score, meta, inspect(documentRef, row, open));
+    } else {
+      slot.append(
+        identity,
+        score,
+        element(documentRef, "span", "ranked-v3-leaderboard-depth", grouped(row.depth)),
+        element(documentRef, "span", "ranked-v3-leaderboard-gold", grouped(row.gold)),
+        inspect(documentRef, row, open)
+      );
+    }
     return slot;
   }
 
@@ -109,21 +144,20 @@
     const overlay = element(documentRef, "div", SELECTORS.overlay + " ranked-v3-leaderboard-overlay");
     const heading = element(documentRef, "header", "ranked-v3-leaderboard-heading");
     heading.append(
-      element(documentRef, "p", "ranked-v3-leaderboard-kicker", "Ranked Descent"),
       element(documentRef, "p", "ranked-v3-leaderboard-display-title", "Ranked Leaderboard"),
       element(documentRef, "p", "ranked-v3-leaderboard-season", "Current Season")
     );
     const podium = element(documentRef, "section", "ranked-v3-leaderboard-podium");
     for (let rank = 1; rank <= PODIUM_SIZE; rank += 1) {
       const row = presentation.podium.find((candidate) => candidate.rank === rank) || null;
-      podium.append(leaderboardSlot(documentRef, row, SELECTORS.podiumSlot, handlers.onOpen));
+      podium.append(leaderboardSlot(documentRef, row, SELECTORS.podiumSlot, handlers.onOpen, "podium"));
     }
     const ledger = element(documentRef, "section", "ranked-v3-leaderboard-ledger");
     const columnHeadings = element(documentRef, "div", "ranked-v3-leaderboard-columns");
-    for (const label of ["Rank", "Name", "Score", "Depth", "Gold", "Build"]) columnHeadings.append(element(documentRef, "span", "ranked-v3-leaderboard-column", label));
+    for (const label of ["Rank", "Name", "Score", "Depth", "Gold", "Inspect Build"]) columnHeadings.append(element(documentRef, "span", "ranked-v3-leaderboard-column", label));
     const ledgerRows = element(documentRef, "div", "ranked-v3-leaderboard-ledger-rows");
     for (let index = 0; index < LEDGER_ROWS_PER_PAGE; index += 1) {
-      ledgerRows.append(leaderboardSlot(documentRef, presentation.ledger[index] || null, SELECTORS.ledgerSlot, handlers.onOpen));
+      ledgerRows.append(leaderboardSlot(documentRef, presentation.ledger[index] || null, SELECTORS.ledgerSlot, handlers.onOpen, "ledger"));
     }
     ledger.append(columnHeadings, ledgerRows);
     const pager = element(documentRef, "nav", "ranked-v3-leaderboard-pager");
@@ -167,10 +201,10 @@
       slot.append(element(documentRef, "span", "ranked-v3-inspect-equipment-fallback", "?"));
     }
     const label = element(documentRef, "span", "ranked-v3-inspect-equipment-label");
-    label.append(
-      element(documentRef, "strong", "", relicName(relic.relicId)),
-      element(documentRef, "small", "", relic.stacks > 1 ? `Stack x${relic.stacks}` : "Carried")
-    );
+    label.append(element(documentRef, "strong", "", relicName(relic.relicId)));
+    if (relic.stacks > 1) {
+      label.append(element(documentRef, "small", "", `Stack x${relic.stacks}`));
+    }
     slot.append(label);
     return slot;
   }
@@ -203,10 +237,11 @@
     const overlay = element(documentRef, "div", `${SELECTORS.overlay} ranked-v3-inspect-overlay`);
     const header = element(documentRef, "header", "ranked-v3-inspect-header");
     header.append(
-      element(documentRef, "p", "ranked-v3-inspect-rank", `Rank #${detail.rank}`),
+      element(documentRef, "p", "ranked-v3-inspect-rank", String(detail.rank)),
       element(documentRef, "h3", "ranked-v3-inspect-player", detail.playerName),
-      element(documentRef, "p", "ranked-v3-inspect-score", `${grouped(detail.score)} pts`),
-      element(documentRef, "p", "ranked-v3-inspect-depth", `Depth ${detail.depth}`),
+      scoreDisplay(documentRef, "ranked-v3-inspect-score", detail.score, "p"),
+      element(documentRef, "p", "ranked-v3-inspect-score-label", "Final Score"),
+      element(documentRef, "p", "ranked-v3-inspect-depth", `Depth ${grouped(detail.depth)}`),
       element(documentRef, "p", "ranked-v3-inspect-gold", `Gold ${grouped(detail.gold)}`)
     );
     const loadout = element(documentRef, "section", "ranked-v3-inspect-loadout");
@@ -218,7 +253,7 @@
     const chronicle = element(documentRef, "section", "ranked-v3-inspect-chronicle");
     chronicle.append(element(documentRef, "h3", "ranked-v3-inspect-section-title", "Run Chronicle"));
     const metrics = element(documentRef, "div", "ranked-v3-inspect-chronicle-rows");
-    const mutators = element(documentRef, "button", "ranked-v3-inspect-mutators", active.length ? `${active.length} active` : "No mutators used");
+    const mutators = element(documentRef, "button", "ranked-v3-inspect-mutators", active.length ? String(active.length) : "No mutators used");
     mutators.type = "button";
     mutators.setAttribute("tabindex", "0");
     const tooltip = mutatorTooltip(active);
@@ -238,7 +273,8 @@
     const terminal = element(documentRef, "section", "ranked-v3-inspect-terminal");
     terminal.append(
       element(documentRef, "h3", "ranked-v3-inspect-terminal-title", isVictory ? "Victory" : "Game Over"),
-      element(documentRef, "p", "ranked-v3-inspect-terminal-cause", isVictory ? "Run completed" : (cause || "Cause not recorded."))
+      element(documentRef, "p", "ranked-v3-inspect-terminal-eyebrow", isVictory ? "Run completed" : "Fell in combat"),
+      element(documentRef, "p", "ranked-v3-inspect-terminal-cause", isVictory ? "The descent was conquered." : (cause || "Cause not recorded."))
     );
     const actions = element(documentRef, "nav", "ranked-v3-inspect-actions");
     actions.append(

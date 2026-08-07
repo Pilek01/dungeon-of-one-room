@@ -49,14 +49,14 @@ test("M4 leaderboard client preserves opaque cursor and canonical server order",
   });
   const payload = await client.list({
     season: "season-a",
-    limit: 20,
+    limit: 50,
     cursor: "opaque+/cursor=="
   });
   const view = leaderboardUi.createLeaderboardViewModel(payload, 1);
   assert.deepEqual(view.rows.map((row) => row.runId), ["run_aa", "run_bb"]);
   assert.deepEqual(view.rows.map((row) => row.rank), [2, 3]);
   assert.equal(view.cursor, "opaque+/cursor==");
-  assert.match(requests[0].path, /cursor=opaque%2B%2Fcursor%3D%3D/u);
+  assert.match(requests[0].path, /limit=50.*cursor=opaque%2B%2Fcursor%3D%3D/u);
 });
 
 test("M4 leaderboard detail uses canonical public build and excludes private fields", async () => {
@@ -121,7 +121,7 @@ test("M4 leaderboard rendering is text-safe and never uses innerHTML", () => {
   );
   const text = (node) => [node.textContent, ...(node.children || []).map(text)].join(" ");
   const visible = text(rendered);
-  assert.match(visible, /Ranked Leaderboard.*#1.*<img src=x onerror=alert\(1\)>.*5 pts.*Page 1 \/ 1/su);
+  assert.match(visible, /Ranked Leaderboard.*1.*<img src=x onerror=alert\(1\)>.*5 pts.*Page 1 \/ 1/su);
   const allNodes = (node) => [node, ...(node.children || []).flatMap(allNodes)];
   const art = allNodes(rendered).filter((node) => String(node.className).split(/\s+/u).includes("ranked-v3-reference-plate-art"));
   assert.equal(art.length, 1);

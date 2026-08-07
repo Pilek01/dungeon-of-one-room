@@ -1363,3 +1363,37 @@ Updated next good targets
   `sha256:bc0d548d204557d0cc0ec7f8a358e18246778a13b27c58f5c6cdd73e73621711`
   remain correct. Remote D1 reports no pending migrations; no migration,
   backfill, Worker rollout, or ruleset activation was performed.
+
+## 2026-08-07 - Ranked reference-plate leaderboard and Inspect repair
+
+- Rebuilt the two Ranked desktop surfaces around cleaned 1536 x 1080 raster
+  plates derived from the approved references. All player names, ranks, scores,
+  stats, item names, tooltips, and controls remain live DOM content.
+- Leaderboard now collects up to 73 authoritative rows through the existing
+  opaque cursor, keeps Top 3 visible on every page, and shows ranks 4-73 as ten
+  local seven-row pages. The browser client request cap was corrected from 20
+  to the Worker-supported 50.
+- Inspect Build now shows the crowned player summary, ten ordered real relic
+  icons, exactly the seven approved Chronicle values, compact live mutator count
+  with the complete keyboard-focusable tooltip, truthful terminal cause, Back,
+  and Close. Pacts, skills, camp upgrades, elixirs, and damage statistics remain
+  stored but are not rendered on this surface.
+- Fixed the escaped upper-left Inspect score by allowing the shared score
+  renderer to use the positioned block element. Score numbers and pts units
+  keep independent visual hierarchy; single-stack relics no longer show
+  redundant Carried copy.
+- Ranked headed QA now refuses to accept a Classic canvas with HD overlay CSS.
+  It waits for completed HD preload, checks runtime mode plus canvas/body
+  markers, and retries only bounded transient Chromium image-decode failures.
+  The 73-row visual fixture is served through the real client and parser.
+- Final visual evidence is in
+  output/verification/ranked-reference-repair/final-leaderboard-full.jpg,
+  final-inspect-full.jpg, and final-pages-1-2-10.jpg. The detailed report in
+  design-qa.md records final result: passed with no actionable P0-P2 findings.
+- Verification: focused reference/UI/style tests 9/9; focused Worker and client
+  regressions 36/36; verify:phase 779/779; verify:baseline 3/3 plus clean headed
+  baseline; final true-HD Ranked lifecycle PASS with page 1, page 2, page 10,
+  Inspect, exact page return, terminal cause, and no browser console/page errors.
+- Practice Records, source game.js, D1 schema/migrations, production release
+  bindings, and the active production ruleset were not changed. No merge, push,
+  deployment, backfill, or ruleset activation was performed.
