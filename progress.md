@@ -1441,3 +1441,25 @@ Updated next good targets
   plus clean committed headed baseline.
 - Mobile Ranked UX remains deferred. No commit, merge, push, deployment, D1
   migration/backfill, or ruleset activation was performed.
+
+
+## 2026-08-08 - Ranked reference-plate production release
+
+- Committed the final Leaderboard/Inspect calibration as `ab546dc` and pushed
+  it to `origin/codex/ranked-reference-plates`; `origin/main` was not merged or
+  changed.
+- Verified the exact clean commit with `verify:full` 803/803, including local
+  Wrangler/D1 21/21, the clean committed Practice baseline, and the clean
+  committed Ranked lifecycle.
+- Built a clean 3111-file Pages bundle without the QA marker, test boot hook,
+  or the unstaged Forge work. Wrangler uploaded 7 changed files and reused
+  3103 existing assets.
+- Deployed production Pages release
+  `8c77e656-426e-43a8-bc2b-45843fe62cc6` from source `ab546dc`.
+- The immutable deployment URL and stable project alias return HTTP 200 and an
+  active compatible Ranked availability response. The leaderboard module,
+  `style.css`, and both reference plates match the local release bundle
+  byte-for-byte on both URLs.
+- The production Worker, D1 schema/data, active ruleset, Practice gameplay,
+  Forge behavior, and `origin/main` were not changed. Seven unrelated WIP
+  files remain preserved and unstaged.
