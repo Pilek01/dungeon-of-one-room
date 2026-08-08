@@ -189,8 +189,16 @@
       slot.setAttribute("aria-hidden", "true");
       return slot;
     }
-    slot.setAttribute("data-relic-index", String(index));
     const definition = root?.DungeonRelicData?.RELICS?.find((item) => item.id === relic.relicId);
+    const relicTooltip = [
+      String(definition?.name || relicName(relic.relicId)),
+      String(definition?.desc || definition?.description || "Description unavailable."),
+      `Stack x${Math.max(1, integer(relic.stacks))}`
+    ].join(" | ");
+    slot.setAttribute("data-relic-index", String(index));
+    slot.setAttribute("tabindex", "0");
+    slot.setAttribute("data-record-tooltip", relicTooltip);
+    slot.setAttribute("aria-label", relicTooltip);
     const iconSrc = String(definition?.icon || definition?.iconSrc || "");
     if (iconSrc) {
       const icon = element(documentRef, "img", "ranked-v3-inspect-equipment-icon");
@@ -200,12 +208,6 @@
     } else {
       slot.append(element(documentRef, "span", "ranked-v3-inspect-equipment-fallback", "?"));
     }
-    const label = element(documentRef, "span", "ranked-v3-inspect-equipment-label");
-    label.append(element(documentRef, "strong", "", relicName(relic.relicId)));
-    if (relic.stacks > 1) {
-      label.append(element(documentRef, "small", "", `Stack x${relic.stacks}`));
-    }
-    slot.append(label);
     return slot;
   }
 
@@ -224,6 +226,15 @@
     row.append(typeof value === "string" ? element(documentRef, "span", "ranked-v3-inspect-chronicle-value", value) : value);
     return row;
   }
+
+  function inspectStat(documentRef, className, label, value) {
+    const stat = element(documentRef, "p", className);
+    stat.append(
+      element(documentRef, "span", "ranked-v3-inspect-stat-label", label),
+      element(documentRef, "span", "ranked-v3-inspect-stat-value", grouped(value))
+    );
+    return stat;
+  }
   function renderDetail(documentRef, detail, handlerInput) {
     const handlers = inspectHandlers(handlerInput);
     const summary = detail.summary || {};
@@ -241,8 +252,8 @@
       element(documentRef, "h3", "ranked-v3-inspect-player", detail.playerName),
       scoreDisplay(documentRef, "ranked-v3-inspect-score", detail.score, "p"),
       element(documentRef, "p", "ranked-v3-inspect-score-label", "Final Score"),
-      element(documentRef, "p", "ranked-v3-inspect-depth", `Depth ${grouped(detail.depth)}`),
-      element(documentRef, "p", "ranked-v3-inspect-gold", `Gold ${grouped(detail.gold)}`)
+      inspectStat(documentRef, "ranked-v3-inspect-depth", "Depth", detail.depth),
+      inspectStat(documentRef, "ranked-v3-inspect-gold", "Gold", detail.gold)
     );
     const loadout = element(documentRef, "section", "ranked-v3-inspect-loadout");
     loadout.append(element(documentRef, "h3", "ranked-v3-inspect-section-title", "Build Loadout"));
@@ -277,10 +288,7 @@
       element(documentRef, "p", "ranked-v3-inspect-terminal-cause", isVictory ? "The descent was conquered." : (cause || "Cause not recorded."))
     );
     const actions = element(documentRef, "nav", "ranked-v3-inspect-actions");
-    actions.append(
-      control(documentRef, "ranked-v3-inspect-back", "Back to Leaderboard", handlers.onBack),
-      control(documentRef, "ranked-v3-inspect-close", "Close", handlers.onClose)
-    );
+    actions.append(control(documentRef, "ranked-v3-inspect-back", "Back to Leaderboard", handlers.onBack));
     overlay.append(header, loadout, chronicle, terminal, actions);
     rootNode.append(art, overlay);
     return rootNode;

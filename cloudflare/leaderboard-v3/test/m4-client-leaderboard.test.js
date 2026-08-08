@@ -142,7 +142,7 @@ test("M4 leaderboard detail rejects non-canonical run IDs before transport", asy
   await assert.rejects(() => client.detail("../private"), /LEADERBOARD_RUN_ID_INVALID/u);
   assert.equal(called, false);
 });
-test("M4 leaderboard renders player-facing relic names without protocol metadata", () => {
+test("M4 leaderboard keeps relic details in an accessible icon tooltip without protocol metadata", () => {
   const documentRef = fakeDocument();
   const detail = leaderboardUi.createDetailViewModel({
     entry: {
@@ -162,8 +162,14 @@ test("M4 leaderboard renders player-facing relic names without protocol metadata
   const art = allNodes(rendered).filter((node) => hasClass(node, "ranked-v3-reference-plate-art"));
   assert.equal(art.length, 1);
   assert.equal(art[0].attributes.get("aria-hidden"), "true");
-  assert.match(visible, /Fang Charm.*Stack x2/su);
-  assert.doesNotMatch(visible, /v08-meta-1|v08-score-1|\bfang\b/u);
+  const occupied = allNodes(rendered).filter((node) => (
+    hasClass(node, "ranked-v3-inspect-equipment-slot") && node.attributes.get("data-relic-index") === "0"
+  ));
+  assert.equal(occupied.length, 1);
+  assert.equal(occupied[0].attributes.get("tabindex"), "0");
+  assert.equal(occupied[0].attributes.get("data-record-tooltip"), "Fang Charm | +10 ATK | Stack x2");
+  assert.equal(occupied[0].attributes.get("aria-label"), occupied[0].attributes.get("data-record-tooltip"));
+  assert.doesNotMatch(visible, /Fang Charm|Stack x2|v08-meta-1|v08-score-1|\bfang\b/u);
 });
 test("M4 Ranked relic choices resolve catalog name, description, rarity, and icon", () => {
   globalThis.DungeonRelicData.RELICS[0].icon = "assets/hd/ui/relics/fang.png";

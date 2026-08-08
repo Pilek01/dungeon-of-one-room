@@ -1561,6 +1561,21 @@ ${fatalTestHookAnchor}`;
       const nameBox = bounds('.ranked-v3-podium-slot[data-record-rank="1"] .record-archive-name');
       const scoreBox = bounds('.ranked-v3-podium-slot[data-record-rank="1"] .ranked-v3-leaderboard-score');
       const podiumInspect = document.querySelector('.ranked-v3-podium-slot[data-record-rank="1"] .ranked-v3-leaderboard-details-button');
+      const centerXRatio = (selector) => {
+        const box = document.querySelector(selector)?.getBoundingClientRect();
+        return box ? ((box.left + box.width / 2) - plate.left) / plate.width : null;
+      };
+      const centerX = (selector) => {
+        const box = document.querySelector(selector)?.getBoundingClientRect();
+        return box ? box.left + box.width / 2 : null;
+      };
+      const firstLedgerRank = document.querySelector(".ranked-v3-ledger-slot[data-record-rank]")?.dataset.recordRank;
+      const ledgerValueSelector = (className) => `.ranked-v3-ledger-slot[data-record-rank="${firstLedgerRank}"] .${className}`;
+      const ledgerAnchorDrift = {
+        depth: Math.abs(centerX(".ranked-v3-leaderboard-column:nth-child(4)") - centerX(ledgerValueSelector("ranked-v3-leaderboard-depth"))),
+        gold: Math.abs(centerX(".ranked-v3-leaderboard-column:nth-child(5)") - centerX(ledgerValueSelector("ranked-v3-leaderboard-gold"))),
+        inspect: Math.abs(centerX(".ranked-v3-leaderboard-column:nth-child(6)") - centerX(ledgerValueSelector("ranked-v3-leaderboard-details-button")))
+      };
       const game = document.querySelector("#game");
       const hdMode = {
         dataMode: game?.dataset.graphicsMode || "",
@@ -1586,8 +1601,12 @@ ${fatalTestHookAnchor}`;
         metaFontSize: Number.parseFloat(getComputedStyle(document.querySelector('.ranked-v3-podium-slot[data-record-rank="1"] .ranked-v3-podium-meta')).fontSize),
         columnFontSize: Number.parseFloat(getComputedStyle(document.querySelector(".ranked-v3-leaderboard-columns")).fontSize),
         ledgerFontSize: Number.parseFloat(getComputedStyle(document.querySelector(".ranked-v3-ledger-slot")).fontSize),
+        depthFontSize: Number.parseFloat(getComputedStyle(document.querySelector(".ranked-v3-ledger-slot[data-record-rank] .ranked-v3-leaderboard-depth")).fontSize),
+        goldFontSize: Number.parseFloat(getComputedStyle(document.querySelector(".ranked-v3-ledger-slot[data-record-rank] .ranked-v3-leaderboard-gold")).fontSize),
         populatedPodium: document.querySelectorAll(".ranked-v3-podium-slot[data-record-rank]").length,
         populatedLedger: document.querySelectorAll(".ranked-v3-ledger-slot[data-record-rank]").length,
+        podiumCenters: [1, 2, 3].map((rank) => centerXRatio(`.ranked-v3-podium-slot[data-record-rank="${rank}"]`)),
+        ledgerAnchorDrift,
         titleLines,
         hdMode,
         classicArtDisplay,
@@ -1604,6 +1623,13 @@ ${fatalTestHookAnchor}`;
     assert.equal(referencePlateAudit.titleLines, 1, "Ranked Leaderboard title wrapped over the podium");
     assert.ok(referencePlateAudit.heading.bottom < referencePlateAudit.podium.top, JSON.stringify(referencePlateAudit));
     assert.ok(referencePlateAudit.podium.bottom < referencePlateAudit.ledger.top, JSON.stringify(referencePlateAudit));
+    const expectedPodiumCenters = [0.5, 421 / 1536, 1115 / 1536];
+    referencePlateAudit.podiumCenters.forEach((center, index) => {
+      assert.ok(Math.abs(center - expectedPodiumCenters[index]) <= 0.008, JSON.stringify(referencePlateAudit));
+    });
+    Object.values(referencePlateAudit.ledgerAnchorDrift).forEach((drift) => {
+      assert.ok(drift <= 3, JSON.stringify(referencePlateAudit));
+    });
     assert.ok(referencePlateAudit.nameRatio >= 0.43 && referencePlateAudit.nameRatio <= 0.48, JSON.stringify(referencePlateAudit));
     assert.ok(referencePlateAudit.scoreRatio >= 0.47 && referencePlateAudit.scoreRatio <= 0.52, JSON.stringify(referencePlateAudit));
     assert.equal(referencePlateAudit.podiumInspectFontSize, "0px", "Podium leaked a floating Inspect build label");
@@ -1619,6 +1645,8 @@ ${fatalTestHookAnchor}`;
     assert.ok(referencePlateAudit.metaFontSize >= 12, JSON.stringify(referencePlateAudit));
     assert.ok(referencePlateAudit.columnFontSize >= 13, JSON.stringify(referencePlateAudit));
     assert.ok(referencePlateAudit.ledgerFontSize >= 17, JSON.stringify(referencePlateAudit));
+    assert.ok(referencePlateAudit.depthFontSize >= 16, JSON.stringify(referencePlateAudit));
+    assert.ok(referencePlateAudit.goldFontSize >= 16, JSON.stringify(referencePlateAudit));
     await page.getByRole("button", { name: "Inspect build" }).first().click();
     await page.locator(".ranked-v3-leaderboard-detail").waitFor({ state: "visible" });
     assert.match(
@@ -1627,12 +1655,78 @@ ${fatalTestHookAnchor}`;
     );
     const detailPlateAudit = await page.evaluate(() => {
       const fontSize = (selector) => Number.parseFloat(getComputedStyle(document.querySelector(selector)).fontSize);
+      const equipment = [...document.querySelectorAll(".ranked-v3-inspect-equipment-slot[data-relic-index]")].map((slot) => {
+        const slotBox = slot.getBoundingClientRect();
+        const iconBox = slot.querySelector(".ranked-v3-inspect-equipment-icon, .ranked-v3-inspect-equipment-fallback")?.getBoundingClientRect();
+        return {
+          text: slot.textContent.trim(),
+          tabindex: slot.getAttribute("tabindex"),
+          tooltip: slot.getAttribute("data-record-tooltip") || "",
+          centerDx: iconBox ? (iconBox.left + iconBox.width / 2) - (slotBox.left + slotBox.width / 2) : null,
+          centerDy: iconBox ? (iconBox.top + iconBox.height / 2) - (slotBox.top + slotBox.height / 2) : null
+        };
+      });
+      const chronicleAlignment = [...document.querySelectorAll(".ranked-v3-inspect-chronicle-row")].map((row) => {
+        const rowBox = row.getBoundingClientRect();
+        const labelBox = row.querySelector(".ranked-v3-inspect-chronicle-label").getBoundingClientRect();
+        const valueBox = row.querySelector(".ranked-v3-inspect-chronicle-value, .ranked-v3-inspect-mutators").getBoundingClientRect();
+        return {
+          labelInset: labelBox.left - rowBox.left,
+          valueInset: rowBox.right - valueBox.right
+        };
+      });
+      const inspectHeader = document.querySelector(".ranked-v3-inspect-header");
+      const inspectHeaderBox = inspectHeader.getBoundingClientRect();
+      const headerSeparators = ["::before", "::after"].map((pseudo) => {
+        const style = getComputedStyle(inspectHeader, pseudo);
+        return {
+          content: style.content,
+          leftRatio: Number.parseFloat(style.left) / inspectHeaderBox.width,
+          width: Number.parseFloat(style.width),
+          height: Number.parseFloat(style.height)
+        };
+      });
+      const terminal = document.querySelector(".ranked-v3-inspect-terminal");
+      const terminalBox = terminal.getBoundingClientRect();
+      const terminalTitle = terminal.querySelector(".ranked-v3-inspect-terminal-title");
+      const terminalEyebrow = terminal.querySelector(".ranked-v3-inspect-terminal-eyebrow");
+      const terminalCause = terminal.querySelector(".ranked-v3-inspect-terminal-cause");
+      const terminalTitleBox = terminalTitle.getBoundingClientRect();
+      const terminalEyebrowBox = terminalEyebrow.getBoundingClientRect();
+      const terminalCauseBox = terminalCause.getBoundingClientRect();
       return {
         playerFontSize: fontSize(".ranked-v3-inspect-player"),
         scoreFontSize: fontSize(".ranked-v3-inspect-score"),
         statFontSize: fontSize(".ranked-v3-inspect-depth"),
         chronicleFontSize: fontSize(".ranked-v3-inspect-chronicle-row"),
-        equipmentLabelFontSize: fontSize(".ranked-v3-inspect-equipment-label"),
+        visibleEquipmentLabels: [...document.querySelectorAll(".ranked-v3-inspect-equipment-label")]
+          .filter((label) => label.getClientRects().length > 0).length,
+        equipment,
+        chronicleAlignment,
+        headerSeparators,
+        inspectStats: [".ranked-v3-inspect-depth", ".ranked-v3-inspect-gold"].map((selector) => (
+          [...document.querySelector(selector).children].map((node) => node.textContent)
+        )),
+        inspectStatMetrics: [".ranked-v3-inspect-depth", ".ranked-v3-inspect-gold"].map((selector) => {
+          const stat = document.querySelector(selector);
+          const label = stat.querySelector(".ranked-v3-inspect-stat-label");
+          const value = stat.querySelector(".ranked-v3-inspect-stat-value");
+          return {
+            labelFontSize: Number.parseFloat(getComputedStyle(label).fontSize),
+            valueFontSize: Number.parseFloat(getComputedStyle(value).fontSize),
+            labelFontFamily: getComputedStyle(label).fontFamily,
+            valueFontFamily: getComputedStyle(value).fontFamily
+          };
+        }),
+        terminalLayout: {
+          titleCenterDelta: Math.abs((terminalTitleBox.left + terminalTitleBox.width / 2) - (terminalBox.left + terminalBox.width / 2)),
+          titleTopInset: terminalTitleBox.top - terminalBox.top,
+          eyebrowLeftInset: terminalEyebrowBox.left - terminalBox.left,
+          causeLeftInset: terminalCauseBox.left - terminalBox.left,
+          eyebrowTextAlign: getComputedStyle(terminalEyebrow).textAlign,
+          causeTextAlign: getComputedStyle(terminalCause).textAlign
+        },
+        actionLabels: [...document.querySelectorAll(".ranked-v3-inspect-actions button")].map((button) => button.textContent),
         backFontSize: fontSize(".ranked-v3-inspect-back"),
         occupiedSlots: document.querySelectorAll(".ranked-v3-inspect-equipment-slot[data-relic-index]").length,
         visibleIcons: [...document.querySelectorAll(".ranked-v3-inspect-equipment-icon")]
@@ -1643,7 +1737,147 @@ ${fatalTestHookAnchor}`;
         tooltip: document.querySelector(".ranked-v3-inspect-mutators")?.getAttribute("data-record-tooltip") || ""
       };
     });
+    const firstRelicSlot = page.locator(".ranked-v3-inspect-equipment-slot[data-relic-index]").first();
+    await firstRelicSlot.hover();
+    const visibleRelicTooltip = await firstRelicSlot.evaluate((slot) => {
+      const style = getComputedStyle(slot, "::after");
+      const slotBox = slot.getBoundingClientRect();
+      const plateBox = slot.closest(".ranked-v3-reference-plate").getBoundingClientRect();
+      const left = Number.parseFloat(style.left);
+      const contentWidth = Number.parseFloat(style.width);
+      const outerWidth = contentWidth + Number.parseFloat(style.paddingLeft) + Number.parseFloat(style.paddingRight)
+        + Number.parseFloat(style.borderLeftWidth) + Number.parseFloat(style.borderRightWidth);
+      const outerHeight = Number.parseFloat(style.height) + Number.parseFloat(style.paddingTop) + Number.parseFloat(style.paddingBottom)
+        + Number.parseFloat(style.borderTopWidth) + Number.parseFloat(style.borderBottomWidth);
+      const transformX = new DOMMatrixReadOnly(style.transform).m41;
+      const visualLeft = slotBox.left + left + transformX;
+      const computedTop = Number.parseFloat(style.top);
+      const computedBottom = Number.parseFloat(style.bottom);
+      const visualTop = Number.isFinite(computedTop)
+        ? slotBox.top + computedTop
+        : slotBox.bottom - computedBottom - outerHeight;
+      const secondRowBox = document.querySelectorAll(".ranked-v3-inspect-equipment-slot[data-relic-index]")[5].getBoundingClientRect();
+      const loadoutTitleBox = document.querySelector(".ranked-v3-inspect-loadout > .ranked-v3-inspect-section-title").getBoundingClientRect();
+      return {
+        content: style.content,
+        width: contentWidth,
+        centerDelta: Math.abs((visualLeft + outerWidth / 2) - (slotBox.left + slotBox.width / 2)),
+        visualLeft,
+        visualRight: visualLeft + outerWidth,
+        visualTop,
+        visualBottom: visualTop + outerHeight,
+        slotBottom: slotBox.bottom,
+        secondRowTop: secondRowBox.top,
+        loadoutTitleBottom: loadoutTitleBox.bottom,
+        fontSize: Number.parseFloat(style.fontSize),
+        plateLeft: plateBox.left,
+        plateRight: plateBox.right
+      };
+    });
+    assert.match(visibleRelicTooltip.content, /Stack x\d+/u, JSON.stringify(visibleRelicTooltip));
+    assert.ok(visibleRelicTooltip.width <= 320, JSON.stringify(visibleRelicTooltip));
+    assert.ok(visibleRelicTooltip.centerDelta <= 1, JSON.stringify(visibleRelicTooltip));
+    assert.ok(visibleRelicTooltip.visualLeft >= visibleRelicTooltip.plateLeft, JSON.stringify(visibleRelicTooltip));
+    assert.ok(visibleRelicTooltip.visualRight <= visibleRelicTooltip.plateRight, JSON.stringify(visibleRelicTooltip));
+    assert.ok(visibleRelicTooltip.visualTop >= visibleRelicTooltip.slotBottom + 4, JSON.stringify(visibleRelicTooltip));
+    assert.ok(visibleRelicTooltip.visualBottom <= visibleRelicTooltip.secondRowTop - 4, JSON.stringify(visibleRelicTooltip));
+    assert.ok(visibleRelicTooltip.visualTop >= visibleRelicTooltip.loadoutTitleBottom + 4, JSON.stringify(visibleRelicTooltip));
+    assert.ok(visibleRelicTooltip.fontSize >= 12, JSON.stringify(visibleRelicTooltip));
+    await page.screenshot({
+      path: path.join(ARTIFACT_ROOT, "ranked-leaderboard-detail-tooltip.png"),
+      fullPage: true
+    });
+    await page.mouse.move(2, 2);
     await page.evaluate(() => document.activeElement?.blur());
+    await page.waitForTimeout(50);
+    assert.equal(
+      await firstRelicSlot.evaluate((slot) => getComputedStyle(slot, "::after").content),
+      "none"
+    );
+    const lastRelicSlot = page.locator(".ranked-v3-inspect-equipment-slot[data-relic-index]").last();
+    await lastRelicSlot.hover();
+    const longRelicTooltip = await lastRelicSlot.evaluate((slot) => {
+      const style = getComputedStyle(slot, "::after");
+      const slotBox = slot.getBoundingClientRect();
+      const backBox = document.querySelector(".ranked-v3-inspect-back").getBoundingClientRect();
+      const plateBox = slot.closest(".ranked-v3-reference-plate").getBoundingClientRect();
+      const contentWidth = Number.parseFloat(style.width);
+      const outerWidth = contentWidth + Number.parseFloat(style.paddingLeft) + Number.parseFloat(style.paddingRight)
+        + Number.parseFloat(style.borderLeftWidth) + Number.parseFloat(style.borderRightWidth);
+      const outerHeight = Number.parseFloat(style.height) + Number.parseFloat(style.paddingTop) + Number.parseFloat(style.paddingBottom)
+        + Number.parseFloat(style.borderTopWidth) + Number.parseFloat(style.borderBottomWidth);
+      const left = Number.parseFloat(style.left);
+      const visualLeft = slotBox.left + left + new DOMMatrixReadOnly(style.transform).m41;
+      const computedTop = Number.parseFloat(style.top);
+      const computedBottom = Number.parseFloat(style.bottom);
+      const visualTop = Number.isFinite(computedTop)
+        ? slotBox.top + computedTop
+        : slotBox.bottom - computedBottom - outerHeight;
+      return {
+        content: style.content,
+        visualLeft,
+        visualRight: visualLeft + outerWidth,
+        visualTop,
+        visualBottom: visualTop + outerHeight,
+        slotBottom: slotBox.bottom,
+        backTop: backBox.top,
+        plateLeft: plateBox.left,
+        plateRight: plateBox.right,
+        fontSize: Number.parseFloat(style.fontSize)
+      };
+    });
+    assert.match(longRelicTooltip.content, /Cache Key.*Non-stackable.*Stack x1/u, JSON.stringify(longRelicTooltip));
+    assert.ok(longRelicTooltip.visualLeft >= longRelicTooltip.plateLeft, JSON.stringify(longRelicTooltip));
+    assert.ok(longRelicTooltip.visualRight <= longRelicTooltip.plateRight, JSON.stringify(longRelicTooltip));
+    assert.ok(longRelicTooltip.visualTop >= longRelicTooltip.slotBottom + 4, JSON.stringify(longRelicTooltip));
+    assert.ok(longRelicTooltip.visualBottom <= longRelicTooltip.backTop - 12, JSON.stringify(longRelicTooltip));
+    assert.ok(longRelicTooltip.fontSize >= 12, JSON.stringify(longRelicTooltip));
+    await page.screenshot({
+      path: path.join(ARTIFACT_ROOT, "ranked-leaderboard-detail-long-tooltip.png"),
+      fullPage: true
+    });
+    await page.mouse.move(2, 2);
+    const mutatorsControl = page.locator(".ranked-v3-inspect-mutators");
+    await mutatorsControl.hover();
+    const mutatorTooltipAudit = await mutatorsControl.evaluate((control) => {
+      const style = getComputedStyle(control, "::after");
+      const controlBox = control.getBoundingClientRect();
+      const plateBox = control.closest(".ranked-v3-reference-plate").getBoundingClientRect();
+      const contentWidth = Number.parseFloat(style.width);
+      const outerWidth = contentWidth + Number.parseFloat(style.paddingLeft) + Number.parseFloat(style.paddingRight)
+        + Number.parseFloat(style.borderLeftWidth) + Number.parseFloat(style.borderRightWidth);
+      const outerHeight = Number.parseFloat(style.height) + Number.parseFloat(style.paddingTop) + Number.parseFloat(style.paddingBottom)
+        + Number.parseFloat(style.borderTopWidth) + Number.parseFloat(style.borderBottomWidth);
+      const visualRight = controlBox.right - Number.parseFloat(style.right);
+      const visualBottom = controlBox.bottom - Number.parseFloat(style.bottom);
+      return {
+        content: style.content,
+        visualLeft: visualRight - outerWidth,
+        visualRight,
+        visualTop: visualBottom - outerHeight,
+        visualBottom,
+        plateLeft: plateBox.left,
+        plateRight: plateBox.right,
+        plateTop: plateBox.top,
+        plateBottom: plateBox.bottom,
+        fontSize: Number.parseFloat(style.fontSize),
+        hostOverflow: getComputedStyle(control).overflow
+      };
+    });
+    assert.match(mutatorTooltipAudit.content, /Berserker.*Bulwark.*Alchemist/u, JSON.stringify(mutatorTooltipAudit));
+    assert.ok(mutatorTooltipAudit.visualLeft >= mutatorTooltipAudit.plateLeft, JSON.stringify(mutatorTooltipAudit));
+    assert.ok(mutatorTooltipAudit.visualRight <= mutatorTooltipAudit.plateRight, JSON.stringify(mutatorTooltipAudit));
+    assert.ok(mutatorTooltipAudit.visualTop >= mutatorTooltipAudit.plateTop, JSON.stringify(mutatorTooltipAudit));
+    assert.ok(mutatorTooltipAudit.visualBottom <= mutatorTooltipAudit.plateBottom, JSON.stringify(mutatorTooltipAudit));
+    assert.ok(mutatorTooltipAudit.fontSize >= 12, JSON.stringify(mutatorTooltipAudit));
+    assert.equal(mutatorTooltipAudit.hostOverflow, "visible", JSON.stringify(mutatorTooltipAudit));
+    await page.screenshot({
+      path: path.join(ARTIFACT_ROOT, "ranked-leaderboard-detail-mutators-tooltip.png"),
+      fullPage: true
+    });
+    await page.mouse.move(2, 2);
+    await page.evaluate(() => document.activeElement?.blur());
+    await page.waitForTimeout(50);
     await page.screenshot({
       path: path.join(ARTIFACT_ROOT, "ranked-leaderboard-detail.png"),
       fullPage: true
@@ -1653,7 +1887,40 @@ ${fatalTestHookAnchor}`;
     assert.ok(detailPlateAudit.statFontSize >= 18.5, JSON.stringify(detailPlateAudit));
     assert.ok(detailPlateAudit.chronicleFontSize >= 17, JSON.stringify(detailPlateAudit));
     assert.ok(detailPlateAudit.backFontSize >= 20, JSON.stringify(detailPlateAudit));
-    assert.ok(detailPlateAudit.equipmentLabelFontSize >= 15, JSON.stringify(detailPlateAudit));
+    assert.deepEqual(detailPlateAudit.inspectStats, [["Depth", "19"], ["Gold", "8,550"]]);
+    assert.deepEqual(detailPlateAudit.actionLabels, ["Back to Leaderboard"]);
+    assert.ok(Math.abs(detailPlateAudit.headerSeparators[0].leftRatio - 0.447) <= 0.008, JSON.stringify(detailPlateAudit));
+    assert.ok(Math.abs(detailPlateAudit.headerSeparators[1].leftRatio - 0.568) <= 0.008, JSON.stringify(detailPlateAudit));
+    detailPlateAudit.headerSeparators.forEach((separator) => {
+      assert.notEqual(separator.content, "none", JSON.stringify(detailPlateAudit));
+      assert.ok(separator.width >= 0.9 && separator.width <= 2, JSON.stringify(detailPlateAudit));
+      assert.ok(separator.height >= 55 && separator.height <= 80, JSON.stringify(detailPlateAudit));
+    });
+    detailPlateAudit.inspectStatMetrics.forEach((stat) => {
+      assert.ok(stat.labelFontSize >= 11 && stat.labelFontSize <= 14, JSON.stringify(detailPlateAudit));
+      assert.ok(stat.valueFontSize >= 20, JSON.stringify(detailPlateAudit));
+      assert.ok(stat.valueFontSize >= stat.labelFontSize * 1.5, JSON.stringify(detailPlateAudit));
+      assert.match(stat.labelFontFamily, /Courier New/iu, JSON.stringify(detailPlateAudit));
+      assert.match(stat.valueFontFamily, /Georgia/iu, JSON.stringify(detailPlateAudit));
+    });
+    assert.ok(detailPlateAudit.terminalLayout.titleCenterDelta <= 2, JSON.stringify(detailPlateAudit));
+    assert.ok(detailPlateAudit.terminalLayout.titleTopInset >= 10 && detailPlateAudit.terminalLayout.titleTopInset <= 24, JSON.stringify(detailPlateAudit));
+    assert.ok(detailPlateAudit.terminalLayout.eyebrowLeftInset >= 110 && detailPlateAudit.terminalLayout.eyebrowLeftInset <= 145, JSON.stringify(detailPlateAudit));
+    assert.ok(detailPlateAudit.terminalLayout.causeLeftInset >= 110 && detailPlateAudit.terminalLayout.causeLeftInset <= 145, JSON.stringify(detailPlateAudit));
+    assert.equal(detailPlateAudit.terminalLayout.eyebrowTextAlign, "left", JSON.stringify(detailPlateAudit));
+    assert.equal(detailPlateAudit.terminalLayout.causeTextAlign, "left", JSON.stringify(detailPlateAudit));
+    assert.equal(detailPlateAudit.visibleEquipmentLabels, 0, JSON.stringify(detailPlateAudit));
+    detailPlateAudit.equipment.forEach((slot) => {
+      assert.equal(slot.text, "", JSON.stringify(detailPlateAudit));
+      assert.equal(slot.tabindex, "0", JSON.stringify(detailPlateAudit));
+      assert.match(slot.tooltip, /.+ \| .+ \| Stack x\d+/u, JSON.stringify(detailPlateAudit));
+      assert.ok(Math.abs(slot.centerDx) <= 6, JSON.stringify(detailPlateAudit));
+      assert.ok(Math.abs(slot.centerDy) <= 6, JSON.stringify(detailPlateAudit));
+    });
+    detailPlateAudit.chronicleAlignment.forEach(({ labelInset, valueInset }) => {
+      assert.ok(labelInset >= 58 && labelInset <= 70, JSON.stringify(detailPlateAudit));
+      assert.ok(valueInset >= 15 && valueInset <= 30, JSON.stringify(detailPlateAudit));
+    });
     assert.equal(detailPlateAudit.occupiedSlots, 10, JSON.stringify(detailPlateAudit));
     assert.equal(detailPlateAudit.visibleIcons, 10, JSON.stringify(detailPlateAudit));
     assert.deepEqual(detailPlateAudit.chronicleLabels, [

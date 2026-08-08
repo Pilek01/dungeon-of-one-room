@@ -5505,12 +5505,12 @@ body.ranked-v3-modal-open #screenOverlay {
   body:has(#game.graphics-hd) .ranked-v3-leaderboard-podium {
     position: absolute;
     top: 20.7%;
-    left: 13.8%;
-    right: 13.8%;
+    left: 16.43%;
+    right: 16.43%;
     height: 34.3%;
     display: grid;
-    grid-template-columns: 1fr 1.18fr 1fr;
-    gap: 2.8%;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0;
   }
   body:has(#game.graphics-hd) .ranked-v3-podium-slot {
     position: relative;
@@ -5602,6 +5602,7 @@ body.ranked-v3-modal-open #screenOverlay {
     display: grid;
     grid-template-columns: 10.5% 31.5% 20% 10.5% 13% 14.5%;
     align-items: center;
+    column-gap: 0;
   }
   body:has(#game.graphics-hd) .ranked-v3-leaderboard-columns {
     color: #d8bd86;
@@ -5618,7 +5619,7 @@ body.ranked-v3-modal-open #screenOverlay {
   }
   body:has(#game.graphics-hd) .ranked-v3-ledger-slot {
     min-width: 0;
-    padding: 0 .8%;
+    padding: 0;
     border: 0;
     color: #c5b69f;
     background: transparent;
@@ -5639,8 +5640,8 @@ body.ranked-v3-modal-open #screenOverlay {
     font: 600 .9cqw/1 "Copperplate Gothic Light", Georgia, serif;
   }
   body:has(#game.graphics-hd) .ranked-v3-ledger-slot .ranked-v3-leaderboard-score { grid-column: 3; color: var(--ranked-plate-gold); text-align: center; }
-  body:has(#game.graphics-hd) .ranked-v3-ledger-slot .ranked-v3-leaderboard-depth { grid-column: 4; text-align: center; }
-  body:has(#game.graphics-hd) .ranked-v3-ledger-slot .ranked-v3-leaderboard-gold { grid-column: 5; text-align: center; }
+  body:has(#game.graphics-hd) .ranked-v3-ledger-slot .ranked-v3-leaderboard-depth { grid-column: 4; font: inherit; text-align: center; }
+  body:has(#game.graphics-hd) .ranked-v3-ledger-slot .ranked-v3-leaderboard-gold { grid-column: 5; font: inherit; text-align: center; }
   body:has(#game.graphics-hd) .ranked-v3-ledger-slot .ranked-v3-leaderboard-details-button {
     grid-column: 6;
     justify-self: center;
@@ -5692,6 +5693,20 @@ body.ranked-v3-modal-open #screenOverlay {
   }
   body:has(#game.graphics-hd) .ranked-v3-inspect-header p,
   body:has(#game.graphics-hd) .ranked-v3-inspect-header h3 { position: absolute; margin: 0; }
+  body:has(#game.graphics-hd) .ranked-v3-inspect-header::before,
+  body:has(#game.graphics-hd) .ranked-v3-inspect-header::after {
+    content: "";
+    position: absolute;
+    top: 48%;
+    width: 1px;
+    height: 32%;
+    background: #725b3d;
+    box-shadow: 1px 0 #080706;
+    opacity: .72;
+    pointer-events: none;
+  }
+  body:has(#game.graphics-hd) .ranked-v3-inspect-header::before { left: 44.7%; }
+  body:has(#game.graphics-hd) .ranked-v3-inspect-header::after { left: 56.8%; }
   body:has(#game.graphics-hd) .ranked-v3-inspect-rank {
     top: 76%;
     left: 18.3%;
@@ -5733,14 +5748,30 @@ body.ranked-v3-modal-open #screenOverlay {
     text-transform: uppercase;
     white-space: nowrap;
   }
+  body:has(#game.graphics-hd) .ranked-v3-inspect-depth,
+  body:has(#game.graphics-hd) .ranked-v3-inspect-gold {
+    display: flex;
+    align-items: baseline;
+    gap: .52cqw;
+  }
   body:has(#game.graphics-hd) .ranked-v3-inspect-depth { left: 47.8%; }
   body:has(#game.graphics-hd) .ranked-v3-inspect-gold { left: 59.3%; }
+  body:has(#game.graphics-hd) .ranked-v3-inspect-stat-label {
+    color: #b89b73;
+    font: 600 .78cqw/1 "Courier New", monospace;
+    letter-spacing: .12em;
+  }
+  body:has(#game.graphics-hd) .ranked-v3-inspect-stat-value {
+    color: #d4b98c;
+    font: 400 1.45cqw/1 Georgia, serif;
+    letter-spacing: .02em;
+  }
 
   body:has(#game.graphics-hd) .ranked-v3-inspect-loadout {
     position: absolute;
-    top: 31.1%;
-    left: 15.2%;
-    width: 46.1%;
+    top: 33%;
+    left: 17.55%;
+    width: 43.05%;
   }
   body:has(#game.graphics-hd) .ranked-v3-inspect-section-title {
     margin: 0 0 2.3%;
@@ -5750,30 +5781,44 @@ body.ranked-v3-modal-open #screenOverlay {
     text-align: center;
     text-transform: uppercase;
   }
+  body:has(#game.graphics-hd) .ranked-v3-inspect-loadout > .ranked-v3-inspect-section-title {
+    margin-bottom: 1.15cqw;
+  }
   body:has(#game.graphics-hd) .ranked-v3-inspect-equipment-grid {
     display: grid;
     grid-template-columns: repeat(5, minmax(0, 1fr));
-    column-gap: 1.5%;
-    row-gap: 3.05cqw;
+    column-gap: 2.55%;
+    row-gap: 4.15cqw;
   }
   body:has(#game.graphics-hd) .ranked-v3-inspect-equipment-slot {
     min-width: 0;
     min-height: 0;
-    aspect-ratio: 1 / 1.24;
+    aspect-ratio: 1 / 1.25;
     display: grid;
-    grid-template-rows: minmax(0, 1fr) auto;
-    justify-items: center;
-    gap: 3%;
-    padding: 5% 6% 3%;
+    place-items: center;
+    padding: 7%;
     border: 0;
     background: transparent;
-    text-align: center;
+  }
+  body:has(#game.graphics-hd) .ranked-v3-inspect-equipment-slot:focus-visible {
+    outline: 1px solid #c39a56;
+    outline-offset: -3px;
+  }
+  body:has(#game.graphics-hd) .ranked-v3-inspect-equipment-slot[data-record-tooltip]::after {
+    top: calc(100% + .4cqw);
+    bottom: auto;
+    left: 50%;
+    right: auto;
+    width: min(300px, 22cqw);
+    transform: translateX(-50%);
+    font: 600 .8cqw/1.35 "Courier New", monospace;
+    text-align: left;
   }
   body:has(#game.graphics-hd) .ranked-v3-inspect-equipment-slot[aria-hidden="true"] { visibility: hidden; }
   body:has(#game.graphics-hd) .ranked-v3-inspect-equipment-icon {
-    width: 82%;
-    height: 100%;
-    max-height: 100%;
+    width: 88%;
+    height: 88%;
+    max-height: 88%;
     object-fit: contain;
     filter: drop-shadow(0 5px 4px #000);
   }
@@ -5797,9 +5842,9 @@ body.ranked-v3-modal-open #screenOverlay {
 
   body:has(#game.graphics-hd) .ranked-v3-inspect-chronicle {
     position: absolute;
-    top: 31.2%;
-    right: 12.2%;
-    width: 23.6%;
+    top: 32%;
+    right: 13.2%;
+    width: 23%;
   }
   body:has(#game.graphics-hd) .ranked-v3-inspect-chronicle-rows {
     display: grid;
@@ -5812,18 +5857,18 @@ body.ranked-v3-modal-open #screenOverlay {
     grid-template-columns: minmax(0, 1fr) auto;
     align-items: center;
     min-height: 0;
-    padding: 0 4%;
+    padding: 0 6% 0 18%;
     border: 0;
     color: #d7c29e;
     background: transparent;
     font: 600 .82cqw/1 Georgia, serif;
   }
-  body:has(#game.graphics-hd) .ranked-v3-inspect-chronicle-label { padding-right: 8%; }
+  body:has(#game.graphics-hd) .ranked-v3-inspect-chronicle-label { padding-right: 6%; }
   body:has(#game.graphics-hd) .ranked-v3-inspect-chronicle-value { color: #e6c681; text-align: right; }
   body:has(#game.graphics-hd) .ranked-v3-inspect-mutators {
     max-width: 100%;
     padding: .32em .42em;
-    overflow: hidden;
+    overflow: visible;
     color: #e6c681;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -5831,39 +5876,55 @@ body.ranked-v3-modal-open #screenOverlay {
     font: inherit;
     text-align: right;
   }
+  body:has(#game.graphics-hd) .ranked-v3-inspect-mutators[data-record-tooltip]::after {
+    font: 600 .8cqw/1.35 "Courier New", monospace;
+    text-align: left;
+  }
   body:has(#game.graphics-hd) .ranked-v3-inspect-terminal {
     position: absolute;
-    right: 12.2%;
+    right: 13.2%;
     bottom: 16.1%;
-    width: 23.6%;
+    width: 23%;
     height: 13.7%;
-    display: grid;
-    align-content: center;
-    justify-items: center;
-    gap: .55cqw;
-    padding: 2.2% 2.7%;
+    display: block;
+    padding: 0;
     border: 0;
     background: transparent;
-    text-align: center;
+    text-align: left;
   }
   body:has(#game.graphics-hd) .ranked-v3-inspect-terminal h3,
   body:has(#game.graphics-hd) .ranked-v3-inspect-terminal p { margin: 0; }
   body:has(#game.graphics-hd) .ranked-v3-inspect-terminal-title {
+    position: absolute;
+    top: 8.5%;
+    left: 0;
+    right: 0;
     color: #c56f5a;
     font: 600 1.15cqw/1 "Copperplate Gothic Light", Georgia, serif;
     letter-spacing: .15em;
+    text-align: center;
     text-transform: uppercase;
   }
   body:has(#game.graphics-hd) .ranked-v3-inspect-terminal-eyebrow {
+    position: absolute;
+    top: 46%;
+    left: 35%;
+    right: 8%;
     color: #c8785e;
     font: 600 .83cqw/1 "Copperplate Gothic Light", Georgia, serif;
     letter-spacing: .08em;
+    text-align: left;
     text-transform: uppercase;
   }
   body:has(#game.graphics-hd) .ranked-v3-inspect-terminal-cause {
-    max-width: 82%;
+    position: absolute;
+    top: 64%;
+    left: 35%;
+    right: 12%;
+    max-width: none;
     color: #c4a880;
-    font: 600 .72cqw/1.2 Georgia, serif;
+    font: 400 .72cqw/1.2 Georgia, serif;
+    text-align: left;
   }
   body:has(#game.graphics-hd) .ranked-v3-inspect-actions {
     position: absolute;
@@ -6043,9 +6104,9 @@ body.ranked-v3-modal-open #screenOverlay {
     font-weight: 400;
   }
   body:has(#game.graphics-hd) .ranked-v3-inspect-equipment-icon {
-    width: 92%;
-    transform: scale(1.08);
-    transform-origin: center;
+    width: 88%;
+    height: 88%;
+    transform: none;
   }
   body:has(#game.graphics-hd) .ranked-v3-inspect-equipment-label {
     font-size: .94cqw;

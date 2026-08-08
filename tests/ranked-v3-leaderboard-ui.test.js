@@ -52,7 +52,15 @@ function loadUi() {
   const modulePath = path.resolve(__dirname, "..", "online-v3", "ranked-v3-leaderboard-ui.js");
   delete require.cache[modulePath];
   global.DungeonRelicData = {
-    RELICS: [{ id: "crownconcord", name: "Crown Concord", icon: "assets/hd/ui/relics/crownconcord.png" }, { id: "second-relic", name: "Second Relic" }]
+    RELICS: [
+      {
+        id: "crownconcord",
+        name: "Crown Concord",
+        desc: "You can equip up to 2 legendary relics",
+        icon: "assets/hd/ui/relics/crownconcord.png"
+      },
+      { id: "second-relic", name: "Second Relic", desc: "Second relic description" }
+    ]
   };
   global.DungeonMutatorData = {
     MUTATORS: [{
@@ -231,10 +239,38 @@ test("Ranked inspect plate renders only the approved build and Chronicle fields"
   const art = visit(plate, (node) => hasClass(node, "ranked-v3-reference-plate-art"));
   assert.equal(art.length, 1);
   assert.equal(art[0].attributes.get("aria-hidden"), "true");
+  const depthStat = visit(plate, (node) => hasClass(node, "ranked-v3-inspect-depth"));
+  const goldStat = visit(plate, (node) => hasClass(node, "ranked-v3-inspect-gold"));
+  assert.deepEqual(
+    depthStat[0].children.map((node) => [node.className, node.textContent]),
+    [
+      ["ranked-v3-inspect-stat-label", "Depth"],
+      ["ranked-v3-inspect-stat-value", "19"]
+    ]
+  );
+  assert.deepEqual(
+    goldStat[0].children.map((node) => [node.className, node.textContent]),
+    [
+      ["ranked-v3-inspect-stat-label", "Gold"],
+      ["ranked-v3-inspect-stat-value", "700"]
+    ]
+  );
   const slots = visit(plate, (node) => hasClass(node, "ranked-v3-inspect-equipment-slot"));
   assert.equal(slots.length, 10);
   assert.equal(slots.filter((slot) => slot.attributes.get("aria-hidden") === "true").length, 0);
-  assert.ok(text.indexOf("Crown Concord") < text.indexOf("Second Relic"));
+  assert.equal(visit(plate, (node) => hasClass(node, "ranked-v3-inspect-equipment-label")).length, 0);
+  assert.doesNotMatch(text, /Crown Concord|Second Relic/iu);
+  assert.equal(slots[0].attributes.get("tabindex"), "0");
+  assert.equal(
+    slots[0].attributes.get("data-record-tooltip"),
+    "Crown Concord | You can equip up to 2 legendary relics | Stack x2"
+  );
+  assert.equal(slots[0].attributes.get("aria-label"), slots[0].attributes.get("data-record-tooltip"));
+  assert.equal(slots[0].attributes.has("title"), false);
+  assert.equal(
+    slots[1].attributes.get("data-record-tooltip"),
+    "Second Relic | Second relic description | Stack x1"
+  );
   assert.doesNotMatch(text, /Ignored Relic|Carried/iu);
 
   const chronicleRows = visit(plate, (node) => hasClass(node, "ranked-v3-inspect-chronicle-row"));
@@ -250,12 +286,14 @@ test("Ranked inspect plate renders only the approved build and Chronicle fields"
   assert.match(text, /Game Over.*Defeated by The Hollow Seraph/isu);
   assert.doesNotMatch(text, /Pacts|Skill Tiers|Camp Upgrades|Elixirs|Final Chronicle|Damage Done|v08-meta-1|v08-score-1/iu);
 
-  const back = visit(plate, (node) => node.tagName === "button" && node.textContent === "Back to Leaderboard");
-  const close = visit(plate, (node) => node.tagName === "button" && node.textContent === "Close");
-  back[0].click();
-  close[0].click();
+  const inspectActions = visit(plate, (node) => (
+    node.tagName === "button"
+    && (hasClass(node, "ranked-v3-inspect-back") || hasClass(node, "ranked-v3-inspect-close"))
+  ));
+  assert.deepEqual(inspectActions.map((node) => node.textContent), ["Back to Leaderboard"]);
+  inspectActions[0].click();
   assert.deepEqual(returned, [true]);
-  assert.deepEqual(closed, [true]);
+  assert.deepEqual(closed, []);
 });
 
 test("Ranked inspect plate never invents a missing defeat cause", () => {
