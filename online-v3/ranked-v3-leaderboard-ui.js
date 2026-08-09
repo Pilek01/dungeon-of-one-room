@@ -10,6 +10,7 @@
   const PODIUM_SIZE = 3;
   const LEDGER_ROWS_PER_PAGE = 7;
   const MAX_LEDGER_PAGES = 10;
+  let inspectTooltipSequence = 0;
   const integer = (value) => Math.max(0, Math.floor(Number(value) || 0));
   const humanize = (value) => String(value || "").replace(/[_-]+/gu, " ").replace(/\b\w/gu, (letter) => letter.toUpperCase()) || "None";
   const duration = (value) => { const seconds = Math.floor(integer(value) / 1000); const hours = Math.floor(seconds / 3600); const minutes = Math.floor((seconds % 3600) / 60); return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(seconds % 60).padStart(2, "0")}`; };
@@ -415,6 +416,178 @@
     }).join(" | ");
   }
 
+  function createInspectTooltipPanel(documentRef) {
+    const panel = element(documentRef, "aside", "ranked-v3-inspect-tooltip");
+    const panelId = "ranked-v3-inspect-tooltip-" + String(++inspectTooltipSequence);
+    panel.setAttribute("id", panelId);
+    panel.setAttribute("role", "tooltip");
+    panel.setAttribute("aria-hidden", "true");
+    panel.setAttribute("data-visible", "false");
+    panel.hidden = true;
+    return panel;
+  }
+
+  function installInspectTooltip(rootNode, panel) {
+    const anchors = navDescendants(rootNode, (node) => Boolean(navAttr(node, "data-record-tooltip")));
+    const anchorSet = new Set(anchors);
+    const documentRef = rootNode.ownerDocument || root?.document;
+    const panelId = navAttr(panel, "id");
+    const preferredPlacement = (anchor) => {
+      const relicIndex = Number(navAttr(anchor, "data-relic-index"));
+      return navAttr(anchor, "data-record-action") === "mutators"
+        || (Number.isFinite(relicIndex) && relicIndex >= 5)
+        ? "above"
+        : "below";
+    };
+    const anchorForTarget = (target) => {
+      let current = target;
+      while (current) {
+        if (anchorSet.has(current)) return current;
+        if (current === rootNode) break;
+        current = current.parentNode;
+      }
+      return null;
+    };
+    for (const anchor of anchors) {
+      anchor.setAttribute("aria-describedby", panelId);
+      anchor.setAttribute("data-record-tooltip-placement", preferredPlacement(anchor));
+    }
+    let hoveredAnchor = null;
+    let focusedAnchor = null;
+
+    const place = (anchor) => {
+      const rootBox = rootNode.getBoundingClientRect?.();
+      const anchorBox = anchor?.getBoundingClientRect?.();
+      const panelBox = panel.getBoundingClientRect?.();
+      if (!rootBox || !anchorBox || !panelBox || !panelBox.width || !panelBox.height) return;
+      const margin = Math.max(12, rootBox.width * 0.018);
+      const gap = Math.max(10, rootBox.width * 0.008);
+      const viewportWidth = Number(documentRef?.defaultView?.innerWidth || root?.innerWidth || 0);
+      const viewportHeight = Number(documentRef?.defaultView?.innerHeight || root?.innerHeight || 0);
+      const minLeft = Math.max(margin, viewportWidth ? margin - rootBox.left : margin);
+      const rootMaxLeft = rootBox.width - margin - panelBox.width;
+      const viewportMaxLeft = viewportWidth ? viewportWidth - rootBox.left - margin - panelBox.width : rootMaxLeft;
+      let maxLeft = Math.max(minLeft, Math.min(rootMaxLeft, viewportMaxLeft));
+      const chronicleNode = navDescendants(rootNode, (node) => String(node?.className || "").split(/\s+/u).includes("ranked-v3-inspect-chronicle"))[0];
+      const chronicleBox = chronicleNode?.getBoundingClientRect?.();
+      if (chronicleBox) {
+        const beforeChronicle = chronicleBox.left - rootBox.left - gap - panelBox.width;
+        if (beforeChronicle >= minLeft) maxLeft = Math.min(maxLeft, beforeChronicle);
+      }
+      const centeredLeft = anchorBox.left + anchorBox.width / 2 - rootBox.left - panelBox.width / 2;
+      const left = Math.max(minLeft, Math.min(maxLeft, centeredLeft));
+      const minTop = Math.max(margin, viewportHeight ? margin - rootBox.top : margin);
+      const rootMaxTop = rootBox.height - margin - panelBox.height;
+      const viewportMaxTop = viewportHeight ? viewportHeight - rootBox.top - margin - panelBox.height : rootMaxTop;
+      const maxTop = Math.max(minTop, Math.min(rootMaxTop, viewportMaxTop));
+      const below = anchorBox.bottom - rootBox.top + gap;
+      const above = anchorBox.top - rootBox.top - panelBox.height - gap;
+      const belowFits = below <= maxTop;
+      const aboveFits = above >= minTop;
+      let placement = preferredPlacement(anchor);
+      if (placement === "above" && !aboveFits && belowFits) placement = "below";
+      if (placement === "below" && !belowFits && aboveFits) placement = "above";
+      const candidateTop = placement === "above" ? above : below;
+      let top = Math.max(minTop, Math.min(maxTop, candidateTop));
+      const backNode = navDescendants(rootNode, (node) => navAttr(node, "data-record-action") === "back")[0];
+      const backBox = backNode?.getBoundingClientRect?.();
+      const overlapsBack = (candidate) => Boolean(backBox
+        && left < backBox.right - rootBox.left + gap
+        && left + panelBox.width > backBox.left - rootBox.left - gap
+        && candidate < backBox.bottom - rootBox.top + gap
+        && candidate + panelBox.height > backBox.top - rootBox.top - gap);
+      if (overlapsBack(top)) {
+        const alternatives = [
+          { placement: "above", top: above },
+          { placement: "below", top: below }
+        ];
+        const alternative = alternatives.find((item) => item.top >= minTop && item.top <= maxTop && !overlapsBack(item.top));
+        if (alternative) {
+          placement = alternative.placement;
+          top = alternative.top;
+        } else {
+          const beforeBack = backBox.top - rootBox.top - gap - panelBox.height;
+          const afterBack = backBox.bottom - rootBox.top + gap;
+          if (beforeBack >= minTop) top = Math.min(maxTop, beforeBack);
+          else if (afterBack <= maxTop) top = Math.max(minTop, afterBack);
+        }
+      }
+      panel.style.left = left + "px";
+      panel.style.top = top + "px";
+      panel.setAttribute("data-placement", placement);
+    };
+
+    const show = (anchor) => {
+      const content = navAttr(anchor, "data-record-tooltip");
+      if (!content) return;
+      panel.textContent = content;
+      panel.hidden = false;
+      panel.setAttribute("aria-hidden", "false");
+      panel.setAttribute("data-visible", "true");
+      panel.setAttribute("data-placement", preferredPlacement(anchor));
+      panel.setAttribute(
+        "data-tooltip-source",
+        navAttr(anchor, "data-record-action") === "mutators"
+          ? "mutators"
+          : "equipment-" + navAttr(anchor, "data-relic-index")
+      );
+      place(anchor);
+    };
+
+    const hide = () => {
+      panel.hidden = true;
+      panel.setAttribute("aria-hidden", "true");
+      panel.setAttribute("data-visible", "false");
+    };
+    const showActive = () => {
+      const active = focusedAnchor || hoveredAnchor;
+      if (active) show(active);
+      else hide();
+    };
+    const onPointerover = (event) => {
+      const anchor = anchorForTarget(event?.target);
+      if (!anchor || anchorForTarget(event?.relatedTarget) === anchor) return;
+      hoveredAnchor = anchor;
+      show(anchor);
+    };
+    const onPointerout = (event) => {
+      const anchor = anchorForTarget(event?.target);
+      if (!anchor) return;
+      const nextAnchor = anchorForTarget(event?.relatedTarget);
+      if (nextAnchor === anchor) return;
+      if (hoveredAnchor === anchor) hoveredAnchor = nextAnchor;
+      showActive();
+    };
+    const onFocusin = (event) => {
+      const anchor = anchorForTarget(event?.target);
+      if (!anchor || anchorForTarget(event?.relatedTarget) === anchor) return;
+      focusedAnchor = anchor;
+      show(anchor);
+    };
+    const onFocusout = (event) => {
+      const anchor = anchorForTarget(event?.target);
+      if (!anchor) return;
+      const nextAnchor = anchorForTarget(event?.relatedTarget);
+      if (nextAnchor === anchor) return;
+      if (focusedAnchor === anchor) focusedAnchor = nextAnchor;
+      showActive();
+    };
+
+    rootNode.addEventListener("pointerover", onPointerover);
+    rootNode.addEventListener("pointerout", onPointerout);
+    rootNode.addEventListener("focusin", onFocusin);
+    rootNode.addEventListener("focusout", onFocusout);
+    return Object.freeze({
+      hide,
+      refresh: showActive,
+      destroy: () => {
+        rootNode.removeEventListener?.("pointerover", onPointerover);
+        rootNode.removeEventListener?.("pointerout", onPointerout);
+        rootNode.removeEventListener?.("focusin", onFocusin);
+        rootNode.removeEventListener?.("focusout", onFocusout);
+      }
+    });
+  }
   function chronicleRow(documentRef, label, value) {
     const row = element(documentRef, "article", "ranked-v3-inspect-chronicle-row");
     row.append(element(documentRef, "span", "ranked-v3-inspect-chronicle-label", label));
@@ -443,6 +616,7 @@
     const art = element(documentRef, "div", SELECTORS.art);
     art.setAttribute("aria-hidden", "true");
     const overlay = element(documentRef, "div", `${SELECTORS.overlay} ranked-v3-inspect-overlay`);
+    const tooltipPanel = createInspectTooltipPanel(documentRef);
     const header = element(documentRef, "header", "ranked-v3-inspect-header");
     const rank = element(documentRef, "p", "ranked-v3-inspect-rank", String(detail.rank));
     rank.setAttribute("data-record-rank", String(detail.rank));
@@ -460,8 +634,9 @@
       loadout.append(element(documentRef, "p", "ranked-v3-inspect-unavailable", notice));
       const actions = element(documentRef, "nav", "ranked-v3-inspect-actions");
       actions.append(recordNavMeta(control(documentRef, "ranked-v3-inspect-back", "Back to Leaderboard", handlers.onBack), "detail-action", "back"));
-      overlay.append(header, loadout, actions);
+      overlay.append(header, loadout, actions, tooltipPanel);
       rootNode.append(art, overlay);
+      installInspectTooltip(rootNode, tooltipPanel);
       attachRecordNavigation(rootNode, { mode: "detail", onBack: handlers.onBack, onClose: handlers.onClose });
       return rootNode;
     }
@@ -500,8 +675,9 @@
     );
     const actions = element(documentRef, "nav", "ranked-v3-inspect-actions");
     actions.append(recordNavMeta(control(documentRef, "ranked-v3-inspect-back", "Back to Leaderboard", handlers.onBack), "detail-action", "back"));
-    overlay.append(header, loadout, chronicle, terminal, actions);
+    overlay.append(header, loadout, chronicle, terminal, actions, tooltipPanel);
     rootNode.append(art, overlay);
+    installInspectTooltip(rootNode, tooltipPanel);
     attachRecordNavigation(rootNode, { mode: "detail", onBack: handlers.onBack, onClose: handlers.onClose });
     return rootNode;
   }

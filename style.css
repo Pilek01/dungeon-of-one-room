@@ -6243,10 +6243,68 @@ body.ranked-v3-modal-open #screenOverlay {
     top: 92.25%;
     font-size: 1.05cqw;
   }
-  body:has(#game.graphics-hd) .ranked-v3-ledger-slot .record-archive-name {
-    transform: translateX(2.1cqw);
+  body:has(#game.graphics-hd) .ranked-v3-reference-plate--leaderboard {
+    --ranked-ledger-name-shift: 2.1cqw;
+    --ranked-ledger-depth-shift: -2.1cqw;
   }
+  body:has(#game.graphics-hd) .ranked-v3-leaderboard-column:nth-child(2),
+  body:has(#game.graphics-hd) .ranked-v3-ledger-slot .record-archive-name {
+    transform: translateX(var(--ranked-ledger-name-shift));
+  }
+  body:has(#game.graphics-hd) .ranked-v3-leaderboard-column:nth-child(4),
   body:has(#game.graphics-hd) .ranked-v3-ledger-slot .ranked-v3-leaderboard-depth {
-    transform: translateX(-2.1cqw);
+    transform: translateX(var(--ranked-ledger-depth-shift));
+  }
+  body:has(#game.graphics-hd) .ranked-v3-inspect-rank[data-rank-digits="single"] {
+    transform: translateX(.35cqw);
+  }
+}
+/* Shared Inspect tooltip: one readable panel for pointer and keyboard focus. */
+.ranked-v3-reference-plate--inspect [data-record-tooltip]::after {
+  content: none !important;
+  display: none !important;
+}
+.ranked-v3-inspect-tooltip {
+  position: absolute;
+  z-index: 40;
+  width: min(48cqw, 740px);
+  max-width: calc(100% - 24px);
+  box-sizing: border-box;
+  margin: 0;
+  padding: clamp(.75rem, 1.2cqw, 1.25rem);
+  border: 1px solid #b38d4d;
+  color: #f4e9d3;
+  background:
+    linear-gradient(180deg, #12100dfa, #050609fa),
+    #050609fa;
+  box-shadow:
+    inset 0 0 0 1px #f0c87922,
+    0 12px 38px #000e;
+  font: 600 clamp(1rem, 2cqw, 1.95rem)/1.35 "Courier New", monospace;
+  letter-spacing: .02em;
+  text-align: left;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  pointer-events: none;
+}
+.ranked-v3-inspect-tooltip[hidden],
+.ranked-v3-inspect-tooltip[aria-hidden="true"] {
+  display: none;
+}
+.ranked-v3-inspect-tooltip[data-visible="true"] {
+  display: block;
+}
+.ranked-v3-inspect-tooltip[data-placement="above"] {
+  border-bottom-color: #e2bd74;
+}
+.ranked-v3-inspect-tooltip[data-placement="below"] {
+  border-top-color: #e2bd74;
+}
+@media (max-width: 760px) {
+  .ranked-v3-inspect-tooltip {
+    width: min(calc(100vw - 32px), 100%);
+    max-width: calc(100% - 16px);
+    padding: clamp(.75rem, 3vw, 1rem);
+    font-size: clamp(1rem, 4vw, 1.35rem);
   }
 }

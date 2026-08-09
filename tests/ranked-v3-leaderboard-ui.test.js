@@ -35,12 +35,23 @@ class FakeElement {
   }
 
   addEventListener(name, listener) {
-    this.listeners.set(String(name), listener);
+    const key = String(name);
+    const listeners = this.listeners.get(key) || [];
+    listeners.push(listener);
+    this.listeners.set(key, listeners);
+  }
+
+  removeEventListener(name, listener) {
+    const key = String(name);
+    const listeners = this.listeners.get(key) || [];
+    this.listeners.set(key, listeners.filter((entry) => entry !== listener));
   }
 
   click() {
     if (this.disabled) return;
-    this.listeners.get("click")?.({ type: "click", target: this, currentTarget: this });
+    for (const listener of this.listeners.get("click") || []) {
+      listener({ type: "click", target: this, currentTarget: this });
+    }
   }
 
   focus() {
@@ -51,7 +62,7 @@ class FakeElement {
     const next = event || {};
     next.target ||= this;
     next.currentTarget = this;
-    this.listeners.get(String(next.type))?.(next);
+    for (const listener of this.listeners.get(String(next.type)) || []) listener(next);
     return true;
   }
 }
@@ -301,6 +312,7 @@ test("Inspect detail preserves explicit availability flags and renders a neutral
 
   assert.equal(hasClass(plate, "ranked-v3-reference-plate"), true);
   assert.equal(visit(plate, (node) => hasClass(node, "ranked-v3-reference-plate-art")).length, 1);
+  assert.equal(visit(plate, (node) => hasClass(node, "ranked-v3-inspect-tooltip")).length, 1);
   assert.equal(notice.length, 1);
   assert.equal(notice[0].textContent, unavailable.detailsUnavailableNotice);
   const loadout = visit(plate, (node) => hasClass(node, "ranked-v3-inspect-loadout"));
@@ -457,6 +469,42 @@ test("Ranked inspect plate renders only the approved build and Chronicle fields"
   assert.equal(tooltip[0].attributes.get("tabindex"), "0");
   assert.equal(tooltip[0].textContent, "1");
   assert.match(tooltip[0].attributes.get("data-record-tooltip"), /\[G\].*Greed.*\+50% gold.*Enemies hit harder/iu);
+  const tooltipPanel = visit(plate, (node) => hasClass(node, "ranked-v3-inspect-tooltip"));
+  assert.equal(tooltipPanel.length, 1);
+  const panel = tooltipPanel[0];
+  const panelId = panel.attributes.get("id");
+  assert.equal(panel.attributes.get("role"), "tooltip");
+  assert.match(panelId, /^ranked-v3-inspect-tooltip-\d+$/u);
+  assert.equal(panel.attributes.get("aria-hidden"), "true");
+  for (const slot of slots) assert.equal(slot.attributes.get("aria-describedby"), panelId);
+  assert.equal(tooltip[0].attributes.get("aria-describedby"), panelId);
+
+  plate.dispatchEvent({ type: "pointerover", target: slots[0], relatedTarget: null });
+  assert.equal(panel.attributes.get("aria-hidden"), "false");
+  assert.equal(panel.attributes.get("data-visible"), "true");
+  assert.equal(panel.attributes.get("data-placement"), "below");
+  assert.equal(panel.textContent, slots[0].attributes.get("data-record-tooltip"));
+  plate.dispatchEvent({ type: "pointerout", target: slots[0], relatedTarget: null });
+  assert.equal(panel.attributes.get("aria-hidden"), "true");
+
+  plate.dispatchEvent({ type: "pointerover", target: slots[5], relatedTarget: null });
+  assert.equal(panel.attributes.get("data-placement"), "above");
+  assert.equal(panel.textContent, slots[5].attributes.get("data-record-tooltip"));
+  plate.dispatchEvent({ type: "pointerout", target: slots[5], relatedTarget: null });
+  assert.equal(panel.attributes.get("aria-hidden"), "true");
+
+  tooltip[0].focus();
+  plate.dispatchEvent({ type: "focusin", target: tooltip[0], relatedTarget: null });
+  assert.equal(documentRef.activeElement, tooltip[0]);
+  assert.equal(panel.attributes.get("aria-hidden"), "false");
+  assert.equal(panel.attributes.get("data-placement"), "above");
+  assert.equal(panel.textContent, tooltip[0].attributes.get("data-record-tooltip"));
+  plate.dispatchEvent({ type: "focusout", target: tooltip[0], relatedTarget: null });
+  assert.equal(panel.attributes.get("aria-hidden"), "true");
+  assert.equal(
+    visit(plate, (node) => hasClass(node, "ranked-v3-inspect-tooltip")).length,
+    1
+  );
   assert.match(text, /Game Over.*Defeated by The Hollow Seraph/isu);
   assert.doesNotMatch(text, /Pacts|Skill Tiers|Camp Upgrades|Elixirs|Final Chronicle|Damage Done|v08-meta-1|v08-score-1/iu);
 
