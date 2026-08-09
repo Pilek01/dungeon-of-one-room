@@ -3,22 +3,35 @@ const path = require("node:path");
 const test = require("node:test");
 
 class FakeElement {
-  constructor(tagName) {
+  constructor(tagName, ownerDocument = null) {
     this.tagName = String(tagName).toLowerCase();
     this.children = [];
     this.attributes = new Map();
     this.listeners = new Map();
+    this.ownerDocument = ownerDocument;
+    this.parentNode = null;
     this.className = "";
     this.textContent = "";
     this.type = "";
+    this.disabled = false;
+    this.style = {};
   }
 
   append(...nodes) {
-    this.children.push(...nodes);
+    for (const node of nodes) {
+      if (!node) continue;
+      node.parentNode = this;
+      if (!node.ownerDocument) node.ownerDocument = this.ownerDocument;
+      this.children.push(node);
+    }
   }
 
   setAttribute(name, value) {
     this.attributes.set(String(name), String(value));
+  }
+
+  getAttribute(name) {
+    return this.attributes.get(String(name)) ?? null;
   }
 
   addEventListener(name, listener) {
@@ -26,16 +39,50 @@ class FakeElement {
   }
 
   click() {
-    this.listeners.get("click")?.();
+    if (this.disabled) return;
+    this.listeners.get("click")?.({ type: "click", target: this, currentTarget: this });
+  }
+
+  focus() {
+    if (!this.disabled && this.ownerDocument) this.ownerDocument.activeElement = this;
+  }
+
+  dispatchEvent(event) {
+    const next = event || {};
+    next.target ||= this;
+    next.currentTarget = this;
+    this.listeners.get(String(next.type))?.(next);
+    return true;
   }
 }
 
 function createDocument() {
-  return Object.freeze({
+  const documentRef = {
+    activeElement: null,
+    defaultView: {
+      getComputedStyle(node) {
+        return { gridTemplateColumns: node?.style?.gridTemplateColumns || "1fr 1fr 1fr 1fr 1fr" };
+      }
+    },
     createElement(tagName) {
-      return new FakeElement(tagName);
+      return new FakeElement(tagName, documentRef);
     }
-  });
+  };
+  return documentRef;
+}
+
+function press(node, key, extra = {}) {
+  const event = {
+    type: "keydown",
+    key,
+    ...extra,
+    defaultPrevented: false,
+    propagationStopped: false,
+    preventDefault() { this.defaultPrevented = true; },
+    stopPropagation() { this.propagationStopped = true; }
+  };
+  node.dispatchEvent(event);
+  return event;
 }
 
 function visit(node, predicate, result = []) {
@@ -433,4 +480,257 @@ test("Ranked inspect plate never invents a missing defeat cause", () => {
   assert.equal(slots.length, 10);
   assert.equal(slots.filter((slot) => slot.attributes.get("aria-hidden") === "true").length, 10);
   assert.match(allText(plate), /Game Over.*Cause not recorded\./isu);
+});
+test("Record archive exposes canonical row metadata and moves by row and column keys", () => {
+  const ui = loadUi();
+  const documentRef = createDocument();
+  const rows = ui.createLeaderboardViewModel({ entries: Array.from({ length: 5 }, (_, index) => ({
+    runId: `run_${index + 1}`,
+    playerName: `Player ${index + 1}`
+  })) }).rows;
+  const plate = ui.renderList(documentRef, ui.createLeaderboardPresentation(rows));
+  const rowActions = visit(plate, (node) => node.attributes.get("data-record-nav-region") === "row");
+  assert.equal(rowActions.length, 10);
+  assert.deepEqual(rowActions.slice(0, 4).map((node) => [
+    node.attributes.get("data-record-run-id"), node.attributes.get("data-record-action"), node.attributes.get("data-record-row-index")
+  ]), [["run_1", "name", "0"], ["run_1", "inspect", "0"], ["run_2", "name", "1"], ["run_2", "inspect", "1"]]);
+  const firstName = rowActions[0];
+  firstName.focus();
+  press(plate, "ArrowRight");
+  assert.equal(documentRef.activeElement.attributes.get("data-record-action"), "inspect");
+  press(plate, "ArrowDown");
+  assert.equal(documentRef.activeElement.attributes.get("data-record-run-id"), "run_2");
+  assert.equal(documentRef.activeElement.attributes.get("data-record-action"), "inspect");
+  press(plate, "a");
+  assert.equal(documentRef.activeElement.attributes.get("data-record-action"), "name");
+  press(plate, "s");
+  assert.equal(documentRef.activeElement.attributes.get("data-record-run-id"), "run_3");
+  assert.equal(documentRef.activeElement.attributes.get("data-record-action"), "name");
+});
+
+test("Record archive footer is reachable, cycles enabled controls, and honors paging keys", () => {
+  const ui = loadUi();
+  const documentRef = createDocument();
+  const pages = [];
+  const rows = ui.createLeaderboardViewModel({ entries: Array.from({ length: 17 }, (_, index) => ({
+    runId: `run_${index + 1}`,
+    playerName: `Player ${index + 1}`
+  })) }).rows;
+  const plate = ui.renderList(documentRef, ui.createLeaderboardPresentation(rows, 2), { onPage: (page) => pages.push(page) });
+  const finalInspect = visit(plate, (node) => node.attributes.get("data-record-nav-region") === "row" && node.attributes.get("data-record-run-id") === "run_17" && node.attributes.get("data-record-action") === "inspect")[0];
+  const footer = visit(plate, (node) => node.attributes.get("data-record-nav-region") === "footer");
+  assert.deepEqual(footer.map((node) => [node.textContent, node.attributes.get("data-record-action"), node.disabled]), [["Previous page", "previous", false], ["Next page", "next", true], ["Close", "close", false]]);
+  finalInspect.focus();
+  press(plate, "ArrowDown");
+  assert.equal(documentRef.activeElement.attributes.get("data-record-action"), "previous");
+  press(plate, "ArrowRight");
+  assert.equal(documentRef.activeElement.attributes.get("data-record-action"), "close");
+  press(plate, "ArrowUp");
+  assert.equal(documentRef.activeElement, finalInspect);
+  press(plate, "PageUp");
+  const invalidPageDown = press(plate, "PageDown");
+  assert.equal(invalidPageDown.defaultPrevented, true);
+  assert.deepEqual(pages, [1]);
+});
+
+test("Record archive opener metadata preserves the exact action and supports focus tokens", () => {
+  const ui = loadUi();
+  const documentRef = createDocument();
+  const opened = [];
+  const rows = ui.createLeaderboardViewModel({ entries: [
+    { runId: "run_token_1", playerName: "Token One" },
+    { runId: "run_token_2", playerName: "Token Two" }
+  ] }).rows;
+  const plate = ui.renderList(documentRef, ui.createLeaderboardPresentation(rows), {
+    onOpen: (runId, action) => opened.push([runId, action])
+  });
+  const name = visit(plate, (node) => node.attributes.get("data-record-run-id") === "run_token_1" && node.attributes.get("data-record-action") === "name")[0];
+  const inspect = visit(plate, (node) => node.attributes.get("data-record-run-id") === "run_token_1" && node.attributes.get("data-record-action") === "inspect")[0];
+  name.click();
+  inspect.click();
+  assert.deepEqual(opened, [["run_token_1", "name"], ["run_token_1", "inspect"]]);
+
+  const token = ui.createReferencePlateFocusToken("run_token_2", "inspect");
+  assert.deepEqual(token, { region: "row", runId: "run_token_2", action: "inspect" });
+  assert.equal(Object.isFrozen(token), true);
+  const exactTarget = visit(plate, (node) => node.attributes.get("data-record-run-id") === "run_token_2" && node.attributes.get("data-record-action") === "inspect")[0];
+  assert.equal(ui.focusReferencePlateAction(plate, token), exactTarget);
+  assert.equal(documentRef.activeElement, exactTarget);
+  const missing = ui.createReferencePlateFocusToken("missing", "inspect");
+  assert.equal(ui.focusReferencePlateAction(plate, missing, false), null);
+  assert.equal(documentRef.activeElement, exactTarget);
+  const fallback = ui.focusReferencePlateAction(plate, missing);
+  assert.equal(fallback, visit(plate, (node) => node.attributes.get("data-record-nav-region") === "row")[0]);
+  const activeBeforeNull = documentRef.activeElement;
+  assert.equal(ui.focusReferencePlateAction(plate, null, false), null);
+  assert.equal(documentRef.activeElement, activeBeforeNull);
+  const nullFallback = ui.focusReferencePlateAction(plate, null);
+  assert.equal(nullFallback, visit(plate, (node) => node.attributes.get("data-record-nav-region") === "row")[0]);
+});
+
+test("Record archive focusin remembers the last row column across native focus changes", () => {
+  const ui = loadUi();
+  const documentRef = createDocument();
+  const rows = ui.createLeaderboardViewModel({ entries: [
+    { runId: "run_focus_1", playerName: "Focus One" },
+    { runId: "run_focus_2", playerName: "Focus Two" }
+  ] }).rows;
+  const plate = ui.renderList(documentRef, ui.createLeaderboardPresentation(rows));
+  const finalInspect = visit(plate, (node) => node.attributes.get("data-record-run-id") === "run_focus_2" && node.attributes.get("data-record-action") === "inspect")[0];
+  const close = visit(plate, (node) => node.attributes.get("data-record-action") === "close")[0];
+  finalInspect.focus();
+  plate.dispatchEvent({ type: "focusin", target: finalInspect });
+  close.focus();
+  press(plate, "ArrowUp");
+  assert.equal(documentRef.activeElement, finalInspect);
+});
+
+test("Record archive keyboard activation is single-shot and Tab stays native", () => {
+  const ui = loadUi();
+  const documentRef = createDocument();
+  const opened = [];
+  const closed = [];
+  const rows = ui.createLeaderboardViewModel({ entries: [{ runId: "run_once", playerName: "Once" }] }).rows;
+  const plate = ui.renderList(documentRef, ui.createLeaderboardPresentation(rows), { onOpen: (runId) => opened.push(runId), onClose: () => closed.push(true) });
+  const name = visit(plate, (node) => node.attributes.get("data-record-action") === "name")[0];
+  name.focus();
+  const enter = press(plate, "Enter");
+  assert.equal(enter.defaultPrevented, true);
+  assert.deepEqual(opened, ["run_once"]);
+  name.focus();
+  const tab = press(plate, "Tab");
+  assert.equal(tab.defaultPrevented, false);
+  assert.equal(tab.propagationStopped, true);
+  assert.equal(documentRef.activeElement, name);
+  const shiftTab = press(plate, "Tab", { shiftKey: true });
+  assert.equal(shiftTab.defaultPrevented, false);
+  assert.equal(shiftTab.propagationStopped, true);
+  const textKey = press(plate, "t");
+  assert.equal(textKey.defaultPrevented, false);
+  assert.equal(textKey.propagationStopped, false);
+  const close = visit(plate, (node) => node.attributes.get("data-record-action") === "close")[0];
+  close.focus();
+  const space = press(plate, " ");
+  assert.equal(space.defaultPrevented, true);
+  assert.deepEqual(closed, [true]);
+  const escape = press(plate, "Escape");
+  assert.equal(escape.defaultPrevented, true);
+  assert.deepEqual(closed, [true, true]);
+  press(plate, "w");
+  assert.equal(documentRef.activeElement.attributes.get("data-record-run-id"), "run_once");
+  press(plate, "d");
+  assert.equal(documentRef.activeElement.attributes.get("data-record-action"), "inspect");
+});
+
+test("Empty record archive keeps Close as the only footer target", () => {
+  const ui = loadUi();
+  const documentRef = createDocument();
+  const closed = [];
+  const plate = ui.renderList(documentRef, ui.createLeaderboardPresentation([]), { onClose: () => closed.push(true) });
+  const footer = visit(plate, (node) => node.attributes.get("data-record-nav-region") === "footer");
+  assert.deepEqual(footer.map((node) => [node.attributes.get("data-record-action"), node.disabled]), [["previous", true], ["next", true], ["close", false]]);
+  const close = footer[2];
+  const fallback = ui.focusReferencePlateAction(plate, ui.createReferencePlateFocusToken("missing", "inspect"));
+  assert.equal(fallback, close);
+  assert.equal(documentRef.activeElement, close);
+  close.focus();
+  press(plate, "ArrowLeft");
+  assert.equal(documentRef.activeElement, close);
+  press(plate, " ");
+  assert.deepEqual(closed, [true]);
+});
+
+test("Inspect detail arrows traverse the visual equipment grid, mutators, and Back", () => {
+  const ui = loadUi();
+  const documentRef = createDocument();
+  const returned = [];
+  const detail = ui.createDetailViewModel({ entry: {
+    runId: "run_detail",
+    playerName: "Detail",
+    build: { relics: [
+      { relicId: "crownconcord", stacks: 1 },
+      { relicId: "second-relic", stacks: 1 },
+      { relicId: "crownconcord", stacks: 2 },
+      { relicId: "second-relic", stacks: 1 },
+      { relicId: "crownconcord", stacks: 1 },
+      { relicId: "second-relic", stacks: 2 }
+    ], runModifiers: { active: [{ modifierId: "greed" }] } }
+  } });
+  const plate = ui.renderDetail(documentRef, detail, { onBack: () => returned.push(true) });
+  const equipment = visit(plate, (node) => node.attributes.get("data-record-nav-region") === "equipment");
+  assert.deepEqual(equipment.map((node) => node.attributes.get("data-relic-index")), ["0", "1", "2", "3", "4", "5"]);
+  const mutator = visit(plate, (node) => node.attributes.get("data-record-action") === "mutators")[0];
+  const back = visit(plate, (node) => node.attributes.get("data-record-action") === "back")[0];
+  assert.equal(mutator.attributes.get("data-record-nav-region"), "detail-action");
+  assert.equal(back.attributes.get("data-record-nav-region"), "detail-action");
+  equipment[0].focus();
+  press(plate, "ArrowUp");
+  assert.equal(documentRef.activeElement, equipment[0]);
+  press(plate, "ArrowRight");
+  assert.equal(documentRef.activeElement.attributes.get("data-relic-index"), "1");
+  equipment[0].focus();
+  press(plate, "ArrowDown");
+  assert.equal(documentRef.activeElement.attributes.get("data-relic-index"), "5");
+  press(plate, "ArrowDown");
+  assert.equal(documentRef.activeElement, mutator);
+  press(plate, "ArrowUp");
+  assert.equal(documentRef.activeElement.attributes.get("data-relic-index"), "5");
+  press(plate, "ArrowDown");
+  assert.equal(documentRef.activeElement, mutator);
+  press(plate, "ArrowDown");
+  assert.equal(documentRef.activeElement, back);
+  const escape = press(plate, "Escape");
+  assert.equal(escape.defaultPrevented, true);
+  assert.deepEqual(returned, [true]);
+});
+
+test("Inspect detail leaves PageUp and PageDown native", () => {
+  const ui = loadUi();
+  const documentRef = createDocument();
+  const detail = ui.createDetailViewModel({ entry: {
+    runId: "run_detail_pages",
+    playerName: "Detail Pages",
+    build: { relics: [{ relicId: "crownconcord", stacks: 1 }] }
+  } });
+  const plate = ui.renderDetail(documentRef, detail);
+  const equipment = visit(plate, (node) => node.attributes.get("data-record-nav-region") === "equipment")[0];
+  equipment.focus();
+  const pageUp = press(plate, "PageUp");
+  const pageDown = press(plate, "PageDown");
+  assert.equal(pageUp.defaultPrevented, false);
+  assert.equal(pageDown.defaultPrevented, false);
+  assert.equal(pageUp.propagationStopped, true);
+  assert.equal(pageDown.propagationStopped, true);
+  assert.equal(documentRef.activeElement, equipment);
+});
+
+test("Inspect detail derives responsive two-column equipment navigation from computed style", () => {
+  const ui = loadUi();
+  const documentRef = createDocument();
+  const detail = ui.createDetailViewModel({ entry: {
+    runId: "run_detail_responsive",
+    playerName: "Responsive Detail",
+    build: { relics: [
+      { relicId: "crownconcord", stacks: 1 },
+      { relicId: "second-relic", stacks: 1 },
+      { relicId: "crownconcord", stacks: 1 },
+      { relicId: "second-relic", stacks: 1 },
+      { relicId: "crownconcord", stacks: 1 },
+      { relicId: "second-relic", stacks: 1 }
+    ] }
+  } });
+  const plate = ui.renderDetail(documentRef, detail);
+  const grid = visit(plate, (node) => String(node.className).split(/\s+/u).includes("ranked-v3-inspect-equipment-grid"))[0];
+  grid.style.gridTemplateColumns = "1fr 1fr";
+  const equipment = visit(plate, (node) => node.attributes.get("data-record-nav-region") === "equipment");
+  equipment[0].focus();
+  press(plate, "ArrowDown");
+  assert.equal(documentRef.activeElement, equipment[2]);
+  press(plate, "ArrowDown");
+  assert.equal(documentRef.activeElement, equipment[4]);
+  press(plate, "ArrowUp");
+  assert.equal(documentRef.activeElement, equipment[2]);
+  equipment[0].focus();
+  press(plate, "ArrowRight");
+  assert.equal(documentRef.activeElement, equipment[1]);
 });
