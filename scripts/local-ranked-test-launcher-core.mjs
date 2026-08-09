@@ -103,7 +103,7 @@ export function launcherPaths(repoRoot, value) {
     hash,
     cacheRoot,
     worktree: safeChildPath(cacheRoot, "worktrees", hash),
-    stateRoot: safeChildPath(cacheRoot, "state", hash)
+    stateRoot: safeChildPath(root, "output", "r", hash)
   });
 }
 

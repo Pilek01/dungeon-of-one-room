@@ -73,13 +73,13 @@ test("deduplicates repeated commit rows and ignores malformed commit rows", () =
   assert.deepEqual(commits.map((commit) => commit.hash), [HASH_A]);
 });
 
-test("derives launcher paths only below the launcher output root", () => {
+test("keeps isolated D1 state on a short per-commit output path", () => {
   const root = path.resolve("D:/repo");
   const paths = launcherPaths(root, HASH_A);
 
   assert.equal(paths.cacheRoot, path.join(root, "output", "local-ranked-test-launcher"));
   assert.equal(paths.worktree, path.join(paths.cacheRoot, "worktrees", HASH_A));
-  assert.equal(paths.stateRoot, path.join(paths.cacheRoot, "state", HASH_A));
+  assert.equal(paths.stateRoot, path.join(root, "output", "r", HASH_A));
   assert.throws(() => launcherPaths(root, "../main"), /full commit hash/u);
 });
 test("parses the line-delimited NUL records emitted by git for-each-ref", () => {

@@ -8,11 +8,42 @@ $ErrorActionPreference = "Stop"
 
 Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
+Add-Type -TypeDefinition @"
+using System.Collections.Concurrent;
+using System.Diagnostics;
+using System.IO;
+using System.Threading.Tasks;
+
+public static class LauncherProcessOutputPump
+{
+    public static void Start(Process process, ConcurrentQueue<string> queue)
+    {
+        Task.Factory.StartNew(
+            () => Pump(process.StandardOutput, queue),
+            TaskCreationOptions.LongRunning
+        );
+        Task.Factory.StartNew(
+            () => Pump(process.StandardError, queue),
+            TaskCreationOptions.LongRunning
+        );
+    }
+
+    private static void Pump(StreamReader reader, ConcurrentQueue<string> queue)
+    {
+        string line;
+        while ((line = reader.ReadLine()) != null)
+        {
+            queue.Enqueue(line);
+        }
+    }
+}
+"@
 
 $RepositoryRoot = [System.IO.Path]::GetFullPath($RepositoryRoot)
 $corePath = Join-Path $RepositoryRoot "scripts\local-ranked-test-launcher-core.mjs"
 $script:activeProcess = $null
 $script:readyUrl = $null
+$script:launcherEventQueue = [System.Collections.Concurrent.ConcurrentQueue[string]]::new()
 
 function Quote-ProcessArgument([string] $Argument) {
   if ($null -eq $Argument -or $Argument.Length -eq 0) { return '""' }
@@ -41,6 +72,48 @@ function Set-StartAvailability {
   $startButton.Enabled = ($null -eq $script:activeProcess -and $commitList.SelectedItems.Count -eq 1)
 }
 
+function Clear-LauncherEvents {
+  [string] $discardedLine = $null
+  while ($script:launcherEventQueue.TryDequeue([ref] $discardedLine)) { }
+}
+
+function Process-LauncherEvents {
+  [string] $line = $null
+  while ($script:launcherEventQueue.TryDequeue([ref] $line)) {
+    if ([string]::IsNullOrWhiteSpace($line)) { continue }
+    try {
+      $message = $line | ConvertFrom-Json -ErrorAction Stop
+      if ($message.type -eq "ready") {
+        $script:readyUrl = [string] $message.url
+        $openGameButton.Enabled = $true
+        Set-SessionState "Ready"
+        Add-StatusLine "Ready: $($script:readyUrl)"
+        Start-Process $script:readyUrl
+      } elseif ($message.type -eq "failed") {
+        Set-SessionState "Failed"
+        Add-StatusLine "Failed: $($message.message)"
+      } elseif ($message.type -eq "stopped") {
+        Set-SessionState "Stopped"
+        Add-StatusLine "Stopped local launcher session."
+      } else {
+        Add-StatusLine $line
+      }
+    } catch {
+      Add-StatusLine $line
+    }
+  }
+
+  if ($null -ne $script:activeProcess -and $script:activeProcess.HasExited) {
+    $script:activeProcess = $null
+    $stopButton.Enabled = $false
+    if ($statusLabel.Text -notmatch "Failed") {
+      Set-SessionState "Stopped"
+      Add-StatusLine "Stopped local launcher session."
+    }
+    Set-StartAvailability
+  }
+}
+
 function Stop-LauncherSession {
   if ($null -eq $script:activeProcess) { return }
   $processId = $script:activeProcess.Id
@@ -60,7 +133,11 @@ function Stop-LauncherSession {
 }
 
 function Start-LauncherSession {
-  if ($commitList.SelectedItems.Count -ne 1) { return }
+  if ($commitList.SelectedItems.Count -ne 1) {
+    Set-SessionState "Awaiting commit selection"
+    Add-StatusLine "Select one commit before starting the local test."
+    return
+  }
 
   $commit = [string] $commitList.SelectedItems[0].Tag
   $startInfo = [System.Diagnostics.ProcessStartInfo]::new()
@@ -81,6 +158,7 @@ function Start-LauncherSession {
   }
 
   $script:readyUrl = $null
+  Clear-LauncherEvents
   $openGameButton.Enabled = $false
   $startButton.Enabled = $false
   $stopButton.Enabled = $true
@@ -89,60 +167,11 @@ function Start-LauncherSession {
 
   $process = [System.Diagnostics.Process]::new()
   $process.StartInfo = $startInfo
-  $process.EnableRaisingEvents = $true
-  $process.add_OutputDataReceived({
-    param($sender, $eventArgs)
-    if ([string]::IsNullOrWhiteSpace($eventArgs.Data)) { return }
-    $line = $eventArgs.Data
-    [void] $form.BeginInvoke([System.Action] {
-      try {
-        $message = $line | ConvertFrom-Json -ErrorAction Stop
-        if ($message.type -eq "ready") {
-          $script:readyUrl = [string] $message.url
-          $openGameButton.Enabled = $true
-          Set-SessionState "Ready"
-          Add-StatusLine "Ready: $($script:readyUrl)"
-          Start-Process $script:readyUrl
-        } elseif ($message.type -eq "failed") {
-          Set-SessionState "Failed"
-          Add-StatusLine "Failed: $($message.message)"
-        } elseif ($message.type -eq "stopped") {
-          Set-SessionState "Stopped"
-          Add-StatusLine "Stopped local launcher session."
-        } else {
-          Add-StatusLine $line
-        }
-      } catch {
-        Add-StatusLine $line
-      }
-    })
-  })
-  $process.add_ErrorDataReceived({
-    param($sender, $eventArgs)
-    if ([string]::IsNullOrWhiteSpace($eventArgs.Data)) { return }
-    $line = $eventArgs.Data
-    [void] $form.BeginInvoke([System.Action] { Add-StatusLine $line })
-  })
-  $process.add_Exited({
-    param($sender, $eventArgs)
-    [void] $form.BeginInvoke([System.Action] {
-      if ($script:activeProcess -eq $sender) {
-        $script:activeProcess = $null
-        $stopButton.Enabled = $false
-        if ($statusLabel.Text -notmatch "Failed") {
-          Set-SessionState "Stopped"
-          Add-StatusLine "Stopped local launcher session."
-        }
-        Set-StartAvailability
-      }
-    })
-  })
   if (-not $process.Start()) {
     throw "Could not start Node.js for the local launcher."
   }
   $script:activeProcess = $process
-  $process.BeginOutputReadLine()
-  $process.BeginErrorReadLine()
+  [LauncherProcessOutputPump]::Start($process, $script:launcherEventQueue)
 }
 
 function Get-LocalCandidates {
@@ -244,6 +273,11 @@ $statusBox.ReadOnly = $true
 $statusBox.ScrollBars = [System.Windows.Forms.ScrollBars]::Vertical
 $form.Controls.Add($statusBox)
 
+$eventTimer = [System.Windows.Forms.Timer]::new()
+$eventTimer.Interval = 100
+$eventTimer.add_Tick({ Process-LauncherEvents })
+$eventTimer.Start()
+
 try {
   $candidates = Get-LocalCandidates
   $branchLabel.Text = "Eligible branch: $($candidates.branch.name)"
@@ -254,12 +288,24 @@ try {
     $row.Tag = [string] $commit.hash
     [void] $commitList.Items.Add($row)
   }
-  Add-StatusLine "Select one commit, then choose Start or Start + Observer Bot."
+  Add-StatusLine "The newest eligible commit will be selected automatically."
 } catch {
   $branchLabel.Text = "Eligible branch: unavailable"
   Set-SessionState "Failed"
   Add-StatusLine "Failed to read local launch candidates: $($_.Exception.Message)"
 }
 
-$form.add_FormClosing({ Stop-LauncherSession })
+$form.add_Shown({
+  if ($commitList.Items.Count -gt 0) {
+    $commitList.Items[0].Selected = $true
+    $commitList.Items[0].Focused = $true
+    $commitList.Select()
+    Set-StartAvailability
+    Add-StatusLine "Newest eligible commit selected. Choose Start or Start + Observer Bot."
+  }
+})
+$form.add_FormClosing({
+  $eventTimer.Stop()
+  Stop-LauncherSession
+})
 [void] $form.ShowDialog()
