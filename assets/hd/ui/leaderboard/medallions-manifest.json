@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "medallions": [
+    {
+      "rank": 1,
+      "role": "champion",
+      "path": "assets/hd/ui/leaderboard/skull-medallion-gold.png",
+      "width": 256,
+      "height": 256,
+      "colorType": "rgba",
+      "sha256": "ffe767fae80c9106123df1f98dff7d20f90f853078fe7295fe65f24bceb620c6"
+    },
+    {
+      "rank": 2,
+      "role": "runner_up",
+      "path": "assets/hd/ui/leaderboard/skull-medallion-silver.png",
+      "width": 256,
+      "height": 256,
+      "colorType": "rgba",
+      "sha256": "9dc8276ed2dac21060c0aa39853f9358e24502a60d106fd9051dac63c0d9199e"
+    },
+    {
+      "rank": 3,
+      "role": "third_place",
+      "path": "assets/hd/ui/leaderboard/skull-medallion-bronze.png",
+      "width": 256,
+      "height": 256,
+      "colorType": "rgba",
+      "sha256": "8870460fa7dab49762da51204c494f81c2853f6c17fb6d29ce2f8b13df5b15df"
+    }
+  ]
+}

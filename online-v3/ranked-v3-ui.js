@@ -271,8 +271,7 @@
     }
 
     function showContent(heading, message, content, controls = []) {
-      const leaderboard = content?.classList?.contains("ranked-v3-leaderboard-list") ||
-        content?.classList?.contains("ranked-v3-leaderboard-detail");
+      const leaderboard = content?.classList?.contains("record-archive-v2");
       setView(leaderboard ? "leaderboard" : "content");
       text(title, heading);
       text(status, message);

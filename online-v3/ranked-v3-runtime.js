@@ -206,7 +206,7 @@
     const content = leaderboardUi.renderList(
       root.document,
       leaderboardRows,
-      (runId) => openLeaderboardDetail(runId)
+      (selectedRow) => openLeaderboardDetail(selectedRow)
     );
     ui.showContent(
       "Ranked Leaderboard",
@@ -240,11 +240,14 @@
     }
   }
 
-  async function openLeaderboardDetail(runId) {
+  async function openLeaderboardDetail(selectedRow) {
+    const runId = String(selectedRow?.runId || "");
+    if (!runId) return;
     try {
       ui.showMessage("Build Chronicle", "Loading this descent...");
       const detail = leaderboardUi.createDetailViewModel(
-        await createLeaderboardClient().detail(runId)
+        await createLeaderboardClient().detail(runId),
+        { rank: selectedRow.rank, listedRow: selectedRow }
       );
       ui.showContent(
         "Build Chronicle",

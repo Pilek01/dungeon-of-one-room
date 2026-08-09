@@ -1,5 +1,6 @@
 const assert = require("node:assert/strict");
 const path = require("node:path");
+const { readFileSync } = require("node:fs");
 const test = require("node:test");
 
 class FakeElement {
@@ -63,6 +64,9 @@ function loadUi() {
       drawback: "Enemies hit harder"
     }]
   };
+  const archivePath = path.resolve(__dirname, "..", "record-archive-ui.js");
+  delete require.cache[archivePath];
+  global.DungeonRecordArchiveUi = require(archivePath);
   return require(modulePath);
 }
 
@@ -80,11 +84,20 @@ test("Ranked ledger shows only the five requested facts and elevates top three",
   }).rows;
 
   const archive = ui.renderList(documentRef, rows, (runId) => opened.push(runId));
-  assert.equal(archive.className, "record-archive ranked-v3-record-archive ranked-v3-leaderboard-list");
+  assert.equal(archive.className, "record-archive-v2 record-archive-list");
+  assert.deepEqual(ui.SELECTORS, { archive: "record-archive-v2" });
   const hasClass = (node, className) => String(node.className).split(/\s+/u).includes(className);
   assert.equal(visit(archive, (node) => hasClass(node, "record-archive-podium-card")).length, 3);
   assert.equal(visit(archive, (node) => hasClass(node, "record-archive-ledger-row")).length, 1);
-  assert.equal(visit(archive, (node) => hasClass(node, "ranked-v3-leaderboard-row")).length, 4);
+  assert.equal(visit(archive, (node) => node.attributes.get("data-record-rank")).length, 4);
+  assert.deepEqual(
+    visit(archive, (node) => node.tagName === "img").map((node) => node.src),
+    [
+      "assets/hd/ui/leaderboard/skull-medallion-gold.png",
+      "assets/hd/ui/leaderboard/skull-medallion-silver.png",
+      "assets/hd/ui/leaderboard/skull-medallion-bronze.png"
+    ]
+  );
 
   const facts = visit(archive, (node) => node.attributes.get("data-record-field"));
   assert.deepEqual(
@@ -98,7 +111,9 @@ test("Ranked ledger shows only the five requested facts and elevates top three",
   assert.equal(adaControls.length, 1);
   assert.equal(inspectControls.length, 4);
   adaControls[0].click();
-  assert.deepEqual(opened, ["run_aaaaaaaa"]);
+  assert.equal(opened.length, 1);
+  assert.equal(opened[0].runId, "run_aaaaaaaa");
+  assert.equal(opened[0].rank, 1);
 });
 
 test("Build Chronicle exposes exact active mutators through a focusable tooltip", () => {
@@ -137,5 +152,59 @@ test("Build Chronicle exposes exact active mutators through a focusable tooltip"
   const relicIcons = visit(chronicle, (node) => node.tagName === "img" && /crownconcord\.png$/u.test(node.src || ""));
   assert.equal(relicIcons.length, 1);
   assert.match(allText(chronicle), /Time Played.*1m 20s.*Rooms Cleared.*19.*Bosses Defeated.*3/isu);
-  assert.match(allText(chronicle), /Final Chronicle.*Damage Done.*1234.*Damage Taken.*456.*Total Kills.*77/isu);
+  assert.doesNotMatch(allText(chronicle), /Damage Done|Damage Taken|Total Kills|Potions Used|Gold Collected|Deaths/u);
+});
+test("Ranked adapter delegates list DOM to the shared archive renderer", () => {
+  const ui = loadUi();
+  const documentRef = createDocument();
+  const rendered = ui.renderList(documentRef, [{
+    runId: "run_adapter",
+    rank: 1,
+    playerName: "Ada",
+    score: 10,
+    depth: 2,
+    gold: 3
+  }], () => {});
+
+  assert.equal(rendered.className, "record-archive-v2 record-archive-list");
+  const source = readFileSync(path.resolve(__dirname, "..", "online-v3", "ranked-v3-leaderboard-ui.js"), "utf8");
+  assert.doesNotMatch(source, /record-archive-podium|record-archive-ledger/u);
+});
+test("Ranked detail preserves the selected rank and omits an unlisted rank", () => {
+  const ui = loadUi();
+  const payload = {
+    entry: {
+      runId: "run_four",
+      playerName: "Dara",
+      score: 100,
+      depth: 6,
+      gold: 20,
+      summary: {
+        outcome: "defeat",
+        finalDepth: 19,
+        score: 30056,
+        goldEarned: 1778,
+        durationMs: 80000,
+        livesRemaining: 0,
+        roomsCompleted: 19,
+        bossesCompleted: 3,
+        rulesetId: "v08-meta-1",
+        rulesetHash: "sha256:fixture",
+        verificationLevel: "checkpoint_verified_v3"
+      }
+    }
+  };
+  const selected = ui.createDetailViewModel(payload, { rank: 4 });
+  const selectedText = allText(ui.renderDetail(createDocument(), selected));
+  assert.equal(selected.rank, 4);
+  assert.match(selectedText, /Rank #4/u);
+  assert.doesNotMatch(selectedText, /Rank #1/u);
+  assert.doesNotMatch(selectedText, /Damage Done|Damage Taken|Total Kills|Potions Used|Gold Collected|Deaths/u);
+
+  const unlisted = ui.createDetailViewModel(payload);
+  const unlistedText = allText(ui.renderDetail(createDocument(), unlisted));
+  assert.equal(unlisted.rank, null);
+  assert.doesNotMatch(unlistedText, /Rank #/u);
+  const runtimeSource = readFileSync(path.resolve(__dirname, "..", "online-v3", "ranked-v3-runtime.js"), "utf8");
+  assert.match(runtimeSource, /rank:\s*selectedRow\.rank/u);
 });

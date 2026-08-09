@@ -44,8 +44,39 @@ const WORKER_NODE_MODULES = process.env.DUNGEON_ONLINE_V3_WORKER_NODE_MODULES ||
   path.join(WORKER_ROOT, "node_modules");
 const WRANGLER = path.join(WORKER_NODE_MODULES, "wrangler", "bin", "wrangler.js");
 const DATABASE = "dungeon-online-v3-local";
-const SEASON = "m4-headed";
+const SEASON = "season-1";
 const TEST_BOT_PASSWORD = "ranked-headed-observer-bot";
+const RANKED_ARCHIVE_FIXTURES = Object.freeze([
+  Object.freeze({
+    rank: 1, runId: "run_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", profileId: "ranked-archive-profile-1", playerName: "Archive Crown",
+    score: 9_300_000, depth: 30, gold: 12_000, durationMs: 610_000, outcome: "victory", createdAt: 1_700_000_001_000,
+    build: { relics: [{ relicId: "crownconcord", stacks: 1 }], pacts: ["blood_pact"], skillTiers: { slash: 2 }, campUpgrades: { vitality: 1 }, elixirs: [], runModifiers: { active: [{ modifierId: "greed" }] } },
+    summary: { durationMs: 610_000, roomsCompleted: 30, bossesCompleted: 6, finalDepth: 30, goldEarned: 12_000, score: 9_300_000, livesRemaining: 2 }
+  }),
+  Object.freeze({
+    rank: 2, runId: "run_bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb", profileId: "ranked-archive-profile-2", playerName: "Archive Silver",
+    score: 8_300_000, depth: 27, gold: 9_800, durationMs: 520_000, outcome: "defeat", createdAt: 1_700_000_002_000,
+    build: { relics: [{ relicId: "fang", stacks: 2 }], pacts: [], skillTiers: {}, campUpgrades: {}, elixirs: [], runModifiers: { active: [] } },
+    summary: { durationMs: 520_000, roomsCompleted: 27, bossesCompleted: 5, finalDepth: 27, goldEarned: 9_800, score: 8_300_000, livesRemaining: 0 }
+  }),
+  Object.freeze({
+    rank: 3, runId: "run_cccccccccccccccccccccccccccccccc", profileId: "ranked-archive-profile-3", playerName: "Archive Bronze",
+    score: 7_300_000, depth: 25, gold: 8_000, durationMs: 460_000, outcome: "defeat", createdAt: 1_700_000_003_000,
+    build: { relics: [{ relicId: "raven_edge", stacks: 1 }], pacts: [], skillTiers: {}, campUpgrades: {}, elixirs: [], runModifiers: { active: [] } },
+    summary: { durationMs: 460_000, roomsCompleted: 25, bossesCompleted: 5, finalDepth: 25, goldEarned: 8_000, score: 7_300_000, livesRemaining: 0 }
+  }),
+  Object.freeze({
+    rank: 4, runId: "run_dddddddddddddddddddddddddddddddd", profileId: "ranked-archive-profile-4", playerName: "Archive Fourth",
+    score: 6_300_000, depth: 22, gold: 6_400, durationMs: 372_000, outcome: "defeat", createdAt: 1_700_000_004_000,
+    build: { relics: [{ relicId: "crownconcord", stacks: 1 }], pacts: ["blood_pact"], skillTiers: { slash: 1 }, campUpgrades: { vitality: 1 }, elixirs: [], runModifiers: { active: [{ modifierId: "greed" }] } },
+    summary: { durationMs: 372_000, roomsCompleted: 22, bossesCompleted: 4, finalDepth: 22, goldEarned: 6_400, score: 6_300_000, livesRemaining: 0 }
+  })
+]);
+const PODIUM_MEDALLION_PATHS = Object.freeze([
+  "assets/hd/ui/leaderboard/skull-medallion-gold.png",
+  "assets/hd/ui/leaderboard/skull-medallion-silver.png",
+  "assets/hd/ui/leaderboard/skull-medallion-bronze.png"
+]);
 const HEADLESS = process.argv.includes("--headless");
 const execFileAsync = promisify(execFile);
 
@@ -578,6 +609,59 @@ async function d1Count(runId) {
   return Number(JSON.parse(stdout)[0].results[0].count);
 }
 
+function sqlLiteral(value) {
+  return `'${String(value).replaceAll("'", "''")}'`;
+}
+
+async function seedRankedArchiveFixtures() {
+  const statements = [];
+  for (const entry of RANKED_ARCHIVE_FIXTURES) {
+    statements.push(`
+      INSERT INTO ranked_runs (
+        run_id, profile_id, season, protocol_version, ruleset_hash, status,
+        revision, player_name, depth, room_index, gold, lives,
+        canonical_state_json, state_digest, recent_ops_json, started_at,
+        updated_at, expires_at, finalized_at, outcome, start_idempotency_key,
+        start_request_digest
+      ) VALUES (
+        ${sqlLiteral(entry.runId)}, ${sqlLiteral(entry.profileId)}, ${sqlLiteral(SEASON)},
+        'ranked-v3-checkpoint-1', 'sha256:ranked-archive-fixture', 'finalized',
+        1, ${sqlLiteral(entry.playerName)}, ${entry.depth}, ${entry.depth}, ${entry.gold},
+        ${entry.summary.livesRemaining}, '{}', ${sqlLiteral(`fixture-state-${entry.rank}`)}, '[]',
+        ${entry.createdAt - entry.durationMs}, ${entry.createdAt}, ${entry.createdAt + 86_400_000},
+        ${entry.createdAt}, ${sqlLiteral(entry.outcome)}, ${sqlLiteral(`fixture-start-${entry.rank}`)},
+        ${sqlLiteral(`fixture-request-${entry.rank}`)}
+      )
+    `);
+    statements.push(`
+      INSERT INTO leaderboard_entries (
+        run_id, profile_id, season, player_name, score, depth, gold,
+        duration_ms, outcome, build_json, summary_json, verification_level,
+        state_digest, created_at
+      ) VALUES (
+        ${sqlLiteral(entry.runId)}, ${sqlLiteral(entry.profileId)}, ${sqlLiteral(SEASON)},
+        ${sqlLiteral(entry.playerName)}, ${entry.score}, ${entry.depth}, ${entry.gold},
+        ${entry.durationMs}, ${sqlLiteral(entry.outcome)}, ${sqlLiteral(JSON.stringify(entry.build))},
+        ${sqlLiteral(JSON.stringify(entry.summary))}, 'checkpoint_verified_v3',
+        ${sqlLiteral(`fixture-state-${entry.rank}`)}, ${entry.createdAt}
+      )
+    `);
+  }
+  await runWrangler([
+    "d1",
+    "execute",
+    DATABASE,
+    "--local",
+    "--config",
+    CONFIG,
+    "--persist-to",
+    PERSIST_ROOT,
+    "--command",
+    statements.join(";\n")
+  ]);
+  return RANKED_ARCHIVE_FIXTURES;
+}
+
 async function main() {
   assertOutputPath(ARTIFACT_ROOT);
   await fsPromises.rm(ARTIFACT_ROOT, { recursive: true, force: true });
@@ -596,6 +680,7 @@ async function main() {
     "--persist-to",
     PERSIST_ROOT
   ]);
+  const seededRankedArchive = RUN_LIFECYCLE ? await seedRankedArchiveFixtures() : [];
 
   await execFileAsync(process.execPath, [
     path.join(ROOT, "scripts", "build-pages-v3.mjs"),
@@ -1397,21 +1482,67 @@ ${fatalTestHookAnchor}`;
     await dismissBoot(page);
     await openNativeMenuOption(page, "Ranked Leaderboard");
 
-    await page.locator(".ranked-v3-leaderboard-row").waitFor({ state: "visible" });
-    assert.match(
-      await page.locator(".ranked-v3-leaderboard-row").first().textContent(),
-      /M4Headed/u
-    );
-    await page.getByRole("button", { name: "Inspect build" }).first().click();
-    await page.locator(".ranked-v3-leaderboard-detail").waitFor({ state: "visible" });
-    assert.match(
-      await page.locator(".ranked-v3-leaderboard-detail").textContent(),
-      /Relic Build/u
-    );
-    await page.screenshot({
-      path: path.join(ARTIFACT_ROOT, "ranked-leaderboard-detail.png"),
-      fullPage: true
-    });
+    const rankedArchive = page.locator(".record-archive-v2.record-archive-list").first();
+    await page.waitForFunction(() => {
+      const archive = document.querySelector(".record-archive-v2.record-archive-list");
+      const overlay = document.querySelector(".ranked-v3-overlay");
+      return Boolean(archive?.getClientRects().length) || !/Loading season results/iu.test(overlay?.textContent || "");
+    }, null, { timeout: 30_000 });
+    const rankedArchiveAudit = await page.evaluate(() => ({
+      archiveVisible: Boolean(document.querySelector(".record-archive-v2.record-archive-list")?.getClientRects().length),
+      overlayText: document.querySelector(".ranked-v3-overlay")?.textContent?.replace(/\\s+/gu, " ").trim() || "",
+      recordArchiveReady: typeof window.DungeonRecordArchiveUi?.renderList === "function"
+    }));
+    assert.equal(rankedArchiveAudit.archiveVisible, true, JSON.stringify(rankedArchiveAudit));
+    assert.equal(await rankedArchive.locator(".record-archive-podium-card").count(), 3);
+    assert.equal(await rankedArchive.locator(".record-archive-ledger-row").count() >= 1, true);
+    const rankedListText = await rankedArchive.innerText();
+    for (const entry of seededRankedArchive) {
+      assert.match(rankedListText, new RegExp(entry.playerName));
+      assert.match(rankedListText, new RegExp(String(entry.score)));
+      assert.match(rankedListText, new RegExp(String(entry.depth)));
+      assert.match(rankedListText, new RegExp(String(entry.gold)));
+    }
+    assert.doesNotMatch(rankedListText, /Outcome|Time Played/u);
+    const desktopBoxes = await Promise.all([1, 2, 3].map((rank) => rankedArchive.locator(`[data-record-rank="${rank}"]`).boundingBox()));
+    assert(desktopBoxes.every(Boolean), JSON.stringify(desktopBoxes));
+    assert(desktopBoxes[1].x < desktopBoxes[0].x && desktopBoxes[0].x < desktopBoxes[2].x, JSON.stringify(desktopBoxes));
+    assert(desktopBoxes[0].y < desktopBoxes[1].y && desktopBoxes[0].y < desktopBoxes[2].y, JSON.stringify(desktopBoxes));
+    const rankedLedger = rankedArchive.locator('[data-record-rank="4"]');
+    const ledgerBoxes = await Promise.all([
+      rankedLedger.locator('[data-record-field="name"]').boundingBox(),
+      rankedLedger.locator('[data-record-field="score"]').boundingBox(),
+      rankedLedger.locator('[data-record-field="depth"]').boundingBox(),
+      rankedLedger.locator('[data-record-field="gold"]').boundingBox(),
+      rankedLedger.locator(".record-archive-inspect-button").boundingBox()
+    ]);
+    assert(ledgerBoxes.every(Boolean), JSON.stringify(ledgerBoxes));
+    assert(ledgerBoxes[0].x < ledgerBoxes[1].x && ledgerBoxes[1].x < ledgerBoxes[2].x && ledgerBoxes[2].x < ledgerBoxes[3].x && ledgerBoxes[3].x < ledgerBoxes[4].x, JSON.stringify(ledgerBoxes));
+    for (const assetPath of PODIUM_MEDALLION_PATHS) {
+      const asset = rankedArchive.locator(`img[src="${assetPath}"]`);
+      assert.equal(await asset.count(), 1, assetPath);
+      assert.equal(await asset.evaluate((image) => image.complete && image.naturalWidth > 0), true, assetPath);
+    }
+    await page.screenshot({ path: path.join(ARTIFACT_ROOT, "ranked-records-list-desktop.png"), fullPage: true });
+    await page.setViewportSize({ width: 640, height: 1080 });
+    await page.screenshot({ path: path.join(ARTIFACT_ROOT, "ranked-records-list-narrow.png"), fullPage: true });
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await rankedLedger.locator(".record-archive-name").click();
+    const rankedDetail = page.locator(".record-archive-v2.record-archive-detail").first();
+    await rankedDetail.waitFor({ state: "visible" });
+    const rankedDetailText = await rankedDetail.innerText();
+    const fourth = seededRankedArchive.find((entry) => entry.rank === 4);
+    assert(fourth);
+    assert.match(rankedDetailText, new RegExp(`Rank #4[\\s\\S]*${fourth.playerName}[\\s\\S]*${fourth.score}`, "i"));
+    assert.match(rankedDetailText, /Time Played[\s\S]*6m 12s[\s\S]*Rooms Cleared[\s\S]*22[\s\S]*Gold Earned[\s\S]*6400/iu);
+    assert.doesNotMatch(rankedDetailText, /Damage Done|Damage Taken|Total Kills|Potions Used|Gold Collected|Deaths/u);
+    const mutatorChip = rankedDetail.locator(".record-archive-mutators");
+    await mutatorChip.focus();
+    await mutatorChip.hover();
+    const mutatorTooltip = await mutatorChip.getAttribute("data-record-tooltip");
+    assert.equal(mutatorTooltip, "[4] Greed +40% gold +2 enemies/room, enemies +20% HP, shop +25%");
+    assert.match(await mutatorChip.evaluate((node) => getComputedStyle(node, "::after").content), /Greed/u);
+    await page.screenshot({ path: path.join(ARTIFACT_ROOT, "ranked-records-detail-rank4.png"), fullPage: true });
     }
 
     if (RUN_CAMP) {
@@ -1862,6 +1993,8 @@ ${fatalTestHookAnchor}`;
       finalizeAttempts: diagnostics.finalizeOperationIds.length,
       uniqueFinalizeOperationIds: new Set(diagnostics.finalizeOperationIds).size,
       leaderboardRowsForRun: RUN_LIFECYCLE ? await d1Count(runId) : null,
+      recordArchiveScenarios: RUN_LIFECYCLE ? 1 : 0,
+      seededRankedArchiveRows: seededRankedArchive.length,
       apiRequests: diagnostics.apiRequests,
       consoleErrors: unexpectedConsoleErrors.length,
       expectedDroppedResponseConsoleErrors: expectedDroppedResponseErrors.length,
