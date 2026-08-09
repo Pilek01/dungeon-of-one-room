@@ -67,7 +67,13 @@
     overlay.setAttribute("role", "dialog");
     overlay.addEventListener("pointerdown", (event) => event.stopPropagation());
     overlay.addEventListener("click", (event) => event.stopPropagation());
-    overlay.addEventListener("keydown", (event) => event.stopPropagation());
+    overlay.addEventListener("keydown", (event) => {
+      event.stopPropagation();
+      if (event.key === "Escape" && overlay.dataset.view === "reference-plate") {
+        event.preventDefault();
+        setOpen(false);
+      }
+    });
     const card = createElement(documentRef, "div", "ranked-v3-card");
     const eyebrow = createElement(documentRef, "p", "ranked-v3-eyebrow relic-draft-kicker", "Ranked Descent");
     const title = createElement(documentRef, "h2", "ranked-v3-title overlay-title");
@@ -87,11 +93,14 @@
       overlay.dataset.view = normalized;
       body.className = normalized === "relic"
         ? "ranked-v3-body relic-draft-panel"
-        : "ranked-v3-body";
+        : normalized === "reference-plate"
+          ? "ranked-v3-body ranked-v3-body-reference-plate"
+          : "ranked-v3-body";
       card.className = [
         "ranked-v3-card",
         normalized === "relic" ? "ranked-v3-card-relic overlay-card-relic-starting" : "",
         normalized === "leaderboard" ? "ranked-v3-card-leaderboard" : "",
+        normalized === "reference-plate" ? "ranked-v3-card-reference-plate" : "",
         normalized === "menu" ? "ranked-v3-card-menu" : "",
         normalized === "sync" ? "ranked-v3-card-sync" : ""
       ].filter(Boolean).join(" ");
@@ -271,8 +280,10 @@
     }
 
     function showContent(heading, message, content, controls = []) {
-      const leaderboard = content?.classList?.contains("record-archive-v2");
-      setView(leaderboard ? "leaderboard" : "content");
+      const referencePlate = content?.classList?.contains("ranked-v3-reference-plate");
+      const leaderboard = referencePlate || content?.classList?.contains("ranked-v3-leaderboard-list") ||
+        content?.classList?.contains("ranked-v3-leaderboard-detail");
+      setView(referencePlate ? "reference-plate" : (leaderboard ? "leaderboard" : "content"));
       text(title, heading);
       text(status, message);
       clear(body);
@@ -280,6 +291,7 @@
       if (content) body.append(content);
       for (const control of controls) actions.append(control);
       setOpen(true);
+      if (referencePlate) root?.requestAnimationFrame?.(() => body.querySelector(".ranked-v3-reference-plate button:not(:disabled)")?.focus());
     }
 
     return Object.freeze({

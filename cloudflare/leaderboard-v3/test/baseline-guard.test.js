@@ -24,7 +24,7 @@ const PROTECTED_PATHS = [
   "assets"
 ];
 
-const ALLOWED_HD_WARDEN_PORTAL_PATHS = new Set([
+const ALLOWED_PROTECTED_ONLINE_V3_PATHS = new Set([
   "assets/hd/objects/warden/portal-active01.png",
   "assets/hd/objects/warden/portal-active02.png",
   "assets/hd/objects/warden/portal-active03.png",
@@ -37,10 +37,12 @@ const ALLOWED_HD_WARDEN_PORTAL_PATHS = new Set([
   "assets/hd/objects/warden/portal-swirl05.png",
   "assets/hd/objects/warden/portal-swirl06.png",
   "assets/hd/objects/warden/portal-swirl07.png",
-  "assets/hd/objects/warden/portal-swirl08.png"
+  "assets/hd/objects/warden/portal-swirl08.png",
+  "assets/hd/ui/ranked-reference-plates/ranked-build-inspect-desktop-plate.png",
+  "assets/hd/ui/ranked-reference-plates/ranked-leaderboard-desktop-plate.png"
 ]);
 
-test("non-M4 Practice protected paths match f98820c outside the committed HD Warden portal set", () => {
+test("non-M4 Practice protected paths match f98820c outside explicitly allowed Online v3 assets", () => {
   const changed = execFileSync(
     "git",
     [
@@ -57,7 +59,7 @@ test("non-M4 Practice protected paths match f98820c outside the committed HD War
   const unexpected = changed
     .split(/\r?\n/u)
     .filter(Boolean)
-    .filter((relative) => !ALLOWED_HD_WARDEN_PORTAL_PATHS.has(relative));
+    .filter((relative) => !ALLOWED_PROTECTED_ONLINE_V3_PATHS.has(relative));
   assert.deepEqual(unexpected, []);
 });
 

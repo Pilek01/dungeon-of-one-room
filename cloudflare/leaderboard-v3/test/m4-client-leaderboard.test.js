@@ -1,7 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { createRequire } from "node:module";
-import { readFile } from "node:fs/promises";
 
 const require = createRequire(import.meta.url);
 globalThis.DungeonRelicData = {
@@ -50,14 +49,14 @@ test("M4 leaderboard client preserves opaque cursor and canonical server order",
   });
   const payload = await client.list({
     season: "season-a",
-    limit: 20,
+    limit: 50,
     cursor: "opaque+/cursor=="
   });
   const view = leaderboardUi.createLeaderboardViewModel(payload, 1);
   assert.deepEqual(view.rows.map((row) => row.runId), ["run_aa", "run_bb"]);
   assert.deepEqual(view.rows.map((row) => row.rank), [2, 3]);
   assert.equal(view.cursor, "opaque+/cursor==");
-  assert.match(requests[0].path, /cursor=opaque%2B%2Fcursor%3D%3D/u);
+  assert.match(requests[0].path, /limit=50.*cursor=opaque%2B%2Fcursor%3D%3D/u);
 });
 
 test("M4 leaderboard detail uses canonical public build and excludes private fields", async () => {
@@ -115,12 +114,18 @@ test("M4 leaderboard rendering is text-safe and never uses innerHTML", () => {
     score: 5,
     outcome: "defeat"
   })];
-  const rendered = leaderboardUi.renderList(documentRef, rows, () => {});
+  const rendered = leaderboardUi.renderList(
+    documentRef,
+    leaderboardUi.createLeaderboardPresentation(rows, 1),
+    { onOpen() {}, onPage() {}, onClose() {} }
+  );
   const text = (node) => [node.textContent, ...(node.children || []).map(text)].join(" ");
   const visible = text(rendered);
-  assert.match(visible, /Champion.*<img src=x onerror=alert\(1\)>.*Score.*5/su);
-  assert.doesNotMatch(visible, /\bRank\b|#1/u);
+  assert.match(visible, /Ranked Leaderboard.*1.*<img src=x onerror=alert\(1\)>.*5 pts.*Page 1 \/ 1/su);
   const allNodes = (node) => [node, ...(node.children || []).flatMap(allNodes)];
+  const art = allNodes(rendered).filter((node) => String(node.className).split(/\s+/u).includes("ranked-v3-reference-plate-art"));
+  assert.equal(art.length, 1);
+  assert.equal(art[0].attributes.get("aria-hidden"), "true");
   assert.equal(allNodes(rendered).some((node) => "innerHTML" in node), false);
 });
 
@@ -137,7 +142,7 @@ test("M4 leaderboard detail rejects non-canonical run IDs before transport", asy
   await assert.rejects(() => client.detail("../private"), /LEADERBOARD_RUN_ID_INVALID/u);
   assert.equal(called, false);
 });
-test("M4 leaderboard renders player-facing relic names without protocol metadata", () => {
+test("M4 leaderboard keeps relic details in an accessible icon tooltip without protocol metadata", () => {
   const documentRef = fakeDocument();
   const detail = leaderboardUi.createDetailViewModel({
     entry: {
@@ -151,8 +156,20 @@ test("M4 leaderboard renders player-facing relic names without protocol metadata
   const rendered = leaderboardUi.renderDetail(documentRef, detail);
   const text = (node) => [node.textContent, ...(node.children || []).map(text)].join(" ");
   const visible = text(rendered);
-  assert.match(visible, /Fang Charm.*Stack x2/su);
-  assert.doesNotMatch(visible, /v08-meta-1|v08-score-1|\bfang\b/u);
+  const allNodes = (node) => [node, ...(node.children || []).flatMap(allNodes)];
+  const hasClass = (node, className) => String(node.className).split(/\s+/u).includes(className);
+  assert.equal(hasClass(rendered, "ranked-v3-reference-plate--inspect"), true);
+  const art = allNodes(rendered).filter((node) => hasClass(node, "ranked-v3-reference-plate-art"));
+  assert.equal(art.length, 1);
+  assert.equal(art[0].attributes.get("aria-hidden"), "true");
+  const occupied = allNodes(rendered).filter((node) => (
+    hasClass(node, "ranked-v3-inspect-equipment-slot") && node.attributes.get("data-relic-index") === "0"
+  ));
+  assert.equal(occupied.length, 1);
+  assert.equal(occupied[0].attributes.get("tabindex"), "0");
+  assert.equal(occupied[0].attributes.get("data-record-tooltip"), "Fang Charm | +10 ATK | Stack x2");
+  assert.equal(occupied[0].attributes.get("aria-label"), occupied[0].attributes.get("data-record-tooltip"));
+  assert.doesNotMatch(visible, /Fang Charm|Stack x2|v08-meta-1|v08-score-1|\bfang\b/u);
 });
 test("M4 Ranked relic choices resolve catalog name, description, rarity, and icon", () => {
   globalThis.DungeonRelicData.RELICS[0].icon = "assets/hd/ui/relics/fang.png";
@@ -174,13 +191,4 @@ test("M4 Ranked relic choices resolve catalog name, description, rarity, and ico
 test("M4 Ranked choice copy hides protocol-style separators", () => {
   assert.equal(rankedUi.playerText("Upgrade crit_chance to 1"), "Upgrade crit chance to 1");
   assert.equal(rankedUi.playerText("buy_iron-1"), "Buy iron 1");
-});
-test("M4 archive consumers load the shared renderer before the adapter and game", async () => {
-  const index = await readFile(new URL("../../../index.html", import.meta.url), "utf8");
-  const renderer = index.indexOf('<script src="record-archive-ui.js"></script>');
-  const adapter = index.indexOf('<script src="online-v3/ranked-v3-leaderboard-ui.js"></script>');
-  const game = index.indexOf('<script src="game.js"></script>');
-  assert(renderer >= 0);
-  assert(renderer < adapter);
-  assert(adapter < game);
 });

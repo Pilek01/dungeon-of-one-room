@@ -250,7 +250,7 @@ test("Ranked Observer Bot owns canonical offers and waits for the full boundary"
   assert.match(runtime, /commit_meta_transaction/u);
   assert.match(
     runtime,
-    /function onForgeMode\(mode\)[\s\S]*runObserverBotBoundary[\s\S]*open_meta_offer/u
+    /function onForgeMode\(mode, context = \{\}\)[\s\S]*runObserverBotBoundary[\s\S]*open_meta_offer/u
   );
   assert.match(runtime, /isObserverBotBoundaryPending/u);
 

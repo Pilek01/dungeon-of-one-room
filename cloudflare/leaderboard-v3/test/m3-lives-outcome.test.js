@@ -57,10 +57,10 @@ async function addRelic(state, relicId, revision = state.revision) {
   });
 }
 
-async function fatal(value) {
+async function fatal(value, request = { classification: "local_fatal_event" }) {
   return value.ruleset.reportFatalEvent(
     value.state,
-    { classification: "local_fatal_event" },
+    request,
     { secret: TEST_SECRET }
   );
 }
@@ -143,6 +143,30 @@ test("the accepted loss at one life creates terminal defeat without a room", asy
   assert.equal(result.publicResult.resolution, "terminal_defeat");
 });
 
+test("fatal presentation cause is bounded, receipt-only, and leaves canonical resolution unchanged", async () => {
+  const caused = await activeState(90);
+  const plain = await activeState(90);
+  caused.state.lives = 1;
+  plain.state.lives = 1;
+  const withCause = await fatal(caused, {
+    classification: "local_fatal_event",
+    presentationCause: "  Defeated by The Hollow Seraph  "
+  });
+  const withoutCause = await fatal(plain);
+  assert.equal(withCause.publicResult.presentationCause, "Defeated by The Hollow Seraph");
+  assert.equal(withCause.nextState.lifeLedger.history.at(-1).presentationCause, "Defeated by The Hollow Seraph");
+  const receiptFreeState = structuredClone(withCause.nextState);
+  delete receiptFreeState.lifeLedger.history.at(-1).presentationCause;
+  assert.deepEqual(receiptFreeState, withoutCause.nextState);
+  for (const request of [
+    { classification: "local_fatal_event", presentationCause: " " },
+    { classification: "local_fatal_event", presentationCause: "bad\u0001cause" },
+    { classification: "local_fatal_event", presentationCause: "x".repeat(161) },
+    { classification: "local_fatal_event", presentationCause: "valid", unexpected: true }
+  ]) {
+    await assert.rejects(() => fatal(caused, request));
+  }
+});
 test("normal and emergency extraction are server-derived and terminal", async () => {
   const normal = await activeState(6);
   normal.state.statistics.roomsCompleted = 1;

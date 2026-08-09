@@ -4766,7 +4766,8 @@ body.ranked-v3-modal-open #screenOverlay {
   box-shadow: inset 4px 0 0 #b89a62, inset 0 0 0 1px #050607, 0 0 15px #7187962b;
 }
 
-.ranked-v3-button {
+.ranked-v3-button,
+.ranked-v3-leaderboard-details-button {
   position: relative;
   min-height: 44px;
   padding: 10px 16px;
@@ -4804,7 +4805,9 @@ body.ranked-v3-modal-open #screenOverlay {
 }
 
 .ranked-v3-button:hover,
-.ranked-v3-button:focus-visible {
+.ranked-v3-button:focus-visible,
+.ranked-v3-leaderboard-details-button:hover,
+.ranked-v3-leaderboard-details-button:focus-visible {
   outline: 1px solid #b89a62;
   outline-offset: 2px;
   border-color: #8b959b;
@@ -4818,6 +4821,65 @@ body.ranked-v3-modal-open #screenOverlay {
   cursor: not-allowed;
 }
 
+.ranked-v3-leaderboard-list,
+.ranked-v3-leaderboard-detail {
+  display: grid;
+  gap: 10px;
+  text-align: left;
+}
+
+.ranked-v3-leaderboard-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 6px 16px;
+  align-items: center;
+  padding: 13px 15px;
+  border: 1px solid #3f484e;
+  background:
+    linear-gradient(90deg, #151a1ee8, #090c0fe8),
+    url("assets/hd/ui/abyssal-gothic/panel-texture.png") center / 210px 210px;
+  box-shadow: inset 3px 0 0 #5f6d75, inset 0 0 18px #0009;
+}
+
+.ranked-v3-leaderboard-rank {
+  color: #e4d9c7;
+  font: 600 1rem/1.2 "Copperplate Gothic Light", "Palatino Linotype", Georgia, serif;
+}
+
+.ranked-v3-leaderboard-row > span {
+  grid-column: 1;
+  color: #909894;
+  font: 0.68rem/1.35 "Courier New", monospace;
+}
+
+.ranked-v3-leaderboard-details-button {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+}
+
+.ranked-v3-leaderboard-detail > p {
+  margin: 0;
+  color: #aaa197;
+}
+
+.ranked-v3-leaderboard-build {
+  padding-top: 10px;
+  border-top: 1px solid #493f34;
+}
+
+.ranked-v3-leaderboard-build h3 {
+  margin: 0 0 6px;
+  color: #cdb988;
+  font: 600 0.78rem/1.2 "Copperplate Gothic Light", "Palatino Linotype", Georgia, serif;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.ranked-v3-leaderboard-build ul {
+  margin: 0;
+  padding-left: 20px;
+  color: #a9a098;
+}
 
 .ranked-v3-overlay[data-view="sync"] {
   place-items: end center;
@@ -4924,10 +4986,1256 @@ body.ranked-v3-modal-open #screenOverlay {
     height: 76px;
   }
 
+  .ranked-v3-leaderboard-row {
+    grid-template-columns: 1fr;
+  }
+
+  .ranked-v3-leaderboard-details-button {
+    grid-column: 1;
+    grid-row: auto;
+    width: 100%;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .ranked-v3-card {
     animation: none;
+  }
+}
+
+/* Shared Ranked Leaderboard and Practice Records archive. */
+.record-archive {
+  --record-gold: #e7c26f;
+  --record-silver: #c9d5df;
+  --record-bronze: #cd9264;
+  display: grid;
+  gap: 18px;
+  text-align: left;
+}
+.record-archive-podium { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.record-archive-podium-card, .record-archive-ledger-row, .record-archive-chronicle, .record-archive-build-section {
+  border: 1px solid #4e5559;
+  background: linear-gradient(145deg, #242a2ddd, #090b0ee8), url("assets/hd/ui/abyssal-gothic/panel-texture.png") center/220px;
+  box-shadow: inset 0 0 0 1px #050607, inset 0 0 22px #000b;
+}
+.record-archive-podium-card { display:grid; justify-items:center; gap:6px; padding:14px 10px; text-align:center; }
+.record-archive-podium-card.ranked-v3-leaderboard-row { grid-template-columns:1fr; }
+.record-archive-podium-card .ranked-v3-leaderboard-details-button { grid-column:1; grid-row:auto; }
+.record-archive-podium-card[data-record-rank="1"] { border-color: var(--record-gold); }
+.record-archive-podium-card[data-record-rank="2"] { border-color: var(--record-silver); }
+.record-archive-podium-card[data-record-rank="3"] { border-color: var(--record-bronze); }
+.record-archive-skull { width:58px; height:58px; object-fit:contain; filter: sepia(.75) saturate(1.7) brightness(1.18); }
+.record-archive-skull-rank-2 { filter: grayscale(1) brightness(1.65); }
+.record-archive-skull-rank-3 { filter: sepia(.9) saturate(1.2) hue-rotate(330deg) brightness(.95); }
+.record-archive-podium-title, .record-archive-kicker { margin:0; color:var(--record-gold); font:700 .68rem/1.2 "Courier New",monospace; letter-spacing:1.5px; text-transform:uppercase; }
+.record-archive-name { border:0; padding:0; color:#f3e7cf; background:transparent; font:600 1rem/1.1 "Copperplate Gothic Light",Georgia,serif; cursor:pointer; }
+.record-archive-podium-facts, .record-archive-chronicle-facts { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:5px; width:100%; }
+.record-archive-ledger { display:grid; gap:7px; }
+.record-archive-ledger-row { display:grid; grid-template-columns:70px minmax(120px,1fr) repeat(3,minmax(76px,auto)) auto; gap:10px; align-items:center; padding:10px 12px; }
+.record-archive-fact { display:grid; gap:2px; }
+.record-archive-fact-label { color:#9d978d; font:600 .58rem/1 "Courier New",monospace; letter-spacing:.8px; text-transform:uppercase; }
+.record-archive-fact-value { color:#e2d6c3; font:600 .82rem/1.15 Georgia,serif; }
+.record-archive-mutators { position:relative; width:max-content; max-width:100%; padding:7px 10px; border:1px solid #6e624d; color:#e3cf9c; font:.7rem/1.25 "Courier New",monospace; cursor:help; }
+.record-archive-mutators:hover::after, .record-archive-mutators:focus-visible::after { content:attr(data-record-tooltip); position:absolute; z-index:3; right:0; bottom:calc(100% + 7px); width:min(330px,80vw); padding:9px; border:1px solid #a88a53; color:#f3e7cf; background:#080a0df8; box-shadow:0 8px 24px #000d; white-space:normal; }
+.record-archive-header { padding-bottom:10px; border-bottom:1px solid #554b3b; }
+.record-archive-player { margin:3px 0; color:#f0e2cc; font:600 1.65rem/1 "Copperplate Gothic Light",Georgia,serif; }
+.record-archive-score { margin:0; color:var(--record-gold); }
+.record-archive-chronicle, .record-archive-build-section { padding:13px; }
+.record-archive-section-title { margin:0 0 9px; color:#d8bd83; font:600 .78rem/1.2 "Copperplate Gothic Light",Georgia,serif; letter-spacing:1px; text-transform:uppercase; }
+.record-archive-build-list { margin:0; padding-left:18px; color:#bcb4aa; }
+@media (max-width:760px) { .record-archive-podium { grid-template-columns:1fr; } .record-archive-ledger-row { grid-template-columns:repeat(2,minmax(0,1fr)); } .record-archive-ledger-row .ranked-v3-leaderboard-details-button { grid-column:1/-1; width:100%; } }
+@media (prefers-reduced-motion:reduce) { .record-archive * { transition:none!important; animation:none!important; } }
+
+
+/* Practice Records detail extensions. */
+.record-archive-shell {
+  width: min(1100px, 94vw);
+  max-height: min(860px, 92vh);
+  overflow: auto;
+  border-color: #6b5940;
+  background:
+    radial-gradient(circle at 50% -20%, #8c6b2a22, transparent 42%),
+    linear-gradient(145deg, #171a1ddd, #050608f2);
+}
+.record-archive-masthead { display:grid; justify-items:center; gap:5px; margin-bottom:18px; text-align:center; }
+.record-archive-masthead .overlay-title { margin:0; font-family:"Copperplate Gothic Light",Georgia,serif; letter-spacing:4px; text-shadow:0 2px 0 #000,0 0 22px #d8a94b45; }
+.record-archive-rank { color:#c7bda9; font:700 .8rem/1 "Courier New",monospace; letter-spacing:1px; }
+.record-archive-podium-card[data-record-rank="1"] .record-archive-rank,
+.record-archive-podium-card[data-record-rank="1"] .record-archive-podium-score { color:var(--record-gold); }
+.record-archive-podium-card[data-record-rank="2"] .record-archive-rank,
+.record-archive-podium-card[data-record-rank="2"] .record-archive-podium-score { color:var(--record-silver); }
+.record-archive-podium-card[data-record-rank="3"] .record-archive-rank,
+.record-archive-podium-card[data-record-rank="3"] .record-archive-podium-score { color:var(--record-bronze); }
+.record-archive-podium-score { font:700 1.05rem/1 Georgia,serif; text-shadow:0 1px 0 #000; }
+.record-archive-facts { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:6px; width:100%; }
+.record-archive-facts span,
+.record-archive-detail-metrics span,
+.record-archive-build-grid > span,
+.record-archive-stat-grid > span { display:grid; gap:3px; min-width:0; }
+.record-archive-facts small,
+.record-archive-detail small,
+.record-archive-ledger-row small { color:#918a7e; font:600 .58rem/1.1 "Courier New",monospace; letter-spacing:.8px; text-transform:uppercase; }
+.record-archive-facts strong,
+.record-archive-detail strong { color:#e7dac4; font-family:Georgia,serif; }
+.record-archive-inspect,
+.record-archive-back {
+  border:1px solid #716246;
+  padding:8px 12px;
+  color:#e7d9bc;
+  background:linear-gradient(#252119,#0c0d0f);
+  font:700 .68rem/1 "Courier New",monospace;
+  letter-spacing:.7px;
+  text-transform:uppercase;
+  cursor:pointer;
+}
+.record-archive-name:hover,
+.record-archive-name:focus-visible,
+.record-archive-inspect:hover,
+.record-archive-inspect:focus-visible,
+.record-archive-back:hover,
+.record-archive-back:focus-visible { color:#fff2c7; border-color:#c8a457; text-shadow:0 0 12px #d9ad4e88; }
+.record-archive-ledger-row > span { color:#b9b0a1; font:.72rem/1.2 "Courier New",monospace; }
+.record-archive-ledger-row .record-archive-score { color:#d9bd7e; font-family:Georgia,serif; }
+.record-archive-detail { display:grid; gap:14px; }
+.record-archive-detail-header {
+  display:flex;
+  justify-content:space-between;
+  gap:16px;
+  align-items:end;
+  padding:15px;
+  border:1px solid #65583f;
+  background:linear-gradient(135deg,#24211cdd,#090b0eea);
+  box-shadow:inset 0 0 24px #000b;
+}
+.record-archive-detail-header h3 { margin:4px 0; color:#f0e2cc; font:600 1.65rem/1 "Copperplate Gothic Light",Georgia,serif; }
+.record-archive-detail-header > strong { color:var(--record-gold); font-size:1.25rem; }
+.record-archive-detail-metrics { display:grid; grid-template-columns:repeat(6,minmax(0,1fr)); gap:7px; }
+.record-archive-detail-metrics span,
+.record-archive-build-grid > span,
+.record-archive-stat-grid > span { padding:9px; border:1px solid #403a31; background:#0b0d10c9; }
+.record-archive-detail-section { padding:13px; border:1px solid #4e4940; background:linear-gradient(145deg,#1d2022d9,#080a0de8); box-shadow:inset 0 0 20px #000a; }
+.record-archive-detail-section h4 { margin:0 0 10px; color:#d8bd83; font:600 .8rem/1.2 "Copperplate Gothic Light",Georgia,serif; letter-spacing:1px; text-transform:uppercase; }
+.record-archive-detail-columns { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+.record-archive-build-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:7px; }
+.record-archive-stat-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:7px; }
+.record-archive-relic-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:8px; }
+.record-archive-relic { display:flex; align-items:center; gap:8px; min-width:0; padding:8px; border:1px solid #4b4235; background:#090b0ed9; }
+.record-archive-relic img,
+.record-archive-relic-fallback { width:38px; height:38px; flex:0 0 38px; object-fit:contain; }
+.record-archive-relic-fallback { display:grid; place-items:center; color:#806f51; }
+.record-archive-relic span { display:grid; gap:3px; min-width:0; }
+.record-archive-relic strong { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:.78rem; }
+.record-archive-empty,
+.record-archive-legacy-note { margin:0; padding:18px; border:1px dashed #554b3b; color:#aaa093; text-align:center; }
+.record-archive-detail-legacy { min-height:300px; align-content:center; }
+[data-record-tooltip] { position:relative; cursor:help; }
+[data-record-tooltip]:hover::after,
+[data-record-tooltip]:focus-visible::after {
+  content:attr(data-record-tooltip);
+  position:absolute;
+  z-index:20;
+  right:0;
+  bottom:calc(100% + 8px);
+  width:min(390px,80vw);
+  padding:10px 12px;
+  border:1px solid #b38d4d;
+  color:#f4e9d3;
+  background:#050609fa;
+  box-shadow:0 10px 30px #000e;
+  font:600 .68rem/1.45 "Courier New",monospace;
+  white-space:normal;
+}
+@media (max-width:900px) {
+  .record-archive-detail-metrics { grid-template-columns:repeat(3,minmax(0,1fr)); }
+  .record-archive-relic-grid,
+  .record-archive-stat-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+}
+@media (max-width:760px) {
+  .record-archive-detail-columns { grid-template-columns:1fr; }
+  .record-archive-build-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .record-archive-detail-header { align-items:start; flex-direction:column; }
+}
+
+/* Ranked desktop reference plates. Practice Records remain on .record-archive-* rules above. */
+.ranked-v3-card-reference-plate {
+  width: min(1536px, calc(100vw - 32px));
+  max-height: none;
+  padding: 0;
+  overflow: visible;
+  background: transparent;
+  box-shadow: none;
+}
+.ranked-v3-card-reference-plate > .ranked-v3-eyebrow,
+.ranked-v3-card-reference-plate > .ranked-v3-title,
+.ranked-v3-card-reference-plate > .ranked-v3-status,
+.ranked-v3-card-reference-plate > .ranked-v3-actions { display: none; }
+.ranked-v3-card-reference-plate .ranked-v3-body-reference-plate { width: 100%; margin: 0; }
+.ranked-v3-reference-plate {
+  --ranked-plate-ivory: #eadfce;
+  --ranked-plate-copy: #c4ad8c;
+  --ranked-plate-gold: #d9ad60;
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1536 / 1080;
+  overflow: hidden;
+  color: var(--ranked-plate-ivory);
+  text-align: left;
+  text-shadow: 0 2px 2px #000;
+}
+.ranked-v3-reference-plate-title {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+.ranked-v3-reference-plate-art {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 100% 100%;
+}
+.ranked-v3-reference-plate--leaderboard .ranked-v3-reference-plate-art { background-image: url("assets/hd/ui/ranked-reference-plates/ranked-leaderboard-desktop-plate.png"); }
+.ranked-v3-reference-plate--inspect .ranked-v3-reference-plate-art { background-image: url("assets/hd/ui/ranked-reference-plates/ranked-build-inspect-desktop-plate.png"); }
+.ranked-v3-reference-plate-overlay { position: absolute; inset: 0; z-index: 1; }
+.ranked-v3-reference-plate button {
+  border: 0;
+  color: inherit;
+  font: inherit;
+  text-shadow: inherit;
+  cursor: pointer;
+}
+.ranked-v3-reference-plate button:focus-visible {
+  z-index: 5;
+  outline: 2px solid #f6d889;
+  outline-offset: 3px;
+  box-shadow: 0 0 0 4px #120e09cc, 0 0 18px #d9ad60aa;
+}
+.ranked-v3-reference-plate button:disabled { cursor: not-allowed; opacity: .42; }
+
+@media (min-width: 761px) {
+  .ranked-v3-reference-plate--leaderboard .ranked-v3-leaderboard-heading {
+    position: absolute;
+    top: 10.6%;
+    left: 22%;
+    right: 22%;
+    display: grid;
+    justify-items: center;
+    gap: .22em;
+    text-align: center;
+  }
+  .ranked-v3-leaderboard-kicker { margin: 0; color: #bc9b68; font: 700 clamp(.5rem, .7vw, .72rem)/1 "Courier New", monospace; letter-spacing: .38em; text-transform: uppercase; }
+  .ranked-v3-leaderboard-display-title { margin: 0; color: #e7d7c0; font: 600 clamp(1.7rem, 3.6vw, 4rem)/1 "Copperplate Gothic Light", Georgia, serif; letter-spacing: .18em; text-transform: uppercase; }
+  .ranked-v3-leaderboard-season { margin: 0; color: #b99868; font: 600 clamp(.62rem, 1vw, .95rem)/1.2 "Copperplate Gothic Light", Georgia, serif; letter-spacing: .3em; text-transform: uppercase; }
+  .ranked-v3-leaderboard-podium {
+    position: absolute;
+    top: 25.4%;
+    left: 14.1%;
+    right: 14.1%;
+    height: 29.2%;
+    display: grid;
+    grid-template-columns: 1fr 1.18fr 1fr;
+    align-items: stretch;
+    gap: 4.4%;
+  }
+  .ranked-v3-reference-plate .ranked-v3-leaderboard-row {
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+  .ranked-v3-podium-slot {
+    display: grid;
+    grid-template-columns: 1fr;
+    align-content: end;
+    justify-items: center;
+    gap: .45em;
+    min-width: 0;
+    padding: 10% 8% 8%;
+    text-align: center;
+  }
+  .ranked-v3-podium-slot:nth-child(1) { grid-column: 2; grid-row: 1; padding-bottom: 2%; }
+  .ranked-v3-podium-slot:nth-child(2) { grid-column: 1; grid-row: 1; }
+  .ranked-v3-podium-slot:nth-child(3) { grid-column: 3; grid-row: 1; }
+  .ranked-v3-leaderboard-slot-identity { display: grid; justify-items: center; gap: .28em; min-width: 0; }
+  .ranked-v3-leaderboard-rank { color: var(--ranked-plate-gold); font: 600 clamp(.76rem, 1.35vw, 1.52rem)/1 Georgia, serif; }
+  .ranked-v3-podium-slot:nth-child(2) .ranked-v3-leaderboard-rank { color: #d5d7d5; }
+  .ranked-v3-podium-slot:nth-child(3) .ranked-v3-leaderboard-rank { color: #c98961; }
+  .ranked-v3-reference-plate .record-archive-name { max-width: 100%; overflow: hidden; color: #e9ddca; text-overflow: ellipsis; white-space: nowrap; background: transparent; font: 600 clamp(.63rem, 1.2vw, 1.28rem)/1.1 "Copperplate Gothic Light", Georgia, serif; }
+  .ranked-v3-podium-slot .ranked-v3-leaderboard-score { color: var(--ranked-plate-gold); font: 600 clamp(.72rem, 1.2vw, 1.22rem)/1 Georgia, serif; }
+  .ranked-v3-podium-slot .ranked-v3-leaderboard-depth,
+  .ranked-v3-podium-slot .ranked-v3-leaderboard-gold { color: #b89b73; font: 600 clamp(.43rem, .66vw, .68rem)/1.1 "Courier New", monospace; letter-spacing: .12em; text-transform: uppercase; }
+  .ranked-v3-podium-slot .ranked-v3-leaderboard-details-button { margin-top: .28em; padding: .35em .56em; color: #caaa74; background: transparent; font: 600 clamp(.43rem, .63vw, .68rem)/1 Georgia, serif; }
+  .ranked-v3-leaderboard-ledger {
+    position: absolute;
+    top: 58.2%;
+    left: 10.3%;
+    right: 10.3%;
+    height: 28.7%;
+    display: grid;
+    grid-template-rows: 11% 1fr;
+  }
+  .ranked-v3-leaderboard-columns,
+  .ranked-v3-ledger-slot {
+    display: grid;
+    grid-template-columns: 9% 30% 17% 11% 17% 16%;
+    align-items: center;
+  }
+  .ranked-v3-leaderboard-columns { color: #d8bd86; font: 600 clamp(.46rem, .72vw, .75rem)/1 "Copperplate Gothic Light", Georgia, serif; letter-spacing: .13em; text-transform: uppercase; }
+  .ranked-v3-leaderboard-column:nth-child(3),
+  .ranked-v3-leaderboard-column:nth-child(4),
+  .ranked-v3-leaderboard-column:nth-child(5),
+  .ranked-v3-leaderboard-column:nth-child(6) { text-align: center; }
+  .ranked-v3-leaderboard-ledger-rows { display: grid; grid-template-rows: repeat(7, minmax(0, 1fr)); }
+  .ranked-v3-ledger-slot { min-width: 0; padding: 0 .8%; color: #c5b69f; font: 600 clamp(.5rem, .84vw, .88rem)/1 Georgia, serif; }
+  .ranked-v3-ledger-slot .ranked-v3-leaderboard-slot-identity { display: contents; }
+  .ranked-v3-ledger-slot .ranked-v3-leaderboard-rank { grid-column: 1; color: #c6aa78; text-align: center; }
+  .ranked-v3-ledger-slot .record-archive-name { grid-column: 2; justify-self: start; font-size: clamp(.5rem, .9vw, .96rem); }
+  .ranked-v3-ledger-slot .ranked-v3-leaderboard-score { grid-column: 3; color: var(--ranked-plate-gold); text-align: center; }
+  .ranked-v3-ledger-slot .ranked-v3-leaderboard-depth { grid-column: 4; text-align: center; }
+  .ranked-v3-ledger-slot .ranked-v3-leaderboard-gold { grid-column: 5; text-align: center; }
+  .ranked-v3-reference-plate .ranked-v3-leaderboard-details-button { grid-column: 6; grid-row: auto; justify-self: center; padding: .32em .48em; color: #c9a874; background: transparent; font: 600 clamp(.46rem, .7vw, .74rem)/1 Georgia, serif; }
+  .ranked-v3-leaderboard-pager {
+    position: absolute;
+    left: 25%;
+    right: 25%;
+    bottom: 7.1%;
+    display: grid;
+    grid-template-columns: auto 1fr 1fr auto auto;
+    align-items: center;
+    gap: 1.5%;
+    color: #ba9b6d;
+    text-align: center;
+  }
+  .ranked-v3-leaderboard-pager p { margin: 0; font: 600 clamp(.44rem, .68vw, .73rem)/1 "Courier New", monospace; letter-spacing: .06em; }
+  .ranked-v3-leaderboard-page-control,
+  .ranked-v3-leaderboard-close,
+  .ranked-v3-inspect-back,
+  .ranked-v3-inspect-close { padding: .55em .85em; color: #e1c992; background: linear-gradient(180deg, #2c2721aa, #090908aa); border: 1px solid #79603e !important; font: 600 clamp(.44rem, .7vw, .76rem)/1 "Copperplate Gothic Light", Georgia, serif !important; letter-spacing: .08em; text-transform: uppercase; }
+
+  .ranked-v3-reference-plate--inspect .ranked-v3-inspect-header {
+    position: absolute;
+    top: 12.2%;
+    left: 14.3%;
+    right: 21.8%;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto auto auto;
+    align-items: end;
+    column-gap: 2.2%;
+  }
+  .ranked-v3-inspect-header p,
+  .ranked-v3-inspect-header h3 { margin: 0; }
+  .ranked-v3-inspect-rank { color: #c4a16c; font: 600 clamp(.55rem, .92vw, .96rem)/1 Georgia, serif; }
+  .ranked-v3-inspect-player { min-width: 0; overflow: hidden; color: #e7d9c2; text-overflow: ellipsis; white-space: nowrap; font: 600 clamp(1.2rem, 2.4vw, 2.7rem)/1 "Copperplate Gothic Light", Georgia, serif; }
+  .ranked-v3-inspect-score { color: var(--ranked-plate-gold); font: 600 clamp(.84rem, 1.7vw, 1.85rem)/1 Georgia, serif; }
+  .ranked-v3-inspect-depth,
+  .ranked-v3-inspect-gold { color: #c1a780; font: 600 clamp(.54rem, .88vw, .92rem)/1 "Courier New", monospace; letter-spacing: .09em; text-transform: uppercase; }
+  .ranked-v3-inspect-loadout { position: absolute; top: 31.5%; left: 14.7%; width: 47.5%; }
+  .ranked-v3-inspect-section-title { margin: 0 0 2.8%; color: #cfb17e; font: 600 clamp(.66rem, 1.05vw, 1.08rem)/1 "Copperplate Gothic Light", Georgia, serif; letter-spacing: .2em; text-align: center; text-transform: uppercase; }
+  .ranked-v3-inspect-equipment-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 2.4%; }
+  .ranked-v3-inspect-equipment-slot { min-width: 0; min-height: 0; aspect-ratio: 1 / 1.24; display: grid; grid-template-rows: 1fr auto; justify-items: center; gap: 4%; padding: 8%; text-align: center; }
+  .ranked-v3-inspect-equipment-slot[aria-hidden="true"] { opacity: 0; }
+  .ranked-v3-inspect-equipment-icon { width: 72%; max-height: 100%; object-fit: contain; filter: drop-shadow(0 5px 4px #000); }
+  .ranked-v3-inspect-equipment-fallback { display: grid; place-items: center; width: 55%; aspect-ratio: 1; color: #66573e; font-size: clamp(.7rem, 1.5vw, 1.55rem); }
+  .ranked-v3-inspect-equipment-label { display: grid; gap: .28em; min-width: 0; color: #d8c29a; font: 600 clamp(.42rem, .7vw, .75rem)/1.1 Georgia, serif; }
+  .ranked-v3-inspect-equipment-label strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .ranked-v3-inspect-equipment-label small { color: #9b815d; font: 600 .86em/1 "Courier New", monospace; }
+  .ranked-v3-inspect-chronicle { position: absolute; top: 30.2%; right: 13.6%; width: 25.2%; }
+  .ranked-v3-inspect-chronicle-rows { display: grid; gap: 0; border-top: 1px solid #67553c99; }
+  .ranked-v3-inspect-chronicle-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; min-height: clamp(1.4rem, 3.05vw, 3.15rem); border-bottom: 1px solid #67553c99; color: #d7c29e; font: 600 clamp(.5rem, .82vw, .86rem)/1 Georgia, serif; }
+  .ranked-v3-inspect-chronicle-label { padding-right: 8%; }
+  .ranked-v3-inspect-chronicle-value { color: #e6c681; text-align: right; }
+  .ranked-v3-inspect-mutators { max-width: 100%; padding: .32em .42em; color: #e6c681; background: transparent; font: inherit; text-align: right; }
+  .ranked-v3-inspect-terminal { position: absolute; right: 13.6%; bottom: 17.6%; width: 25.2%; min-height: 13%; display: grid; align-content: center; justify-items: center; gap: 10%; padding: 4%; text-align: center; }
+  .ranked-v3-inspect-terminal h3,
+  .ranked-v3-inspect-terminal p { margin: 0; }
+  .ranked-v3-inspect-terminal-title { color: #c56f5a; font: 600 clamp(.72rem, 1.16vw, 1.22rem)/1 "Copperplate Gothic Light", Georgia, serif; letter-spacing: .15em; text-transform: uppercase; }
+  .ranked-v3-inspect-terminal-cause { color: #c4a880; font: 600 clamp(.5rem, .78vw, .82rem)/1.25 Georgia, serif; }
+  .ranked-v3-inspect-actions { position: absolute; left: 31%; right: 31%; bottom: 7.4%; display: grid; grid-template-columns: 1fr auto; gap: 4%; align-items: center; }
+  .ranked-v3-inspect-back { min-height: 2.8em; }
+  .ranked-v3-inspect-close { min-height: 2.8em; }
+}
+
+@media (max-width: 760px) {
+  .ranked-v3-card-reference-plate { width: min(100%, 680px); max-height: none; padding: 18px; background: #080a0ee8; box-shadow: 0 18px 48px #000; }
+  .ranked-v3-reference-plate { aspect-ratio: auto; overflow: visible; }
+  .ranked-v3-reference-plate-art { display: none; }
+  .ranked-v3-reference-plate-overlay { position: static; display: grid; gap: 14px; }
+  .ranked-v3-leaderboard-heading,
+  .ranked-v3-inspect-header { display: grid; gap: 6px; text-align: center; }
+  .ranked-v3-leaderboard-display-title,
+  .ranked-v3-inspect-player { margin: 0; color: #e7d9c2; font-family: "Copperplate Gothic Light", Georgia, serif; }
+  .ranked-v3-leaderboard-podium,
+  .ranked-v3-inspect-equipment-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .ranked-v3-podium-slot,
+  .ranked-v3-ledger-slot,
+  .ranked-v3-inspect-equipment-slot,
+  .ranked-v3-inspect-chronicle-row { padding: 10px; border: 1px solid #51452f; background: #0d1015; }
+  .ranked-v3-leaderboard-ledger-rows,
+  .ranked-v3-inspect-chronicle-rows { display: grid; gap: 6px; }
+  .ranked-v3-leaderboard-columns { display: none; }
+  .ranked-v3-ledger-slot { display: grid; gap: 5px; }
+  .ranked-v3-ledger-slot[aria-hidden="true"] { display: none; }
+  .ranked-v3-inspect-equipment-slot[aria-hidden="true"] { min-height: 76px; }
+  .ranked-v3-inspect-equipment-label { display: grid; gap: 3px; text-align: center; }
+  .ranked-v3-inspect-equipment-icon { width: 56px; height: 56px; object-fit: contain; }
+  .ranked-v3-leaderboard-pager,
+  .ranked-v3-inspect-actions { display: grid; grid-template-columns: 1fr; gap: 8px; }
+  .ranked-v3-inspect-terminal { padding: 14px; border: 1px solid #67553c; text-align: center; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ranked-v3-reference-plate,
+  .ranked-v3-reference-plate * { animation: none !important; transition: none !important; }
+}
+
+/* Ranked reference plate fidelity repair: HD-only art, plate-relative type, and viewport-safe scaling. */
+@media (min-width: 761px) {
+  body:not(:has(#game.graphics-hd)) .ranked-v3-reference-plate-art { display: none !important; }
+  body:not(:has(#game.graphics-hd)) .ranked-v3-card-reference-plate {
+    width: min(900px, calc(100vw - 36px));
+    max-height: calc(100vh - 36px);
+    padding: 52px 46px 40px;
+    overflow: auto;
+  }
+  body:not(:has(#game.graphics-hd)) .ranked-v3-reference-plate { aspect-ratio: auto; overflow: visible; }
+  body:not(:has(#game.graphics-hd)) .ranked-v3-reference-plate-overlay {
+    position: static;
+    display: grid;
+    gap: 14px;
+  }
+  body:not(:has(#game.graphics-hd)) .ranked-v3-leaderboard-heading,
+  body:not(:has(#game.graphics-hd)) .ranked-v3-leaderboard-podium,
+  body:not(:has(#game.graphics-hd)) .ranked-v3-leaderboard-ledger,
+  body:not(:has(#game.graphics-hd)) .ranked-v3-leaderboard-pager,
+  body:not(:has(#game.graphics-hd)) .ranked-v3-inspect-header,
+  body:not(:has(#game.graphics-hd)) .ranked-v3-inspect-loadout,
+  body:not(:has(#game.graphics-hd)) .ranked-v3-inspect-chronicle,
+  body:not(:has(#game.graphics-hd)) .ranked-v3-inspect-terminal,
+  body:not(:has(#game.graphics-hd)) .ranked-v3-inspect-actions {
+    position: static;
+    inset: auto;
+    width: auto;
+    height: auto;
+  }
+  body:not(:has(#game.graphics-hd)) .ranked-v3-leaderboard-heading,
+  body:not(:has(#game.graphics-hd)) .ranked-v3-inspect-header { display: grid; gap: 6px; text-align: center; }
+  body:not(:has(#game.graphics-hd)) .ranked-v3-leaderboard-podium { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+
+  body:has(#game.graphics-hd) .ranked-v3-overlay[data-view="reference-plate"] {
+    place-items: center;
+    padding: 0;
+    overflow: hidden;
+    background: #020304;
+    backdrop-filter: none;
+  }
+  body:has(#game.graphics-hd) .ranked-v3-card-reference-plate {
+    width: min(1536px, 100vw, 142.222222vh);
+    max-height: none;
+    padding: 0;
+    overflow: hidden;
+    background: transparent;
+    box-shadow: none;
+  }
+  body:has(#game.graphics-hd) .ranked-v3-card-reference-plate .ranked-v3-body-reference-plate {
+    width: 100%;
+    height: 100%;
+    margin: 0;
+  }
+  body:has(#game.graphics-hd) .ranked-v3-reference-plate {
+    container-type: inline-size;
+    width: 100%;
+    aspect-ratio: 1536 / 1080;
+    overflow: hidden;
+  }
+  body:has(#game.graphics-hd) .ranked-v3-reference-plate-art {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    display: block;
+    pointer-events: none;
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: 100% 100%;
+  }
+  body:has(#game.graphics-hd) .ranked-v3-reference-plate-overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    display: block;
+  }
+  body:has(#game.graphics-hd) .ranked-v3-reference-plate .ranked-v3-leaderboard-row {
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  body:has(#game.graphics-hd) .ranked-v3-leaderboard-heading {
+    position: absolute;
+    top: 11.9%;
+    left: 12%;
+    right: 12%;
+    display: grid;
+    justify-items: center;
+    gap: .55cqw;
+    text-align: center;
+  }
+  body:has(#game.graphics-hd) .ranked-v3-leaderboard-display-title {
+    margin: 0;
+    color: #e7d7c0;
+    font: 600 3.45cqw/.95 "Copperplate Gothic Light", Georgia, serif;
+    letter-spacing: .13em;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+  body:has(#game.graphics-hd) .ranked-v3-leaderboard-season {
+    margin: 0;
+    color: #b99868;
+    font: 600 .92cqw/1 "Copperplate Gothic Light", Georgia, serif;
+    letter-spacing: .3em;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+  body:has(#game.graphics-hd) .ranked-v3-leaderboard-podium {
+    position: absolute;
+    top: 20.7%;
+    left: 16.43%;
+    right: 16.43%;
+    height: 34.3%;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0;
+  }
+  body:has(#game.graphics-hd) .ranked-v3-podium-slot {
+    position: relative;
+    display: block;
+    min-width: 0;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    text-align: center;
+  }
+  body:has(#game.graphics-hd) .ranked-v3-podium-slot:nth-child(1) { grid-column: 2; grid-row: 1; }
+  body:has(#game.graphics-hd) .ranked-v3-podium-slot:nth-child(2) { grid-column: 1; grid-row: 1; }
+  body:has(#game.graphics-hd) .ranked-v3-podium-slot:nth-child(3) { grid-column: 3; grid-row: 1; }
+  body:has(#game.graphics-hd) .ranked-v3-podium-slot[aria-hidden="true"] { display: block; visibility: hidden; }
+  body:has(#game.graphics-hd) .ranked-v3-podium-slot .ranked-v3-leaderboard-slot-identity { display: contents; }
+  body:has(#game.graphics-hd) .ranked-v3-podium-slot .ranked-v3-leaderboard-rank,
+  body:has(#game.graphics-hd) .ranked-v3-podium-slot .record-archive-name,
+  body:has(#game.graphics-hd) .ranked-v3-podium-slot .ranked-v3-leaderboard-score,
+  body:has(#game.graphics-hd) .ranked-v3-podium-slot .ranked-v3-podium-meta {
+    position: absolute;
+    left: 4%;
+    right: 4%;
+    margin: 0;
+  }
+  body:has(#game.graphics-hd) .ranked-v3-podium-slot .ranked-v3-leaderboard-rank {
+    top: 57.2%;
+    color: var(--ranked-plate-gold);
+    font: 600 1.45cqw/1 Georgia, serif;
+    text-align: center;
+  }
+  body:has(#game.graphics-hd) .ranked-v3-podium-slot:nth-child(2) .ranked-v3-leaderboard-rank { color: #d5d7d5; }
+  body:has(#game.graphics-hd) .ranked-v3-podium-slot:nth-child(3) .ranked-v3-leaderboard-rank { color: #c98961; }
+  body:has(#game.graphics-hd) .ranked-v3-podium-slot .record-archive-name {
+    top: 67.2%;
+    max-width: 92%;
+    overflow: hidden;
+    color: #e9ddca;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    background: transparent;
+    font: 600 1.25cqw/1.1 "Copperplate Gothic Light", Georgia, serif;
+    text-align: center;
+  }
+  body:has(#game.graphics-hd) .ranked-v3-podium-slot .ranked-v3-leaderboard-score {
+    top: 76.7%;
+    color: var(--ranked-plate-gold);
+    font: 600 1.58cqw/1 Georgia, serif;
+  }
+  body:has(#game.graphics-hd) .ranked-v3-podium-slot .ranked-v3-podium-meta {
+    top: 88.2%;
+    display: flex;
+    justify-content: center;
+    gap: 1.1cqw;
+    color: #b89b73;
+    font: 600 .67cqw/1.1 "Courier New", monospace;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+  body:has(#game.graphics-hd) .ranked-v3-podium-slot .ranked-v3-leaderboard-details-button {
+    position: absolute;
+    top: 0;
+    left: 16%;
+    width: 68%;
+    height: 56%;
+    padding: 0;
+    overflow: hidden;
+    border-radius: 50%;
+    color: transparent;
+    background: transparent;
+    font-size: 0;
+    text-shadow: none;
+  }
+}
+
+
+@media (min-width: 761px) {
+  body:has(#game.graphics-hd) .ranked-v3-leaderboard-ledger {
+    position: absolute;
+    top: 59.4%;
+    left: 8.55%;
+    right: 8.55%;
+    height: 31.1%;
+    display: grid;
+    grid-template-rows: 10.4% 1fr;
+  }
+  body:has(#game.graphics-hd) .ranked-v3-leaderboard-columns,
+  body:has(#game.graphics-hd) .ranked-v3-ledger-slot {
+    display: grid;
+    grid-template-columns: 10.5% 31.5% 20% 10.5% 13% 14.5%;
+    align-items: center;
+    column-gap: 0;
+  }
+  body:has(#game.graphics-hd) .ranked-v3-leaderboard-columns {
+    color: #d8bd86;
+    font: 600 .72cqw/1 "Copperplate Gothic Light", Georgia, serif;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+  }
+  body:has(#game.graphics-hd) .ranked-v3-leaderboard-column:nth-child(1),
+  body:has(#game.graphics-hd) .ranked-v3-leaderboard-column:nth-child(n+3) { text-align: center; }
+  body:has(#game.graphics-hd) .ranked-v3-leaderboard-ledger-rows {
+    display: grid;
+    grid-template-rows: repeat(7, minmax(0, 1fr));
+    gap: 0;
+  }
+  body:has(#game.graphics-hd) .ranked-v3-ledger-slot {
+    min-width: 0;
+    padding: 0;
+    border: 0;
+    color: #c5b69f;
+    background: transparent;
+    font: 600 .86cqw/1 Georgia, serif;
+  }
+  body:has(#game.graphics-hd) .ranked-v3-ledger-slot[aria-hidden="true"] { display: grid; visibility: hidden; }
+  body:has(#game.graphics-hd) .ranked-v3-ledger-slot .ranked-v3-leaderboard-slot-identity { display: contents; }
+  body:has(#game.graphics-hd) .ranked-v3-ledger-slot .ranked-v3-leaderboard-rank { grid-column: 1; color: #c6aa78; text-align: center; }
+  body:has(#game.graphics-hd) .ranked-v3-ledger-slot .record-archive-name {
+    grid-column: 2;
+    justify-self: start;
+    max-width: 96%;
+    overflow: hidden;
+    color: #d8cbb8;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    background: transparent;
+    font: 600 .9cqw/1 "Copperplate Gothic Light", Georgia, serif;
+  }
+  body:has(#game.graphics-hd) .ranked-v3-ledger-slot .ranked-v3-leaderboard-score { grid-column: 3; color: var(--ranked-plate-gold); text-align: center; }
+  body:has(#game.graphics-hd) .ranked-v3-ledger-slot .ranked-v3-leaderboard-depth { grid-column: 4; font: inherit; text-align: center; }
+  body:has(#game.graphics-hd) .ranked-v3-ledger-slot .ranked-v3-leaderboard-gold { grid-column: 5; font: inherit; text-align: center; }
+  body:has(#game.graphics-hd) .ranked-v3-ledger-slot .ranked-v3-leaderboard-details-button {
+    grid-column: 6;
+    justify-self: center;
+    padding: .35em .55em;
+    color: #c9a874;
+    background: #0505054d;
+    font: 600 .7cqw/1 Georgia, serif;
+  }
+  body:has(#game.graphics-hd) .ranked-v3-leaderboard-pager {
+    position: absolute;
+    inset: 0;
+    display: block;
+    pointer-events: none;
+    color: #ba9b6d;
+  }
+  body:has(#game.graphics-hd) .ranked-v3-leaderboard-pager > * {
+    position: absolute;
+    bottom: 4.3%;
+    margin: 0;
+    pointer-events: auto;
+  }
+  body:has(#game.graphics-hd) .ranked-v3-leaderboard-page-control,
+  body:has(#game.graphics-hd) .ranked-v3-leaderboard-close {
+    padding: .55em .8em;
+    border: 1px solid #5f4c34;
+    color: #dbc38f;
+    background: #080706b8;
+    font: 600 .64cqw/1 "Copperplate Gothic Light", Georgia, serif;
+    letter-spacing: .07em;
+    text-transform: uppercase;
+  }
+  body:has(#game.graphics-hd) .ranked-v3-leaderboard-page-control:first-child { left: 8.5%; }
+  body:has(#game.graphics-hd) .ranked-v3-leaderboard-page-label { left: 25%; font: 600 .65cqw/1 "Courier New", monospace; }
+  body:has(#game.graphics-hd) .ranked-v3-leaderboard-range-label { right: 25%; font: 600 .65cqw/1 "Courier New", monospace; }
+  body:has(#game.graphics-hd) .ranked-v3-leaderboard-page-control:nth-child(4) { right: 14%; }
+  body:has(#game.graphics-hd) .ranked-v3-leaderboard-close { right: 7.3%; }
+}
+
+
+@media (min-width: 761px) {
+  body:has(#game.graphics-hd) .ranked-v3-inspect-header {
+    position: absolute;
+    top: 9.8%;
+    left: 0;
+    right: 0;
+    height: 19.3%;
+    display: block;
+    text-align: left;
+  }
+  body:has(#game.graphics-hd) .ranked-v3-inspect-header p,
+  body:has(#game.graphics-hd) .ranked-v3-inspect-header h3 { position: absolute; margin: 0; }
+  body:has(#game.graphics-hd) .ranked-v3-inspect-header::before,
+  body:has(#game.graphics-hd) .ranked-v3-inspect-header::after {
+    content: "";
+    position: absolute;
+    top: 48%;
+    width: 1px;
+    height: 32%;
+    background: #725b3d;
+    box-shadow: 1px 0 #080706;
+    opacity: .72;
+    pointer-events: none;
+  }
+  body:has(#game.graphics-hd) .ranked-v3-inspect-header::before { left: 44.7%; }
+  body:has(#game.graphics-hd) .ranked-v3-inspect-header::after { left: 56.8%; }
+  body:has(#game.graphics-hd) .ranked-v3-inspect-rank {
+    top: 76%;
+    left: 18.3%;
+    width: 6%;
+    color: #d3ad70;
+    font: 600 1.15cqw/1 Georgia, serif;
+    text-align: center;
+  }
+  body:has(#game.graphics-hd) .ranked-v3-inspect-player {
+    top: 10%;
+    left: 29.4%;
+    right: 30%;
+    overflow: hidden;
+    color: #e7d9c2;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font: 600 3cqw/1 "Copperplate Gothic Light", Georgia, serif;
+  }
+  body:has(#game.graphics-hd) .ranked-v3-inspect-score {
+    top: 47%;
+    left: 29.4%;
+    color: var(--ranked-plate-gold);
+    font: 600 2.15cqw/1 Georgia, serif;
+  }
+  body:has(#game.graphics-hd) .ranked-v3-inspect-score-label {
+    top: 72%;
+    left: 29.4%;
+    color: #b89b73;
+    font: 600 .76cqw/1 "Copperplate Gothic Light", Georgia, serif;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+  }
+  body:has(#game.graphics-hd) .ranked-v3-inspect-depth,
+  body:has(#game.graphics-hd) .ranked-v3-inspect-gold {
+    top: 51%;
+    color: #c1a780;
+    font: 600 .92cqw/1 "Courier New", monospace;
+    letter-spacing: .09em;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+  body:has(#game.graphics-hd) .ranked-v3-inspect-depth,
+  body:has(#game.graphics-hd) .ranked-v3-inspect-gold {
+    display: flex;
+    align-items: baseline;
+    gap: .52cqw;
+  }
+  body:has(#game.graphics-hd) .ranked-v3-inspect-depth { left: 47.8%; }
+  body:has(#game.graphics-hd) .ranked-v3-inspect-gold { left: 59.3%; }
+  body:has(#game.graphics-hd) .ranked-v3-inspect-stat-label {
+    color: #b89b73;
+    font: 600 .78cqw/1 "Courier New", monospace;
+    letter-spacing: .12em;
+  }
+  body:has(#game.graphics-hd) .ranked-v3-inspect-stat-value {
+    color: #d4b98c;
+    font: 400 1.45cqw/1 Georgia, serif;
+    letter-spacing: .02em;
+  }
+
+  body:has(#game.graphics-hd) .ranked-v3-inspect-loadout {
+    position: absolute;
+    top: 33%;
+    left: 17.55%;
+    width: 43.05%;
+  }
+  body:has(#game.graphics-hd) .ranked-v3-inspect-section-title {
+    margin: 0 0 2.3%;
+    color: #cfb17e;
+    font: 600 1.03cqw/1 "Copperplate Gothic Light", Georgia, serif;
+    letter-spacing: .2em;
+    text-align: center;
+    text-transform: uppercase;
+  }
+  body:has(#game.graphics-hd) .ranked-v3-inspect-loadout > .ranked-v3-inspect-section-title {
+    margin-bottom: 1.15cqw;
+  }
+  body:has(#game.graphics-hd) .ranked-v3-inspect-equipment-grid {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    column-gap: 2.55%;
+    row-gap: 4.15cqw;
+  }
+  body:has(#game.graphics-hd) .ranked-v3-inspect-equipment-slot {
+    min-width: 0;
+    min-height: 0;
+    aspect-ratio: 1 / 1.25;
+    display: grid;
+    place-items: center;
+    padding: 7%;
+    border: 0;
+    background: transparent;
+  }
+  body:has(#game.graphics-hd) .ranked-v3-inspect-equipment-slot:focus-visible {
+    outline: 1px solid #c39a56;
+    outline-offset: -3px;
+  }
+  body:has(#game.graphics-hd) .ranked-v3-inspect-equipment-slot[data-record-tooltip]::after {
+    top: calc(100% + .4cqw);
+    bottom: auto;
+    left: 50%;
+    right: auto;
+    width: min(300px, 22cqw);
+    transform: translateX(-50%);
+    font: 600 .8cqw/1.35 "Courier New", monospace;
+    text-align: left;
+  }
+  body:has(#game.graphics-hd) .ranked-v3-inspect-equipment-slot[aria-hidden="true"] { visibility: hidden; }
+  body:has(#game.graphics-hd) .ranked-v3-inspect-equipment-icon {
+    width: 88%;
+    height: 88%;
+    max-height: 88%;
+    object-fit: contain;
+    filter: drop-shadow(0 5px 4px #000);
+  }
+  body:has(#game.graphics-hd) .ranked-v3-inspect-equipment-fallback {
+    display: grid;
+    place-items: center;
+    width: 58%;
+    aspect-ratio: 1;
+    color: #66573e;
+    font-size: 1.4cqw;
+  }
+  body:has(#game.graphics-hd) .ranked-v3-inspect-equipment-label {
+    display: grid;
+    gap: .2em;
+    min-width: 0;
+    color: #d8c29a;
+    font: 600 .7cqw/1.08 Georgia, serif;
+  }
+  body:has(#game.graphics-hd) .ranked-v3-inspect-equipment-label strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  body:has(#game.graphics-hd) .ranked-v3-inspect-equipment-label small { color: #9b815d; font: 600 .82em/1 "Courier New", monospace; }
+
+  body:has(#game.graphics-hd) .ranked-v3-inspect-chronicle {
+    position: absolute;
+    top: 32%;
+    right: 13.2%;
+    width: 23%;
+  }
+  body:has(#game.graphics-hd) .ranked-v3-inspect-chronicle-rows {
+    display: grid;
+    grid-template-rows: repeat(7, 3.35cqw);
+    gap: 0;
+    border: 0;
+  }
+  body:has(#game.graphics-hd) .ranked-v3-inspect-chronicle-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    min-height: 0;
+    padding: 0 6% 0 18%;
+    border: 0;
+    color: #d7c29e;
+    background: transparent;
+    font: 600 .82cqw/1 Georgia, serif;
+  }
+  body:has(#game.graphics-hd) .ranked-v3-inspect-chronicle-label { padding-right: 6%; }
+  body:has(#game.graphics-hd) .ranked-v3-inspect-chronicle-value { color: #e6c681; text-align: right; }
+  body:has(#game.graphics-hd) .ranked-v3-inspect-mutators {
+    max-width: 100%;
+    padding: .32em .42em;
+    overflow: visible;
+    color: #e6c681;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    background: transparent;
+    font: inherit;
+    text-align: right;
+  }
+  body:has(#game.graphics-hd) .ranked-v3-inspect-mutators[data-record-tooltip]::after {
+    font: 600 .8cqw/1.35 "Courier New", monospace;
+    text-align: left;
+  }
+  body:has(#game.graphics-hd) .ranked-v3-inspect-terminal {
+    position: absolute;
+    right: 13.2%;
+    bottom: 16.1%;
+    width: 23%;
+    height: 13.7%;
+    display: block;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    text-align: left;
+  }
+  body:has(#game.graphics-hd) .ranked-v3-inspect-terminal h3,
+  body:has(#game.graphics-hd) .ranked-v3-inspect-terminal p { margin: 0; }
+  body:has(#game.graphics-hd) .ranked-v3-inspect-terminal-title {
+    position: absolute;
+    top: 8.5%;
+    left: 0;
+    right: 0;
+    color: #c56f5a;
+    font: 600 1.15cqw/1 "Copperplate Gothic Light", Georgia, serif;
+    letter-spacing: .15em;
+    text-align: center;
+    text-transform: uppercase;
+  }
+  body:has(#game.graphics-hd) .ranked-v3-inspect-terminal-eyebrow {
+    position: absolute;
+    top: 46%;
+    left: 35%;
+    right: 8%;
+    color: #c8785e;
+    font: 600 .83cqw/1 "Copperplate Gothic Light", Georgia, serif;
+    letter-spacing: .08em;
+    text-align: left;
+    text-transform: uppercase;
+  }
+  body:has(#game.graphics-hd) .ranked-v3-inspect-terminal-cause {
+    position: absolute;
+    top: 64%;
+    left: 35%;
+    right: 12%;
+    max-width: none;
+    color: #c4a880;
+    font: 400 .72cqw/1.2 Georgia, serif;
+    text-align: left;
+  }
+  body:has(#game.graphics-hd) .ranked-v3-inspect-actions {
+    position: absolute;
+    inset: 0;
+    display: block;
+    pointer-events: none;
+  }
+  body:has(#game.graphics-hd) .ranked-v3-inspect-actions button { pointer-events: auto; }
+  body:has(#game.graphics-hd) .ranked-v3-inspect-back {
+    position: absolute;
+    left: 31.4%;
+    bottom: 8.4%;
+    width: 37.2%;
+    height: 6.8%;
+    padding: 0 4%;
+    border: 0;
+    color: #e1c992;
+    background: transparent;
+    font: 600 1.15cqw/1 "Copperplate Gothic Light", Georgia, serif;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+  }
+  body:has(#game.graphics-hd) .ranked-v3-inspect-close {
+    position: absolute;
+    right: 7.5%;
+    bottom: 6.4%;
+    padding: .45em .65em;
+    border: 1px solid #5f4c34;
+    color: #bba477;
+    background: #080706a8;
+    font: 600 .62cqw/1 "Copperplate Gothic Light", Georgia, serif;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+  }
+}
+/* Final desktop type hierarchy measured against the approved 1536 x 1080 Ranked references. */
+.ranked-v3-reference-plate .ranked-v3-score-value,
+.ranked-v3-reference-plate .ranked-v3-score-unit {
+  display: inline-block;
+}
+.ranked-v3-reference-plate .ranked-v3-score-unit {
+  margin-left: .28em;
+  font-size: .62em;
+  letter-spacing: .03em;
+  text-transform: none;
+}
+@media (min-width: 761px) {
+  body:has(#game.graphics-hd) .ranked-v3-podium-slot .ranked-v3-leaderboard-rank {
+    font-size: 1.9cqw;
+  }
+  body:has(#game.graphics-hd) .ranked-v3-podium-slot .record-archive-name {
+    font-size: 1.55cqw;
+  }
+  body:has(#game.graphics-hd) .ranked-v3-podium-slot .ranked-v3-leaderboard-score {
+    font-size: 2.4cqw;
+    white-space: nowrap;
+  }
+  body:has(#game.graphics-hd) .ranked-v3-podium-slot .ranked-v3-score-unit,
+  body:has(#game.graphics-hd) .ranked-v3-inspect-score .ranked-v3-score-unit {
+    font-size: .46em;
+  }
+  body:has(#game.graphics-hd) .ranked-v3-podium-slot .ranked-v3-podium-meta {
+    font-size: .86cqw;
+  }
+  body:has(#game.graphics-hd) .ranked-v3-leaderboard-columns {
+    font-size: .9cqw;
+  }
+  body:has(#game.graphics-hd) .ranked-v3-ledger-slot {
+    font-size: 1cqw;
+  }
+  body:has(#game.graphics-hd) .ranked-v3-ledger-slot .record-archive-name {
+    font-size: 1cqw;
+  }
+  body:has(#game.graphics-hd) .ranked-v3-ledger-slot .ranked-v3-leaderboard-details-button {
+    font-size: .88cqw;
+  }
+  body:has(#game.graphics-hd) .ranked-v3-ledger-slot .ranked-v3-score-unit {
+    font-size: .68em;
+  }
+  body:has(#game.graphics-hd) .ranked-v3-leaderboard-page-control,
+  body:has(#game.graphics-hd) .ranked-v3-leaderboard-close {
+    font-size: .76cqw;
+  }
+  body:has(#game.graphics-hd) .ranked-v3-leaderboard-page-label,
+  body:has(#game.graphics-hd) .ranked-v3-leaderboard-range-label {
+    font-size: .72cqw;
+  }
+
+  body:has(#game.graphics-hd) .ranked-v3-inspect-rank {
+    font-size: 1.65cqw;
+  }
+  body:has(#game.graphics-hd) .ranked-v3-inspect-player {
+    font-size: 3.35cqw;
+  }
+  body:has(#game.graphics-hd) .ranked-v3-inspect-score {
+    font-size: 2.75cqw;
+    white-space: nowrap;
+  }
+  body:has(#game.graphics-hd) .ranked-v3-inspect-score-label {
+    font-size: .82cqw;
+  }
+  body:has(#game.graphics-hd) .ranked-v3-inspect-depth,
+  body:has(#game.graphics-hd) .ranked-v3-inspect-gold {
+    font-size: 1.15cqw;
+  }
+  body:has(#game.graphics-hd) .ranked-v3-inspect-section-title {
+    font-size: 1.22cqw;
+  }
+  body:has(#game.graphics-hd) .ranked-v3-inspect-equipment-label {
+    font-size: .88cqw;
+  }
+  body:has(#game.graphics-hd) .ranked-v3-inspect-chronicle-row {
+    font-size: 1cqw;
+  }
+  body:has(#game.graphics-hd) .ranked-v3-inspect-terminal-title {
+    font-size: 1.28cqw;
+  }
+  body:has(#game.graphics-hd) .ranked-v3-inspect-terminal-eyebrow {
+    font-size: 1cqw;
+  }
+  body:has(#game.graphics-hd) .ranked-v3-inspect-terminal-cause {
+    font-size: .9cqw;
+  }
+  body:has(#game.graphics-hd) .ranked-v3-inspect-back {
+    font-size: 1.4cqw;
+  }
+  body:has(#game.graphics-hd) .ranked-v3-inspect-close {
+    font-size: .72cqw;
+  }
+}
+/* Reference-matched engraving weight: live copy stays crisp without overpowering the plate. */
+@media (min-width: 761px) {
+  body:has(#game.graphics-hd) .ranked-v3-leaderboard-display-title {
+    font-weight: 500;
+  }
+  body:has(#game.graphics-hd) .ranked-v3-podium-slot .record-archive-name {
+    font-family: Georgia, serif;
+    font-weight: 400;
+  }
+  body:has(#game.graphics-hd) .ranked-v3-podium-slot:nth-child(2) .record-archive-name,
+  body:has(#game.graphics-hd) .ranked-v3-podium-slot:nth-child(3) .record-archive-name {
+    font-size: 1.35cqw;
+  }
+  body:has(#game.graphics-hd) .ranked-v3-podium-slot .ranked-v3-leaderboard-score {
+    font-weight: 400;
+  }
+  body:has(#game.graphics-hd) .ranked-v3-ledger-slot {
+    font-weight: 400;
+  }
+  body:has(#game.graphics-hd) .ranked-v3-ledger-slot .ranked-v3-leaderboard-rank {
+    font-size: 1.08cqw;
+  }
+  body:has(#game.graphics-hd) .ranked-v3-ledger-slot .record-archive-name {
+    font-family: Georgia, serif;
+    font-weight: 400;
+    text-decoration: underline;
+    text-decoration-color: #9b7d5266;
+    text-underline-offset: .18em;
+  }
+  body:has(#game.graphics-hd) .ranked-v3-ledger-slot .ranked-v3-leaderboard-score {
+    font-size: 1.28cqw;
+    font-weight: 400;
+    white-space: nowrap;
+  }
+  body:has(#game.graphics-hd) .ranked-v3-ledger-slot .ranked-v3-leaderboard-details-button {
+    font-weight: 400;
+  }
+}
+/* Final Inspect fidelity pass: preserve the plate's engraving hierarchy and slot art scale. */
+@media (min-width: 761px) {
+  body:has(#game.graphics-hd) .ranked-v3-inspect-player {
+    font-family: Georgia, serif;
+    font-weight: 400;
+  }
+  body:has(#game.graphics-hd) .ranked-v3-inspect-score,
+  body:has(#game.graphics-hd) .ranked-v3-inspect-chronicle-row {
+    font-weight: 400;
+  }
+  body:has(#game.graphics-hd) .ranked-v3-inspect-equipment-icon {
+    width: 88%;
+    height: 88%;
+    transform: none;
+  }
+  body:has(#game.graphics-hd) .ranked-v3-inspect-equipment-label {
+    font-size: .94cqw;
+    font-weight: 400;
+  }
+  body:has(#game.graphics-hd) .ranked-v3-inspect-equipment-label strong {
+    display: -webkit-box;
+    overflow: hidden;
+    white-space: normal;
+    text-overflow: clip;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+  body:has(#game.graphics-hd) .ranked-v3-inspect-back {
+    font: 600 1.4cqw/1 "Copperplate Gothic Light", Georgia, serif !important;
+  }
+}
+/* Optical-size match against the approved 1536 x 1080 references. */
+@media (min-width: 761px) {
+  body:has(#game.graphics-hd) .ranked-v3-podium-slot .record-archive-name {
+    font-size: 1.7cqw;
+  }
+  body:has(#game.graphics-hd) .ranked-v3-podium-slot:nth-child(2) .record-archive-name,
+  body:has(#game.graphics-hd) .ranked-v3-podium-slot:nth-child(3) .record-archive-name {
+    font-size: 1.5cqw;
+  }
+  body:has(#game.graphics-hd) .ranked-v3-podium-slot .ranked-v3-leaderboard-score {
+    font-size: 2.65cqw;
+  }
+  body:has(#game.graphics-hd) .ranked-v3-ledger-slot {
+    font-size: 1.05cqw;
+  }
+  body:has(#game.graphics-hd) .ranked-v3-ledger-slot .record-archive-name {
+    font-size: 1.1cqw;
+  }
+  body:has(#game.graphics-hd) .ranked-v3-ledger-slot .ranked-v3-leaderboard-score {
+    font-size: 1.48cqw;
+  }
+  body:has(#game.graphics-hd) .ranked-v3-leaderboard-page-control,
+  body:has(#game.graphics-hd) .ranked-v3-leaderboard-close {
+    font-size: .85cqw;
+  }
+  body:has(#game.graphics-hd) .ranked-v3-leaderboard-page-label,
+  body:has(#game.graphics-hd) .ranked-v3-leaderboard-range-label {
+    font-size: .76cqw;
+  }
+  body:has(#game.graphics-hd) .ranked-v3-inspect-player {
+    font-size: 3.7cqw;
+  }
+  body:has(#game.graphics-hd) .ranked-v3-inspect-equipment-label {
+    font-size: 1.02cqw;
+  }
+  body:has(#game.graphics-hd) .ranked-v3-inspect-chronicle-row {
+    font-size: 1.12cqw;
+  }
+  body:has(#game.graphics-hd) .ranked-v3-inspect-terminal-eyebrow {
+    font-size: 1.08cqw;
+  }
+  body:has(#game.graphics-hd) .ranked-v3-inspect-terminal-cause {
+    max-width: 70%;
+    font-size: .95cqw;
+  }
+  body:has(#game.graphics-hd) .ranked-v3-inspect-close {
+    font-size: .85cqw;
+  }
+}
+/* Final reference calibration after headed 1536 x 1080 measurement. */
+@media (min-width: 761px) {
+  body:has(#game.graphics-hd) .ranked-v3-podium-slot .ranked-v3-leaderboard-score {
+    font-size: 2.8cqw;
+  }
+  body:has(#game.graphics-hd) .ranked-v3-podium-slot:nth-child(2) .ranked-v3-leaderboard-score,
+  body:has(#game.graphics-hd) .ranked-v3-podium-slot:nth-child(3) .ranked-v3-leaderboard-score {
+    font-size: 2.55cqw;
+  }
+  body:has(#game.graphics-hd) .ranked-v3-ledger-slot {
+    font-size: 1.15cqw;
+  }
+  body:has(#game.graphics-hd) .ranked-v3-ledger-slot .record-archive-name {
+    font-size: 1.18cqw;
+  }
+  body:has(#game.graphics-hd) .ranked-v3-ledger-slot .ranked-v3-leaderboard-score {
+    font-size: 1.65cqw;
+  }
+  body:has(#game.graphics-hd) .ranked-v3-ledger-slot .ranked-v3-leaderboard-details-button {
+    font-size: .95cqw;
+  }
+  body:has(#game.graphics-hd) .ranked-v3-inspect-player {
+    font-size: 4cqw;
+  }
+  body:has(#game.graphics-hd) .ranked-v3-inspect-score {
+    font-size: 3cqw;
+  }
+  body:has(#game.graphics-hd) .ranked-v3-inspect-depth,
+  body:has(#game.graphics-hd) .ranked-v3-inspect-gold {
+    font-size: 1.25cqw;
+  }
+  body:has(#game.graphics-hd) .ranked-v3-inspect-equipment-label strong {
+    font-weight: 400;
+  }
+}
+/* User-approved desktop Ranked plate calibration: baked podium ranks and optical content offsets. */
+.ranked-v3-rank-label {
+  position: absolute !important;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+@media (min-width: 761px) {
+  body:has(#game.graphics-hd) .ranked-v3-podium-slot .ranked-v3-leaderboard-rank {
+    display: none;
+  }
+  body:has(#game.graphics-hd) .ranked-v3-podium-slot .record-archive-name {
+    top: 71.25%;
+  }
+  body:has(#game.graphics-hd) .ranked-v3-podium-slot .ranked-v3-podium-meta {
+    top: 92.25%;
+    font-size: 1.05cqw;
+  }
+  body:has(#game.graphics-hd) .ranked-v3-ledger-slot .record-archive-name {
+    transform: translateX(2.1cqw);
+  }
+  body:has(#game.graphics-hd) .ranked-v3-ledger-slot .ranked-v3-leaderboard-depth {
+    transform: translateX(-2.1cqw);
   }
 }

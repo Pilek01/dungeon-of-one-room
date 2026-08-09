@@ -184,7 +184,7 @@ async function verifyPhaseGuardrails() {
   assert(Object.values(storage.STORAGE_KEYS).every((key) => key.startsWith("dungeonRankedV3")));
 
   const leaderboardUi = require(path.join(ROOT, "online-v3", "ranked-v3-leaderboard-ui.js"));
-  assert(Object.values(leaderboardUi.SELECTORS).every((selector) => selector.startsWith("record-archive-v2")));
+  assert(Object.values(leaderboardUi.SELECTORS).every((selector) => selector.startsWith("ranked-v3-")));
 
   return {
     changedPaths,

@@ -8,9 +8,9 @@ const defaultRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "
 export const APPROVAL_RECEIPT_RELATIVE_PATH = "output/verification/record-archive-visual-approval.json";
 export const RELEASE_RECEIPT_FILE = "record-archive-release-receipt.json";
 export const REQUIRED_SCREENSHOTS = Object.freeze([
-  Object.freeze({ id: "ranked-list-desktop", relativePath: "output/online-v3-ranked-headed/lifecycle/ranked-records-list-desktop.png" }),
-  Object.freeze({ id: "ranked-list-narrow", relativePath: "output/online-v3-ranked-headed/lifecycle/ranked-records-list-narrow.png" }),
-  Object.freeze({ id: "ranked-detail-rank4", relativePath: "output/online-v3-ranked-headed/lifecycle/ranked-records-detail-rank4.png" }),
+  Object.freeze({ id: "ranked-list-desktop", relativePath: "output/online-v3-ranked-headed/lifecycle/ranked-leaderboard.png" }),
+  Object.freeze({ id: "ranked-list-page-2", relativePath: "output/online-v3-ranked-headed/lifecycle/ranked-leaderboard-page-2.png" }),
+  Object.freeze({ id: "ranked-detail", relativePath: "output/online-v3-ranked-headed/lifecycle/ranked-leaderboard-detail.png" }),
   Object.freeze({ id: "practice-list-desktop", relativePath: "output/online-v3-baseline/save/practice-records-list-desktop.png" }),
   Object.freeze({ id: "practice-list-narrow", relativePath: "output/online-v3-baseline/save/practice-records-list-narrow.png" }),
   Object.freeze({ id: "practice-detail-rank4", relativePath: "output/online-v3-baseline/save/practice-records-detail-rank4.png" })
@@ -22,6 +22,9 @@ export const REQUIRED_SOURCE_PATHS = Object.freeze([
   "online-v3/ranked-v3-runtime.js",
   "game.js",
   "style-record-archive.css",
+  "style.css",
+  "assets/hd/ui/ranked-reference-plates/ranked-leaderboard-desktop-plate.png",
+  "assets/hd/ui/ranked-reference-plates/ranked-build-inspect-desktop-plate.png",
   "index.html",
   "assets/hd/ui/leaderboard/skull-medallion-gold.png",
   "assets/hd/ui/leaderboard/skull-medallion-silver.png",

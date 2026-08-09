@@ -1363,3 +1363,111 @@ Updated next good targets
   `sha256:bc0d548d204557d0cc0ec7f8a358e18246778a13b27c58f5c6cdd73e73621711`
   remain correct. Remote D1 reports no pending migrations; no migration,
   backfill, Worker rollout, or ruleset activation was performed.
+
+## 2026-08-07 - Ranked reference-plate leaderboard and Inspect repair
+
+- Rebuilt the two Ranked desktop surfaces around cleaned 1536 x 1080 raster
+  plates derived from the approved references. All player names, ranks, scores,
+  stats, item names, tooltips, and controls remain live DOM content.
+- Leaderboard now collects up to 73 authoritative rows through the existing
+  opaque cursor, keeps Top 3 visible on every page, and shows ranks 4-73 as ten
+  local seven-row pages. The browser client request cap was corrected from 20
+  to the Worker-supported 50.
+- Inspect Build now shows the crowned player summary, ten ordered real relic
+  icons, exactly the seven approved Chronicle values, compact live mutator count
+  with the complete keyboard-focusable tooltip, truthful terminal cause, Back,
+  and Close. Pacts, skills, camp upgrades, elixirs, and damage statistics remain
+  stored but are not rendered on this surface.
+- Fixed the escaped upper-left Inspect score by allowing the shared score
+  renderer to use the positioned block element. Score numbers and pts units
+  keep independent visual hierarchy; single-stack relics no longer show
+  redundant Carried copy.
+- Ranked headed QA now refuses to accept a Classic canvas with HD overlay CSS.
+  It waits for completed HD preload, checks runtime mode plus canvas/body
+  markers, and retries only bounded transient Chromium image-decode failures.
+  The 73-row visual fixture is served through the real client and parser.
+- Final visual evidence is in
+  output/verification/ranked-reference-repair/final-leaderboard-full.jpg,
+  final-inspect-full.jpg, and final-pages-1-2-10.jpg. The detailed report in
+  design-qa.md records final result: passed with no actionable P0-P2 findings.
+- Verification: focused reference/UI/style tests 9/9; focused Worker and client
+  regressions 36/36; verify:phase 779/779; verify:baseline 3/3 plus clean headed
+  baseline; final true-HD Ranked lifecycle PASS with page 1, page 2, page 10,
+  Inspect, exact page return, terminal cause, and no browser console/page errors.
+- Practice Records, source game.js, D1 schema/migrations, production release
+  bindings, and the active production ruleset were not changed. No merge, push,
+  deployment, backfill, or ruleset activation was performed.
+## 2026-08-08 - Ranked reference-plate feedback calibration
+
+- Recalibrated the desktop HD leaderboard against the approved plate: Rank 2,
+  Rank 1, and Rank 3 now use the shield centers, while the six ledger tracks
+  share one gap-free grid. Final browser measurements report effectively zero
+  horizontal drift for Depth, Gold, and Inspect Build.
+- Rebuilt Inspect loadout presentation as icon-only. Ten real catalogue icons
+  align to the engraved five-by-two frames; relic name, description, and stack
+  count are available through a keyboard-focusable hover tooltip instead of
+  visible labels.
+- Shifted Run Chronicle copy into the engraved icon gutter and restored the
+  intended ledger type size for Depth and Gold. The relic tooltip is centered
+  above its icon and remains fully inside the plate.
+- Added RED/GREEN DOM and headed geometry regressions for podium centers,
+  ledger columns, readable values, icon-only slots, tooltip content and bounds,
+  and Chronicle label/value insets.
+- Verification: focused reference/UI/style tests 8/8; focused M4 client tests
+  7/7; final true-HD Ranked lifecycle PASS; `verify:phase` 780/780;
+  `verify:baseline` 3/3 plus the clean committed headed baseline. Final visual
+  comparisons and the full iteration history are recorded in `design-qa.md`.
+- Mobile Ranked UX remains explicitly deferred. No commit, merge, push,
+  deployment, D1 migration/backfill, or ruleset activation was performed.
+
+## 2026-08-08 - Ranked presentation detailed re-audit
+
+- Repeated the desktop visual audit from fresh true-HD captures and compared
+  the full Leaderboard and Inspect Build screens side by side with the approved
+  source images. Pages 1, 2, and 10 were checked with the Top 3 kept persistent.
+- Corrected six remaining P2 details: Inspect stat hierarchy and separators,
+  the redundant Close action, terminal text placement, first-row tooltip
+  direction, second-row long-tooltip direction, and a Mutators tooltip clipped
+  by host overflow.
+- Inspect retains ten icon-only real relics with keyboard/mouse tooltips and
+  exactly the seven approved Run Chronicle fields. The single Back action
+  returns to the exact leaderboard page.
+- Final evidence is in
+  `output/verification/ranked-detailed-reaudit-20260808/60-leaderboard-accepted-reference-vs-implementation.jpg`,
+  `61-inspect-accepted-reference-vs-implementation.jpg`, and
+  `62-tooltip-suite-accepted.jpg`.
+- Verification: focused tests 15/15; renderer and headed-script syntax PASS;
+  final true-HD lifecycle PASS; `verify:phase` 780/780; `verify:baseline` 3/3
+  plus clean committed headed baseline.
+- Mobile Ranked UX remains deferred. No commit, merge, push, deployment, D1
+  migration/backfill, or ruleset activation was performed.
+
+
+## 2026-08-08 - Ranked reference-plate production release
+
+- Committed the final Leaderboard/Inspect calibration as `ab546dc` and pushed
+  it to `origin/codex/ranked-reference-plates`; `origin/main` was not merged or
+  changed.
+- Verified the exact clean commit with `verify:full` 803/803, including local
+  Wrangler/D1 21/21, the clean committed Practice baseline, and the clean
+  committed Ranked lifecycle.
+- Built a clean 3111-file Pages bundle without the QA marker, test boot hook,
+  or the unstaged Forge work. Wrangler uploaded 7 changed files and reused
+  3103 existing assets.
+- Deployed production Pages release
+  `8c77e656-426e-43a8-bc2b-45843fe62cc6` from source `ab546dc`.
+- The immutable deployment URL and stable project alias return HTTP 200 and an
+  active compatible Ranked availability response. The leaderboard module,
+  `style.css`, and both reference plates match the local release bundle
+  byte-for-byte on both URLs.
+- The production Worker, D1 schema/data, active ruleset, Practice gameplay,
+  Forge behavior, and `origin/main` were not changed. Seven unrelated WIP
+  files remain preserved and unstaged.
+## 2026-08-09 - Leaderboard live-feedback calibration
+
+- Root cause confirmed in true HD at 1536 x 1080: podium ranks were live DOM glyphs; name/meta anchors and two ledger content offsets differed from the approved composition.
+- Added RED coverage for baked plaque numerals, accessible Top 3 rank semantics, exact podium anchors, larger/lower metadata, Name +32 px, Depth -32 px, and unchanged Score/Gold/Inspect anchors.
+- Baked static 2 / 1 / 3 into the existing leaderboard plate using a measured metallic serif treatment; no other plate region or Inspect asset changed.
+- Focused tests passed 9/9; JavaScript syntax passed; Ranked headed lifecycle passed with zero unexpected console or page errors.
+- Final comparison evidence: output/verification/ranked-live-feedback-20260809/.
+- No commit, push, or deployment was performed.

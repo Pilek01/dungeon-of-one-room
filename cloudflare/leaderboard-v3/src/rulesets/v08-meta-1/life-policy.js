@@ -7,6 +7,7 @@ import { chooseIndex } from "./rng.js";
 
 const policy = sourceAuditDocument.canonicalData;
 const HISTORY_LIMIT = 32;
+const PRESENTATION_CAUSE_MAX_LENGTH = 160;
 
 export const LIFE_POLICY_VERSION = "v08-life-1";
 
@@ -16,6 +17,7 @@ export const LIFE_POLICY_SPEC = Object.freeze({
   authority: Object.freeze({
     maximumLives: "SERVER_DERIVED",
     fatalEventReport: "HEURISTIC_ONLY",
+    fatalEventPresentationCause: "CLIENT_REPORTED_DISPLAY_ONLY",
     fatalEventResolution: "SERVER_DERIVED",
     issuedLifePurchase: "SERVER_DERIVED",
     deathRelicLoss: "SERVER_ISSUED"
@@ -28,7 +30,12 @@ function exactFatalEventRequest(request) {
     !request ||
     typeof request !== "object" ||
     Array.isArray(request) ||
-    !["classification", "classification,elixirUsage"].includes(Object.keys(request).sort().join(",")) ||
+    ![
+      "classification",
+      "classification,elixirUsage",
+      "classification,presentationCause",
+      "classification,elixirUsage,presentationCause"
+    ].includes(Object.keys(request).sort().join(",")) ||
     request.classification !== "local_fatal_event"
   ) {
     throw new TypeError("FATAL_EVENT_CLASSIFICATION_INVALID");
@@ -56,6 +63,17 @@ function normalizeElixirUsage(state, request) {
   return { elixirId, count };
 }
 
+function normalizePresentationCause(request) {
+  if (request.presentationCause === undefined) return null;
+  if (typeof request.presentationCause !== "string" || /[\u0000-\u001f\u007f]/u.test(request.presentationCause)) {
+    throw new TypeError("FATAL_PRESENTATION_CAUSE_INVALID");
+  }
+  const normalized = request.presentationCause.replace(/\s+/gu, " ").trim();
+  if (!normalized || normalized.length > PRESENTATION_CAUSE_MAX_LENGTH) {
+    throw new TypeError("FATAL_PRESENTATION_CAUSE_INVALID");
+  }
+  return normalized;
+}
 function appendHistory(history, entry) {
   return [...(Array.isArray(history) ? history : []), entry].slice(-HISTORY_LIMIT);
 }
@@ -176,6 +194,7 @@ export async function applyFatalEventV08(state, request, context = {}) {
   const next = structuredClone(state);
   const before = structuredClone(state);
   const elixirUsage = normalizeElixirUsage(next, request);
+  const presentationCause = normalizePresentationCause(request);
   if (elixirUsage) {
     next.build.elixirs[0].charges -= elixirUsage.count;
   }
@@ -222,7 +241,8 @@ export async function applyFatalEventV08(state, request, context = {}) {
     livesBefore: before.lives,
     livesAfter: next.lives,
     lostRelicId,
-    elixirUsage
+    elixirUsage,
+    ...(presentationCause ? { presentationCause } : {})
   };
   next.lifeLedger.history = appendHistory(next.lifeLedger.history, receipt);
   assertLifeLedgerV08(next);

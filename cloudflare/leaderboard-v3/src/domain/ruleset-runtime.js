@@ -333,8 +333,12 @@ export async function applyRulesetEvent(state, body, ruleset, context = {}) {
     case "report_fatal_event": {
       const fatalPayload = body.payload === undefined ? {} : requireObject(body.payload, "FATAL_EVENT_PAYLOAD_INVALID");
       const fatalFields = Object.keys(fatalPayload).sort();
-      const fatalAllowed = fatalFields.length === 1 && fatalFields[0] === "classification" ||
-        fatalFields.length === 2 && fatalFields[0] === "classification" && fatalFields[1] === "elixirUsage";
+      const fatalAllowed = [
+        "classification",
+        "classification,elixirUsage",
+        "classification,presentationCause",
+        "classification,elixirUsage,presentationCause"
+      ].includes(fatalFields.join(","));
       if (!fatalAllowed) throw new TypeError("FATAL_EVENT_PAYLOAD_INVALID_FIELDS");
       const request = fatalPayload;
       const result = await ruleset.reportFatalEvent(

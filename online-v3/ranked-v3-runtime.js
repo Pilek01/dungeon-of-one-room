@@ -20,7 +20,7 @@
   let client = null;
   let leaderboardClient = null;
   let leaderboardRows = [];
-  let leaderboardCursor = null;
+  let leaderboardPage = 1;
   let startedAt = 0;
   let pendingRoomSummary = null;
   let pendingExtractionMode = null;
@@ -32,10 +32,21 @@
   let pendingBotPassword = null;
   let currentMerchantOffer = null;
   let merchantMutationPending = false;
+  let currentForgeOffer = null;
+  let currentForgeContext = null;
+  let forgeMutationPending = false;
   let observerBotBoundaryPending = false;
   let observerBotAutomationHalted = false;
   const recoveryStore = root.DungeonRankedV3Storage.createStore(root.localStorage);
 
+  function normalizePresentationCause(value) {
+    if (typeof value !== "string") return "";
+    return value
+      .replace(/[\u0000-\u001f\u007f]/gu, " ")
+      .replace(/\s+/gu, " ")
+      .trim()
+      .slice(0, 160);
+  }
   function publicName() {
     return String(root.localStorage.getItem("dungeonOneRoomPlayerName") || "Anonymous").slice(0, 18);
   }
@@ -116,6 +127,9 @@
     pendingFreshCampaign = false;
     pendingElixirUsage = null;
     pendingBotPassword = null;
+    currentForgeOffer = null;
+    currentForgeContext = null;
+    forgeMutationPending = false;
     observerBotBoundaryPending = false;
     observerBotAutomationHalted = false;
     client?.releaseWriter?.();
@@ -186,16 +200,6 @@
     return leaderboardClient;
   }
 
-  function leaderboardControls() {
-    const controls = [
-      ui.button("Close", () => ui.hide())
-    ];
-    if (leaderboardCursor) {
-      controls.unshift(ui.button("Load next page", () => openLeaderboard(false)));
-    }
-    return controls;
-  }
-
   function showLeaderboardRows() {
     if (!leaderboardRows.length) {
       ui.showMessage("Ranked Leaderboard", "No Ranked results have been published this season.", [
@@ -203,60 +207,54 @@
       ]);
       return;
     }
-    const content = leaderboardUi.renderList(
-      root.document,
-      leaderboardRows,
-      (selectedRow) => openLeaderboardDetail(selectedRow)
-    );
+    const presentation = leaderboardUi.createLeaderboardPresentation(leaderboardRows, leaderboardPage);
+    leaderboardPage = presentation.page;
+    const content = leaderboardUi.renderList(root.document, presentation, {
+      onOpen: (runId) => openLeaderboardDetail(runId),
+      onPage: (page) => {
+        leaderboardPage = page;
+        showLeaderboardRows();
+      },
+      onClose: () => ui.hide()
+    });
     ui.showContent(
       "Ranked Leaderboard",
       "The strongest descents of the current season.",
-      content,
-      leaderboardControls()
+      content
     );
   }
-
   async function openLeaderboard(reset = true) {
     try {
       if (reset) {
         leaderboardRows = [];
-        leaderboardCursor = null;
+        leaderboardPage = 1;
       }
       ui.showMessage("Ranked Leaderboard", "Loading season results...");
-      const payload = await createLeaderboardClient().list({
-        season: String(root.DUNGEON_ONLINE_V3_SEASON || "local-m4"),
-        limit: 20,
-        cursor: reset ? "" : leaderboardCursor
-      });
-      const page = leaderboardUi.createLeaderboardViewModel(payload, leaderboardRows.length);
-      leaderboardRows = leaderboardRows.concat(page.rows);
-      leaderboardCursor = page.cursor;
+      leaderboardRows = await leaderboardUi.collectLeaderboardRows(
+        (request) => createLeaderboardClient().list(request),
+        { season: String(root.DUNGEON_ONLINE_V3_SEASON || "local-m4") }
+      );
       showLeaderboardRows();
     } catch {
       ui.showMessage("Leaderboard unavailable", "Season results could not be loaded.", [
-        ui.button("Retry", () => openLeaderboard(reset)),
+        ui.button("Retry", () => openLeaderboard(true)),
         ui.button("Close", () => ui.hide())
       ]);
     }
   }
-
-  async function openLeaderboardDetail(selectedRow) {
-    const runId = String(selectedRow?.runId || "");
-    if (!runId) return;
+  async function openLeaderboardDetail(runId) {
     try {
       ui.showMessage("Build Chronicle", "Loading this descent...");
       const detail = leaderboardUi.createDetailViewModel(
-        await createLeaderboardClient().detail(runId),
-        { rank: selectedRow.rank, listedRow: selectedRow }
+        await createLeaderboardClient().detail(runId)
       );
       ui.showContent(
         "Build Chronicle",
         displaySeason(detail.season),
-        leaderboardUi.renderDetail(root.document, detail),
-        [
-          ui.button("Back to leaderboard", showLeaderboardRows),
-          ui.button("Close", () => ui.hide())
-        ]
+        leaderboardUi.renderDetail(root.document, detail, {
+          onBack: showLeaderboardRows,
+          onClose: () => ui.hide()
+        })
       );
     } catch {
       ui.showMessage("Build details unavailable", "This Ranked build could not be loaded.", [
@@ -723,6 +721,89 @@
     await continueBoundary(response.metaState);
   }
 
+  function normalizedForgeContext(offer, context = {}) {
+    const sourceId = String(offer?.sourceId || "");
+    const requestedMode = String(context.mode || "");
+    const mode = ["temper", "transmute"].includes(requestedMode)
+      ? requestedMode
+      : sourceId.includes("transmute") ? "transmute" : "temper";
+    const firstAction = Array.isArray(offer?.choices)
+      ? offer.choices.find((choice) => {
+          const data = choice?.publicData && typeof choice.publicData === "object"
+            ? choice.publicData
+            : choice;
+          return choice?.status === "available" && data?.action !== "leave";
+        })
+      : null;
+    const firstActionData = firstAction?.publicData && typeof firstAction.publicData === "object"
+      ? firstAction.publicData
+      : firstAction;
+    return {
+      mode,
+      sacrificeRelicId: mode === "transmute"
+        ? String(context.sacrificeRelicId || firstActionData?.sacrificeRelicId || "")
+        : ""
+    };
+  }
+
+  function presentNativeForge(state, context = {}) {
+    const offer = state?.metaTransactionOffer;
+    if (!offer || offer.sourceType !== "forge") {
+      throw new TypeError("RANKED_FORGE_OFFER_INVALID");
+    }
+    const bridge = root.DungeonOnlineV3GameBridge;
+    if (!bridge || typeof bridge.enterRankedForge !== "function") {
+      throw new TypeError("RANKED_FORGE_BRIDGE_UNAVAILABLE");
+    }
+    const normalizedContext = normalizedForgeContext(offer, context);
+    currentForgeOffer = offer;
+    currentForgeContext = normalizedContext;
+    forgeMutationPending = false;
+    const accepted = bridge.enterRankedForge(state, offer, normalizedContext);
+    if (accepted === false) throw new TypeError("RANKED_FORGE_PRESENTATION_UNAVAILABLE");
+    ui.hide();
+  }
+
+  function presentForgeError(error) {
+    if (root.DUNGEON_ONLINE_V3_DEBUG === true) {
+      console.debug("[Online v3] Forge error", error);
+    }
+    root.DungeonOnlineV3GameBridge?.failRankedForgeRequest?.();
+    ui.hide();
+  }
+
+  async function commitForgeChoice(choice) {
+    const context = currentForgeContext || normalizedForgeContext(currentForgeOffer, {});
+    root.DungeonOnlineV3GameBridge?.beginRankedForgeRequest?.();
+    const response = await createClient().event("commit_meta_transaction", {
+      transactionId: choice.transactionId,
+      choiceId: choice.choiceId
+    });
+    root.DungeonOnlineV3GameBridge.syncCanonicalProjection(response.metaState);
+    currentForgeOffer = null;
+    currentForgeContext = null;
+    root.DungeonOnlineV3GameBridge?.completeRankedForge?.(response.metaState, {
+      ...context,
+      choiceId: choice.choiceId
+    });
+    await continueBoundary(response.metaState);
+  }
+
+  function onForgeChoice(choiceId) {
+    if (forgeMutationPending || !currentForgeOffer) return false;
+    const choice = currentForgeOffer.choices?.find((entry) =>
+      entry?.status === "available" && String(entry.choiceId || "") === String(choiceId || "")
+    );
+    if (!choice) {
+      root.DungeonOnlineV3GameBridge?.failRankedForgeRequest?.("That Forge choice is no longer available.");
+      return false;
+    }
+    forgeMutationPending = true;
+    commitForgeChoice(choice)
+      .catch(presentForgeError)
+      .finally(() => { forgeMutationPending = false; });
+    return true;
+  }
   async function commitMetaChoice(offer, choiceId) {
     const choice = offer.choices.find((entry) => entry.choiceId === choiceId);
     if (!choice || choice.status !== "available") throw new TypeError("RANKED_META_CHOICE_UNAVAILABLE");
@@ -735,7 +816,10 @@
     await continueBoundary(response.metaState);
   }
 
-  async function presentMetaOffer(offer) {
+  async function presentMetaOffer(offer, state) {
+    if (offer?.sourceType === "forge" && !isRankedObserverBotActive()) {
+      return presentNativeForge(state, currentForgeContext || {});
+    }
     session.transition(root.DungeonRankedV3Session.STATES.offer);
     const choices = offers.metaChoices(offer).filter((choice) => !choice.disabled);
     if (isRankedObserverBotActive()) {
@@ -1009,7 +1093,7 @@
     root.DungeonOnlineV3GameBridge.syncCanonicalProjection(state);
     if (state.relicReplacement) return presentReplacement(state.relicReplacement);
     if (state.relicOffer) return presentRelicOffer(state.relicOffer);
-    if (state.metaTransactionOffer) return presentMetaOffer(state.metaTransactionOffer);
+    if (state.metaTransactionOffer) return presentMetaOffer(state.metaTransactionOffer, state);
     const slot = offers.pendingRewardSlots(state, {
       roomClearPending: Boolean(pendingRoomSummary)
     })[0];
@@ -1061,8 +1145,8 @@
   }
 
 
-  function onForgeMode(mode) {
-    if (!pendingRoomSummary || !["temper", "transmute"].includes(mode)) return false;
+  function onForgeMode(mode, context = {}) {
+    if (!pendingRoomSummary || forgeMutationPending || !["temper", "transmute"].includes(mode)) return false;
     if (isRankedObserverBotActive()) {
       void runObserverBotBoundary(async () => {
         session.transition(root.DungeonRankedV3Session.STATES.offer);
@@ -1071,10 +1155,17 @@
       });
       return true;
     }
+    currentForgeContext = {
+      mode,
+      sacrificeRelicId: mode === "transmute" ? String(context.sacrificeRelicId || "") : ""
+    };
+    forgeMutationPending = true;
+    root.DungeonOnlineV3GameBridge?.beginRankedForgeRequest?.();
     session.transition(root.DungeonRankedV3Session.STATES.offer);
     createClient().event("open_meta_offer", { mode })
       .then((response) => continueBoundary(response.metaState))
-      .catch(presentError);
+      .catch(presentForgeError)
+      .finally(() => { forgeMutationPending = false; });
     return true;
   }
 
@@ -1159,6 +1250,8 @@
       const previousDirectiveId = previousState?.currentRoomDirective?.directiveId || null;
       const fatalPayload = { classification: "local_fatal_event" };
       if (pendingElixirUsage && pendingElixirUsage.count > 0) fatalPayload.elixirUsage = { ...pendingElixirUsage };
+      const presentationCause = normalizePresentationCause(context?.reason);
+      if (presentationCause) fatalPayload.presentationCause = presentationCause;
       const response = await createClient().event("report_fatal_event", fatalPayload);
       pendingElixirUsage = null;
       const state = response.metaState;
@@ -1340,6 +1433,7 @@
     unlockTestBot,
     leaveToMainMenu: returnToPractice,
     onForgeMode,
+    onForgeChoice,
     onForgeLeave,
     isObserverBotBoundaryPending,
     getSessionState: () => session.getState(),

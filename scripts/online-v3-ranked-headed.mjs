@@ -44,39 +44,8 @@ const WORKER_NODE_MODULES = process.env.DUNGEON_ONLINE_V3_WORKER_NODE_MODULES ||
   path.join(WORKER_ROOT, "node_modules");
 const WRANGLER = path.join(WORKER_NODE_MODULES, "wrangler", "bin", "wrangler.js");
 const DATABASE = "dungeon-online-v3-local";
-const SEASON = "season-1";
+const SEASON = "m4-headed";
 const TEST_BOT_PASSWORD = "ranked-headed-observer-bot";
-const RANKED_ARCHIVE_FIXTURES = Object.freeze([
-  Object.freeze({
-    rank: 1, runId: "run_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", profileId: "ranked-archive-profile-1", playerName: "Archive Crown",
-    score: 9_300_000, depth: 30, gold: 12_000, durationMs: 610_000, outcome: "victory", createdAt: 1_700_000_001_000,
-    build: { relics: [{ relicId: "crownconcord", stacks: 1 }], pacts: ["blood_pact"], skillTiers: { slash: 2 }, campUpgrades: { vitality: 1 }, elixirs: [], runModifiers: { active: [{ modifierId: "greed" }] } },
-    summary: { durationMs: 610_000, roomsCompleted: 30, bossesCompleted: 6, finalDepth: 30, goldEarned: 12_000, score: 9_300_000, livesRemaining: 2 }
-  }),
-  Object.freeze({
-    rank: 2, runId: "run_bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb", profileId: "ranked-archive-profile-2", playerName: "Archive Silver",
-    score: 8_300_000, depth: 27, gold: 9_800, durationMs: 520_000, outcome: "defeat", createdAt: 1_700_000_002_000,
-    build: { relics: [{ relicId: "fang", stacks: 2 }], pacts: [], skillTiers: {}, campUpgrades: {}, elixirs: [], runModifiers: { active: [] } },
-    summary: { durationMs: 520_000, roomsCompleted: 27, bossesCompleted: 5, finalDepth: 27, goldEarned: 9_800, score: 8_300_000, livesRemaining: 0 }
-  }),
-  Object.freeze({
-    rank: 3, runId: "run_cccccccccccccccccccccccccccccccc", profileId: "ranked-archive-profile-3", playerName: "Archive Bronze",
-    score: 7_300_000, depth: 25, gold: 8_000, durationMs: 460_000, outcome: "defeat", createdAt: 1_700_000_003_000,
-    build: { relics: [{ relicId: "raven_edge", stacks: 1 }], pacts: [], skillTiers: {}, campUpgrades: {}, elixirs: [], runModifiers: { active: [] } },
-    summary: { durationMs: 460_000, roomsCompleted: 25, bossesCompleted: 5, finalDepth: 25, goldEarned: 8_000, score: 7_300_000, livesRemaining: 0 }
-  }),
-  Object.freeze({
-    rank: 4, runId: "run_dddddddddddddddddddddddddddddddd", profileId: "ranked-archive-profile-4", playerName: "Archive Fourth",
-    score: 6_300_000, depth: 22, gold: 6_400, durationMs: 372_000, outcome: "defeat", createdAt: 1_700_000_004_000,
-    build: { relics: [{ relicId: "crownconcord", stacks: 1 }], pacts: ["blood_pact"], skillTiers: { slash: 1 }, campUpgrades: { vitality: 1 }, elixirs: [], runModifiers: { active: [{ modifierId: "greed" }] } },
-    summary: { durationMs: 372_000, roomsCompleted: 22, bossesCompleted: 4, finalDepth: 22, goldEarned: 6_400, score: 6_300_000, livesRemaining: 0 }
-  })
-]);
-const PODIUM_MEDALLION_PATHS = Object.freeze([
-  "assets/hd/ui/leaderboard/skull-medallion-gold.png",
-  "assets/hd/ui/leaderboard/skull-medallion-silver.png",
-  "assets/hd/ui/leaderboard/skull-medallion-bronze.png"
-]);
 const HEADLESS = process.argv.includes("--headless");
 const execFileAsync = promisify(execFile);
 
@@ -277,7 +246,7 @@ async function waitForBootAdvance(page) {
   });
 }
 
-async function dismissBoot(page) {
+async function dismissBoot(page, diagnostics = null, hdAttempt = 1) {
   const boot = page.locator("#bootScreen");
   if (!await boot.evaluate((element) => element.classList.contains("hidden"))) {
     await page.keyboard.press("Enter");
@@ -293,6 +262,41 @@ async function dismissBoot(page) {
   }
   await page.waitForFunction(() => document.querySelector("#bootScreen")?.classList.contains("hidden"));
   await page.waitForFunction(() => window.__DUNGEON_TEST_BOOT_INPUT_READY?.() === true);
+  const graphicsReady = await page.evaluate(() => window.__DUNGEON_TEST_GRAPHICS_READY?.());
+  if (
+    graphicsReady?.requested !== "hd" ||
+    graphicsReady?.mode !== "hd" ||
+    graphicsReady?.pending !== false
+  ) {
+    if (hdAttempt < 4) {
+      await page.reload({ waitUntil: "domcontentloaded" });
+      await page.waitForFunction(() => typeof window.render_game_to_text === "function");
+      return dismissBoot(page, diagnostics, hdAttempt + 1);
+    }
+    const graphics = await page.evaluate(() => {
+      const canvas = document.querySelector("#game");
+      return {
+        preference: localStorage.getItem("dungeonOneRoomGraphicsMode"),
+        dataMode: canvas?.dataset.graphicsMode || "",
+        canvasClass: canvas?.className || "",
+        bodyClass: document.body.className,
+        canvasSize: canvas ? `${canvas.width}x${canvas.height}` : "missing"
+      };
+    });
+    throw new Error(`Ranked headed QA did not reach real HD mode after ${hdAttempt} attempts: ${JSON.stringify({
+      graphics,
+      graphicsReady,
+      consoleWarnings: diagnostics?.consoleWarnings || [],
+      consoleErrors: diagnostics?.consoleErrors || [],
+      pageErrors: diagnostics?.pageErrors || []
+    })}`);
+  }
+  await page.waitForFunction(() => {
+    const canvas = document.querySelector("#game");
+    return canvas?.dataset.graphicsMode === "hd" &&
+      canvas.classList.contains("graphics-hd") &&
+      document.body.classList.contains("graphics-hd-ui");
+  }, null, { timeout: 5_000 });
   const readiness = await page.evaluate(() => ({
     phase: (() => {
       try { return JSON.parse(window.render_game_to_text?.() || "{}").phase || ""; }
@@ -609,59 +613,6 @@ async function d1Count(runId) {
   return Number(JSON.parse(stdout)[0].results[0].count);
 }
 
-function sqlLiteral(value) {
-  return `'${String(value).replaceAll("'", "''")}'`;
-}
-
-async function seedRankedArchiveFixtures() {
-  const statements = [];
-  for (const entry of RANKED_ARCHIVE_FIXTURES) {
-    statements.push(`
-      INSERT INTO ranked_runs (
-        run_id, profile_id, season, protocol_version, ruleset_hash, status,
-        revision, player_name, depth, room_index, gold, lives,
-        canonical_state_json, state_digest, recent_ops_json, started_at,
-        updated_at, expires_at, finalized_at, outcome, start_idempotency_key,
-        start_request_digest
-      ) VALUES (
-        ${sqlLiteral(entry.runId)}, ${sqlLiteral(entry.profileId)}, ${sqlLiteral(SEASON)},
-        'ranked-v3-checkpoint-1', 'sha256:ranked-archive-fixture', 'finalized',
-        1, ${sqlLiteral(entry.playerName)}, ${entry.depth}, ${entry.depth}, ${entry.gold},
-        ${entry.summary.livesRemaining}, '{}', ${sqlLiteral(`fixture-state-${entry.rank}`)}, '[]',
-        ${entry.createdAt - entry.durationMs}, ${entry.createdAt}, ${entry.createdAt + 86_400_000},
-        ${entry.createdAt}, ${sqlLiteral(entry.outcome)}, ${sqlLiteral(`fixture-start-${entry.rank}`)},
-        ${sqlLiteral(`fixture-request-${entry.rank}`)}
-      )
-    `);
-    statements.push(`
-      INSERT INTO leaderboard_entries (
-        run_id, profile_id, season, player_name, score, depth, gold,
-        duration_ms, outcome, build_json, summary_json, verification_level,
-        state_digest, created_at
-      ) VALUES (
-        ${sqlLiteral(entry.runId)}, ${sqlLiteral(entry.profileId)}, ${sqlLiteral(SEASON)},
-        ${sqlLiteral(entry.playerName)}, ${entry.score}, ${entry.depth}, ${entry.gold},
-        ${entry.durationMs}, ${sqlLiteral(entry.outcome)}, ${sqlLiteral(JSON.stringify(entry.build))},
-        ${sqlLiteral(JSON.stringify(entry.summary))}, 'checkpoint_verified_v3',
-        ${sqlLiteral(`fixture-state-${entry.rank}`)}, ${entry.createdAt}
-      )
-    `);
-  }
-  await runWrangler([
-    "d1",
-    "execute",
-    DATABASE,
-    "--local",
-    "--config",
-    CONFIG,
-    "--persist-to",
-    PERSIST_ROOT,
-    "--command",
-    statements.join(";\n")
-  ]);
-  return RANKED_ARCHIVE_FIXTURES;
-}
-
 async function main() {
   assertOutputPath(ARTIFACT_ROOT);
   await fsPromises.rm(ARTIFACT_ROOT, { recursive: true, force: true });
@@ -680,7 +631,6 @@ async function main() {
     "--persist-to",
     PERSIST_ROOT
   ]);
-  const seededRankedArchive = RUN_LIFECYCLE ? await seedRankedArchiveFixtures() : [];
 
   await execFileAsync(process.execPath, [
     path.join(ROOT, "scripts", "build-pages-v3.mjs"),
@@ -732,6 +682,14 @@ async function main() {
   assert(headedGame.includes(fatalTestHookAnchor));
   const fatalTestHook = `  window.__DUNGEON_TEST_BOOT_INPUT_READY = () =>
     !bootInputLocked && performance.now() >= bootInputUnlockAt;
+  window.__DUNGEON_TEST_GRAPHICS_READY = async () => {
+    await initialGraphicsReady;
+    return {
+      requested: getGraphicsPreferenceMode(),
+      mode: getRuntimeGraphicsMode(),
+      pending: graphicsTransitionPending
+    };
+  };
   window.__DUNGEON_TEST_TRIGGER_FATAL = (reason = "Headed fatal event") => {
     if (!canUseDebugCheats() || state.phase !== "playing") return false;
     state.player.hp = 0;
@@ -760,6 +718,19 @@ async function main() {
   window.__DUNGEON_TEST_IS_TURN_INPUT_LOCKED = () => (
     canUseDebugCheats() && isTurnInputLocked()
   );
+  window.__DUNGEON_TEST_OPEN_FORGE = () => {
+    if (
+      !canUseDebugCheats() ||
+      state.phase !== "playing" ||
+      state.roomType !== "forge" ||
+      !state.roomCleared ||
+      !state.forge?.awakened ||
+      state.forge?.used
+    ) return false;
+    state.player.x = Number(state.forge.interactX ?? state.forge.x);
+    state.player.y = Number(state.forge.interactY ?? state.forge.y);
+    return openForgeRoom();
+  };
   window.__DUNGEON_TEST_CLEAR_VISIBLE_ROOM = () => {
     if (!canUseDebugCheats() || state.phase !== "playing") return false;
     if (state.roomCleared) return true;
@@ -782,12 +753,14 @@ ${fatalTestHookAnchor}`;
     "utf8"
   );
   const secret = randomBytes(48).toString("base64url");
-  const worker = await startWorker(await acquirePort(), secret);
-  const proxy = await startGameProxy(worker.baseUrl);
+  const workerPort = await acquirePort();
+  let worker = null;
+  const proxy = await startGameProxy(`http://127.0.0.1:${workerPort}`);
   const diagnostics = {
     apiRequests: [],
     apiErrors: [],
     debugMessages: [],
+    consoleWarnings: [],
     consoleErrors: [],
     pageErrors: [],
     finalizeOperationIds: [],
@@ -796,7 +769,7 @@ ${fatalTestHookAnchor}`;
   const { chromium } = loadPlaywright();
   const browser = await chromium.launch({ headless: HEADLESS });
   try {
-    const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+    const context = await browser.newContext({ viewport: { width: 1536, height: 1080 } });
     await context.addInitScript((season) => {
       window.DUNGEON_ONLINE_V3_SEASON = season;
       window.DUNGEON_ONLINE_V3_DEBUG = true;
@@ -836,6 +809,7 @@ ${fatalTestHookAnchor}`;
       }
     });
     page.on("console", (message) => {
+      if (message.type() === "warning") diagnostics.consoleWarnings.push(message.text());
       if (message.type() === "error") diagnostics.consoleErrors.push(message.text());
       if (message.type() === "debug") diagnostics.debugMessages.push(message.text());
     });
@@ -844,7 +818,13 @@ ${fatalTestHookAnchor}`;
     let runId = "";
     await page.goto(`${proxy.baseUrl}/`, { waitUntil: "domcontentloaded" });
     await page.waitForFunction(() => typeof window.render_game_to_text === "function");
-    await dismissBoot(page);
+    await dismissBoot(page, diagnostics);
+    assert.equal(
+      diagnostics.apiRequests.length,
+      0,
+      "Ranked client issued API traffic before the player opened an Online screen"
+    );
+    worker = await startWorker(workerPort, secret);
     const nativeMenuText = await page.locator(".overlay-menu").innerText();
     assert.match(nativeMenuText, /Practice \(Offline\)[\s\S]*Ranked \(Online\)[\s\S]*Ranked Leaderboard/u);
     assert.equal(await page.locator(".overlay-menu-row", { hasText: /^Continue$/u }).count(), 0);
@@ -881,7 +861,7 @@ ${fatalTestHookAnchor}`;
     const quotaCleanup = await abandonCurrentRankedAndClearLocal(page);
     assert.equal(quotaCleanup.status, "abandoned");
     await page.reload({ waitUntil: "domcontentloaded" });
-    await dismissBoot(page);
+    await dismissBoot(page, diagnostics);
 
     const staleProfile = await seedStaleRankedProfile(page);
     const staleErrorsBefore = diagnostics.apiErrors.length;
@@ -910,7 +890,7 @@ ${fatalTestHookAnchor}`;
       fullPage: true
     });
     await page.reload({ waitUntil: "domcontentloaded" });
-    await dismissBoot(page);
+    await dismissBoot(page, diagnostics);
     await openNativeMenuOption(page, "Ranked (Online)");
     await page.getByRole("heading", { name: "Ranked (Online)", exact: true }).waitFor({ state: "visible" });
     const savedMenuBox = await page.locator(".ranked-v3-card-menu").boundingBox();
@@ -955,7 +935,7 @@ ${fatalTestHookAnchor}`;
     await sessionState(page, "AWAITING_STARTING_RELIC");
     const savedRunId = await page.evaluate(() => window.DungeonOnlineV3.getSnapshot().runId);
     await page.reload({ waitUntil: "domcontentloaded" });
-    await dismissBoot(page);
+    await dismissBoot(page, diagnostics);
     await openNativeMenuOption(page, "Ranked (Online)");
     await page.getByRole("heading", { name: "Ranked (Online)", exact: true }).waitFor({ state: "visible" });
     await page.getByRole("button", { name: "Start New Ranked", exact: true }).click();
@@ -970,7 +950,7 @@ ${fatalTestHookAnchor}`;
     const staleCleanup = await abandonCurrentRankedAndClearLocal(page);
     assert.equal(staleCleanup.status, "abandoned");
     await page.reload({ waitUntil: "domcontentloaded" });
-    await dismissBoot(page);
+    await dismissBoot(page, diagnostics);
 
     const practiceApiBefore = diagnostics.apiRequests.length;
     await openNativeMenuOption(page, "Practice (Offline)");
@@ -1028,7 +1008,6 @@ ${fatalTestHookAnchor}`;
       window.DungeonOnlineV3GameBridge?.isRankedTestBotActive?.() === true
     ));
 
-    const observerBotRequestsBefore = diagnostics.apiRequests.length;
     assert.equal(
       await page.evaluate(() => window.__DUNGEON_TEST_TOGGLE_OBSERVER_BOT?.()),
       true
@@ -1066,6 +1045,73 @@ ${fatalTestHookAnchor}`;
       `Canonical Ranked schedule did not issue Forge by depth 21: ${JSON.stringify(forgeRoom)}`
     );
 
+    const forgeRequestsBefore = diagnostics.apiRequests.length;
+    assert.equal(
+      await page.evaluate(() => window.__DUNGEON_TEST_CLEAR_VISIBLE_ROOM?.()),
+      true
+    );
+    await page.waitForFunction(() => JSON.parse(window.render_game_to_text()).roomCleared === true);
+    assert.equal(
+      await page.evaluate(() => window.__DUNGEON_TEST_OPEN_FORGE?.()),
+      true
+    );
+    await page.locator("#screenOverlay .overlay-card-forge-mode:visible").waitFor({ state: "visible" });
+    const forgeModeAudit = await page.evaluate(() => ({
+      phase: JSON.parse(window.render_game_to_text()).phase,
+      nativeModeVisible: Boolean(document.querySelector("#screenOverlay .overlay-card-forge-mode")?.getClientRects().length),
+      genericRankedVisible: Boolean(document.querySelector(".ranked-v3-overlay")?.getClientRects().length),
+      hd: document.body.classList.contains("graphics-hd-ui"),
+      text: document.querySelector("#screenOverlay .overlay-card-forge-mode")?.textContent || ""
+    }));
+    assert.equal(forgeModeAudit.phase, "playing", JSON.stringify(forgeModeAudit));
+    assert.equal(forgeModeAudit.nativeModeVisible, true, JSON.stringify(forgeModeAudit));
+    assert.equal(forgeModeAudit.genericRankedVisible, false, JSON.stringify(forgeModeAudit));
+    assert.equal(forgeModeAudit.hd, true, JSON.stringify(forgeModeAudit));
+    assert.match(forgeModeAudit.text, /Forge Chamber[\s\S]*Temper[\s\S]*Transmute[\s\S]*Leave Forge/u);
+    await page.screenshot({
+      path: path.join(ARTIFACT_ROOT, "ranked-forge-native-mode.png"),
+      fullPage: true
+    });
+
+    await page.keyboard.press("1");
+    try {
+      await page.locator("#screenOverlay .overlay-card-forge-reward:visible").waitFor({
+        state: "visible",
+        timeout: 20_000
+      });
+    } catch (error) {
+      const diagnostic = await page.evaluate(() => ({
+        game: JSON.parse(window.render_game_to_text()),
+        session: window.DungeonOnlineV3?.getSessionState?.() || "",
+        nativeOverlay: document.querySelector("#screenOverlay")?.textContent || "",
+        rankedOverlay: document.querySelector(".ranked-v3-overlay")?.textContent || ""
+      }));
+      diagnostic.apiErrors = diagnostics.apiErrors.slice(-5);
+      diagnostic.debugMessages = diagnostics.debugMessages.slice(-10);
+      diagnostic.consoleErrors = diagnostics.consoleErrors.slice(-10);
+      diagnostic.pageErrors = diagnostics.pageErrors.slice(-10);
+      throw new Error(`Ranked Forge reward did not open: ${JSON.stringify(diagnostic)}`, { cause: error });
+    }
+    const forgeRewardAudit = await page.evaluate(() => ({
+      phase: JSON.parse(window.render_game_to_text()).phase,
+      nativeRewardVisible: Boolean(document.querySelector("#screenOverlay .overlay-card-forge-reward")?.getClientRects().length),
+      genericRankedVisible: Boolean(document.querySelector(".ranked-v3-overlay")?.getClientRects().length),
+      rewardCards: document.querySelectorAll("#screenOverlay .forge-reward-choice").length,
+      text: document.querySelector("#screenOverlay .overlay-card-forge-reward")?.textContent || ""
+    }));
+    assert.equal(forgeRewardAudit.phase, "relic", JSON.stringify(forgeRewardAudit));
+    assert.equal(forgeRewardAudit.nativeRewardVisible, true, JSON.stringify(forgeRewardAudit));
+    assert.equal(forgeRewardAudit.genericRankedVisible, false, JSON.stringify(forgeRewardAudit));
+    assert.equal(forgeRewardAudit.rewardCards, 1, JSON.stringify(forgeRewardAudit));
+    assert.match(forgeRewardAudit.text, /Forge Temper[\s\S]*Offer[\s\S]*Leave Forged Relic/u);
+    await page.screenshot({
+      path: path.join(ARTIFACT_ROOT, "ranked-forge-native-temper.png"),
+      fullPage: true
+    });
+
+    await page.keyboard.press("1");
+    await sessionState(page, "ENTERING_NEXT_ROOM", diagnostics);
+    await crossVisiblePortal(page, forgeRoom.depth + 1);
     assert.equal(
       await page.evaluate(() => window.__DUNGEON_TEST_TOGGLE_OBSERVER_BOT?.()),
       true
@@ -1073,15 +1119,6 @@ ${fatalTestHookAnchor}`;
     await page.waitForFunction(() => (
       window.DungeonOnlineV3GameBridge?.isRankedTestBotActive?.() === true
     ));
-    assert.equal(
-      await page.evaluate(() => window.__DUNGEON_TEST_CLEAR_VISIBLE_ROOM?.()),
-      true
-    );
-    await page.waitForFunction((depth) => {
-      const game = JSON.parse(window.render_game_to_text());
-      return game.depth >= depth && game.roomType !== "forge" &&
-        window.DungeonOnlineV3?.getSessionState?.() === "ROOM_ACTIVE";
-    }, forgeRoom.depth + 1, { timeout: 45_000 });
     const observerBotForgeAudit = await page.evaluate(() => ({
       game: JSON.parse(window.render_game_to_text()),
       session: window.DungeonOnlineV3?.getSessionState?.() || "",
@@ -1100,9 +1137,9 @@ ${fatalTestHookAnchor}`;
     );
     assert.doesNotMatch(observerBotForgeAudit.overlay, /reconnect|required|unavailable/iu);
     assert(
-      diagnostics.apiRequests.slice(observerBotRequestsBefore)
-        .filter((entry) => entry.path === "/api/v3/runs/checkpoint").length >= 2,
-      "Observer Bot Forge lifecycle did not checkpoint both room boundaries"
+      diagnostics.apiRequests.slice(forgeRequestsBefore)
+        .filter((entry) => entry.path === "/api/v3/runs/checkpoint").length >= 1,
+      "Native Ranked Forge lifecycle did not checkpoint its room boundary"
     );
     await page.screenshot({
       path: path.join(ARTIFACT_ROOT, "ranked-observer-bot-after-forge-portal.png"),
@@ -1167,13 +1204,14 @@ ${fatalTestHookAnchor}`;
       }
     });
     observerPage.on("console", (message) => {
+      if (message.type() === "warning") diagnostics.consoleWarnings.push(message.text());
       if (message.type() === "error") diagnostics.consoleErrors.push(message.text());
       if (message.type() === "debug") diagnostics.debugMessages.push(message.text());
     });
     observerPage.on("pageerror", (error) => diagnostics.pageErrors.push(String(error?.stack || error)));
     await observerPage.goto(`${proxy.baseUrl}/`, { waitUntil: "domcontentloaded" });
     await observerPage.waitForFunction(() => typeof window.render_game_to_text === "function");
-    await dismissBoot(observerPage);
+    await dismissBoot(observerPage, diagnostics);
     await openRankedChoice(observerPage, "Continue Ranked");
 
     await sessionState(observerPage, "RECONNECT_REQUIRED");
@@ -1190,7 +1228,7 @@ ${fatalTestHookAnchor}`;
     page = observerPage;
 
     await page.reload({ waitUntil: "domcontentloaded" });
-    await dismissBoot(page);
+    await dismissBoot(page, diagnostics);
     await openRankedChoice(page, "Continue Ranked");
 
     await sessionState(page, "ROOM_ACTIVE");
@@ -1479,70 +1517,545 @@ ${fatalTestHookAnchor}`;
     await page.keyboard.press("Escape");
     await openNativeMenuOption(page, "Main Menu");
     await page.reload({ waitUntil: "domcontentloaded" });
-    await dismissBoot(page);
+    await dismissBoot(page, diagnostics);
+    const visualCatalog = await page.evaluate(() => ({
+      relicIds: (Array.isArray(window.DungeonRelicData?.RELICS) ? window.DungeonRelicData.RELICS : [])
+        .filter((relic) => relic?.id && (relic.icon || relic.iconSrc))
+        .slice(0, 10)
+        .map((relic) => relic.id),
+      mutatorIds: (Array.isArray(window.DungeonMutatorData?.MUTATORS) ? window.DungeonMutatorData.MUTATORS : [])
+        .filter((mutator) => mutator?.id)
+        .slice(0, 3)
+        .map((mutator) => mutator.id)
+    }));
+    assert.equal(visualCatalog.relicIds.length, 10, JSON.stringify(visualCatalog));
+    assert.equal(visualCatalog.mutatorIds.length, 3, JSON.stringify(visualCatalog));
+    const visualTopTen = [
+      { playerName: "test", score: 43_600, depth: 19, gold: 8_550 },
+      { playerName: "PortalSmoke1dc325c", score: 30_056, depth: 19, gold: 1_778 },
+      { playerName: "test", score: 30_092, depth: 3, gold: 46 },
+      { playerName: "CHAMPION-7f2a9b", score: 28_440, depth: 18, gold: 6_420 },
+      { playerName: "MUTANT_KING", score: 25_810, depth: 17, gold: 5_310 },
+      { playerName: "GrimDelver", score: 24_390, depth: 16, gold: 4_887 },
+      { playerName: "AbyssWalker", score: 22_170, depth: 15, gold: 3_980 },
+      { playerName: "Stonebound", score: 20_940, depth: 14, gold: 3_210 },
+      { playerName: "DarkPilgrim", score: 19_305, depth: 13, gold: 2_860 },
+      { playerName: "VoidReaper", score: 18_260, depth: 12, gold: 2_310 }
+    ];
+    const visualRows = Array.from({ length: 73 }, (_, index) => {
+      const rank = index + 1;
+      const fixture = visualTopTen[index] || {
+        playerName: "Dreadwalker " + rank,
+        score: 18_000 - (rank * 113),
+        depth: Math.max(1, 19 - Math.floor(rank / 4)),
+        gold: Math.max(0, 2_200 - (rank * 19))
+      };
+      return {
+        runId: rank === 1 ? runId : "run_f" + rank.toString(16).padStart(8, "0"),
+        rank,
+        ...fixture,
+        durationMs: 6_452_000,
+        outcome: "defeat",
+        verificationLevel: "checkpoint_verified_v3",
+        createdAt: 1_786_000_000_000 - rank
+      };
+    });
+    const visualDetail = {
+      ...visualRows[0],
+      season: SEASON,
+      build: {
+        relics: visualCatalog.relicIds.map((relicId, index) => ({ relicId, stacks: index === 2 ? 2 : 1 })),
+        pacts: ["stored-but-hidden"],
+        skillTiers: { dash: 3 },
+        campUpgrades: { health: 4 },
+        elixirs: [{ elixirId: "stored-but-hidden" }],
+        runModifiers: {
+          active: visualCatalog.mutatorIds.map((modifierId) => ({ modifierId }))
+        }
+      },
+      summary: {
+        durationMs: 6_452_000,
+        roomsCompleted: 312,
+        bossesCompleted: 7,
+        gold: { earned: 8_550 },
+        presentationCause: "Defeated by The Hollow Seraph"
+      }
+    };
+    await page.route("**/api/v3/leaderboard**", async (route) => {
+      const url = new URL(route.request().url());
+      if (route.request().method() === "GET" && url.pathname === "/api/v3/leaderboard") {
+        const cursor = url.searchParams.get("cursor") || "";
+        const entries = cursor ? visualRows.slice(50) : visualRows.slice(0, 50);
+        await route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify({
+            ok: true,
+            season: SEASON,
+            status: "ready",
+            entries,
+            cursor: cursor ? null : "visual-cursor-50"
+          })
+        });
+        return;
+      }
+      if (route.request().method() === "GET" && url.pathname === "/api/v3/leaderboard/" + runId) {
+        await route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify({ ok: true, entry: visualDetail })
+        });
+        return;
+      }
+      await route.continue();
+    });
     await openNativeMenuOption(page, "Ranked Leaderboard");
 
-    const rankedArchive = page.locator(".record-archive-v2.record-archive-list").first();
-    await page.waitForFunction(() => {
-      const archive = document.querySelector(".record-archive-v2.record-archive-list");
-      const overlay = document.querySelector(".ranked-v3-overlay");
-      return Boolean(archive?.getClientRects().length) || !/Loading season results/iu.test(overlay?.textContent || "");
-    }, null, { timeout: 30_000 });
-    const rankedArchiveAudit = await page.evaluate(() => ({
-      archiveVisible: Boolean(document.querySelector(".record-archive-v2.record-archive-list")?.getClientRects().length),
-      overlayText: document.querySelector(".ranked-v3-overlay")?.textContent?.replace(/\\s+/gu, " ").trim() || "",
-      recordArchiveReady: typeof window.DungeonRecordArchiveUi?.renderList === "function"
-    }));
-    assert.equal(rankedArchiveAudit.archiveVisible, true, JSON.stringify(rankedArchiveAudit));
-    assert.equal(await rankedArchive.locator(".record-archive-podium-card").count(), 3);
-    assert.equal(await rankedArchive.locator(".record-archive-ledger-row").count() >= 1, true);
-    const rankedListText = await rankedArchive.innerText();
-    for (const entry of seededRankedArchive) {
-      assert.match(rankedListText, new RegExp(entry.playerName));
-      assert.match(rankedListText, new RegExp(String(entry.score)));
-      assert.match(rankedListText, new RegExp(String(entry.depth)));
-      assert.match(rankedListText, new RegExp(String(entry.gold)));
+    const leaderboardRecord = page.locator(".ranked-v3-leaderboard-row[data-record-rank]");
+    await leaderboardRecord.first().waitFor({ state: "visible" });
+    assert.match(
+      await leaderboardRecord.first().textContent(),
+      /test/u
+    );
+
+    const referencePlateAudit = await page.evaluate(async () => {
+      const bounds = (selector) => {
+        const box = document.querySelector(selector)?.getBoundingClientRect();
+        return box ? { top: box.top, left: box.left, right: box.right, bottom: box.bottom, width: box.width, height: box.height } : null;
+      };
+      const plate = bounds(".ranked-v3-reference-plate");
+      const title = document.querySelector(".ranked-v3-leaderboard-display-title");
+      const titleRange = document.createRange();
+      titleRange.selectNodeContents(title);
+      const titleLines = [...titleRange.getClientRects()].filter((box) => box.width > 0 && box.height > 0).length;
+      const nameBox = bounds('.ranked-v3-podium-slot[data-record-rank="1"] .record-archive-name');
+      const scoreBox = bounds('.ranked-v3-podium-slot[data-record-rank="1"] .ranked-v3-leaderboard-score');
+      const metaBox = bounds('.ranked-v3-podium-slot[data-record-rank="1"] .ranked-v3-podium-meta');
+      const podiumInspect = document.querySelector('.ranked-v3-podium-slot[data-record-rank="1"] .ranked-v3-leaderboard-details-button');
+      const centerXRatio = (selector) => {
+        const box = document.querySelector(selector)?.getBoundingClientRect();
+        return box ? ((box.left + box.width / 2) - plate.left) / plate.width : null;
+      };
+      const centerX = (selector) => {
+        const box = document.querySelector(selector)?.getBoundingClientRect();
+        return box ? box.left + box.width / 2 : null;
+      };
+      const firstLedgerRank = document.querySelector(".ranked-v3-ledger-slot[data-record-rank]")?.dataset.recordRank;
+      const ledgerValueSelector = (className) => `.ranked-v3-ledger-slot[data-record-rank="${firstLedgerRank}"] .${className}`;
+      const ledgerHeaderBox = (column) => document.querySelector(`.ranked-v3-leaderboard-column:nth-child(${column})`)?.getBoundingClientRect();
+      const ledgerValueBox = (className) => document.querySelector(ledgerValueSelector(className))?.getBoundingClientRect();
+      const signedCenterOffset = (header, value) => (
+        value.left + value.width / 2 - (header.left + header.width / 2)
+      );
+      const nameHeaderBox = ledgerHeaderBox(2);
+      const nameValueBox = ledgerValueBox("record-archive-name");
+      const ledgerOffsets = {
+        nameLeft: nameValueBox.left - nameHeaderBox.left,
+        score: signedCenterOffset(ledgerHeaderBox(3), ledgerValueBox("ranked-v3-leaderboard-score")),
+        depth: signedCenterOffset(ledgerHeaderBox(4), ledgerValueBox("ranked-v3-leaderboard-depth")),
+        gold: signedCenterOffset(ledgerHeaderBox(5), ledgerValueBox("ranked-v3-leaderboard-gold")),
+        inspect: signedCenterOffset(ledgerHeaderBox(6), ledgerValueBox("ranked-v3-leaderboard-details-button"))
+      };
+      const game = document.querySelector("#game");
+      const hdMode = {
+        dataMode: game?.dataset.graphicsMode || "",
+        classActive: Boolean(game?.classList.contains("graphics-hd"))
+      };
+      game?.classList.remove("graphics-hd");
+      game?.classList.add("graphics-classic");
+      await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+      const classicArtDisplay = getComputedStyle(document.querySelector(".ranked-v3-reference-plate-art")).display;
+      game?.classList.remove("graphics-classic");
+      game?.classList.add("graphics-hd");
+      await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+      return {
+        plate,
+        heading: bounds(".ranked-v3-leaderboard-heading"),
+        podium: bounds(".ranked-v3-leaderboard-podium"),
+        ledger: bounds(".ranked-v3-leaderboard-ledger"),
+        nameRatio: (nameBox.top - plate.top) / plate.height,
+        scoreRatio: (scoreBox.top - plate.top) / plate.height,
+        metaRatio: (metaBox.top - plate.top) / plate.height,
+        nameToScoreOffset: scoreBox.top - nameBox.top,
+        scoreToMetaGap: metaBox.top - scoreBox.bottom,
+        podiumRankDisplays: [...document.querySelectorAll(".ranked-v3-podium-slot[data-record-rank] .ranked-v3-leaderboard-rank")]
+          .map((rank) => getComputedStyle(rank).display),
+        accessibleRanks: [...document.querySelectorAll(".ranked-v3-podium-slot[data-record-rank] .ranked-v3-rank-label")]
+          .map((rank) => rank.textContent),
+        podiumInspectFontSize: getComputedStyle(podiumInspect).fontSize,
+        nameFontSize: Number.parseFloat(getComputedStyle(document.querySelector('.ranked-v3-podium-slot[data-record-rank="1"] .record-archive-name')).fontSize),
+        scoreFontSize: Number.parseFloat(getComputedStyle(document.querySelector('.ranked-v3-podium-slot[data-record-rank="1"] .ranked-v3-leaderboard-score')).fontSize),
+        metaFontSize: Number.parseFloat(getComputedStyle(document.querySelector('.ranked-v3-podium-slot[data-record-rank="1"] .ranked-v3-podium-meta')).fontSize),
+        columnFontSize: Number.parseFloat(getComputedStyle(document.querySelector(".ranked-v3-leaderboard-columns")).fontSize),
+        ledgerFontSize: Number.parseFloat(getComputedStyle(document.querySelector(".ranked-v3-ledger-slot")).fontSize),
+        depthFontSize: Number.parseFloat(getComputedStyle(document.querySelector(".ranked-v3-ledger-slot[data-record-rank] .ranked-v3-leaderboard-depth")).fontSize),
+        goldFontSize: Number.parseFloat(getComputedStyle(document.querySelector(".ranked-v3-ledger-slot[data-record-rank] .ranked-v3-leaderboard-gold")).fontSize),
+        populatedPodium: document.querySelectorAll(".ranked-v3-podium-slot[data-record-rank]").length,
+        populatedLedger: document.querySelectorAll(".ranked-v3-ledger-slot[data-record-rank]").length,
+        podiumCenters: [1, 2, 3].map((rank) => centerXRatio(`.ranked-v3-podium-slot[data-record-rank="${rank}"]`)),
+        ledgerOffsets,
+        titleLines,
+        hdMode,
+        classicArtDisplay,
+        overflowX: document.documentElement.scrollWidth > innerWidth,
+        overflowY: document.documentElement.scrollHeight > innerHeight
+      };
+    });
+    assert.deepEqual(referencePlateAudit.hdMode, { dataMode: "hd", classActive: true });
+    assert.equal(referencePlateAudit.classicArtDisplay, "none", "HD Ranked artwork leaked into Classic mode");
+    assert.equal(referencePlateAudit.overflowX, false, JSON.stringify(referencePlateAudit));
+    assert.equal(referencePlateAudit.overflowY, false, JSON.stringify(referencePlateAudit));
+    assert.ok(referencePlateAudit.plate.top >= -1 && referencePlateAudit.plate.left >= -1, JSON.stringify(referencePlateAudit));
+    assert.ok(referencePlateAudit.plate.right <= 1537 && referencePlateAudit.plate.bottom <= 1081, JSON.stringify(referencePlateAudit));
+    assert.equal(referencePlateAudit.titleLines, 1, "Ranked Leaderboard title wrapped over the podium");
+    assert.ok(referencePlateAudit.heading.bottom < referencePlateAudit.podium.top, JSON.stringify(referencePlateAudit));
+    assert.ok(referencePlateAudit.podium.bottom < referencePlateAudit.ledger.top, JSON.stringify(referencePlateAudit));
+    const expectedPodiumCenters = [0.5, 421 / 1536, 1115 / 1536];
+    referencePlateAudit.podiumCenters.forEach((center, index) => {
+      assert.ok(Math.abs(center - expectedPodiumCenters[index]) <= 0.008, JSON.stringify(referencePlateAudit));
+    });
+    assert.ok(referencePlateAudit.ledgerOffsets.nameLeft >= 24 && referencePlateAudit.ledgerOffsets.nameLeft <= 38, JSON.stringify(referencePlateAudit));
+    assert.ok(referencePlateAudit.ledgerOffsets.depth <= -24 && referencePlateAudit.ledgerOffsets.depth >= -38, JSON.stringify(referencePlateAudit));
+    for (const key of ["score", "gold", "inspect"]) {
+      assert.ok(Math.abs(referencePlateAudit.ledgerOffsets[key]) <= 3, JSON.stringify(referencePlateAudit));
     }
-    assert.doesNotMatch(rankedListText, /Outcome|Time Played/u);
-    const desktopBoxes = await Promise.all([1, 2, 3].map((rank) => rankedArchive.locator(`[data-record-rank="${rank}"]`).boundingBox()));
-    assert(desktopBoxes.every(Boolean), JSON.stringify(desktopBoxes));
-    assert(desktopBoxes[1].x < desktopBoxes[0].x && desktopBoxes[0].x < desktopBoxes[2].x, JSON.stringify(desktopBoxes));
-    assert(desktopBoxes[0].y < desktopBoxes[1].y && desktopBoxes[0].y < desktopBoxes[2].y, JSON.stringify(desktopBoxes));
-    const rankedLedger = rankedArchive.locator('[data-record-rank="4"]');
-    const ledgerBoxes = await Promise.all([
-      rankedLedger.locator('[data-record-field="name"]').boundingBox(),
-      rankedLedger.locator('[data-record-field="score"]').boundingBox(),
-      rankedLedger.locator('[data-record-field="depth"]').boundingBox(),
-      rankedLedger.locator('[data-record-field="gold"]').boundingBox(),
-      rankedLedger.locator(".record-archive-inspect-button").boundingBox()
+    assert.deepEqual(referencePlateAudit.podiumRankDisplays, ["none", "none", "none"], JSON.stringify(referencePlateAudit));
+    assert.deepEqual(referencePlateAudit.accessibleRanks, ["Rank 1", "Rank 2", "Rank 3"], JSON.stringify(referencePlateAudit));
+    assert.ok(referencePlateAudit.nameRatio >= 0.445 && referencePlateAudit.nameRatio <= 0.458, JSON.stringify(referencePlateAudit));
+    assert.ok(referencePlateAudit.scoreRatio >= 0.47 && referencePlateAudit.scoreRatio <= 0.52, JSON.stringify(referencePlateAudit));
+    assert.ok(referencePlateAudit.metaRatio >= 0.518 && referencePlateAudit.metaRatio <= 0.535, JSON.stringify(referencePlateAudit));
+    assert.ok(referencePlateAudit.nameToScoreOffset >= 17 && referencePlateAudit.nameToScoreOffset <= 24, JSON.stringify(referencePlateAudit));
+    assert.ok(referencePlateAudit.scoreToMetaGap >= 8, JSON.stringify(referencePlateAudit));
+    assert.equal(referencePlateAudit.podiumInspectFontSize, "0px", "Podium leaked a floating Inspect build label");
+    await page.evaluate(() => document.activeElement?.blur());
+    await page.screenshot({
+      path: path.join(ARTIFACT_ROOT, "ranked-leaderboard.png"),
+      fullPage: true
+    });
+    assert.equal(referencePlateAudit.populatedPodium, 3, JSON.stringify(referencePlateAudit));
+    assert.equal(referencePlateAudit.populatedLedger, 7, JSON.stringify(referencePlateAudit));
+    assert.ok(referencePlateAudit.nameFontSize >= 25, JSON.stringify(referencePlateAudit));
+    assert.ok(referencePlateAudit.scoreFontSize >= 42, JSON.stringify(referencePlateAudit));
+    assert.ok(referencePlateAudit.metaFontSize >= 15.5, JSON.stringify(referencePlateAudit));
+    assert.ok(referencePlateAudit.columnFontSize >= 13, JSON.stringify(referencePlateAudit));
+    assert.ok(referencePlateAudit.ledgerFontSize >= 17, JSON.stringify(referencePlateAudit));
+    assert.ok(referencePlateAudit.depthFontSize >= 16, JSON.stringify(referencePlateAudit));
+    assert.ok(referencePlateAudit.goldFontSize >= 16, JSON.stringify(referencePlateAudit));
+    await page.getByRole("button", { name: "Inspect build" }).first().click();
+    await page.locator(".ranked-v3-leaderboard-detail").waitFor({ state: "visible" });
+    assert.match(
+      await page.locator(".ranked-v3-leaderboard-detail").textContent(),
+      /Build Loadout/u
+    );
+    const detailPlateAudit = await page.evaluate(() => {
+      const fontSize = (selector) => Number.parseFloat(getComputedStyle(document.querySelector(selector)).fontSize);
+      const equipment = [...document.querySelectorAll(".ranked-v3-inspect-equipment-slot[data-relic-index]")].map((slot) => {
+        const slotBox = slot.getBoundingClientRect();
+        const iconBox = slot.querySelector(".ranked-v3-inspect-equipment-icon, .ranked-v3-inspect-equipment-fallback")?.getBoundingClientRect();
+        return {
+          text: slot.textContent.trim(),
+          tabindex: slot.getAttribute("tabindex"),
+          tooltip: slot.getAttribute("data-record-tooltip") || "",
+          centerDx: iconBox ? (iconBox.left + iconBox.width / 2) - (slotBox.left + slotBox.width / 2) : null,
+          centerDy: iconBox ? (iconBox.top + iconBox.height / 2) - (slotBox.top + slotBox.height / 2) : null
+        };
+      });
+      const chronicleAlignment = [...document.querySelectorAll(".ranked-v3-inspect-chronicle-row")].map((row) => {
+        const rowBox = row.getBoundingClientRect();
+        const labelBox = row.querySelector(".ranked-v3-inspect-chronicle-label").getBoundingClientRect();
+        const valueBox = row.querySelector(".ranked-v3-inspect-chronicle-value, .ranked-v3-inspect-mutators").getBoundingClientRect();
+        return {
+          labelInset: labelBox.left - rowBox.left,
+          valueInset: rowBox.right - valueBox.right
+        };
+      });
+      const inspectHeader = document.querySelector(".ranked-v3-inspect-header");
+      const inspectHeaderBox = inspectHeader.getBoundingClientRect();
+      const headerSeparators = ["::before", "::after"].map((pseudo) => {
+        const style = getComputedStyle(inspectHeader, pseudo);
+        return {
+          content: style.content,
+          leftRatio: Number.parseFloat(style.left) / inspectHeaderBox.width,
+          width: Number.parseFloat(style.width),
+          height: Number.parseFloat(style.height)
+        };
+      });
+      const terminal = document.querySelector(".ranked-v3-inspect-terminal");
+      const terminalBox = terminal.getBoundingClientRect();
+      const terminalTitle = terminal.querySelector(".ranked-v3-inspect-terminal-title");
+      const terminalEyebrow = terminal.querySelector(".ranked-v3-inspect-terminal-eyebrow");
+      const terminalCause = terminal.querySelector(".ranked-v3-inspect-terminal-cause");
+      const terminalTitleBox = terminalTitle.getBoundingClientRect();
+      const terminalEyebrowBox = terminalEyebrow.getBoundingClientRect();
+      const terminalCauseBox = terminalCause.getBoundingClientRect();
+      return {
+        playerFontSize: fontSize(".ranked-v3-inspect-player"),
+        scoreFontSize: fontSize(".ranked-v3-inspect-score"),
+        statFontSize: fontSize(".ranked-v3-inspect-depth"),
+        chronicleFontSize: fontSize(".ranked-v3-inspect-chronicle-row"),
+        visibleEquipmentLabels: [...document.querySelectorAll(".ranked-v3-inspect-equipment-label")]
+          .filter((label) => label.getClientRects().length > 0).length,
+        equipment,
+        chronicleAlignment,
+        headerSeparators,
+        inspectStats: [".ranked-v3-inspect-depth", ".ranked-v3-inspect-gold"].map((selector) => (
+          [...document.querySelector(selector).children].map((node) => node.textContent)
+        )),
+        inspectStatMetrics: [".ranked-v3-inspect-depth", ".ranked-v3-inspect-gold"].map((selector) => {
+          const stat = document.querySelector(selector);
+          const label = stat.querySelector(".ranked-v3-inspect-stat-label");
+          const value = stat.querySelector(".ranked-v3-inspect-stat-value");
+          return {
+            labelFontSize: Number.parseFloat(getComputedStyle(label).fontSize),
+            valueFontSize: Number.parseFloat(getComputedStyle(value).fontSize),
+            labelFontFamily: getComputedStyle(label).fontFamily,
+            valueFontFamily: getComputedStyle(value).fontFamily
+          };
+        }),
+        terminalLayout: {
+          titleCenterDelta: Math.abs((terminalTitleBox.left + terminalTitleBox.width / 2) - (terminalBox.left + terminalBox.width / 2)),
+          titleTopInset: terminalTitleBox.top - terminalBox.top,
+          eyebrowLeftInset: terminalEyebrowBox.left - terminalBox.left,
+          causeLeftInset: terminalCauseBox.left - terminalBox.left,
+          eyebrowTextAlign: getComputedStyle(terminalEyebrow).textAlign,
+          causeTextAlign: getComputedStyle(terminalCause).textAlign
+        },
+        actionLabels: [...document.querySelectorAll(".ranked-v3-inspect-actions button")].map((button) => button.textContent),
+        backFontSize: fontSize(".ranked-v3-inspect-back"),
+        occupiedSlots: document.querySelectorAll(".ranked-v3-inspect-equipment-slot[data-relic-index]").length,
+        visibleIcons: [...document.querySelectorAll(".ranked-v3-inspect-equipment-icon")]
+          .filter((icon) => icon.getClientRects().length > 0).length,
+        chronicleLabels: [...document.querySelectorAll(".ranked-v3-inspect-chronicle-label")]
+          .map((label) => label.textContent),
+        terminalText: document.querySelector(".ranked-v3-inspect-terminal")?.textContent || "",
+        tooltip: document.querySelector(".ranked-v3-inspect-mutators")?.getAttribute("data-record-tooltip") || ""
+      };
+    });
+    const firstRelicSlot = page.locator(".ranked-v3-inspect-equipment-slot[data-relic-index]").first();
+    await firstRelicSlot.hover();
+    const visibleRelicTooltip = await firstRelicSlot.evaluate((slot) => {
+      const style = getComputedStyle(slot, "::after");
+      const slotBox = slot.getBoundingClientRect();
+      const plateBox = slot.closest(".ranked-v3-reference-plate").getBoundingClientRect();
+      const left = Number.parseFloat(style.left);
+      const contentWidth = Number.parseFloat(style.width);
+      const outerWidth = contentWidth + Number.parseFloat(style.paddingLeft) + Number.parseFloat(style.paddingRight)
+        + Number.parseFloat(style.borderLeftWidth) + Number.parseFloat(style.borderRightWidth);
+      const outerHeight = Number.parseFloat(style.height) + Number.parseFloat(style.paddingTop) + Number.parseFloat(style.paddingBottom)
+        + Number.parseFloat(style.borderTopWidth) + Number.parseFloat(style.borderBottomWidth);
+      const transformX = new DOMMatrixReadOnly(style.transform).m41;
+      const visualLeft = slotBox.left + left + transformX;
+      const computedTop = Number.parseFloat(style.top);
+      const computedBottom = Number.parseFloat(style.bottom);
+      const visualTop = Number.isFinite(computedTop)
+        ? slotBox.top + computedTop
+        : slotBox.bottom - computedBottom - outerHeight;
+      const secondRowBox = document.querySelectorAll(".ranked-v3-inspect-equipment-slot[data-relic-index]")[5].getBoundingClientRect();
+      const loadoutTitleBox = document.querySelector(".ranked-v3-inspect-loadout > .ranked-v3-inspect-section-title").getBoundingClientRect();
+      return {
+        content: style.content,
+        width: contentWidth,
+        centerDelta: Math.abs((visualLeft + outerWidth / 2) - (slotBox.left + slotBox.width / 2)),
+        visualLeft,
+        visualRight: visualLeft + outerWidth,
+        visualTop,
+        visualBottom: visualTop + outerHeight,
+        slotBottom: slotBox.bottom,
+        secondRowTop: secondRowBox.top,
+        loadoutTitleBottom: loadoutTitleBox.bottom,
+        fontSize: Number.parseFloat(style.fontSize),
+        plateLeft: plateBox.left,
+        plateRight: plateBox.right
+      };
+    });
+    assert.match(visibleRelicTooltip.content, /Stack x\d+/u, JSON.stringify(visibleRelicTooltip));
+    assert.ok(visibleRelicTooltip.width <= 320, JSON.stringify(visibleRelicTooltip));
+    assert.ok(visibleRelicTooltip.centerDelta <= 1, JSON.stringify(visibleRelicTooltip));
+    assert.ok(visibleRelicTooltip.visualLeft >= visibleRelicTooltip.plateLeft, JSON.stringify(visibleRelicTooltip));
+    assert.ok(visibleRelicTooltip.visualRight <= visibleRelicTooltip.plateRight, JSON.stringify(visibleRelicTooltip));
+    assert.ok(visibleRelicTooltip.visualTop >= visibleRelicTooltip.slotBottom + 4, JSON.stringify(visibleRelicTooltip));
+    assert.ok(visibleRelicTooltip.visualBottom <= visibleRelicTooltip.secondRowTop - 4, JSON.stringify(visibleRelicTooltip));
+    assert.ok(visibleRelicTooltip.visualTop >= visibleRelicTooltip.loadoutTitleBottom + 4, JSON.stringify(visibleRelicTooltip));
+    assert.ok(visibleRelicTooltip.fontSize >= 12, JSON.stringify(visibleRelicTooltip));
+    await page.screenshot({
+      path: path.join(ARTIFACT_ROOT, "ranked-leaderboard-detail-tooltip.png"),
+      fullPage: true
+    });
+    await page.mouse.move(2, 2);
+    await page.evaluate(() => document.activeElement?.blur());
+    await page.waitForTimeout(50);
+    assert.equal(
+      await firstRelicSlot.evaluate((slot) => getComputedStyle(slot, "::after").content),
+      "none"
+    );
+    const lastRelicSlot = page.locator(".ranked-v3-inspect-equipment-slot[data-relic-index]").last();
+    await lastRelicSlot.hover();
+    const longRelicTooltip = await lastRelicSlot.evaluate((slot) => {
+      const style = getComputedStyle(slot, "::after");
+      const slotBox = slot.getBoundingClientRect();
+      const backBox = document.querySelector(".ranked-v3-inspect-back").getBoundingClientRect();
+      const plateBox = slot.closest(".ranked-v3-reference-plate").getBoundingClientRect();
+      const contentWidth = Number.parseFloat(style.width);
+      const outerWidth = contentWidth + Number.parseFloat(style.paddingLeft) + Number.parseFloat(style.paddingRight)
+        + Number.parseFloat(style.borderLeftWidth) + Number.parseFloat(style.borderRightWidth);
+      const outerHeight = Number.parseFloat(style.height) + Number.parseFloat(style.paddingTop) + Number.parseFloat(style.paddingBottom)
+        + Number.parseFloat(style.borderTopWidth) + Number.parseFloat(style.borderBottomWidth);
+      const left = Number.parseFloat(style.left);
+      const visualLeft = slotBox.left + left + new DOMMatrixReadOnly(style.transform).m41;
+      const computedTop = Number.parseFloat(style.top);
+      const computedBottom = Number.parseFloat(style.bottom);
+      const visualTop = Number.isFinite(computedTop)
+        ? slotBox.top + computedTop
+        : slotBox.bottom - computedBottom - outerHeight;
+      return {
+        content: style.content,
+        visualLeft,
+        visualRight: visualLeft + outerWidth,
+        visualTop,
+        visualBottom: visualTop + outerHeight,
+        slotBottom: slotBox.bottom,
+        backTop: backBox.top,
+        plateLeft: plateBox.left,
+        plateRight: plateBox.right,
+        fontSize: Number.parseFloat(style.fontSize)
+      };
+    });
+    assert.match(longRelicTooltip.content, /Cache Key.*Non-stackable.*Stack x1/u, JSON.stringify(longRelicTooltip));
+    assert.ok(longRelicTooltip.visualLeft >= longRelicTooltip.plateLeft, JSON.stringify(longRelicTooltip));
+    assert.ok(longRelicTooltip.visualRight <= longRelicTooltip.plateRight, JSON.stringify(longRelicTooltip));
+    assert.ok(longRelicTooltip.visualTop >= longRelicTooltip.slotBottom + 4, JSON.stringify(longRelicTooltip));
+    assert.ok(longRelicTooltip.visualBottom <= longRelicTooltip.backTop - 12, JSON.stringify(longRelicTooltip));
+    assert.ok(longRelicTooltip.fontSize >= 12, JSON.stringify(longRelicTooltip));
+    await page.screenshot({
+      path: path.join(ARTIFACT_ROOT, "ranked-leaderboard-detail-long-tooltip.png"),
+      fullPage: true
+    });
+    await page.mouse.move(2, 2);
+    const mutatorsControl = page.locator(".ranked-v3-inspect-mutators");
+    await mutatorsControl.hover();
+    const mutatorTooltipAudit = await mutatorsControl.evaluate((control) => {
+      const style = getComputedStyle(control, "::after");
+      const controlBox = control.getBoundingClientRect();
+      const plateBox = control.closest(".ranked-v3-reference-plate").getBoundingClientRect();
+      const contentWidth = Number.parseFloat(style.width);
+      const outerWidth = contentWidth + Number.parseFloat(style.paddingLeft) + Number.parseFloat(style.paddingRight)
+        + Number.parseFloat(style.borderLeftWidth) + Number.parseFloat(style.borderRightWidth);
+      const outerHeight = Number.parseFloat(style.height) + Number.parseFloat(style.paddingTop) + Number.parseFloat(style.paddingBottom)
+        + Number.parseFloat(style.borderTopWidth) + Number.parseFloat(style.borderBottomWidth);
+      const visualRight = controlBox.right - Number.parseFloat(style.right);
+      const visualBottom = controlBox.bottom - Number.parseFloat(style.bottom);
+      return {
+        content: style.content,
+        visualLeft: visualRight - outerWidth,
+        visualRight,
+        visualTop: visualBottom - outerHeight,
+        visualBottom,
+        plateLeft: plateBox.left,
+        plateRight: plateBox.right,
+        plateTop: plateBox.top,
+        plateBottom: plateBox.bottom,
+        fontSize: Number.parseFloat(style.fontSize),
+        hostOverflow: getComputedStyle(control).overflow
+      };
+    });
+    assert.match(mutatorTooltipAudit.content, /Berserker.*Bulwark.*Alchemist/u, JSON.stringify(mutatorTooltipAudit));
+    assert.ok(mutatorTooltipAudit.visualLeft >= mutatorTooltipAudit.plateLeft, JSON.stringify(mutatorTooltipAudit));
+    assert.ok(mutatorTooltipAudit.visualRight <= mutatorTooltipAudit.plateRight, JSON.stringify(mutatorTooltipAudit));
+    assert.ok(mutatorTooltipAudit.visualTop >= mutatorTooltipAudit.plateTop, JSON.stringify(mutatorTooltipAudit));
+    assert.ok(mutatorTooltipAudit.visualBottom <= mutatorTooltipAudit.plateBottom, JSON.stringify(mutatorTooltipAudit));
+    assert.ok(mutatorTooltipAudit.fontSize >= 12, JSON.stringify(mutatorTooltipAudit));
+    assert.equal(mutatorTooltipAudit.hostOverflow, "visible", JSON.stringify(mutatorTooltipAudit));
+    await page.screenshot({
+      path: path.join(ARTIFACT_ROOT, "ranked-leaderboard-detail-mutators-tooltip.png"),
+      fullPage: true
+    });
+    await page.mouse.move(2, 2);
+    await page.evaluate(() => document.activeElement?.blur());
+    await page.waitForTimeout(50);
+    await page.screenshot({
+      path: path.join(ARTIFACT_ROOT, "ranked-leaderboard-detail.png"),
+      fullPage: true
+    });
+    assert.ok(detailPlateAudit.playerFontSize >= 60, JSON.stringify(detailPlateAudit));
+    assert.ok(detailPlateAudit.scoreFontSize >= 45, JSON.stringify(detailPlateAudit));
+    assert.ok(detailPlateAudit.statFontSize >= 18.5, JSON.stringify(detailPlateAudit));
+    assert.ok(detailPlateAudit.chronicleFontSize >= 17, JSON.stringify(detailPlateAudit));
+    assert.ok(detailPlateAudit.backFontSize >= 20, JSON.stringify(detailPlateAudit));
+    assert.deepEqual(detailPlateAudit.inspectStats, [["Depth", "19"], ["Gold", "8,550"]]);
+    assert.deepEqual(detailPlateAudit.actionLabels, ["Back to Leaderboard"]);
+    assert.ok(Math.abs(detailPlateAudit.headerSeparators[0].leftRatio - 0.447) <= 0.008, JSON.stringify(detailPlateAudit));
+    assert.ok(Math.abs(detailPlateAudit.headerSeparators[1].leftRatio - 0.568) <= 0.008, JSON.stringify(detailPlateAudit));
+    detailPlateAudit.headerSeparators.forEach((separator) => {
+      assert.notEqual(separator.content, "none", JSON.stringify(detailPlateAudit));
+      assert.ok(separator.width >= 0.9 && separator.width <= 2, JSON.stringify(detailPlateAudit));
+      assert.ok(separator.height >= 55 && separator.height <= 80, JSON.stringify(detailPlateAudit));
+    });
+    detailPlateAudit.inspectStatMetrics.forEach((stat) => {
+      assert.ok(stat.labelFontSize >= 11 && stat.labelFontSize <= 14, JSON.stringify(detailPlateAudit));
+      assert.ok(stat.valueFontSize >= 20, JSON.stringify(detailPlateAudit));
+      assert.ok(stat.valueFontSize >= stat.labelFontSize * 1.5, JSON.stringify(detailPlateAudit));
+      assert.match(stat.labelFontFamily, /Courier New/iu, JSON.stringify(detailPlateAudit));
+      assert.match(stat.valueFontFamily, /Georgia/iu, JSON.stringify(detailPlateAudit));
+    });
+    assert.ok(detailPlateAudit.terminalLayout.titleCenterDelta <= 2, JSON.stringify(detailPlateAudit));
+    assert.ok(detailPlateAudit.terminalLayout.titleTopInset >= 10 && detailPlateAudit.terminalLayout.titleTopInset <= 24, JSON.stringify(detailPlateAudit));
+    assert.ok(detailPlateAudit.terminalLayout.eyebrowLeftInset >= 110 && detailPlateAudit.terminalLayout.eyebrowLeftInset <= 145, JSON.stringify(detailPlateAudit));
+    assert.ok(detailPlateAudit.terminalLayout.causeLeftInset >= 110 && detailPlateAudit.terminalLayout.causeLeftInset <= 145, JSON.stringify(detailPlateAudit));
+    assert.equal(detailPlateAudit.terminalLayout.eyebrowTextAlign, "left", JSON.stringify(detailPlateAudit));
+    assert.equal(detailPlateAudit.terminalLayout.causeTextAlign, "left", JSON.stringify(detailPlateAudit));
+    assert.equal(detailPlateAudit.visibleEquipmentLabels, 0, JSON.stringify(detailPlateAudit));
+    detailPlateAudit.equipment.forEach((slot) => {
+      assert.equal(slot.text, "", JSON.stringify(detailPlateAudit));
+      assert.equal(slot.tabindex, "0", JSON.stringify(detailPlateAudit));
+      assert.match(slot.tooltip, /.+ \| .+ \| Stack x\d+/u, JSON.stringify(detailPlateAudit));
+      assert.ok(Math.abs(slot.centerDx) <= 6, JSON.stringify(detailPlateAudit));
+      assert.ok(Math.abs(slot.centerDy) <= 6, JSON.stringify(detailPlateAudit));
+    });
+    detailPlateAudit.chronicleAlignment.forEach(({ labelInset, valueInset }) => {
+      assert.ok(labelInset >= 58 && labelInset <= 70, JSON.stringify(detailPlateAudit));
+      assert.ok(valueInset >= 15 && valueInset <= 30, JSON.stringify(detailPlateAudit));
+    });
+    assert.equal(detailPlateAudit.occupiedSlots, 10, JSON.stringify(detailPlateAudit));
+    assert.equal(detailPlateAudit.visibleIcons, 10, JSON.stringify(detailPlateAudit));
+    assert.deepEqual(detailPlateAudit.chronicleLabels, [
+      "Time Played", "Rooms Cleared", "Bosses Defeated", "Mutators",
+      "Highest Depth", "Gold Earned", "Final Score"
     ]);
-    assert(ledgerBoxes.every(Boolean), JSON.stringify(ledgerBoxes));
-    assert(ledgerBoxes[0].x < ledgerBoxes[1].x && ledgerBoxes[1].x < ledgerBoxes[2].x && ledgerBoxes[2].x < ledgerBoxes[3].x && ledgerBoxes[3].x < ledgerBoxes[4].x, JSON.stringify(ledgerBoxes));
-    for (const assetPath of PODIUM_MEDALLION_PATHS) {
-      const asset = rankedArchive.locator(`img[src="${assetPath}"]`);
-      assert.equal(await asset.count(), 1, assetPath);
-      assert.equal(await asset.evaluate((image) => image.complete && image.naturalWidth > 0), true, assetPath);
+    assert.match(detailPlateAudit.terminalText, /Game Over.*Fell in combat.*Defeated by The Hollow Seraph/isu);
+    assert.equal(detailPlateAudit.tooltip.includes(" | "), true, detailPlateAudit.tooltip);
+    await page.getByRole("button", { name: "Back to Leaderboard", exact: true }).click();
+    await page.getByText("Page 1 / 10", { exact: true }).waitFor({ state: "visible" });
+    await page.getByRole("button", { name: "Next page", exact: true }).click();
+    await page.getByText("Page 2 / 10", { exact: true }).waitFor({ state: "visible" });
+    assert.deepEqual(
+      await page.locator(".ranked-v3-podium-slot[data-record-rank]").evaluateAll((slots) => slots.map((slot) => Number(slot.dataset.recordRank))),
+      [1, 2, 3]
+    );
+    assert.deepEqual(
+      await page.locator(".ranked-v3-ledger-slot[data-record-rank]").evaluateAll((slots) => slots.map((slot) => Number(slot.dataset.recordRank))),
+      [11, 12, 13, 14, 15, 16, 17]
+    );
+    await page.screenshot({
+      path: path.join(ARTIFACT_ROOT, "ranked-leaderboard-page-2.png"),
+      fullPage: true
+    });
+    await page.getByRole("button", { name: "Inspect build for test", exact: true }).first().click();
+    await page.locator(".ranked-v3-leaderboard-detail").waitFor({ state: "visible" });
+    await page.getByRole("button", { name: "Back to Leaderboard", exact: true }).click();
+    await page.getByText("Page 2 / 10", { exact: true }).waitFor({ state: "visible" });
+    for (let targetPage = 3; targetPage <= 10; targetPage += 1) {
+      await page.getByRole("button", { name: "Next page", exact: true }).click();
+      await page.getByText("Page " + targetPage + " / 10", { exact: true }).waitFor({ state: "visible" });
     }
-    await page.screenshot({ path: path.join(ARTIFACT_ROOT, "ranked-records-list-desktop.png"), fullPage: true });
-    await page.setViewportSize({ width: 640, height: 1080 });
-    await page.screenshot({ path: path.join(ARTIFACT_ROOT, "ranked-records-list-narrow.png"), fullPage: true });
-    await page.setViewportSize({ width: 1440, height: 900 });
-    await rankedLedger.locator(".record-archive-name").click();
-    const rankedDetail = page.locator(".record-archive-v2.record-archive-detail").first();
-    await rankedDetail.waitFor({ state: "visible" });
-    const rankedDetailText = await rankedDetail.innerText();
-    const fourth = seededRankedArchive.find((entry) => entry.rank === 4);
-    assert(fourth);
-    assert.match(rankedDetailText, new RegExp(`Rank #4[\\s\\S]*${fourth.playerName}[\\s\\S]*${fourth.score}`, "i"));
-    assert.match(rankedDetailText, /Time Played[\s\S]*6m 12s[\s\S]*Rooms Cleared[\s\S]*22[\s\S]*Gold Earned[\s\S]*6400/iu);
-    assert.doesNotMatch(rankedDetailText, /Damage Done|Damage Taken|Total Kills|Potions Used|Gold Collected|Deaths/u);
-    const mutatorChip = rankedDetail.locator(".record-archive-mutators");
-    await mutatorChip.focus();
-    await mutatorChip.hover();
-    const mutatorTooltip = await mutatorChip.getAttribute("data-record-tooltip");
-    assert.equal(mutatorTooltip, "[4] Greed +40% gold +2 enemies/room, enemies +20% HP, shop +25%");
-    assert.match(await mutatorChip.evaluate((node) => getComputedStyle(node, "::after").content), /Greed/u);
-    await page.screenshot({ path: path.join(ARTIFACT_ROOT, "ranked-records-detail-rank4.png"), fullPage: true });
+    assert.deepEqual(
+      await page.locator(".ranked-v3-ledger-slot[data-record-rank]").evaluateAll((slots) => slots.map((slot) => Number(slot.dataset.recordRank))),
+      [67, 68, 69, 70, 71, 72, 73]
+    );
+    assert.equal(await page.getByRole("button", { name: "Next page", exact: true }).isDisabled(), true);
+    await page.screenshot({
+      path: path.join(ARTIFACT_ROOT, "ranked-leaderboard-page-10.png"),
+      fullPage: true
+    });
     }
 
     if (RUN_CAMP) {
@@ -1550,7 +2063,7 @@ ${fatalTestHookAnchor}`;
       localStorage.setItem("dungeonOneRoomTotalKills", "200");
     });
     await page.reload({ waitUntil: "domcontentloaded" });
-    await dismissBoot(page);
+    await dismissBoot(page, diagnostics);
     await openRankedChoice(page, "Start New Ranked");
 
     await page.locator(".ranked-v3-choice-relic").first().waitFor({ state: "visible" });
@@ -1857,13 +2370,14 @@ ${fatalTestHookAnchor}`;
       }
     });
     recoveryPage.on("console", (message) => {
+      if (message.type() === "warning") diagnostics.consoleWarnings.push(message.text());
       if (message.type() === "error") diagnostics.consoleErrors.push(message.text());
       if (message.type() === "debug") diagnostics.debugMessages.push(message.text());
     });
     recoveryPage.on("pageerror", (error) => diagnostics.pageErrors.push(String(error?.stack || error)));
     await recoveryPage.goto(`${proxy.baseUrl}/`, { waitUntil: "domcontentloaded" });
     await recoveryPage.waitForFunction(() => typeof window.render_game_to_text === "function");
-    await dismissBoot(recoveryPage);
+    await dismissBoot(recoveryPage, diagnostics);
     await openRankedChoice(recoveryPage, "Continue Ranked");
     await sessionState(recoveryPage, "RECONNECT_REQUIRED");
     await recoveryPage.getByRole("button", { name: "Request control" }).waitFor({ state: "visible" });
@@ -1993,8 +2507,6 @@ ${fatalTestHookAnchor}`;
       finalizeAttempts: diagnostics.finalizeOperationIds.length,
       uniqueFinalizeOperationIds: new Set(diagnostics.finalizeOperationIds).size,
       leaderboardRowsForRun: RUN_LIFECYCLE ? await d1Count(runId) : null,
-      recordArchiveScenarios: RUN_LIFECYCLE ? 1 : 0,
-      seededRankedArchiveRows: seededRankedArchive.length,
       apiRequests: diagnostics.apiRequests,
       consoleErrors: unexpectedConsoleErrors.length,
       expectedDroppedResponseConsoleErrors: expectedDroppedResponseErrors.length,
@@ -2025,16 +2537,18 @@ ${fatalTestHookAnchor}`;
     }
     assert.equal(worker.getLogs().includes(secret), false);
   } catch (error) {
-    const workerLogs = worker.getLogs().replaceAll(secret, "[redacted]").trim();
+    const workerLogs = worker ? worker.getLogs().replaceAll(secret, "[redacted]").trim() : "";
     await browser.close();
     await closeServer(proxy.server);
-    worker.child.kill();
-    await waitForExit(worker.child);
-    if (worker.child.exitCode === null) {
-      worker.child.kill("SIGKILL");
+    if (worker) {
+      worker.child.kill();
       await waitForExit(worker.child);
+      if (worker.child.exitCode === null) {
+        worker.child.kill("SIGKILL");
+        await waitForExit(worker.child);
+      }
+      assert.equal(worker.getLogs().includes(secret), false);
     }
-    assert.equal(worker.getLogs().includes(secret), false);
     throw new Error(
       workerLogs ? `${error.stack}\nWorker logs:\n${workerLogs}` : error.stack,
       { cause: error }

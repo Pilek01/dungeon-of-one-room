@@ -659,8 +659,54 @@ const productionGameReplacements = [
       state.forge.used = true;
       state.forgePrompt = null;
       markUiDirty();
-      return Boolean(window.DungeonOnlineV3?.onForgeMode?.("transmute"));
+      return Boolean(window.DungeonOnlineV3?.onForgeMode?.("transmute", { sacrificeRelicId }));
     }`
+  ],
+  [
+`  function chooseRelic(index) {
+    if (state.phase !== "relic") return;`,
+`  function chooseRelic(index) {
+    if (state.phase !== "relic") return;
+    if (state.onlineV3Ranked && state.onlineV3ForgePresentation) {
+      const presentation = state.onlineV3ForgePresentation;
+      const skipIndex = getRelicDraftSkipIndex();
+      if (index === skipIndex) {
+        const accepted = window.DungeonOnlineV3?.onForgeChoice?.(presentation.leaveChoiceId);
+        if (!accepted) pushLog("That Forge choice is still resolving.", "warn");
+        return;
+      }
+      if (state.relicSwapPending && Number.isInteger(presentation.pendingRewardIndex)) {
+        const outgoingRelicId = String(state.relics[index] || "");
+        const pendingReward = presentation.rewardChoices[presentation.pendingRewardIndex];
+        const replacement = pendingReward?.replacementChoices?.find((choice) =>
+          choice.removalRelicIds.includes(outgoingRelicId)
+        );
+        if (!replacement) {
+          pushLog("That relic cannot be offered to this Forge result.", "bad");
+          return;
+        }
+        const accepted = window.DungeonOnlineV3?.onForgeChoice?.(replacement.choiceId);
+        if (!accepted) pushLog("That Forge choice is still resolving.", "warn");
+        return;
+      }
+      const reward = presentation.rewardChoices[index];
+      if (!reward) return;
+      if (reward.directChoiceId) {
+        const accepted = window.DungeonOnlineV3?.onForgeChoice?.(reward.directChoiceId);
+        if (!accepted) pushLog("That Forge choice is still resolving.", "warn");
+        return;
+      }
+      if (reward.replacementChoices.length > 0) {
+        presentation.pendingRewardIndex = index;
+        state.relicSwapPending = reward.relicId;
+        state.relicSwapAdditionalDiscards = 0;
+        pushLog("Relic inventory full. Choose the relic the Forge should replace.", "warn");
+        markUiDirty();
+        return;
+      }
+      pushLog("That Forge result is unavailable.", "bad");
+      return;
+    }`,
   ],
   [
 `      if (key === "escape" || key === "n") {
@@ -747,6 +793,12 @@ const productionGameReplacements = [
       const campaign = publicState?.campaign || {};
       state.player.potions = Math.max(0, Number(resources.potions) || 0);
       state.player.maxPotions = Math.max(1, Number(resources.maxPotions) || state.player.maxPotions);
+      if (Array.isArray(publicState?.build?.relics)) {
+        state.relics = publicState.build.relics.flatMap((relic) =>
+          Array.from({ length: Math.max(1, Number(relic.stacks) || 1) }, () => String(relic.relicId || relic.id || ""))
+        ).filter(Boolean);
+        normalizeRelicInventory();
+      }
       state.treasureMapFragments = Math.max(0, Number(campaign.treasureMapFragments) || 0);
       state.forcedNextRoomType = String(campaign.forcedNextRoomType || "");
       syncRankedStartDepthUnlocks(campaign);
@@ -1399,6 +1451,124 @@ const rankedMerchantBridge = `    beginRankedMerchantRequest() {
     enterRankedCamp(profile, offer) {`;
 if (!game.includes(rankedMerchantBridgeMarker)) throw new Error("Missing Ranked Merchant bridge marker.");
 game = game.replace(rankedMerchantBridgeMarker, rankedMerchantBridge);
+
+const rankedForgeBridgeMarker = `    enterRankedCamp(profile, offer) {`;
+const rankedForgeBridge = `    beginRankedForgeRequest() {
+      if (!state.onlineV3Ranked) return;
+      state.turnInProgress = true;
+      markUiDirty();
+    },
+    failRankedForgeRequest(message = "Forge connection failed. Try the choice again.") {
+      if (!state.onlineV3Ranked) return;
+      state.turnInProgress = false;
+      if (!state.onlineV3ForgePresentation && state.phase === "playing" && state.forge) {
+        state.forge.used = false;
+        state.forgePrompt = { step: "mode" };
+      }
+      pushLog(String(message || "Forge connection failed. Try the choice again."), "bad");
+      markUiDirty();
+    },
+    enterRankedForge(publicState, offer, context = {}) {
+      if (!state.onlineV3Ranked || state.roomType !== "forge") return false;
+      const available = Array.isArray(offer?.choices)
+        ? offer.choices.filter((choice) => choice?.status === "available")
+        : [];
+      const sourceId = String(offer?.sourceId || "");
+      const mode = ["temper", "transmute"].includes(String(context.mode || ""))
+        ? String(context.mode)
+        : sourceId.includes("transmute") ? "transmute" : "temper";
+      const sacrificeRelicId = mode === "transmute" ? String(context.sacrificeRelicId || "") : "";
+      const rewardGroups = new Map();
+      let leaveChoiceId = "";
+      for (const choice of available) {
+        const data = choice.publicData && typeof choice.publicData === "object"
+          ? choice.publicData
+          : choice;
+        if (data.action === "leave") {
+          leaveChoiceId = String(choice.choiceId || leaveChoiceId);
+          continue;
+        }
+        if (mode === "temper" && data.action !== "temper") continue;
+        if (mode === "transmute") {
+          if (data.action !== "transmute") continue;
+          if (sacrificeRelicId && String(data.sacrificeRelicId || "") !== sacrificeRelicId) continue;
+        }
+        const relicId = String(mode === "transmute" ? data.resultRelicId : data.relicId);
+        const relic = getRelicById(relicId);
+        if (!relic) continue;
+        if (!rewardGroups.has(relicId)) {
+          rewardGroups.set(relicId, {
+            relicId,
+            relic,
+            directChoiceId: "",
+            replacementChoices: []
+          });
+        }
+        const group = rewardGroups.get(relicId);
+        const removalRelicIds = (Array.isArray(data.removals) ? data.removals : [])
+          .map((entry) => String(entry?.relicId || ""))
+          .filter(Boolean);
+        if (data.replacement === true || removalRelicIds.length > 0) {
+          group.replacementChoices.push({
+            choiceId: String(choice.choiceId || ""),
+            removalRelicIds
+          });
+        } else {
+          group.directChoiceId = String(choice.choiceId || "");
+        }
+      }
+      const rewardChoices = Array.from(rewardGroups.values());
+      if (!rewardChoices.length || !leaveChoiceId) return false;
+      state.turnInProgress = false;
+      state.onlineV3ForgePresentation = {
+        mode,
+        sacrificeRelicId,
+        leaveChoiceId,
+        pendingRewardIndex: -1,
+        rewardChoices: rewardChoices.map((choice) => ({
+          relicId: choice.relicId,
+          directChoiceId: choice.directChoiceId,
+          replacementChoices: choice.replacementChoices
+        }))
+      };
+      state.forge.used = true;
+      state.forgePrompt = null;
+      state.forgeRewardMode = mode;
+      state.forgeTransmutePending = mode === "transmute" ? { sacrificedRelicId: sacrificeRelicId } : null;
+      state.legendarySwapPending = null;
+      state.relicSwapPending = null;
+      state.relicSwapAdditionalDiscards = 0;
+      state.relicDraft = rewardChoices.map((choice) => choice.relic);
+      state.startingRelicDraft = false;
+      state.phase = "relic";
+      syncBgmWithState();
+      pushLog(mode === "temper"
+        ? "Forge Temper: take the forged relic or leave it."
+        : "Forge Transmute: choose one replacement or keep the sacrificed relic.", "good");
+      markUiDirty();
+      return true;
+    },
+    completeRankedForge(publicState, context = {}) {
+      if (!state.onlineV3Ranked) return;
+      const mode = String(context.mode || state.onlineV3ForgePresentation?.mode || "forge");
+      state.turnInProgress = false;
+      state.onlineV3ForgePresentation = null;
+      state.forgePrompt = null;
+      state.forgeRewardMode = "";
+      state.forgeTransmutePending = null;
+      state.legendarySwapPending = null;
+      state.relicSwapPending = null;
+      state.relicSwapAdditionalDiscards = 0;
+      state.relicDraft = null;
+      state.startingRelicDraft = false;
+      state.phase = "playing";
+      syncBgmWithState();
+      pushLog(mode === "transmute" ? "Forge Transmute complete." : "Forge Temper complete.", "good");
+      markUiDirty();
+    },
+    enterRankedCamp(profile, offer) {`;
+if (!game.includes(rankedForgeBridgeMarker)) throw new Error("Missing Ranked Forge bridge marker.");
+game = game.replace(rankedForgeBridgeMarker, rankedForgeBridge);
 const rankedSetNextMarker = `    setNextDirective(directive) {
       state.onlineV3NextDirective = directive;`;
 if (!game.includes(rankedSetNextMarker)) throw new Error("Missing Ranked setNextDirective marker.");
