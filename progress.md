@@ -1490,3 +1490,23 @@ Updated next good targets
 - Selected a fail-closed HD-only architecture: HD markers before first paint, no graphics selector or preference module, no Classic startup preloads/fallback, and no Classic presentation assets in the Pages bundle.
 - Shared gameplay, saves, Online protocol, music, sound effects, historical fixtures, and physical Classic source files remain unchanged.
 - Design saved in `docs/superpowers/specs/2026-08-09-hd-only-v082-design.md`; implementation will follow TDD and bump the live game version to `v0.8.2`.
+
+## 2026-08-10 - HD-only v0.8.2 implementation
+
+- Retired the Classic presentation path from live gameplay: the document starts
+  in HD, the canvas is 576 x 576, and the graphics preference/toggle is gone.
+- The HD controller now stays HD before, during, and after asset loading. Missing
+  critical assets fail closed on the boot screen instead of invoking Classic.
+- Removed all Classic sprite preload calls and active Classic UI-builder paths;
+  the old source definitions and physical files remain only as unreachable data.
+- Pages builds now omit assets/logo.png, all assets/sprite/**, and
+  render/graphics-preference.js.
+- Bumped the live game version and active Online/Ranked fallbacks to v0.8.2.
+- Verification passed: focused HD/build/archive tests 86/86, current-tree boot
+  and HD browser scenarios, direct HD startup/scenario/reload with zero retired
+  asset requests, and the clean committed protected baseline.
+- Boot and HD screenshots were visually inspected; no mixed Classic/HD frame,
+  missing game chrome, or layout regression was observed.
+- verify:guard and verify:phase were each run once and stopped at the known
+  generated source-manifest.generated.json drift; no generated ruleset or
+  production binding was changed. No push, deploy, merge, or activation occurred.
