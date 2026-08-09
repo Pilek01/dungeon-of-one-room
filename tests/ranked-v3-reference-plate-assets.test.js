@@ -124,6 +124,30 @@ function brightFraction(image, [left, top, right, bottom], threshold = 100) {
   return bright / count;
 }
 
+function brightPixelBounds(image, [left, top, right, bottom], threshold = 160) {
+  let minX = right;
+  let minY = bottom;
+  let maxX = left - 1;
+  let maxY = top - 1;
+  let count = 0;
+  let ySum = 0;
+  for (let y = top; y < bottom; y += 1) {
+    for (let x = left; x < right; x += 1) {
+      const offset = (y * image.width + x) * image.channels;
+      const luminance = image.pixels[offset] * 0.2126 + image.pixels[offset + 1] * 0.7152 + image.pixels[offset + 2] * 0.0722;
+      if (luminance <= threshold) continue;
+      minX = Math.min(minX, x);
+      minY = Math.min(minY, y);
+      maxX = Math.max(maxX, x);
+      maxY = Math.max(maxY, y);
+      count += 1;
+      ySum += y;
+    }
+  }
+  assert.ok(maxX >= minX && maxY >= minY, "ornamental numeral region must contain bright pixels");
+  return { minX, minY, maxX, maxY, width: maxX - minX + 1, height: maxY - minY + 1, count, centerY: ySum / count };
+}
+
 test("Ranked plates retain the ornamental skull medallions instead of blank mounts", () => {
   const leaderboard = readPngPixels(path.join(ROOT, PLATES[0]));
   const leaderboardMounts = [
@@ -155,4 +179,15 @@ test("Leaderboard plate permanently carries the ornamental 2, 1, and 3 plaque nu
       `rank ${numeral.rank} plaque must contain its baked ornamental numeral`
     );
   }
+});
+
+test("Leaderboard champion and third-place numerals have optically balanced engraved contours", () => {
+  const leaderboard = readPngPixels(path.join(ROOT, PLATES[0]));
+  const champion = brightPixelBounds(leaderboard, [749, 389, 788, 466]);
+  const thirdPlace = brightPixelBounds(leaderboard, [1092, 412, 1133, 464]);
+
+  assert.ok(champion.centerY <= 417, `rank 1 highlight mass sits too low: ${JSON.stringify(champion)}`);
+  assert.ok(champion.count <= 135, `rank 1 contour is too heavy: ${JSON.stringify(champion)}`);
+  assert.ok(thirdPlace.maxY >= 452, `rank 3 contour ends too high: ${JSON.stringify(thirdPlace)}`);
+  assert.ok(thirdPlace.height >= 40, `rank 3 contour is too short: ${JSON.stringify(thirdPlace)}`);
 });

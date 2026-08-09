@@ -5716,12 +5716,15 @@ body.ranked-v3-modal-open #screenOverlay {
   body:has(#game.graphics-hd) .ranked-v3-inspect-header::before { left: 44.7%; }
   body:has(#game.graphics-hd) .ranked-v3-inspect-header::after { left: 56.8%; }
   body:has(#game.graphics-hd) .ranked-v3-inspect-rank {
-    top: 76%;
+    top: 73.5%;
     left: 18.3%;
     width: 6%;
-    color: #d3ad70;
-    font: 600 1.15cqw/1 Georgia, serif;
+    color: #dfc58f;
+    font: 700 1.15cqw/1 "Copperplate Gothic Bold", "Palatino Linotype", Georgia, serif;
+    font-variant-numeric: lining-nums tabular-nums;
+    letter-spacing: .02em;
     text-align: center;
+    text-shadow: 0 1px 0 #241609, 0 0 .12cqw rgb(180 119 45 / 34%);
   }
   body:has(#game.graphics-hd) .ranked-v3-inspect-player {
     top: 10%;
@@ -6022,7 +6025,7 @@ body.ranked-v3-modal-open #screenOverlay {
   }
 
   body:has(#game.graphics-hd) .ranked-v3-inspect-rank {
-    font-size: 1.65cqw;
+    font-size: 2.4cqw;
   }
   body:has(#game.graphics-hd) .ranked-v3-inspect-player {
     font-size: 3.35cqw;

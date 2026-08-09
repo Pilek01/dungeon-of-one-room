@@ -1788,7 +1788,20 @@ ${fatalTestHookAnchor}`;
       const terminalTitleBox = terminalTitle.getBoundingClientRect();
       const terminalEyebrowBox = terminalEyebrow.getBoundingClientRect();
       const terminalCauseBox = terminalCause.getBoundingClientRect();
+      const inspectRank = document.querySelector(".ranked-v3-inspect-rank");
+      const inspectRankBox = inspectRank.getBoundingClientRect();
+      const originalRankText = inspectRank.textContent;
+      inspectRank.textContent = "73";
+      const twoDigitFits = inspectRank.scrollWidth <= inspectRank.clientWidth;
+      inspectRank.textContent = originalRankText;
       return {
+        rank: {
+          text: inspectRank.textContent,
+          fontSize: Number.parseFloat(getComputedStyle(inspectRank).fontSize),
+          boxWidth: inspectRankBox.width,
+          boxHeight: inspectRankBox.height,
+          twoDigitFits
+        },
         playerFontSize: fontSize(".ranked-v3-inspect-player"),
         scoreFontSize: fontSize(".ranked-v3-inspect-score"),
         statFontSize: fontSize(".ranked-v3-inspect-depth"),
@@ -1976,6 +1989,11 @@ ${fatalTestHookAnchor}`;
       path: path.join(ARTIFACT_ROOT, "ranked-leaderboard-detail.png"),
       fullPage: true
     });
+    assert.equal(detailPlateAudit.rank.text, "1", JSON.stringify(detailPlateAudit));
+    assert.ok(detailPlateAudit.rank.fontSize >= 34, JSON.stringify(detailPlateAudit));
+    assert.ok(detailPlateAudit.rank.boxHeight >= 34, JSON.stringify(detailPlateAudit));
+    assert.ok(detailPlateAudit.rank.boxWidth >= 45, JSON.stringify(detailPlateAudit));
+    assert.equal(detailPlateAudit.rank.twoDigitFits, true, JSON.stringify(detailPlateAudit));
     assert.ok(detailPlateAudit.playerFontSize >= 60, JSON.stringify(detailPlateAudit));
     assert.ok(detailPlateAudit.scoreFontSize >= 45, JSON.stringify(detailPlateAudit));
     assert.ok(detailPlateAudit.statFontSize >= 18.5, JSON.stringify(detailPlateAudit));
