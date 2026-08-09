@@ -493,6 +493,36 @@ async function chooseRelicWithoutFatalPrevention(page) {
   await page.locator(".ranked-v3-choice-relic").nth(choiceIndex).click();
 }
 
+async function chooseForgeRewardWithCanonicalReplacement(page, diagnostics) {
+  await page.keyboard.press("1");
+  await page.waitForFunction(() => {
+    const session = window.DungeonOnlineV3?.getSessionState?.() || "";
+    const replacement = [...document.querySelectorAll("#screenOverlay .relic-draft-grid-inventory [data-relic-key]")]
+      .some((element) => element.getClientRects().length > 0);
+    return session === "ENTERING_NEXT_ROOM" || replacement;
+  }, null, { timeout: 20_000 });
+
+  const session = await page.evaluate(() => window.DungeonOnlineV3?.getSessionState?.() || "");
+  if (session !== "ENTERING_NEXT_ROOM") {
+    const replacement = await page.evaluate(() => {
+      const state = window.DungeonOnlineV3?.getSnapshot?.()?.publicState;
+      const choice = state?.metaTransactionOffer?.choices?.find((candidate) =>
+        Array.isArray(candidate?.removals) && candidate.removals[0]?.relicId
+      );
+      const relicId = choice?.removals?.[0]?.relicId || "";
+      const index = state?.build?.relics?.findIndex((entry) => entry?.relicId === relicId) ?? -1;
+      const key = index === 9 ? "0" : index >= 0 ? String(index + 1) : "";
+      const control = key ? document.querySelector(`#screenOverlay [data-relic-key="${key}"]`) : null;
+      return { relicId, key, visible: Boolean(control?.getClientRects().length) };
+    });
+    assert.ok(replacement.relicId, JSON.stringify(replacement));
+    assert.match(replacement.key, /^(?:[1-9]|0)$/u, JSON.stringify(replacement));
+    assert.equal(replacement.visible, true, JSON.stringify(replacement));
+    await page.keyboard.press(replacement.key);
+  }
+  await sessionState(page, "ENTERING_NEXT_ROOM", diagnostics);
+}
+
 async function waitForStartingRelic(page, label) {
   let timedOut = false;
   try {
@@ -1109,8 +1139,7 @@ ${fatalTestHookAnchor}`;
       fullPage: true
     });
 
-    await page.keyboard.press("1");
-    await sessionState(page, "ENTERING_NEXT_ROOM", diagnostics);
+    await chooseForgeRewardWithCanonicalReplacement(page, diagnostics);
     await crossVisiblePortal(page, forgeRoom.depth + 1);
     assert.equal(
       await page.evaluate(() => window.__DUNGEON_TEST_TOGGLE_OBSERVER_BOT?.()),

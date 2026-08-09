@@ -238,6 +238,14 @@ test("deployed test bot remains password-gated and test music is muted", async (
   assert.match(headed, /dungeonOneRoomAudioMuted/u);
 });
 
+test("headed Forge reward resolves the canonical replacement before leaving the room", async () => {
+  const headed = await readFile(new URL("../../../scripts/online-v3-ranked-headed.mjs", import.meta.url), "utf8");
+
+  assert.match(headed, /async function chooseForgeRewardWithCanonicalReplacement\(page, diagnostics\)/u);
+  assert.match(headed, /metaTransactionOffer[\s\S]*removals[\s\S]*relicId[\s\S]*data-relic-key/u);
+  assert.match(headed, /chooseForgeRewardWithCanonicalReplacement\(page, diagnostics\)[\s\S]*crossVisiblePortal/u);
+});
+
 test("Ranked Observer Bot owns canonical offers and waits for the full boundary", async () => {
   const builder = await readFile(new URL("../../../scripts/build-pages-v3.mjs", import.meta.url), "utf8");
   const runtime = await readFile(new URL("../../../online-v3/ranked-v3-runtime.js", import.meta.url), "utf8");
