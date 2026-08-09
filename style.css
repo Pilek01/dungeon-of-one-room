@@ -108,6 +108,14 @@ button:focus-visible,
   letter-spacing: 0.5px;
 }
 
+.boot-build-metadata {
+  margin: -4px 0 0;
+  color: #454b58;
+  font-family: "Courier Prime", "Cascadia Mono", "IBM Plex Mono", monospace;
+  font-size: clamp(9px, 1vw, 11px);
+  letter-spacing: 0.35px;
+}
+
 @keyframes bootPulse {
   0% { opacity: 0.6; }
   50% { opacity: 1; }

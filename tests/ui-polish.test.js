@@ -6,6 +6,15 @@ const path = require("node:path");
 const root = path.join(__dirname, "..");
 const css = fs.readFileSync(path.join(root, "style.css"), "utf8");
 const html = fs.readFileSync(path.join(root, "index.html"), "utf8");
+const game = fs.readFileSync(path.join(root, "game.js"), "utf8");
+
+test("boot screen exposes version, commit, and commit date below the author credit", () => {
+  assert.match(html, /Made by Kamil Matysek[\s\S]*id="bootBuildMetadata"/u);
+  assert.match(css, /\.boot-build-metadata\s*\{/u);
+  assert.match(game, /DUNGEON_BUILD_COMMIT/u);
+  assert.match(game, /DUNGEON_BUILD_COMMIT_DATE/u);
+  assert.match(game, /`\$\{GAME_VERSION\} · \$\{GAME_BUILD_COMMIT\} · \$\{GAME_BUILD_COMMIT_DATE\}`/u);
+});
 
 test("menu structure and original soundtrack-facing boot copy remain intact", () => {
   assert.match(html, /id="bootScreen"/);

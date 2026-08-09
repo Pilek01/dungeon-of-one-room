@@ -72,6 +72,16 @@
     const normalized = typeof raw === "string" ? raw.trim() : "";
     return normalized || "dev";
   })();
+  const GAME_BUILD_COMMIT = (() => {
+    const raw = typeof window !== "undefined" ? window.DUNGEON_BUILD_COMMIT : "";
+    const normalized = typeof raw === "string" ? raw.trim() : "";
+    return normalized || "dev";
+  })();
+  const GAME_BUILD_COMMIT_DATE = (() => {
+    const raw = typeof window !== "undefined" ? window.DUNGEON_BUILD_COMMIT_DATE : "";
+    const normalized = typeof raw === "string" ? raw.trim() : "";
+    return normalized || "working tree";
+  })();
   const MAX_DEPTH = 100;
   const START_DEPTH_CHECKPOINTS = Object.freeze([11, 21, 31, 41, 51, 61, 71, 81, 91]);
   const START_DEPTH_UNLOCK_BOSS_DEPTHS = Object.freeze([10, 20, 30, 40, 50, 60, 70, 80, 90]);
@@ -994,6 +1004,7 @@
   const mutatorsEl = document.getElementById("mutators");
   const logEl = document.getElementById("log");
   const appVersionEl = document.getElementById("appVersion");
+  const bootBuildMetadataEl = document.getElementById("bootBuildMetadata");
   const bootScreenEl = document.getElementById("bootScreen");
   const gameAppEl = document.getElementById("gameApp");
   const layoutEl = document.getElementById("layout");
@@ -1051,6 +1062,9 @@
 
   if (appVersionEl) {
     appVersionEl.textContent = `Version ${GAME_VERSION}`;
+  }
+  if (bootBuildMetadataEl) {
+    bootBuildMetadataEl.textContent = `${GAME_VERSION} · ${GAME_BUILD_COMMIT} · ${GAME_BUILD_COMMIT_DATE}`;
   }
   window.DUNGEON_GAME_VERSION = GAME_VERSION;
 

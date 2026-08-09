@@ -161,6 +161,19 @@ body.graphics-hd-ui .boot-credits {
   white-space: nowrap;
 }
 
+body.graphics-hd-ui .boot-build-metadata {
+  position: absolute;
+  bottom: clamp(15px, 1.6vh, 19px);
+  left: 50%;
+  margin: 0;
+  color: #484540;
+  font: 400 clamp(0.48rem, 0.62vw, 0.56rem)/1.2 "Courier Prime", "Cascadia Mono", monospace;
+  letter-spacing: 0.8px;
+  text-shadow: 0 1px #000;
+  transform: translateX(-50%);
+  white-space: nowrap;
+}
+
 @keyframes hdBootGateReveal {
   from { opacity: 0; filter: saturate(0.4) contrast(1.15) brightness(0.34); transform: scale(1.06); }
   to { opacity: 0.92; filter: saturate(0.7) contrast(1.08) brightness(0.76); transform: scale(1.015); }
