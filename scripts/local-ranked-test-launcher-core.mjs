@@ -451,7 +451,10 @@ export async function listLocalCandidates(options = {}) {
     ["for-each-ref", "refs/heads", "--format=%(refname:short)%00%(objectname)%00%(committerdate:iso-strict)"],
     commandOptions
   );
-  const branch = chooseNewestBranch(parseBranchTips(branchResult?.stdout), { excludedBranchName });
+  const branches = parseBranchTips(branchResult?.stdout);
+  const branch = excludedBranchName === "main"
+    ? branches.find((candidate) => candidate.name === "main") || chooseNewestBranch(branches)
+    : chooseNewestBranch(branches, { excludedBranchName });
   const historyResult = await execFile(
     "git",
     ["log", branch.name, "-5", "--format=%H%x00%cI%x00%s%x00"],

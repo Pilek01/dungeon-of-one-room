@@ -5,6 +5,7 @@ import test from "node:test";
 import {
   chooseNewestBranch,
   launcherPaths,
+  listLocalCandidates,
   parseBranchTips,
   parseCommitHistory,
   selectListedCommit
@@ -30,6 +31,31 @@ test("chooses the newest local branch after excluding the launcher host branch",
   );
 });
 
+test("launcher running from main selects main even when a safety branch is newer", async () => {
+  const calls = [];
+  const result = await listLocalCandidates({
+    repoRoot: path.resolve("D:/repo"),
+    async execFile(command, args) {
+      calls.push([command, args]);
+      if (args[0] === "branch") return { stdout: "main\n" };
+      if (args[0] === "for-each-ref") {
+        return {
+          stdout: [
+            "main", HASH_A, "2026-08-03T12:00:00Z",
+            "codex/safety-pre-consolidation", HASH_B, "2026-08-04T12:00:00Z"
+          ].join("\0")
+        };
+      }
+      if (args[0] === "log") {
+        return { stdout: [HASH_A, "2026-08-03T12:00:00Z", "main commit"].join("\0") };
+      }
+      throw new Error(`Unexpected git command: ${args.join(" ")}`);
+    }
+  });
+
+  assert.equal(result.branch.name, "main");
+  assert.deepEqual(calls.at(-1)[1].slice(0, 2), ["log", "main"]);
+});
 test("breaks equal branch timestamps by full branch name", () => {
   const branches = parseBranchTips([
     "codex/zeta", HASH_A, "2026-08-03T12:00:00Z",
