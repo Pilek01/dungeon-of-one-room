@@ -2019,6 +2019,9 @@
     hasContinueRun: false,
     leaderboardModalOpen: false,
     practiceRecordDetailRunId: "",
+    practiceRecordPage: 1,
+    practiceRecordFocusToken: null,
+    practiceRecordReturnFocus: null,
     leaderboardSortMode: "score", // "score" | "depth"
     leaderboardScope: "current", // "current" | "legacy"
     nameModalOpen: false,
@@ -3967,22 +3970,26 @@
   }
 
   function openTerminalRecords() {
+    const opener = document.activeElement;
     const ranked = Boolean(state.onlineV3Ranked);
     enterMenu();
     if (ranked) {
-      window.DungeonOnlineV3?.openLeaderboard?.();
+      window.DungeonOnlineV3?.openLeaderboard?.(opener);
       return;
     }
-    openPracticeRecordsModal();
+    openPracticeRecordsModal(opener);
   }
 
   function openLeaderboardModal() {
-    openPracticeRecordsModal();
+    openPracticeRecordsModal(document.activeElement);
   }
 
-  function openPracticeRecordsModal() {
+  function openPracticeRecordsModal(opener = null) {
     state.leaderboardModalOpen = true;
     state.practiceRecordDetailRunId = "";
+    state.practiceRecordPage = 1;
+    state.practiceRecordFocusToken = null;
+    state.practiceRecordReturnFocus = opener && opener !== document.body ? opener : null;
     state.leaderboardSortMode = "score";
     state.leaderboardScope = "current";
     markUiDirty();
@@ -3990,13 +3997,23 @@
 
   function closeLeaderboardModal() {
     if (!state.leaderboardModalOpen) return;
+    const returnFocus = state.practiceRecordReturnFocus;
     state.leaderboardModalOpen = false;
     state.practiceRecordDetailRunId = "";
+    state.practiceRecordFocusToken = null;
+    state.practiceRecordReturnFocus = null;
     markUiDirty();
+    requestAnimationFrame(() => {
+      if (returnFocus && returnFocus.isConnected !== false && typeof returnFocus.focus === "function") {
+        returnFocus.focus();
+      }
+    });
   }
 
   function toggleLeaderboardSortMode() {
     state.leaderboardSortMode = state.leaderboardSortMode === "score" ? "depth" : "score";
+    state.practiceRecordPage = 1;
+    state.practiceRecordFocusToken = null;
     markUiDirty();
   }
 
@@ -22663,12 +22680,17 @@
   function renderPracticeRecordsMount() {
     const mount = screenOverlayEl.querySelector("[data-practice-record-archive]");
     const adapter = window.DungeonPracticeRecordsAdapter;
-    const archiveUi = window.DungeonRecordArchiveUi;
-    if (!mount || !adapter || !archiveUi) return;
+    const leaderboardUi = window.DungeonRankedV3LeaderboardUi;
+    if (!mount || !adapter || !leaderboardUi) return;
     const options = practiceArchiveOptions();
+    const listModel = adapter.createListModel(state.leaderboard, options);
     const selected = state.practiceRecordDetailRunId
       ? adapter.findRankedEntry(state.leaderboard, state.practiceRecordDetailRunId, options)
       : null;
+    if (state.practiceRecordDetailRunId && !selected) {
+      state.practiceRecordDetailRunId = "";
+      state.practiceRecordFocusToken = null;
+    }
     const describeRelic = (id) => {
       const relic = getRelicById(id);
       return {
@@ -22682,34 +22704,53 @@
         ? { key: mutator.key, name: mutator.name, bonus: mutator.bonus, drawback: mutator.drawback }
         : { name: String(id || "Unknown mutator") };
     };
-    const content = selected
-      ? archiveUi.renderDetail(document, adapter.createDetailModel(selected, {
+    const detailOpen = Boolean(selected);
+    let content;
+    if (detailOpen) {
+      const payload = adapter.createReferencePlatePayload(selected, {
         rank: selected.rank,
         describeRelic,
         describeMutator
-      }), {
-        backLabel: "Back to Practice Records",
+      });
+      const detail = leaderboardUi.createDetailViewModel(payload);
+      content = leaderboardUi.renderDetail(document, detail, {
         onBack() {
           state.practiceRecordDetailRunId = "";
           markUiDirty();
-        }
-      })
-      : archiveUi.renderList(document, adapter.createListModel(state.leaderboard, options), {
-        onInspect(row) {
-          state.practiceRecordDetailRunId = row.runId;
-          markUiDirty();
-        }
+        },
+        onClose: closeLeaderboardModal
       });
+    } else {
+      const presentation = leaderboardUi.createLeaderboardPresentation(listModel.rows, state.practiceRecordPage);
+      state.practiceRecordPage = presentation.page;
+      content = leaderboardUi.renderList(document, presentation, {
+        onOpen(runId, action) {
+          state.practiceRecordDetailRunId = String(runId || "");
+          state.practiceRecordFocusToken = leaderboardUi.createReferencePlateFocusToken(runId, action);
+          markUiDirty();
+        },
+        onPage(page) {
+          state.practiceRecordPage = page;
+          state.practiceRecordFocusToken = null;
+          markUiDirty();
+        },
+        onClose: closeLeaderboardModal
+      });
+    }
     mount.replaceChildren(content);
+    requestAnimationFrame(() => {
+      if (detailOpen) {
+        content.querySelector?.('[data-record-nav-region="equipment"], [data-record-nav-region="detail-action"]')?.focus?.();
+        return;
+      }
+      leaderboardUi.focusReferencePlateAction(content, state.practiceRecordFocusToken || {}, true);
+    });
   }
 
   function buildPracticeRecordsModalHtml() {
-    const detailOpen = Boolean(state.practiceRecordDetailRunId);
     return [
-      '<div class="overlay-card overlay-card-wide overlay-card-leaderboard record-archive-v2 record-archive-shell">',
-      '<header class="record-archive-masthead"><span class="record-archive-kicker">Local Hall of Descent</span><h2 class="overlay-title">Practice Records</h2><p class="overlay-sub">Completed local campaigns | canonical Practice score</p></header>',
-      '<div class="record-archive-v2" data-practice-record-archive></div>',
-      '<p class="overlay-hint">' + (detailOpen ? 'Esc/Enter - back to records' : 'T - sort Points/Depth | Esc - close') + '</p>',
+      '<div class="ranked-v3-card ranked-v3-card-reference-plate">',
+      '<div class="ranked-v3-body ranked-v3-body-reference-plate" data-practice-record-archive></div>',
       '</div>'
     ].join("");
   }
@@ -22954,7 +22995,8 @@
     }
 
     if (state.leaderboardModalOpen && state.phase === "menu") {
-      screenOverlayEl.className = "screen-overlay visible";
+      screenOverlayEl.className = "screen-overlay visible ranked-v3-overlay";
+      screenOverlayEl.dataset.view = "reference-plate";
       screenOverlayEl.innerHTML = buildPracticeRecordsModalHtml();
       renderPracticeRecordsMount();
       return;
@@ -31757,26 +31799,16 @@
     }
 
     if (state.leaderboardModalOpen && state.phase === "menu") {
-      if (state.practiceRecordDetailRunId && (key === "escape" || isConfirm)) {
+      if (state.practiceRecordDetailRunId && key === "escape") {
         state.practiceRecordDetailRunId = "";
         markUiDirty();
         return;
       }
-      if (key === "t" || key === "tab") {
+      if (key === "t") {
         toggleLeaderboardSortMode();
         return;
       }
-      if (key === "arrowleft") {
-        state.leaderboardSortMode = "score";
-        markUiDirty();
-        return;
-      }
-      if (key === "arrowright") {
-        state.leaderboardSortMode = "depth";
-        markUiDirty();
-        return;
-      }
-      if (key === "escape" || isConfirm) {
+      if (key === "escape") {
         closeLeaderboardModal();
         return;
       }

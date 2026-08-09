@@ -5,6 +5,7 @@ const test = require("node:test");
 
 const gameSource = fs.readFileSync(path.resolve(__dirname, "..", "game.js"), "utf8");
 const practiceAdapterSource = fs.readFileSync(path.resolve(__dirname, "..", "practice-records-adapter.js"), "utf8");
+const rankedRuntimeSource = fs.readFileSync(path.resolve(__dirname, "..", "online-v3", "ranked-v3-runtime.js"), "utf8");
 
 function functionBody(name, nextName) {
   const start = gameSource.indexOf("  function " + name);
@@ -36,9 +37,55 @@ test("Practice records remain local and capture a terminal build chronicle", () 
 
 test("Practice and Ranked terminal routing keep canonical destinations and local presentation", () => {
   assert.match(gameSource, /state\.onlineV3Ranked[\s\S]*DungeonOnlineV3\?\.openLeaderboard/u);
+  assert.match(gameSource, /DungeonOnlineV3\?\.openLeaderboard\?\.\(opener\)/u);
   assert.match(gameSource, /Practice Records/u);
   assert.match(functionBody("buildPracticeRecordsModalHtml", "buildMutatorPanel"), /data-practice-record-archive/u);
   assert.doesNotMatch(practiceAdapterSource, /fetch\(|\/api\/v3\/leaderboard/u);
+});
+
+test("Practice mounts the canonical reference-plate lifecycle without the legacy renderer", () => {
+  const mount = functionBody("renderPracticeRecordsMount", "buildPracticeRecordsModalHtml");
+  const modal = functionBody("buildPracticeRecordsModalHtml", "buildMutatorPanel");
+  assert.match(mount, /DungeonRankedV3LeaderboardUi/u);
+  assert.match(mount, /createLeaderboardPresentation/u);
+  assert.match(mount, /renderList/u);
+  assert.match(mount, /renderDetail/u);
+  assert.doesNotMatch(mount, /DungeonRecordArchiveUi/u);
+  assert.match(gameSource, /screenOverlayEl\.className = "screen-overlay visible ranked-v3-overlay"/u);
+  assert.match(gameSource, /screenOverlayEl\.dataset\.view = "reference-plate"/u);
+  assert.match(modal, /ranked-v3-card-reference-plate/u);
+  assert.match(modal, /ranked-v3-body-reference-plate/u);
+  assert.doesNotMatch(modal, /record-archive-v2/u);
+  assert.match(gameSource, /practiceRecordPage:\s*1/u);
+  assert.match(gameSource, /practiceRecordFocusToken:\s*null/u);
+  assert.match(gameSource, /practiceRecordReturnFocus:\s*null/u);
+  assert.match(mount, /createReferencePlateFocusToken/u);
+  assert.match(mount, /focusReferencePlateAction/u);
+});
+
+test("Practice archive keeps T as its only global sort shortcut and remains local", () => {
+  const keydownStart = gameSource.indexOf('window.addEventListener("keydown"');
+  const branchStart = gameSource.indexOf('if (state.leaderboardModalOpen && state.phase === "menu") {', keydownStart);
+  const branchEnd = gameSource.indexOf('if (state.phase === "menu" && state.menuNewGameConfirmOpen)', branchStart);
+  assert.ok(branchStart >= 0);
+  assert.ok(branchEnd > branchStart);
+  const practiceBranch = gameSource.slice(branchStart, branchEnd);
+  assert.match(practiceBranch, /key === "t"/u);
+  assert.doesNotMatch(practiceBranch, /key === "tab"|key === "arrowleft"|key === "arrowright"|isConfirm/u);
+  assert.doesNotMatch(functionBody("renderPracticeRecordsMount", "buildPracticeRecordsModalHtml"), /fetch\(|\/api\/v3\/leaderboard/u);
+});
+
+test("Online leaderboard owns external opener and canonical detail rank/focus lifecycle", () => {
+  assert.match(rankedRuntimeSource, /leaderboardReturnFocus/u);
+  assert.match(rankedRuntimeSource, /createReferencePlateFocusToken/u);
+  assert.match(rankedRuntimeSource, /focusReferencePlateAction/u);
+  assert.match(rankedRuntimeSource, /createLeaderboardPresentation\(leaderboardRows, leaderboardPage\)/u);
+  assert.match(rankedRuntimeSource, /renderList\(root\.document, presentation/u);
+  assert.match(rankedRuntimeSource, /renderDetail\(root\.document, detail/u);
+  assert.match(rankedRuntimeSource, /entry\.rank|rank:\s*selected/u);
+  assert.match(rankedRuntimeSource, /closeLeaderboardOverlay/u);
+  assert.match(rankedRuntimeSource, /openLeaderboard:\s*\(opener = null\) => openLeaderboard\(true, opener\)/u);
+  assert.doesNotMatch(rankedRuntimeSource, /if \(!leaderboardRows\.length\)\s*\{/u);
 });
 
 test("Practice adapter keeps records local, sorted, and explicit about legacy detail", () => {

@@ -21,6 +21,8 @@
   let leaderboardClient = null;
   let leaderboardRows = [];
   let leaderboardPage = 1;
+  let leaderboardReturnFocus = null;
+  let leaderboardFocusToken = null;
   let startedAt = 0;
   let pendingRoomSummary = null;
   let pendingExtractionMode = null;
@@ -200,34 +202,81 @@
     return leaderboardClient;
   }
 
-  function showLeaderboardRows() {
-    if (!leaderboardRows.length) {
-      ui.showMessage("Ranked Leaderboard", "No Ranked results have been published this season.", [
-        ui.button("Close", () => ui.hide())
-      ]);
+  function scheduleLeaderboardFocus(callback) {
+    if (typeof root.requestAnimationFrame === "function") {
+      root.requestAnimationFrame(callback);
       return;
     }
+    callback();
+  }
+
+  function connectedLeaderboardFocusTarget(target) {
+    return Boolean(target && target.isConnected !== false && typeof target.focus === "function");
+  }
+
+  function restoreLeaderboardFocus() {
+    const target = leaderboardReturnFocus;
+    leaderboardReturnFocus = null;
+    leaderboardFocusToken = null;
+    if (!connectedLeaderboardFocusTarget(target)) return;
+    scheduleLeaderboardFocus(() => {
+      if (connectedLeaderboardFocusTarget(target)) target.focus();
+    });
+  }
+
+  function closeLeaderboardOverlay() {
+    ui.hide();
+    restoreLeaderboardFocus();
+  }
+
+  function focusLeaderboardContent(content, detailOpen = false) {
+    scheduleLeaderboardFocus(() => {
+      if (detailOpen) {
+        const target = content.querySelector?.('[data-record-nav-region="equipment"], [data-record-nav-region="detail-action"]');
+        if (target) {
+          target.focus?.();
+          return;
+        }
+      }
+      leaderboardUi.focusReferencePlateAction(content, leaderboardFocusToken || {}, true);
+    });
+  }
+
+  function showLeaderboardRows() {
     const presentation = leaderboardUi.createLeaderboardPresentation(leaderboardRows, leaderboardPage);
     leaderboardPage = presentation.page;
     const content = leaderboardUi.renderList(root.document, presentation, {
-      onOpen: (runId) => openLeaderboardDetail(runId),
+      onOpen: (runId, action) => {
+        leaderboardFocusToken = leaderboardUi.createReferencePlateFocusToken(runId, action);
+        openLeaderboardDetail(runId);
+      },
       onPage: (page) => {
         leaderboardPage = page;
+        leaderboardFocusToken = null;
         showLeaderboardRows();
       },
-      onClose: () => ui.hide()
+      onClose: closeLeaderboardOverlay
     });
     ui.showContent(
       "Ranked Leaderboard",
-      "The strongest descents of the current season.",
+      leaderboardRows.length
+        ? "The strongest descents of the current season."
+        : "No Ranked results have been published this season.",
       content
     );
+    focusLeaderboardContent(content);
   }
-  async function openLeaderboard(reset = true) {
+
+  async function openLeaderboard(reset = true, opener = null) {
     try {
       if (reset) {
+        const active = connectedLeaderboardFocusTarget(opener) ? opener : root.document.activeElement;
+        if (active && active !== root.document.body && !ui.overlay.contains?.(active)) {
+          leaderboardReturnFocus = active;
+        }
         leaderboardRows = [];
         leaderboardPage = 1;
+        leaderboardFocusToken = null;
       }
       ui.showMessage("Ranked Leaderboard", "Loading season results...");
       leaderboardRows = await leaderboardUi.collectLeaderboardRows(
@@ -237,29 +286,36 @@
       showLeaderboardRows();
     } catch {
       ui.showMessage("Leaderboard unavailable", "Season results could not be loaded.", [
-        ui.button("Retry", () => openLeaderboard(true)),
-        ui.button("Close", () => ui.hide())
+        ui.button("Retry", () => openLeaderboard(false)),
+        ui.button("Close", closeLeaderboardOverlay)
       ]);
     }
   }
+
   async function openLeaderboardDetail(runId) {
     try {
       ui.showMessage("Build Chronicle", "Loading this descent...");
-      const detail = leaderboardUi.createDetailViewModel(
-        await createLeaderboardClient().detail(runId)
-      );
-      ui.showContent(
-        "Build Chronicle",
-        displaySeason(detail.season),
-        leaderboardUi.renderDetail(root.document, detail, {
-          onBack: showLeaderboardRows,
-          onClose: () => ui.hide()
-        })
-      );
+      const selected = leaderboardRows.find((row) => String(row?.runId || "") === String(runId || ""));
+      const payload = await createLeaderboardClient().detail(runId);
+      const sourceEntry = payload?.entry && typeof payload.entry === "object" ? payload.entry : {};
+      const entry = { ...(selected || {}), ...sourceEntry };
+      if (selected && (!Number.isInteger(entry.rank) || entry.rank <= 0)) {
+        entry.rank = selected.rank;
+      }
+      const detail = leaderboardUi.createDetailViewModel({
+        ...(payload && typeof payload === "object" ? payload : {}),
+        entry
+      });
+      const content = leaderboardUi.renderDetail(root.document, detail, {
+        onBack: showLeaderboardRows,
+        onClose: closeLeaderboardOverlay
+      });
+      ui.showContent("Build Chronicle", displaySeason(detail.season), content);
+      focusLeaderboardContent(content, true);
     } catch {
       ui.showMessage("Build details unavailable", "This Ranked build could not be loaded.", [
         ui.button("Back to leaderboard", showLeaderboardRows),
-        ui.button("Close", () => ui.hide())
+        ui.button("Close", closeLeaderboardOverlay)
       ]);
     }
   }
@@ -1405,7 +1461,7 @@
       return ordered.map((option, index) => ({ ...option, key: String(index + 1) }));
     },
     openRanked: openRankedEntry,
-    openLeaderboard: () => openLeaderboard(true)
+    openLeaderboard: (opener = null) => openLeaderboard(true, opener)
   });
 
   ui.entry.addEventListener("click", openRankedEntry);
@@ -1431,6 +1487,7 @@
     onCampStartRun,
     onElixirUsed: recordElixirUsage,
     unlockTestBot,
+    openLeaderboard: (opener = null) => openLeaderboard(true, opener),
     leaveToMainMenu: returnToPractice,
     onForgeMode,
     onForgeChoice,

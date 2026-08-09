@@ -5,6 +5,7 @@ const test = require("node:test");
 
 const css = fs.readFileSync(path.resolve(__dirname, "..", "style.css"), "utf8");
 const rankedUi = fs.readFileSync(path.resolve(__dirname, "..", "online-v3", "ranked-v3-ui.js"), "utf8");
+const rankedRuntime = fs.readFileSync(path.resolve(__dirname, "..", "online-v3", "ranked-v3-runtime.js"), "utf8");
 
 test("Ranked reference plates use isolated desktop artwork, focus, and reduced-motion rules", () => {
   assert.match(css, /ranked-leaderboard-desktop-plate\.png/u);
@@ -19,4 +20,7 @@ test("Ranked reference plates use isolated desktop artwork, focus, and reduced-m
   assert.match(css, /\.record-archive-ledger-row/u);
   assert.match(rankedUi, /ranked-v3-card-reference-plate/u);
   assert.match(rankedUi, /ranked-v3-reference-plate/u);
+  assert.match(rankedRuntime, /onClose:\s*closeLeaderboardOverlay/u);
+  assert.match(rankedRuntime, /onBack:\s*showLeaderboardRows/u);
+  assert.match(rankedRuntime, /focusReferencePlateAction/u);
 });
