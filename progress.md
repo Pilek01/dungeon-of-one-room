@@ -1482,3 +1482,11 @@ Updated next good targets
 - Verification: focused archive/client/style/gate tests 41/41 PASS; Practice save browser scenario PASS with zero API requests; direct Ranked lifecycle PASS with keyboard, tooltip geometry, rank 1/9/10/73, and opener-focus assertions.
 - Generated Practice and Ranked screenshots were visually inspected; final approval receipt remains intentionally pending explicit review of the six current artifacts.
 - No push, deployment, D1 change, ruleset activation, or production-state change was performed.
+
+## 2026-08-09 - HD-only v0.8.2 audit and design
+
+- Created isolated worktree `codex/hd-only-v082` from the completed canonical archive branch.
+- Confirmed the current boot eagerly requests more than 100 `assets/sprite/**` Classic images before HD initialization, honors persisted Classic preferences, and renders Classic while HD assets preload.
+- Selected a fail-closed HD-only architecture: HD markers before first paint, no graphics selector or preference module, no Classic startup preloads/fallback, and no Classic presentation assets in the Pages bundle.
+- Shared gameplay, saves, Online protocol, music, sound effects, historical fixtures, and physical Classic source files remain unchanged.
+- Design saved in `docs/superpowers/specs/2026-08-09-hd-only-v082-design.md`; implementation will follow TDD and bump the live game version to `v0.8.2`.
