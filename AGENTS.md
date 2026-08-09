@@ -70,6 +70,7 @@ Verification must be proportional to the changed behavior and paths.
   protocol, shared Ranked runtime, or cross-subsystem changes.
 - For a visible current-working-tree change, run exactly the affected browser
   scenario: `npm run verify:ui-current -- --scenario boot|hd|save`.
+- After every game code, content, or UI change, keep the boot-screen build identity visible and accurate in the form `GAME_VERSION · short commit · commit date`. The commit hash and date must come from the build checkout automatically; never hardcode or maintain them manually. Update `window.GAME_VERSION` only when the intended game version changes.
 - Run `npm run verify:baseline` (alias
   `verify:baseline-committed`) only when protected game, UI, loading,
   renderer, build integration, or baseline-sensitive paths changed, or for a
