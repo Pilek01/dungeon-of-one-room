@@ -38,8 +38,13 @@ const ALLOWED_PROTECTED_ONLINE_V3_PATHS = new Set([
   "assets/hd/objects/warden/portal-swirl06.png",
   "assets/hd/objects/warden/portal-swirl07.png",
   "assets/hd/objects/warden/portal-swirl08.png",
+  "assets/hd/ui/leaderboard/medallions-manifest.json",
+  "assets/hd/ui/leaderboard/skull-medallion-bronze.png",
+  "assets/hd/ui/leaderboard/skull-medallion-gold.png",
+  "assets/hd/ui/leaderboard/skull-medallion-silver.png",
   "assets/hd/ui/ranked-reference-plates/ranked-build-inspect-desktop-plate.png",
-  "assets/hd/ui/ranked-reference-plates/ranked-leaderboard-desktop-plate.png"
+  "assets/hd/ui/ranked-reference-plates/ranked-leaderboard-desktop-plate.png",
+  "style-hd-boot.css"
 ]);
 
 test("non-M4 Practice protected paths match f98820c outside explicitly allowed Online v3 assets", () => {
