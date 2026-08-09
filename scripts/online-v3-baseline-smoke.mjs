@@ -712,10 +712,13 @@ async function main() {
 
     const practiceApiBeforeRecords = diagnostics.apiRequests.length;
     await save.page.keyboard.press("2");
-    const practiceArchive = save.page.locator("[data-practice-record-archive] > .record-archive-v2.record-archive-list");
+    const practiceArchive = save.page.locator("[data-practice-record-archive] > .ranked-v3-reference-plate.ranked-v3-reference-plate--leaderboard.ranked-v3-leaderboard-list");
     await practiceArchive.waitFor({ state: "visible" });
-    assert.equal(await practiceArchive.locator(".record-archive-podium-card").count(), 3);
-    assert.equal(await practiceArchive.locator(".record-archive-ledger-row").count() >= 1, true);
+    assert.equal(await practiceArchive.locator(".ranked-v3-podium-slot").count(), 3);
+    const practiceLedgerSlots = await practiceArchive.locator(".ranked-v3-ledger-slot").count();
+    assert.equal(practiceLedgerSlots >= 1 && practiceLedgerSlots <= 7, true);
+    assert.equal(await practiceArchive.locator(".ranked-v3-reference-plate-title").count(), 1);
+    assert.equal(await practiceArchive.locator('[data-record-nav-region="footer"][data-record-action="close"]').count(), 1);
     const practiceListText = await practiceArchive.innerText();
     for (const name of ["Practice Crown", "Practice Silver", "Practice Bronze", "BaselineQA"]) {
       assert.match(practiceListText, new RegExp(name));
@@ -729,7 +732,7 @@ async function main() {
       return {
         viewport: { width: window.innerWidth, height: window.innerHeight },
         screenOverlay: box("#screenOverlay"),
-        shell: box(".record-archive-shell")
+        shell: box("#screenOverlay .ranked-v3-card-reference-plate")
       };
     });
     await writeJson("practice-records-desktop-layout.json", practiceDesktopLayout);
@@ -752,7 +755,7 @@ async function main() {
       return {
         viewport: { width: window.innerWidth, height: window.innerHeight },
         screenOverlay: box("#screenOverlay"),
-        shell: box(".record-archive-shell")
+        shell: box("#screenOverlay .ranked-v3-card-reference-plate")
       };
     });
     await writeJson("practice-records-narrow-layout.json", practiceNarrowLayout);
@@ -769,16 +772,50 @@ async function main() {
     );
     await save.page.screenshot({ path: path.join(ARTIFACT_ROOT, "practice-records-list-narrow.png"), fullPage: true });
     await save.page.setViewportSize({ width: 1920, height: 1080 });
-    await practiceArchive.locator('[data-record-rank="4"] .record-archive-name').click();
-    const practiceDetail = save.page.locator("[data-practice-record-archive] > .record-archive-v2.record-archive-detail");
+    const practiceNamesBeforeTab = await practiceArchive.locator('[data-record-nav-region="row"][data-record-action="name"]').evaluateAll((nodes) => nodes.map((node) => node.textContent?.trim() || ""));
+    await practiceArchive.locator('[data-record-nav-region="row"][data-record-action="name"]').first().focus();
+    await save.page.keyboard.press("Tab");
+    const tabFocus = await save.page.evaluate(() => ({
+      action: document.activeElement?.getAttribute("data-record-action") || "",
+      runId: document.activeElement?.getAttribute("data-record-run-id") || "",
+      canonicalVisible: Boolean(document.querySelector("[data-practice-record-archive] > .ranked-v3-reference-plate.ranked-v3-reference-plate--leaderboard"))
+    }));
+    assert.equal(tabFocus.action, "inspect");
+    assert.ok(tabFocus.runId);
+    assert.equal(tabFocus.canonicalVisible, true);
+    assert.deepEqual(
+      await practiceArchive.locator('[data-record-nav-region="row"][data-record-action="name"]').evaluateAll((nodes) => nodes.map((node) => node.textContent?.trim() || "")),
+      practiceNamesBeforeTab
+    );
+    const rank4Inspect = practiceArchive.locator('[data-record-rank="4"] [data-record-action="inspect"]');
+    const openedRunId = await rank4Inspect.getAttribute("data-record-run-id");
+    assert.ok(openedRunId);
+    await rank4Inspect.focus();
+    await save.page.keyboard.press("Enter");
+    const practiceDetail = save.page.locator("[data-practice-record-archive] > .ranked-v3-reference-plate.ranked-v3-reference-plate--inspect.ranked-v3-leaderboard-detail");
     await practiceDetail.waitFor({ state: "visible" });
     const practiceDetailText = await practiceDetail.innerText();
-    assert.match(practiceDetailText, /Rank #4[\s\S]*BaselineQA/iu);
-    assert.match(practiceDetailText, /Time Played|Run Chronicle/iu);
+    assert.equal(await practiceDetail.locator('.ranked-v3-inspect-rank[data-record-rank="4"]').count(), 1);
+    assert.match(practiceDetailText, /Inspect Build[\s\S]*BaselineQA/iu);
+    assert.match(practiceDetailText, /Run Chronicle/iu);
+    assert.equal(await practiceDetail.locator(".record-archive-v2").count(), 0);
     assert.doesNotMatch(practiceDetailText, /Rank #1/u);
     await save.page.screenshot({ path: path.join(ARTIFACT_ROOT, "practice-records-detail-rank4.png"), fullPage: true });
+    await practiceDetail.locator('[data-record-nav-region="detail-action"][data-record-action="back"]').focus();
+    await save.page.keyboard.press("Enter");
+    await practiceArchive.waitFor({ state: "visible" });
+    const restoredFocus = await save.page.evaluate(() => ({
+      action: document.activeElement?.getAttribute("data-record-action") || "",
+      runId: document.activeElement?.getAttribute("data-record-run-id") || ""
+    }));
+    assert.equal(restoredFocus.action, "inspect");
+    assert.equal(restoredFocus.runId, openedRunId);
+    await save.page.keyboard.press("ArrowDown");
+    assert.equal(await save.page.evaluate(() => document.activeElement?.getAttribute("data-record-action") || ""), "close");
+    await save.page.keyboard.press("Enter");
+    await practiceArchive.waitFor({ state: "hidden" });
     assert.equal(diagnostics.apiRequests.length, practiceApiBeforeRecords, "Practice Records emitted an /api request");
-    results.checks.practiceRecordArchive = { podium: 3, rank: 4, localApiRequests: 0 };
+    results.checks.practiceRecordArchive = { podium: 3, ledger: practiceLedgerSlots, rank: 4, localApiRequests: 0 };
     results.checks.finalDefeat = {
       phase: defeated.phase,
       prompt: defeated.prompts.finalGameOver,

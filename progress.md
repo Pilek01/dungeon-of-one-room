@@ -1471,3 +1471,14 @@ Updated next good targets
 - Focused tests passed 9/9; JavaScript syntax passed; Ranked headed lifecycle passed with zero unexpected console or page errors.
 - Final comparison evidence: output/verification/ranked-live-feedback-20260809/.
 - No commit, push, or deployment was performed.
+
+## 2026-08-09 - Canonical Practice archive and keyboard navigation
+
+- Practice Records now uses the same canonical Ranked leaderboard and Inspect plates while remaining fully local and preserving legacy records without invented details.
+- Added shared keyboard navigation for Name/Inspect rows, responsive equipment grids, mutators, Back, Previous Page, Next Page, and Close; native Tab remains available.
+- Added exact focus-token restoration across list/detail/page transitions and a safe body fallback when an external opener is unavailable.
+- Aligned Name and Depth headings with their live values, optically shifted single-digit Inspect ranks, and replaced small pseudo tooltips with one readable shared panel.
+- Migrated current-tree Practice and Ranked browser QA plus the six-image visual fingerprint to canonical sources and selectors.
+- Verification: focused archive/client/style/gate tests 41/41 PASS; Practice save browser scenario PASS with zero API requests; direct Ranked lifecycle PASS with keyboard, tooltip geometry, rank 1/9/10/73, and opener-focus assertions.
+- Generated Practice and Ranked screenshots were visually inspected; final approval receipt remains intentionally pending explicit review of the six current artifacts.
+- No push, deployment, D1 change, ruleset activation, or production-state change was performed.

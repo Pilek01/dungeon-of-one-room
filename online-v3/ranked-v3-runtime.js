@@ -218,9 +218,12 @@
     const target = leaderboardReturnFocus;
     leaderboardReturnFocus = null;
     leaderboardFocusToken = null;
-    if (!connectedLeaderboardFocusTarget(target)) return;
     scheduleLeaderboardFocus(() => {
-      if (connectedLeaderboardFocusTarget(target)) target.focus();
+      if (connectedLeaderboardFocusTarget(target)) {
+        target.focus();
+        return;
+      }
+      root.document.activeElement?.blur?.();
     });
   }
 
