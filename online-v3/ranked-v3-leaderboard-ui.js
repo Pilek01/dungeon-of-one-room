@@ -54,7 +54,7 @@
     }
     return Object.freeze(rows);
   }
-  const createDetailViewModel = (payload = {}) => { const entry = payload.entry && typeof payload.entry === "object" ? payload.entry : {}; return Object.freeze({ ...toLeaderboardRow(entry), season: String(entry.season || ""), build: Object.freeze(normalizeBuild(entry.build)), summary: Object.freeze(entry.summary && typeof entry.summary === "object" ? { ...entry.summary } : {}), detailsAvailable: entry.detailsAvailable !== false, detailsUnavailableNotice: String(entry.detailsUnavailableNotice || "") }); };
+  const createDetailViewModel = (payload = {}) => { const entry = payload.entry && typeof payload.entry === "object" ? payload.entry : {}; const hasValue = (key) => Object.hasOwn(entry, key) && entry[key] !== null && entry[key] !== undefined; return Object.freeze({ ...toLeaderboardRow(entry), season: String(entry.season || ""), build: Object.freeze(normalizeBuild(entry.build)), summary: Object.freeze(entry.summary && typeof entry.summary === "object" ? { ...entry.summary } : {}), detailsAvailable: entry.detailsAvailable !== false, detailsUnavailableNotice: String(entry.detailsUnavailableNotice || ""), presentationFields: Object.freeze({ score: hasValue("score"), depth: hasValue("depth"), gold: hasValue("gold") }) }); };
   function name(documentRef, row, open) {
     const node = element(documentRef, "button", "record-archive-name", row.playerName);
     node.type = "button";
@@ -249,6 +249,7 @@
     const cause = String(summary.presentationCause || "").trim();
     const isVictory = String(detail.outcome || "").toLowerCase() === "victory";
     const detailsAvailable = detail.detailsAvailable !== false;
+    const presentationFields = detail.presentationFields || {};
     const rootNode = element(documentRef, "section", `${SELECTORS.plate} ranked-v3-reference-plate--inspect ${SELECTORS.detail}`);
     rootNode.append(element(documentRef, "h2", "ranked-v3-reference-plate-title", "Inspect Build"));
     const art = element(documentRef, "div", SELECTORS.art);
@@ -262,20 +263,16 @@
       rank,
       element(documentRef, "h3", "ranked-v3-inspect-player", detail.playerName)
     );
-    if (detailsAvailable) {
-      header.append(
-        scoreDisplay(documentRef, "ranked-v3-inspect-score", detail.score, "p"),
-        element(documentRef, "p", "ranked-v3-inspect-score-label", "Final Score"),
-        inspectStat(documentRef, "ranked-v3-inspect-depth", "Depth", detail.depth),
-        inspectStat(documentRef, "ranked-v3-inspect-gold", "Gold", detail.gold)
-      );
-    }
+    if (detailsAvailable || presentationFields.score) header.append(scoreDisplay(documentRef, "ranked-v3-inspect-score", detail.score, "p"), element(documentRef, "p", "ranked-v3-inspect-score-label", "Final Score"));
+    if (detailsAvailable || presentationFields.depth) header.append(inspectStat(documentRef, "ranked-v3-inspect-depth", "Depth", detail.depth));
+    if (detailsAvailable || presentationFields.gold) header.append(inspectStat(documentRef, "ranked-v3-inspect-gold", "Gold", detail.gold));
     if (!detailsAvailable) {
       const notice = detail.detailsUnavailableNotice || "Build Chronicle unavailable.";
-      const unavailable = element(documentRef, "p", "ranked-v3-inspect-unavailable", notice);
+      const loadout = element(documentRef, "section", "ranked-v3-inspect-loadout");
+      loadout.append(element(documentRef, "p", "ranked-v3-inspect-unavailable", notice));
       const actions = element(documentRef, "nav", "ranked-v3-inspect-actions");
       actions.append(control(documentRef, "ranked-v3-inspect-back", "Back to Leaderboard", handlers.onBack));
-      overlay.append(header, unavailable, actions);
+      overlay.append(header, loadout, actions);
       rootNode.append(art, overlay);
       return rootNode;
     }

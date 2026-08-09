@@ -235,6 +235,8 @@ test("Inspect detail preserves explicit availability flags and renders a neutral
       runId: "legacy_practice",
       rank: 73,
       playerName: "Legacy Practice",
+      score: 88,
+      depth: 6,
       detailsAvailable: false,
       detailsUnavailableNotice: "Build Chronicle unavailable for this legacy Practice record."
     }
@@ -254,6 +256,12 @@ test("Inspect detail preserves explicit availability flags and renders a neutral
   assert.equal(visit(plate, (node) => hasClass(node, "ranked-v3-reference-plate-art")).length, 1);
   assert.equal(notice.length, 1);
   assert.equal(notice[0].textContent, unavailable.detailsUnavailableNotice);
+  const loadout = visit(plate, (node) => hasClass(node, "ranked-v3-inspect-loadout"));
+  assert.equal(loadout.length, 1);
+  assert.equal(visit(loadout[0], (node) => hasClass(node, "ranked-v3-inspect-unavailable")).length, 1);
+  assert.deepEqual(visit(plate, (node) => hasClass(node, "ranked-v3-score-value")).map((node) => node.textContent), ["88"]);
+  assert.match(allText(plate), /Depth.*6/isu);
+  assert.equal(visit(plate, (node) => hasClass(node, "ranked-v3-inspect-gold")).length, 0);
   assert.equal(visit(plate, (node) => hasClass(node, "ranked-v3-inspect-equipment-slot")).length, 0);
   assert.equal(visit(plate, (node) => hasClass(node, "ranked-v3-inspect-chronicle-row")).length, 0);
   assert.equal(visit(plate, (node) => hasClass(node, "ranked-v3-inspect-terminal")).length, 0);
