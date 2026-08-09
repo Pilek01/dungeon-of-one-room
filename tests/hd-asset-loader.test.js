@@ -672,5 +672,5 @@ test("UMD asset scripts attach in dependency order before the graphics controlle
   const gameSource = fs.readFileSync(path.join(projectRoot, "game.js"), "utf8");
   assert.match(gameSource, /loader:\s*window\.DungeonHDAssetLoader/);
   assert.match(gameSource, /manifest:\s*window\.DungeonHDAssetManifest\s*&&\s*window\.DungeonHDAssetManifest\.entries/);
-  assert.match(gameSource, /graphicsController\.initialize\(graphicsPreferenceApi\.isHd\(graphicsPreference\)\)/);
+  assert.match(gameSource, /graphicsController\.initialize\(\)/);
 });
