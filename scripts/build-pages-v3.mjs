@@ -23,6 +23,24 @@ if (!output.startsWith(outputRoot) || path.basename(output) !== outputName) {
   throw new Error(`Refusing to build Pages outside output/${outputName}.`);
 }
 
+function readGitBuildValue(args, label) {
+  let value = "";
+  try {
+    value = execFileSync(
+      "git",
+      ["-c", `safe.directory=${root.replaceAll("\\", "/")}`, ...args],
+      { cwd: root, encoding: "utf8" }
+    ).trim();
+  } catch (error) {
+    throw new Error(`Unable to read ${label} for the Pages build.`, { cause: error });
+  }
+  if (!value) throw new Error(`Git returned an empty ${label} for the Pages build.`);
+  return value;
+}
+
+const buildCommit = readGitBuildValue(["rev-parse", "--short=7", "HEAD"], "commit hash");
+const buildCommitDate = readGitBuildValue(["show", "-s", "--format=%cs", "HEAD"], "commit date");
+
 const observerBotConfig = observerBotReleaseConfig(process.env, target);
 const visualApproval = target === "release" ? await verifyRecordArchiveVisualApproval({ root }) : null;
 
@@ -61,6 +79,8 @@ for (const [source, replacement] of [
 }
 config += "\nwindow.DUNGEON_ONLINE_TEST_BOT_ENABLED = " + JSON.stringify(observerBotConfig.enabled) + ";\n";
 config += "window.DUNGEON_ONLINE_TEST_BOT_PASSWORD_HASH = " + JSON.stringify(observerBotConfig.passwordHash) + ";\n";
+config += "window.DUNGEON_BUILD_COMMIT = " + JSON.stringify(buildCommit) + ";\n";
+config += "window.DUNGEON_BUILD_COMMIT_DATE = " + JSON.stringify(buildCommitDate) + ";\n";
 await writeFile(configPath, config, "utf8");
 
 const indexPath = path.join(output, "index.html");
