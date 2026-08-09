@@ -74,6 +74,16 @@ function loadUi() {
   return require(modulePath);
 }
 
+function loadPracticeAdapter() {
+  const modulePath = path.resolve(__dirname, "..", "practice-records-adapter.js");
+  delete require.cache[modulePath];
+  return require(modulePath);
+}
+
+function classShape(node) {
+  return [node.tagName, node.className, (node.children || []).map(classShape)];
+}
+
 test("Ranked leaderboard plate keeps Top 3 and renders seven interactive ledger slots", () => {
   const ui = loadUi();
   const documentRef = createDocument();
@@ -162,6 +172,109 @@ test("Ranked presentation keeps the Top 3 while paging ranks 4 through 73", () =
   assert.deepEqual(finalPage.ledger.map((row) => row.rank), [67, 68, 69, 70, 71, 72, 73]);
   assert.equal(finalPage.canGoNext, false);
 });
+
+test("Practice adapter rows use the canonical leaderboard presentation and DOM shape", () => {
+  const ui = loadUi();
+  const adapter = loadPracticeAdapter();
+  const entries = Array.from({ length: 20 }, (_, index) => ({
+    runId: `practice_${index + 1}`,
+    playerName: `Practice ${index + 1}`,
+    score: 20_000 - index,
+    depth: 20 - index,
+    gold: index
+  }));
+  const practiceRows = adapter.createListModel(entries, { sortMode: "score", limit: 20 }).rows;
+  const practicePresentation = ui.createLeaderboardPresentation(practiceRows, 2);
+  const practicePlate = ui.renderList(createDocument(), practicePresentation);
+  const onlineRows = ui.createLeaderboardViewModel({ entries }).rows;
+  const onlinePlate = ui.renderList(createDocument(), ui.createLeaderboardPresentation(onlineRows, 2));
+  const hasClass = (node, className) => String(node.className).split(/\s+/u).includes(className);
+  const ledger = visit(practicePlate, (node) => hasClass(node, "ranked-v3-ledger-slot"));
+
+  assert.deepEqual(classShape(practicePlate), classShape(onlinePlate));
+  assert.equal(visit(practicePlate, (node) => hasClass(node, "ranked-v3-podium-slot")).length, 3);
+  assert.equal(ledger.length, 7);
+  assert.deepEqual(ledger.map((slot) => slot.attributes.get("data-record-rank")), ["11", "12", "13", "14", "15", "16", "17"]);
+  assert.match(allText(practicePlate), /Page 2 \/ 3.*Ranks 11-17/isu);
+});
+
+test("Practice reference payload renders the canonical Inspect root and ten equipment slots", () => {
+  const ui = loadUi();
+  const adapter = loadPracticeAdapter();
+  const payload = adapter.createReferencePlatePayload({
+    runId: "practice_complete",
+    playerName: "Practice Ada",
+    score: 4_200,
+    depth: 8,
+    gold: 120,
+    durationMs: 125_000,
+    outcome: "victory",
+    build: { relics: [{ relicId: "crownconcord", stacks: 2 }] },
+    summary: { roomsCompleted: 6, bossesCompleted: 1 }
+  }, { rank: 4 });
+  const detail = ui.createDetailViewModel(payload);
+  const practicePlate = ui.renderDetail(createDocument(), detail);
+  const onlinePlate = ui.renderDetail(createDocument(), ui.createDetailViewModel({
+    entry: { ...payload.entry, detailsAvailable: undefined }
+  }));
+  const hasClass = (node, className) => String(node.className).split(/\s+/u).includes(className);
+
+  assert.equal(detail.detailsAvailable, true);
+  assert.equal(detail.detailsUnavailableNotice, "");
+  assert.deepEqual(classShape(practicePlate), classShape(onlinePlate));
+  assert.equal(hasClass(practicePlate, "ranked-v3-reference-plate"), true);
+  assert.equal(hasClass(practicePlate, "ranked-v3-reference-plate--inspect"), true);
+  assert.equal(visit(practicePlate, (node) => hasClass(node, "ranked-v3-inspect-equipment-slot")).length, 10);
+});
+
+test("Inspect detail preserves explicit availability flags and renders a neutral legacy notice", () => {
+  const ui = loadUi();
+  const available = ui.createDetailViewModel({ entry: { playerName: "Online" } });
+  const unavailable = ui.createDetailViewModel({
+    entry: {
+      runId: "legacy_practice",
+      rank: 73,
+      playerName: "Legacy Practice",
+      detailsAvailable: false,
+      detailsUnavailableNotice: "Build Chronicle unavailable for this legacy Practice record."
+    }
+  });
+  assert.equal(available.detailsAvailable, true);
+  assert.equal(available.detailsUnavailableNotice, "");
+  assert.equal(unavailable.detailsAvailable, false);
+  assert.equal(unavailable.detailsUnavailableNotice, "Build Chronicle unavailable for this legacy Practice record.");
+
+  const returned = [];
+  const plate = ui.renderDetail(createDocument(), unavailable, { onBack: () => returned.push(true) });
+  const hasClass = (node, className) => String(node.className).split(/\s+/u).includes(className);
+  const notice = visit(plate, (node) => hasClass(node, "ranked-v3-inspect-unavailable"));
+  const back = visit(plate, (node) => hasClass(node, "ranked-v3-inspect-back"));
+
+  assert.equal(hasClass(plate, "ranked-v3-reference-plate"), true);
+  assert.equal(visit(plate, (node) => hasClass(node, "ranked-v3-reference-plate-art")).length, 1);
+  assert.equal(notice.length, 1);
+  assert.equal(notice[0].textContent, unavailable.detailsUnavailableNotice);
+  assert.equal(visit(plate, (node) => hasClass(node, "ranked-v3-inspect-equipment-slot")).length, 0);
+  assert.equal(visit(plate, (node) => hasClass(node, "ranked-v3-inspect-chronicle-row")).length, 0);
+  assert.equal(visit(plate, (node) => hasClass(node, "ranked-v3-inspect-terminal")).length, 0);
+  assert.doesNotMatch(allText(plate), /Game Over|Cause not recorded|\b0\b/iu);
+  assert.equal(back.length, 1);
+  back[0].click();
+  assert.deepEqual(returned, [true]);
+});
+
+test("Inspect rank exposes numeric rank and single or double digit metadata", () => {
+  const ui = loadUi();
+  const hasClass = (node, className) => String(node.className).split(/\s+/u).includes(className);
+  for (const [rank, digits] of [[1, "single"], [9, "single"], [10, "double"], [73, "double"]]) {
+    const detail = ui.createDetailViewModel({ entry: { rank, playerName: "Ranked", score: 1 } });
+    const plate = ui.renderDetail(createDocument(), detail);
+    const rankNode = visit(plate, (node) => hasClass(node, "ranked-v3-inspect-rank"))[0];
+    assert.equal(rankNode.attributes.get("data-record-rank"), String(rank));
+    assert.equal(rankNode.attributes.get("data-rank-digits"), digits);
+  }
+});
+
 test("Ranked collection follows opaque cursors once and caps the authoritative order at 73", async () => {
   const ui = loadUi();
   const calls = [];

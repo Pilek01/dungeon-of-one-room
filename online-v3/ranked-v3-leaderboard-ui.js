@@ -54,7 +54,7 @@
     }
     return Object.freeze(rows);
   }
-  const createDetailViewModel = (payload = {}) => { const entry = payload.entry && typeof payload.entry === "object" ? payload.entry : {}; return Object.freeze({ ...toLeaderboardRow(entry), season: String(entry.season || ""), build: Object.freeze(normalizeBuild(entry.build)), summary: Object.freeze(entry.summary && typeof entry.summary === "object" ? { ...entry.summary } : {}) }); };
+  const createDetailViewModel = (payload = {}) => { const entry = payload.entry && typeof payload.entry === "object" ? payload.entry : {}; return Object.freeze({ ...toLeaderboardRow(entry), season: String(entry.season || ""), build: Object.freeze(normalizeBuild(entry.build)), summary: Object.freeze(entry.summary && typeof entry.summary === "object" ? { ...entry.summary } : {}), detailsAvailable: entry.detailsAvailable !== false, detailsUnavailableNotice: String(entry.detailsUnavailableNotice || "") }); };
   function name(documentRef, row, open) {
     const node = element(documentRef, "button", "record-archive-name", row.playerName);
     node.type = "button";
@@ -248,20 +248,37 @@
     const active = detail.build.runModifiers || [];
     const cause = String(summary.presentationCause || "").trim();
     const isVictory = String(detail.outcome || "").toLowerCase() === "victory";
+    const detailsAvailable = detail.detailsAvailable !== false;
     const rootNode = element(documentRef, "section", `${SELECTORS.plate} ranked-v3-reference-plate--inspect ${SELECTORS.detail}`);
     rootNode.append(element(documentRef, "h2", "ranked-v3-reference-plate-title", "Inspect Build"));
     const art = element(documentRef, "div", SELECTORS.art);
     art.setAttribute("aria-hidden", "true");
     const overlay = element(documentRef, "div", `${SELECTORS.overlay} ranked-v3-inspect-overlay`);
     const header = element(documentRef, "header", "ranked-v3-inspect-header");
+    const rank = element(documentRef, "p", "ranked-v3-inspect-rank", String(detail.rank));
+    rank.setAttribute("data-record-rank", String(detail.rank));
+    rank.setAttribute("data-rank-digits", integer(detail.rank) >= 10 ? "double" : "single");
     header.append(
-      element(documentRef, "p", "ranked-v3-inspect-rank", String(detail.rank)),
-      element(documentRef, "h3", "ranked-v3-inspect-player", detail.playerName),
-      scoreDisplay(documentRef, "ranked-v3-inspect-score", detail.score, "p"),
-      element(documentRef, "p", "ranked-v3-inspect-score-label", "Final Score"),
-      inspectStat(documentRef, "ranked-v3-inspect-depth", "Depth", detail.depth),
-      inspectStat(documentRef, "ranked-v3-inspect-gold", "Gold", detail.gold)
+      rank,
+      element(documentRef, "h3", "ranked-v3-inspect-player", detail.playerName)
     );
+    if (detailsAvailable) {
+      header.append(
+        scoreDisplay(documentRef, "ranked-v3-inspect-score", detail.score, "p"),
+        element(documentRef, "p", "ranked-v3-inspect-score-label", "Final Score"),
+        inspectStat(documentRef, "ranked-v3-inspect-depth", "Depth", detail.depth),
+        inspectStat(documentRef, "ranked-v3-inspect-gold", "Gold", detail.gold)
+      );
+    }
+    if (!detailsAvailable) {
+      const notice = detail.detailsUnavailableNotice || "Build Chronicle unavailable.";
+      const unavailable = element(documentRef, "p", "ranked-v3-inspect-unavailable", notice);
+      const actions = element(documentRef, "nav", "ranked-v3-inspect-actions");
+      actions.append(control(documentRef, "ranked-v3-inspect-back", "Back to Leaderboard", handlers.onBack));
+      overlay.append(header, unavailable, actions);
+      rootNode.append(art, overlay);
+      return rootNode;
+    }
     const loadout = element(documentRef, "section", "ranked-v3-inspect-loadout");
     loadout.append(element(documentRef, "h3", "ranked-v3-inspect-section-title", "Build Loadout"));
     const equipment = element(documentRef, "div", "ranked-v3-inspect-equipment-grid");
