@@ -38,7 +38,6 @@ const RUN_HD = SCENARIO === "all" || SCENARIO === "hd";
 const RUN_SAVE = SCENARIO === "all" || SCENARIO === "save";
 const STORAGE_PREFIX = "dungeonOneRoom";
 const RUN_SAVE_KEY = "dungeonOneRoomRunSave";
-const GRAPHICS_KEY = "dungeonOneRoomGraphicsMode";
 const PLAYER_NAME_KEY = "dungeonOneRoomPlayerName";
 const LIVES_KEY = "dungeonOneRoomLives";
 const PRACTICE_ARCHIVE_STORAGE_KEY = "dungeonOneRoomLeaderboardV1";
@@ -306,9 +305,8 @@ async function screenshot(page, name) {
   };
 }
 
-function seedStorage(mode = "hd") {
+function seedStorage() {
   return {
-    mode,
     playerName: "BaselineQA",
     tutorialKeys: TUTORIAL_KEYS
   };
@@ -322,7 +320,6 @@ async function createContext(browser, options = {}) {
   if (options.seed !== false) {
     await context.addInitScript((seed) => {
       try {
-        localStorage.setItem("dungeonOneRoomGraphicsMode", seed.mode);
         localStorage.setItem("dungeonOneRoomPlayerName", seed.playerName);
         for (const key of seed.tutorialKeys) localStorage.setItem(key, "1");
         localStorage.removeItem("dungeonOneRoomAudioMuted");
@@ -352,14 +349,17 @@ function attachDiagnostics(page, bucket, label) {
   });
   page.on("request", (request) => {
     const parsed = new URL(request.url());
+    if (parsed.pathname === "/assets/logo.png" || parsed.pathname.startsWith("/assets/sprite/")) {
+      bucket.forbiddenClassicRequests.push({ label, path: parsed.pathname });
+    }
     if (parsed.pathname.startsWith("/api/")) {
       bucket.apiRequests.push({ label, method: request.method(), url: request.url() });
     }
   });
 }
 
-async function openScenario(browser, baseUrl, diagnostics, label, scenario, mode = "hd", options = {}) {
-  const context = await createContext(browser, { seed: seedStorage(mode) });
+async function openScenario(browser, baseUrl, diagnostics, label, scenario, options = {}) {
+  const context = await createContext(browser);
   if (options.practiceTerminalRecord === true) {
     const configSource = await fsPromises.readFile(path.join(ROOT, "config.js"), "utf8");
     const localPracticeConfig = configSource.replace(
@@ -470,7 +470,8 @@ async function main() {
     consoleErrors: [],
     pageErrors: [],
     requestFailures: [],
-    apiRequests: []
+    apiRequests: [],
+    forbiddenClassicRequests: []
   };
   const results = {
     runnerMode: HEADLESS ? "headless" : "headed",
@@ -495,7 +496,7 @@ async function main() {
     assert.equal(results.httpStatus, 200);
     await bootPage.waitForFunction(() => typeof window.render_game_to_text === "function");
     results.gameVersion = await bootPage.evaluate(() => window.DUNGEON_GAME_VERSION);
-    assert.equal(results.gameVersion, "v0.8.0");
+    assert.equal(results.gameVersion, "v0.8.2");
     assert.equal(await bootPage.locator("#bootScreen").isVisible(), true);
     results.screenshots.push(await screenshot(bootPage, "01-boot.png"));
     await bootPage.keyboard.press("Enter");
@@ -510,27 +511,13 @@ async function main() {
     }
 
     if (RUN_HD) {
-    const classic = await openScenario(
-      browser,
-      baseUrl,
-      diagnostics,
-      "classic-shrine",
-      "descent_hd",
-      "classic"
-    );
-    assert.equal(classic.state.roomType, "shrine");
-    assert.equal(await classic.page.locator("body.graphics-hd-ui").count(), 0);
-    assert.equal(await classic.page.locator("#game").getAttribute("data-graphics-mode"), "legacy");
-    results.checks.classic = { phase: classic.state.phase, roomType: classic.state.roomType };
-    results.screenshots.push(await screenshot(classic.page, "02-classic-shrine.png"));
-    await classic.context.close();
 
-    const hd = await openScenario(browser, baseUrl, diagnostics, "hd-shrine", "descent_hd", "hd");
+    const hd = await openScenario(browser, baseUrl, diagnostics, "hd-shrine", "descent_hd");
     await hd.page.waitForFunction(() => document.querySelector("#game")?.dataset.graphicsMode === "hd");
     assert.equal(hd.state.roomType, "shrine");
     assert.equal(await hd.page.locator("body.graphics-hd-ui").count(), 1);
     results.checks.hd = { phase: hd.state.phase, roomType: hd.state.roomType };
-    results.screenshots.push(await screenshot(hd.page, "03-hd-shrine.png"));
+    results.screenshots.push(await screenshot(hd.page, "02-hd-shrine.png"));
 
     const hudStructure = await hd.page.evaluate(() => {
       const ids = [
@@ -583,8 +570,7 @@ async function main() {
       baseUrl,
       diagnostics,
       "vault",
-      "expansion_vault_guardian_hd",
-      "hd"
+      "expansion_vault_guardian_hd"
     );
     assert.equal(vault.state.roomType, "vault");
     assert(vault.state.enemies.some((enemy) => enemy.type === "guardian"));
@@ -600,8 +586,7 @@ async function main() {
       baseUrl,
       diagnostics,
       "motion",
-      "enemy_roster_hd",
-      "hd"
+      "enemy_roster_hd"
     );
     for (const elapsedMs of [0, 120, 240, 360]) {
       if (elapsedMs > 0) await motion.page.waitForTimeout(120);
@@ -621,8 +606,7 @@ async function main() {
       baseUrl,
       diagnostics,
       "observer",
-      "enemy_roster_hd",
-      "hd"
+      "enemy_roster_hd"
     );
     await observer.page.keyboard.press("F10");
     await observer.page.waitForFunction(() => document.querySelector("#screenOverlay")?.textContent?.includes("Observer Bot Menu"));
@@ -637,7 +621,7 @@ async function main() {
     }
 
     if (RUN_SAVE) {
-    const save = await openScenario(browser, baseUrl, diagnostics, "save", "descent_hd", "hd", { practiceTerminalRecord: true });
+    const save = await openScenario(browser, baseUrl, diagnostics, "save", "descent_hd", { practiceTerminalRecord: true });
     const savedRaw = await save.page.evaluate((key) => localStorage.getItem(key), RUN_SAVE_KEY);
     assert(savedRaw, "Scenario start must create a Continue snapshot");
     const savedSnapshot = JSON.parse(savedRaw);
@@ -826,6 +810,7 @@ async function main() {
     }
 
     assert.deepEqual(diagnostics.apiRequests, [], "Practice emitted an /api request");
+    assert.deepEqual(diagnostics.forbiddenClassicRequests, [], "HD-only runtime requested retired presentation assets");
     assert.deepEqual(diagnostics.consoleErrors, [], "Browser console errors detected");
     assert.deepEqual(diagnostics.pageErrors, [], "Uncaught page errors detected");
     const unexpectedRequestFailures = diagnostics.requestFailures.filter(
