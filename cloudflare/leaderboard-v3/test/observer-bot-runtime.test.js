@@ -33,6 +33,9 @@ function metaState(overrides = {}) {
 function createHarness(options = {}) {
   const calls = [];
   const directives = [];
+  const forgePresentations = [];
+  const forgeCompletions = [];
+  const uiChoiceCalls = [];
   let snapshot = {
     publicState: metaState({
       currentRoomDirective: {
@@ -90,7 +93,7 @@ function createHarness(options = {}) {
     hide() {},
     setStatus() {},
     setEntryVisible() {},
-    showChoices() {},
+    showChoices(...args) { uiChoiceCalls.push(args); },
     showMenu() {},
     showMessage() {},
     showSync() {}
@@ -171,12 +174,16 @@ function createHarness(options = {}) {
       createStore() { return store; }
     },
     DungeonOnlineV3GameBridge: {
-      isRankedTestBotActive() { return true; },
+      isRankedTestBotActive() { return options.observerBotActive !== false; },
       syncCanonicalProjection() {},
-      setNextDirective(directive) { directives.push(directive); }
+      setNextDirective(directive) { directives.push(directive); },
+      enterRankedForge(publicState, offer, context) {
+        forgePresentations.push({ publicState, offer, context });
+      },
+      completeRankedForge(publicState) { forgeCompletions.push(publicState); }
     }
   };
-  return { root, calls, directives };
+  return { root, calls, directives, forgePresentations, forgeCompletions, uiChoiceCalls };
 }
 
 async function installRuntime(harness) {
@@ -191,6 +198,14 @@ async function waitForBoundary(runtime) {
     await new Promise((resolve) => setImmediate(resolve));
   }
   assert.fail("Observer Bot boundary did not settle");
+}
+
+async function waitFor(predicate, message) {
+  for (let attempt = 0; attempt < 50; attempt += 1) {
+    if (predicate()) return;
+    await new Promise((resolve) => setImmediate(resolve));
+  }
+  assert.fail(message);
 }
 
 test("Observer Bot resolves relic and replacement choices before checkpoint", async () => {
@@ -288,4 +303,84 @@ test("Observer Bot completes Forge choice and checkpoint under one busy boundary
   ]);
   assert.equal(harness.calls[1].payload.choiceId, "choice_a");
   assert.equal(harness.directives.length, 1);
+});
+
+test("player Forge offer stays on the native Practice surface through canonical commit", async () => {
+  const harness = createHarness({
+    roomType: "forge",
+    observerBotActive: false,
+    async onEvent(action, payload) {
+      if (action === "open_meta_offer") {
+        assert.equal(payload.mode, "transmute");
+        return { metaState: metaState({
+          build: { relics: [{ relicId: "fang", stacks: 1 }] },
+          metaTransactionOffer: {
+            sourceType: "forge",
+            sourceId: "forge-transmute",
+            choices: [
+              {
+                transactionId: "forge_2",
+                choiceId: "fang_to_vamp",
+                status: "available",
+                kind: "forge_transmute",
+                action: "transmute",
+                sacrificeRelicId: "fang",
+                resultRelicId: "vampfang"
+              },
+              {
+                transactionId: "forge_2",
+                choiceId: "idol_to_lucky",
+                status: "available",
+                kind: "forge_transmute",
+                action: "transmute",
+                sacrificeRelicId: "idol",
+                resultRelicId: "lucky"
+              },
+              {
+                transactionId: "forge_2",
+                choiceId: "forge_leave",
+                status: "available",
+                kind: "forge_transmute_leave",
+                action: "leave",
+                mode: "transmute"
+              }
+            ]
+          }
+        }) };
+      }
+      if (action === "commit_meta_transaction") {
+        assert.equal(payload.transactionId, "forge_2");
+        assert.equal(payload.choiceId, "fang_to_vamp");
+        return { metaState: metaState({
+          build: { relics: [{ relicId: "vampfang", stacks: 1 }] }
+        }) };
+      }
+      throw new Error(`Unexpected event: ${action} ${JSON.stringify(payload)}`);
+    }
+  });
+  const runtime = await installRuntime(harness);
+  await runtime.onLocalRoomCleared({ turnCount: 3, rewardClaims: [] });
+
+  assert.equal(runtime.onForgeMode("transmute", { sacrificeRelicId: "fang" }), true);
+  await waitFor(
+    () => harness.forgePresentations.length === 1,
+    "Ranked Forge offer was not handed to the native Practice presentation"
+  );
+  assert.equal(harness.uiChoiceCalls.length, 0, "generic Ranked choices must stay hidden for Forge");
+  assert.equal(harness.forgePresentations[0].context.mode, "transmute");
+  assert.equal(harness.forgePresentations[0].context.sacrificeRelicId, "fang");
+
+  assert.equal(runtime.onForgeChoice("fang_to_vamp"), true);
+  await waitFor(
+    () => harness.forgeCompletions.length === 1 && harness.directives.length === 1,
+    "canonical Forge commit did not finish the native presentation and checkpoint"
+  );
+  assert.deepEqual(harness.calls.map((entry) => entry.action), [
+    "open_meta_offer",
+    "commit_meta_transaction",
+    "checkpoint"
+  ]);
+  assert.deepEqual(harness.forgeCompletions[0].build, {
+    relics: [{ relicId: "vampfang", stacks: 1 }]
+  });
 });

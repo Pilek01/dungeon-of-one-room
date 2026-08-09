@@ -517,3 +517,47 @@ final result: passed
   `output/verification/baseline-20260808T182353668Z.log`.
 
 final result: passed
+## 2026-08-09 - Leaderboard live-feedback calibration
+
+**Source visual truth**
+
+- Approved Leaderboard reference: C:\Users\Kamil\.codex\generated_images\019fbd02-789b-75b0-a741-d3e80ca2eedc\exec-0243c83e-6db0-445c-afeb-7d7f6b7b154d.png.
+- Production feedback capture: C:\Users\Kamil\AppData\Local\Temp\codex-clipboard-b8fd2217-30ad-4a61-820f-fce76cb0b6ae.png.
+
+**Implementation evidence**
+
+- Fresh true-HD capture: output/online-v3-ranked-headed/lifecycle/ranked-leaderboard.png.
+- Full comparison: output/verification/ranked-live-feedback-20260809/leaderboard-reference-left-implementation-right.jpg.
+- Focused podium comparison: output/verification/ranked-live-feedback-20260809/leaderboard-podium-reference-top-implementation-bottom.jpg.
+- Focused ledger comparison: output/verification/ranked-live-feedback-20260809/leaderboard-ledger-reference-top-implementation-bottom.jpg.
+- Viewport and implementation: 1536 x 1080 CSS pixels at device scale 1.
+- Source: 1487 x 1058 pixels, normalized to 1536 x 1080 for comparison.
+- State: desktop HD Ranked lifecycle, three populated podium records and ranks 4-10. Mobile remains deferred.
+
+**Findings and comparison history**
+
+1. [P1] The podium rank numerals were live Georgia text and visibly floated above the engraved shields.
+   Fix: permanently baked metallic serif 2, 1, and 3 into the silver, gold, and bronze raster plaques. The redundant visible HD DOM glyphs are removed while Rank 1, Rank 2, and Rank 3 remain available to assistive technology.
+2. [P2] Podium names touched the lower edge of the skull plaques.
+   Fix: moved the name anchor down by 15 plate pixels. Browser geometry changed from 0.4375 to 0.4514 of plate height while score remains at the unchanged 0.4701 anchor.
+3. [P2] Podium Depth and Gold were too small and crowded the score.
+   Fix: moved the metadata down by 15 plate pixels and increased it from 13.2 px to 16.1 px. The score-to-metadata gap is now 14.5 px.
+4. [P2] Ledger names sat too far left and Depth values too far right.
+   Fix: moved only name content 32.1 px right and only Depth content 32.1 px left. Score, Gold, and Inspect Build remain on their original anchors with measured drift at or below 0.001 px.
+
+**Required fidelity surfaces**
+
+- Fonts and typography: the new shield numerals use a restrained metallic Georgia serif with dark engraved outline; live names, scores, metadata, and ledger hierarchy remain readable and match the reference rhythm.
+- Spacing and layout rhythm: names and metadata have distinct vertical anchors; the podium, seven ledger rows, and footer stay inside the 1536 x 1080 plate without overflow.
+- Colors and visual tokens: silver, tarnished gold, and bronze numeral fills are matched to their corresponding medallions; existing plate colors are unchanged.
+- Image quality and asset fidelity: only the three numeral glyphs were added to the existing 1536 x 1080 raster plate. No placeholder, CSS-drawn, inline-SVG, or emoji asset was introduced.
+- Copy and content: all player names, scores, Depth, Gold, pagination, and actions remain live authoritative DOM content. Only static podium ranks are part of the plate.
+- Accessibility and behavior: Top 3 rank semantics remain exposed through visually hidden labels. Names, Inspect Build, pagination, and Close remain real controls.
+
+**Primary interactions and diagnostics**
+
+- Opened the HD Ranked leaderboard, verified Top 3 plus ranks 4-10, opened Inspect Build, returned to the same page, and completed the lifecycle scenario.
+- Browser assertions prove the three live podium glyphs have display none, the three accessible rank labels remain present, and Score / Gold / Inspect Build anchors did not move.
+- The final lifecycle completed with zero unexpected console or page errors.
+
+final result: passed

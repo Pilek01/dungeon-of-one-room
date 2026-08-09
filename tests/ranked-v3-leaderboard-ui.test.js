@@ -104,6 +104,12 @@ test("Ranked leaderboard plate keeps Top 3 and renders seven interactive ledger 
   assert.equal(art.length, 1);
   assert.equal(art[0].attributes.get("aria-hidden"), "true");
   assert.equal(visit(plate, (node) => hasClass(node, "ranked-v3-podium-slot")).length, 3);
+  const podiumRanks = visit(plate, (node) => hasClass(node, "ranked-v3-podium-slot"))
+    .flatMap((slot) => visit(slot, (node) => hasClass(node, "ranked-v3-leaderboard-rank")));
+  assert.deepEqual(podiumRanks.map((node) => node.textContent), ["1", "2", "3"]);
+  assert.deepEqual(podiumRanks.map((node) => node.attributes.get("aria-hidden")), ["true", "true", "true"]);
+  const accessibleRanks = visit(plate, (node) => hasClass(node, "ranked-v3-rank-label"));
+  assert.deepEqual(accessibleRanks.map((node) => node.textContent), ["Rank 1", "Rank 2", "Rank 3"]);
   assert.equal(visit(plate, (node) => hasClass(node, "ranked-v3-ledger-slot")).length, 7);
   const scoreValues = visit(plate, (node) => hasClass(node, "ranked-v3-score-value"));
   const scoreUnits = visit(plate, (node) => hasClass(node, "ranked-v3-score-unit"));

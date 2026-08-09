@@ -110,6 +110,20 @@ function regionContrast(image, [left, top, right, bottom]) {
   };
 }
 
+function brightFraction(image, [left, top, right, bottom], threshold = 100) {
+  let bright = 0;
+  let count = 0;
+  for (let y = top; y < bottom; y += 1) {
+    for (let x = left; x < right; x += 1) {
+      const offset = (y * image.width + x) * image.channels;
+      const luminance = image.pixels[offset] * 0.2126 + image.pixels[offset + 1] * 0.7152 + image.pixels[offset + 2] * 0.0722;
+      if (luminance > threshold) bright += 1;
+      count += 1;
+    }
+  }
+  return bright / count;
+}
+
 test("Ranked plates retain the ornamental skull medallions instead of blank mounts", () => {
   const leaderboard = readPngPixels(path.join(ROOT, PLATES[0]));
   const leaderboardMounts = [
@@ -126,4 +140,19 @@ test("Ranked plates retain the ornamental skull medallions instead of blank moun
   const rankMedallion = regionContrast(inspect, [0.14, 0.08, 0.30, 0.30]);
   assert.ok(rankMedallion.deviation > 28, "Inspect header lost its crowned rank skull artwork");
   assert.ok(rankMedallion.brightFraction > 0.03, "Inspect header rank mount is empty");
+});
+
+test("Leaderboard plate permanently carries the ornamental 2, 1, and 3 plaque numerals", () => {
+  const leaderboard = readPngPixels(path.join(ROOT, PLATES[0]));
+  const numeralRegions = [
+    { rank: 2, bounds: [403, 412, 446, 464], minimum: 0.09 },
+    { rank: 1, bounds: [749, 389, 788, 466], minimum: 0.10 },
+    { rank: 3, bounds: [1092, 412, 1133, 464], minimum: 0.065 }
+  ];
+  for (const numeral of numeralRegions) {
+    assert.ok(
+      brightFraction(leaderboard, numeral.bounds) > numeral.minimum,
+      `rank ${numeral.rank} plaque must contain its baked ornamental numeral`
+    );
+  }
 });

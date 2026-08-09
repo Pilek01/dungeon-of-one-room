@@ -718,6 +718,19 @@ async function main() {
   window.__DUNGEON_TEST_IS_TURN_INPUT_LOCKED = () => (
     canUseDebugCheats() && isTurnInputLocked()
   );
+  window.__DUNGEON_TEST_OPEN_FORGE = () => {
+    if (
+      !canUseDebugCheats() ||
+      state.phase !== "playing" ||
+      state.roomType !== "forge" ||
+      !state.roomCleared ||
+      !state.forge?.awakened ||
+      state.forge?.used
+    ) return false;
+    state.player.x = Number(state.forge.interactX ?? state.forge.x);
+    state.player.y = Number(state.forge.interactY ?? state.forge.y);
+    return openForgeRoom();
+  };
   window.__DUNGEON_TEST_CLEAR_VISIBLE_ROOM = () => {
     if (!canUseDebugCheats() || state.phase !== "playing") return false;
     if (state.roomCleared) return true;
@@ -995,7 +1008,6 @@ ${fatalTestHookAnchor}`;
       window.DungeonOnlineV3GameBridge?.isRankedTestBotActive?.() === true
     ));
 
-    const observerBotRequestsBefore = diagnostics.apiRequests.length;
     assert.equal(
       await page.evaluate(() => window.__DUNGEON_TEST_TOGGLE_OBSERVER_BOT?.()),
       true
@@ -1033,6 +1045,73 @@ ${fatalTestHookAnchor}`;
       `Canonical Ranked schedule did not issue Forge by depth 21: ${JSON.stringify(forgeRoom)}`
     );
 
+    const forgeRequestsBefore = diagnostics.apiRequests.length;
+    assert.equal(
+      await page.evaluate(() => window.__DUNGEON_TEST_CLEAR_VISIBLE_ROOM?.()),
+      true
+    );
+    await page.waitForFunction(() => JSON.parse(window.render_game_to_text()).roomCleared === true);
+    assert.equal(
+      await page.evaluate(() => window.__DUNGEON_TEST_OPEN_FORGE?.()),
+      true
+    );
+    await page.locator("#screenOverlay .overlay-card-forge-mode:visible").waitFor({ state: "visible" });
+    const forgeModeAudit = await page.evaluate(() => ({
+      phase: JSON.parse(window.render_game_to_text()).phase,
+      nativeModeVisible: Boolean(document.querySelector("#screenOverlay .overlay-card-forge-mode")?.getClientRects().length),
+      genericRankedVisible: Boolean(document.querySelector(".ranked-v3-overlay")?.getClientRects().length),
+      hd: document.body.classList.contains("graphics-hd-ui"),
+      text: document.querySelector("#screenOverlay .overlay-card-forge-mode")?.textContent || ""
+    }));
+    assert.equal(forgeModeAudit.phase, "playing", JSON.stringify(forgeModeAudit));
+    assert.equal(forgeModeAudit.nativeModeVisible, true, JSON.stringify(forgeModeAudit));
+    assert.equal(forgeModeAudit.genericRankedVisible, false, JSON.stringify(forgeModeAudit));
+    assert.equal(forgeModeAudit.hd, true, JSON.stringify(forgeModeAudit));
+    assert.match(forgeModeAudit.text, /Forge Chamber[\s\S]*Temper[\s\S]*Transmute[\s\S]*Leave Forge/u);
+    await page.screenshot({
+      path: path.join(ARTIFACT_ROOT, "ranked-forge-native-mode.png"),
+      fullPage: true
+    });
+
+    await page.keyboard.press("1");
+    try {
+      await page.locator("#screenOverlay .overlay-card-forge-reward:visible").waitFor({
+        state: "visible",
+        timeout: 20_000
+      });
+    } catch (error) {
+      const diagnostic = await page.evaluate(() => ({
+        game: JSON.parse(window.render_game_to_text()),
+        session: window.DungeonOnlineV3?.getSessionState?.() || "",
+        nativeOverlay: document.querySelector("#screenOverlay")?.textContent || "",
+        rankedOverlay: document.querySelector(".ranked-v3-overlay")?.textContent || ""
+      }));
+      diagnostic.apiErrors = diagnostics.apiErrors.slice(-5);
+      diagnostic.debugMessages = diagnostics.debugMessages.slice(-10);
+      diagnostic.consoleErrors = diagnostics.consoleErrors.slice(-10);
+      diagnostic.pageErrors = diagnostics.pageErrors.slice(-10);
+      throw new Error(`Ranked Forge reward did not open: ${JSON.stringify(diagnostic)}`, { cause: error });
+    }
+    const forgeRewardAudit = await page.evaluate(() => ({
+      phase: JSON.parse(window.render_game_to_text()).phase,
+      nativeRewardVisible: Boolean(document.querySelector("#screenOverlay .overlay-card-forge-reward")?.getClientRects().length),
+      genericRankedVisible: Boolean(document.querySelector(".ranked-v3-overlay")?.getClientRects().length),
+      rewardCards: document.querySelectorAll("#screenOverlay .forge-reward-choice").length,
+      text: document.querySelector("#screenOverlay .overlay-card-forge-reward")?.textContent || ""
+    }));
+    assert.equal(forgeRewardAudit.phase, "relic", JSON.stringify(forgeRewardAudit));
+    assert.equal(forgeRewardAudit.nativeRewardVisible, true, JSON.stringify(forgeRewardAudit));
+    assert.equal(forgeRewardAudit.genericRankedVisible, false, JSON.stringify(forgeRewardAudit));
+    assert.equal(forgeRewardAudit.rewardCards, 1, JSON.stringify(forgeRewardAudit));
+    assert.match(forgeRewardAudit.text, /Forge Temper[\s\S]*Offer[\s\S]*Leave Forged Relic/u);
+    await page.screenshot({
+      path: path.join(ARTIFACT_ROOT, "ranked-forge-native-temper.png"),
+      fullPage: true
+    });
+
+    await page.keyboard.press("1");
+    await sessionState(page, "ENTERING_NEXT_ROOM", diagnostics);
+    await crossVisiblePortal(page, forgeRoom.depth + 1);
     assert.equal(
       await page.evaluate(() => window.__DUNGEON_TEST_TOGGLE_OBSERVER_BOT?.()),
       true
@@ -1040,15 +1119,6 @@ ${fatalTestHookAnchor}`;
     await page.waitForFunction(() => (
       window.DungeonOnlineV3GameBridge?.isRankedTestBotActive?.() === true
     ));
-    assert.equal(
-      await page.evaluate(() => window.__DUNGEON_TEST_CLEAR_VISIBLE_ROOM?.()),
-      true
-    );
-    await page.waitForFunction((depth) => {
-      const game = JSON.parse(window.render_game_to_text());
-      return game.depth >= depth && game.roomType !== "forge" &&
-        window.DungeonOnlineV3?.getSessionState?.() === "ROOM_ACTIVE";
-    }, forgeRoom.depth + 1, { timeout: 45_000 });
     const observerBotForgeAudit = await page.evaluate(() => ({
       game: JSON.parse(window.render_game_to_text()),
       session: window.DungeonOnlineV3?.getSessionState?.() || "",
@@ -1067,9 +1137,9 @@ ${fatalTestHookAnchor}`;
     );
     assert.doesNotMatch(observerBotForgeAudit.overlay, /reconnect|required|unavailable/iu);
     assert(
-      diagnostics.apiRequests.slice(observerBotRequestsBefore)
-        .filter((entry) => entry.path === "/api/v3/runs/checkpoint").length >= 2,
-      "Observer Bot Forge lifecycle did not checkpoint both room boundaries"
+      diagnostics.apiRequests.slice(forgeRequestsBefore)
+        .filter((entry) => entry.path === "/api/v3/runs/checkpoint").length >= 1,
+      "Native Ranked Forge lifecycle did not checkpoint its room boundary"
     );
     await page.screenshot({
       path: path.join(ARTIFACT_ROOT, "ranked-observer-bot-after-forge-portal.png"),
@@ -1560,6 +1630,7 @@ ${fatalTestHookAnchor}`;
       const titleLines = [...titleRange.getClientRects()].filter((box) => box.width > 0 && box.height > 0).length;
       const nameBox = bounds('.ranked-v3-podium-slot[data-record-rank="1"] .record-archive-name');
       const scoreBox = bounds('.ranked-v3-podium-slot[data-record-rank="1"] .ranked-v3-leaderboard-score');
+      const metaBox = bounds('.ranked-v3-podium-slot[data-record-rank="1"] .ranked-v3-podium-meta');
       const podiumInspect = document.querySelector('.ranked-v3-podium-slot[data-record-rank="1"] .ranked-v3-leaderboard-details-button');
       const centerXRatio = (selector) => {
         const box = document.querySelector(selector)?.getBoundingClientRect();
@@ -1571,10 +1642,19 @@ ${fatalTestHookAnchor}`;
       };
       const firstLedgerRank = document.querySelector(".ranked-v3-ledger-slot[data-record-rank]")?.dataset.recordRank;
       const ledgerValueSelector = (className) => `.ranked-v3-ledger-slot[data-record-rank="${firstLedgerRank}"] .${className}`;
-      const ledgerAnchorDrift = {
-        depth: Math.abs(centerX(".ranked-v3-leaderboard-column:nth-child(4)") - centerX(ledgerValueSelector("ranked-v3-leaderboard-depth"))),
-        gold: Math.abs(centerX(".ranked-v3-leaderboard-column:nth-child(5)") - centerX(ledgerValueSelector("ranked-v3-leaderboard-gold"))),
-        inspect: Math.abs(centerX(".ranked-v3-leaderboard-column:nth-child(6)") - centerX(ledgerValueSelector("ranked-v3-leaderboard-details-button")))
+      const ledgerHeaderBox = (column) => document.querySelector(`.ranked-v3-leaderboard-column:nth-child(${column})`)?.getBoundingClientRect();
+      const ledgerValueBox = (className) => document.querySelector(ledgerValueSelector(className))?.getBoundingClientRect();
+      const signedCenterOffset = (header, value) => (
+        value.left + value.width / 2 - (header.left + header.width / 2)
+      );
+      const nameHeaderBox = ledgerHeaderBox(2);
+      const nameValueBox = ledgerValueBox("record-archive-name");
+      const ledgerOffsets = {
+        nameLeft: nameValueBox.left - nameHeaderBox.left,
+        score: signedCenterOffset(ledgerHeaderBox(3), ledgerValueBox("ranked-v3-leaderboard-score")),
+        depth: signedCenterOffset(ledgerHeaderBox(4), ledgerValueBox("ranked-v3-leaderboard-depth")),
+        gold: signedCenterOffset(ledgerHeaderBox(5), ledgerValueBox("ranked-v3-leaderboard-gold")),
+        inspect: signedCenterOffset(ledgerHeaderBox(6), ledgerValueBox("ranked-v3-leaderboard-details-button"))
       };
       const game = document.querySelector("#game");
       const hdMode = {
@@ -1595,6 +1675,13 @@ ${fatalTestHookAnchor}`;
         ledger: bounds(".ranked-v3-leaderboard-ledger"),
         nameRatio: (nameBox.top - plate.top) / plate.height,
         scoreRatio: (scoreBox.top - plate.top) / plate.height,
+        metaRatio: (metaBox.top - plate.top) / plate.height,
+        nameToScoreOffset: scoreBox.top - nameBox.top,
+        scoreToMetaGap: metaBox.top - scoreBox.bottom,
+        podiumRankDisplays: [...document.querySelectorAll(".ranked-v3-podium-slot[data-record-rank] .ranked-v3-leaderboard-rank")]
+          .map((rank) => getComputedStyle(rank).display),
+        accessibleRanks: [...document.querySelectorAll(".ranked-v3-podium-slot[data-record-rank] .ranked-v3-rank-label")]
+          .map((rank) => rank.textContent),
         podiumInspectFontSize: getComputedStyle(podiumInspect).fontSize,
         nameFontSize: Number.parseFloat(getComputedStyle(document.querySelector('.ranked-v3-podium-slot[data-record-rank="1"] .record-archive-name')).fontSize),
         scoreFontSize: Number.parseFloat(getComputedStyle(document.querySelector('.ranked-v3-podium-slot[data-record-rank="1"] .ranked-v3-leaderboard-score')).fontSize),
@@ -1606,7 +1693,7 @@ ${fatalTestHookAnchor}`;
         populatedPodium: document.querySelectorAll(".ranked-v3-podium-slot[data-record-rank]").length,
         populatedLedger: document.querySelectorAll(".ranked-v3-ledger-slot[data-record-rank]").length,
         podiumCenters: [1, 2, 3].map((rank) => centerXRatio(`.ranked-v3-podium-slot[data-record-rank="${rank}"]`)),
-        ledgerAnchorDrift,
+        ledgerOffsets,
         titleLines,
         hdMode,
         classicArtDisplay,
@@ -1627,11 +1714,18 @@ ${fatalTestHookAnchor}`;
     referencePlateAudit.podiumCenters.forEach((center, index) => {
       assert.ok(Math.abs(center - expectedPodiumCenters[index]) <= 0.008, JSON.stringify(referencePlateAudit));
     });
-    Object.values(referencePlateAudit.ledgerAnchorDrift).forEach((drift) => {
-      assert.ok(drift <= 3, JSON.stringify(referencePlateAudit));
-    });
-    assert.ok(referencePlateAudit.nameRatio >= 0.43 && referencePlateAudit.nameRatio <= 0.48, JSON.stringify(referencePlateAudit));
+    assert.ok(referencePlateAudit.ledgerOffsets.nameLeft >= 24 && referencePlateAudit.ledgerOffsets.nameLeft <= 38, JSON.stringify(referencePlateAudit));
+    assert.ok(referencePlateAudit.ledgerOffsets.depth <= -24 && referencePlateAudit.ledgerOffsets.depth >= -38, JSON.stringify(referencePlateAudit));
+    for (const key of ["score", "gold", "inspect"]) {
+      assert.ok(Math.abs(referencePlateAudit.ledgerOffsets[key]) <= 3, JSON.stringify(referencePlateAudit));
+    }
+    assert.deepEqual(referencePlateAudit.podiumRankDisplays, ["none", "none", "none"], JSON.stringify(referencePlateAudit));
+    assert.deepEqual(referencePlateAudit.accessibleRanks, ["Rank 1", "Rank 2", "Rank 3"], JSON.stringify(referencePlateAudit));
+    assert.ok(referencePlateAudit.nameRatio >= 0.445 && referencePlateAudit.nameRatio <= 0.458, JSON.stringify(referencePlateAudit));
     assert.ok(referencePlateAudit.scoreRatio >= 0.47 && referencePlateAudit.scoreRatio <= 0.52, JSON.stringify(referencePlateAudit));
+    assert.ok(referencePlateAudit.metaRatio >= 0.518 && referencePlateAudit.metaRatio <= 0.535, JSON.stringify(referencePlateAudit));
+    assert.ok(referencePlateAudit.nameToScoreOffset >= 17 && referencePlateAudit.nameToScoreOffset <= 24, JSON.stringify(referencePlateAudit));
+    assert.ok(referencePlateAudit.scoreToMetaGap >= 8, JSON.stringify(referencePlateAudit));
     assert.equal(referencePlateAudit.podiumInspectFontSize, "0px", "Podium leaked a floating Inspect build label");
     await page.evaluate(() => document.activeElement?.blur());
     await page.screenshot({
@@ -1642,7 +1736,7 @@ ${fatalTestHookAnchor}`;
     assert.equal(referencePlateAudit.populatedLedger, 7, JSON.stringify(referencePlateAudit));
     assert.ok(referencePlateAudit.nameFontSize >= 25, JSON.stringify(referencePlateAudit));
     assert.ok(referencePlateAudit.scoreFontSize >= 42, JSON.stringify(referencePlateAudit));
-    assert.ok(referencePlateAudit.metaFontSize >= 12, JSON.stringify(referencePlateAudit));
+    assert.ok(referencePlateAudit.metaFontSize >= 15.5, JSON.stringify(referencePlateAudit));
     assert.ok(referencePlateAudit.columnFontSize >= 13, JSON.stringify(referencePlateAudit));
     assert.ok(referencePlateAudit.ledgerFontSize >= 17, JSON.stringify(referencePlateAudit));
     assert.ok(referencePlateAudit.depthFontSize >= 16, JSON.stringify(referencePlateAudit));

@@ -106,10 +106,17 @@
     }
     slot.setAttribute("data-record-rank", String(row.rank));
     const identity = element(documentRef, "div", "ranked-v3-leaderboard-slot-identity");
-    identity.append(
-      element(documentRef, "span", "ranked-v3-leaderboard-rank", String(row.rank)),
-      name(documentRef, row, open)
-    );
+    const rank = element(documentRef, "span", "ranked-v3-leaderboard-rank", String(row.rank));
+    if (layout === "podium") {
+      rank.setAttribute("aria-hidden", "true");
+      identity.append(
+        rank,
+        element(documentRef, "span", "ranked-v3-rank-label", `Rank ${row.rank}`),
+        name(documentRef, row, open)
+      );
+    } else {
+      identity.append(rank, name(documentRef, row, open));
+    }
     const score = scoreDisplay(documentRef, "ranked-v3-leaderboard-score", row.score);
     if (layout === "podium") {
       const meta = element(documentRef, "div", "ranked-v3-podium-meta");

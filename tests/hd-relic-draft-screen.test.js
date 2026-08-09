@@ -18,7 +18,10 @@ assert.match(game, /relic-draft-grid-dense/);
 assert.match(game, /relic-draft-grid-duel/);
 assert.match(game, /data-relic-key="\$\{escapeHtmlAttr\(key\)\}"/);
 assert.match(game, /class="relic-draft-icon"/);
-assert.match(game, /state\.phase === "relic"\) \{\s*menuBlock = buildRelicDraftOverlayContent\(\)/);
+assert.match(
+  game,
+  /state\.phase === "relic"\) \{\s*menuBlock = graphicsPreferenceApi\.isHd\(graphicsPreference\)\s*\? buildRelicDraftOverlayContent\(\)\s*:\s*buildClassicRelicDraftOverlayContent\(\)/
+);
 assert.match(game, /overlay-card overlay-card-relic-draft/);
 assert.match(game, /if \(state\.phase === "relic"\) \{\s*mutatorsEl\.innerHTML = ""/);
 assert.match(game, /const activateRelicChoice = \(choice\) =>/);

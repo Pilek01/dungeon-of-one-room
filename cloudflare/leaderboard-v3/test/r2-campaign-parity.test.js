@@ -186,9 +186,11 @@ test("production bridge uses native Forge and native Camp checkpoint selection",
   const runtime = await readFile(new URL("../../../online-v3/ranked-v3-runtime.js", import.meta.url), "utf8");
   assert.match(builder, /openRankedForgeRoom/u);
   assert.match(builder, /onForgeMode/u);
+  assert.match(builder, /enterRankedForge/u);
+  assert.match(builder, /state.onlineV3ForgePresentation/u);
   assert.match(builder, /syncRankedStartDepthUnlocks/u);
   assert.match(builder, /onCampStartRun\?\.\(selectedDepth\)/u);
   assert.doesNotMatch(runtime, /ui\.showMessage\("Forge", "Choose the Forge operation\."/u);
-  assert.match(runtime, /function onForgeMode\(mode\)/u);
+  assert.match(runtime, /function onForgeMode\(mode, context = \{\}\)/u);
   assert.match(runtime, /function onCampStartRun\(startDepth = 0\)[\s\S]*prepareFreshRankedStart\(false\)/u);
 });

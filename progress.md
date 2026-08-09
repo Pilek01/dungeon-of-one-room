@@ -1463,3 +1463,11 @@ Updated next good targets
 - The production Worker, D1 schema/data, active ruleset, Practice gameplay,
   Forge behavior, and `origin/main` were not changed. Seven unrelated WIP
   files remain preserved and unstaged.
+## 2026-08-09 - Leaderboard live-feedback calibration
+
+- Root cause confirmed in true HD at 1536 x 1080: podium ranks were live DOM glyphs; name/meta anchors and two ledger content offsets differed from the approved composition.
+- Added RED coverage for baked plaque numerals, accessible Top 3 rank semantics, exact podium anchors, larger/lower metadata, Name +32 px, Depth -32 px, and unchanged Score/Gold/Inspect anchors.
+- Baked static 2 / 1 / 3 into the existing leaderboard plate using a measured metallic serif treatment; no other plate region or Inspect asset changed.
+- Focused tests passed 9/9; JavaScript syntax passed; Ranked headed lifecycle passed with zero unexpected console or page errors.
+- Final comparison evidence: output/verification/ranked-live-feedback-20260809/.
+- No commit, push, or deployment was performed.
