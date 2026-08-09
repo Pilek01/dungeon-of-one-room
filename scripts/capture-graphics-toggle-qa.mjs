@@ -54,6 +54,12 @@ async function readMetrics(page) {
       gameVersion: window.DUNGEON_GAME_VERSION || window.GAME_VERSION || "",
       graphicsMode: canvas?.dataset.graphicsMode || "",
       canvasWidth: canvas?.width || 0,
+      canvasDisplay: style?.display || "",
+      canvasVisibility: style?.visibility || "",
+      canvasRect: rect ? { width: rect.width, height: rect.height } : null,
+      appHidden: document.querySelector("#gameApp")?.classList.contains("app-hidden") || false,
+      bootClass: document.querySelector("#bootScreen")?.className || "",
+      bodyClass: document.body.className,
       canvasHeight: canvas?.height || 0,
       canvasVisible: Boolean(rect && rect.width > 0 && rect.height > 0 && style?.display !== "none" && style?.visibility !== "hidden"),
       hdUi: document.body.classList.contains("graphics-hd-ui"),
@@ -78,6 +84,18 @@ async function waitForPlaying(page) {
   }, null, { timeout: 120000 });
 }
 
+async function revealScenarioGame(page) {
+  await page.evaluate(() => {
+    document.getElementById("bootScreen")?.classList.add("hidden");
+    document.getElementById("gameApp")?.classList.remove("app-hidden");
+  });
+  await page.waitForFunction(() => {
+    const boot = document.getElementById("bootScreen");
+    const app = document.getElementById("gameApp");
+    return Boolean(boot?.classList.contains("hidden") && !app?.classList.contains("app-hidden"));
+  }, null, { timeout: 10000 });
+}
+
 async function assertHd(page, label) {
   await waitForRenderer(page);
   const metrics = await readMetrics(page);
@@ -94,7 +112,7 @@ async function capture(page, name) {
   const state = await readState(page);
   const metrics = await assertHd(page, name);
   if (state.phase === "playing" && !metrics.canvasVisible) {
-    throw new Error(name + ": active HD canvas is not visible");
+    throw new Error(name + ": active HD canvas is not visible: " + JSON.stringify({ statePhase: state.phase, metrics }));
   }
   await page.screenshot({ path: path.join(target, "viewport.png"), fullPage: false });
   if (metrics.canvasVisible) await page.locator("#game").screenshot({ path: path.join(target, "canvas.png") });
@@ -128,9 +146,11 @@ try {
   const startup = await capture(page, "01-startup-hd");
   await page.goto(scenarioUrl, { waitUntil: "domcontentloaded" });
   await waitForPlaying(page);
+  await revealScenarioGame(page);
   const playing = await capture(page, "02-playing-hd");
   await page.reload({ waitUntil: "domcontentloaded" });
   await waitForPlaying(page);
+  await revealScenarioGame(page);
   const reload = await capture(page, "03-reload-hd");
   if (!sameRunState(playing.state, reload.state)) throw new Error("HD reload changed the deterministic run state");
   if (forbiddenRequests.length > 0) throw new Error(`Forbidden asset requests detected: ${JSON.stringify(forbiddenRequests)}`);
