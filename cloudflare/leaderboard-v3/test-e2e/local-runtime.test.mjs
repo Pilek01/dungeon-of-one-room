@@ -173,6 +173,8 @@ async function startRuntime(secret) {
       "127.0.0.1",
       "--port",
       String(port),
+      "--var",
+      `RANKED_V3_HMAC_SECRET:${secret}`,
       "--log-level",
       "error"
     ],
