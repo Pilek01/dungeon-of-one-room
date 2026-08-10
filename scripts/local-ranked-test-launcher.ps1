@@ -40,6 +40,7 @@ public static class LauncherProcessOutputPump
 "@
 
 $RepositoryRoot = [System.IO.Path]::GetFullPath($RepositoryRoot)
+Set-Location -LiteralPath $RepositoryRoot
 $corePath = Join-Path $RepositoryRoot "scripts\local-ranked-test-launcher-core.mjs"
 $script:activeProcess = $null
 $script:readyUrl = $null
