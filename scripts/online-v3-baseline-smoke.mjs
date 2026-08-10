@@ -739,10 +739,27 @@ async function main() {
         const rect = document.querySelector(selector)?.getBoundingClientRect();
         return rect ? { x: rect.x, y: rect.y, width: rect.width, height: rect.height } : null;
       };
+      const skin = (selector) => {
+        const node = document.querySelector(selector);
+        if (!node) return null;
+        const computed = getComputedStyle(node);
+        return {
+          backgroundImage: computed.backgroundImage,
+          borderImageSource: computed.borderImageSource,
+          fontSize: computed.fontSize
+        };
+      };
       return {
         viewport: { width: window.innerWidth, height: window.innerHeight },
         screenOverlay: box("#screenOverlay"),
-        shell: box("#screenOverlay .ranked-v3-card-reference-plate")
+        shell: box("#screenOverlay .ranked-v3-card-reference-plate"),
+        skin: {
+          shell: skin("#screenOverlay .ranked-v3-card-reference-plate"),
+          heading: skin("#screenOverlay .ranked-v3-leaderboard-heading"),
+          podium: skin("#screenOverlay .ranked-v3-podium-slot:not([aria-hidden='true'])"),
+          ledger: skin("#screenOverlay .ranked-v3-ledger-slot:not([aria-hidden='true'])"),
+          action: skin("#screenOverlay .ranked-v3-leaderboard-close")
+        }
       };
     });
     await writeJson("practice-records-narrow-layout.json", practiceNarrowLayout);
@@ -757,6 +774,14 @@ async function main() {
       true,
       JSON.stringify(practiceNarrowLayout)
     );
+    const hdTexture = /url\([^)]*\/assets\/hd\//u;
+    assert.match(practiceNarrowLayout.skin?.shell?.backgroundImage || "", hdTexture, JSON.stringify(practiceNarrowLayout.skin));
+    assert.match(practiceNarrowLayout.skin?.shell?.borderImageSource || "", hdTexture, JSON.stringify(practiceNarrowLayout.skin));
+    assert.match(practiceNarrowLayout.skin?.heading?.backgroundImage || "", hdTexture, JSON.stringify(practiceNarrowLayout.skin));
+    assert.match(practiceNarrowLayout.skin?.podium?.backgroundImage || "", hdTexture, JSON.stringify(practiceNarrowLayout.skin));
+    assert.match(practiceNarrowLayout.skin?.ledger?.backgroundImage || "", hdTexture, JSON.stringify(practiceNarrowLayout.skin));
+    assert.match(practiceNarrowLayout.skin?.action?.backgroundImage || "", hdTexture, JSON.stringify(practiceNarrowLayout.skin));
+    assert.equal(Number.parseFloat(practiceNarrowLayout.skin?.heading?.fontSize || "0") >= 16, true, JSON.stringify(practiceNarrowLayout.skin));
     await save.page.screenshot({ path: path.join(ARTIFACT_ROOT, "practice-records-list-narrow.png"), fullPage: true });
     await save.page.setViewportSize({ width: 1920, height: 1080 });
     const practiceNamesBeforeTab = await practiceArchive.locator('[data-record-nav-region="row"][data-record-action="name"]').evaluateAll((nodes) => nodes.map((node) => node.textContent?.trim() || ""));

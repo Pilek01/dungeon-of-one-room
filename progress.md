@@ -1524,3 +1524,21 @@ Updated next good targets
   added a RED regression guard and migrated the hook to the HD-only ready outcome.
 - Generated and visually inspected all six current HD-only archive screenshots.
   Two match the prior approved bytes; four require a new current-tip approval receipt.
+
+## 2026-08-10 - Narrow Practice archive HD skin
+
+- Confirmed the 640 x 1080 Practice screenshot was using a deliberate flat
+  responsive fallback: it hid the reference art and removed every HD texture.
+- Kept the readable responsive DOM flow, but replaced the flat cards with the
+  shared HD board frame, panel texture, section plaque, ranked podium hierarchy,
+  styled ledger, and 44 px keyboard/touch actions. The same canonical selectors
+  also protect narrow Ranked archive surfaces.
+- Added a browser regression that inspects the computed narrow styles and
+  requires real `assets/hd/**` presentation on the shell, header, podium,
+  ledger, and Close action.
+- TDD evidence: the new browser assertion first failed with every computed
+  background and border image equal to `none`; after the CSS fix, the focused
+  archive/UI tests passed 20/20 and the fresh Practice save scenario passed.
+- Final screenshot inspected at
+  `output/online-v3-baseline/save/practice-records-list-narrow.png`; no Classic
+  asset request, push, deployment, merge, or ruleset activation occurred.
