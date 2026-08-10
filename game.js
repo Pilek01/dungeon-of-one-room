@@ -7665,6 +7665,7 @@
     return bootDismissPromise;
   }
   function enterSplash() {
+    bootScreenEl?.classList.add("loading");
     return Promise.resolve(initialGraphicsReady).then((outcome) => {
       if (!outcome || outcome.ready !== true) {
         showHdLoadFailure();
