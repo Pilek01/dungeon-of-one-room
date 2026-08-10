@@ -31486,7 +31486,15 @@
     }
     if (event.repeat) return;
 
-    if (state.tutorialModalOpen) {
+    if (
+      state.tutorialModalOpen &&
+      state.tutorialModalKind === "portal" &&
+      state.phase === "playing" &&
+      isOnPortal() &&
+      (key === "e" || key === "q")
+    ) {
+      closeTutorialModal();
+    } else if (state.tutorialModalOpen) {
       if (key === "arrowup" || key === "arrowdown") {
         const tutorialScroller = screenOverlayEl.querySelector(".tutorial-sections");
         if (tutorialScroller) {
