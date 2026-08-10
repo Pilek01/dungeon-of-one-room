@@ -1542,3 +1542,22 @@ Updated next good targets
 - Final screenshot inspected at
   `output/online-v3-baseline/save/practice-records-list-narrow.png`; no Classic
   asset request, push, deployment, merge, or ruleset activation occurred.
+
+## 2026-08-10 - Final Defeat records focus repair
+
+- Direct pointer activation of the second Final Defeat action already opened
+  Practice Records and Ranked Leaderboard on the current HD-only tip.
+- Reproduced the reported failure through keyboard focus: ArrowRight changed the
+  visible selection to the records action while focus remained on Main Menu, so
+  Enter activated the stale focused control.
+- Synchronized the selected Final Defeat action with DOM focus, preserving the
+  existing shared Online/Practice routing and preventing the focused control
+  from disagreeing with the visible selection.
+- Added headed regressions for focus + ArrowRight + Enter in Practice and direct
+  Leaderboard activation in the terminal Ranked lifecycle.
+- Fresh verification passed: Practice save browser scenario, direct Ranked
+  lifecycle, focused HD/menu/leaderboard tests 26/26, guard 14/14, and phase
+  781/781.
+- Regenerated the 34 source-bound `v08-meta-1` data files and
+  `ruleset-manifest.json` after the `game.js` fingerprint changed. The
+  ruleset remains test-only; no activation, push, deployment, or merge occurred.

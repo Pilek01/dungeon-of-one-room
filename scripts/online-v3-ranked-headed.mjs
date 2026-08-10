@@ -1527,8 +1527,20 @@ ${fatalTestHookAnchor}`;
       true,
       "Terminal Ranked defeat allowed Rise Again"
     );
-    await page.keyboard.press("Enter");
-    await page.waitForFunction(() => JSON.parse(window.render_game_to_text()).phase === "menu");
+    const terminalLeaderboardAction = page.locator('.gameover-requiem-action[data-hd-key="2"]');
+    assert.equal(await terminalLeaderboardAction.count(), 1, "Final Defeat Leaderboard action is missing");
+    await terminalLeaderboardAction.click();
+    const terminalLeaderboard = page.locator(
+      ".ranked-v3-overlay:not(.hidden) .ranked-v3-reference-plate--leaderboard"
+    );
+    await terminalLeaderboard.waitFor({ state: "visible" });
+    assert.equal(
+      await page.evaluate(() => JSON.parse(window.render_game_to_text()).phase),
+      "menu",
+      "Final Defeat Leaderboard action did not return the game to menu state"
+    );
+    await terminalLeaderboard.locator(".ranked-v3-leaderboard-close").click();
+    await page.waitForFunction(() => document.querySelector(".ranked-v3-overlay")?.hidden === true);
     const postTerminalPracticeApiBefore = diagnostics.apiRequests.length;
     await openNativeMenuOption(page, "Practice (Offline)");
     const practiceAfterRanked = await page.evaluate(() => JSON.parse(window.render_game_to_text()).phase);

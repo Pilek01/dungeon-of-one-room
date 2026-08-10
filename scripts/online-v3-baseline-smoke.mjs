@@ -698,7 +698,19 @@ async function main() {
     results.screenshots.push(await screenshot(save.page, "08-final-defeat.png"));
 
     const practiceApiBeforeRecords = diagnostics.apiRequests.length;
-    await save.page.keyboard.press("2");
+    const terminalMainMenuAction = save.page.locator('.gameover-requiem-action[data-hd-key="1"]');
+    const terminalRecordsAction = save.page.locator('.gameover-requiem-action[data-hd-key="2"]');
+    assert.equal(await terminalMainMenuAction.count(), 1, "Final Defeat Main Menu action is missing");
+    assert.equal(await terminalRecordsAction.count(), 1, "Final Defeat records action is missing");
+    await terminalMainMenuAction.focus();
+    await save.page.keyboard.press("ArrowRight");
+    assert.equal(await terminalRecordsAction.getAttribute("aria-selected"), "true");
+    assert.equal(
+      await save.page.evaluate(() => document.activeElement?.getAttribute("data-hd-key")),
+      "2",
+      "Final Defeat arrow navigation did not move focus to the records action"
+    );
+    await save.page.keyboard.press("Enter");
     const practiceArchive = save.page.locator("[data-practice-record-archive] > .ranked-v3-reference-plate.ranked-v3-reference-plate--leaderboard.ranked-v3-leaderboard-list");
     await practiceArchive.waitFor({ state: "visible" });
     assert.equal(await practiceArchive.locator(".ranked-v3-podium-slot").count(), 3);

@@ -22794,6 +22794,10 @@
       action.classList.toggle("selected", selected);
       action.setAttribute("aria-selected", selected ? "true" : "false");
     });
+    const selectedAction = actions[state.finalGameOverSelection];
+    if (typeof selectedAction?.focus === "function") {
+      selectedAction.focus({ preventScroll: true });
+    }
   }
 
   function buildScreenOverlay() {
