@@ -7665,10 +7665,13 @@
     return bootDismissPromise;
   }
   function enterSplash() {
-    dismissBootScreen();
-    playSplashTrack();
-    // Skip splash phase, go straight to menu
-    enterMenu();
+    return dismissBootScreen().then((dismissed) => {
+      if (dismissed !== true || state.phase !== "boot") return false;
+      playSplashTrack();
+      // Skip splash phase, go straight to menu
+      enterMenu();
+      return true;
+    });
   }
 
   function isRunPauseMenuActive() {
@@ -13801,20 +13804,31 @@
     const scenario = state.testScenario;
     if (!scenario || state.testScenarioApplied) return false;
     state.testScenarioApplied = true;
-    dismissBootScreen();
-    startRun({ startDepth: 0, resetMapFragments: true });
-    state.tutorialModalOpen = false;
-    state.tutorialModalKind = null;
-    state.tutorialModalSource = null;
-    state.depth = clamp(Math.floor(Number(scenario.depth) || 0), 0, MAX_DEPTH);
-    applyScenarioRoomOverrideFromState();
-    buildRoom();
-    applyScenarioOverrideAfterRoomBuild();
-    sanitizeRoomVisualConflicts();
-    pushLog(`Scenario loaded: ${scenario.label}.`, "warn");
-    saveRunSnapshot();
-    markUiDirty();
-    return true;
+    return Promise.resolve(initialGraphicsReady).then((outcome) => {
+      if (!outcome || outcome.ready !== true) {
+        showHdLoadFailure();
+        return false;
+      }
+      return dismissBootScreen();
+    }).then((dismissed) => {
+      if (dismissed !== true) return false;
+      startRun({ startDepth: 0, resetMapFragments: true });
+      state.tutorialModalOpen = false;
+      state.tutorialModalKind = null;
+      state.tutorialModalSource = null;
+      state.depth = clamp(Math.floor(Number(scenario.depth) || 0), 0, MAX_DEPTH);
+      applyScenarioRoomOverrideFromState();
+      buildRoom();
+      applyScenarioOverrideAfterRoomBuild();
+      sanitizeRoomVisualConflicts();
+      pushLog(`Scenario loaded: ${scenario.label}.`, "warn");
+      saveRunSnapshot();
+      markUiDirty();
+      return true;
+    }, () => {
+      showHdLoadFailure();
+      return false;
+    });
   }
 
   function buildRoom() {

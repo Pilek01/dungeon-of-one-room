@@ -278,20 +278,33 @@ async function waitForState(page, predicate, label, timeoutMs = 12_000) {
   throw new Error(`Timed out waiting for ${label}. Last state: ${JSON.stringify(lastState)}`);
 }
 
-async function waitForBootAdvance(page) {
-  await page.waitForFunction(() => {
-    let phase = "";
+async function waitForBootAdvance(page, diagnosticBucket = null) {
+  const deadline = Date.now() + 120_000;
+  while (Date.now() < deadline) {
+    await page.keyboard.press("Enter");
     try {
-      phase = JSON.parse(window.render_game_to_text?.() || "{}").phase || "";
-    } catch {
-      // The render hook can be between boot states for one frame.
+      await page.waitForFunction(() => {
+        let phase = "";
+        try {
+          phase = JSON.parse(window.render_game_to_text?.() || "{}").phase || "";
+        } catch {
+          // The render hook can be between boot states for one frame.
+        }
+        const boot = document.getElementById("bootScreen");
+        return phase === "menu" ||
+          Boolean(boot?.classList.contains("hidden"));
+      }, null, { timeout: 2000 });
+      return;
+    } catch (error) {
+      if (error?.name !== "TimeoutError") throw error;
+      const failed = await page.locator("#bootScreen.hd-load-failed").count();
+      if (failed) {
+        const prompt = await page.locator("#bootScreen .boot-press").textContent();
+        throw new Error("HD boot failed closed: " + String(prompt || "") + " " + JSON.stringify(diagnosticBucket?.consoleErrors || []));
+      }
     }
-    const boot = document.getElementById("bootScreen");
-    const loading = document.querySelector(".boot-loading");
-    return phase === "menu" ||
-      Boolean(boot?.classList.contains("hidden")) ||
-      Boolean(loading?.getClientRects().length);
-  });
+  }
+  throw new Error("Timed out waiting for HD boot input to advance: " + JSON.stringify(diagnosticBucket?.consoleErrors || []));
 }
 
 async function screenshot(page, name) {
@@ -333,8 +346,9 @@ async function createContext(browser, options = {}) {
 
 function attachDiagnostics(page, bucket, label) {
   page.on("console", (message) => {
-    if (message.type() === "error") {
-      bucket.consoleErrors.push({ label, text: message.text() });
+    const text = message.text();
+    if (message.type() === "error" || (message.type() === "warning" && text.includes("[Dungeon graphics]"))) {
+      bucket.consoleErrors.push({ label, text });
     }
   });
   page.on("pageerror", (error) => {
@@ -379,18 +393,12 @@ async function openScenario(browser, baseUrl, diagnostics, label, scenario, opti
     waitUntil: "domcontentloaded"
   });
   assert.equal(response?.status(), 200, `${label}: expected HTTP 200`);
-  const state = await waitForState(page, (value) => value.phase === "playing", `${label} playing`);
-  await page.evaluate(() => {
-    // Scenario overrides start directly in gameplay while the first-launch boot
-    // layer remains mounted. Reveal the already-running game for visual QA.
-    document.getElementById("bootScreen")?.classList.add("hidden");
-    document.getElementById("gameApp")?.classList.remove("app-hidden");
-  });
+  const state = await waitForState(page, (value) => value.phase === "playing", `${label} playing`, 120_000);
   await page.waitForFunction(() => {
     const boot = document.getElementById("bootScreen");
     const app = document.getElementById("gameApp");
-    return Boolean(boot?.classList.contains("hidden") && !app?.classList.contains("app-hidden"));
-  });
+    return Boolean(!app?.classList.contains("app-hidden") && (boot?.classList.contains("fading") || boot?.classList.contains("hidden")));
+  }, null, { timeout: 10000 });
   return { context, page, state };
 }
 
@@ -399,11 +407,7 @@ async function dismissBootToMenu(page) {
   if (current?.phase !== "menu") {
     const boot = page.locator("#bootScreen");
     if (!await boot.evaluate((element) => element.classList.contains("hidden"))) {
-      await page.keyboard.press("Enter");
       await waitForBootAdvance(page);
-      if (!await boot.evaluate((element) => element.classList.contains("hidden"))) {
-        await page.keyboard.press("Enter");
-      }
     }
   }
   const state = await waitForState(page, (value) => value.phase === "menu", "main menu");
@@ -499,8 +503,7 @@ async function main() {
     assert.equal(results.gameVersion, "v0.8.2");
     assert.equal(await bootPage.locator("#bootScreen").isVisible(), true);
     results.screenshots.push(await screenshot(bootPage, "01-boot.png"));
-    await bootPage.keyboard.press("Enter");
-    await waitForBootAdvance(bootPage);
+    await waitForBootAdvance(bootPage, diagnostics);
     const mutedBefore = await bootPage.evaluate(() => localStorage.getItem("dungeonOneRoomAudioMuted"));
     await bootPage.keyboard.press("m");
     const mutedAfter = await bootPage.evaluate(() => localStorage.getItem("dungeonOneRoomAudioMuted"));

@@ -70,6 +70,7 @@
     return new Promise((resolve) => {
       let image = null;
       let settled = false;
+      let decodeRejected = false;
       let timerId;
       let timerScheduled = false;
 
@@ -129,13 +130,11 @@
 
       const canDecode = typeof image.decode === "function";
       image.onerror = function handleImageError() {
-        settle(false, "error");
+        settle(false, decodeRejected ? "decode" : "error");
       };
-      image.onload = canDecode
-        ? null
-        : function handleImageLoad() {
-            settle(true);
-          };
+      image.onload = function handleImageLoad() {
+        settle(true);
+      };
 
       try {
         timerId = options.setTimeoutFn(() => settle(false, "timeout"), options.timeoutMs);
@@ -158,12 +157,14 @@
         try {
           decodeResult = image.decode();
         } catch (_error) {
-          settle(false, "decode");
+          decodeRejected = true;
           return;
         }
         Promise.resolve(decodeResult).then(
           () => settle(true),
-          () => settle(false, "decode")
+          () => {
+            decodeRejected = true;
+          }
         );
       }
     });

@@ -32,3 +32,33 @@ test("startup never invokes Classic sprite preloaders", () => {
 test("live version is v0.8.2", () => {
   assert.match(config, /window\.GAME_VERSION\s*=\s*"v0\.8\.2"/u);
 });
+
+test("scenario overrides cannot bypass HD readiness", () => {
+  const start = game.indexOf("function bootstrapScenarioOverride()");
+  const end = game.indexOf("function buildRoom()", start);
+  assert.notEqual(start, -1, "scenario bootstrap must remain discoverable");
+  assert.notEqual(end, -1, "scenario bootstrap boundary must remain discoverable");
+  const body = game.slice(start, end);
+  const readinessGate = body.indexOf("Promise.resolve(initialGraphicsReady)");
+  const readyCheck = body.indexOf("outcome.ready !== true");
+  const dismiss = body.indexOf("dismissBootScreen()");
+  const runStart = body.indexOf("startRun(");
+  assert.ok(readinessGate >= 0, "scenario bootstrap must await HD readiness");
+  assert.ok(readyCheck > readinessGate, "scenario bootstrap must fail closed");
+  assert.ok(dismiss > readyCheck, "boot may dismiss only after HD becomes ready");
+  assert.ok(runStart > dismiss, "scenario gameplay may start only after boot dismissal");
+});
+
+test("boot input cannot enter the menu before HD readiness", () => {
+  const start = game.indexOf("function enterSplash()");
+  const end = game.indexOf("function isRunPauseMenuActive()", start);
+  assert.notEqual(start, -1, "boot transition must remain discoverable");
+  assert.notEqual(end, -1, "boot transition boundary must remain discoverable");
+  const body = game.slice(start, end);
+  const dismiss = body.indexOf("dismissBootScreen()");
+  const dismissedCheck = body.indexOf("dismissed !== true");
+  const enterMenu = body.indexOf("enterMenu()");
+  assert.ok(dismiss >= 0, "boot input must request HD-gated dismissal");
+  assert.ok(dismissedCheck > dismiss, "failed HD dismissal must stop the transition");
+  assert.ok(enterMenu > dismissedCheck, "menu entry must follow successful HD dismissal");
+});

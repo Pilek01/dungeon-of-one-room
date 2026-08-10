@@ -84,18 +84,6 @@ async function waitForPlaying(page) {
   }, null, { timeout: 120000 });
 }
 
-async function revealScenarioGame(page) {
-  await page.evaluate(() => {
-    document.getElementById("bootScreen")?.classList.add("hidden");
-    document.getElementById("gameApp")?.classList.remove("app-hidden");
-  });
-  await page.waitForFunction(() => {
-    const boot = document.getElementById("bootScreen");
-    const app = document.getElementById("gameApp");
-    return Boolean(boot?.classList.contains("hidden") && !app?.classList.contains("app-hidden"));
-  }, null, { timeout: 10000 });
-}
-
 async function assertHd(page, label) {
   await waitForRenderer(page);
   const metrics = await readMetrics(page);
@@ -146,11 +134,9 @@ try {
   const startup = await capture(page, "01-startup-hd");
   await page.goto(scenarioUrl, { waitUntil: "domcontentloaded" });
   await waitForPlaying(page);
-  await revealScenarioGame(page);
   const playing = await capture(page, "02-playing-hd");
   await page.reload({ waitUntil: "domcontentloaded" });
   await waitForPlaying(page);
-  await revealScenarioGame(page);
   const reload = await capture(page, "03-reload-hd");
   if (!sameRunState(playing.state, reload.state)) throw new Error("HD reload changed the deterministic run state");
   if (forbiddenRequests.length > 0) throw new Error(`Forbidden asset requests detected: ${JSON.stringify(forbiddenRequests)}`);

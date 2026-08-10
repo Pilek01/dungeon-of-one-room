@@ -1502,7 +1502,7 @@ Updated next good targets
 - Pages builds now omit assets/logo.png, all assets/sprite/**, and
   render/graphics-preference.js.
 - Bumped the live game version and active Online/Ranked fallbacks to v0.8.2.
-- Verification passed: focused HD/build/archive tests 86/86, current-tree boot
+- Verification passed: focused HD/build/archive tests 89/89, current-tree boot
   and HD browser scenarios, direct HD startup/scenario/reload with zero retired
   asset requests, and the clean committed protected baseline.
 - Boot and HD screenshots were visually inspected; no mixed Classic/HD frame,
