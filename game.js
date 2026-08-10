@@ -7665,12 +7665,19 @@
     return bootDismissPromise;
   }
   function enterSplash() {
-    return dismissBootScreen().then((dismissed) => {
-      if (dismissed !== true || state.phase !== "boot") return false;
+    return Promise.resolve(initialGraphicsReady).then((outcome) => {
+      if (!outcome || outcome.ready !== true) {
+        showHdLoadFailure();
+        return false;
+      }
+      if (state.phase !== "boot") return false;
       playSplashTrack();
       // Skip splash phase, go straight to menu
       enterMenu();
-      return true;
+      return dismissBootScreen();
+    }, () => {
+      showHdLoadFailure();
+      return false;
     });
   }
 

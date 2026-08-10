@@ -50,18 +50,20 @@ test("scenario overrides cannot bypass HD readiness", () => {
   assert.ok(runStart > dismiss, "scenario gameplay may start only after boot dismissal");
 });
 
-test("boot input cannot enter the menu before HD readiness", () => {
+test("boot input prepares the menu before revealing the HD app", () => {
   const start = game.indexOf("function enterSplash()");
   const end = game.indexOf("function isRunPauseMenuActive()", start);
   assert.notEqual(start, -1, "boot transition must remain discoverable");
   assert.notEqual(end, -1, "boot transition boundary must remain discoverable");
   const body = game.slice(start, end);
-  const dismiss = body.indexOf("dismissBootScreen()");
-  const dismissedCheck = body.indexOf("dismissed !== true");
+  const readinessGate = body.indexOf("Promise.resolve(initialGraphicsReady)");
+  const readyCheck = body.indexOf("outcome.ready !== true");
   const enterMenu = body.indexOf("enterMenu()");
-  assert.ok(dismiss >= 0, "boot input must request HD-gated dismissal");
-  assert.ok(dismissedCheck > dismiss, "failed HD dismissal must stop the transition");
-  assert.ok(enterMenu > dismissedCheck, "menu entry must follow successful HD dismissal");
+  const dismiss = body.indexOf("dismissBootScreen()");
+  assert.ok(readinessGate >= 0, "boot input must await HD readiness");
+  assert.ok(readyCheck > readinessGate, "failed HD readiness must stop the transition");
+  assert.ok(enterMenu > readyCheck, "menu state must be prepared only after HD becomes ready");
+  assert.ok(dismiss > enterMenu, "the app may be revealed only after the menu is prepared");
 });
 
 test("Ranked QA readiness hook uses only the live HD-only contract", () => {
