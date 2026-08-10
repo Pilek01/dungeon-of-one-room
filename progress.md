@@ -1507,6 +1507,12 @@ Updated next good targets
   asset requests, and the clean committed protected baseline.
 - Boot and HD screenshots were visually inspected; no mixed Classic/HD frame,
   missing game chrome, or layout regression was observed.
-- verify:guard and verify:phase were each run once and stopped at the known
-  generated source-manifest.generated.json drift; no generated ruleset or
-  production binding was changed. No push, deploy, merge, or activation occurred.
+- The user approved all six canonical Practice/Ranked archive screenshots.
+  Their local approval receipt verifies fingerprint
+  `sha256:d1947031bc12de3e3cb6036e0d9caa99f7b98c0b6fc6865d7c4235430cd964cd`
+  in the prior archive worktree.
+- After explicit authorization, regenerated the 34 `v08-meta-1` source-bound
+  data files plus `ruleset-manifest.json`. Fresh verification passed:
+  generator check, guard 14/14, and phase 781/781.
+- `v08-meta-1` remains test-only. No production binding, push, deploy, merge,
+  or ruleset activation occurred.
