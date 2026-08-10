@@ -964,11 +964,8 @@
   const canvas = document.getElementById("game");
   const ctx = canvas.getContext("2d");
   ctx.imageSmoothingEnabled = false;
-  const graphicsPreferenceApi = window.DungeonGraphicsPreference;
-  const shippingHdDefault = readGlobalFlag("DUNGEON_HD_GRAPHICS_ENABLED", false);
-  let graphicsPreference = graphicsPreferenceApi.readPreference(localStorage, shippingHdDefault);
-  let graphicsTransitionPending = false;
-  let graphicsTransitionGeneration = 0;
+  function isHdGraphics() { return true; }
+
   let initialGraphicsReady = Promise.resolve();
   let bootDismissPromise = null;
   const screenOverlayEl = document.getElementById("screenOverlay");
@@ -2011,7 +2008,7 @@
     menuOpenedFromRun: false,
     menuReturnPhase: "",
     menuOptionsOpen: false,
-    menuOptionsView: "root", // "root" | "enemy_speed" | "audio" | "graphics" | "tutorial"
+    menuOptionsView: "root", // "root" | "enemy_speed" | "audio" | "tutorial"
     menuOptionsContext: "options", // "options" | "tutorial"
     menuOptionsIndex: 0,
     menuNewGameConfirmOpen: false,
@@ -2019,6 +2016,9 @@
     hasContinueRun: false,
     leaderboardModalOpen: false,
     practiceRecordDetailRunId: "",
+    practiceRecordPage: 1,
+    practiceRecordFocusToken: null,
+    practiceRecordReturnFocus: null,
     leaderboardSortMode: "score", // "score" | "depth"
     leaderboardScope: "current", // "current" | "legacy"
     nameModalOpen: false,
@@ -2581,14 +2581,7 @@
   };
 
   function isHdPlayerMenuNavigationSurface() {
-    if (
-      !screenOverlayEl ||
-      !graphicsPreferenceApi ||
-      typeof graphicsPreferenceApi.isHd !== "function" ||
-      !graphicsPreferenceApi.isHd(graphicsPreference)
-    ) {
-      return false;
-    }
+    if (!screenOverlayEl) return false;
     if (state.phase === "won") return Boolean(state.finalVictoryPrompt);
     if (state.phase === "camp") {
       return !state.campStartDepthPromptOpen && !state.extractRelicPrompt;
@@ -3967,22 +3960,26 @@
   }
 
   function openTerminalRecords() {
+    const opener = document.activeElement;
     const ranked = Boolean(state.onlineV3Ranked);
     enterMenu();
     if (ranked) {
-      window.DungeonOnlineV3?.openLeaderboard?.();
+      window.DungeonOnlineV3?.openLeaderboard?.(opener);
       return;
     }
-    openPracticeRecordsModal();
+    openPracticeRecordsModal(opener);
   }
 
   function openLeaderboardModal() {
-    openPracticeRecordsModal();
+    openPracticeRecordsModal(document.activeElement);
   }
 
-  function openPracticeRecordsModal() {
+  function openPracticeRecordsModal(opener = null) {
     state.leaderboardModalOpen = true;
     state.practiceRecordDetailRunId = "";
+    state.practiceRecordPage = 1;
+    state.practiceRecordFocusToken = null;
+    state.practiceRecordReturnFocus = opener && opener !== document.body ? opener : null;
     state.leaderboardSortMode = "score";
     state.leaderboardScope = "current";
     markUiDirty();
@@ -3990,13 +3987,23 @@
 
   function closeLeaderboardModal() {
     if (!state.leaderboardModalOpen) return;
+    const returnFocus = state.practiceRecordReturnFocus;
     state.leaderboardModalOpen = false;
     state.practiceRecordDetailRunId = "";
+    state.practiceRecordFocusToken = null;
+    state.practiceRecordReturnFocus = null;
     markUiDirty();
+    requestAnimationFrame(() => {
+      if (returnFocus && returnFocus.isConnected !== false && typeof returnFocus.focus === "function") {
+        returnFocus.focus();
+      }
+    });
   }
 
   function toggleLeaderboardSortMode() {
     state.leaderboardSortMode = state.leaderboardSortMode === "score" ? "depth" : "score";
+    state.practiceRecordPage = 1;
+    state.practiceRecordFocusToken = null;
     markUiDirty();
   }
 
@@ -6709,28 +6716,6 @@
     ];
   }
 
-  function getGraphicsOptionsItems() {
-    return [
-      { id: "hd", key: "1", label: "HD" },
-      { id: "classic", key: "2", label: "Classic" }
-    ];
-  }
-
-  function getGraphicsPreferenceMode() {
-    return graphicsPreference;
-  }
-
-  function getGraphicsMenuDescription() {
-    const requested = getGraphicsPreferenceMode();
-    const runtime = getRuntimeGraphicsMode();
-    if (graphicsTransitionPending && requested === "hd") {
-      return "Loading HD graphics...";
-    }
-    if (requested === "hd" && runtime === "classic") {
-      return "Requested: HD. Running: Classic fallback.";
-    }
-    return `Current: ${runtime === "hd" ? "HD" : "Classic"}.`;
-  }
 
   function getTutorialOptionsItems() {
     return [
@@ -6758,12 +6743,6 @@
         key: "2",
         title: "Audio",
         desc: `Current: ${state.audioMuted ? "Off" : "On"}.`
-      },
-      {
-        id: "graphics",
-        key: "3",
-        title: "Graphics",
-        desc: getGraphicsMenuDescription()
       }
     ];
   }
@@ -6775,9 +6754,7 @@
     if (state.menuOptionsView === "audio") {
       return getAudioOptionsItems();
     }
-    if (state.menuOptionsView === "graphics") {
-      return getGraphicsOptionsItems();
-    }
+
     if (state.menuOptionsView === "tutorial") {
       return getTutorialOptionsItems();
     }
@@ -6814,11 +6791,6 @@
     markUiDirty();
   }
 
-  function openGraphicsOptions() {
-    state.menuOptionsView = "graphics";
-    state.menuOptionsIndex = getGraphicsPreferenceMode() === "hd" ? 0 : 1;
-    markUiDirty();
-  }
 
   function openTutorialOptions() {
     state.menuOptionsView = "tutorial";
@@ -6847,12 +6819,7 @@
       markUiDirty();
       return true;
     }
-    if (state.menuOptionsView === "graphics") {
-      state.menuOptionsView = "root";
-      state.menuOptionsIndex = 0;
-      markUiDirty();
-      return true;
-    }
+
     if (state.menuOptionsView === "tutorial") {
       if (state.menuOptionsContext === "options") {
         state.menuOptionsView = "root";
@@ -6876,8 +6843,6 @@
         openEnemySpeedOptions();
       } else if (item.id === "audio") {
         openAudioOptions();
-      } else if (item.id === "graphics") {
-        openGraphicsOptions();
       }
       return;
     }
@@ -6898,12 +6863,7 @@
       markUiDirty();
       return;
     }
-    if (state.menuOptionsView === "graphics") {
-      setGraphicsPreference(item.id);
-      state.menuOptionsIndex = getGraphicsPreferenceMode() === "hd" ? 0 : 1;
-      markUiDirty();
-      return;
-    }
+
     if (state.menuOptionsView === "tutorial") {
       closeMenuOptions();
       openTutorialModal(item.id, "manual");
@@ -7085,7 +7045,7 @@
   }
 
   function getTutorialModalModel(kind) {
-    const useHdTutorialControls = graphicsPreferenceApi.isHd(graphicsPreference);
+    const useHdTutorialControls = isHdGraphics();
     if (kind === "combat_basics") {
       return {
         title: "Combat Basics",
@@ -7674,9 +7634,19 @@
     markUiDirty();
   }
 
+  function showHdLoadFailure() {
+    const prompt = bootScreenEl?.querySelector(".boot-press");
+    if (prompt) prompt.textContent = "HD assets failed to load. Reload to retry.";
+    bootScreenEl?.classList.add("hd-load-failed");
+  }
+
   function dismissBootScreen() {
     if (bootDismissPromise) return bootDismissPromise;
-    bootDismissPromise = Promise.resolve(initialGraphicsReady).then(() => {
+    bootDismissPromise = Promise.resolve(initialGraphicsReady).then((outcome) => {
+      if (!outcome || outcome.ready !== true) {
+        showHdLoadFailure();
+        return false;
+      }
       if (gameAppEl) {
         gameAppEl.classList.remove("app-hidden");
         requestAnimationFrame(() => syncHdMenuNavigation());
@@ -7687,15 +7657,28 @@
           bootScreenEl.classList.add("hidden");
         }, { once: true });
       }
+      return true;
+    }, () => {
+      showHdLoadFailure();
+      return false;
     });
     return bootDismissPromise;
   }
-
   function enterSplash() {
-    dismissBootScreen();
-    playSplashTrack();
-    // Skip splash phase, go straight to menu
-    enterMenu();
+    return Promise.resolve(initialGraphicsReady).then((outcome) => {
+      if (!outcome || outcome.ready !== true) {
+        showHdLoadFailure();
+        return false;
+      }
+      if (state.phase !== "boot") return false;
+      playSplashTrack();
+      // Skip splash phase, go straight to menu
+      enterMenu();
+      return dismissBootScreen();
+    }, () => {
+      showHdLoadFailure();
+      return false;
+    });
   }
 
   function isRunPauseMenuActive() {
@@ -10233,7 +10216,7 @@
         );
       }
       pushLog(
-        graphicsPreferenceApi.isHd(graphicsPreference)
+        isHdGraphics()
           ? "Camp: use arrows to choose a tab or action, then press Enter."
           : "Camp shop: keys 1-0 buy upgrades. Press R to start next run."
       );
@@ -10342,7 +10325,7 @@
 
   function getCampStartDepthPromptOptions() {
     const available = getAvailableStartDepths();
-    const useHdStartDepthUi = graphicsPreferenceApi.isHd(graphicsPreference);
+    const useHdStartDepthUi = isHdGraphics();
     if (!useHdStartDepthUi || available.length <= 1) return available;
     return [0, ...START_DEPTH_CHECKPOINTS];
   }
@@ -13828,20 +13811,31 @@
     const scenario = state.testScenario;
     if (!scenario || state.testScenarioApplied) return false;
     state.testScenarioApplied = true;
-    dismissBootScreen();
-    startRun({ startDepth: 0, resetMapFragments: true });
-    state.tutorialModalOpen = false;
-    state.tutorialModalKind = null;
-    state.tutorialModalSource = null;
-    state.depth = clamp(Math.floor(Number(scenario.depth) || 0), 0, MAX_DEPTH);
-    applyScenarioRoomOverrideFromState();
-    buildRoom();
-    applyScenarioOverrideAfterRoomBuild();
-    sanitizeRoomVisualConflicts();
-    pushLog(`Scenario loaded: ${scenario.label}.`, "warn");
-    saveRunSnapshot();
-    markUiDirty();
-    return true;
+    return Promise.resolve(initialGraphicsReady).then((outcome) => {
+      if (!outcome || outcome.ready !== true) {
+        showHdLoadFailure();
+        return false;
+      }
+      return dismissBootScreen();
+    }).then((dismissed) => {
+      if (dismissed !== true) return false;
+      startRun({ startDepth: 0, resetMapFragments: true });
+      state.tutorialModalOpen = false;
+      state.tutorialModalKind = null;
+      state.tutorialModalSource = null;
+      state.depth = clamp(Math.floor(Number(scenario.depth) || 0), 0, MAX_DEPTH);
+      applyScenarioRoomOverrideFromState();
+      buildRoom();
+      applyScenarioOverrideAfterRoomBuild();
+      sanitizeRoomVisualConflicts();
+      pushLog(`Scenario loaded: ${scenario.label}.`, "warn");
+      saveRunSnapshot();
+      markUiDirty();
+      return true;
+    }, () => {
+      showHdLoadFailure();
+      return false;
+    });
   }
 
   function buildRoom() {
@@ -21866,7 +21860,7 @@
     if (state.phase === "boot") { actionsEl.textContent = ""; return; }
     const emergencyLossPercent = Math.round(getEmergencyExtractLossRatio() * 100);
     const elixirHint = hasElixirLoadout() ? " Press G for elixir." : "";
-      if (graphicsPreferenceApi.isHd(graphicsPreference)) {
+      if (isHdGraphics()) {
         actionsEl.textContent = state.menuOptionsOpen
           ? "Use arrows to choose. Enter applies. Esc goes back."
           : "Navigate with arrows. Enter selects.";
@@ -21901,7 +21895,7 @@
       }
       actionsEl.textContent = "";
       return;
-      if (graphicsPreferenceApi.isHd(graphicsPreference)) {
+      if (isHdGraphics()) {
         actionsEl.textContent = "Use arrows to choose a relic. Enter confirms. Esc keeps or skips.";
         return;
       }
@@ -21940,14 +21934,14 @@
         0,
         Number(state.finalVictoryPrompt?.score) || calculateScore(finalDepth, getRunGoldEarned())
       );
-      actionsEl.textContent = graphicsPreferenceApi.isHd(graphicsPreference)
+      actionsEl.textContent = isHdGraphics()
         ? `VICTORY! Depth ${finalDepth} cleared (${finalScore} pts). Use arrows and Enter.`
         : `VICTORY! Depth ${finalDepth} cleared (${finalScore} pts). 1 = Main Menu, 2 = ${getTerminalRecordsLabel()}.`;
       return;
     }
     if (state.phase === "dead") {
       if (state.finalGameOverPrompt) {
-        actionsEl.textContent = graphicsPreferenceApi.isHd(graphicsPreference)
+        actionsEl.textContent = isHdGraphics()
           ? "GAME OVER: all lives lost. Use arrows and Enter."
           : `GAME OVER: all lives lost. 1 = Main Menu, 2 = ${getTerminalRecordsLabel()}.`;
       } else {
@@ -21956,13 +21950,13 @@
       return;
     }
     if (state.phase === "playing" && state.extractConfirm) {
-      actionsEl.textContent = graphicsPreferenceApi.isHd(graphicsPreference)
+      actionsEl.textContent = isHdGraphics()
         ? `Lose ${emergencyLossPercent}% gold? Use arrows and Enter, or Esc to cancel.`
         : `Lose ${emergencyLossPercent}% gold? Y/Enter - confirm, N/Esc - cancel.`;
       return;
     }
     if (state.phase === "playing" && state.merchantMenuOpen) {
-      if (graphicsPreferenceApi.isHd(graphicsPreference)) {
+      if (isHdGraphics()) {
         actionsEl.textContent = "Merchant: use arrows to choose. Enter confirms. Esc closes or goes back.";
         return;
       }
@@ -22118,7 +22112,7 @@
   function buildCampOverlayContent() {
     const startDepthOptions = getAvailableStartDepths();
     const unlockedCheckpoints = Math.max(0, startDepthOptions.length - 1);
-    const useHdNavigation = graphicsPreferenceApi.isHd(graphicsPreference);
+    const useHdNavigation = isHdGraphics();
     const campViews = ["shop", "mutators", "elixirs", "relics"];
     const view = campViews.includes(state.campPanelView) ? state.campPanelView : "shop";
     const upgradeIconById = Object.freeze({
@@ -22479,7 +22473,7 @@
     return `<div class="overlay-menu">${rows.join("")}</div>`;
   }
 
-    const useHdNavigation = graphicsPreferenceApi.isHd(graphicsPreference);
+    const useHdNavigation = isHdGraphics();
     const choiceKeyLabel = (key) => useHdNavigation ? "\u21b5" : key;
   function buildRelicDraftOverlayContent() {
     const forgeRewardKind = state.roomType === "forge" && state.phase === "relic"
@@ -22663,12 +22657,17 @@
   function renderPracticeRecordsMount() {
     const mount = screenOverlayEl.querySelector("[data-practice-record-archive]");
     const adapter = window.DungeonPracticeRecordsAdapter;
-    const archiveUi = window.DungeonRecordArchiveUi;
-    if (!mount || !adapter || !archiveUi) return;
+    const leaderboardUi = window.DungeonRankedV3LeaderboardUi;
+    if (!mount || !adapter || !leaderboardUi) return;
     const options = practiceArchiveOptions();
+    const listModel = adapter.createListModel(state.leaderboard, options);
     const selected = state.practiceRecordDetailRunId
       ? adapter.findRankedEntry(state.leaderboard, state.practiceRecordDetailRunId, options)
       : null;
+    if (state.practiceRecordDetailRunId && !selected) {
+      state.practiceRecordDetailRunId = "";
+      state.practiceRecordFocusToken = null;
+    }
     const describeRelic = (id) => {
       const relic = getRelicById(id);
       return {
@@ -22682,34 +22681,53 @@
         ? { key: mutator.key, name: mutator.name, bonus: mutator.bonus, drawback: mutator.drawback }
         : { name: String(id || "Unknown mutator") };
     };
-    const content = selected
-      ? archiveUi.renderDetail(document, adapter.createDetailModel(selected, {
+    const detailOpen = Boolean(selected);
+    let content;
+    if (detailOpen) {
+      const payload = adapter.createReferencePlatePayload(selected, {
         rank: selected.rank,
         describeRelic,
         describeMutator
-      }), {
-        backLabel: "Back to Practice Records",
+      });
+      const detail = leaderboardUi.createDetailViewModel(payload);
+      content = leaderboardUi.renderDetail(document, detail, {
         onBack() {
           state.practiceRecordDetailRunId = "";
           markUiDirty();
-        }
-      })
-      : archiveUi.renderList(document, adapter.createListModel(state.leaderboard, options), {
-        onInspect(row) {
-          state.practiceRecordDetailRunId = row.runId;
-          markUiDirty();
-        }
+        },
+        onClose: closeLeaderboardModal
       });
+    } else {
+      const presentation = leaderboardUi.createLeaderboardPresentation(listModel.rows, state.practiceRecordPage);
+      state.practiceRecordPage = presentation.page;
+      content = leaderboardUi.renderList(document, presentation, {
+        onOpen(runId, action) {
+          state.practiceRecordDetailRunId = String(runId || "");
+          state.practiceRecordFocusToken = leaderboardUi.createReferencePlateFocusToken(runId, action);
+          markUiDirty();
+        },
+        onPage(page) {
+          state.practiceRecordPage = page;
+          state.practiceRecordFocusToken = null;
+          markUiDirty();
+        },
+        onClose: closeLeaderboardModal
+      });
+    }
     mount.replaceChildren(content);
+    requestAnimationFrame(() => {
+      if (detailOpen) {
+        content.querySelector?.('[data-record-nav-region="equipment"], [data-record-nav-region="detail-action"]')?.focus?.();
+        return;
+      }
+      leaderboardUi.focusReferencePlateAction(content, state.practiceRecordFocusToken || {}, true);
+    });
   }
 
   function buildPracticeRecordsModalHtml() {
-    const detailOpen = Boolean(state.practiceRecordDetailRunId);
     return [
-      '<div class="overlay-card overlay-card-wide overlay-card-leaderboard record-archive-v2 record-archive-shell">',
-      '<header class="record-archive-masthead"><span class="record-archive-kicker">Local Hall of Descent</span><h2 class="overlay-title">Practice Records</h2><p class="overlay-sub">Completed local campaigns | canonical Practice score</p></header>',
-      '<div class="record-archive-v2" data-practice-record-archive></div>',
-      '<p class="overlay-hint">' + (detailOpen ? 'Esc/Enter - back to records' : 'T - sort Points/Depth | Esc - close') + '</p>',
+      '<div class="ranked-v3-card ranked-v3-card-reference-plate">',
+      '<div class="ranked-v3-body ranked-v3-body-reference-plate" data-practice-record-archive></div>',
       '</div>'
     ].join("");
   }
@@ -22727,9 +22745,7 @@
 
     // Camp controls live in the central HD preparation dashboard.
     if (state.phase === "camp") {
-      mutatorsEl.innerHTML = graphicsPreferenceApi.isHd(graphicsPreference)
-        ? buildActiveMutatorSummary()
-        : buildClassicCampSidePanel();
+      mutatorsEl.innerHTML = buildActiveMutatorSummary();
       return;
     }
 
@@ -22785,6 +22801,10 @@
       action.classList.toggle("selected", selected);
       action.setAttribute("aria-selected", selected ? "true" : "false");
     });
+    const selectedAction = actions[state.finalGameOverSelection];
+    if (typeof selectedAction?.focus === "function") {
+      selectedAction.focus({ preventScroll: true });
+    }
   }
 
   function buildScreenOverlay() {
@@ -22792,7 +22812,7 @@
     syncStartDepthOverlayPortal(Boolean(
       (state.phase === "camp" &&
         state.campStartDepthPromptOpen &&
-        graphicsPreferenceApi.isHd(graphicsPreference)) ||
+        isHdGraphics()) ||
       (state.phase === "menu" && state.leaderboardModalOpen)
     ));
 
@@ -22954,7 +22974,8 @@
     }
 
     if (state.leaderboardModalOpen && state.phase === "menu") {
-      screenOverlayEl.className = "screen-overlay visible";
+      screenOverlayEl.className = "screen-overlay visible ranked-v3-overlay";
+      screenOverlayEl.dataset.view = "reference-plate";
       screenOverlayEl.innerHTML = buildPracticeRecordsModalHtml();
       renderPracticeRecordsMount();
       return;
@@ -22995,7 +23016,7 @@
       const tutorialContext = state.menuOptionsContext === "tutorial";
       const rootView = state.menuOptionsView === "root";
       const enemySpeedView = state.menuOptionsView === "enemy_speed";
-      const graphicsView = state.menuOptionsView === "graphics";
+
       const tutorialView = state.menuOptionsView === "tutorial";
       const tutorialLabelById = {
         run: "Core controls and run flow.",
@@ -23066,24 +23087,7 @@
                 `</div>`
               ].join("");
             }).join("")
-            : graphicsView
-              ? getGraphicsOptionsItems().map((option, index) => {
-                const requested = getGraphicsPreferenceMode();
-                const runtime = getRuntimeGraphicsMode();
-                const active = requested === option.id;
-                const fallback = option.id === "hd" && requested === "hd" && runtime === "classic";
-                const classes = [
-                  "overlay-menu-row",
-                  state.menuOptionsIndex === index ? "selected" : ""
-                ].join(" ").trim();
-                return [
-                  `<div class="${classes}">`,
-                  `<div class="overlay-menu-key">${option.key}</div>`,
-                  `<div><strong>${option.label}${active ? " (Active)" : ""}</strong><br /><span>${fallback ? "Requested; running Classic fallback" : "World and combat presentation"}</span></div>`,
-                  `</div>`
-                ].join("");
-              }).join("")
-              : getAudioOptionsItems().map((option, index) => {
+            : getAudioOptionsItems().map((option, index) => {
               const active = (option.id === "off" && state.audioMuted) || (option.id === "on" && !state.audioMuted);
               const classes = [
                 "overlay-menu-row",
@@ -23096,25 +23100,13 @@
                 `</div>`
               ].join("");
             }).join("");
-      const optionsHint = graphicsPreferenceApi.isHd(graphicsPreference)
-        ? tutorialContext
+      const optionsHint = tutorialContext
+        ? "Arrows move | Enter open | Esc close"
+        : rootView
           ? "Arrows move | Enter open | Esc close"
-          : rootView
-            ? "Arrows move | Enter open | Esc close"
-            : tutorialView
-              ? "Arrows move | Enter open | Esc back"
-              : "Arrows move | Enter apply | Esc back"
-        : tutorialContext
-          ? "W/S or Arrows - move | Enter - open | 1-8 quick open | Esc - close"
-          : rootView
-            ? "W/S or Arrows - move | Enter - open | Esc - close"
-            : enemySpeedView
-              ? "W/S or Arrows - move | Enter - apply | 1-3 quick set | Esc - back"
-              : graphicsView
-                ? "W/S or Arrows - move | Enter - apply | 1-2 quick set | Esc - back"
-                : tutorialView
-                  ? "W/S or Arrows - move | Enter - open | 1-8 quick open | Esc - back"
-                  : "W/S or Arrows - move | Enter - apply | 1-2 quick set | Esc - back";
+          : tutorialView
+            ? "Arrows move | Enter open | Esc back"
+            : "Arrows move | Enter apply | Esc back";
       screenOverlayEl.className = "screen-overlay visible";
       const optionsCardClass = tutorialContext || tutorialView
         ? "overlay-card overlay-card-options overlay-card-options-tutorial"
@@ -23124,7 +23116,7 @@
         `<h2 class="overlay-title">${tutorialContext ? "Tutorial" : "Options"}</h2>`,
         `<p class="overlay-sub">${tutorialContext
           ? "Choose a guide"
-          : rootView ? "Choose a category" : enemySpeedView ? "Enemy Speed" : graphicsView ? "Graphics" : tutorialView ? "Tutorial" : "Audio"
+          : rootView ? "Choose a category" : enemySpeedView ? "Enemy Speed" : tutorialView ? "Tutorial" : "Audio"
         }</p>`,
         `<div class="overlay-menu">${rows}</div>`,
         `<p class="overlay-hint">${optionsHint}</p>`,
@@ -23156,7 +23148,7 @@
       const totalMerchantPots = Math.max(0, Number(state.finalGameOverPrompt.totalMerchantPots) || 0);
       const potionFreeExtracts = Math.max(0, Number(state.finalGameOverPrompt.potionFreeExtracts) || 0);
       const shieldUses = Math.max(0, Number(state.finalGameOverPrompt.shieldUses) || 0);
-      if (graphicsPreferenceApi.isHd(graphicsPreference)) {
+      if (isHdGraphics()) {
         const damageRatio = damageTaken > 0
           ? `${(damageDone / damageTaken).toFixed(1)}x`
           : damageDone > 0 ? "Perfect" : "0.0x";
@@ -23332,7 +23324,7 @@
       const livesLeft = `${state.lives}/${MAX_LIVES}`;
       const relicLossText = state.lastDeathRelicLossText || "Death penalty: no relic lost.";
       screenOverlayEl.className = "screen-overlay visible";
-      if (graphicsPreferenceApi.isHd(graphicsPreference)) {
+      if (isHdGraphics()) {
         const deathSelection = clamp(Math.floor(Number(state.deathScreenSelection) || 0), 0, 1);
         state.deathScreenSelection = deathSelection;
         const deathReason = escapeHtmlAttr(
@@ -23400,7 +23392,7 @@
 
     if (state.phase === "playing" && state.forgePrompt) {
       if (state.forgePrompt.step === "transmute_select") {
-        const useHdForgeUi = graphicsPreferenceApi.isHd(graphicsPreference);
+        const useHdForgeUi = isHdGraphics();
         const rows = state.relics.map((relicId, index) => {
           const relic = getRelicById(relicId);
           const rarityInfo = RARITY[relic?.rarity] || RARITY.normal;
@@ -23455,7 +23447,7 @@
         return;
       }
 
-      const useHdForgeUi = graphicsPreferenceApi.isHd(graphicsPreference);
+      const useHdForgeUi = isHdGraphics();
       const transmuteAvailable = state.relics.length > 0;
       screenOverlayEl.className = "screen-overlay visible";
       if (useHdForgeUi) {
@@ -23509,7 +23501,7 @@
     if (state.phase === "playing" && state.pactPrompt) {
       const offers = getPactOfferDefs();
       const currentPact = getPactDefinitionsFromState()[0] || null;
-      const useHdPactUi = graphicsPreferenceApi.isHd(graphicsPreference);
+      const useHdPactUi = isHdGraphics();
       if (useHdPactUi) {
         const pactCards = offers.map((pact, index) => {
           const pactClass = String(pact.id || "unknown").replace(/[^a-z0-9_-]/gi, "").toLowerCase();
@@ -23560,7 +23552,7 @@
         ].join("");
         return;
       }
-      const pactKeyLabel = graphicsPreferenceApi.isHd(graphicsPreference) ? "\u21b5" : "";
+      const pactKeyLabel = isHdGraphics() ? "\u21b5" : "";
       const rows = offers.map((pact, index) => {
         return [
           `<div class="overlay-menu-row" data-hd-key="${index + 1}" role="button" tabindex="0">`,
@@ -23589,7 +23581,7 @@
         `<p class="overlay-sub">${currentPact ? "Replace your current pact, or break it." : "Take one pact for the rest of this game, or walk away."}</p>`,
         `${currentPact ? `<p class="overlay-sub"><strong>Current Pact:</strong> ${currentPact.name}</p>` : ""}`,
         `<div class="overlay-menu">${rows}${thirdRow}</div>`,
-        `<p class="overlay-hint">${graphicsPreferenceApi.isHd(graphicsPreference) ? "Arrows choose | Enter confirms | Esc closes" : `1-2 choose pact | 3 ${currentPact ? "break" : "leave"} | Esc close`}</p>`,
+        `<p class="overlay-hint">${isHdGraphics() ? "Arrows choose | Enter confirms | Esc closes" : `1-2 choose pact | 3 ${currentPact ? "break" : "leave"} | Esc close`}</p>`,
         `</div>`
       ].join("");
       return;
@@ -23602,7 +23594,7 @@
     }
 
     if (state.phase === "camp" && state.extractRelicPrompt) {
-      const useHdRelicExchangeUi = graphicsPreferenceApi.isHd(graphicsPreference);
+      const useHdRelicExchangeUi = isHdGraphics();
       const prompt = state.extractRelicPrompt;
       const relicReturn = prompt.relicReturn || { count: 0, total: 0, byRarity: {} };
       const carried = Math.max(0, Number(relicReturn.count) || 0);
@@ -23696,7 +23688,7 @@
 
     if (state.phase === "camp" && state.campStartDepthPromptOpen) {
       const options = getCampStartDepthPromptOptions();
-      const useHdStartDepthUi = graphicsPreferenceApi.isHd(graphicsPreference);
+      const useHdStartDepthUi = isHdGraphics();
       const safeIndex = clamp(
         Math.floor(Number(state.campStartDepthSelectionIndex) || 0),
         0,
@@ -23739,6 +23731,7 @@
           `<div class="camp-start-action camp-start-action-cancel" data-camp-key="Escape" role="button" tabindex="0"><span class="camp-start-key">Esc</span><strong>Back</strong></div>`,
           `</div>`,
           `</div>`,
+          `<p class="overlay-hint">Arrows choose | Enter confirms | Esc returns</p>`,
           `</div>`
         ].join("");
         return;
@@ -23781,7 +23774,7 @@
     let overlayExtraBlock = "";
     const isCrimsonRelicDraft = state.phase === "relic" && state.roomType === "otter";
     const isHdStandardRelicDraft =
-      graphicsPreferenceApi.isHd(graphicsPreference) &&
+      isHdGraphics() &&
       state.phase === "relic" &&
       !state.startingRelicDraft &&
       state.roomType !== "otter" &&
@@ -23794,7 +23787,7 @@
         (isMutatorActive("ascension") && state.relicDraft.length === 4)
       );
     const isHdForgeRewardDraft =
-      graphicsPreferenceApi.isHd(graphicsPreference) &&
+      isHdGraphics() &&
       state.phase === "relic" &&
       state.roomType === "forge" &&
       Boolean(state.forgeTransmutePending || state.forgeRewardMode === "temper");
@@ -23811,7 +23804,7 @@
       )}.`;
       hint = "Enter/Y confirm | Esc/N cancel";
     } else if (state.phase === "playing" && state.merchantMenuOpen) {
-      if (graphicsPreferenceApi.isHd(graphicsPreference)) {
+      if (isHdGraphics()) {
         title = state.blackMarketPending
           ? "Black Market"
           : state.merchantBuybackPending
@@ -23866,13 +23859,10 @@
           : state.campPanelView === "elixirs"
             ? "Elixirs"
             : state.campPanelView === "relics" ? "Relics" : "Upgrades";
-      const useHdCampUi = graphicsPreferenceApi.isHd(graphicsPreference);
-      title = useHdCampUi ? "Camp" : "Camp Shop";
+      title = "Camp";
       subtitle = `Prepare your next descent — ${currentViewLabel}`;
-      subtitleDetail = useHdCampUi ? "" : `Current panel: ${currentViewLabel}`;
-      subtitle = useHdCampUi ? subtitle : "Prepare your next run.";
-      overlayExtraBlock = graphicsPreferenceApi.isHd(graphicsPreference)
-        ? buildCampOverlayContent() : buildClassicCampOverlayContent();
+      subtitleDetail = "";
+      overlayExtraBlock = buildCampOverlayContent();
     } else if (state.phase === "relic") {
       if (state.legendarySwapPending) {
         const incoming = getRelicById(state.legendarySwapPending.incomingRelicId);
@@ -23923,7 +23913,7 @@
     }
 
     if (state.phase === "menu") {
-      hint = graphicsPreferenceApi.isHd(graphicsPreference)
+      hint = isHdGraphics()
         ? isRunPauseMenuActive()
           ? "Arrows move | Enter confirm | Esc resume"
           : "Arrows move | Enter confirm"
@@ -23937,7 +23927,7 @@
     }
     if (state.phase === "relic") {
       const draftSize = Math.max(1, (state.relicDraft || []).length);
-      if (graphicsPreferenceApi.isHd(graphicsPreference)) {
+      if (isHdGraphics()) {
         hint = state.startingRelicDraft
           ? `Arrows choose | Enter binds relic | 1-${draftSize} quick select`
           : isHdStandardRelicDraft
@@ -23962,7 +23952,7 @@
 
     let menuBlock = "";
     if (state.phase === "playing" && state.extractConfirm) {
-      hint = graphicsPreferenceApi.isHd(graphicsPreference)
+      hint = isHdGraphics()
         ? "Arrows choose | Enter confirm | Esc cancel"
         : "Enter/Y confirm | Esc/N cancel";
       menuBlock = `<div class="overlay-menu"><div class="overlay-menu-row" data-hd-key="y" role="button" tabindex="0"><div class="overlay-menu-key">Enter</div><div><strong>Extract Now</strong><br /><span>Accept the gold loss and return to Camp.</span></div></div><div class="overlay-menu-row" data-hd-key="Escape" role="button" tabindex="0"><div class="overlay-menu-key">Esc</div><div><strong>Stay in Dungeon</strong><br /><span>Cancel emergency extraction and continue the run.</span></div></div></div>`;
@@ -23984,9 +23974,7 @@
         .join("");
       menuBlock = `<div class="overlay-menu">${rows}</div>`;
     } else if (state.phase === "relic") {
-      menuBlock = graphicsPreferenceApi.isHd(graphicsPreference)
-        ? buildRelicDraftOverlayContent()
-        : buildClassicRelicDraftOverlayContent();
+      menuBlock = buildRelicDraftOverlayContent();
     } else if (state.phase === "playing" && state.merchantMenuOpen) {
       const getMerchantTierClass = (tierLabel) => {
         const normalized = String(tierLabel || "").trim().toLowerCase();
@@ -24000,7 +23988,7 @@
         return "";
       };
 
-      const useHdMerchantUi = graphicsPreferenceApi.isHd(graphicsPreference);
+      const useHdMerchantUi = isHdGraphics();
       const merchantUiIcons = Object.freeze({
         potion: "assets/hd/ui/status/potion.png",
         dash: "assets/hd/ui/abyssal-gothic/skill-dash.png",
@@ -24477,7 +24465,7 @@
         menuBlock = `<div class="overlay-menu merchant-menu-dashboard">${consumablesSection}${skillsSection}${relicSection}${utilitySection}${buybackSection}</div>`;
       }
     if (
-      graphicsPreferenceApi.isHd(graphicsPreference) &&
+      isHdGraphics() &&
       state.phase === "playing" &&
       state.merchantMenuOpen
     ) {
@@ -24486,10 +24474,10 @@
     }
 
     const isHdRelicOverlay =
-      graphicsPreferenceApi.isHd(graphicsPreference) &&
+      isHdGraphics() &&
       state.phase === "relic";
     const isHdMerchantOverlay =
-      graphicsPreferenceApi.isHd(graphicsPreference) &&
+      isHdGraphics() &&
       state.phase === "playing" &&
       state.merchantMenuOpen;
     const merchantViewClass = state.blackMarketPending
@@ -24524,7 +24512,7 @@
     const nextOverlayClassName = "screen-overlay visible";
     const nextOverlayHtml = [
       `<div class="${overlayCardClass}">`,
-      graphicsPreferenceApi.isHd(graphicsPreference) && state.phase === "relic"
+      isHdGraphics() && state.phase === "relic"
         ? state.startingRelicDraft
           ? `<p class="relic-draft-kicker">Before the first step</p>`
           : isHdStandardRelicDraft
@@ -27402,77 +27390,18 @@
     console.warn(`[Dungeon graphics] ${diagnostic.message}`, diagnostic.cause || diagnostic.result || "");
   }
 
-  function resetLegacyCanvasMode() {
-    if (canvas.width !== CANVAS_SIZE) canvas.width = CANVAS_SIZE;
-    if (canvas.height !== CANVAS_SIZE) canvas.height = CANVAS_SIZE;
-    ctx.imageSmoothingEnabled = false;
-    canvas.dataset.graphicsMode = "legacy";
-    canvas.classList.toggle("graphics-hd", false);
-    canvas.classList.toggle("graphics-legacy", true);
-  }
-
   function getRuntimeGraphicsMode() {
-    if (graphicsController && typeof graphicsController.getMode === "function") {
-      return graphicsController.getMode() === "hd" ? "hd" : "classic";
-    }
-    return canvas.dataset.graphicsMode === "hd" ? "hd" : "classic";
+    return "hd";
   }
 
   function syncGraphicsUiMode() {
-    const mode = graphicsTransitionPending && gameAppEl?.classList.contains("app-hidden")
-      ? (graphicsPreferenceApi.isHd(graphicsPreference) ? "hd" : "classic")
-      : getRuntimeGraphicsMode();
-    document.body.classList.toggle("graphics-hd-ui", mode === "hd");
-  }
-
-  function applyGraphicsPreference() {
-    const transitionGeneration = ++graphicsTransitionGeneration;
-    if (!graphicsController) {
-      graphicsTransitionPending = false;
-      resetLegacyCanvasMode();
-      syncGraphicsUiMode();
-      markUiDirty();
-      return Object.freeze({ mode: "legacy", stale: false });
-    }
-
-    try {
-      const initialization = graphicsController.initialize(graphicsPreferenceApi.isHd(graphicsPreference));
-      const isPending = Boolean(initialization && typeof initialization.then === "function");
-      graphicsTransitionPending = isPending;
-      syncGraphicsUiMode();
-      markUiDirty();
-      if (!isPending) return initialization;
-
-      initialization.then(
-        () => {
-          if (transitionGeneration !== graphicsTransitionGeneration) return;
-          graphicsTransitionPending = false;
-          syncGraphicsUiMode();
-          markUiDirty();
-        },
-        (error) => {
-          if (transitionGeneration !== graphicsTransitionGeneration) return;
-          graphicsTransitionPending = false;
-          graphicsController.fallback(error);
-          syncGraphicsUiMode();
-          markUiDirty();
-        }
-      );
-      return initialization;
-    } catch (error) {
-      if (transitionGeneration !== graphicsTransitionGeneration) return null;
-      graphicsTransitionPending = false;
-      graphicsController.fallback(error);
-      syncGraphicsUiMode();
-      markUiDirty();
-      return null;
-    }
-  }
-
-  function setGraphicsPreference(mode) {
-    graphicsPreference = graphicsPreferenceApi.writePreference(localStorage, mode);
-    applyGraphicsPreference();
-    return graphicsPreference;
+    document.body.classList.add("graphics-hd-ui");
+    if (canvas.width !== 576) canvas.width = 576;
+    if (canvas.height !== 576) canvas.height = 576;
+    ctx.imageSmoothingEnabled = false;
+    canvas.dataset.graphicsMode = "hd";
+    canvas.classList.add("graphics-hd");
+    canvas.classList.remove("graphics-legacy");
   }
 
   function initializeGraphicsMode() {
@@ -27480,15 +27409,8 @@
     const rendererApi = window.DungeonHDRenderer;
     if (!rendererApi || typeof rendererApi.createGraphicsController !== "function") {
       graphicsController = null;
-      initialGraphicsReady = Promise.resolve();
-      resetLegacyCanvasMode();
-      syncGraphicsUiMode();
-      if (graphicsPreferenceApi.isHd(graphicsPreference)) {
-        reportHDGraphicsDiagnostic({
-          message: "HD renderer module is unavailable; using the legacy renderer fallback"
-        });
-      }
-      markUiDirty();
+      initialGraphicsReady = Promise.resolve({ mode: "hd", ready: false });
+      reportHDGraphicsDiagnostic({ message: "HD renderer module is unavailable" });
       return;
     }
 
@@ -27501,38 +27423,20 @@
         renderHD(snapshot, renderContext, assets) {
           rendererApi.renderHDFrame(snapshot, renderContext, assets);
         },
-        renderLegacy: (snapshot) => {
-          void snapshot;
-          renderLegacy();
-        },
         onDiagnostic: reportHDGraphicsDiagnostic
       });
-      const initialization = applyGraphicsPreference();
-      initialGraphicsReady = Promise.resolve(initialization).catch(() => undefined);
-    } catch (error) {
+      const initialization = graphicsController.initialize();
+      initialGraphicsReady = Promise.resolve(initialization).catch((cause) => ({ mode: "hd", ready: false, cause }));
+    } catch (cause) {
       graphicsController = null;
-      graphicsTransitionPending = false;
-      initialGraphicsReady = Promise.resolve();
-      resetLegacyCanvasMode();
-      syncGraphicsUiMode();
-      if (graphicsPreferenceApi.isHd(graphicsPreference)) {
-        reportHDGraphicsDiagnostic({
-          message: "HD graphics initialization failed; using the legacy renderer fallback",
-          cause: error
-        });
-      }
-      markUiDirty();
+      initialGraphicsReady = Promise.resolve({ mode: "hd", ready: false, cause });
+      reportHDGraphicsDiagnostic({ message: "HD graphics initialization failed", cause });
     }
   }
 
   function renderSelectedFrame(snapshot) {
-    if (graphicsController) {
-      graphicsController.render(snapshot);
-      return;
-    }
-    renderLegacy();
+    if (graphicsController) graphicsController.render(snapshot);
   }
-
   function renderVisualFrame(nowMs) {
     visualSnapshotApi.renderFrame(state, nowMs, (snapshot) => {
       snapshot.wardenBurstRange = getWardenBurstRange(snapshot.depth);
@@ -31589,7 +31493,15 @@
     }
     if (event.repeat) return;
 
-    if (state.tutorialModalOpen) {
+    if (
+      state.tutorialModalOpen &&
+      state.tutorialModalKind === "portal" &&
+      state.phase === "playing" &&
+      isOnPortal() &&
+      (key === "e" || key === "q")
+    ) {
+      closeTutorialModal();
+    } else if (state.tutorialModalOpen) {
       if (key === "arrowup" || key === "arrowdown") {
         const tutorialScroller = screenOverlayEl.querySelector(".tutorial-sections");
         if (tutorialScroller) {
@@ -31691,7 +31603,7 @@
 
     if (state.phase === "camp" && state.campStartDepthPromptOpen) {
       const options = getCampStartDepthPromptOptions();
-      const useHdStartDepthUi = graphicsPreferenceApi.isHd(graphicsPreference);
+      const useHdStartDepthUi = isHdGraphics();
       if (
         useHdStartDepthUi &&
         (key === "arrowup" || key === "arrowleft" || key === "arrowdown" || key === "arrowright")
@@ -31757,26 +31669,16 @@
     }
 
     if (state.leaderboardModalOpen && state.phase === "menu") {
-      if (state.practiceRecordDetailRunId && (key === "escape" || isConfirm)) {
+      if (state.practiceRecordDetailRunId && key === "escape") {
         state.practiceRecordDetailRunId = "";
         markUiDirty();
         return;
       }
-      if (key === "t" || key === "tab") {
+      if (key === "t") {
         toggleLeaderboardSortMode();
         return;
       }
-      if (key === "arrowleft") {
-        state.leaderboardSortMode = "score";
-        markUiDirty();
-        return;
-      }
-      if (key === "arrowright") {
-        state.leaderboardSortMode = "depth";
-        markUiDirty();
-        return;
-      }
-      if (key === "escape" || isConfirm) {
+      if (key === "escape") {
         closeLeaderboardModal();
         return;
       }
@@ -31857,16 +31759,7 @@
         markUiDirty();
         return;
       }
-      if (state.menuOptionsView === "graphics" && (key === "arrowleft" || key === "a")) {
-        state.menuOptionsIndex = 0;
-        activateMenuOptionsSelection(0);
-        return;
-      }
-      if (state.menuOptionsView === "graphics" && (key === "arrowright" || key === "d")) {
-        state.menuOptionsIndex = 1;
-        activateMenuOptionsSelection(1);
-        return;
-      }
+
       if (key >= "1" && key <= "9") {
         const index = Number(key) - 1;
         if (state.menuOptionsView === "root") {
@@ -31891,13 +31784,7 @@
           }
           return;
         }
-        if (state.menuOptionsView === "graphics") {
-          if (index >= 0 && index < getGraphicsOptionsItems().length) {
-            state.menuOptionsIndex = index;
-            activateMenuOptionsSelection(index);
-          }
-          return;
-        }
+
         if (state.menuOptionsView === "tutorial") {
           if (index >= 0 && index < getTutorialOptionsItems().length) {
             state.menuOptionsIndex = index;
@@ -33067,40 +32954,6 @@
   state.hasContinueRun = Boolean(localStorage.getItem(STORAGE_RUN_SAVE));
   state.phase = "boot";
   state.log = [];
-  loadChestSprite();
-  loadRedChestSprite();
-  loadPortalSprite();
-  loadGoldPortalSprite();
-  loadRedPortalSprite();
-  loadForgePortalSprite();
-  loadMerchantSprite();
-  loadShrineSprite();
-  loadPactSigilSprite();
-  loadShieldSprite();
-  loadBloodBarrierSprite();
-  loadWardenAegisSprite();
-  loadSpikeSprite();
-  loadDeepSpikeSprite();
-  loadUltraSpikeSprite();
-  loadMineSprite();
-  loadTilesetSprite();
-  loadDeepTilesetSprite();
-  loadUltraTilesetSprite();
-  loadTorchSprite();
-  loadDeepTorchSprite();
-  loadUltraTorchSprite();
-  loadPlayerSprites();
-  loadSlimeSprites();
-  loadSkeletonSprites();
-  loadBruteSprites();
-  loadAcolyteSprite();
-  loadSkitterSprite();
-  loadTotemSprite();
-  loadOtterSprite();
-  loadGuardianSprite();
-  loadBlacksmithSprite();
-  loadForgeSetpieceSprite();
-  loadWardenSprite();
   initializeGraphicsMode();
   handleViewportChange();
   syncBgmWithState();

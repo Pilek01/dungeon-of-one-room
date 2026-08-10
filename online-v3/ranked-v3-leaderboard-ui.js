@@ -10,6 +10,7 @@
   const PODIUM_SIZE = 3;
   const LEDGER_ROWS_PER_PAGE = 7;
   const MAX_LEDGER_PAGES = 10;
+  let inspectTooltipSequence = 0;
   const integer = (value) => Math.max(0, Math.floor(Number(value) || 0));
   const humanize = (value) => String(value || "").replace(/[_-]+/gu, " ").replace(/\b\w/gu, (letter) => letter.toUpperCase()) || "None";
   const duration = (value) => { const seconds = Math.floor(integer(value) / 1000); const hours = Math.floor(seconds / 3600); const minutes = Math.floor((seconds % 3600) / 60); return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(seconds % 60).padStart(2, "0")}`; };
@@ -54,20 +55,28 @@
     }
     return Object.freeze(rows);
   }
-  const createDetailViewModel = (payload = {}) => { const entry = payload.entry && typeof payload.entry === "object" ? payload.entry : {}; return Object.freeze({ ...toLeaderboardRow(entry), season: String(entry.season || ""), build: Object.freeze(normalizeBuild(entry.build)), summary: Object.freeze(entry.summary && typeof entry.summary === "object" ? { ...entry.summary } : {}) }); };
+  const createDetailViewModel = (payload = {}) => { const entry = payload.entry && typeof payload.entry === "object" ? payload.entry : {}; const hasValue = (key) => Object.hasOwn(entry, key) && entry[key] !== null && entry[key] !== undefined; return Object.freeze({ ...toLeaderboardRow(entry), season: String(entry.season || ""), build: Object.freeze(normalizeBuild(entry.build)), summary: Object.freeze(entry.summary && typeof entry.summary === "object" ? { ...entry.summary } : {}), detailsAvailable: entry.detailsAvailable !== false, detailsUnavailableNotice: String(entry.detailsUnavailableNotice || ""), presentationFields: Object.freeze({ score: hasValue("score"), depth: hasValue("depth"), gold: hasValue("gold") }) }); };
   function name(documentRef, row, open) {
     const node = element(documentRef, "button", "record-archive-name", row.playerName);
     node.type = "button";
     node.setAttribute("data-record-field", "name");
+    node.setAttribute("data-record-nav-region", "row");
+    node.setAttribute("data-record-run-id", row.runId);
+    node.setAttribute("data-record-action", "name");
+    node.setAttribute("data-record-row-index", String(Math.max(0, integer(row.rank) - 1)));
     node.setAttribute("aria-label", `${row.playerName}, inspect build`);
-    node.addEventListener("click", () => open(row.runId), { once: true });
+    node.addEventListener("click", () => open(row.runId, "name"), { once: true });
     return node;
   }
   function inspect(documentRef, row, open) {
     const node = element(documentRef, "button", SELECTORS.detailsButton, "Inspect build");
     node.type = "button";
+    node.setAttribute("data-record-nav-region", "row");
+    node.setAttribute("data-record-run-id", row.runId);
+    node.setAttribute("data-record-action", "inspect");
+    node.setAttribute("data-record-row-index", String(Math.max(0, integer(row.rank) - 1)));
     node.setAttribute("aria-label", `Inspect build for ${row.playerName}`);
-    node.addEventListener("click", () => open(row.runId), { once: true });
+    node.addEventListener("click", () => open(row.runId, "inspect"), { once: true });
     return node;
   }
   function listHandlers(value) {
@@ -86,6 +95,181 @@
     node.disabled = Boolean(disabled);
     if (!node.disabled) node.addEventListener("click", handler, { once: true });
     return node;
+  }
+
+  function recordNavMeta(node, region, action, runId = "") {
+    node.setAttribute("data-record-nav-region", region);
+    node.setAttribute("data-record-action", action);
+    if (runId) node.setAttribute("data-record-run-id", runId);
+    return node;
+  }
+
+  const navAttr = (node, name) => String(node?.getAttribute?.(name) || node?.attributes?.get?.(name) || "");
+  const navDescendants = (rootNode, predicate) => {
+    const found = [];
+    const walk = (node) => {
+      if (predicate(node)) found.push(node);
+      for (const child of node?.children || []) walk(child);
+    };
+    walk(rootNode);
+    return found;
+  };
+  const navInside = (rootNode, node) => {
+    let current = node;
+    while (current) {
+      if (current === rootNode) return true;
+      current = current.parentNode;
+    }
+    return false;
+  };
+  const navActions = (rootNode, region, includeDisabled = false) => navDescendants(rootNode, (node) => (
+    navAttr(node, "data-record-nav-region") === region && (includeDisabled || !node.disabled)
+  ));
+  const navFocus = (node) => {
+    if (node && !node.disabled && typeof node.focus === "function") node.focus();
+    return node;
+  };
+  const navKey = (event) => String(event?.key || "");
+  const navSpace = (key) => key === " " || key === "Spacebar" || key.toLowerCase() === "space";
+
+  function attachRecordNavigation(rootNode, options = {}) {
+    if (!rootNode || typeof rootNode.addEventListener !== "function") return null;
+    const mode = options.mode === "detail" ? "detail" : "list";
+    let lastRowAction = "name";
+    const documentRef = rootNode.ownerDocument || root;
+    const focusDefault = () => {
+      const rows = navActions(rootNode, "row");
+      const footer = navActions(rootNode, "footer");
+      return navFocus(mode === "detail" ? navActions(rootNode, "equipment")[0] || navActions(rootNode, "detail-action")[0] : rows[0] || footer[0]);
+    };
+    const equipmentColumns = () => {
+      const grid = navDescendants(rootNode, (node) => String(node?.className || "").split(/\s+/u).includes("ranked-v3-inspect-equipment-grid"))[0];
+      const template = String(documentRef?.defaultView?.getComputedStyle?.(grid)?.gridTemplateColumns || "");
+      const count = template.trim() && template.trim() !== "none" ? template.trim().split(/\s+/u).filter(Boolean).length : 0;
+      return Number.isFinite(count) && count > 0 ? count : 5;
+    };
+    const listGroups = () => {
+      const groups = [];
+      const byRun = new Map();
+      for (const node of navActions(rootNode, "row")) {
+        const runId = navAttr(node, "data-record-run-id");
+        if (!byRun.has(runId)) {
+          const group = { runId, actions: [] };
+          byRun.set(runId, group);
+          groups.push(group);
+        }
+        byRun.get(runId).actions.push(node);
+      }
+      return groups;
+    };
+    const activeNode = () => {
+      const active = documentRef?.activeElement;
+      return navInside(rootNode, active) && navAttr(active, "data-record-nav-region") ? active : null;
+    };
+    const focusRow = (group, action) => navFocus(group?.actions.find((node) => navAttr(node, "data-record-action") === action) || group?.actions[0]);
+    const footerMove = (active, direction) => {
+      const enabled = navActions(rootNode, "footer");
+      if (!enabled.length) return null;
+      const current = enabled.indexOf(active);
+      const next = current < 0 ? 0 : (current + direction + enabled.length) % enabled.length;
+      return navFocus(enabled[next]);
+    };
+    const invokePage = (action) => {
+      const target = navActions(rootNode, "footer", true).find((node) => navAttr(node, "data-record-action") === action);
+      if (target && !target.disabled) target.click();
+    };
+    const handleList = (key, active) => {
+      const groups = listGroups();
+      const footer = navActions(rootNode, "footer", true);
+      const enabledFooter = footer.filter((node) => !node.disabled);
+      if (!active) active = groups[0]?.actions[0] || enabledFooter[0] || null;
+      if (!active) return;
+      const region = navAttr(active, "data-record-nav-region");
+      if (region === "footer") {
+        if (key === "ArrowLeft" || key.toLowerCase() === "a") footerMove(active, -1);
+        else if (key === "ArrowRight" || key.toLowerCase() === "d") footerMove(active, 1);
+        else if (key === "ArrowUp" || key.toLowerCase() === "w") focusRow(groups.at(-1), lastRowAction);
+        else if (key === "PageUp") invokePage("previous");
+        else if (key === "PageDown") invokePage("next");
+        else if (key === "Enter" || navSpace(key)) active.click();
+        return;
+      }
+      const groupIndex = groups.findIndex((group) => group.actions.includes(active));
+      if (groupIndex < 0) return;
+      const currentAction = navAttr(active, "data-record-action");
+      lastRowAction = currentAction;
+      if (key === "ArrowLeft" || key.toLowerCase() === "a" || key === "ArrowRight" || key.toLowerCase() === "d") {
+        focusRow(groups[groupIndex], currentAction === "name" ? "inspect" : "name");
+      } else if (key === "ArrowUp" || key.toLowerCase() === "w") {
+        if (groupIndex > 0) focusRow(groups[groupIndex - 1], currentAction);
+      } else if (key === "ArrowDown" || key.toLowerCase() === "s") {
+        if (groupIndex < groups.length - 1) focusRow(groups[groupIndex + 1], currentAction);
+        else navFocus(enabledFooter[0]);
+      } else if (key === "PageUp") invokePage("previous");
+      else if (key === "PageDown") invokePage("next");
+      else if (key === "Enter" || navSpace(key)) active.click();
+    };
+    const handleDetail = (key, active) => {
+      const equipment = navActions(rootNode, "equipment");
+      const detailActions = navActions(rootNode, "detail-action");
+      if (!active) active = equipment[0] || detailActions[0] || null;
+      if (!active) return;
+      const region = navAttr(active, "data-record-nav-region");
+      if (region === "equipment") {
+        const index = Number(navAttr(active, "data-relic-index"));
+        const find = (delta, limit = 10) => equipment.find((node) => {
+          const candidate = Number(navAttr(node, "data-relic-index"));
+          return candidate >= 0 && candidate < limit && ((delta > 0 && candidate > index) || (delta < 0 && candidate < index));
+        });
+        let target = null;
+        const columns = equipmentColumns();
+        if (key === "ArrowRight" || key.toLowerCase() === "d") target = find(1, Math.floor(index / columns) * columns + columns);
+        else if (key === "ArrowLeft" || key.toLowerCase() === "a") target = equipment.slice().reverse().find((node) => Number(navAttr(node, "data-relic-index")) < index && Number(navAttr(node, "data-relic-index")) >= Math.floor(index / columns) * columns);
+        else if (key === "ArrowDown" || key.toLowerCase() === "s") target = equipment.find((node) => Number(navAttr(node, "data-relic-index")) === index + columns);
+        else if (key === "ArrowUp" || key.toLowerCase() === "w") target = equipment.find((node) => Number(navAttr(node, "data-relic-index")) === index - columns);
+        if (target) navFocus(target);
+        else if (key === "ArrowDown" || key.toLowerCase() === "s") navFocus(detailActions[0]);
+        else if ((key === "ArrowUp" || key.toLowerCase() === "w") && index >= columns) navFocus(equipment.slice().reverse().find((node) => Number(navAttr(node, "data-relic-index")) < index));
+        else if (key === "Enter" || navSpace(key)) active.click();
+        return;
+      }
+      const detailIndex = detailActions.indexOf(active);
+      if ((key === "ArrowDown" || key.toLowerCase() === "s") && detailIndex < detailActions.length - 1) navFocus(detailActions[detailIndex + 1]);
+      else if (key === "ArrowUp" || key.toLowerCase() === "w") navFocus(detailIndex > 0 ? detailActions[detailIndex - 1] : equipment.at(-1));
+      else if (key === "Enter" || navSpace(key)) active.click();
+    };
+    const onKeydown = (event) => {
+      const key = navKey(event);
+      if (key === "Tab") {
+        event.stopPropagation?.();
+        return;
+      }
+      const handled = ["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "PageUp", "PageDown", "Enter", "Escape", "w", "W", "a", "A", "s", "S", "d", "D"].includes(key) || navSpace(key);
+      if (!handled) return;
+      event.stopPropagation?.();
+      if (mode === "detail" && (key === "PageUp" || key === "PageDown")) return;
+      event.preventDefault?.();
+      if (key === "Escape") {
+        if (mode === "detail") options.onBack?.();
+        else options.onClose?.();
+        return;
+      }
+      const active = activeNode();
+      if (mode === "detail") handleDetail(key, active);
+      else handleList(key, active);
+    };
+    const onFocusin = (event) => {
+      const target = event?.target || documentRef?.activeElement;
+      if (!navInside(rootNode, target) || navAttr(target, "data-record-nav-region") !== "row") return;
+      const action = navAttr(target, "data-record-action");
+      if (action === "name" || action === "inspect") lastRowAction = action;
+    };
+    rootNode.addEventListener("keydown", onKeydown);
+    rootNode.addEventListener("focusin", onFocusin);
+    return Object.freeze({ focusDefault, destroy: () => {
+      rootNode.removeEventListener?.("keydown", onKeydown);
+      rootNode.removeEventListener?.("focusin", onFocusin);
+    } });
   }
 
   function scoreDisplay(documentRef, className, value, tagName = "span") {
@@ -169,15 +353,19 @@
     ledger.append(columnHeadings, ledgerRows);
     const pager = element(documentRef, "nav", "ranked-v3-leaderboard-pager");
     pager.setAttribute("aria-label", "Leaderboard pages");
+    const previous = recordNavMeta(control(documentRef, "ranked-v3-leaderboard-page-control", "Previous page", () => handlers.onPage(presentation.page - 1), !presentation.canGoPrevious), "footer", "previous");
+    const next = recordNavMeta(control(documentRef, "ranked-v3-leaderboard-page-control", "Next page", () => handlers.onPage(presentation.page + 1), !presentation.canGoNext), "footer", "next");
+    const close = recordNavMeta(control(documentRef, "ranked-v3-leaderboard-close", "Close", handlers.onClose), "footer", "close");
     pager.append(
-      control(documentRef, "ranked-v3-leaderboard-page-control", "Previous page", () => handlers.onPage(presentation.page - 1), !presentation.canGoPrevious),
+      previous,
       element(documentRef, "p", "ranked-v3-leaderboard-page-label", presentation.pageLabel),
       element(documentRef, "p", "ranked-v3-leaderboard-range-label", presentation.rangeLabel),
-      control(documentRef, "ranked-v3-leaderboard-page-control", "Next page", () => handlers.onPage(presentation.page + 1), !presentation.canGoNext),
-      control(documentRef, "ranked-v3-leaderboard-close", "Close", handlers.onClose)
+      next,
+      close
     );
     overlay.append(heading, podium, ledger, pager);
     rootNode.append(art, overlay);
+    attachRecordNavigation(rootNode, { mode: "list", onPage: handlers.onPage, onClose: handlers.onClose });
     return rootNode;
   }
   function grouped(value) { return integer(value).toLocaleString("en-US"); }
@@ -203,6 +391,7 @@
       `Stack x${Math.max(1, integer(relic.stacks))}`
     ].join(" | ");
     slot.setAttribute("data-relic-index", String(index));
+    recordNavMeta(slot, "equipment", "equipment");
     slot.setAttribute("tabindex", "0");
     slot.setAttribute("data-record-tooltip", relicTooltip);
     slot.setAttribute("aria-label", relicTooltip);
@@ -227,6 +416,178 @@
     }).join(" | ");
   }
 
+  function createInspectTooltipPanel(documentRef) {
+    const panel = element(documentRef, "aside", "ranked-v3-inspect-tooltip");
+    const panelId = "ranked-v3-inspect-tooltip-" + String(++inspectTooltipSequence);
+    panel.setAttribute("id", panelId);
+    panel.setAttribute("role", "tooltip");
+    panel.setAttribute("aria-hidden", "true");
+    panel.setAttribute("data-visible", "false");
+    panel.hidden = true;
+    return panel;
+  }
+
+  function installInspectTooltip(rootNode, panel) {
+    const anchors = navDescendants(rootNode, (node) => Boolean(navAttr(node, "data-record-tooltip")));
+    const anchorSet = new Set(anchors);
+    const documentRef = rootNode.ownerDocument || root?.document;
+    const panelId = navAttr(panel, "id");
+    const preferredPlacement = (anchor) => {
+      const relicIndex = Number(navAttr(anchor, "data-relic-index"));
+      return navAttr(anchor, "data-record-action") === "mutators"
+        || (Number.isFinite(relicIndex) && relicIndex >= 5)
+        ? "above"
+        : "below";
+    };
+    const anchorForTarget = (target) => {
+      let current = target;
+      while (current) {
+        if (anchorSet.has(current)) return current;
+        if (current === rootNode) break;
+        current = current.parentNode;
+      }
+      return null;
+    };
+    for (const anchor of anchors) {
+      anchor.setAttribute("aria-describedby", panelId);
+      anchor.setAttribute("data-record-tooltip-placement", preferredPlacement(anchor));
+    }
+    let hoveredAnchor = null;
+    let focusedAnchor = null;
+
+    const place = (anchor) => {
+      const rootBox = rootNode.getBoundingClientRect?.();
+      const anchorBox = anchor?.getBoundingClientRect?.();
+      const panelBox = panel.getBoundingClientRect?.();
+      if (!rootBox || !anchorBox || !panelBox || !panelBox.width || !panelBox.height) return;
+      const margin = Math.max(12, rootBox.width * 0.018);
+      const gap = Math.max(10, rootBox.width * 0.008);
+      const viewportWidth = Number(documentRef?.defaultView?.innerWidth || root?.innerWidth || 0);
+      const viewportHeight = Number(documentRef?.defaultView?.innerHeight || root?.innerHeight || 0);
+      const minLeft = Math.max(margin, viewportWidth ? margin - rootBox.left : margin);
+      const rootMaxLeft = rootBox.width - margin - panelBox.width;
+      const viewportMaxLeft = viewportWidth ? viewportWidth - rootBox.left - margin - panelBox.width : rootMaxLeft;
+      let maxLeft = Math.max(minLeft, Math.min(rootMaxLeft, viewportMaxLeft));
+      const chronicleNode = navDescendants(rootNode, (node) => String(node?.className || "").split(/\s+/u).includes("ranked-v3-inspect-chronicle"))[0];
+      const chronicleBox = chronicleNode?.getBoundingClientRect?.();
+      if (chronicleBox) {
+        const beforeChronicle = chronicleBox.left - rootBox.left - gap - panelBox.width;
+        if (beforeChronicle >= minLeft) maxLeft = Math.min(maxLeft, beforeChronicle);
+      }
+      const centeredLeft = anchorBox.left + anchorBox.width / 2 - rootBox.left - panelBox.width / 2;
+      const left = Math.max(minLeft, Math.min(maxLeft, centeredLeft));
+      const minTop = Math.max(margin, viewportHeight ? margin - rootBox.top : margin);
+      const rootMaxTop = rootBox.height - margin - panelBox.height;
+      const viewportMaxTop = viewportHeight ? viewportHeight - rootBox.top - margin - panelBox.height : rootMaxTop;
+      const maxTop = Math.max(minTop, Math.min(rootMaxTop, viewportMaxTop));
+      const below = anchorBox.bottom - rootBox.top + gap;
+      const above = anchorBox.top - rootBox.top - panelBox.height - gap;
+      const belowFits = below <= maxTop;
+      const aboveFits = above >= minTop;
+      let placement = preferredPlacement(anchor);
+      if (placement === "above" && !aboveFits && belowFits) placement = "below";
+      if (placement === "below" && !belowFits && aboveFits) placement = "above";
+      const candidateTop = placement === "above" ? above : below;
+      let top = Math.max(minTop, Math.min(maxTop, candidateTop));
+      const backNode = navDescendants(rootNode, (node) => navAttr(node, "data-record-action") === "back")[0];
+      const backBox = backNode?.getBoundingClientRect?.();
+      const overlapsBack = (candidate) => Boolean(backBox
+        && left < backBox.right - rootBox.left + gap
+        && left + panelBox.width > backBox.left - rootBox.left - gap
+        && candidate < backBox.bottom - rootBox.top + gap
+        && candidate + panelBox.height > backBox.top - rootBox.top - gap);
+      if (overlapsBack(top)) {
+        const alternatives = [
+          { placement: "above", top: above },
+          { placement: "below", top: below }
+        ];
+        const alternative = alternatives.find((item) => item.top >= minTop && item.top <= maxTop && !overlapsBack(item.top));
+        if (alternative) {
+          placement = alternative.placement;
+          top = alternative.top;
+        } else {
+          const beforeBack = backBox.top - rootBox.top - gap - panelBox.height;
+          const afterBack = backBox.bottom - rootBox.top + gap;
+          if (beforeBack >= minTop) top = Math.min(maxTop, beforeBack);
+          else if (afterBack <= maxTop) top = Math.max(minTop, afterBack);
+        }
+      }
+      panel.style.left = left + "px";
+      panel.style.top = top + "px";
+      panel.setAttribute("data-placement", placement);
+    };
+
+    const show = (anchor) => {
+      const content = navAttr(anchor, "data-record-tooltip");
+      if (!content) return;
+      panel.textContent = content;
+      panel.hidden = false;
+      panel.setAttribute("aria-hidden", "false");
+      panel.setAttribute("data-visible", "true");
+      panel.setAttribute("data-placement", preferredPlacement(anchor));
+      panel.setAttribute(
+        "data-tooltip-source",
+        navAttr(anchor, "data-record-action") === "mutators"
+          ? "mutators"
+          : "equipment-" + navAttr(anchor, "data-relic-index")
+      );
+      place(anchor);
+    };
+
+    const hide = () => {
+      panel.hidden = true;
+      panel.setAttribute("aria-hidden", "true");
+      panel.setAttribute("data-visible", "false");
+    };
+    const showActive = () => {
+      const active = focusedAnchor || hoveredAnchor;
+      if (active) show(active);
+      else hide();
+    };
+    const onPointerover = (event) => {
+      const anchor = anchorForTarget(event?.target);
+      if (!anchor || anchorForTarget(event?.relatedTarget) === anchor) return;
+      hoveredAnchor = anchor;
+      show(anchor);
+    };
+    const onPointerout = (event) => {
+      const anchor = anchorForTarget(event?.target);
+      if (!anchor) return;
+      const nextAnchor = anchorForTarget(event?.relatedTarget);
+      if (nextAnchor === anchor) return;
+      if (hoveredAnchor === anchor) hoveredAnchor = nextAnchor;
+      showActive();
+    };
+    const onFocusin = (event) => {
+      const anchor = anchorForTarget(event?.target);
+      if (!anchor || anchorForTarget(event?.relatedTarget) === anchor) return;
+      focusedAnchor = anchor;
+      show(anchor);
+    };
+    const onFocusout = (event) => {
+      const anchor = anchorForTarget(event?.target);
+      if (!anchor) return;
+      const nextAnchor = anchorForTarget(event?.relatedTarget);
+      if (nextAnchor === anchor) return;
+      if (focusedAnchor === anchor) focusedAnchor = nextAnchor;
+      showActive();
+    };
+
+    rootNode.addEventListener("pointerover", onPointerover);
+    rootNode.addEventListener("pointerout", onPointerout);
+    rootNode.addEventListener("focusin", onFocusin);
+    rootNode.addEventListener("focusout", onFocusout);
+    return Object.freeze({
+      hide,
+      refresh: showActive,
+      destroy: () => {
+        rootNode.removeEventListener?.("pointerover", onPointerover);
+        rootNode.removeEventListener?.("pointerout", onPointerout);
+        rootNode.removeEventListener?.("focusin", onFocusin);
+        rootNode.removeEventListener?.("focusout", onFocusout);
+      }
+    });
+  }
   function chronicleRow(documentRef, label, value) {
     const row = element(documentRef, "article", "ranked-v3-inspect-chronicle-row");
     row.append(element(documentRef, "span", "ranked-v3-inspect-chronicle-label", label));
@@ -248,20 +609,37 @@
     const active = detail.build.runModifiers || [];
     const cause = String(summary.presentationCause || "").trim();
     const isVictory = String(detail.outcome || "").toLowerCase() === "victory";
+    const detailsAvailable = detail.detailsAvailable !== false;
+    const presentationFields = detail.presentationFields || {};
     const rootNode = element(documentRef, "section", `${SELECTORS.plate} ranked-v3-reference-plate--inspect ${SELECTORS.detail}`);
     rootNode.append(element(documentRef, "h2", "ranked-v3-reference-plate-title", "Inspect Build"));
     const art = element(documentRef, "div", SELECTORS.art);
     art.setAttribute("aria-hidden", "true");
     const overlay = element(documentRef, "div", `${SELECTORS.overlay} ranked-v3-inspect-overlay`);
+    const tooltipPanel = createInspectTooltipPanel(documentRef);
     const header = element(documentRef, "header", "ranked-v3-inspect-header");
+    const rank = element(documentRef, "p", "ranked-v3-inspect-rank", String(detail.rank));
+    rank.setAttribute("data-record-rank", String(detail.rank));
+    rank.setAttribute("data-rank-digits", integer(detail.rank) >= 10 ? "double" : "single");
     header.append(
-      element(documentRef, "p", "ranked-v3-inspect-rank", String(detail.rank)),
-      element(documentRef, "h3", "ranked-v3-inspect-player", detail.playerName),
-      scoreDisplay(documentRef, "ranked-v3-inspect-score", detail.score, "p"),
-      element(documentRef, "p", "ranked-v3-inspect-score-label", "Final Score"),
-      inspectStat(documentRef, "ranked-v3-inspect-depth", "Depth", detail.depth),
-      inspectStat(documentRef, "ranked-v3-inspect-gold", "Gold", detail.gold)
+      rank,
+      element(documentRef, "h3", "ranked-v3-inspect-player", detail.playerName)
     );
+    if (detailsAvailable || presentationFields.score) header.append(scoreDisplay(documentRef, "ranked-v3-inspect-score", detail.score, "p"), element(documentRef, "p", "ranked-v3-inspect-score-label", "Final Score"));
+    if (detailsAvailable || presentationFields.depth) header.append(inspectStat(documentRef, "ranked-v3-inspect-depth", "Depth", detail.depth));
+    if (detailsAvailable || presentationFields.gold) header.append(inspectStat(documentRef, "ranked-v3-inspect-gold", "Gold", detail.gold));
+    if (!detailsAvailable) {
+      const notice = detail.detailsUnavailableNotice || "Build Chronicle unavailable.";
+      const loadout = element(documentRef, "section", "ranked-v3-inspect-loadout");
+      loadout.append(element(documentRef, "p", "ranked-v3-inspect-unavailable", notice));
+      const actions = element(documentRef, "nav", "ranked-v3-inspect-actions");
+      actions.append(recordNavMeta(control(documentRef, "ranked-v3-inspect-back", "Back to Leaderboard", handlers.onBack), "detail-action", "back"));
+      overlay.append(header, loadout, actions, tooltipPanel);
+      rootNode.append(art, overlay);
+      installInspectTooltip(rootNode, tooltipPanel);
+      attachRecordNavigation(rootNode, { mode: "detail", onBack: handlers.onBack, onClose: handlers.onClose });
+      return rootNode;
+    }
     const loadout = element(documentRef, "section", "ranked-v3-inspect-loadout");
     loadout.append(element(documentRef, "h3", "ranked-v3-inspect-section-title", "Build Loadout"));
     const equipment = element(documentRef, "div", "ranked-v3-inspect-equipment-grid");
@@ -277,6 +655,7 @@
     const tooltip = mutatorTooltip(active);
     mutators.setAttribute("data-record-tooltip", tooltip);
     mutators.setAttribute("aria-label", tooltip);
+    recordNavMeta(mutators, "detail-action", "mutators");
     const earnedGold = summary.gold && typeof summary.gold === "object" ? summary.gold.earned : (summary.goldEarned ?? detail.gold);
     metrics.append(
       chronicleRow(documentRef, "Time Played", duration(summary.durationMs ?? detail.durationMs)),
@@ -295,10 +674,33 @@
       element(documentRef, "p", "ranked-v3-inspect-terminal-cause", isVictory ? "The descent was conquered." : (cause || "Cause not recorded."))
     );
     const actions = element(documentRef, "nav", "ranked-v3-inspect-actions");
-    actions.append(control(documentRef, "ranked-v3-inspect-back", "Back to Leaderboard", handlers.onBack));
-    overlay.append(header, loadout, chronicle, terminal, actions);
+    actions.append(recordNavMeta(control(documentRef, "ranked-v3-inspect-back", "Back to Leaderboard", handlers.onBack), "detail-action", "back"));
+    overlay.append(header, loadout, chronicle, terminal, actions, tooltipPanel);
     rootNode.append(art, overlay);
+    installInspectTooltip(rootNode, tooltipPanel);
+    attachRecordNavigation(rootNode, { mode: "detail", onBack: handlers.onBack, onClose: handlers.onClose });
     return rootNode;
   }
-  return Object.freeze({ SELECTORS, normalizeBuild, toLeaderboardRow, createLeaderboardViewModel, createLeaderboardPresentation, collectLeaderboardRows, createDetailViewModel, renderList, renderDetail });
+  const createReferencePlateFocusToken = (runId, action) => Object.freeze({
+    region: "row",
+    runId: String(runId || ""),
+    action: String(action || "")
+  });
+  const focusReferencePlateAction = (rootNode, reference = {}, fallback = true) => {
+    const source = reference && typeof reference === "object" ? reference : {};
+    const region = String(source.region || "");
+    const action = String(source.action || "");
+    const runId = String(source.runId || "");
+    const hasReference = Boolean(region || action || runId);
+    const target = hasReference && navDescendants(rootNode, (node) => (
+      (!region || navAttr(node, "data-record-nav-region") === region)
+      && (!action || navAttr(node, "data-record-action") === action)
+      && (!runId || navAttr(node, "data-record-run-id") === runId)
+      && !node.disabled
+    ))[0];
+    if (target) return navFocus(target);
+    if (!fallback) return null;
+    return navFocus(navActions(rootNode, "row")[0] || navActions(rootNode, "footer")[0] || null);
+  };
+  return Object.freeze({ SELECTORS, normalizeBuild, toLeaderboardRow, createLeaderboardViewModel, createLeaderboardPresentation, collectLeaderboardRows, createDetailViewModel, renderList, renderDetail, attachRecordNavigation, createReferencePlateFocusToken, focusReferencePlateAction });
 });

@@ -16,12 +16,11 @@ export const REQUIRED_SCREENSHOTS = Object.freeze([
   Object.freeze({ id: "practice-detail-rank4", relativePath: "output/online-v3-baseline/save/practice-records-detail-rank4.png" })
 ]);
 export const REQUIRED_SOURCE_PATHS = Object.freeze([
-  "record-archive-ui.js",
   "practice-records-adapter.js",
   "online-v3/ranked-v3-leaderboard-ui.js",
   "online-v3/ranked-v3-runtime.js",
+  "online-v3/ranked-v3-ui.js",
   "game.js",
-  "style-record-archive.css",
   "style.css",
   "assets/hd/ui/ranked-reference-plates/ranked-leaderboard-desktop-plate.png",
   "assets/hd/ui/ranked-reference-plates/ranked-build-inspect-desktop-plate.png",

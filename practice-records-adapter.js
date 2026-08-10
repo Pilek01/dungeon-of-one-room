@@ -46,6 +46,63 @@
     return createListModel(entries, options).rows.find((entry) => entry.runId === String(runId || "")) || null;
   }
 
+  function createReferencePlatePayload(entry, context = {}) {
+    const source = entry && typeof entry === "object" ? entry : {};
+    const base = {
+      runId: String(source.runId || source.id || ""),
+      rank: Number.isInteger(context.rank) && context.rank > 0 ? context.rank : 1,
+      playerName: String(source.playerName || "Anonymous"),
+      score: integer(source.score)
+    };
+    if (hasOwn(source, "depth") && source.depth !== null && source.depth !== undefined) base.depth = integer(source.depth);
+    if (hasOwn(source, "durationMs") && source.durationMs !== null && source.durationMs !== undefined) base.durationMs = integer(source.durationMs);
+    if (hasOwn(source, "outcome") && source.outcome !== null && source.outcome !== undefined) base.outcome = String(source.outcome);
+    if (hasOwn(source, "gold") && source.gold !== null && source.gold !== undefined) base.gold = integer(source.gold);
+
+    const build = source.build && typeof source.build === "object" ? source.build : null;
+    const summary = source.summary && typeof source.summary === "object" ? source.summary : null;
+    if (!build || !summary) {
+      return Object.freeze({ entry: Object.freeze({
+        ...base,
+        detailsAvailable: false,
+        detailsUnavailableNotice: "Build Chronicle unavailable for this legacy Practice record."
+      }) });
+    }
+
+    const relics = Array.isArray(build.relics)
+      ? build.relics.map((item) => ({
+        relicId: String(item?.relicId || item?.id || ""),
+        stacks: Math.max(1, integer(item?.stacks))
+      })).filter((item) => item.relicId)
+      : [];
+    const pacts = Array.isArray(build.pacts) ? [...build.pacts] : [];
+    const skillTiers = build.skillTiers && typeof build.skillTiers === "object" ? { ...build.skillTiers } : {};
+    const campUpgrades = build.campUpgrades && typeof build.campUpgrades === "object" ? { ...build.campUpgrades } : {};
+    const elixirs = build.elixir && typeof build.elixir === "object" ? [{ ...build.elixir }] : [];
+    const runModifiers = {
+      active: (Array.isArray(source.mutatorIds) ? source.mutatorIds : [])
+        .map((id) => ({ modifierId: String(id), stacks: 1 }))
+        .filter((item) => item.modifierId)
+    };
+
+    const projectedSummary = { ...summary };
+    if (hasOwn(source, "durationMs") && source.durationMs !== null && source.durationMs !== undefined) projectedSummary.durationMs = integer(source.durationMs);
+    if (hasOwn(source, "gold") && source.gold !== null && source.gold !== undefined) projectedSummary.gold = { earned: integer(source.gold) };
+
+    return Object.freeze({ entry: Object.freeze({
+      ...base,
+      detailsAvailable: true,
+      build: {
+        relics,
+        pacts,
+        skillTiers,
+        campUpgrades,
+        elixirs,
+        runModifiers
+      },
+      summary: projectedSummary
+    }) });
+  }
   function createDetailModel(entry, context = {}) {
     const source = entry && typeof entry === "object" ? entry : {};
     const rank = Number.isInteger(context.rank) && context.rank > 0 ? context.rank : null;
@@ -119,5 +176,5 @@
     });
   }
 
-  return Object.freeze({ createListModel, createDetailModel, findRankedEntry });
+  return Object.freeze({ createListModel, createDetailModel, createReferencePlatePayload, findRankedEntry });
 });

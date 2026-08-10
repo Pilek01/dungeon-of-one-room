@@ -16,10 +16,9 @@
   <link rel="stylesheet" href="style-hd-relic-draft.css" />
   <link rel="stylesheet" href="style-hd-boot.css" />
 </head>
-<body>
+<body class="graphics-hd-ui">
   <div id="bootScreen" class="boot-screen">
     <div class="boot-content">
-      <img src="assets/logo.png" alt="Dungeon of One Room" class="boot-logo" />
       <h1 class="boot-hd-brand" aria-label="Dungeon of One Room">
         <span class="boot-hd-brand-dungeon">Dungeon</span>
         <span class="boot-hd-brand-room"><small>of</small> One Room</span>
@@ -57,7 +56,7 @@
               <span class="room-vital-label">HP</span>
             </aside>
             <div class="canvas-wrap">
-              <canvas id="game" width="144" height="144" aria-label="Gra dungeon"></canvas>
+              <canvas id="game" width="576" height="576" class="graphics-hd" data-graphics-mode="hd" aria-label="Gra dungeon"></canvas>
               <div id="roomIntroOverlay" class="room-intro-overlay" aria-hidden="true"></div>
               <div id="screenOverlay" class="screen-overlay" aria-live="polite"></div>
             </div>
@@ -170,7 +169,6 @@
   <script src="render/hd-renderer-layers.js"></script>
   <script src="render/hd-renderer.js"></script>
   <script src="render/visual-snapshot.js"></script>
-  <script src="render/graphics-preference.js"></script>
   <script src="online-v3/ranked-v3-protocol.js"></script>
   <script src="online-v3/ranked-v3-storage.js"></script>
   <script src="online-v3/ranked-v3-coordination.js"></script>

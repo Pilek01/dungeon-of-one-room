@@ -51,6 +51,22 @@ async function tempRoot(t) {
   return root;
 }
 
+test("visual fingerprint tracks canonical archive sources and excludes the retired Practice renderer", () => {
+  const canonicalSources = [
+    "practice-records-adapter.js",
+    "online-v3/ranked-v3-leaderboard-ui.js",
+    "online-v3/ranked-v3-runtime.js",
+    "online-v3/ranked-v3-ui.js",
+    "game.js",
+    "style.css"
+  ];
+  for (const relativePath of canonicalSources) {
+    assert.ok(REQUIRED_SOURCE_PATHS.includes(relativePath), `missing canonical source: ${relativePath}`);
+  }
+  assert.equal(REQUIRED_SOURCE_PATHS.includes("record-archive-ui.js"), false);
+  assert.equal(REQUIRED_SOURCE_PATHS.includes("style-record-archive.css"), false);
+});
+
 test("record archive visual gate rejects a missing, incomplete, stale, or mismatched receipt", async (t) => {
   await t.test("missing receipt", async (t) => {
     const root = await tempRoot(t);
