@@ -7,6 +7,7 @@ const root = path.resolve(__dirname, "..");
 const index = fs.readFileSync(path.join(root, "index.html"), "utf8");
 const game = fs.readFileSync(path.join(root, "game.js"), "utf8");
 const config = fs.readFileSync(path.join(root, "config.js"), "utf8");
+const rankedHeaded = fs.readFileSync(path.join(root, "scripts", "online-v3-ranked-headed.mjs"), "utf8");
 
 test("the document starts in HD and does not load retired presentation modules", () => {
   assert.match(index, /<body\b[^>]*class="[^"]*\bgraphics-hd-ui\b[^"]*"/u);
@@ -61,4 +62,24 @@ test("boot input cannot enter the menu before HD readiness", () => {
   assert.ok(dismiss >= 0, "boot input must request HD-gated dismissal");
   assert.ok(dismissedCheck > dismiss, "failed HD dismissal must stop the transition");
   assert.ok(enterMenu > dismissedCheck, "menu entry must follow successful HD dismissal");
+});
+
+test("Ranked QA readiness hook uses only the live HD-only contract", () => {
+  const start = rankedHeaded.indexOf("window.__DUNGEON_TEST_GRAPHICS_READY = async");
+  const end = rankedHeaded.indexOf("window.__DUNGEON_TEST_TRIGGER_FATAL", start);
+  assert.notEqual(start, -1, "Ranked QA graphics hook must remain discoverable");
+  assert.ok(end > start, "Ranked QA graphics hook boundary must remain discoverable");
+  const dismissStart = rankedHeaded.indexOf("async function dismissBoot(");
+  const dismissEnd = rankedHeaded.indexOf("async function openNativeMenuOption(", dismissStart);
+  assert.notEqual(dismissStart, -1, "Ranked boot dismissal must remain discoverable");
+  assert.ok(dismissEnd > dismissStart, "Ranked boot dismissal boundary must remain discoverable");
+  const dismissBoot = rankedHeaded.slice(dismissStart, dismissEnd);
+  const hook = rankedHeaded.slice(start, end);
+  assert.match(hook, /const outcome = await initialGraphicsReady/u);
+  assert.match(hook, /requested:\s*"hd"/u);
+  assert.match(hook, /mode:\s*getRuntimeGraphicsMode\(\)/u);
+  assert.match(hook, /pending:\s*false/u);
+  assert.match(hook, /ready:\s*outcome\?\.ready === true/u);
+  assert.doesNotMatch(hook, /getGraphicsPreferenceMode|graphicsTransitionPending/u);
+  assert.match(dismissBoot, /graphicsReady\?\.ready !== true/u);
 });

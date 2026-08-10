@@ -264,6 +264,7 @@ async function dismissBoot(page, diagnostics = null, hdAttempt = 1) {
   await page.waitForFunction(() => window.__DUNGEON_TEST_BOOT_INPUT_READY?.() === true);
   const graphicsReady = await page.evaluate(() => window.__DUNGEON_TEST_GRAPHICS_READY?.());
   if (
+    graphicsReady?.ready !== true ||
     graphicsReady?.requested !== "hd" ||
     graphicsReady?.mode !== "hd" ||
     graphicsReady?.pending !== false
@@ -712,11 +713,12 @@ async function main() {
   const fatalTestHook = `  window.__DUNGEON_TEST_BOOT_INPUT_READY = () =>
     !bootInputLocked && performance.now() >= bootInputUnlockAt;
   window.__DUNGEON_TEST_GRAPHICS_READY = async () => {
-    await initialGraphicsReady;
+    const outcome = await initialGraphicsReady;
     return {
-      requested: getGraphicsPreferenceMode(),
+      requested: "hd",
       mode: getRuntimeGraphicsMode(),
-      pending: graphicsTransitionPending
+      pending: false,
+      ready: outcome?.ready === true
     };
   };
   window.__DUNGEON_TEST_TRIGGER_FATAL = (reason = "Headed fatal event") => {

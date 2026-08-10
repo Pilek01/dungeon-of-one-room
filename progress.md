@@ -1516,3 +1516,11 @@ Updated next good targets
   generator check, guard 14/14, and phase 781/781.
 - `v08-meta-1` remains test-only. No production binding, push, deploy, merge,
   or ruleset activation occurred.
+
+## 2026-08-10 - Remote HD-only browser acceptance
+
+- Fresh current-tree Practice save and Ranked lifecycle browser scenarios passed.
+- Ranked QA exposed a stale Classic preference hook in its isolated Pages build;
+  added a RED regression guard and migrated the hook to the HD-only ready outcome.
+- Generated and visually inspected all six current HD-only archive screenshots.
+  Two match the prior approved bytes; four require a new current-tip approval receipt.
