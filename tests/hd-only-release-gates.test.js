@@ -56,10 +56,13 @@ test("boot input prepares the menu before revealing the HD app", () => {
   assert.notEqual(start, -1, "boot transition must remain discoverable");
   assert.notEqual(end, -1, "boot transition boundary must remain discoverable");
   const body = game.slice(start, end);
+  const loading = body.indexOf('bootScreenEl?.classList.add("loading")');
   const readinessGate = body.indexOf("Promise.resolve(initialGraphicsReady)");
   const readyCheck = body.indexOf("outcome.ready !== true");
   const enterMenu = body.indexOf("enterMenu()");
   const dismiss = body.indexOf("dismissBootScreen()");
+  assert.ok(loading >= 0, "boot input must start loading immediately");
+  assert.ok(readinessGate > loading, "loading feedback must start before HD readiness completes");
   assert.ok(readinessGate >= 0, "boot input must await HD readiness");
   assert.ok(readyCheck > readinessGate, "failed HD readiness must stop the transition");
   assert.ok(enterMenu > readyCheck, "menu state must be prepared only after HD becomes ready");

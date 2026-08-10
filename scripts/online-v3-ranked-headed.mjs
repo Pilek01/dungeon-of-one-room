@@ -246,6 +246,16 @@ async function waitForBootAdvance(page) {
   });
 }
 
+async function waitForLeaderboardRenderFocus(page) {
+  await page.waitForFunction(() => {
+    const active = document.activeElement;
+    return active?.isConnected === true
+      && active.getAttribute("data-record-nav-region") === "row"
+      && active.getAttribute("data-record-action") === "name"
+      && active.closest("[data-record-rank]")?.getAttribute("data-record-rank") === "1";
+  });
+}
+
 async function dismissBoot(page, diagnostics = null, hdAttempt = 1) {
   const boot = page.locator("#bootScreen");
   if (!await boot.evaluate((element) => element.classList.contains("hidden"))) {
@@ -2139,6 +2149,7 @@ ${fatalTestHookAnchor}`;
     });
     await page.keyboard.press("PageUp");
     await page.getByText("Page 1 / 10", { exact: true }).waitFor({ state: "visible" });
+    await waitForLeaderboardRenderFocus(page);
 
     const pageOneLastInspect = page.locator('.ranked-v3-ledger-slot[data-record-rank="10"] .ranked-v3-leaderboard-details-button');
     await pageOneLastInspect.focus();
@@ -2150,6 +2161,7 @@ ${fatalTestHookAnchor}`;
     assert.equal(await page.evaluate(() => document.activeElement?.getAttribute("data-record-action")), "next");
     await page.keyboard.press("Enter");
     await page.getByText("Page 2 / 10", { exact: true }).waitFor({ state: "visible" });
+    await waitForLeaderboardRenderFocus(page);
 
     const pageTwoLastInspect = page.locator('.ranked-v3-ledger-slot[data-record-rank="17"] .ranked-v3-leaderboard-details-button');
     await pageTwoLastInspect.focus();
@@ -2167,6 +2179,7 @@ ${fatalTestHookAnchor}`;
     for (let targetPage = 4; targetPage <= 10; targetPage += 1) {
       const previousPage = targetPage - 1;
       const previousLastRank = 3 + previousPage * 7;
+      await waitForLeaderboardRenderFocus(page);
       const lastInspect = page.locator(`.ranked-v3-ledger-slot[data-record-rank="${previousLastRank}"] .ranked-v3-leaderboard-details-button`);
       await lastInspect.focus();
       await page.keyboard.press("ArrowDown");
@@ -2185,6 +2198,7 @@ ${fatalTestHookAnchor}`;
       path: path.join(ARTIFACT_ROOT, "ranked-leaderboard-page-10.png"),
       fullPage: true
     });
+    await waitForLeaderboardRenderFocus(page);
     const finalLastInspect = page.locator('.ranked-v3-ledger-slot[data-record-rank="73"] .ranked-v3-leaderboard-details-button');
     await finalLastInspect.focus();
     await page.keyboard.press("ArrowDown");
