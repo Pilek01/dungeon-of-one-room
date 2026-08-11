@@ -38,6 +38,34 @@ function readGitBuildValue(args, label) {
   return value;
 }
 
+function versionLinkedFirstPartyAssets(html, version) {
+  const isRelative = (source) => !/^(?:[a-z]+:|\/\/|\/|#)/iu.test(source);
+  const rewrite = (match, prefix, source, suffix, extension) => {
+    if (!isRelative(source)) return match;
+    const sourcePath = source.split(/[?#]/u, 1)[0];
+    if (!sourcePath.toLowerCase().endsWith(extension)) return match;
+    if (/[?#]/u.test(source)) {
+      throw new Error(`Refusing to duplicate a version query or fragment for ${source}.`);
+    }
+    return `${prefix}${source}?v=${version}${suffix}`;
+  };
+  let versioned = html.replace(
+    /(<script\b[^>]*\bsrc=")([^"]+)(")/gu,
+    (match, prefix, source, suffix) => rewrite(
+      match,
+      prefix,
+      source,
+      suffix,
+      ".js"
+    )
+  );
+  versioned = versioned.replace(
+    /(<link\b(?=[^>]*\brel="stylesheet")[^>]*\bhref=")([^"]+)(")/gu,
+    (match, prefix, source, suffix) => rewrite(match, prefix, source, suffix, ".css")
+  );
+  return versioned;
+}
+
 const buildCommit = readGitBuildValue(["rev-parse", "--short=7", "HEAD"], "commit hash");
 const buildCommitDate = readGitBuildValue(["show", "-s", "--format=%cs", "HEAD"], "commit date");
 
@@ -97,6 +125,7 @@ const gameScript = '  <script src="game.js"></script>';
 const rewardRecorderScript = '  <script src="online-v3/ranked-v3-recorder.js"></script>';
 if (!index.includes(gameScript)) throw new Error("Missing production game script.");
 index = index.replace(gameScript, `${rewardRecorderScript}\n${gameScript}`);
+index = versionLinkedFirstPartyAssets(index, buildCommit);
 await writeFile(indexPath, index, "utf8");
 
 const bootStylePath = path.join(output, "style-hd-boot.css");

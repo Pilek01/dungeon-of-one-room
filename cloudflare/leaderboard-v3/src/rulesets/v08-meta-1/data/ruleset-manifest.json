@@ -457,8 +457,8 @@
     },
     {
       "file": "ruleset-hash-policy.js",
-      "byteLength": 1044,
-      "sha256": "b199ab809d9faf0b40888e17ac7110917f4cc3ac6b80c2b37a8b7a470f62f1ee"
+      "byteLength": 1198,
+      "sha256": "72b19a55b9006e6ddb2fd824a58f4bd9afecbbc0b11c94ade66ed4c399460470"
     },
     {
       "file": "run-modifiers.js",
@@ -566,5 +566,5 @@
       "sha256": "cfce80fea7bd5d1328020055f2012bcaeaf9b61e5438e437bf948a4288fb8bf0"
     }
   ],
-  "rulesetHash": "sha256:f2ca48c5663f7b06123d7dfd85ab04b8acc2df04ff67c544e80ce78c8a0d7fb0"
+  "rulesetHash": "sha256:7eb0f0a14ada566c5d161563d310a8635d1bc7c55e6bfbee2531124e205e77df"
 }
