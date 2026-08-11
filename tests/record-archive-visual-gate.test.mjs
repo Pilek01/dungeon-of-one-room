@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import crypto from "node:crypto";
-import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import test from "node:test";
@@ -50,6 +50,18 @@ async function tempRoot(t) {
   await writeFixture(root);
   return root;
 }
+
+test("ranked-list-desktop capture disables animations before visual approval hashing", async () => {
+  const source = await readFile(
+    new URL("../scripts/online-v3-ranked-headed.mjs", import.meta.url),
+    "utf8"
+  );
+  const capture = source.match(
+    /await page\.screenshot\(\{\s*path:\s*path\.join\(ARTIFACT_ROOT,\s*"ranked-leaderboard\.png"\),([\s\S]*?)\}\);/u
+  );
+  assert(capture, "ranked-list-desktop screenshot call is missing");
+  assert.match(capture[1], /animations:\s*"disabled"/u);
+});
 
 test("record archive visual gate rejects a missing, incomplete, stale, or mismatched receipt", async (t) => {
   await t.test("missing receipt", async (t) => {

@@ -1759,7 +1759,8 @@ ${fatalTestHookAnchor}`;
     await page.evaluate(() => document.activeElement?.blur());
     await page.screenshot({
       path: path.join(ARTIFACT_ROOT, "ranked-leaderboard.png"),
-      fullPage: true
+      fullPage: true,
+      animations: "disabled"
     });
     assert.equal(referencePlateAudit.populatedPodium, 3, JSON.stringify(referencePlateAudit));
     assert.equal(referencePlateAudit.populatedLedger, 7, JSON.stringify(referencePlateAudit));
