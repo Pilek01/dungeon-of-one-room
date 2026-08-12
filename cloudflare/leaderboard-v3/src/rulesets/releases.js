@@ -3,12 +3,64 @@ import {
   V08_META_1_DESCRIPTOR,
   createV08Meta1Ruleset
 } from "./v08-meta-1/index.js";
+import { normalizeFatalPresentationCauseV08 } from "./v08-meta-1/life-policy.js";
 
-export const V08_META_1_LOCAL_RELEASE_DESCRIPTOR = Object.freeze({
-  ...V08_META_1_DESCRIPTOR,
-  status: RULESET_RELEASE_STATES.LOCAL_RELEASE_CANDIDATE,
-  allowedEnvironments: Object.freeze(["test", "local"])
+const LEGACY_FATAL_CAPABILITIES = Object.freeze({
+  fatalPresentationCauseMode: "strip"
 });
+const CURRENT_FATAL_CAPABILITIES = Object.freeze({
+  fatalPresentationCauseMode: "retain"
+});
+const LOCAL_ENVIRONMENTS = Object.freeze(["test", "local"]);
+const PRODUCTION_ENVIRONMENTS = Object.freeze(["test", "local", "production"]);
+
+function compatibleFatalRequest(request, capabilities) {
+  if (
+    !request ||
+    typeof request !== "object" ||
+    !Object.hasOwn(request, "presentationCause")
+  ) return request;
+  const presentationCause = normalizeFatalPresentationCauseV08(request);
+  if (capabilities.fatalPresentationCauseMode === "retain") {
+    return { ...request, presentationCause };
+  }
+  const legacyRequest = { ...request };
+  delete legacyRequest.presentationCause;
+  return legacyRequest;
+}
+
+function createCapabilityBoundRuleset(rulesetHash, capabilities) {
+  const ruleset = createV08Meta1Ruleset({ rulesetHash });
+  return Object.freeze({
+    ...ruleset,
+    capabilities,
+    async reportFatalEvent(state, request, context = {}) {
+      return ruleset.reportFatalEvent(
+        state,
+        compatibleFatalRequest(request, capabilities),
+        context
+      );
+    }
+  });
+}
+
+function createReleaseDescriptor(rulesetHash, status, allowedEnvironments, capabilities) {
+  return Object.freeze({
+    ...V08_META_1_DESCRIPTOR,
+    rulesetHash,
+    status,
+    allowedEnvironments,
+    capabilities,
+    createRuleset: () => createCapabilityBoundRuleset(rulesetHash, capabilities)
+  });
+}
+
+export const V08_META_1_LOCAL_RELEASE_DESCRIPTOR = createReleaseDescriptor(
+  V08_META_1_DESCRIPTOR.rulesetHash,
+  RULESET_RELEASE_STATES.LOCAL_RELEASE_CANDIDATE,
+  LOCAL_ENVIRONMENTS,
+  CURRENT_FATAL_CAPABILITIES
+);
 
 export const V08_META_1_PRODUCTION_RULESET_HASH =
   "sha256:bc0d548d204557d0cc0ec7f8a358e18246778a13b27c58f5c6cdd73e73621711";
@@ -34,82 +86,58 @@ export const V08_META_1_PREVIOUS_PRODUCTION_RULESET_HASH =
 export const V08_META_1_LEGACY_PRODUCTION_RULESET_HASH =
   "sha256:0bf00607056dbf3c30ffe57bbcfc77cea95b21c9ccc23aa985ec555856d1cbd6";
 
-export const V08_META_1_LEGACY_PRODUCTION_RELEASE_DESCRIPTOR = Object.freeze({
-  ...V08_META_1_DESCRIPTOR,
-  rulesetHash: V08_META_1_LEGACY_PRODUCTION_RULESET_HASH,
-  status: RULESET_RELEASE_STATES.PRODUCTION_RELEASED,
-  allowedEnvironments: Object.freeze(["test", "local", "production"]),
-  createRuleset: () => createV08Meta1Ruleset({
-    rulesetHash: V08_META_1_LEGACY_PRODUCTION_RULESET_HASH
-  })
-});
+export const V08_META_1_LEGACY_PRODUCTION_RELEASE_DESCRIPTOR = createReleaseDescriptor(
+  V08_META_1_LEGACY_PRODUCTION_RULESET_HASH,
+  RULESET_RELEASE_STATES.PRODUCTION_RELEASED,
+  PRODUCTION_ENVIRONMENTS,
+  LEGACY_FATAL_CAPABILITIES
+);
 
-export const V08_META_1_R2_PRODUCTION_RELEASE_DESCRIPTOR = Object.freeze({
-  ...V08_META_1_DESCRIPTOR,
-  rulesetHash: V08_META_1_R2_PRODUCTION_RULESET_HASH,
-  status: RULESET_RELEASE_STATES.PRODUCTION_RELEASED,
-  allowedEnvironments: Object.freeze(["test", "local", "production"]),
-  createRuleset: () => createV08Meta1Ruleset({
-    rulesetHash: V08_META_1_R2_PRODUCTION_RULESET_HASH
-  })
-});
+export const V08_META_1_R2_PRODUCTION_RELEASE_DESCRIPTOR = createReleaseDescriptor(
+  V08_META_1_R2_PRODUCTION_RULESET_HASH,
+  RULESET_RELEASE_STATES.PRODUCTION_RELEASED,
+  PRODUCTION_ENVIRONMENTS,
+  LEGACY_FATAL_CAPABILITIES
+);
 
-export const V08_META_1_WARDEN_HOTFIX_RELEASE_DESCRIPTOR = Object.freeze({
-  ...V08_META_1_DESCRIPTOR,
-  rulesetHash: V08_META_1_WARDEN_HOTFIX_RULESET_HASH,
-  status: RULESET_RELEASE_STATES.PRODUCTION_RELEASED,
-  allowedEnvironments: Object.freeze(["test", "local", "production"]),
-  createRuleset: () => createV08Meta1Ruleset({
-    rulesetHash: V08_META_1_WARDEN_HOTFIX_RULESET_HASH
-  })
-});
+export const V08_META_1_WARDEN_HOTFIX_RELEASE_DESCRIPTOR = createReleaseDescriptor(
+  V08_META_1_WARDEN_HOTFIX_RULESET_HASH,
+  RULESET_RELEASE_STATES.PRODUCTION_RELEASED,
+  PRODUCTION_ENVIRONMENTS,
+  LEGACY_FATAL_CAPABILITIES
+);
 
-export const V08_META_1_SCORE_CARRY_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR = Object.freeze({
-  ...V08_META_1_DESCRIPTOR,
-  rulesetHash: V08_META_1_SCORE_CARRY_PREVIOUS_PRODUCTION_RULESET_HASH,
-  status: RULESET_RELEASE_STATES.PRODUCTION_RELEASED,
-  allowedEnvironments: Object.freeze(["test", "local", "production"]),
-  createRuleset: () => createV08Meta1Ruleset({
-    rulesetHash: V08_META_1_SCORE_CARRY_PREVIOUS_PRODUCTION_RULESET_HASH
-  })
-});
+export const V08_META_1_SCORE_CARRY_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR = createReleaseDescriptor(
+  V08_META_1_SCORE_CARRY_PREVIOUS_PRODUCTION_RULESET_HASH,
+  RULESET_RELEASE_STATES.PRODUCTION_RELEASED,
+  PRODUCTION_ENVIRONMENTS,
+  LEGACY_FATAL_CAPABILITIES
+);
 
-export const V08_META_1_HD_BOOT_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR = Object.freeze({
-  ...V08_META_1_DESCRIPTOR,
-  rulesetHash: V08_META_1_HD_BOOT_PREVIOUS_PRODUCTION_RULESET_HASH,
-  status: RULESET_RELEASE_STATES.PRODUCTION_RELEASED,
-  allowedEnvironments: Object.freeze(["test", "local", "production"]),
-  createRuleset: () => createV08Meta1Ruleset({
-    rulesetHash: V08_META_1_HD_BOOT_PREVIOUS_PRODUCTION_RULESET_HASH
-  })
-});
+export const V08_META_1_HD_BOOT_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR = createReleaseDescriptor(
+  V08_META_1_HD_BOOT_PREVIOUS_PRODUCTION_RULESET_HASH,
+  RULESET_RELEASE_STATES.PRODUCTION_RELEASED,
+  PRODUCTION_ENVIRONMENTS,
+  LEGACY_FATAL_CAPABILITIES
+);
 
-export const V08_META_1_BOUNDARY_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR = Object.freeze({
-  ...V08_META_1_DESCRIPTOR,
-  rulesetHash: V08_META_1_BOUNDARY_PREVIOUS_PRODUCTION_RULESET_HASH,
-  status: RULESET_RELEASE_STATES.PRODUCTION_RELEASED,
-  allowedEnvironments: Object.freeze(["test", "local", "production"]),
-  createRuleset: () => createV08Meta1Ruleset({
-    rulesetHash: V08_META_1_BOUNDARY_PREVIOUS_PRODUCTION_RULESET_HASH
-  })
-});
+export const V08_META_1_BOUNDARY_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR = createReleaseDescriptor(
+  V08_META_1_BOUNDARY_PREVIOUS_PRODUCTION_RULESET_HASH,
+  RULESET_RELEASE_STATES.PRODUCTION_RELEASED,
+  PRODUCTION_ENVIRONMENTS,
+  LEGACY_FATAL_CAPABILITIES
+);
 
-export const V08_META_1_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR = Object.freeze({
-  ...V08_META_1_DESCRIPTOR,
-  rulesetHash: V08_META_1_PREVIOUS_PRODUCTION_RULESET_HASH,
-  status: RULESET_RELEASE_STATES.PRODUCTION_RELEASED,
-  allowedEnvironments: Object.freeze(["test", "local", "production"]),
-  createRuleset: () => createV08Meta1Ruleset({
-    rulesetHash: V08_META_1_PREVIOUS_PRODUCTION_RULESET_HASH
-  })
-});
+export const V08_META_1_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR = createReleaseDescriptor(
+  V08_META_1_PREVIOUS_PRODUCTION_RULESET_HASH,
+  RULESET_RELEASE_STATES.PRODUCTION_RELEASED,
+  PRODUCTION_ENVIRONMENTS,
+  LEGACY_FATAL_CAPABILITIES
+);
 
-export const V08_META_1_PRODUCTION_RELEASE_DESCRIPTOR = Object.freeze({
-  ...V08_META_1_DESCRIPTOR,
-  rulesetHash: V08_META_1_PRODUCTION_RULESET_HASH,
-  status: RULESET_RELEASE_STATES.PRODUCTION_RELEASED,
-  allowedEnvironments: Object.freeze(["test", "local", "production"]),
-  createRuleset: () => createV08Meta1Ruleset({
-    rulesetHash: V08_META_1_PRODUCTION_RULESET_HASH
-  })
-});
+export const V08_META_1_PRODUCTION_RELEASE_DESCRIPTOR = createReleaseDescriptor(
+  V08_META_1_PRODUCTION_RULESET_HASH,
+  RULESET_RELEASE_STATES.PRODUCTION_RELEASED,
+  PRODUCTION_ENVIRONMENTS,
+  LEGACY_FATAL_CAPABILITIES
+);

@@ -1561,3 +1561,35 @@ Updated next good targets
 - Regenerated the 34 source-bound `v08-meta-1` data files and
   `ruleset-manifest.json` after the `game.js` fingerprint changed. The
   ruleset remains test-only; no activation, push, deployment, or merge occurred.
+
+## 2026-08-12 - Ranked fatal compatibility Worker hotfix
+
+- Created the clean Worker-only release commit
+  `4041faa4836183b819a64a58d0ef351cd07ba020` directly on the live/GitHub
+  production base `f67eb9554a1395d8399e23fda6094c6e22d7305d`; stale local
+  `main` and the active `mobile-v1` worktree were not used or modified.
+- Implemented accept-validate-strip compatibility for production legacy fatal
+  payloads. f67 cause-bearing clients and cause-free clients are both accepted;
+  `presentationCause` is validated, then removed before applying `bc0d`.
+  Stripped and omitted cause produce identical canonical state, digests,
+  checkpoint tokens, and terminal summaries. Unexpected internal failures
+  remain 500-class.
+- Fresh release verification passed 815/815 from exact clean commit `4041faa`.
+  Candidate override and post-promotion smoke covered malformed-cause 422,
+  cause-bearing and cause-free fatal events, replay/conflict behavior, Resume,
+  and cleanup; all disposable diagnostic runs were abandoned.
+- Uploaded Worker version `b03cb1ae-25e2-458f-8297-6aeeb298778d`, completed
+  inactive, 5%, and 25% candidate checks, then promoted it to 100% in final
+  deployment `cc896f3f-eb6f-40ba-989f-663e423af6c7`. The recorded rollback
+  version remains `19b9174c-f720-4484-8f7b-c0918215c29b`; no rollback was
+  required.
+- The active ruleset remains
+  `sha256:bc0d548d204557d0cc0ec7f8a358e18246778a13b27c58f5c6cdd73e73621711`.
+  Pages stayed unchanged at deployment
+  `4236fef9-1e2d-4e6c-aac8-752cc2f71b55` from source `f67eb95`; no visual
+  receipt changed. D1 had no migration, backfill, restore, or schema/data
+  release action and still reports `No migrations to apply`.
+- Remote source provenance is the release branch
+  `codex/ranked-fatal-worker-compat` plus annotated tag
+  `online-v3-worker-production-2026-08-12-4041faa`, which anchors the exact
+  deployed source commit rather than local `main`.

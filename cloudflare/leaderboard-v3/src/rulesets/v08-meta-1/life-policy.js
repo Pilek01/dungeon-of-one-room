@@ -63,7 +63,7 @@ function normalizeElixirUsage(state, request) {
   return { elixirId, count };
 }
 
-function normalizePresentationCause(request) {
+export function normalizeFatalPresentationCauseV08(request) {
   if (request.presentationCause === undefined) return null;
   if (typeof request.presentationCause !== "string" || /[\u0000-\u001f\u007f]/u.test(request.presentationCause)) {
     throw new TypeError("FATAL_PRESENTATION_CAUSE_INVALID");
@@ -74,6 +74,7 @@ function normalizePresentationCause(request) {
   }
   return normalized;
 }
+
 function appendHistory(history, entry) {
   return [...(Array.isArray(history) ? history : []), entry].slice(-HISTORY_LIMIT);
 }
@@ -194,7 +195,7 @@ export async function applyFatalEventV08(state, request, context = {}) {
   const next = structuredClone(state);
   const before = structuredClone(state);
   const elixirUsage = normalizeElixirUsage(next, request);
-  const presentationCause = normalizePresentationCause(request);
+  const presentationCause = normalizeFatalPresentationCauseV08(request);
   if (elixirUsage) {
     next.build.elixirs[0].charges -= elixirUsage.count;
   }
