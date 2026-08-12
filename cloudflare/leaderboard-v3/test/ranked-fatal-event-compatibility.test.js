@@ -145,9 +145,9 @@ function createHttpHarness(descriptor, environment) {
   return { repositories, startSelect, resume, fatal };
 }
 
-test("production ruleset releases are explicit legacy fatal-presentation capabilities", () => {
+test("production ruleset releases explicitly strip fatal presentation causes", () => {
   for (const descriptor of LEGACY_RELEASES) {
-    assert.deepEqual(descriptor.capabilities, { fatalPresentationCause: false }, descriptor.rulesetHash);
+    assert.deepEqual(descriptor.capabilities, { fatalPresentationCauseMode: "strip" }, descriptor.rulesetHash);
     assert.equal(Object.isFrozen(descriptor.capabilities), true, descriptor.rulesetHash);
     const ruleset = descriptor.createRuleset();
     assert.deepEqual(ruleset.capabilities, descriptor.capabilities, descriptor.rulesetHash);
@@ -155,7 +155,7 @@ test("production ruleset releases are explicit legacy fatal-presentation capabil
   }
   assert.deepEqual(
     V08_META_1_LOCAL_RELEASE_DESCRIPTOR.capabilities,
-    { fatalPresentationCause: true }
+    { fatalPresentationCauseMode: "retain" }
   );
 });
 
@@ -219,15 +219,15 @@ test("supporting local ruleset accepts classification, elixir usage, and present
   );
 });
 
-test("legacy cause payload is a known 422 while unknown failures remain 500", async () => {
+test("production cause payload is accepted and stripped while unknown failures remain 500", async () => {
   const harness = createHttpHarness(V08_META_1_PRODUCTION_RELEASE_DESCRIPTOR, "production");
   const started = await harness.startSelect("bc-cause");
   const result = await harness.fatal(started.session, {
     classification: "local_fatal_event",
     presentationCause: "Defeated by The Hollow Seraph"
   }, "bc-cause-fatal");
-  assert.equal(result.response.status, 422, JSON.stringify(result.payload));
-  assert.equal(result.payload.error.code, "FATAL_EVENT_PAYLOAD_INVALID_FIELDS");
+  assert.equal(result.response.status, 200, JSON.stringify(result.payload));
+  assert.equal(Object.hasOwn(harness.repositories.snapshotRun(result.payload.runId).lifeLedger.history.at(-1), "presentationCause"), false);
 
   const unknown = errorFromCause(new TypeError("UNEXPECTED_FATAL_STORAGE_FAILURE"));
   assert.equal(unknown.status, 500);

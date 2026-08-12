@@ -222,7 +222,7 @@
       const body = {
         playerName: String(input.playerName || "Anonymous"),
         season: String(input.season || "local-m4"),
-        gameVersion: String(input.gameVersion || "v0.8.0"),
+        gameVersion: String(input.gameVersion || "v0.8.2"),
         rulesetId: protocol.RULESET_ID,
         startDepth: Math.max(0, Math.floor(Number(input.startDepth) || 0)),
         rulesetHash: protocol.RULESET_HASH,

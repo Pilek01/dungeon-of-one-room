@@ -41,13 +41,19 @@ const summary = [];
 
 fs.mkdirSync(outputRoot, { recursive: true });
 
-function attachDiagnostics(page, consoleErrors) {
+function attachDiagnostics(page, consoleErrors, forbiddenClassicRequests) {
   page.on("console", (message) => {
     if (["error", "warning"].includes(message.type()) && !/AudioContext was not allowed to start/.test(message.text())) {
       consoleErrors.push({ type: message.type(), text: message.text() });
     }
   });
   page.on("pageerror", (error) => consoleErrors.push({ type: "pageerror", text: String(error) }));
+  page.on("request", (request) => {
+    const pathname = new URL(request.url()).pathname;
+    if (pathname === "/assets/logo.png" || pathname.startsWith("/assets/sprite/")) {
+      forbiddenClassicRequests.push(pathname);
+    }
+  });
 }
 
 function launchAuditBrowser() {
@@ -64,7 +70,8 @@ async function captureBoot(viewportName, viewport) {
     try {
       const bootPage = await context.newPage();
       const bootErrors = [];
-      attachDiagnostics(bootPage, bootErrors);
+      const forbiddenClassicRequests = [];
+      attachDiagnostics(bootPage, bootErrors, forbiddenClassicRequests);
       await bootPage.goto(baseUrl, { waitUntil: "domcontentloaded" });
       await bootPage.waitForTimeout(1800);
       const bootMenuVisible = await bootPage.locator("#bootScreen").isVisible();
@@ -77,6 +84,8 @@ async function captureBoot(viewportName, viewport) {
             && rect.width > 0 && rect.height > 0;
         };
         return {
+          gameVersion: window.DUNGEON_GAME_VERSION || window.GAME_VERSION || "",
+          versionIsExpected: window.DUNGEON_GAME_VERSION === "v0.8.2",
           hdUi: document.body.classList.contains("graphics-hd-ui"),
           appHidden: document.querySelector("#gameApp")?.classList.contains("app-hidden") || false,
           bootLogoVisible: visible(document.querySelector("#bootScreen .boot-logo")),
@@ -86,11 +95,11 @@ async function captureBoot(viewportName, viewport) {
       const bootTarget = path.join(outputRoot, viewportName, "boot");
       fs.mkdirSync(bootTarget, { recursive: true });
       await bootPage.screenshot({ path: path.join(outputRoot, viewportName, bootViewportRelative) });
-      summary.push({ viewport: viewportName, scenario: "boot", bootMenuVisible, bootGraphics, consoleErrors: bootErrors });
+      summary.push({ viewport: viewportName, scenario: "boot", bootMenuVisible, bootGraphics, forbiddenClassicRequests, consoleErrors: bootErrors });
       if (
-        !bootMenuVisible || !bootGraphics.hdUi || !bootGraphics.appHidden
-        || bootGraphics.bootLogoVisible || !bootGraphics.hdBrandVisible || bootErrors.length
-      ) throw new Error(`boot audit failed for ${viewportName}: ${JSON.stringify({ bootMenuVisible, bootGraphics, bootErrors })}`);
+        !bootMenuVisible || !bootGraphics.versionIsExpected || bootGraphics.gameVersion !== "v0.8.2" || !bootGraphics.hdUi || !bootGraphics.appHidden
+        || bootGraphics.bootLogoVisible || !bootGraphics.hdBrandVisible || bootErrors.length || forbiddenClassicRequests.length
+      ) throw new Error(`boot audit failed for ${viewportName}: ${JSON.stringify({ bootMenuVisible, bootGraphics, forbiddenClassicRequests, bootErrors })}`);
       await bootPage.close();
     } finally {
       await context.close();
@@ -110,7 +119,8 @@ async function captureScenarioBatch(viewportName, viewport, batchScenarios) {
       const page = await context.newPage();
         try {
           const consoleErrors = [];
-          attachDiagnostics(page, consoleErrors);
+          const forbiddenClassicRequests = [];
+          attachDiagnostics(page, consoleErrors, forbiddenClassicRequests);
           await page.goto(`${baseUrl}?scenario=${scenario}`, { waitUntil: "domcontentloaded" });
           await page.waitForFunction(() => {
             const canvas = document.querySelector("#game");
@@ -149,6 +159,7 @@ async function captureScenarioBatch(viewportName, viewport, batchScenarios) {
             }
             const pixelCount = pixels.length / 4;
             return {
+              gameVersion: window.DUNGEON_GAME_VERSION || window.GAME_VERSION || "",
               graphicsMode: canvas.dataset.graphicsMode,
               canvasWidth: canvas.width,
               canvasHeight: canvas.height,
@@ -164,19 +175,43 @@ async function captureScenarioBatch(viewportName, viewport, batchScenarios) {
 
           const target = path.join(outputRoot, viewportName, scenario);
           fs.mkdirSync(target, { recursive: true });
+          fs.writeFileSync(path.join(target, "state.json"), JSON.stringify(state, null, 2) + "\n");
           await page.screenshot({ path: path.join(target, "viewport.png") });
           await page.locator("#game").screenshot({ path: path.join(target, "canvas.png") });
-          fs.writeFileSync(path.join(target, "state.json"), JSON.stringify(state, null, 2) + "\n");
-          fs.writeFileSync(path.join(target, "diagnostics.json"), JSON.stringify({ consoleErrors }, null, 2) + "\n");
-          const result = { viewport: viewportName, scenario, ...metrics, consoleErrors };
+          const beforeReloadRequests = forbiddenClassicRequests.length;
+          await page.reload({ waitUntil: "domcontentloaded" });
+          await page.waitForFunction(() => {
+            const canvas = document.querySelector("#game");
+            return canvas?.dataset.graphicsMode === "hd" && canvas.width === 576 && canvas.height === 576;
+          }, null, { timeout: 30000 });
+          await page.waitForFunction((expected) => {
+            if (typeof window.render_game_to_text !== "function") return false;
+            const state = JSON.parse(window.render_game_to_text());
+            return state.phase === "playing" && state.scenario === expected;
+          }, scenario, { timeout: 30000 });
+          const reloadGraphics = await page.evaluate(() => {
+            const canvas = document.querySelector("#game");
+            return {
+              gameVersion: window.DUNGEON_GAME_VERSION || window.GAME_VERSION || "",
+              graphicsMode: canvas?.dataset.graphicsMode || "",
+              canvasWidth: canvas?.width || 0,
+              canvasHeight: canvas?.height || 0,
+              hdUi: document.body.classList.contains("graphics-hd-ui")
+            };
+          });
+          const reloadForbiddenClassicRequests = forbiddenClassicRequests.slice(beforeReloadRequests);
+          fs.writeFileSync(path.join(target, "diagnostics.json"), JSON.stringify({ consoleErrors, forbiddenClassicRequests, reloadGraphics, reloadForbiddenClassicRequests }, null, 2) + "\n");
+          const result = { viewport: viewportName, scenario, ...metrics, reloadGraphics, forbiddenClassicRequests, reloadForbiddenClassicRequests, consoleErrors };
           summary.push(result);
 
           const mobileChromeMissing = viewportName === "mobile" && (!metrics.skillsBarVisible || !metrics.mobileControlsVisible);
           if (
-            metrics.graphicsMode !== "hd" || metrics.canvasWidth !== 576 || metrics.canvasHeight !== 576
+            metrics.gameVersion !== "v0.8.2" || metrics.graphicsMode !== "hd" || metrics.canvasWidth !== 576 || metrics.canvasHeight !== 576
             || metrics.scrollY !== 0 || metrics.horizontalOverflow || mobileChromeMissing
             || metrics.nonTransparentRatio < 0.98 || metrics.magentaKeyRatio > 0.001
-            || metrics.meanLuminance < 15 || metrics.meanLuminance > 190 || consoleErrors.length
+            || metrics.meanLuminance < 15 || metrics.meanLuminance > 190 || reloadGraphics.gameVersion !== "v0.8.2"
+            || reloadGraphics.graphicsMode !== "hd" || reloadGraphics.canvasWidth !== 576 || reloadGraphics.canvasHeight !== 576
+            || !reloadGraphics.hdUi || forbiddenClassicRequests.length || reloadForbiddenClassicRequests.length || consoleErrors.length
           ) throw new Error(`final HD audit failed: ${JSON.stringify(result)}`);
         } finally {
           await page.close();

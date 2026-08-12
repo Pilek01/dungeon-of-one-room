@@ -42,3 +42,35 @@ test("final screenshot audit recycles Chromium before decoded HD assets can accu
   assert.match(source, /for \(const batchScenarios of scenarioBatches\)/);
   assert.match(source, /await browser\.close\(\)/);
 });
+test("HD browser audit captures forbidden Classic requests and live version across reload", () => {
+  const source = fs.readFileSync(runnerPath, "utf8");
+  assert.match(source, /forbiddenClassicRequests/u);
+  assert.match(source, /pathname === ["']\/assets\/logo\.png["']/u);
+  assert.match(source, /pathname\.startsWith\(["']\/assets\/sprite\/["']\)/u);
+  assert.match(source, /DUNGEON_GAME_VERSION[^\n]*v0\.8\.2/u);
+  assert.match(source, /page\.reload\(/u);
+  assert.match(source, /reload[^\n]*forbiddenClassicRequests|forbiddenClassicRequests[^\n]*reload/iu);
+});
+
+test("HD baseline and graphics QA no longer exercise Classic mode or preference storage", () => {
+  const baseline = fs.readFileSync(path.join(root, "scripts", "online-v3-baseline-smoke.mjs"), "utf8");
+  const graphics = fs.readFileSync(path.join(root, "scripts", "capture-graphics-toggle-qa.mjs"), "utf8");
+  assert.doesNotMatch(baseline, /classic-shrine|GRAPHICS_KEY|data-graphics-mode.*legacy|graphicsMode.*classic/iu);
+  assert.match(baseline, /forbiddenClassicRequests/u);
+  assert.match(baseline, /assets\/sprite\//u);
+  assert.match(baseline, /assets\/logo\.png/u);
+  assert.doesNotMatch(graphics, /Classic|classic|dungeonOneRoomGraphicsMode|Digit[1236]/u);
+  assert.match(graphics, /forbiddenClassicRequests|assets\/sprite\//u);
+});
+
+test("live Ranked client/runtime/headed fallbacks identify v0.8.2", () => {
+  for (const relative of [
+    "online-v3/ranked-v3-client.js",
+    "online-v3/ranked-v3-runtime.js",
+    "scripts/online-v3-ranked-headed.mjs"
+  ]) {
+    const source = fs.readFileSync(path.join(root, relative), "utf8");
+    assert.doesNotMatch(source, /v0\.8\.0/gu, relative);
+    assert.match(source, /v0\.8\.2/u, relative);
+  }
+});

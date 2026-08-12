@@ -329,6 +329,25 @@ test("records decode rejection without an unhandled or double settlement", async
   assert.strictEqual(created[0].onerror, null);
 });
 
+test("decode rejection can recover through a later successful load event", async () => {
+  const created = [];
+  const asset = entry("fx.shockwave.base");
+  const result = await loaderApi.loadAssets([asset], {
+    imageFactory: createImageFactory([{
+      decode: () => Promise.reject(new Error("transient decoder pressure")),
+      onSrc(image) {
+        setImmediate(() => {
+          if (image.onload) image.onload();
+        });
+      }
+    }], created),
+    timeoutMs: 100
+  });
+
+  assert.strictEqual(result.loaded.get(asset.key), created[0]);
+  assert.deepEqual(result.failures, []);
+});
+
 test("handles deterministic timeout and clears timers and image handlers", async () => {
   const timers = new Map();
   const cleared = [];
@@ -536,15 +555,14 @@ test("hostile handler cleanup cannot strand decode rejection or create an unhand
   process.prependListener("unhandledRejection", onUnhandled);
   let result;
   try {
-    const timeoutSentinel = Symbol("did not settle");
-    result = await Promise.race([
-      loaderApi.loadAssets([entry("fx.shockwave.base")], {
-        imageFactory: () => image,
-        timeoutMs: 100
-      }),
-      new Promise((resolve) => setImmediate(() => resolve(timeoutSentinel)))
-    ]);
-    assert.notStrictEqual(result, timeoutSentinel);
+    const loading = loaderApi.loadAssets([entry("fx.shockwave.base")], {
+      imageFactory: () => image,
+      timeoutMs: 100
+    });
+    await Promise.resolve();
+    assert.equal(typeof storedOnError, "function");
+    storedOnError(new Error("decode failed"));
+    result = await loading;
     await new Promise((resolve) => setImmediate(resolve));
   } finally {
     process.removeListener("unhandledRejection", onUnhandled);
@@ -672,5 +690,5 @@ test("UMD asset scripts attach in dependency order before the graphics controlle
   const gameSource = fs.readFileSync(path.join(projectRoot, "game.js"), "utf8");
   assert.match(gameSource, /loader:\s*window\.DungeonHDAssetLoader/);
   assert.match(gameSource, /manifest:\s*window\.DungeonHDAssetManifest\s*&&\s*window\.DungeonHDAssetManifest\.entries/);
-  assert.match(gameSource, /graphicsController\.initialize\(graphicsPreferenceApi\.isHd\(graphicsPreference\)\)/);
+  assert.match(gameSource, /graphicsController\.initialize\(\)/);
 });

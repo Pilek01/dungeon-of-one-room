@@ -246,6 +246,16 @@ async function waitForBootAdvance(page) {
   });
 }
 
+async function waitForLeaderboardRenderFocus(page) {
+  await page.waitForFunction(() => {
+    const active = document.activeElement;
+    return active?.isConnected === true
+      && active.getAttribute("data-record-nav-region") === "row"
+      && active.getAttribute("data-record-action") === "name"
+      && active.closest("[data-record-rank]")?.getAttribute("data-record-rank") === "1";
+  });
+}
+
 async function dismissBoot(page, diagnostics = null, hdAttempt = 1) {
   const boot = page.locator("#bootScreen");
   if (!await boot.evaluate((element) => element.classList.contains("hidden"))) {
@@ -264,6 +274,7 @@ async function dismissBoot(page, diagnostics = null, hdAttempt = 1) {
   await page.waitForFunction(() => window.__DUNGEON_TEST_BOOT_INPUT_READY?.() === true);
   const graphicsReady = await page.evaluate(() => window.__DUNGEON_TEST_GRAPHICS_READY?.());
   if (
+    graphicsReady?.ready !== true ||
     graphicsReady?.requested !== "hd" ||
     graphicsReady?.mode !== "hd" ||
     graphicsReady?.pending !== false
@@ -276,7 +287,6 @@ async function dismissBoot(page, diagnostics = null, hdAttempt = 1) {
     const graphics = await page.evaluate(() => {
       const canvas = document.querySelector("#game");
       return {
-        preference: localStorage.getItem("dungeonOneRoomGraphicsMode"),
         dataMode: canvas?.dataset.graphicsMode || "",
         canvasClass: canvas?.className || "",
         bodyClass: document.body.className,
@@ -363,7 +373,7 @@ async function seedStaleRankedProfile(page) {
     const startBody = {
       playerName: "StaleProfile",
       season,
-      gameVersion: String(window.DUNGEON_GAME_VERSION || window.GAME_VERSION || "v0.8.0"),
+      gameVersion: String(window.DUNGEON_GAME_VERSION || window.GAME_VERSION || "v0.8.2"),
       rulesetId: protocol.RULESET_ID,
       rulesetHash: protocol.RULESET_HASH,
       clientInstallIdHash: "a".repeat(64),
@@ -713,11 +723,12 @@ async function main() {
   const fatalTestHook = `  window.__DUNGEON_TEST_BOOT_INPUT_READY = () =>
     !bootInputLocked && performance.now() >= bootInputUnlockAt;
   window.__DUNGEON_TEST_GRAPHICS_READY = async () => {
-    await initialGraphicsReady;
+    const outcome = await initialGraphicsReady;
     return {
-      requested: getGraphicsPreferenceMode(),
+      requested: "hd",
       mode: getRuntimeGraphicsMode(),
-      pending: graphicsTransitionPending
+      pending: false,
+      ready: outcome?.ready === true
     };
   };
   window.__DUNGEON_TEST_TRIGGER_FATAL = (reason = "Headed fatal event") => {
@@ -1526,8 +1537,20 @@ ${fatalTestHookAnchor}`;
       true,
       "Terminal Ranked defeat allowed Rise Again"
     );
-    await page.keyboard.press("Enter");
-    await page.waitForFunction(() => JSON.parse(window.render_game_to_text()).phase === "menu");
+    const terminalLeaderboardAction = page.locator('.gameover-requiem-action[data-hd-key="2"]');
+    assert.equal(await terminalLeaderboardAction.count(), 1, "Final Defeat Leaderboard action is missing");
+    await terminalLeaderboardAction.click();
+    const terminalLeaderboard = page.locator(
+      ".ranked-v3-overlay:not(.hidden) .ranked-v3-reference-plate--leaderboard"
+    );
+    await terminalLeaderboard.waitFor({ state: "visible" });
+    assert.equal(
+      await page.evaluate(() => JSON.parse(window.render_game_to_text()).phase),
+      "menu",
+      "Final Defeat Leaderboard action did not return the game to menu state"
+    );
+    await terminalLeaderboard.locator(".ranked-v3-leaderboard-close").click();
+    await page.waitForFunction(() => document.querySelector(".ranked-v3-overlay")?.hidden === true);
     const postTerminalPracticeApiBefore = diagnostics.apiRequests.length;
     await openNativeMenuOption(page, "Practice (Offline)");
     const practiceAfterRanked = await page.evaluate(() => JSON.parse(window.render_game_to_text()).phase);
@@ -1638,6 +1661,7 @@ ${fatalTestHookAnchor}`;
       }
       await route.continue();
     });
+    const leaderboardReturnFocus = await page.evaluateHandle(() => document.activeElement);
     await openNativeMenuOption(page, "Ranked Leaderboard");
 
     const leaderboardRecord = page.locator(".ranked-v3-leaderboard-row[data-record-rank]");
@@ -1679,7 +1703,7 @@ ${fatalTestHookAnchor}`;
       const nameHeaderBox = ledgerHeaderBox(2);
       const nameValueBox = ledgerValueBox("record-archive-name");
       const ledgerOffsets = {
-        nameLeft: nameValueBox.left - nameHeaderBox.left,
+        name: nameValueBox.left - nameHeaderBox.left,
         score: signedCenterOffset(ledgerHeaderBox(3), ledgerValueBox("ranked-v3-leaderboard-score")),
         depth: signedCenterOffset(ledgerHeaderBox(4), ledgerValueBox("ranked-v3-leaderboard-depth")),
         gold: signedCenterOffset(ledgerHeaderBox(5), ledgerValueBox("ranked-v3-leaderboard-gold")),
@@ -1743,9 +1767,7 @@ ${fatalTestHookAnchor}`;
     referencePlateAudit.podiumCenters.forEach((center, index) => {
       assert.ok(Math.abs(center - expectedPodiumCenters[index]) <= 0.008, JSON.stringify(referencePlateAudit));
     });
-    assert.ok(referencePlateAudit.ledgerOffsets.nameLeft >= 24 && referencePlateAudit.ledgerOffsets.nameLeft <= 38, JSON.stringify(referencePlateAudit));
-    assert.ok(referencePlateAudit.ledgerOffsets.depth <= -24 && referencePlateAudit.ledgerOffsets.depth >= -38, JSON.stringify(referencePlateAudit));
-    for (const key of ["score", "gold", "inspect"]) {
+    for (const key of ["name", "score", "depth", "gold", "inspect"]) {
       assert.ok(Math.abs(referencePlateAudit.ledgerOffsets[key]) <= 3, JSON.stringify(referencePlateAudit));
     }
     assert.deepEqual(referencePlateAudit.podiumRankDisplays, ["none", "none", "none"], JSON.stringify(referencePlateAudit));
@@ -1771,7 +1793,15 @@ ${fatalTestHookAnchor}`;
     assert.ok(referencePlateAudit.ledgerFontSize >= 17, JSON.stringify(referencePlateAudit));
     assert.ok(referencePlateAudit.depthFontSize >= 16, JSON.stringify(referencePlateAudit));
     assert.ok(referencePlateAudit.goldFontSize >= 16, JSON.stringify(referencePlateAudit));
-    await page.getByRole("button", { name: "Inspect build" }).first().click();
+    const initialName = page.locator('.ranked-v3-podium-slot[data-record-rank="1"] .record-archive-name');
+    await initialName.focus();
+    assert.equal(await page.evaluate(() => document.activeElement?.getAttribute("data-record-action")), "name");
+    await page.keyboard.press("ArrowRight");
+    assert.equal(
+      await page.evaluate(() => document.activeElement?.getAttribute("data-record-action")),
+      "inspect"
+    );
+    await page.keyboard.press("Enter");
     await page.locator(".ranked-v3-leaderboard-detail").waitFor({ state: "visible" });
     assert.match(
       await page.locator(".ranked-v3-leaderboard-detail").textContent(),
@@ -1874,151 +1904,172 @@ ${fatalTestHookAnchor}`;
         tooltip: document.querySelector(".ranked-v3-inspect-mutators")?.getAttribute("data-record-tooltip") || ""
       };
     });
-    const firstRelicSlot = page.locator(".ranked-v3-inspect-equipment-slot[data-relic-index]").first();
-    await firstRelicSlot.hover();
-    const visibleRelicTooltip = await firstRelicSlot.evaluate((slot) => {
-      const style = getComputedStyle(slot, "::after");
-      const slotBox = slot.getBoundingClientRect();
-      const plateBox = slot.closest(".ranked-v3-reference-plate").getBoundingClientRect();
-      const left = Number.parseFloat(style.left);
-      const contentWidth = Number.parseFloat(style.width);
-      const outerWidth = contentWidth + Number.parseFloat(style.paddingLeft) + Number.parseFloat(style.paddingRight)
-        + Number.parseFloat(style.borderLeftWidth) + Number.parseFloat(style.borderRightWidth);
-      const outerHeight = Number.parseFloat(style.height) + Number.parseFloat(style.paddingTop) + Number.parseFloat(style.paddingBottom)
-        + Number.parseFloat(style.borderTopWidth) + Number.parseFloat(style.borderBottomWidth);
-      const transformX = new DOMMatrixReadOnly(style.transform).m41;
-      const visualLeft = slotBox.left + left + transformX;
-      const computedTop = Number.parseFloat(style.top);
-      const computedBottom = Number.parseFloat(style.bottom);
-      const visualTop = Number.isFinite(computedTop)
-        ? slotBox.top + computedTop
-        : slotBox.bottom - computedBottom - outerHeight;
-      const secondRowBox = document.querySelectorAll(".ranked-v3-inspect-equipment-slot[data-relic-index]")[5].getBoundingClientRect();
-      const loadoutTitleBox = document.querySelector(".ranked-v3-inspect-loadout > .ranked-v3-inspect-section-title").getBoundingClientRect();
+    const inspectTooltip = page.locator(".ranked-v3-inspect-tooltip");
+    const inspectTooltipState = async (anchor) => anchor.evaluate((anchorNode) => {
+      const panel = document.querySelector(".ranked-v3-inspect-tooltip");
+      const plate = anchorNode.closest(".ranked-v3-reference-plate");
+      const chronicle = plate?.querySelector(".ranked-v3-inspect-chronicle");
+      const back = plate?.querySelector(".ranked-v3-inspect-back");
+      const rect = (node) => {
+        if (!node) return null;
+        const box = node.getBoundingClientRect();
+        return { left: box.left, top: box.top, right: box.right, bottom: box.bottom, width: box.width, height: box.height };
+      };
+      const overlap = (first, second) => Boolean(first && second
+        && first.left < second.right
+        && first.right > second.left
+        && first.top < second.bottom
+        && first.bottom > second.top);
+      const panelBox = rect(panel);
+      const plateBox = rect(plate);
+      const chronicleBox = rect(chronicle);
+      const backBox = rect(back);
+      const style = panel ? getComputedStyle(panel) : null;
+      const viewportWidth = Number(window.innerWidth || 0);
+      const viewportHeight = Number(window.innerHeight || 0);
       return {
-        content: style.content,
-        width: contentWidth,
-        centerDelta: Math.abs((visualLeft + outerWidth / 2) - (slotBox.left + slotBox.width / 2)),
-        visualLeft,
-        visualRight: visualLeft + outerWidth,
-        visualTop,
-        visualBottom: visualTop + outerHeight,
-        slotBottom: slotBox.bottom,
-        secondRowTop: secondRowBox.top,
-        loadoutTitleBottom: loadoutTitleBox.bottom,
-        fontSize: Number.parseFloat(style.fontSize),
-        plateLeft: plateBox.left,
-        plateRight: plateBox.right
+        content: panel?.textContent || "",
+        anchorContent: anchorNode.getAttribute("data-record-tooltip") || "",
+        anchor: rect(anchorNode),
+        ariaHidden: panel?.getAttribute("aria-hidden") || "",
+        hidden: Boolean(panel?.hidden),
+        visible: Boolean(panel && !panel.hidden && panel.getAttribute("aria-hidden") === "false" && style?.display !== "none"),
+        placement: panel?.getAttribute("data-placement") || "",
+        active: document.activeElement === anchorNode,
+        panel: panelBox,
+        fontSize: Number.parseFloat(style?.fontSize || "0"),
+        padding: {
+          top: Number.parseFloat(style?.paddingTop || "0"),
+          right: Number.parseFloat(style?.paddingRight || "0"),
+          bottom: Number.parseFloat(style?.paddingBottom || "0"),
+          left: Number.parseFloat(style?.paddingLeft || "0")
+        },
+        contained: Boolean(panelBox && plateBox
+          && panelBox.left >= Math.max(plateBox.left, 0) - 1.5
+          && panelBox.top >= Math.max(plateBox.top, 0) - 1.5
+          && panelBox.right <= Math.min(plateBox.right, viewportWidth) + 1.5
+          && panelBox.bottom <= Math.min(plateBox.bottom, viewportHeight) + 1.5),
+        overlapsChronicle: overlap(panelBox, chronicleBox),
+        overlapsBack: overlap(panelBox, backBox)
       };
     });
-    assert.match(visibleRelicTooltip.content, /Stack x\d+/u, JSON.stringify(visibleRelicTooltip));
-    assert.ok(visibleRelicTooltip.width <= 320, JSON.stringify(visibleRelicTooltip));
-    assert.ok(visibleRelicTooltip.centerDelta <= 1, JSON.stringify(visibleRelicTooltip));
-    assert.ok(visibleRelicTooltip.visualLeft >= visibleRelicTooltip.plateLeft, JSON.stringify(visibleRelicTooltip));
-    assert.ok(visibleRelicTooltip.visualRight <= visibleRelicTooltip.plateRight, JSON.stringify(visibleRelicTooltip));
-    assert.ok(visibleRelicTooltip.visualTop >= visibleRelicTooltip.slotBottom + 4, JSON.stringify(visibleRelicTooltip));
-    assert.ok(visibleRelicTooltip.visualBottom <= visibleRelicTooltip.secondRowTop - 4, JSON.stringify(visibleRelicTooltip));
-    assert.ok(visibleRelicTooltip.visualTop >= visibleRelicTooltip.loadoutTitleBottom + 4, JSON.stringify(visibleRelicTooltip));
-    assert.ok(visibleRelicTooltip.fontSize >= 12, JSON.stringify(visibleRelicTooltip));
+    const assertInspectTooltip = (state, placement, label) => {
+      const details = JSON.stringify(state);
+      assert.equal(state.visible, true, `${label}: tooltip hidden ${details}`);
+      assert.equal(state.ariaHidden, "false", `${label}: aria-hidden ${details}`);
+      assert.equal(state.content, state.anchorContent, `${label}: content mismatch ${details}`);
+      assert.equal(state.placement, placement, `${label}: placement mismatch ${details}`);
+      assert.ok(state.panel?.width > 0 && state.panel?.height > 0, `${label}: empty panel ${details}`);
+      assert.ok(state.anchor?.width > 0 && state.anchor?.height > 0, `${label}: empty anchor ${details}`);
+      if (placement === "below") {
+        assert.ok(state.panel.top >= state.anchor.bottom + 4, `${label}: panel is not below anchor ${details}`);
+      } else {
+        assert.ok(state.panel.bottom <= state.anchor.top - 4, `${label}: panel is not above anchor ${details}`);
+      }
+      assert.ok(state.fontSize >= 28, `${label}: reference tooltip font too small ${details}`);
+      for (const side of ["top", "right", "bottom", "left"]) {
+        assert.ok(state.padding[side] >= 16, `${label}: reference tooltip padding too small ${details}`);
+      }
+      assert.equal(state.contained, true, `${label}: tooltip escaped plate or viewport ${details}`);
+      assert.equal(state.overlapsChronicle, false, `${label}: tooltip overlaps Chronicle ${details}`);
+      assert.equal(state.overlapsBack, false, `${label}: tooltip overlaps Back ${details}`);
+    };
+    const firstRelicSlot = page.locator(".ranked-v3-inspect-equipment-slot[data-relic-index]").first();
+    await firstRelicSlot.hover();
+    await inspectTooltip.waitFor({ state: "visible" });
+    const firstHoverTooltip = await inspectTooltipState(firstRelicSlot);
+    assertInspectTooltip(firstHoverTooltip, "below", "first-row hover");
+    assert.match(firstHoverTooltip.content, /Stack x\d+/u, JSON.stringify(firstHoverTooltip));
     await page.screenshot({
       path: path.join(ARTIFACT_ROOT, "ranked-leaderboard-detail-tooltip.png"),
       fullPage: true
     });
-    await page.mouse.move(2, 2);
-    await page.evaluate(() => document.activeElement?.blur());
-    await page.waitForTimeout(50);
-    assert.equal(
-      await firstRelicSlot.evaluate((slot) => getComputedStyle(slot, "::after").content),
-      "none"
-    );
-    const lastRelicSlot = page.locator(".ranked-v3-inspect-equipment-slot[data-relic-index]").last();
-    await lastRelicSlot.hover();
-    const longRelicTooltip = await lastRelicSlot.evaluate((slot) => {
-      const style = getComputedStyle(slot, "::after");
-      const slotBox = slot.getBoundingClientRect();
-      const backBox = document.querySelector(".ranked-v3-inspect-back").getBoundingClientRect();
-      const plateBox = slot.closest(".ranked-v3-reference-plate").getBoundingClientRect();
-      const contentWidth = Number.parseFloat(style.width);
-      const outerWidth = contentWidth + Number.parseFloat(style.paddingLeft) + Number.parseFloat(style.paddingRight)
-        + Number.parseFloat(style.borderLeftWidth) + Number.parseFloat(style.borderRightWidth);
-      const outerHeight = Number.parseFloat(style.height) + Number.parseFloat(style.paddingTop) + Number.parseFloat(style.paddingBottom)
-        + Number.parseFloat(style.borderTopWidth) + Number.parseFloat(style.borderBottomWidth);
-      const left = Number.parseFloat(style.left);
-      const visualLeft = slotBox.left + left + new DOMMatrixReadOnly(style.transform).m41;
-      const computedTop = Number.parseFloat(style.top);
-      const computedBottom = Number.parseFloat(style.bottom);
-      const visualTop = Number.isFinite(computedTop)
-        ? slotBox.top + computedTop
-        : slotBox.bottom - computedBottom - outerHeight;
-      return {
-        content: style.content,
-        visualLeft,
-        visualRight: visualLeft + outerWidth,
-        visualTop,
-        visualBottom: visualTop + outerHeight,
-        slotBottom: slotBox.bottom,
-        backTop: backBox.top,
-        plateLeft: plateBox.left,
-        plateRight: plateBox.right,
-        fontSize: Number.parseFloat(style.fontSize)
-      };
-    });
-    assert.match(longRelicTooltip.content, /Cache Key.*Non-stackable.*Stack x1/u, JSON.stringify(longRelicTooltip));
-    assert.ok(longRelicTooltip.visualLeft >= longRelicTooltip.plateLeft, JSON.stringify(longRelicTooltip));
-    assert.ok(longRelicTooltip.visualRight <= longRelicTooltip.plateRight, JSON.stringify(longRelicTooltip));
-    assert.ok(longRelicTooltip.visualTop >= longRelicTooltip.slotBottom + 4, JSON.stringify(longRelicTooltip));
-    assert.ok(longRelicTooltip.visualBottom <= longRelicTooltip.backTop - 12, JSON.stringify(longRelicTooltip));
-    assert.ok(longRelicTooltip.fontSize >= 12, JSON.stringify(longRelicTooltip));
+    await firstRelicSlot.focus();
+    const firstFocusTooltip = await inspectTooltipState(firstRelicSlot);
+    assertInspectTooltip(firstFocusTooltip, "below", "first-row focus");
+    assert.equal(firstFocusTooltip.active, true, JSON.stringify(firstFocusTooltip));
+    assert.equal(firstFocusTooltip.content, firstHoverTooltip.content, JSON.stringify({ firstHoverTooltip, firstFocusTooltip }));
+
+    const secondRelicSlot = page.locator(".ranked-v3-inspect-equipment-slot[data-relic-index]").nth(5);
+    await secondRelicSlot.hover();
+    const secondHoverTooltip = await inspectTooltipState(secondRelicSlot);
+    assertInspectTooltip(secondHoverTooltip, "above", "second-row hover");
+    assert.match(secondHoverTooltip.content, /Non-stackable.*Stack x1/u, JSON.stringify(secondHoverTooltip));
+    await secondRelicSlot.focus();
+    const secondFocusTooltip = await inspectTooltipState(secondRelicSlot);
+    assertInspectTooltip(secondFocusTooltip, "above", "second-row focus");
+    assert.equal(secondFocusTooltip.active, true, JSON.stringify(secondFocusTooltip));
+    assert.equal(secondFocusTooltip.content, secondHoverTooltip.content, JSON.stringify({ secondHoverTooltip, secondFocusTooltip }));
     await page.screenshot({
       path: path.join(ARTIFACT_ROOT, "ranked-leaderboard-detail-long-tooltip.png"),
       fullPage: true
     });
-    await page.mouse.move(2, 2);
+
     const mutatorsControl = page.locator(".ranked-v3-inspect-mutators");
     await mutatorsControl.hover();
-    const mutatorTooltipAudit = await mutatorsControl.evaluate((control) => {
-      const style = getComputedStyle(control, "::after");
-      const controlBox = control.getBoundingClientRect();
-      const plateBox = control.closest(".ranked-v3-reference-plate").getBoundingClientRect();
-      const contentWidth = Number.parseFloat(style.width);
-      const outerWidth = contentWidth + Number.parseFloat(style.paddingLeft) + Number.parseFloat(style.paddingRight)
-        + Number.parseFloat(style.borderLeftWidth) + Number.parseFloat(style.borderRightWidth);
-      const outerHeight = Number.parseFloat(style.height) + Number.parseFloat(style.paddingTop) + Number.parseFloat(style.paddingBottom)
-        + Number.parseFloat(style.borderTopWidth) + Number.parseFloat(style.borderBottomWidth);
-      const visualRight = controlBox.right - Number.parseFloat(style.right);
-      const visualBottom = controlBox.bottom - Number.parseFloat(style.bottom);
-      return {
-        content: style.content,
-        visualLeft: visualRight - outerWidth,
-        visualRight,
-        visualTop: visualBottom - outerHeight,
-        visualBottom,
-        plateLeft: plateBox.left,
-        plateRight: plateBox.right,
-        plateTop: plateBox.top,
-        plateBottom: plateBox.bottom,
-        fontSize: Number.parseFloat(style.fontSize),
-        hostOverflow: getComputedStyle(control).overflow
-      };
-    });
-    assert.match(mutatorTooltipAudit.content, /Berserker.*Bulwark.*Alchemist/u, JSON.stringify(mutatorTooltipAudit));
-    assert.ok(mutatorTooltipAudit.visualLeft >= mutatorTooltipAudit.plateLeft, JSON.stringify(mutatorTooltipAudit));
-    assert.ok(mutatorTooltipAudit.visualRight <= mutatorTooltipAudit.plateRight, JSON.stringify(mutatorTooltipAudit));
-    assert.ok(mutatorTooltipAudit.visualTop >= mutatorTooltipAudit.plateTop, JSON.stringify(mutatorTooltipAudit));
-    assert.ok(mutatorTooltipAudit.visualBottom <= mutatorTooltipAudit.plateBottom, JSON.stringify(mutatorTooltipAudit));
-    assert.ok(mutatorTooltipAudit.fontSize >= 12, JSON.stringify(mutatorTooltipAudit));
-    assert.equal(mutatorTooltipAudit.hostOverflow, "visible", JSON.stringify(mutatorTooltipAudit));
+    const mutatorHoverTooltip = await inspectTooltipState(mutatorsControl);
+    assertInspectTooltip(mutatorHoverTooltip, "above", "mutators hover");
+    assert.match(mutatorHoverTooltip.content, /Berserker.*Bulwark.*Alchemist/u, JSON.stringify(mutatorHoverTooltip));
+    await mutatorsControl.focus();
+    const mutatorFocusTooltip = await inspectTooltipState(mutatorsControl);
+    assertInspectTooltip(mutatorFocusTooltip, "above", "mutators focus");
+    assert.equal(mutatorFocusTooltip.active, true, JSON.stringify(mutatorFocusTooltip));
+    assert.equal(mutatorFocusTooltip.content, mutatorHoverTooltip.content, JSON.stringify({ mutatorHoverTooltip, mutatorFocusTooltip }));
     await page.screenshot({
       path: path.join(ARTIFACT_ROOT, "ranked-leaderboard-detail-mutators-tooltip.png"),
       fullPage: true
     });
-    await page.mouse.move(2, 2);
     await page.evaluate(() => document.activeElement?.blur());
+    await page.mouse.move(2, 2);
     await page.waitForTimeout(50);
+    assert.equal(await inspectTooltip.getAttribute("aria-hidden"), "true");
     await page.screenshot({
       path: path.join(ARTIFACT_ROOT, "ranked-leaderboard-detail.png"),
       fullPage: true
     });
+    const rankGeometry = await page.evaluate(() => {
+      const rankNode = document.querySelector(".ranked-v3-inspect-rank");
+      const plateNode = rankNode?.closest(".ranked-v3-reference-plate");
+      const original = {
+        text: rankNode?.textContent || "",
+        recordRank: rankNode?.getAttribute("data-record-rank") || "",
+        digits: rankNode?.getAttribute("data-rank-digits") || ""
+      };
+      const samples = [1, 9, 10, 73].map((rank) => {
+        rankNode.textContent = String(rank);
+        rankNode.setAttribute("data-record-rank", String(rank));
+        rankNode.setAttribute("data-rank-digits", rank >= 10 ? "double" : "single");
+        const rankBox = rankNode.getBoundingClientRect();
+        const plateBox = plateNode.getBoundingClientRect();
+        const style = getComputedStyle(rankNode);
+        const transformX = style.transform === "none" ? 0 : new DOMMatrixReadOnly(style.transform).m41;
+        return {
+          rank,
+          digits: rankNode.getAttribute("data-rank-digits"),
+          transformX,
+          contained: rankBox.left >= plateBox.left - 1
+            && rankBox.right <= plateBox.right + 1
+            && rankBox.top >= plateBox.top - 1
+            && rankBox.bottom <= plateBox.bottom + 1
+        };
+      });
+      rankNode.textContent = original.text;
+      rankNode.setAttribute("data-record-rank", original.recordRank);
+      rankNode.setAttribute("data-rank-digits", original.digits);
+      return samples;
+    });
+    for (const sample of rankGeometry) {
+      const details = JSON.stringify(rankGeometry);
+      assert.equal(sample.digits, sample.rank < 10 ? "single" : "double", details);
+      assert.equal(sample.contained, true, details);
+      if (sample.rank < 10) assert.ok(sample.transformX >= 3 && sample.transformX <= 8, details);
+      else assert.ok(Math.abs(sample.transformX) <= 0.5, details);
+    }
+    const rankTransform = (rank) => rankGeometry.find((sample) => sample.rank === rank)?.transformX;
+    assert.ok(Math.abs(rankTransform(1) - rankTransform(9)) <= 0.5, JSON.stringify(rankGeometry));
+    assert.ok(Math.abs(rankTransform(10) - rankTransform(73)) <= 0.5, JSON.stringify(rankGeometry));
+    assert.ok(rankTransform(1) - rankTransform(10) >= 3, JSON.stringify(rankGeometry));
+    assert.ok(rankTransform(1) - rankTransform(10) <= 8, JSON.stringify(rankGeometry));
     assert.equal(detailPlateAudit.rank.text, "1", JSON.stringify(detailPlateAudit));
     assert.ok(detailPlateAudit.rank.fontSize >= 34, JSON.stringify(detailPlateAudit));
     assert.ok(detailPlateAudit.rank.boxHeight >= 34, JSON.stringify(detailPlateAudit));
@@ -2071,9 +2122,19 @@ ${fatalTestHookAnchor}`;
     ]);
     assert.match(detailPlateAudit.terminalText, /Game Over.*Fell in combat.*Defeated by The Hollow Seraph/isu);
     assert.equal(detailPlateAudit.tooltip.includes(" | "), true, detailPlateAudit.tooltip);
-    await page.getByRole("button", { name: "Back to Leaderboard", exact: true }).click();
+    await firstRelicSlot.focus();
+    await page.keyboard.press("Escape");
     await page.getByText("Page 1 / 10", { exact: true }).waitFor({ state: "visible" });
-    await page.getByRole("button", { name: "Next page", exact: true }).click();
+    await page.waitForFunction((expectedRunId) => {
+      const active = document.activeElement;
+      return active?.getAttribute("data-record-nav-region") === "row"
+        && active?.getAttribute("data-record-action") === "inspect"
+        && active?.getAttribute("data-record-run-id") === expectedRunId;
+    }, runId);
+    assert.equal(await page.evaluate(() => document.activeElement?.getAttribute("data-record-action")), "inspect");
+    assert.equal(await page.evaluate(() => document.activeElement?.getAttribute("data-record-run-id")), runId);
+
+    await page.keyboard.press("PageDown");
     await page.getByText("Page 2 / 10", { exact: true }).waitFor({ state: "visible" });
     assert.deepEqual(
       await page.locator(".ranked-v3-podium-slot[data-record-rank]").evaluateAll((slots) => slots.map((slot) => Number(slot.dataset.recordRank))),
@@ -2087,12 +2148,46 @@ ${fatalTestHookAnchor}`;
       path: path.join(ARTIFACT_ROOT, "ranked-leaderboard-page-2.png"),
       fullPage: true
     });
-    await page.getByRole("button", { name: "Inspect build for test", exact: true }).first().click();
-    await page.locator(".ranked-v3-leaderboard-detail").waitFor({ state: "visible" });
-    await page.getByRole("button", { name: "Back to Leaderboard", exact: true }).click();
+    await page.keyboard.press("PageUp");
+    await page.getByText("Page 1 / 10", { exact: true }).waitFor({ state: "visible" });
+    await waitForLeaderboardRenderFocus(page);
+
+    const pageOneLastInspect = page.locator('.ranked-v3-ledger-slot[data-record-rank="10"] .ranked-v3-leaderboard-details-button');
+    await pageOneLastInspect.focus();
+    await page.keyboard.press("ArrowDown");
+    assert.equal(await page.evaluate(() => document.activeElement?.getAttribute("data-record-action")), "next");
+    await page.keyboard.press("ArrowLeft");
+    assert.equal(await page.evaluate(() => document.activeElement?.getAttribute("data-record-action")), "close");
+    await page.keyboard.press("ArrowRight");
+    assert.equal(await page.evaluate(() => document.activeElement?.getAttribute("data-record-action")), "next");
+    await page.keyboard.press("Enter");
     await page.getByText("Page 2 / 10", { exact: true }).waitFor({ state: "visible" });
-    for (let targetPage = 3; targetPage <= 10; targetPage += 1) {
-      await page.getByRole("button", { name: "Next page", exact: true }).click();
+    await waitForLeaderboardRenderFocus(page);
+
+    const pageTwoLastInspect = page.locator('.ranked-v3-ledger-slot[data-record-rank="17"] .ranked-v3-leaderboard-details-button');
+    await pageTwoLastInspect.focus();
+    await page.keyboard.press("ArrowDown");
+    assert.equal(await page.evaluate(() => document.activeElement?.getAttribute("data-record-action")), "previous");
+    await page.keyboard.press("ArrowRight");
+    assert.equal(await page.evaluate(() => document.activeElement?.getAttribute("data-record-action")), "next");
+    await page.keyboard.press("ArrowRight");
+    assert.equal(await page.evaluate(() => document.activeElement?.getAttribute("data-record-action")), "close");
+    await page.keyboard.press("ArrowLeft");
+    assert.equal(await page.evaluate(() => document.activeElement?.getAttribute("data-record-action")), "next");
+    await page.keyboard.press("Enter");
+    await page.getByText("Page 3 / 10", { exact: true }).waitFor({ state: "visible" });
+
+    for (let targetPage = 4; targetPage <= 10; targetPage += 1) {
+      const previousPage = targetPage - 1;
+      const previousLastRank = 3 + previousPage * 7;
+      await waitForLeaderboardRenderFocus(page);
+      const lastInspect = page.locator(`.ranked-v3-ledger-slot[data-record-rank="${previousLastRank}"] .ranked-v3-leaderboard-details-button`);
+      await lastInspect.focus();
+      await page.keyboard.press("ArrowDown");
+      assert.equal(await page.evaluate(() => document.activeElement?.getAttribute("data-record-action")), "previous");
+      await page.keyboard.press("ArrowRight");
+      assert.equal(await page.evaluate(() => document.activeElement?.getAttribute("data-record-action")), "next");
+      await page.keyboard.press("Enter");
       await page.getByText("Page " + targetPage + " / 10", { exact: true }).waitFor({ state: "visible" });
     }
     assert.deepEqual(
@@ -2104,6 +2199,23 @@ ${fatalTestHookAnchor}`;
       path: path.join(ARTIFACT_ROOT, "ranked-leaderboard-page-10.png"),
       fullPage: true
     });
+    await waitForLeaderboardRenderFocus(page);
+    const finalLastInspect = page.locator('.ranked-v3-ledger-slot[data-record-rank="73"] .ranked-v3-leaderboard-details-button');
+    await finalLastInspect.focus();
+    await page.keyboard.press("ArrowDown");
+    assert.equal(await page.evaluate(() => document.activeElement?.getAttribute("data-record-action")), "previous");
+    await page.keyboard.press("ArrowRight");
+    assert.equal(await page.evaluate(() => document.activeElement?.getAttribute("data-record-action")), "close");
+    await page.keyboard.press("Enter");
+    await page.waitForFunction(() => document.querySelector(".ranked-v3-overlay")?.hidden === true);
+    await page.waitForFunction((opener) => document.activeElement === opener, leaderboardReturnFocus);
+    const finalCloseFocus = await page.evaluate((opener) => ({
+      sameNode: document.activeElement === opener,
+      insideHiddenOverlay: Boolean(document.querySelector(".ranked-v3-overlay")?.contains(document.activeElement))
+    }), leaderboardReturnFocus);
+    assert.equal(finalCloseFocus.sameNode, true, JSON.stringify(finalCloseFocus));
+    assert.equal(finalCloseFocus.insideHiddenOverlay, false, JSON.stringify(finalCloseFocus));
+    await leaderboardReturnFocus.dispose();
     }
 
     if (RUN_CAMP) {

@@ -38,7 +38,6 @@ const RUN_HD = SCENARIO === "all" || SCENARIO === "hd";
 const RUN_SAVE = SCENARIO === "all" || SCENARIO === "save";
 const STORAGE_PREFIX = "dungeonOneRoom";
 const RUN_SAVE_KEY = "dungeonOneRoomRunSave";
-const GRAPHICS_KEY = "dungeonOneRoomGraphicsMode";
 const PLAYER_NAME_KEY = "dungeonOneRoomPlayerName";
 const LIVES_KEY = "dungeonOneRoomLives";
 const PRACTICE_ARCHIVE_STORAGE_KEY = "dungeonOneRoomLeaderboardV1";
@@ -279,20 +278,33 @@ async function waitForState(page, predicate, label, timeoutMs = 12_000) {
   throw new Error(`Timed out waiting for ${label}. Last state: ${JSON.stringify(lastState)}`);
 }
 
-async function waitForBootAdvance(page) {
-  await page.waitForFunction(() => {
-    let phase = "";
+async function waitForBootAdvance(page, diagnosticBucket = null) {
+  const deadline = Date.now() + 120_000;
+  while (Date.now() < deadline) {
+    await page.keyboard.press("Enter");
     try {
-      phase = JSON.parse(window.render_game_to_text?.() || "{}").phase || "";
-    } catch {
-      // The render hook can be between boot states for one frame.
+      await page.waitForFunction(() => {
+        let phase = "";
+        try {
+          phase = JSON.parse(window.render_game_to_text?.() || "{}").phase || "";
+        } catch {
+          // The render hook can be between boot states for one frame.
+        }
+        const boot = document.getElementById("bootScreen");
+        return phase === "menu" ||
+          Boolean(boot?.classList.contains("hidden"));
+      }, null, { timeout: 2000 });
+      return;
+    } catch (error) {
+      if (error?.name !== "TimeoutError") throw error;
+      const failed = await page.locator("#bootScreen.hd-load-failed").count();
+      if (failed) {
+        const prompt = await page.locator("#bootScreen .boot-press").textContent();
+        throw new Error("HD boot failed closed: " + String(prompt || "") + " " + JSON.stringify(diagnosticBucket?.consoleErrors || []));
+      }
     }
-    const boot = document.getElementById("bootScreen");
-    const loading = document.querySelector(".boot-loading");
-    return phase === "menu" ||
-      Boolean(boot?.classList.contains("hidden")) ||
-      Boolean(loading?.getClientRects().length);
-  });
+  }
+  throw new Error("Timed out waiting for HD boot input to advance: " + JSON.stringify(diagnosticBucket?.consoleErrors || []));
 }
 
 async function screenshot(page, name) {
@@ -306,9 +318,8 @@ async function screenshot(page, name) {
   };
 }
 
-function seedStorage(mode = "hd") {
+function seedStorage() {
   return {
-    mode,
     playerName: "BaselineQA",
     tutorialKeys: TUTORIAL_KEYS
   };
@@ -322,7 +333,6 @@ async function createContext(browser, options = {}) {
   if (options.seed !== false) {
     await context.addInitScript((seed) => {
       try {
-        localStorage.setItem("dungeonOneRoomGraphicsMode", seed.mode);
         localStorage.setItem("dungeonOneRoomPlayerName", seed.playerName);
         for (const key of seed.tutorialKeys) localStorage.setItem(key, "1");
         localStorage.removeItem("dungeonOneRoomAudioMuted");
@@ -336,8 +346,9 @@ async function createContext(browser, options = {}) {
 
 function attachDiagnostics(page, bucket, label) {
   page.on("console", (message) => {
-    if (message.type() === "error") {
-      bucket.consoleErrors.push({ label, text: message.text() });
+    const text = message.text();
+    if (message.type() === "error" || (message.type() === "warning" && text.includes("[Dungeon graphics]"))) {
+      bucket.consoleErrors.push({ label, text });
     }
   });
   page.on("pageerror", (error) => {
@@ -352,14 +363,17 @@ function attachDiagnostics(page, bucket, label) {
   });
   page.on("request", (request) => {
     const parsed = new URL(request.url());
+    if (parsed.pathname === "/assets/logo.png" || parsed.pathname.startsWith("/assets/sprite/")) {
+      bucket.forbiddenClassicRequests.push({ label, path: parsed.pathname });
+    }
     if (parsed.pathname.startsWith("/api/")) {
       bucket.apiRequests.push({ label, method: request.method(), url: request.url() });
     }
   });
 }
 
-async function openScenario(browser, baseUrl, diagnostics, label, scenario, mode = "hd", options = {}) {
-  const context = await createContext(browser, { seed: seedStorage(mode) });
+async function openScenario(browser, baseUrl, diagnostics, label, scenario, options = {}) {
+  const context = await createContext(browser);
   if (options.practiceTerminalRecord === true) {
     const configSource = await fsPromises.readFile(path.join(ROOT, "config.js"), "utf8");
     const localPracticeConfig = configSource.replace(
@@ -379,18 +393,12 @@ async function openScenario(browser, baseUrl, diagnostics, label, scenario, mode
     waitUntil: "domcontentloaded"
   });
   assert.equal(response?.status(), 200, `${label}: expected HTTP 200`);
-  const state = await waitForState(page, (value) => value.phase === "playing", `${label} playing`);
-  await page.evaluate(() => {
-    // Scenario overrides start directly in gameplay while the first-launch boot
-    // layer remains mounted. Reveal the already-running game for visual QA.
-    document.getElementById("bootScreen")?.classList.add("hidden");
-    document.getElementById("gameApp")?.classList.remove("app-hidden");
-  });
+  const state = await waitForState(page, (value) => value.phase === "playing", `${label} playing`, 120_000);
   await page.waitForFunction(() => {
     const boot = document.getElementById("bootScreen");
     const app = document.getElementById("gameApp");
-    return Boolean(boot?.classList.contains("hidden") && !app?.classList.contains("app-hidden"));
-  });
+    return Boolean(!app?.classList.contains("app-hidden") && (boot?.classList.contains("fading") || boot?.classList.contains("hidden")));
+  }, null, { timeout: 10000 });
   return { context, page, state };
 }
 
@@ -399,11 +407,7 @@ async function dismissBootToMenu(page) {
   if (current?.phase !== "menu") {
     const boot = page.locator("#bootScreen");
     if (!await boot.evaluate((element) => element.classList.contains("hidden"))) {
-      await page.keyboard.press("Enter");
       await waitForBootAdvance(page);
-      if (!await boot.evaluate((element) => element.classList.contains("hidden"))) {
-        await page.keyboard.press("Enter");
-      }
     }
   }
   const state = await waitForState(page, (value) => value.phase === "menu", "main menu");
@@ -470,7 +474,8 @@ async function main() {
     consoleErrors: [],
     pageErrors: [],
     requestFailures: [],
-    apiRequests: []
+    apiRequests: [],
+    forbiddenClassicRequests: []
   };
   const results = {
     runnerMode: HEADLESS ? "headless" : "headed",
@@ -495,11 +500,10 @@ async function main() {
     assert.equal(results.httpStatus, 200);
     await bootPage.waitForFunction(() => typeof window.render_game_to_text === "function");
     results.gameVersion = await bootPage.evaluate(() => window.DUNGEON_GAME_VERSION);
-    assert.equal(results.gameVersion, "v0.8.0");
+    assert.equal(results.gameVersion, "v0.8.2");
     assert.equal(await bootPage.locator("#bootScreen").isVisible(), true);
     results.screenshots.push(await screenshot(bootPage, "01-boot.png"));
-    await bootPage.keyboard.press("Enter");
-    await waitForBootAdvance(bootPage);
+    await waitForBootAdvance(bootPage, diagnostics);
     const mutedBefore = await bootPage.evaluate(() => localStorage.getItem("dungeonOneRoomAudioMuted"));
     await bootPage.keyboard.press("m");
     const mutedAfter = await bootPage.evaluate(() => localStorage.getItem("dungeonOneRoomAudioMuted"));
@@ -510,27 +514,13 @@ async function main() {
     }
 
     if (RUN_HD) {
-    const classic = await openScenario(
-      browser,
-      baseUrl,
-      diagnostics,
-      "classic-shrine",
-      "descent_hd",
-      "classic"
-    );
-    assert.equal(classic.state.roomType, "shrine");
-    assert.equal(await classic.page.locator("body.graphics-hd-ui").count(), 0);
-    assert.equal(await classic.page.locator("#game").getAttribute("data-graphics-mode"), "legacy");
-    results.checks.classic = { phase: classic.state.phase, roomType: classic.state.roomType };
-    results.screenshots.push(await screenshot(classic.page, "02-classic-shrine.png"));
-    await classic.context.close();
 
-    const hd = await openScenario(browser, baseUrl, diagnostics, "hd-shrine", "descent_hd", "hd");
+    const hd = await openScenario(browser, baseUrl, diagnostics, "hd-shrine", "descent_hd");
     await hd.page.waitForFunction(() => document.querySelector("#game")?.dataset.graphicsMode === "hd");
     assert.equal(hd.state.roomType, "shrine");
     assert.equal(await hd.page.locator("body.graphics-hd-ui").count(), 1);
     results.checks.hd = { phase: hd.state.phase, roomType: hd.state.roomType };
-    results.screenshots.push(await screenshot(hd.page, "03-hd-shrine.png"));
+    results.screenshots.push(await screenshot(hd.page, "02-hd-shrine.png"));
 
     const hudStructure = await hd.page.evaluate(() => {
       const ids = [
@@ -583,8 +573,7 @@ async function main() {
       baseUrl,
       diagnostics,
       "vault",
-      "expansion_vault_guardian_hd",
-      "hd"
+      "expansion_vault_guardian_hd"
     );
     assert.equal(vault.state.roomType, "vault");
     assert(vault.state.enemies.some((enemy) => enemy.type === "guardian"));
@@ -600,8 +589,7 @@ async function main() {
       baseUrl,
       diagnostics,
       "motion",
-      "enemy_roster_hd",
-      "hd"
+      "enemy_roster_hd"
     );
     for (const elapsedMs of [0, 120, 240, 360]) {
       if (elapsedMs > 0) await motion.page.waitForTimeout(120);
@@ -621,8 +609,7 @@ async function main() {
       baseUrl,
       diagnostics,
       "observer",
-      "enemy_roster_hd",
-      "hd"
+      "enemy_roster_hd"
     );
     await observer.page.keyboard.press("F10");
     await observer.page.waitForFunction(() => document.querySelector("#screenOverlay")?.textContent?.includes("Observer Bot Menu"));
@@ -637,7 +624,7 @@ async function main() {
     }
 
     if (RUN_SAVE) {
-    const save = await openScenario(browser, baseUrl, diagnostics, "save", "descent_hd", "hd", { practiceTerminalRecord: true });
+    const save = await openScenario(browser, baseUrl, diagnostics, "save", "descent_hd", { practiceTerminalRecord: true });
     const savedRaw = await save.page.evaluate((key) => localStorage.getItem(key), RUN_SAVE_KEY);
     assert(savedRaw, "Scenario start must create a Continue snapshot");
     const savedSnapshot = JSON.parse(savedRaw);
@@ -711,11 +698,26 @@ async function main() {
     results.screenshots.push(await screenshot(save.page, "08-final-defeat.png"));
 
     const practiceApiBeforeRecords = diagnostics.apiRequests.length;
-    await save.page.keyboard.press("2");
-    const practiceArchive = save.page.locator("[data-practice-record-archive] > .record-archive-v2.record-archive-list");
+    const terminalMainMenuAction = save.page.locator('.gameover-requiem-action[data-hd-key="1"]');
+    const terminalRecordsAction = save.page.locator('.gameover-requiem-action[data-hd-key="2"]');
+    assert.equal(await terminalMainMenuAction.count(), 1, "Final Defeat Main Menu action is missing");
+    assert.equal(await terminalRecordsAction.count(), 1, "Final Defeat records action is missing");
+    await terminalMainMenuAction.focus();
+    await save.page.keyboard.press("ArrowRight");
+    assert.equal(await terminalRecordsAction.getAttribute("aria-selected"), "true");
+    assert.equal(
+      await save.page.evaluate(() => document.activeElement?.getAttribute("data-hd-key")),
+      "2",
+      "Final Defeat arrow navigation did not move focus to the records action"
+    );
+    await save.page.keyboard.press("Enter");
+    const practiceArchive = save.page.locator("[data-practice-record-archive] > .ranked-v3-reference-plate.ranked-v3-reference-plate--leaderboard.ranked-v3-leaderboard-list");
     await practiceArchive.waitFor({ state: "visible" });
-    assert.equal(await practiceArchive.locator(".record-archive-podium-card").count(), 3);
-    assert.equal(await practiceArchive.locator(".record-archive-ledger-row").count() >= 1, true);
+    assert.equal(await practiceArchive.locator(".ranked-v3-podium-slot").count(), 3);
+    const practiceLedgerSlots = await practiceArchive.locator(".ranked-v3-ledger-slot").count();
+    assert.equal(practiceLedgerSlots >= 1 && practiceLedgerSlots <= 7, true);
+    assert.equal(await practiceArchive.locator(".ranked-v3-reference-plate-title").count(), 1);
+    assert.equal(await practiceArchive.locator('[data-record-nav-region="footer"][data-record-action="close"]').count(), 1);
     const practiceListText = await practiceArchive.innerText();
     for (const name of ["Practice Crown", "Practice Silver", "Practice Bronze", "BaselineQA"]) {
       assert.match(practiceListText, new RegExp(name));
@@ -729,7 +731,7 @@ async function main() {
       return {
         viewport: { width: window.innerWidth, height: window.innerHeight },
         screenOverlay: box("#screenOverlay"),
-        shell: box(".record-archive-shell")
+        shell: box("#screenOverlay .ranked-v3-card-reference-plate")
       };
     });
     await writeJson("practice-records-desktop-layout.json", practiceDesktopLayout);
@@ -749,10 +751,27 @@ async function main() {
         const rect = document.querySelector(selector)?.getBoundingClientRect();
         return rect ? { x: rect.x, y: rect.y, width: rect.width, height: rect.height } : null;
       };
+      const skin = (selector) => {
+        const node = document.querySelector(selector);
+        if (!node) return null;
+        const computed = getComputedStyle(node);
+        return {
+          backgroundImage: computed.backgroundImage,
+          borderImageSource: computed.borderImageSource,
+          fontSize: computed.fontSize
+        };
+      };
       return {
         viewport: { width: window.innerWidth, height: window.innerHeight },
         screenOverlay: box("#screenOverlay"),
-        shell: box(".record-archive-shell")
+        shell: box("#screenOverlay .ranked-v3-card-reference-plate"),
+        skin: {
+          shell: skin("#screenOverlay .ranked-v3-card-reference-plate"),
+          heading: skin("#screenOverlay .ranked-v3-leaderboard-heading"),
+          podium: skin("#screenOverlay .ranked-v3-podium-slot:not([aria-hidden='true'])"),
+          ledger: skin("#screenOverlay .ranked-v3-ledger-slot:not([aria-hidden='true'])"),
+          action: skin("#screenOverlay .ranked-v3-leaderboard-close")
+        }
       };
     });
     await writeJson("practice-records-narrow-layout.json", practiceNarrowLayout);
@@ -767,18 +786,60 @@ async function main() {
       true,
       JSON.stringify(practiceNarrowLayout)
     );
+    const hdTexture = /url\([^)]*\/assets\/hd\//u;
+    assert.match(practiceNarrowLayout.skin?.shell?.backgroundImage || "", hdTexture, JSON.stringify(practiceNarrowLayout.skin));
+    assert.match(practiceNarrowLayout.skin?.shell?.borderImageSource || "", hdTexture, JSON.stringify(practiceNarrowLayout.skin));
+    assert.match(practiceNarrowLayout.skin?.heading?.backgroundImage || "", hdTexture, JSON.stringify(practiceNarrowLayout.skin));
+    assert.match(practiceNarrowLayout.skin?.podium?.backgroundImage || "", hdTexture, JSON.stringify(practiceNarrowLayout.skin));
+    assert.match(practiceNarrowLayout.skin?.ledger?.backgroundImage || "", hdTexture, JSON.stringify(practiceNarrowLayout.skin));
+    assert.match(practiceNarrowLayout.skin?.action?.backgroundImage || "", hdTexture, JSON.stringify(practiceNarrowLayout.skin));
+    assert.equal(Number.parseFloat(practiceNarrowLayout.skin?.heading?.fontSize || "0") >= 16, true, JSON.stringify(practiceNarrowLayout.skin));
     await save.page.screenshot({ path: path.join(ARTIFACT_ROOT, "practice-records-list-narrow.png"), fullPage: true });
     await save.page.setViewportSize({ width: 1920, height: 1080 });
-    await practiceArchive.locator('[data-record-rank="4"] .record-archive-name').click();
-    const practiceDetail = save.page.locator("[data-practice-record-archive] > .record-archive-v2.record-archive-detail");
+    const practiceNamesBeforeTab = await practiceArchive.locator('[data-record-nav-region="row"][data-record-action="name"]').evaluateAll((nodes) => nodes.map((node) => node.textContent?.trim() || ""));
+    await practiceArchive.locator('[data-record-nav-region="row"][data-record-action="name"]').first().focus();
+    await save.page.keyboard.press("Tab");
+    const tabFocus = await save.page.evaluate(() => ({
+      action: document.activeElement?.getAttribute("data-record-action") || "",
+      runId: document.activeElement?.getAttribute("data-record-run-id") || "",
+      canonicalVisible: Boolean(document.querySelector("[data-practice-record-archive] > .ranked-v3-reference-plate.ranked-v3-reference-plate--leaderboard"))
+    }));
+    assert.equal(tabFocus.action, "inspect");
+    assert.ok(tabFocus.runId);
+    assert.equal(tabFocus.canonicalVisible, true);
+    assert.deepEqual(
+      await practiceArchive.locator('[data-record-nav-region="row"][data-record-action="name"]').evaluateAll((nodes) => nodes.map((node) => node.textContent?.trim() || "")),
+      practiceNamesBeforeTab
+    );
+    const rank4Inspect = practiceArchive.locator('[data-record-rank="4"] [data-record-action="inspect"]');
+    const openedRunId = await rank4Inspect.getAttribute("data-record-run-id");
+    assert.ok(openedRunId);
+    await rank4Inspect.focus();
+    await save.page.keyboard.press("Enter");
+    const practiceDetail = save.page.locator("[data-practice-record-archive] > .ranked-v3-reference-plate.ranked-v3-reference-plate--inspect.ranked-v3-leaderboard-detail");
     await practiceDetail.waitFor({ state: "visible" });
     const practiceDetailText = await practiceDetail.innerText();
-    assert.match(practiceDetailText, /Rank #4[\s\S]*BaselineQA/iu);
-    assert.match(practiceDetailText, /Time Played|Run Chronicle/iu);
+    assert.equal(await practiceDetail.locator('.ranked-v3-inspect-rank[data-record-rank="4"]').count(), 1);
+    assert.match(practiceDetailText, /Inspect Build[\s\S]*BaselineQA/iu);
+    assert.match(practiceDetailText, /Run Chronicle/iu);
+    assert.equal(await practiceDetail.locator(".record-archive-v2").count(), 0);
     assert.doesNotMatch(practiceDetailText, /Rank #1/u);
     await save.page.screenshot({ path: path.join(ARTIFACT_ROOT, "practice-records-detail-rank4.png"), fullPage: true });
+    await practiceDetail.locator('[data-record-nav-region="detail-action"][data-record-action="back"]').focus();
+    await save.page.keyboard.press("Enter");
+    await practiceArchive.waitFor({ state: "visible" });
+    const restoredFocus = await save.page.evaluate(() => ({
+      action: document.activeElement?.getAttribute("data-record-action") || "",
+      runId: document.activeElement?.getAttribute("data-record-run-id") || ""
+    }));
+    assert.equal(restoredFocus.action, "inspect");
+    assert.equal(restoredFocus.runId, openedRunId);
+    await save.page.keyboard.press("ArrowDown");
+    assert.equal(await save.page.evaluate(() => document.activeElement?.getAttribute("data-record-action") || ""), "close");
+    await save.page.keyboard.press("Enter");
+    await practiceArchive.waitFor({ state: "hidden" });
     assert.equal(diagnostics.apiRequests.length, practiceApiBeforeRecords, "Practice Records emitted an /api request");
-    results.checks.practiceRecordArchive = { podium: 3, rank: 4, localApiRequests: 0 };
+    results.checks.practiceRecordArchive = { podium: 3, ledger: practiceLedgerSlots, rank: 4, localApiRequests: 0 };
     results.checks.finalDefeat = {
       phase: defeated.phase,
       prompt: defeated.prompts.finalGameOver,
@@ -789,6 +850,7 @@ async function main() {
     }
 
     assert.deepEqual(diagnostics.apiRequests, [], "Practice emitted an /api request");
+    assert.deepEqual(diagnostics.forbiddenClassicRequests, [], "HD-only runtime requested retired presentation assets");
     assert.deepEqual(diagnostics.consoleErrors, [], "Browser console errors detected");
     assert.deepEqual(diagnostics.pageErrors, [], "Uncaught page errors detected");
     const unexpectedRequestFailures = diagnostics.requestFailures.filter(

@@ -20,6 +20,7 @@ test("Windows launcher exposes only the local Ranked test controls", async () =>
   assert.doesNotMatch(cmdSource, /set "LAUNCHER_ROOT=%~dp0\r?\n/u);
   assert.match(cmdSource, /-File "%LAUNCHER_ROOT%\\scripts\\local-ranked-test-launcher\.ps1"/u);
   assert.match(psSource, /System\.Windows\.Forms/u);
+  assert.match(psSource, /Set-Location -LiteralPath \$RepositoryRoot/u);
   assert.match(psSource, /list --json/u);
   assert.match(psSource, /start --commit/u);
   assert.match(psSource, /--json-events/u);

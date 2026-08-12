@@ -5398,6 +5398,217 @@ body.ranked-v3-modal-open #screenOverlay {
   .ranked-v3-inspect-terminal { padding: 14px; border: 1px solid #67553c; text-align: center; }
 }
 
+/* Narrow HD archive skin: preserve responsive flow without falling back to flat Classic-era cards. */
+@media (max-width: 760px) {
+  body.graphics-hd-ui:has(#game.graphics-hd) .ranked-v3-card-reference-plate {
+    box-sizing: border-box;
+    width: min(calc(100% - 12px), 680px);
+    min-height: min(760px, calc(100vh - 24px));
+    max-height: calc(100vh - 24px);
+    padding: clamp(10px, 2.8vw, 18px);
+    overflow: auto;
+    border: 16px solid transparent;
+    border-image-source: url("assets/hd/ui/abyssal-gothic/board-frame.png");
+    border-image-slice: 112;
+    border-image-width: 16px;
+    background-color: #07090b;
+    background-image:
+      radial-gradient(circle at 50% 0%, #72572b30, transparent 38%),
+      url("assets/hd/ui/abyssal-gothic/panel-texture.png");
+    background-position: center, center;
+    background-size: auto, 280px 280px;
+    box-shadow: 0 24px 64px #000, inset 0 0 34px #000d;
+    scrollbar-color: #7e6744 #08090b;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .ranked-v3-leaderboard-heading,
+  body.graphics-hd-ui:has(#game.graphics-hd) .ranked-v3-inspect-header {
+    padding: 15px clamp(18px, 6vw, 34px);
+    border: 1px solid #66573f;
+    background-color: #0b0d0f;
+    background-image:
+      url("assets/hd/ui/abyssal-gothic/section-plaque.png"),
+      url("assets/hd/ui/abyssal-gothic/panel-texture.png");
+    background-position: center, center;
+    background-repeat: no-repeat, repeat;
+    background-size: 100% 100%, 260px 260px;
+    box-shadow: inset 0 0 22px #000c, 0 8px 20px #0008;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .ranked-v3-leaderboard-kicker,
+  body.graphics-hd-ui:has(#game.graphics-hd) .ranked-v3-leaderboard-season {
+    margin: 0;
+    color: #b99a68;
+    font: 600 clamp(.58rem, 2.3vw, .72rem)/1.2 "Copperplate Gothic Light", Georgia, serif;
+    letter-spacing: .15em;
+    text-transform: uppercase;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .ranked-v3-leaderboard-display-title,
+  body.graphics-hd-ui:has(#game.graphics-hd) .ranked-v3-inspect-player {
+    color: #eadfce;
+    font: 600 clamp(1rem, 5vw, 1.5rem)/1 "Copperplate Gothic Light", Georgia, serif;
+    letter-spacing: .08em;
+    text-shadow: 0 2px 2px #000, 0 0 18px #d9ad6040;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .ranked-v3-leaderboard-podium {
+    grid-template-areas:
+      "champion champion"
+      "silver bronze";
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .ranked-v3-podium-slot,
+  body.graphics-hd-ui:has(#game.graphics-hd) .ranked-v3-ledger-slot,
+  body.graphics-hd-ui:has(#game.graphics-hd) .ranked-v3-inspect-equipment-slot,
+  body.graphics-hd-ui:has(#game.graphics-hd) .ranked-v3-inspect-chronicle-row {
+    min-width: 0;
+    border-color: #66573f;
+    background-color: #0b0d0f;
+    background-image:
+      radial-gradient(circle at 50% 0%, #8c6b2a20, transparent 52%),
+      url("assets/hd/ui/abyssal-gothic/panel-texture.png");
+    background-position: center, center;
+    background-size: auto, 220px 220px;
+    box-shadow: inset 0 0 0 1px #030404, inset 0 0 22px #000d;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .ranked-v3-podium-slot {
+    display: grid;
+    justify-items: center;
+    gap: 5px;
+    text-align: center;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .ranked-v3-podium-slot:nth-child(1) {
+    grid-area: champion;
+    border-color: #b89455;
+    box-shadow: inset 0 0 0 1px #21180b, inset 0 0 28px #8a5d243d, 0 0 18px #9a6b2a20;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .ranked-v3-podium-slot:nth-child(2) {
+    grid-area: silver;
+    border-color: #7f8588;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .ranked-v3-podium-slot:nth-child(3) {
+    grid-area: bronze;
+    border-color: #8d5d42;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .ranked-v3-podium-slot .ranked-v3-leaderboard-slot-identity {
+    display: grid;
+    justify-items: center;
+    gap: 3px;
+    min-width: 0;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .ranked-v3-podium-slot .ranked-v3-leaderboard-rank {
+    color: #d9ad60;
+    font: 700 .86rem/1 Georgia, serif;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .ranked-v3-podium-slot:nth-child(2) .ranked-v3-leaderboard-rank { color: #d5d7d5; }
+  body.graphics-hd-ui:has(#game.graphics-hd) .ranked-v3-podium-slot:nth-child(3) .ranked-v3-leaderboard-rank { color: #c98961; }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .ranked-v3-reference-plate .record-archive-name {
+    max-width: 100%;
+    overflow: hidden;
+    padding: 0;
+    color: #f0e3cc;
+    background: transparent;
+    font: 600 clamp(.82rem, 3.6vw, 1rem)/1.15 Georgia, serif;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .ranked-v3-podium-slot .ranked-v3-leaderboard-score {
+    color: #e1b968;
+    font: 600 clamp(.88rem, 3.8vw, 1.08rem)/1 Georgia, serif;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .ranked-v3-podium-slot .ranked-v3-podium-meta {
+    display: flex;
+    gap: .45em;
+    color: #ad9777;
+    font: 600 clamp(.58rem, 2.4vw, .72rem)/1.2 "Courier New", monospace;
+    text-transform: uppercase;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .ranked-v3-ledger-slot {
+    grid-template-columns: minmax(0, 1.35fr) repeat(3, minmax(0, .72fr));
+    gap: 6px;
+    align-items: center;
+    color: #c7b79e;
+    font: 600 clamp(.66rem, 2.6vw, .78rem)/1.2 Georgia, serif;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .ranked-v3-ledger-slot .ranked-v3-leaderboard-slot-identity {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 8px;
+    align-items: center;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .ranked-v3-ledger-slot .ranked-v3-leaderboard-rank { color: #c9a86d; }
+  body.graphics-hd-ui:has(#game.graphics-hd) .ranked-v3-ledger-slot .ranked-v3-leaderboard-score { color: #dfb86a; text-align: center; }
+  body.graphics-hd-ui:has(#game.graphics-hd) .ranked-v3-ledger-slot .ranked-v3-leaderboard-depth,
+  body.graphics-hd-ui:has(#game.graphics-hd) .ranked-v3-ledger-slot .ranked-v3-leaderboard-gold { text-align: center; }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .ranked-v3-reference-plate .ranked-v3-leaderboard-details-button,
+  body.graphics-hd-ui:has(#game.graphics-hd) .ranked-v3-leaderboard-page-control,
+  body.graphics-hd-ui:has(#game.graphics-hd) .ranked-v3-leaderboard-close,
+  body.graphics-hd-ui:has(#game.graphics-hd) .ranked-v3-inspect-back,
+  body.graphics-hd-ui:has(#game.graphics-hd) .ranked-v3-inspect-close {
+    min-height: 44px;
+    padding: 8px 10px;
+    border: 1px solid #806844 !important;
+    color: #e5c98f;
+    background-color: #17130d;
+    background-image:
+      linear-gradient(180deg, #322819dd, #0a0b0ddd),
+      url("assets/hd/ui/abyssal-gothic/panel-texture.png");
+    background-position: center, center;
+    background-size: auto, 210px 210px;
+    box-shadow: inset 0 0 14px #000c;
+    font: 600 clamp(.64rem, 2.7vw, .76rem)/1 "Copperplate Gothic Light", Georgia, serif;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .ranked-v3-reference-plate .ranked-v3-leaderboard-details-button {
+    grid-column: 1 / -1;
+    width: 100%;
+    margin-top: 2px;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .ranked-v3-leaderboard-page-control:disabled {
+    color: #7d725f;
+    background-color: #0b0c0d;
+    background-image:
+      linear-gradient(180deg, #151513d9, #08090ad9),
+      url("assets/hd/ui/abyssal-gothic/panel-texture.png");
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .ranked-v3-leaderboard-page-label,
+  body.graphics-hd-ui:has(#game.graphics-hd) .ranked-v3-leaderboard-range-label {
+    margin: 0;
+    color: #bba37c;
+    font: 600 .68rem/1.2 "Courier New", monospace;
+    text-align: center;
+  }
+
+  body.graphics-hd-ui:has(#game.graphics-hd) .ranked-v3-inspect-terminal {
+    background-color: #120b0d;
+    background-image:
+      radial-gradient(circle at 50% 0%, #741c2238, transparent 58%),
+      url("assets/hd/ui/abyssal-gothic/panel-texture.png");
+    background-position: center, center;
+    background-size: auto, 220px 220px;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .ranked-v3-reference-plate,
   .ranked-v3-reference-plate * { animation: none !important; transition: none !important; }
@@ -6243,10 +6454,68 @@ body.ranked-v3-modal-open #screenOverlay {
     top: 92.25%;
     font-size: 1.05cqw;
   }
-  body:has(#game.graphics-hd) .ranked-v3-ledger-slot .record-archive-name {
-    transform: translateX(2.1cqw);
+  body:has(#game.graphics-hd) .ranked-v3-reference-plate--leaderboard {
+    --ranked-ledger-name-shift: 2.1cqw;
+    --ranked-ledger-depth-shift: -2.1cqw;
   }
+  body:has(#game.graphics-hd) .ranked-v3-leaderboard-column:nth-child(2),
+  body:has(#game.graphics-hd) .ranked-v3-ledger-slot .record-archive-name {
+    transform: translateX(var(--ranked-ledger-name-shift));
+  }
+  body:has(#game.graphics-hd) .ranked-v3-leaderboard-column:nth-child(4),
   body:has(#game.graphics-hd) .ranked-v3-ledger-slot .ranked-v3-leaderboard-depth {
-    transform: translateX(-2.1cqw);
+    transform: translateX(var(--ranked-ledger-depth-shift));
+  }
+  body:has(#game.graphics-hd) .ranked-v3-inspect-rank[data-rank-digits="single"] {
+    transform: translateX(.35cqw);
+  }
+}
+/* Shared Inspect tooltip: one readable panel for pointer and keyboard focus. */
+.ranked-v3-reference-plate--inspect [data-record-tooltip]::after {
+  content: none !important;
+  display: none !important;
+}
+.ranked-v3-inspect-tooltip {
+  position: absolute;
+  z-index: 40;
+  width: min(48cqw, 740px);
+  max-width: calc(100% - 24px);
+  box-sizing: border-box;
+  margin: 0;
+  padding: clamp(.75rem, 1.2cqw, 1.25rem);
+  border: 1px solid #b38d4d;
+  color: #f4e9d3;
+  background:
+    linear-gradient(180deg, #12100dfa, #050609fa),
+    #050609fa;
+  box-shadow:
+    inset 0 0 0 1px #f0c87922,
+    0 12px 38px #000e;
+  font: 600 clamp(1rem, 2cqw, 1.95rem)/1.35 "Courier New", monospace;
+  letter-spacing: .02em;
+  text-align: left;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  pointer-events: none;
+}
+.ranked-v3-inspect-tooltip[hidden],
+.ranked-v3-inspect-tooltip[aria-hidden="true"] {
+  display: none;
+}
+.ranked-v3-inspect-tooltip[data-visible="true"] {
+  display: block;
+}
+.ranked-v3-inspect-tooltip[data-placement="above"] {
+  border-bottom-color: #e2bd74;
+}
+.ranked-v3-inspect-tooltip[data-placement="below"] {
+  border-top-color: #e2bd74;
+}
+@media (max-width: 760px) {
+  .ranked-v3-inspect-tooltip {
+    width: min(calc(100vw - 32px), 100%);
+    max-width: calc(100% - 16px);
+    padding: clamp(.75rem, 3vw, 1rem);
+    font-size: clamp(1rem, 4vw, 1.35rem);
   }
 }

@@ -1471,3 +1471,125 @@ Updated next good targets
 - Focused tests passed 9/9; JavaScript syntax passed; Ranked headed lifecycle passed with zero unexpected console or page errors.
 - Final comparison evidence: output/verification/ranked-live-feedback-20260809/.
 - No commit, push, or deployment was performed.
+
+## 2026-08-09 - Canonical Practice archive and keyboard navigation
+
+- Practice Records now uses the same canonical Ranked leaderboard and Inspect plates while remaining fully local and preserving legacy records without invented details.
+- Added shared keyboard navigation for Name/Inspect rows, responsive equipment grids, mutators, Back, Previous Page, Next Page, and Close; native Tab remains available.
+- Added exact focus-token restoration across list/detail/page transitions and a safe body fallback when an external opener is unavailable.
+- Aligned Name and Depth headings with their live values, optically shifted single-digit Inspect ranks, and replaced small pseudo tooltips with one readable shared panel.
+- Migrated current-tree Practice and Ranked browser QA plus the six-image visual fingerprint to canonical sources and selectors.
+- Verification: focused archive/client/style/gate tests 41/41 PASS; Practice save browser scenario PASS with zero API requests; direct Ranked lifecycle PASS with keyboard, tooltip geometry, rank 1/9/10/73, and opener-focus assertions.
+- Generated Practice and Ranked screenshots were visually inspected; final approval receipt remains intentionally pending explicit review of the six current artifacts.
+- No push, deployment, D1 change, ruleset activation, or production-state change was performed.
+
+## 2026-08-09 - HD-only v0.8.2 audit and design
+
+- Created isolated worktree `codex/hd-only-v082` from the completed canonical archive branch.
+- Confirmed the current boot eagerly requests more than 100 `assets/sprite/**` Classic images before HD initialization, honors persisted Classic preferences, and renders Classic while HD assets preload.
+- Selected a fail-closed HD-only architecture: HD markers before first paint, no graphics selector or preference module, no Classic startup preloads/fallback, and no Classic presentation assets in the Pages bundle.
+- Shared gameplay, saves, Online protocol, music, sound effects, historical fixtures, and physical Classic source files remain unchanged.
+- Design saved in `docs/superpowers/specs/2026-08-09-hd-only-v082-design.md`; implementation will follow TDD and bump the live game version to `v0.8.2`.
+
+## 2026-08-10 - HD-only v0.8.2 implementation
+
+- Retired the Classic presentation path from live gameplay: the document starts
+  in HD, the canvas is 576 x 576, and the graphics preference/toggle is gone.
+- The HD controller now stays HD before, during, and after asset loading. Missing
+  critical assets fail closed on the boot screen instead of invoking Classic.
+- Removed all Classic sprite preload calls and active Classic UI-builder paths;
+  the old source definitions and physical files remain only as unreachable data.
+- Pages builds now omit assets/logo.png, all assets/sprite/**, and
+  render/graphics-preference.js.
+- Bumped the live game version and active Online/Ranked fallbacks to v0.8.2.
+- Verification passed: focused HD/build/archive tests 89/89, current-tree boot
+  and HD browser scenarios, direct HD startup/scenario/reload with zero retired
+  asset requests, and the clean committed protected baseline.
+- Boot and HD screenshots were visually inspected; no mixed Classic/HD frame,
+  missing game chrome, or layout regression was observed.
+- The user approved all six canonical Practice/Ranked archive screenshots.
+  Their local approval receipt verifies fingerprint
+  `sha256:d1947031bc12de3e3cb6036e0d9caa99f7b98c0b6fc6865d7c4235430cd964cd`
+  in the prior archive worktree.
+- After explicit authorization, regenerated the 34 `v08-meta-1` source-bound
+  data files plus `ruleset-manifest.json`. Fresh verification passed:
+  generator check, guard 14/14, and phase 781/781.
+- `v08-meta-1` remains test-only. No production binding, push, deploy, merge,
+  or ruleset activation occurred.
+
+## 2026-08-10 - Remote HD-only browser acceptance
+
+- Fresh current-tree Practice save and Ranked lifecycle browser scenarios passed.
+- Ranked QA exposed a stale Classic preference hook in its isolated Pages build;
+  added a RED regression guard and migrated the hook to the HD-only ready outcome.
+- Generated and visually inspected all six current HD-only archive screenshots.
+  Two match the prior approved bytes; four require a new current-tip approval receipt.
+
+## 2026-08-10 - Narrow Practice archive HD skin
+
+- Confirmed the 640 x 1080 Practice screenshot was using a deliberate flat
+  responsive fallback: it hid the reference art and removed every HD texture.
+- Kept the readable responsive DOM flow, but replaced the flat cards with the
+  shared HD board frame, panel texture, section plaque, ranked podium hierarchy,
+  styled ledger, and 44 px keyboard/touch actions. The same canonical selectors
+  also protect narrow Ranked archive surfaces.
+- Added a browser regression that inspects the computed narrow styles and
+  requires real `assets/hd/**` presentation on the shell, header, podium,
+  ledger, and Close action.
+- TDD evidence: the new browser assertion first failed with every computed
+  background and border image equal to `none`; after the CSS fix, the focused
+  archive/UI tests passed 20/20 and the fresh Practice save scenario passed.
+- Final screenshot inspected at
+  `output/online-v3-baseline/save/practice-records-list-narrow.png`; no Classic
+  asset request, push, deployment, merge, or ruleset activation occurred.
+
+## 2026-08-10 - Final Defeat records focus repair
+
+- Direct pointer activation of the second Final Defeat action already opened
+  Practice Records and Ranked Leaderboard on the current HD-only tip.
+- Reproduced the reported failure through keyboard focus: ArrowRight changed the
+  visible selection to the records action while focus remained on Main Menu, so
+  Enter activated the stale focused control.
+- Synchronized the selected Final Defeat action with DOM focus, preserving the
+  existing shared Online/Practice routing and preventing the focused control
+  from disagreeing with the visible selection.
+- Added headed regressions for focus + ArrowRight + Enter in Practice and direct
+  Leaderboard activation in the terminal Ranked lifecycle.
+- Fresh verification passed: Practice save browser scenario, direct Ranked
+  lifecycle, focused HD/menu/leaderboard tests 26/26, guard 14/14, and phase
+  781/781.
+- Regenerated the 34 source-bound `v08-meta-1` data files and
+  `ruleset-manifest.json` after the `game.js` fingerprint changed. The
+  ruleset remains test-only; no activation, push, deployment, or merge occurred.
+
+## 2026-08-12 - Ranked fatal compatibility Worker hotfix
+
+- Created the clean Worker-only release commit
+  `4041faa4836183b819a64a58d0ef351cd07ba020` directly on the live/GitHub
+  production base `f67eb9554a1395d8399e23fda6094c6e22d7305d`; stale local
+  `main` and the active `mobile-v1` worktree were not used or modified.
+- Implemented accept-validate-strip compatibility for production legacy fatal
+  payloads. f67 cause-bearing clients and cause-free clients are both accepted;
+  `presentationCause` is validated, then removed before applying `bc0d`.
+  Stripped and omitted cause produce identical canonical state, digests,
+  checkpoint tokens, and terminal summaries. Unexpected internal failures
+  remain 500-class.
+- Fresh release verification passed 815/815 from exact clean commit `4041faa`.
+  Candidate override and post-promotion smoke covered malformed-cause 422,
+  cause-bearing and cause-free fatal events, replay/conflict behavior, Resume,
+  and cleanup; all disposable diagnostic runs were abandoned.
+- Uploaded Worker version `b03cb1ae-25e2-458f-8297-6aeeb298778d`, completed
+  inactive, 5%, and 25% candidate checks, then promoted it to 100% in final
+  deployment `cc896f3f-eb6f-40ba-989f-663e423af6c7`. The recorded rollback
+  version remains `19b9174c-f720-4484-8f7b-c0918215c29b`; no rollback was
+  required.
+- The active ruleset remains
+  `sha256:bc0d548d204557d0cc0ec7f8a358e18246778a13b27c58f5c6cdd73e73621711`.
+  Pages stayed unchanged at deployment
+  `4236fef9-1e2d-4e6c-aac8-752cc2f71b55` from source `f67eb95`; no visual
+  receipt changed. D1 had no migration, backfill, restore, or schema/data
+  release action and still reports `No migrations to apply`.
+- Remote source provenance is the release branch
+  `codex/ranked-fatal-worker-compat` plus annotated tag
+  `online-v3-worker-production-2026-08-12-4041faa`, which anchors the exact
+  deployed source commit rather than local `main`.

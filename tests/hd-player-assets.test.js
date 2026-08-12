@@ -869,9 +869,9 @@ test("player layer preserves the existing 120 ms eased movement tween in HD coor
   assert.deepEqual(calls, [[image, 168, 176, 80, 80]]);
 });
 
-test("a missing critical player frame blocks HD through the existing graphics controller", async () => {
+test("a missing critical player frame keeps HD presentation fail closed", async () => {
   const playerEntries = manifestApi.entries.filter((entry) => entry.group === "player");
-  assert.equal(playerEntries.length, 64, "shipping player group must be active before fallback can be exercised");
+  assert.equal(playerEntries.length, 64, "shipping player group must be active before fail-closed handling can be exercised");
   assert.ok(playerEntries.every((entry) => entry.critical === true));
 
   const missingKey = playerEntries[0].key;
@@ -881,25 +881,34 @@ test("a missing critical player frame blocks HD through the existing graphics co
       .map((entry) => [entry.key, Object.freeze({ key: entry.key })])
   );
   const diagnostics = [];
+  const canvas = createCanvas();
+  let renderedAssets = null;
   const controller = rendererApi.createGraphicsController({
-    canvas: createCanvas(),
+    canvas,
     context: { clearRect() {}, save() {}, restore() {} },
     manifest: manifestApi.entries,
     loader: {
       loadAssets: async () => ({ ready: true, fallbackRequired: false, loaded, failures: [] })
     },
-    renderHD() {
-      assert.fail("HD must not activate with a missing critical player frame");
+    renderHD(_snapshot, _context, assets) {
+      renderedAssets = assets;
     },
-    renderLegacy() {},
     onDiagnostic(diagnostic) {
       diagnostics.push(diagnostic);
     }
   });
 
   const outcome = await controller.initialize(true);
-  assert.equal(outcome.mode, "legacy");
-  assert.equal(controller.getMode(), "legacy");
+  assert.equal(outcome.mode, "hd");
+  assert.equal(outcome.ready, false);
+  assert.equal(controller.getMode(), "hd");
+  assert.equal(canvas.width, 576);
+  assert.equal(canvas.height, 576);
+  assert.equal(canvas.dataset.graphicsMode, "hd");
   assert.equal(diagnostics.length, 1);
+  assert.equal(diagnostics[0].code, "hd-assets-unavailable");
   assert.match(diagnostics[0].message, new RegExp(`${missingKey}|critical|missing`, "i"));
+  controller.render({});
+  assert.equal(renderedAssets instanceof Map, true);
+  assert.equal(renderedAssets.has(missingKey), false);
 });

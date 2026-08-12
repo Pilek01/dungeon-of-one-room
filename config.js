@@ -1,5 +1,5 @@
 ﻿// Single source of truth for current build version.
-window.GAME_VERSION = "v0.8.0";
+window.GAME_VERSION = "v0.8.2";
 window.DUNGEON_FORK_ID = "dungeon v2";
 
 // Enable/disable debug cheat menu (F9).
@@ -12,8 +12,6 @@ window.DUNGEON_DEBUG_CHEATS_ENABLED = true;
 // false = normal leaderboard behavior
 window.DUNGEON_TEST_MODE = true;
 
-// Shipping 64 px HD renderer. Set to false only for legacy fallback diagnostics.
-window.DUNGEON_HD_GRAPHICS_ENABLED = true;
 
 // Observer bot behavior profile.
 // "safe"       = defensywny (mniej zgonów, częstszy extract)

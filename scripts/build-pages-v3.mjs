@@ -72,6 +72,16 @@ const buildCommitDate = readGitBuildValue(["show", "-s", "--format=%cs", "HEAD"]
 const observerBotConfig = observerBotReleaseConfig(process.env, target);
 const visualApproval = target === "release" ? await verifyRecordArchiveVisualApproval({ root }) : null;
 
+const RETIRED_PRESENTATION_PATHS = new Set([
+  "assets/logo.png",
+  "render/graphics-preference.js"
+]);
+
+function isRetiredClassicPresentation(relative) {
+  const normalized = relative.replaceAll("\\", "/");
+  return RETIRED_PRESENTATION_PATHS.has(normalized) || normalized.startsWith("assets/sprite/");
+}
+
 await rm(output, { recursive: true, force: true });
 await mkdir(output, { recursive: true });
 
@@ -87,6 +97,7 @@ for (const directory of ["assets", "render", "online-v3"]) {
     { cwd: root, encoding: "utf8" }
   ).split("\0").filter(Boolean);
   for (const relative of tracked) {
+    if (isRetiredClassicPresentation(relative)) continue;
     const source = path.join(root, relative);
     const destination = path.join(output, relative);
     await mkdir(path.dirname(destination), { recursive: true });
@@ -539,7 +550,11 @@ const productionGameReplacements = [
   [
 `  function dismissBootScreen() {
     if (bootDismissPromise) return bootDismissPromise;
-    bootDismissPromise = Promise.resolve(initialGraphicsReady).then(() => {
+    bootDismissPromise = Promise.resolve(initialGraphicsReady).then((outcome) => {
+      if (!outcome || outcome.ready !== true) {
+        showHdLoadFailure();
+        return false;
+      }
       if (gameAppEl) {
         gameAppEl.classList.remove("app-hidden");
         requestAnimationFrame(() => syncHdMenuNavigation());
@@ -550,6 +565,10 @@ const productionGameReplacements = [
           bootScreenEl.classList.add("hidden");
         }, { once: true });
       }
+      return true;
+    }, () => {
+      showHdLoadFailure();
+      return false;
     });
     return bootDismissPromise;
   }`,
@@ -558,38 +577,47 @@ const productionGameReplacements = [
     bootInputLocked = true;
     bootScreenEl?.classList.add("loading");
     bootDismissPromise = Promise.resolve(initialGraphicsReady)
-      .then(() => {
+      .then((outcome) => {
+        if (!outcome || outcome.ready !== true) {
+          showHdLoadFailure();
+          return false;
+        }
         if (gameAppEl) {
           gameAppEl.classList.remove("app-hidden");
           requestAnimationFrame(() => syncHdMenuNavigation());
         }
         bootScreenEl?.classList.add("ready");
-        return new Promise((resolve) => window.setTimeout(resolve, 180));
+        return new Promise((resolve) => window.setTimeout(() => resolve(true), 180));
+      }, () => {
+        showHdLoadFailure();
+        return false;
       })
-      .then(() => new Promise((resolve) => {
-        if (!bootScreenEl) {
-          resolve();
-          return;
-        }
-        let hidden = false;
-        const hideBoot = () => {
-          if (hidden) return;
-          hidden = true;
-          bootScreenEl.classList.add("hidden");
-          resolve();
-        };
-        bootScreenEl.classList.add("fading");
-        bootScreenEl.addEventListener("transitionend", hideBoot, { once: true });
-        window.setTimeout(hideBoot, 700);
-      }))
+      .then((ready) => {
+        if (ready !== true) return false;
+        return new Promise((resolve) => {
+          if (!bootScreenEl) {
+            resolve(true);
+            return;
+          }
+          let hidden = false;
+          const hideBoot = () => {
+            if (hidden) return;
+            hidden = true;
+            bootScreenEl.classList.add("hidden");
+            resolve(true);
+          };
+          bootScreenEl.classList.add("fading");
+          bootScreenEl.addEventListener("transitionend", hideBoot, { once: true });
+          window.setTimeout(hideBoot, 700);
+        });
+      })
       .finally(() => {
         bootInputLocked = false;
         bootInputUnlockAt = performance.now() + 250;
       });
     return bootDismissPromise;
   }`
-  ],
-  [
+  ],  [
 `  window.addEventListener("keydown", (event) => {
     if (MOBILE_UNSUPPORTED_BLOCKED) return;`,
 `  window.addEventListener("keydown", (event) => {

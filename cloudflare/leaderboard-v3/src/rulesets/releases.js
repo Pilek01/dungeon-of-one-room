@@ -3,15 +3,31 @@ import {
   V08_META_1_DESCRIPTOR,
   createV08Meta1Ruleset
 } from "./v08-meta-1/index.js";
+import { normalizeFatalPresentationCauseV08 } from "./v08-meta-1/life-policy.js";
 
 const LEGACY_FATAL_CAPABILITIES = Object.freeze({
-  fatalPresentationCause: false
+  fatalPresentationCauseMode: "strip"
 });
 const CURRENT_FATAL_CAPABILITIES = Object.freeze({
-  fatalPresentationCause: true
+  fatalPresentationCauseMode: "retain"
 });
 const LOCAL_ENVIRONMENTS = Object.freeze(["test", "local"]);
 const PRODUCTION_ENVIRONMENTS = Object.freeze(["test", "local", "production"]);
+
+function compatibleFatalRequest(request, capabilities) {
+  if (
+    !request ||
+    typeof request !== "object" ||
+    !Object.hasOwn(request, "presentationCause")
+  ) return request;
+  const presentationCause = normalizeFatalPresentationCauseV08(request);
+  if (capabilities.fatalPresentationCauseMode === "retain") {
+    return { ...request, presentationCause };
+  }
+  const legacyRequest = { ...request };
+  delete legacyRequest.presentationCause;
+  return legacyRequest;
+}
 
 function createCapabilityBoundRuleset(rulesetHash, capabilities) {
   const ruleset = createV08Meta1Ruleset({ rulesetHash });
@@ -19,15 +35,11 @@ function createCapabilityBoundRuleset(rulesetHash, capabilities) {
     ...ruleset,
     capabilities,
     async reportFatalEvent(state, request, context = {}) {
-      if (
-        !capabilities.fatalPresentationCause &&
-        request &&
-        typeof request === "object" &&
-        Object.hasOwn(request, "presentationCause")
-      ) {
-        throw new TypeError("FATAL_EVENT_PAYLOAD_INVALID_FIELDS");
-      }
-      return ruleset.reportFatalEvent(state, request, context);
+      return ruleset.reportFatalEvent(
+        state,
+        compatibleFatalRequest(request, capabilities),
+        context
+      );
     }
   });
 }
