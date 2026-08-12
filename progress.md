@@ -1593,3 +1593,65 @@ Updated next good targets
   `codex/ranked-fatal-worker-compat` plus annotated tag
   `online-v3-worker-production-2026-08-12-4041faa`, which anchors the exact
   deployed source commit rather than local `main`.
+
+## 2026-08-11 - Mobile standards repair pass
+
+- Original user request: approve the audited repair pass for mobile appearance
+  and functionality, fixing every confirmed standards gap without changing
+  gameplay rules or desktop HD composition.
+- Made the portrait rotate gate a true modal boundary: gameplay, boot, and any
+  existing screen overlay become inert; forward and reverse Tab stay trapped;
+  landscape restores the previously focused gameplay control.
+- Consolidated announcements into one atomic live game-status region with
+  change-only updates, and added explicit group semantics to the D-pad and
+  mobile action surfaces.
+- Replaced visible keyboard-era mobile guidance with touch copy across Camp,
+  Forge, Merchant, Pact, Options, Tutorial, records, nickname, death, and
+  victory surfaces while retaining desktop keyboard instructions.
+- Raised mobile label/support text, kept named action controls unclipped,
+  restored real Camp icons, changed Camp to a readable one-column scroll list
+  with two-line descriptions, and corrected Forge from five computed layout
+  rows to four. Reduced-motion now suppresses descendant and pseudo-element
+  overlay animation as well as control transitions.
+- Added RED/GREEN static contracts plus browser assertions for portrait
+  inert/focus restoration, touch-only guidance, command-label size, Camp
+  readability/reachability, Forge geometry, reduced motion, and real computed
+  CSS cascade. Fresh gallery comparisons use the approved gothic mobile plate.
+- Verification: focused mobile/UI tests 27/27; JavaScript/script syntax PASS;
+  mobile smoke PASS on iPhone, Android, browser-chrome-height, tablet, iPad,
+  narrow fine-pointer, desktop, and hybrid touch-laptop; gallery PASS for ten
+  states; `verify:ui-current -- --scenario hd`, `verify:baseline`,
+  `verify:guard`, and `verify:phase` (781/781) PASS.
+- The deterministic test-only source/ruleset manifests were regenerated only
+  to record the changed `game.js` hash. No ruleset activation, commit, push,
+  deployment, migration, or production change was performed.
+
+## 2026-08-11 - Mobile button layout re-composition
+
+- Original user request: audit the mobile button appearance and placement,
+  then immediately implement the approved correction because the existing
+  layout looked visually poor despite being functionally operable.
+- Fresh 844x390 and 844x288 measurements confirmed two structural defects: a
+  fixed 210px control shelf left a 66px dead zone at normal height, then
+  overlapped the compact HUD by 26px when browser chrome reduced the viewport.
+  Extract also occupied only half of the final row, leaving an orphaned cell.
+- Re-composed the existing Gothic controls without changing IDs, action keys,
+  canonical input dispatch, gameplay rules, or desktop composition. The D-pad
+  and action bank now share one adaptive vertical center, Extract spans the
+  full action width, icons scale with available height, and tall tablets cap
+  and center the bank instead of stretching it.
+- Added a compact <=320px layout with three combat/action columns and a
+  full-width emergency Extract row. Normal phone landscape keeps the clearer
+  two-column action hierarchy. Shockwave stays on one line where the viewport
+  has enough height.
+- Added a browser RED regression for HUD overlap/dead space, control overlap,
+  clipped labels, D-pad/action alignment, and the Extract span. Before the CSS
+  correction it failed at 844x390 (66px dead zone) and 844x288 (-26px HUD
+  overlap); the corrected iPhone, Android, browser-chrome, tablet, iPad,
+  narrow fine-pointer, desktop, and hybrid matrix passes.
+- Audit, approved design rationale, and the implementation plan are recorded
+  in `docs/audits/2026-08-11-mobile-button-layout-audit.md`,
+  `docs/superpowers/specs/2026-08-11-mobile-button-layout-design.md`, and
+  `docs/superpowers/plans/2026-08-11-mobile-button-layout.md`.
+- No commit, push, deployment, migration, ruleset activation, or gameplay
+  behavior change was performed.

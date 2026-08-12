@@ -12,8 +12,8 @@ const outputRoot = path.resolve(process.argv[3] || "output/hd-status-emblems-qa"
 const scenario = "status_emblems_hd";
 const viewports = {
   desktop: { width: 1440, height: 1000 },
-  // Use the narrow responsive layout without a mobile UA. Real mobile devices
-  // intentionally show the product's existing "not supported" guard screen.
+  // Keep this profile as narrow no-touch coverage. Real touch/orientation
+  // behavior is covered separately by scripts/mobile-v1-smoke.mjs.
   mobile: { width: 390, height: 844 }
 };
 const summary = [];

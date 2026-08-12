@@ -169,6 +169,15 @@
       statusCoverage: STATUS_EMBLEM_COVERAGE,
       floorPattern: DESCENT_HD_FLOOR_PATTERN
     }),
+    fury_seven_hd: Object.freeze({
+      id: "fury_seven_hd",
+      label: "Fury 7/7 Mobile Showcase",
+      autoStart: true,
+      depth: 25,
+      forcedNextRoomType: "combat",
+      forceFurySevenHDShowcaseSetup: true,
+      floorPattern: DESCENT_HD_FLOOR_PATTERN
+    }),
     vault_guardian_hd: Object.freeze({
       id: "vault_guardian_hd",
       label: "Vault Guardian HD Showcase",
@@ -377,6 +386,77 @@
       depth: 35,
       forceRelicExchangeSetup: true
     }),
+    reward_choice_mobile: Object.freeze({
+      id: "reward_choice_mobile",
+      label: "Mobile Relic Reward",
+      autoStart: true,
+      depth: 18,
+      forceMobileSurfaceSetup: "reward"
+    }),
+    forge_reward_mobile: Object.freeze({
+      id: "forge_reward_mobile",
+      label: "Mobile Forge Reward",
+      autoStart: true,
+      depth: 24,
+      forcedNextRoomType: "forge",
+      forceMobileSurfaceSetup: "forge_reward"
+    }),
+    extract_exchange_mobile: Object.freeze({
+      id: "extract_exchange_mobile",
+      label: "Mobile Relic Exchange",
+      autoStart: true,
+      depth: 35,
+      forceMobileSurfaceSetup: "extract_exchange"
+    }),
+    emergency_extract_mobile: Object.freeze({
+      id: "emergency_extract_mobile",
+      label: "Mobile Emergency Extract",
+      autoStart: true,
+      depth: 35,
+      forceMobileSurfaceSetup: "emergency_extract"
+    }),
+    death_mobile: Object.freeze({
+      id: "death_mobile",
+      label: "Mobile Life Defeat",
+      autoStart: true,
+      depth: 35,
+      forceMobileSurfaceSetup: "death"
+    }),
+    gameover_mobile: Object.freeze({
+      id: "gameover_mobile",
+      label: "Mobile Final Defeat",
+      autoStart: true,
+      depth: 47,
+      forceMobileSurfaceSetup: "gameover"
+    }),
+    victory_mobile: Object.freeze({
+      id: "victory_mobile",
+      label: "Mobile Final Victory",
+      autoStart: true,
+      depth: 100,
+      forceMobileSurfaceSetup: "victory"
+    }),
+    records_mobile: Object.freeze({
+      id: "records_mobile",
+      label: "Mobile Practice Records",
+      autoStart: true,
+      depth: 18,
+      forceMobileSurfaceSetup: "records"
+    }),
+    nickname_mobile: Object.freeze({
+      id: "nickname_mobile",
+      label: "Mobile Nickname",
+      autoStart: true,
+      depth: 1,
+      forceMobileSurfaceSetup: "nickname"
+    }),
+    camp_start_mobile: Object.freeze({
+      id: "camp_start_mobile",
+      label: "Mobile Camp Start Depth",
+      autoStart: true,
+      depth: 35,
+      forceMobileSurfaceSetup: "camp_start"
+    }),
     pact: Object.freeze({
       id: "pact",
       label: "Pact Chamber",
@@ -423,6 +503,7 @@
       || scenario.forceVfxHDShowcaseSetup === true
       || scenario.forceSkillVfxTierShowcaseSetup === true
       || scenario.forceBeyondPitHDShowcaseSetup === true
+      || scenario.forceFurySevenHDShowcaseSetup === true
       || Boolean(scenario.forceExpansionHDShowcaseSetup)
       || scenario.forceBossHDShowcaseSetup === true
       || scenario.forceRoomHDShowcaseSetup === true

@@ -619,19 +619,19 @@ const productionGameReplacements = [
   }`
   ],  [
 `  window.addEventListener("keydown", (event) => {
-    if (MOBILE_UNSUPPORTED_BLOCKED) return;`,
+    if (isMobilePortraitBlocked()) return;`,
 `  window.addEventListener("keydown", (event) => {
-    if (MOBILE_UNSUPPORTED_BLOCKED) return;
+    if (isMobilePortraitBlocked()) return;
     if (bootInputLocked || performance.now() < bootInputUnlockAt) {
       event.preventDefault();
       return;
     }`
   ],
   [
-`  window.addEventListener("pointerdown", () => {
-    if (MOBILE_UNSUPPORTED_BLOCKED) return;`,
 `  window.addEventListener("pointerdown", (event) => {
-    if (MOBILE_UNSUPPORTED_BLOCKED) return;
+    if (isMobilePortraitBlocked()) return;`,
+`  window.addEventListener("pointerdown", (event) => {
+    if (isMobilePortraitBlocked()) return;
     if (bootInputLocked || performance.now() < bootInputUnlockAt) {
       event.preventDefault();
       return;

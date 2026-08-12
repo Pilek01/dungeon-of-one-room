@@ -1,8 +1,8 @@
 <!doctype html>
-<html lang="pl">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>Dungeon of One Room</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 64 64%27%3E%3Crect width=%2764%27 height=%2764%27 rx=%2712%27 fill=%27%230b0912%27/%3E%3Cpath d=%27M16 14h32v36H16z%27 fill=%27none%27 stroke=%27%23a875ff%27 stroke-width=%274%27/%3E%3Cpath d=%27M24 22h16v20H24z%27 fill=%27%23241a38%27 stroke=%27%23e0c6ff%27 stroke-width=%273%27/%3E%3Ccircle cx=%2736%27 cy=%2732%27 r=%272%27 fill=%27%23ffd36b%27/%3E%3C/svg%3E" />
   <link rel="stylesheet" href="style.css" />
@@ -15,8 +15,27 @@
   <link rel="stylesheet" href="style-hd-defeat.css" />
   <link rel="stylesheet" href="style-hd-relic-draft.css" />
   <link rel="stylesheet" href="style-hd-boot.css" />
+  <link rel="stylesheet" href="style-mobile-hd.css" />
+  <link rel="stylesheet" href="style-mobile-gothic.css" />
 </head>
 <body class="graphics-hd-ui">
+  <div
+    id="mobileRotateOverlay"
+    class="mobile-rotate-overlay"
+    hidden
+    tabindex="-1"
+    aria-hidden="true"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="mobileRotateTitle"
+    aria-describedby="mobileRotateCopy"
+  >
+    <div class="mobile-rotate-card">
+      <p class="mobile-rotate-kicker">Dungeon Online</p>
+      <h2 id="mobileRotateTitle">Rotate your device</h2>
+      <p id="mobileRotateCopy">Turn your phone sideways to enter the dungeon.</p>
+    </div>
+  </div>
   <div id="bootScreen" class="boot-screen">
     <div class="boot-content">
       <h1 class="boot-hd-brand" aria-label="Dungeon of One Room">
@@ -34,14 +53,14 @@
       <div class="layout-track" id="layoutTrack">
         <aside class="panel panel-left">
           <h2 class="panel-title">Player</h2>
-          <section class="hud" id="hud" aria-live="polite"></section>
+          <section class="hud" id="hud"></section>
         </aside>
         <div class="board">
           <header class="titlebar">
             <h1>Dungeon of One Room</h1>
             <p>One room. One chance. One last descent.</p>
           </header>
-          <div id="depthBadge" class="depth-badge" aria-live="polite"></div>
+          <div id="depthBadge" class="depth-badge"></div>
           <div class="room-stage">
             <aside class="room-resource-rail room-resource-rail-left" id="leftResourceRail" aria-label="Fury and elixir resources">
               <div class="room-resource-group room-resource-fury" id="furyIconRail" aria-label="Fury"></div>
@@ -56,9 +75,10 @@
               <span class="room-vital-label">HP</span>
             </aside>
             <div class="canvas-wrap">
-              <canvas id="game" width="576" height="576" class="graphics-hd" data-graphics-mode="hd" aria-label="Gra dungeon"></canvas>
+              <canvas id="game" width="576" height="576" class="graphics-hd" data-graphics-mode="hd" aria-label="Dungeon game board" aria-describedby="mobileGameStatus"></canvas>
               <div id="roomIntroOverlay" class="room-intro-overlay" aria-hidden="true"></div>
-              <div id="screenOverlay" class="screen-overlay" aria-live="polite"></div>
+              <div id="screenOverlay" class="screen-overlay" aria-hidden="true"></div>
+              <p id="mobileGameStatus" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></p>
             </div>
             <aside class="room-vital-rail room-vital-rail-protection" id="protectionRail" aria-label="Shield and barrier">
               <div class="room-protection-meter room-protection-meter-shield">
@@ -82,29 +102,40 @@
               <div class="room-resource-group room-resource-potions" id="potionIconRail" aria-label="Potions"></div>
             </aside>
           </div>
-          <section id="skillsBar" class="skills-bar" aria-live="polite"></section>
-          <div class="mobile-controls" id="mobileControls" aria-label="Sterowanie dotykowe">
+          <section id="skillsBar" class="skills-bar"></section>
+          <aside id="mobileCommandDeck" class="mobile-command-deck" aria-label="Mobile command deck">
+            <header class="mobile-command-header"><div class="mobile-command-location"><span class="mobile-command-kicker">Dungeon</span><strong id="mobileDepthValue">Depth -</strong><span id="mobileRoomValue">-</span></div><button id="mobileDetailsButton" class="mobile-details-button" type="button" aria-label="Show player details" aria-expanded="false" aria-controls="hud" aria-keyshortcuts="H">Stats</button></header>
+            <section id="mobileHud" class="mobile-hud" aria-label="Player status">
+              <div id="mobileHpMeter" class="mobile-hud-meter mobile-hud-hp" role="meter" aria-label="Health" aria-valuemin="0" aria-valuenow="0" aria-valuemax="1"><span>HP</span><span class="mobile-hud-meter-track"><span class="mobile-hud-meter-fill"></span></span><strong id="mobileHpValue">0/0</strong></div>
+              <div id="mobileShieldMeter" class="mobile-hud-meter mobile-hud-shield" role="meter" aria-label="Shield" aria-valuemin="0" aria-valuenow="0" aria-valuemax="1"><span>SH</span><span class="mobile-hud-meter-track"><span class="mobile-hud-meter-fill"></span></span><strong id="mobileShieldValue">0</strong></div>
+              <div id="mobileBarrierMeter" class="mobile-hud-meter mobile-hud-barrier" role="meter" aria-label="Barrier" aria-valuemin="0" aria-valuenow="0" aria-valuemax="1"><span>BR</span><span class="mobile-hud-meter-track"><span class="mobile-hud-meter-fill"></span></span><strong id="mobileBarrierValue">0</strong></div>
+              <div id="mobileFuryMeter" class="mobile-hud-fury" role="meter" aria-label="Fury" aria-valuemin="0" aria-valuenow="0" aria-valuemax="0"><img src="assets/hd/ui/status/fury.png" alt="" aria-hidden="true"><span>Fury</span><span class="mobile-fury-meter-track"><span class="mobile-fury-meter-fill"></span></span><strong id="mobileFuryValue">0/0</strong></div>
+              <div class="mobile-hud-gold"><span>Run Gold</span><strong id="mobileRunGoldValue">0</strong></div>
+            </section>
+          </aside>
+          <div class="mobile-controls" id="mobileControls" role="group" aria-label="Touch controls">
             <div class="mobile-controls-row">
-              <div class="mobile-dpad" aria-label="Kierunki ruchu">
-                <button class="dpad-btn dpad-up"    id="mbtnUp"    type="button" aria-label="Góra">▲</button>
+              <div class="mobile-dpad" role="group" aria-label="Movement directions">
+                <button class="dpad-btn dpad-up" id="mbtnUp" type="button" aria-label="Move up" aria-keyshortcuts="ArrowUp"></button>
                 <div class="dpad-middle-row">
-                  <button class="dpad-btn dpad-left"  id="mbtnLeft"  type="button" aria-label="Lewo">◀</button>
+                  <button class="dpad-btn dpad-left" id="mbtnLeft" type="button" aria-label="Move left" aria-keyshortcuts="ArrowLeft"></button>
                   <span class="dpad-center"></span>
-                  <button class="dpad-btn dpad-right" id="mbtnRight" type="button" aria-label="Prawo">▶</button>
+                  <button class="dpad-btn dpad-right" id="mbtnRight" type="button" aria-label="Move right" aria-keyshortcuts="ArrowRight"></button>
                 </div>
-                <button class="dpad-btn dpad-down"  id="mbtnDown"  type="button" aria-label="Dół">▼</button>
+                <button class="dpad-btn dpad-down" id="mbtnDown" type="button" aria-label="Move down" aria-keyshortcuts="ArrowDown"></button>
               </div>
-              <div class="mobile-action-buttons">
-                <button class="mact-btn mact-skill mact-z" id="mbtnZ" type="button" aria-label="Umiejętność Z">Z</button>
-                <button class="mact-btn mact-skill mact-x" id="mbtnX" type="button" aria-label="Umiejętność X">X</button>
-                <button class="mact-btn mact-skill mact-c" id="mbtnC" type="button" aria-label="Umiejętność C">C</button>
-                <button class="mact-btn mact-action mact-f" id="mbtnF" type="button" aria-label="Mikstura (F)">F</button>
-                <button class="mact-btn mact-action mact-e" id="mbtnE" type="button" aria-label="Akcja (E)">E</button>
-                <button class="mact-btn mact-action mact-q" id="mbtnQ" type="button" aria-label="Odwrót (Q)">Q</button>
+              <div class="mobile-action-buttons mobile-action-dock" id="mobileActionDock" data-mobile-action="dock" role="group" aria-label="Mobile actions">
+                <button class="mact-btn mact-skill mact-z" id="mbtnZ" data-action-key="z" type="button" aria-label="Dash"><img src="assets/hd/ui/abyssal-gothic/skill-dash.png" alt="" aria-hidden="true"><span class="mobile-action-copy"><strong>Dash</strong><small id="mobileDashStatus">READY</small></span></button>
+                <button class="mact-btn mact-skill mact-x" id="mbtnX" data-action-key="x" type="button" aria-label="Shockwave"><img src="assets/hd/ui/abyssal-gothic/skill-shockwave.png" alt="" aria-hidden="true"><span class="mobile-action-copy"><strong>Shock<wbr>wave</strong><small id="mobileShockwaveStatus">READY</small></span></button>
+                <button class="mact-btn mact-skill mact-c" id="mbtnC" data-action-key="c" type="button" aria-label="Shield"><img src="assets/hd/ui/abyssal-gothic/skill-shield.png" alt="" aria-hidden="true"><span class="mobile-action-copy"><strong>Shield</strong><small id="mobileShieldStatus">READY</small></span></button>
+                <button class="mact-btn mact-action mact-f" id="mbtnF" data-action-key="f" type="button" aria-label="Potion"><img src="assets/hd/ui/status/potion.png" alt="" aria-hidden="true"><span class="mobile-action-copy"><strong>Potion</strong><small id="mobilePotionValue">0/0</small></span></button>
+                <button class="mact-btn mact-action mact-g" id="mbtnG" data-action-key="g" type="button" aria-label="Elixir"><img src="assets/hd/ui/status/elixir.png" alt="" aria-hidden="true"><span class="mobile-action-copy"><strong>Elixir</strong><small id="mobileElixirValue">0/0</small></span></button>
+                <button class="mact-btn mact-action mact-e" id="mbtnE" data-action-key="e" type="button" aria-label="Interact"><span class="mobile-action-key">E</span><span class="mobile-action-copy"><strong id="mobileInteractLabel">Interact</strong><small>Action</small></span></button>
+                <button class="mact-btn mact-action mact-q" id="mbtnQ" data-action-key="q" type="button" aria-label="Extract"><span class="mobile-action-key">Q</span><span class="mobile-action-copy"><strong>Extract</strong><small>Emergency</small></span></button>
               </div>
             </div>
             <div class="mobile-restart-row" id="mobileRestartRow">
-              <button class="mact-btn mact-restart" id="mbtnR" type="button" aria-label="Restart / Nowy run (R)">▶ Start / Restart (R)</button>
+              <button class="mact-btn mact-restart" id="mbtnR" type="button" aria-label="Start or restart run" aria-keyshortcuts="R">Start / Restart</button>
             </div>
           </div>
         </div>
@@ -116,14 +147,14 @@
           <section class="log" id="log"></section>
         </aside>
       </div>
-      <div id="mobileSwipeHint" class="mobile-swipe-hint" aria-live="polite">
+      <div id="mobileSwipeHint" class="mobile-swipe-hint">
         <strong>Swipe Panels</strong>
         <span>Swipe left/right for stats and effects. Use Menu to open main menu.</span>
       </div>
-      <button id="mobileMenuButton" class="mobile-menu-button" type="button" aria-label="Open main menu">Menu</button>
+      <button id="mobileMenuButton" class="mobile-menu-button" type="button" aria-label="Open main menu" aria-keyshortcuts="Escape" aria-haspopup="dialog" aria-controls="screenOverlay" aria-expanded="false" aria-hidden="true" tabindex="-1">Menu</button>
     </section>
     <footer class="app-footer">
-      <span id="appVersion" aria-live="polite"></span>
+      <span id="appVersion"></span>
     </footer>
   </main>
   <script src="config.js"></script>

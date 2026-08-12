@@ -1,0 +1,2454 @@
+/* Mobile HD composition: final layer loaded after every desktop HD stylesheet. */
+
+body:not(.mobile-touch) #mobileCommandDeck,
+body.mobile-touch.mobile-portrait #mobileCommandDeck {
+  display: none;
+}
+
+body.mobile-touch.mobile-landscape {
+  --mobile-safe-top: env(safe-area-inset-top, 0px);
+  --mobile-safe-right: env(safe-area-inset-right, 0px);
+  --mobile-safe-bottom: env(safe-area-inset-bottom, 0px);
+  --mobile-safe-left: env(safe-area-inset-left, 0px);
+  --mobile-gap: clamp(5px, 0.9vw, 10px);
+  --mobile-command-width: clamp(360px, 44.8vw, 378px);
+  --mobile-controls-top: clamp(99px, 26.8dvh, 105px);
+  --mobile-controls-max-height: 252px;
+  --mobile-dpad-cell: clamp(48px, 12.82dvh, 50px);
+  --mobile-dpad-size: calc(var(--mobile-dpad-cell) * 3 + 2px);
+  --mobile-playfield-size: min(
+    calc(100vw - var(--mobile-command-width) - var(--mobile-safe-left) - var(--mobile-safe-right) - var(--mobile-gap) - 12px),
+    calc(100vh - var(--mobile-safe-top) - var(--mobile-safe-bottom) - 12px)
+  );
+  --mobile-playfield-size: min(
+    calc(100vw - var(--mobile-command-width) - var(--mobile-safe-left) - var(--mobile-safe-right) - var(--mobile-gap) - 12px),
+    calc(100dvh - var(--mobile-safe-top) - var(--mobile-safe-bottom) - 12px)
+  );
+  width: 100%;
+  min-width: 0;
+  height: 100vh;
+  height: 100dvh;
+  min-height: 0;
+  padding: 0;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 35% 42%, rgba(32, 61, 85, 0.24), transparent 43%),
+    #070a10;
+}
+
+body.mobile-touch.mobile-landscape #gameApp,
+body.mobile-touch.mobile-landscape .layout,
+body.mobile-touch.mobile-landscape .layout-track {
+  width: 100%;
+  max-width: none;
+  height: 100%;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+}
+
+body.mobile-touch.mobile-landscape .layout {
+  display: block;
+  overflow: hidden;
+  touch-action: none;
+}
+
+body.mobile-touch.mobile-landscape .layout-track {
+  display: block;
+  width: 100%;
+  transform: none !important;
+  transition: none;
+}
+
+body.mobile-touch.mobile-landscape .layout-track > .panel,
+body.mobile-touch.mobile-landscape .titlebar,
+body.mobile-touch.mobile-landscape #depthBadge,
+body.mobile-touch.mobile-landscape #skillsBar,
+body.mobile-touch.mobile-landscape #mobileSwipeHint,
+body.mobile-touch.mobile-landscape .app-footer {
+  display: none !important;
+}
+
+body.mobile-touch.mobile-landscape .layout-track > .board {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) var(--mobile-command-width);
+  grid-template-rows: minmax(0, 1fr);
+  gap: var(--mobile-gap);
+  width: 100%;
+  max-width: none;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  margin: 0;
+  padding:
+    calc(6px + var(--mobile-safe-top))
+    calc(6px + var(--mobile-safe-right))
+    calc(6px + var(--mobile-safe-bottom))
+    calc(6px + var(--mobile-safe-left));
+  box-sizing: border-box;
+  overflow: hidden;
+  background:
+    linear-gradient(rgba(5, 9, 14, 0.34), rgba(5, 9, 14, 0.72)),
+    url("assets/hd/ui/abyssal-gothic/screen-chrome.png") center / cover no-repeat;
+}
+
+body.mobile-touch.mobile-landscape .board > .room-stage {
+  grid-column: 1;
+  grid-row: 1 !important;
+  display: grid !important;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+body.mobile-touch.mobile-landscape .room-stage > .room-resource-rail,
+body.mobile-touch.mobile-landscape .room-stage > .room-vital-rail {
+  display: none !important;
+}
+
+body.mobile-touch.mobile-landscape .room-stage .canvas-wrap {
+  display: grid;
+  place-items: center;
+  width: var(--mobile-playfield-size) !important;
+  height: var(--mobile-playfield-size) !important;
+  max-width: 100%;
+  max-height: 100%;
+  aspect-ratio: 1 / 1;
+  margin: 0;
+  padding: clamp(24px, 7.2dvh, 30px);
+  box-sizing: border-box;
+  overflow: visible;
+  background: url("assets/hd/ui/abyssal-gothic/board-frame.png") center / 100% 100% no-repeat;
+  filter: drop-shadow(0 12px 24px rgba(0, 0, 0, 0.62));
+}
+
+body.mobile-touch.mobile-landscape .room-stage .canvas-wrap > #game {
+  display: block;
+  position: static !important;
+  inset: auto !important;
+  width: 100% !important;
+  height: 100% !important;
+  max-width: none !important;
+  max-height: none !important;
+  aspect-ratio: 1 / 1;
+  margin: 0;
+  border: 0;
+  box-shadow: inset 0 0 24px rgba(0, 0, 0, 0.72);
+  touch-action: none;
+}
+
+body.mobile-touch.mobile-landscape #mobileCommandDeck {
+  grid-column: 2;
+  grid-row: 1;
+  position: relative;
+  z-index: 5;
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr);
+  align-self: stretch;
+  width: 100%;
+  min-width: 0;
+  min-height: 0;
+  padding: clamp(7px, 1.5dvh, 12px);
+  box-sizing: border-box;
+  overflow: hidden;
+  color: #e8edf4;
+  background:
+    linear-gradient(180deg, rgba(12, 20, 31, 0.88), rgba(5, 9, 16, 0.95)),
+    url("assets/hd/ui/abyssal-gothic/panel-texture.png") center / cover;
+  border: 1px solid rgba(102, 151, 189, 0.4);
+  border-radius: 12px;
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.05),
+    inset 0 0 28px rgba(14, 38, 58, 0.46),
+    0 8px 28px rgba(0, 0, 0, 0.48);
+}
+
+body.mobile-touch.mobile-landscape #mobileCommandDeck[hidden] {
+  display: none !important;
+}
+
+body.mobile-touch.mobile-landscape .mobile-command-header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  min-width: 0;
+  min-height: 34px;
+  padding: 0 116px 5px 2px;
+  border-bottom: 1px solid rgba(124, 166, 197, 0.25);
+}
+
+body.mobile-touch.mobile-landscape .mobile-command-location {
+  display: grid;
+  grid-template-columns: auto auto;
+  align-items: baseline;
+  justify-content: start;
+  gap: 0 6px;
+  min-width: 0;
+}
+
+body.mobile-touch.mobile-landscape .mobile-command-kicker,
+body.mobile-touch.mobile-landscape #mobileRoomValue {
+  color: #7f97a9;
+  font-size: 9px;
+  line-height: 1.05;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+}
+
+body.mobile-touch.mobile-landscape #mobileDepthValue {
+  color: #f2d89a;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(13px, 2.1dvh, 17px);
+  line-height: 1;
+  white-space: nowrap;
+}
+
+body.mobile-touch.mobile-landscape #mobileRoomValue {
+  grid-column: 1 / -1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+body.mobile-touch.mobile-landscape .mobile-details-button,
+body.mobile-touch.mobile-landscape #mobileMenuButton {
+  position: fixed;
+  top: calc(7px + var(--mobile-safe-top));
+  z-index: 8000;
+  min-width: 52px;
+  min-height: 48px;
+  padding: 0 8px;
+  border: 1px solid rgba(212, 176, 99, 0.55);
+  border-radius: 7px;
+  color: #f0d99c;
+  background: linear-gradient(180deg, #28384a, #111923);
+  box-shadow: inset 0 0 12px rgba(109, 158, 199, 0.2), 0 4px 12px rgba(0, 0, 0, 0.45);
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  touch-action: manipulation;
+}
+
+body.mobile-touch.mobile-landscape .mobile-details-button {
+  right: calc(66px + var(--mobile-safe-right));
+}
+
+body.mobile-touch.mobile-landscape #mobileMenuButton {
+  right: calc(7px + var(--mobile-safe-right));
+  width: 54px;
+  margin: 0;
+}
+
+body.mobile-touch.mobile-landscape .mobile-hud {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 3px 5px;
+  min-width: 0;
+  padding-top: 5px;
+}
+
+body.mobile-touch.mobile-landscape .mobile-hud-meter,
+body.mobile-touch.mobile-landscape .mobile-hud-fury,
+body.mobile-touch.mobile-landscape .mobile-hud-gold {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  color: #bac6d1;
+  font-size: 9px;
+  line-height: 1;
+}
+
+body.mobile-touch.mobile-landscape .mobile-hud-meter-track,
+body.mobile-touch.mobile-landscape .mobile-fury-meter-track {
+  position: relative;
+  display: block;
+  min-width: 12px;
+  height: 6px;
+  overflow: hidden;
+  border: 1px solid rgba(184, 203, 217, 0.22);
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.55);
+}
+
+body.mobile-touch.mobile-landscape .mobile-hud-meter-fill,
+body.mobile-touch.mobile-landscape .mobile-fury-meter-fill {
+  display: block;
+  width: var(--meter-fill, 0%);
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #841f24, #d94b43);
+  transition: width 160ms ease-out;
+}
+
+body.mobile-touch.mobile-landscape .mobile-hud-shield .mobile-hud-meter-fill {
+  background: linear-gradient(90deg, #1f5c85, #49a9d8);
+}
+
+body.mobile-touch.mobile-landscape .mobile-hud-barrier .mobile-hud-meter-fill {
+  background: linear-gradient(90deg, #64518e, #b49ae0);
+}
+
+body.mobile-touch.mobile-landscape .mobile-hud-fury {
+  grid-column: 1 / span 2;
+}
+
+body.mobile-touch.mobile-landscape .mobile-hud-fury img {
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+}
+
+body.mobile-touch.mobile-landscape .mobile-hud-fury .mobile-hud-label {
+  display: none;
+}
+
+body.mobile-touch.mobile-landscape .mobile-fury-meter-fill {
+  width: var(--mobile-fury-fill, 0%);
+  background: linear-gradient(90deg, #963c25, #f19a47);
+}
+
+body.mobile-touch.mobile-landscape .mobile-hud-gold {
+  grid-template-columns: 1fr auto;
+  justify-self: stretch;
+  color: #d9c382;
+}
+
+body.mobile-touch.mobile-landscape #mobileControls {
+  grid-column: 2;
+  grid-row: 1;
+  z-index: 6;
+  display: grid !important;
+  align-self: stretch;
+  width: 100%;
+  min-width: 0;
+  height: 100%;
+  min-height: 0;
+  margin: 0;
+  padding: var(--mobile-controls-top) 7px 3px;
+  box-sizing: border-box;
+  pointer-events: none;
+}
+
+body.mobile-touch.mobile-landscape #mobileControls.hidden {
+  display: none !important;
+}
+
+body.mobile-touch.mobile-landscape #mobileControls .mobile-controls-row {
+  position: relative;
+  display: grid !important;
+  grid-template-columns: minmax(164px, 1.05fr) minmax(0, 0.95fr);
+  gap: 16px;
+  align-self: stretch;
+  width: 100%;
+  height: min(100%, var(--mobile-controls-max-height));
+  max-height: var(--mobile-controls-max-height);
+  align-items: start;
+  pointer-events: none;
+}
+
+body.mobile-touch.mobile-landscape #mobileControls .mobile-dpad,
+body.mobile-touch.mobile-landscape #mobileControls #mobileActionDock {
+  display: grid !important;
+  pointer-events: auto;
+}
+
+body.mobile-touch.mobile-landscape .mobile-dpad {
+  display: grid !important;
+  grid-template-columns: repeat(3, var(--mobile-dpad-cell));
+  grid-template-rows: repeat(3, var(--mobile-dpad-cell));
+  gap: 1px;
+  align-self: start;
+  justify-self: center;
+  width: var(--mobile-dpad-size);
+  height: var(--mobile-dpad-size);
+  margin: clamp(12px, 3.1dvh, 16px) 0 0;
+}
+
+body.mobile-touch.mobile-landscape .mobile-dpad .dpad-middle-row {
+  display: contents;
+}
+
+body.mobile-touch.mobile-landscape .mobile-dpad .dpad-btn,
+body.mobile-touch.mobile-landscape .mobile-dpad .dpad-center {
+  position: relative;
+  width: var(--mobile-dpad-cell);
+  min-width: 48px;
+  height: var(--mobile-dpad-cell);
+  min-height: 48px;
+  margin: 0;
+}
+
+body.mobile-touch.mobile-landscape .mobile-dpad .dpad-btn {
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border: 1px solid rgba(84, 151, 198, 0.65);
+  border-radius: 9px;
+  color: transparent;
+  text-indent: -999px;
+  background: linear-gradient(180deg, rgba(35, 69, 96, 0.96), rgba(12, 28, 42, 0.98));
+  box-shadow: inset 0 0 12px rgba(68, 144, 202, 0.26), 0 3px 8px rgba(0, 0, 0, 0.36);
+  touch-action: manipulation;
+}
+
+body.mobile-touch.mobile-landscape .mobile-dpad .dpad-btn::before {
+  content: "";
+  display: block;
+  width: 34px;
+  height: 34px;
+  background: url("assets/hd/ui/mobile/dpad-arrow.png") center / contain no-repeat;
+  filter: drop-shadow(0 0 4px rgba(88, 171, 227, 0.48));
+}
+
+body.mobile-touch.mobile-landscape .mobile-dpad .dpad-up { grid-column: 2; grid-row: 1; }
+body.mobile-touch.mobile-landscape .mobile-dpad .dpad-left { grid-column: 1; grid-row: 2; }
+body.mobile-touch.mobile-landscape .mobile-dpad .dpad-center { grid-column: 2; grid-row: 2; border-radius: 12px; background: radial-gradient(circle, #263845, #0c141c 70%); }
+body.mobile-touch.mobile-landscape .mobile-dpad .dpad-right { grid-column: 3; grid-row: 2; }
+body.mobile-touch.mobile-landscape .mobile-dpad .dpad-down { grid-column: 2; grid-row: 3; }
+body.mobile-touch.mobile-landscape .mobile-dpad .dpad-left::before { transform: rotate(-90deg); }
+body.mobile-touch.mobile-landscape .mobile-dpad .dpad-right::before { transform: rotate(90deg); }
+body.mobile-touch.mobile-landscape .mobile-dpad .dpad-down::before { transform: rotate(180deg); }
+
+body.mobile-touch.mobile-landscape #mobileActionDock {
+  display: grid !important;
+  grid-column: 2 !important;
+  grid-row: 1 !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-rows: repeat(4, minmax(48px, 1fr));
+  gap: 8px 18px;
+  align-self: stretch;
+  justify-self: center;
+  width: 100%;
+  min-width: 0;
+  min-height: 0 !important;
+  max-height: none;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  background: none;
+  border: 0;
+}
+
+body.mobile-touch.mobile-landscape #mobileActionDock .mact-q {
+  grid-column: 1 / -1;
+  justify-self: center;
+  width: 64%;
+}
+
+body.mobile-touch.mobile-landscape #mobileActionDock .mact-btn {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr;
+  grid-template-rows: minmax(0, 1fr) auto;
+  place-items: center;
+  width: 100%;
+  min-width: 48px;
+  min-height: 48px;
+  height: auto;
+  gap: 1px;
+  padding: 2px 3px;
+  box-sizing: border-box;
+  overflow: hidden;
+  border: 1px solid rgba(74, 133, 178, 0.62);
+  border-radius: 8px;
+  color: #e6eef4;
+  background: linear-gradient(180deg, rgba(27, 57, 80, 0.98), rgba(9, 23, 35, 0.98));
+  box-shadow: inset 0 0 12px rgba(63, 132, 180, 0.2), 0 2px 7px rgba(0, 0, 0, 0.36);
+  font-size: 9px;
+  line-height: 1;
+  text-align: left;
+  touch-action: manipulation;
+}
+
+body.mobile-touch.mobile-landscape #mobileActionDock .mact-btn > img {
+  width: 26px;
+  height: 26px;
+  object-fit: contain;
+}
+
+body.mobile-touch.mobile-landscape .mobile-action-copy {
+  display: block;
+  min-width: 0;
+  width: 100%;
+  text-align: center;
+}
+
+body.mobile-touch.mobile-landscape .mobile-action-copy strong,
+body.mobile-touch.mobile-landscape .mobile-action-copy small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+body.mobile-touch.mobile-landscape .mobile-action-copy strong {
+  color: #f0f3f7;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(7px, 1.3dvh, 9px);
+}
+
+body.mobile-touch.mobile-landscape .mobile-action-copy small {
+  position: absolute;
+  top: 2px;
+  right: 3px;
+  color: #79badf;
+  font-size: 6px;
+  letter-spacing: 0.05em;
+}
+
+body.mobile-touch.mobile-landscape .mobile-action-key {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border: 1px solid rgba(218, 180, 95, 0.48);
+  border-radius: 7px;
+  color: #e6cc88;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+body.mobile-touch.mobile-landscape #mobileActionDock .mact-btn.is-ready {
+  border-color: rgba(76, 170, 220, 0.9);
+  box-shadow: inset 0 0 14px rgba(57, 148, 205, 0.28), 0 0 8px rgba(63, 154, 211, 0.18);
+}
+
+body.mobile-touch.mobile-landscape #mobileActionDock .mact-btn.is-armed {
+  border-color: #e0ad54;
+  background: linear-gradient(180deg, #6a4720, #2c1d0e);
+}
+
+body.mobile-touch.mobile-landscape #mobileActionDock .mact-btn.is-cooling,
+body.mobile-touch.mobile-landscape #mobileActionDock .mact-btn.is-empty {
+  opacity: 0.55;
+  filter: saturate(0.55);
+}
+
+body.mobile-touch.mobile-landscape #mobileRestartRow {
+  position: absolute;
+  inset: auto 7px 7px;
+  z-index: 8;
+}
+
+body.mobile-touch.mobile-landscape #mobileRestartRow.hidden {
+  display: none !important;
+}
+
+body.mobile-touch.mobile-landscape #mobileRestartRow .mact-restart {
+  width: 100%;
+  min-height: 48px;
+}
+
+/* Mobile overlays retain the current HD components but use one intentional scroll surface. */
+body.mobile-touch #screenOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9000;
+  display: grid;
+  place-items: center;
+  width: 100vw;
+  height: 100vh;
+  height: 100dvh;
+  max-width: none;
+  max-height: none;
+  padding:
+    calc(8px + env(safe-area-inset-top, 0px))
+    calc(8px + env(safe-area-inset-right, 0px))
+    calc(8px + env(safe-area-inset-bottom, 0px))
+    calc(8px + env(safe-area-inset-left, 0px));
+  box-sizing: border-box;
+  overflow: hidden;
+  background: rgba(2, 5, 9, 0.78);
+  backdrop-filter: blur(5px);
+}
+
+body.mobile-touch #screenOverlay:not(.visible) {
+  display: none;
+}
+
+body.mobile-touch #screenOverlay > .overlay-card {
+  position: relative;
+  inset: auto;
+  width: min(820px, 100%);
+  max-width: 100%;
+  height: auto;
+  max-height: 100%;
+  margin: 0;
+  padding: clamp(14px, 3dvh, 24px);
+  box-sizing: border-box;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  background:
+    linear-gradient(rgba(12, 17, 25, 0.88), rgba(7, 10, 16, 0.96)),
+    url("assets/hd/ui/abyssal-gothic/panel-texture.png") center / cover;
+  border: 1px solid rgba(202, 167, 93, 0.46);
+  border-radius: 12px;
+  box-shadow: 0 18px 54px rgba(0, 0, 0, 0.7), inset 0 0 28px rgba(31, 65, 88, 0.24);
+}
+
+@media (max-height: 320px) {
+  body.mobile-touch.mobile-landscape {
+    --mobile-command-width: clamp(292px, 37vw, 330px);
+    --mobile-controls-top: 100px;
+    --mobile-dpad-cell: 48px;
+  }
+
+  body.mobile-touch.mobile-landscape #mobileCommandDeck {
+    padding: 5px;
+  }
+
+  body.mobile-touch.mobile-landscape #mobileControls {
+    height: 100%;
+    padding: var(--mobile-controls-top) 5px 3px;
+  }
+
+  body.mobile-touch.mobile-landscape .mobile-command-header {
+    min-height: 30px;
+    padding-bottom: 2px;
+  }
+
+  body.mobile-touch.mobile-landscape .mobile-hud {
+    gap: 2px 4px;
+    padding-top: 2px;
+  }
+
+  body.mobile-touch.mobile-landscape .mobile-hud-meter,
+  body.mobile-touch.mobile-landscape .mobile-hud-fury,
+  body.mobile-touch.mobile-landscape .mobile-hud-gold {
+    font-size: 8px;
+  }
+
+  body.mobile-touch.mobile-landscape .room-stage .canvas-wrap {
+    padding: 12px;
+  }
+
+  body.mobile-touch.mobile-landscape #mobileActionDock {
+    grid-template-columns: repeat(3, minmax(48px, 1fr));
+    grid-template-rows: repeat(3, minmax(48px, 1fr));
+    gap: 4px;
+  }
+}
+
+@media (max-width: 760px) and (orientation: landscape) {
+  body.mobile-touch.mobile-landscape {
+    --mobile-command-width: clamp(276px, 39vw, 302px);
+    --mobile-dpad-cell: 48px;
+  }
+
+  body.mobile-touch.mobile-landscape #mobileControls .mobile-controls-row {
+    grid-template-columns: minmax(var(--mobile-dpad-size), 0.95fr) minmax(0, 1.05fr);
+    gap: 6px;
+  }
+
+  body.mobile-touch.mobile-landscape #mobileActionDock .mact-btn {
+    padding-inline: 3px;
+  }
+}
+
+/* HD renderer becomes active asynchronously. Keep the mobile composition authoritative
+   after #game gains .graphics-hd; older desktop-HD :has(#game.graphics-hd) rules carry
+   ID specificity and otherwise restore the compact legacy grid mid-run. */
+body.mobile-touch.mobile-landscape.graphics-hd-ui:has(#game.graphics-hd) .layout-track > .board {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) var(--mobile-command-width);
+  grid-template-rows: minmax(0, 1fr);
+  gap: var(--mobile-gap);
+  width: 100%;
+  max-width: none;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+}
+
+body.mobile-touch.mobile-landscape.graphics-hd-ui:has(#game.graphics-hd) .board > .room-stage {
+  grid-column: 1;
+  grid-row: 1 !important;
+  display: grid !important;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+}
+
+body.mobile-touch.mobile-landscape.graphics-hd-ui:has(#game.graphics-hd) .room-stage .canvas-wrap {
+  width: var(--mobile-playfield-size) !important;
+  height: var(--mobile-playfield-size) !important;
+  max-width: 100%;
+  max-height: 100%;
+  aspect-ratio: 1 / 1;
+}
+
+body.mobile-touch.mobile-landscape.graphics-hd-ui:has(#game.graphics-hd) .room-stage .canvas-wrap > #game {
+  position: static !important;
+  inset: auto !important;
+  width: 100% !important;
+  height: 100% !important;
+  max-width: none !important;
+  max-height: none !important;
+  aspect-ratio: 1 / 1;
+}
+
+body.mobile-touch.mobile-landscape.graphics-hd-ui:has(#game.graphics-hd) #mobileCommandDeck,
+body.mobile-touch.mobile-landscape.graphics-hd-ui:has(#game.graphics-hd) #mobileControls {
+  grid-column: 2;
+  grid-row: 1;
+  width: 100%;
+}
+
+body.mobile-touch.mobile-landscape.graphics-hd-ui:has(#game.graphics-hd) #mobileCommandDeck {
+  height: 100%;
+  align-self: stretch;
+}
+
+body.mobile-touch.mobile-landscape.graphics-hd-ui:has(#game.graphics-hd) #mobileControls {
+  align-self: stretch;
+}
+
+body.mobile-touch.mobile-landscape.graphics-hd-ui:has(#game.graphics-hd) #mobileControls .mobile-controls-row {
+  display: grid !important;
+  grid-template-columns: minmax(var(--mobile-dpad-size), 0.95fr) minmax(0, 1.05fr);
+  grid-template-rows: minmax(0, 1fr);
+}
+
+body.mobile-touch.mobile-landscape.graphics-hd-ui:has(#game.graphics-hd) #mobileActionDock {
+  grid-column: 2 !important;
+  grid-row: 1 !important;
+  width: 100%;
+  min-height: 0 !important;
+  max-height: none;
+}
+
+/* Mobile HD overlays: compact, touch-first adaptations of the current PC surfaces. */
+body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay.visible {
+  display: grid;
+  place-items: center;
+  padding:
+    calc(8px + env(safe-area-inset-top, 0px))
+    calc(8px + env(safe-area-inset-right, 0px))
+    calc(8px + env(safe-area-inset-bottom, 0px))
+    calc(8px + env(safe-area-inset-left, 0px));
+}
+
+body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay.visible > .overlay-card {
+  position: relative;
+  inset: auto;
+  width: min(820px, 100%);
+  max-width: 100%;
+  height: min(100%, calc(100dvh - 16px));
+  min-height: 0;
+  max-height: 100%;
+  margin: 0;
+  padding: clamp(10px, 2.4dvh, 18px);
+  box-sizing: border-box;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border: 1px solid rgba(172, 151, 109, 0.46);
+  border-radius: 10px;
+  background:
+    linear-gradient(rgba(10, 14, 20, 0.88), rgba(5, 8, 13, 0.97)),
+    url("assets/hd/ui/abyssal-gothic/panel-texture.png") center / 260px 260px;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.78), inset 0 0 28px rgba(41, 70, 89, 0.22);
+}
+
+body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .overlay-title {
+  margin: 0;
+  color: #e7ddcd;
+  font: 600 clamp(1rem, 4dvh, 1.5rem)/1 Georgia, "Times New Roman", serif;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .overlay-sub,
+body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .overlay-hint {
+  margin: 3px 0;
+  color: #928a7e;
+  font-size: clamp(8px, 1.6dvh, 11px);
+  line-height: 1.25;
+}
+
+/* Main and pause menu stay faithful to the current PC list, but fit the short landscape viewport. */
+body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .overlay-card-main-menu {
+  width: min(500px, 100%);
+  display: flex;
+  flex-direction: column;
+  padding: clamp(24px, 7dvh, 42px) clamp(34px, 7vw, 54px) clamp(20px, 5dvh, 34px);
+  overflow: hidden;
+  border: 0;
+  border-radius: 0;
+  text-align: center;
+  background-color: #07090b;
+  background-image:
+    url("assets/hd/ui/abyssal-gothic/menu-frame.png"),
+    url("assets/hd/ui/abyssal-gothic/panel-texture.png");
+  background-position: center, center;
+  background-repeat: no-repeat, repeat;
+  background-size: 100% 100%, 220px 220px;
+}
+
+body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .overlay-card-main-menu > .overlay-menu {
+  display: grid;
+  gap: 4px;
+  min-height: 0;
+  margin: 7px 0 0;
+  padding: 0;
+  overflow-y: auto;
+}
+
+body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .overlay-card-main-menu .overlay-menu-row {
+  display: grid;
+  grid-template-columns: 32px minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  min-height: 42px;
+  padding: 4px 8px;
+  box-sizing: border-box;
+  border: 1px solid #434b50;
+  background: linear-gradient(90deg, rgba(23, 29, 34, 0.96), rgba(7, 10, 13, 0.98));
+  text-align: left;
+}
+
+body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .overlay-card-main-menu .overlay-menu-key {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border: 1px solid #655a48;
+  color: #d8c286;
+  background: #080a0c;
+}
+
+body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .overlay-card-main-menu .overlay-menu-row strong {
+  color: #ddd6c9;
+  font: 600 clamp(12px, 2.8dvh, 15px)/1.1 Georgia, "Times New Roman", serif;
+}
+
+/* Camp: stats + four real tabs + a single scroll region + sticky next-run action. */
+body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .overlay-card-camp {
+  width: min(820px, 100%);
+  padding: 8px;
+  overflow: hidden;
+  background:
+    linear-gradient(rgba(8, 10, 12, 0.42), rgba(4, 6, 8, 0.82)),
+    url("assets/hd/ui/camp/ember-sanctuary-background.png") center / cover no-repeat;
+}
+
+body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-camp > :is(.overlay-title, .overlay-sub, .overlay-hint) {
+  display: none;
+}
+
+body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) .camp-revamp {
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
+  gap: 5px;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+}
+
+body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) .camp-revamp-stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 4px;
+}
+
+body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) .camp-revamp-stats > div {
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 4px;
+  min-height: 38px;
+  padding: 3px 7px;
+  border: 1px solid rgba(127, 103, 67, 0.58);
+  background: rgba(8, 10, 11, 0.84);
+}
+
+body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) .camp-revamp-stats img {
+  width: 23px;
+  height: 23px;
+  object-fit: contain;
+}
+
+body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) .camp-revamp-stats span,
+body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) .camp-revamp-stats strong {
+  font-size: 9px;
+}
+
+body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) .camp-revamp-tabs {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(48px, 1fr));
+  gap: 4px;
+}
+
+body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) .camp-revamp-tab {
+  display: grid;
+  place-items: center;
+  min-height: 44px;
+  padding: 2px 8px;
+  border: 1px solid #51483d;
+  color: #aaa197;
+  background: rgba(8, 10, 12, 0.9);
+  font-size: 10px;
+  text-transform: uppercase;
+}
+
+body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) .camp-revamp-tab.active {
+  border-color: #bd9149;
+  color: #f0d592;
+  box-shadow: inset 0 -3px #a67735;
+}
+
+body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) .camp-revamp-tab-key {
+  display: none;
+}
+
+body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) .camp-revamp-content {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  min-height: 0;
+  overflow: hidden;
+  background: rgba(5, 8, 10, 0.84);
+}
+
+body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) .camp-revamp-panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 34px;
+  padding: 4px 10px;
+  border-bottom: 1px solid rgba(119, 98, 69, 0.5);
+}
+
+body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) .camp-revamp-panel-head > strong {
+  font-size: 12px;
+}
+
+body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) .camp-revamp-panel-head > small {
+  color: #81796f;
+  font-size: 8px;
+}
+
+body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) .camp-revamp-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-auto-rows: minmax(58px, auto);
+  gap: 5px;
+  min-height: 0;
+  padding: 5px;
+  overflow-y: auto;
+}
+
+body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) .camp-revamp-row {
+  display: grid;
+  grid-template-columns: 38px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 6px;
+  min-height: 58px;
+  padding: 4px 7px;
+  box-sizing: border-box;
+  border: 1px solid #413b34;
+  background: rgba(8, 10, 11, 0.94);
+}
+
+body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) .camp-revamp-icon img {
+  width: 34px;
+  height: 34px;
+  object-fit: contain;
+}
+
+body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) .camp-revamp-copy strong,
+body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) .camp-revamp-copy small {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) .camp-revamp-copy strong { font-size: 10px; }
+body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) .camp-revamp-copy small { color: #8d857a; font-size: 8px; }
+body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) .camp-revamp-status { color: #d0b270; font-size: 9px; white-space: nowrap; }
+
+body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) .camp-revamp-actions {
+  display: grid;
+  grid-template-columns: minmax(180px, 0.65fr) minmax(0, 1fr);
+  gap: 6px;
+  min-height: 48px;
+}
+
+body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) .camp-revamp-action.primary {
+  display: grid;
+  grid-template-columns: 30px 1fr auto;
+  align-items: center;
+  gap: 7px;
+  min-height: 48px;
+  padding: 4px 10px;
+  border: 1px solid #b68b42;
+  color: #ead49b;
+  background: rgba(24, 19, 11, 0.96);
+}
+
+body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) .camp-revamp-action-icon { width: 28px; height: 28px; object-fit: contain; }
+body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) .camp-revamp-guide { display: grid; place-items: center; color: #82796d; font-size: 9px; }
+
+/* Forge: two compact mode cards with the existing emblems and a persistent Leave action. */
+body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay.visible:has(.forge-sanctuary) {
+  background: #030404 url("assets/hd/ui/forge/anvil-sanctuary-background.png") center / cover no-repeat;
+}
+
+body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) .forge-sanctuary {
+  width: min(800px, 100%);
+  height: 100%;
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr) auto auto;
+  gap: 5px;
+  padding: 8px;
+  overflow: hidden;
+  background: rgba(4, 5, 6, 0.82);
+}
+
+body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) .forge-sanctuary-header { display: grid; gap: 2px; text-align: center; }
+body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) .forge-sanctuary .forge-context { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); min-height: 38px; }
+body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) .forge-sanctuary .forge-context > span { display: flex; justify-content: center; align-items: center; gap: 5px; min-height: 38px; border: 1px solid #4c4035; font-size: 9px; }
+body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) .forge-choice-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; min-height: 0; }
+body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) .forge-choice { display: grid; grid-template-columns: minmax(76px, 0.42fr) minmax(0, 1fr); align-items: center; gap: 10px; min-height: 0; padding: 8px; overflow: hidden; border: 1px solid #5f5549; background: rgba(8, 9, 9, 0.94); text-align: left; }
+body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) .forge-choice-emblem { width: min(15dvh, 100px); height: min(15dvh, 100px); justify-self: center; object-fit: contain; }
+body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) .forge-choice-copy { display: grid; gap: 5px; }
+body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) .forge-choice-copy > strong { color: #ddd1c1; font: 600 clamp(13px, 3dvh, 18px)/1 Georgia, serif; text-transform: uppercase; }
+body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) .forge-choice-copy > p { margin: 0; color: #94897c; font-size: clamp(8px, 1.7dvh, 11px); line-height: 1.3; }
+body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) .forge-footer { display: grid; place-items: center; min-height: 48px; border: 1px solid #746348; background: url("assets/hd/ui/abyssal-gothic/section-plaque.png") center / 100% 100%; }
+body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) .forge-controls { margin: 0; font-size: 8px; text-align: center; }
+
+/* Merchant: dashboard/buyback use compact rows and one internal scroll region. */
+body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay.visible:has(.merchant-sanctuary) {
+  background: #020303 url("assets/hd/ui/merchant/curio-market-background.png") center / cover no-repeat;
+}
+
+body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) .merchant-sanctuary {
+  width: min(820px, 100%);
+  height: 100%;
+  display: grid;
+  grid-template-rows: auto auto auto auto minmax(0, 1fr) auto;
+  gap: 4px;
+  padding: 8px;
+  overflow: hidden;
+  background: rgba(5, 6, 7, 0.88);
+}
+
+body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) .merchant-sanctuary > .overlay-title { text-align: center; }
+body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) .merchant-wallet { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); min-height: 36px; }
+body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) .merchant-summary-line { display: flex; justify-content: center; align-items: center; gap: 5px; min-height: 36px; border: 1px solid #4f4133; font-size: 9px; }
+body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) .merchant-sanctuary > .overlay-menu { min-height: 0; margin: 0; overflow-y: auto; }
+body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) .merchant-menu-dashboard { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) .merchant-menu-buyback { display: grid; grid-template-rows: auto minmax(0, 1fr); gap: 6px; min-height: 0; }
+body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) .merchant-buyback-summary { display: flex; justify-content: space-between; align-items: center; min-height: 38px; padding: 4px 9px; border: 1px solid #5a4d3f; }
+body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) .merchant-buyback-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-auto-rows: minmax(74px, auto); gap: 6px; min-height: 0; overflow-y: auto; }
+body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) .merchant-row { display: grid; grid-template-columns: 26px 38px minmax(0, 1fr) auto; align-items: center; gap: 6px; min-height: 62px; padding: 5px 7px; box-sizing: border-box; overflow: hidden; border: 1px solid #51483d; background: rgba(8, 10, 10, 0.95); }
+body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) .merchant-row-icon { width: 36px; height: 36px; object-fit: contain; }
+body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) .merchant-row-copy,
+body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) .merchant-buyback-copy { display: grid; gap: 3px; min-width: 0; text-align: left; }
+body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) :is(.merchant-row-copy, .merchant-buyback-copy) > strong { overflow: hidden; font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
+body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) :is(.merchant-row-copy, .merchant-buyback-copy) > span { overflow: hidden; color: #8d857c; font-size: 8px; text-overflow: ellipsis; white-space: nowrap; }
+body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) .merchant-buyback-action { display: grid; gap: 2px; min-width: 54px; text-align: right; font-size: 9px; }
+body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) .overlay-menu-section { min-width: 0; padding: 5px; border: 1px solid #5a4d3f; background: rgba(7, 9, 9, 0.92); }
+body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) .overlay-menu-section-title { min-height: 34px; display: grid; grid-template-columns: 28px minmax(0, 1fr); align-items: center; gap: 6px; }
+body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) .overlay-menu-section-title img { width: 27px; height: 27px; object-fit: contain; }
+body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) .overlay-menu-section-rows { display: grid; gap: 5px; }
+
+body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-options,
+body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) .tutorial-overlay-card,
+body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) .overlay-card-pact-sanctum {
+  width: min(720px, 100%);
+  height: 100%;
+  max-height: 100%;
+  overflow-y: auto;
+}
+
+/* The command-deck Stats control opens the existing authoritative Player HUD. */
+body.mobile-touch.mobile-landscape.mobile-details-open .layout-track > .panel-left {
+  position: fixed;
+  top: calc(6px + var(--mobile-safe-top));
+  right: calc(var(--mobile-command-width) + var(--mobile-safe-right) + var(--mobile-gap) + 8px);
+  bottom: calc(6px + var(--mobile-safe-bottom));
+  left: calc(6px + var(--mobile-safe-left));
+  z-index: 7600;
+  display: flex !important;
+  flex-direction: column;
+  width: auto;
+  max-width: none;
+  height: auto !important;
+  min-width: 0;
+  min-height: 0;
+  margin: 0;
+  padding: 12px;
+  box-sizing: border-box;
+  overflow: auto;
+  overscroll-behavior: contain;
+  color: #e7edf4;
+  background:
+    linear-gradient(180deg, rgba(10, 18, 28, 0.97), rgba(4, 8, 14, 0.98)),
+    url("assets/hd/ui/abyssal-gothic/panel-texture.png") center / cover;
+  border: 1px solid rgba(122, 166, 202, 0.5);
+  border-radius: 12px;
+  box-shadow: inset 0 0 34px rgba(28, 67, 95, 0.38), 0 12px 34px rgba(0, 0, 0, 0.68);
+  touch-action: pan-y;
+}
+
+body.mobile-touch.mobile-landscape.mobile-details-open .panel-left .panel-title {
+  display: block !important;
+  flex: 0 0 auto;
+  margin: 0 0 8px;
+  color: #f1d594;
+  font-size: clamp(18px, 4dvh, 26px);
+}
+
+body.mobile-touch.mobile-landscape.mobile-details-open .panel-left #hud {
+  display: block !important;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: visible;
+}
+
+/* Buyback owns the full sanctuary width so relic names remain distinguishable. */
+body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) .merchant-sanctuary > .merchant-menu-buyback {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: 6px;
+  box-sizing: border-box;
+}
+
+body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) .merchant-buyback-summary {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+}
+
+body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) .merchant-buyback-summary > div {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) .merchant-buyback-summary > div > :is(strong, span) {
+  display: block;
+  min-width: 0;
+}
+
+body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) .merchant-buyback-copy > strong {
+  text-overflow: clip;
+}
+
+body.mobile-touch.mobile-landscape.mobile-details-open #mobileCommandDeck {
+  z-index: 7900;
+}
+
+body.mobile-touch.mobile-landscape.mobile-details-open .mobile-details-button {
+  color: #fff3cf;
+  border-color: rgba(235, 197, 112, 0.9);
+  background: linear-gradient(180deg, #76592a, #2b2114);
+}
+
+/* Portrait-first touch composition: keep the canonical game, HUD and controls live. */
+body.mobile-touch.mobile-portrait {
+  --mobile-safe-top: env(safe-area-inset-top, 0px);
+  --mobile-safe-right: env(safe-area-inset-right, 0px);
+  --mobile-safe-bottom: env(safe-area-inset-bottom, 0px);
+  --mobile-safe-left: env(safe-area-inset-left, 0px);
+  width: 100%;
+  min-width: 0;
+  height: 100dvh;
+  min-height: 0;
+  padding: 0;
+  overflow: hidden;
+  background: #05080d;
+}
+
+body.mobile-touch.mobile-portrait #mobileRotateOverlay {
+  display: none !important;
+}
+
+body.mobile-touch.mobile-portrait #gameApp,
+body.mobile-touch.mobile-portrait .layout,
+body.mobile-touch.mobile-portrait .layout-track {
+  width: 100%;
+  max-width: none;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+}
+
+body.mobile-touch.mobile-portrait .layout {
+  display: block;
+  overflow: hidden;
+  touch-action: none;
+}
+
+body.mobile-touch.mobile-portrait .layout-track {
+  display: block;
+  width: 100% !important;
+  max-width: none !important;
+  transform: none !important;
+  transition: none;
+}
+
+body.mobile-touch.mobile-portrait .layout.mobile-layout .layout-track {
+  width: 100% !important;
+}
+
+body.mobile-touch.mobile-portrait .layout-track > .panel,
+body.mobile-touch.mobile-portrait .titlebar,
+body.mobile-touch.mobile-portrait #depthBadge,
+body.mobile-touch.mobile-portrait #skillsBar,
+body.mobile-touch.mobile-portrait #mobileSwipeHint,
+body.mobile-touch.mobile-portrait .app-footer {
+  display: none !important;
+}
+
+body.mobile-touch.mobile-portrait .layout-track > .board {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  gap: 6px;
+  width: 100% !important;
+  max-width: none !important;
+  flex: none !important;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  margin: 0;
+  padding: calc(6px + var(--mobile-safe-top)) calc(6px + var(--mobile-safe-right)) calc(6px + var(--mobile-safe-bottom)) calc(6px + var(--mobile-safe-left));
+  box-sizing: border-box;
+  overflow: hidden;
+  background:
+    linear-gradient(rgba(5, 9, 14, 0.3), rgba(5, 9, 14, 0.76)),
+    url(assets/hd/ui/abyssal-gothic/screen-chrome.png) center / cover no-repeat;
+}
+
+body.mobile-touch.mobile-portrait #mobileCommandDeck {
+  grid-column: 1;
+  grid-row: 1;
+  position: relative;
+  z-index: 5;
+  display: grid !important;
+  grid-template-rows: auto auto;
+  width: 100%;
+  min-width: 0;
+  min-height: 0;
+  padding: 6px 6px 5px;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+body.mobile-touch.mobile-portrait #mobileCommandDeck[hidden] {
+  display: none !important;
+}
+
+body.mobile-touch.mobile-portrait .mobile-command-header {
+  min-height: 38px;
+  padding: 0 82px 4px 2px;
+  box-sizing: border-box;
+}
+
+body.mobile-touch.mobile-portrait .mobile-hud {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 4px;
+  min-width: 0;
+  padding: 4px 0 0;
+}
+
+body.mobile-touch.mobile-portrait .mobile-hud-meter,
+body.mobile-touch.mobile-portrait .mobile-hud-fury,
+body.mobile-touch.mobile-portrait .mobile-hud-gold {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  color: #bac6d1;
+  font-size: 9px;
+  line-height: 1;
+}
+
+body.mobile-touch.mobile-portrait .mobile-hud-meter-track,
+body.mobile-touch.mobile-portrait .mobile-fury-meter-track {
+  position: relative;
+  display: block;
+  min-width: 12px;
+  height: 6px;
+  overflow: hidden;
+  border: 1px solid rgba(184, 203, 217, 0.22);
+  background: rgba(0, 0, 0, 0.55);
+}
+
+body.mobile-touch.mobile-portrait .mobile-hud-meter-fill,
+body.mobile-touch.mobile-portrait .mobile-fury-meter-fill {
+  display: block;
+  width: var(--meter-fill, 0%);
+  height: 100%;
+}
+
+body.mobile-touch.mobile-portrait .mobile-hud-fury img {
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+}
+
+body.mobile-touch.mobile-portrait .mobile-fury-meter-fill {
+  width: var(--mobile-fury-fill, 0%);
+}
+
+body.mobile-touch.mobile-portrait .mobile-hud-gold {
+  grid-template-columns: 1fr auto;
+}
+
+body.mobile-touch.mobile-portrait .mobile-hud-fury,
+body.mobile-touch.mobile-portrait .mobile-hud-gold {
+  grid-column: span 1;
+  min-width: 0;
+}
+
+body.mobile-touch.mobile-portrait .mobile-hud-meter,
+body.mobile-touch.mobile-portrait .mobile-hud-fury,
+body.mobile-touch.mobile-portrait .mobile-hud-gold {
+  min-height: 26px;
+  font-size: 9px;
+}
+
+body.mobile-touch.mobile-portrait .board > .room-stage {
+  grid-column: 1;
+  grid-row: 2;
+  display: grid !important;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+body.mobile-touch.mobile-portrait .room-stage > .room-resource-rail,
+body.mobile-touch.mobile-portrait .room-stage > .room-vital-rail {
+  display: none !important;
+}
+
+body.mobile-touch.mobile-portrait .room-stage .canvas-wrap {
+  display: grid;
+  place-items: center;
+  width: min(calc(100vw - 18px), calc(100dvh - 350px));
+  height: min(calc(100vw - 18px), calc(100dvh - 350px)) !important;
+  aspect-ratio: 1 / 1;
+  max-width: 100%;
+  max-height: 100%;
+  margin: 0;
+  padding: clamp(16px, 5vw, 26px);
+  box-sizing: border-box;
+  overflow: visible;
+  background: url(assets/hd/ui/abyssal-gothic/board-frame.png) center / 100% 100% no-repeat;
+  filter: drop-shadow(0 10px 20px rgba(0, 0, 0, 0.62));
+}
+
+body.mobile-touch.mobile-portrait .room-stage .canvas-wrap > #game {
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
+  max-width: none !important;
+  max-height: none !important;
+  aspect-ratio: 1 / 1;
+  margin: 0;
+  border: 0;
+  box-shadow: inset 0 0 24px rgba(0, 0, 0, 0.72);
+  touch-action: none;
+}
+
+body.mobile-touch.mobile-portrait #mobileControls {
+  grid-column: 1;
+  grid-row: 3;
+  position: relative;
+  display: block !important;
+  width: 100%;
+  min-width: 0;
+  min-height: 0;
+  padding: 0;
+  box-sizing: border-box;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+body.mobile-touch.mobile-portrait #mobileControls .mobile-controls-row {
+  display: grid !important;
+  grid-template-columns: minmax(144px, 0.9fr) minmax(0, 1.1fr);
+  gap: 8px;
+  align-items: center;
+  width: 100%;
+  min-width: 0;
+}
+
+body.mobile-touch.mobile-portrait .mobile-dpad {
+  display: grid !important;
+  grid-template-columns: repeat(3, 48px);
+  grid-template-rows: repeat(3, 48px);
+  width: 144px;
+  height: 144px;
+  min-width: 144px;
+  min-height: 144px;
+  margin: 0 auto;
+  pointer-events: auto;
+}
+
+body.mobile-touch.mobile-portrait .mobile-dpad .dpad-middle-row {
+  display: contents;
+}
+
+body.mobile-touch.mobile-portrait .mobile-dpad .dpad-btn,
+body.mobile-touch.mobile-portrait .mobile-dpad .dpad-center {
+  position: relative;
+  width: 48px;
+  height: 48px;
+  margin: 0;
+}
+
+body.mobile-touch.mobile-portrait .mobile-dpad .dpad-btn {
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  touch-action: manipulation;
+}
+
+body.mobile-touch.mobile-portrait .mobile-dpad .dpad-up { grid-column: 2; grid-row: 1; }
+body.mobile-touch.mobile-portrait .mobile-dpad .dpad-left { grid-column: 1; grid-row: 2; }
+body.mobile-touch.mobile-portrait .mobile-dpad .dpad-center { grid-column: 2; grid-row: 2; }
+body.mobile-touch.mobile-portrait .mobile-dpad .dpad-right { grid-column: 3; grid-row: 2; }
+body.mobile-touch.mobile-portrait .mobile-dpad .dpad-down { grid-column: 2; grid-row: 3; }
+
+body.mobile-touch.mobile-portrait .mobile-dpad .dpad-btn,
+body.mobile-touch.mobile-portrait #mobileActionDock .mact-btn,
+body.mobile-touch.mobile-portrait #mobileRestartRow .mact-restart {
+  min-width: 48px;
+  min-height: 48px;
+  box-sizing: border-box;
+}
+
+body.mobile-touch.mobile-portrait #mobileActionDock {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(48px, 1fr));
+  grid-template-rows: repeat(4, minmax(48px, 1fr));
+  gap: 5px;
+  width: 100%;
+  min-width: 0;
+  min-height: 207px;
+  max-height: none;
+  align-content: stretch;
+  pointer-events: auto;
+}
+
+body.mobile-touch.mobile-portrait #mobileActionDock .mact-q {
+  grid-column: 1 / -1;
+}
+
+body.mobile-touch.mobile-portrait #mobileActionDock .mact-btn {
+  padding: 4px;
+}
+
+body.mobile-touch.mobile-portrait #mobileActionDock .mobile-action-copy strong {
+  font-size: clamp(9px, 2.7vw, 11px);
+}
+
+body.mobile-touch.mobile-portrait #mobileActionDock .mobile-action-copy small {
+  font-size: 8px;
+}
+
+body.mobile-touch.mobile-portrait #mobileRestartRow {
+  display: none !important;
+}
+
+body.mobile-touch.mobile-portrait #mobileMenuButton,
+body.mobile-touch.mobile-portrait #mobileDetailsButton {
+  position: fixed;
+  top: calc(6px + var(--mobile-safe-top));
+  z-index: 8000;
+  display: grid;
+  place-items: center;
+  width: 48px !important;
+  max-width: 48px;
+  height: 48px !important;
+  max-height: 48px;
+  min-width: 48px;
+  min-height: 48px;
+  padding: 0;
+  box-sizing: border-box;
+  margin: 0;
+}
+
+body.mobile-touch.mobile-portrait #mobileMenuButton {
+  right: calc(6px + var(--mobile-safe-right));
+}
+
+body.mobile-touch.mobile-portrait #mobileDetailsButton {
+  right: calc(60px + var(--mobile-safe-right));
+}
+
+body.mobile-touch.mobile-portrait.mobile-details-open .layout-track > .panel-left {
+  position: fixed;
+  inset: calc(6px + var(--mobile-safe-top)) calc(6px + var(--mobile-safe-right)) calc(6px + var(--mobile-safe-bottom)) calc(6px + var(--mobile-safe-left));
+  z-index: 7600;
+  display: flex !important;
+  flex-direction: column;
+  width: auto;
+  max-width: none;
+  height: auto !important;
+  min-width: 0;
+  min-height: 0;
+  margin: 0;
+  padding: 12px;
+  box-sizing: border-box;
+  overflow: auto;
+  overscroll-behavior: contain;
+  color: #e7edf4;
+  background:
+    linear-gradient(180deg, rgba(10, 18, 28, 0.98), rgba(4, 8, 14, 0.99)),
+    url(assets/hd/ui/abyssal-gothic/panel-texture.png) center / cover;
+  border: 1px solid rgba(122, 166, 202, 0.5);
+  border-radius: 12px;
+}
+
+body.mobile-touch.mobile-portrait.mobile-details-open .panel-left #hud {
+  display: block !important;
+}
+
+@media (max-height: 700px) and (orientation: portrait) {
+  body.mobile-touch.mobile-portrait .layout-track > .board {
+    gap: 4px;
+    padding-top: calc(4px + var(--mobile-safe-top));
+    padding-bottom: calc(4px + var(--mobile-safe-bottom));
+  }
+
+  body.mobile-touch.mobile-portrait #mobileCommandDeck {
+    padding-block: 4px;
+  }
+
+  body.mobile-touch.mobile-portrait .mobile-command-header {
+    min-height: 34px;
+  }
+
+  body.mobile-touch.mobile-portrait .room-stage .canvas-wrap {
+    width: min(calc(100vw - 14px), calc(100dvh - 387px));
+    height: min(calc(100vw - 14px), calc(100dvh - 387px)) !important;
+    padding: 15px;
+  }
+
+  body.mobile-touch.mobile-portrait #mobileActionDock {
+    min-height: 197px;
+    gap: 3px;
+  }
+}
+
+/* Portrait hub composition: each sanctuary owns the viewport and exactly one
+   deliberate content scroller while its primary exit remains reachable. */
+body.mobile-touch.mobile-portrait .mobile-command-location {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: baseline;
+  justify-content: start;
+  gap: 2px 8px;
+  min-width: 0;
+}
+
+body.mobile-touch.mobile-portrait .mobile-command-kicker,
+body.mobile-touch.mobile-portrait #mobileRoomValue {
+  overflow: hidden;
+  font-size: 9px;
+  line-height: 1.05;
+  letter-spacing: 0.08em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+body.mobile-touch.mobile-portrait #mobileDepthValue {
+  min-width: 0;
+  overflow: hidden;
+  font-size: 13px;
+  line-height: 1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+body.mobile-touch.mobile-portrait #mobileRoomValue {
+  grid-column: 1 / -1;
+}
+
+body.mobile-touch.mobile-portrait.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay {
+  padding:
+    calc(6px + var(--mobile-safe-top))
+    calc(6px + var(--mobile-safe-right))
+    calc(6px + var(--mobile-safe-bottom))
+    calc(6px + var(--mobile-safe-left));
+}
+
+body.mobile-touch.mobile-portrait.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay > .overlay-card {
+  width: 100%;
+  max-width: none;
+  height: 100%;
+  max-height: none;
+  box-sizing: border-box;
+}
+
+body.mobile-touch.mobile-portrait.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay > .overlay-card-camp {
+  overflow: hidden;
+}
+
+body.mobile-touch.mobile-portrait.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .camp-revamp {
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+
+body.mobile-touch.mobile-portrait.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .camp-revamp-content {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  min-height: 0;
+  overflow: hidden;
+}
+
+body.mobile-touch.mobile-portrait.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .camp-revamp-grid {
+  grid-template-columns: minmax(0, 1fr);
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+body.mobile-touch.mobile-portrait.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .camp-revamp-actions {
+  position: sticky;
+  bottom: 0;
+  z-index: 3;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 4px;
+}
+
+body.mobile-touch.mobile-portrait.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .camp-revamp-action.primary {
+  width: 100%;
+  max-width: none;
+  min-height: 52px;
+  margin: 0;
+}
+
+body.mobile-touch.mobile-portrait.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .forge-sanctuary {
+  width: 100%;
+  max-width: none;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+
+body.mobile-touch.mobile-portrait.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .forge-choice-grid {
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: repeat(2, minmax(0, 1fr));
+  min-height: 0;
+  overflow: hidden;
+}
+
+body.mobile-touch.mobile-portrait.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .forge-choice {
+  grid-template-columns: 78px minmax(0, 1fr);
+  min-width: 0;
+  min-height: 0;
+  padding: 8px 12px;
+}
+
+body.mobile-touch.mobile-portrait.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .forge-choice-emblem {
+  width: 72px;
+  height: 72px;
+}
+
+body.mobile-touch.mobile-portrait.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .forge-choice-copy {
+  min-width: 0;
+}
+
+body.mobile-touch.mobile-portrait.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .forge-choice-copy > strong {
+  overflow: hidden;
+  font-size: clamp(13px, 4.2vw, 17px);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+body.mobile-touch.mobile-portrait.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .forge-choice-copy > p {
+  display: -webkit-box;
+  overflow: hidden;
+  font-size: 10px;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+}
+
+body.mobile-touch.mobile-portrait.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .forge-footer {
+  position: sticky;
+  bottom: 0;
+  z-index: 3;
+}
+
+body.mobile-touch.mobile-portrait.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .merchant-sanctuary {
+  width: 100%;
+  max-width: none;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+
+body.mobile-touch.mobile-portrait.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .merchant-sanctuary > .overlay-menu {
+  justify-self: stretch;
+  width: calc(100% + 40px) !important;
+  max-width: none;
+  min-height: 0;
+  margin-inline: -20px !important;
+}
+
+body.mobile-touch.mobile-portrait.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .merchant-view-buyback > .merchant-menu-buyback {
+  overflow: hidden;
+}
+
+body.mobile-touch.mobile-portrait.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .merchant-view-dashboard > .merchant-menu-dashboard {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+body.mobile-touch.mobile-portrait.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .merchant-buyback-grid {
+  grid-template-columns: minmax(0, 1fr);
+  grid-auto-rows: minmax(72px, auto);
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+body.mobile-touch.mobile-portrait.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .merchant-row {
+  grid-template-columns: 26px 38px minmax(0, 1fr) auto;
+  min-width: 0;
+}
+
+body.mobile-touch.mobile-portrait.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .mobile-overlay-actions {
+  position: sticky;
+  bottom: 0;
+  z-index: 4;
+}
+
+body.mobile-touch.mobile-portrait.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay :is(
+  .overlay-card-relic-draft,
+  .overlay-card-relic-exchange,
+  .emergency-extract-confirm,
+  .death-requiem,
+  .gameover-requiem,
+  .overlay-card-success,
+  .record-archive-shell,
+  .overlay-card-dialog,
+  .camp-start-sanctum
+) {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+
+body.mobile-touch.mobile-portrait.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .relic-draft-panel {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+}
+
+body.mobile-touch.mobile-portrait.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .relic-draft-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-auto-rows: minmax(116px, auto);
+  gap: 7px;
+  min-height: 0;
+  padding-right: 6px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: #c19a51 #050607;
+}
+
+body.mobile-touch.mobile-portrait.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .relic-draft-choice {
+  display: grid;
+  grid-template-columns: 74px minmax(0, 1fr);
+  align-items: center;
+  min-width: 0;
+  min-height: 112px;
+  padding: 10px 12px;
+  box-sizing: border-box;
+}
+
+body.mobile-touch.mobile-portrait.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .relic-draft-icon {
+  width: 64px;
+  height: 64px;
+  object-fit: contain;
+}
+
+body.mobile-touch.mobile-portrait.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .relic-draft-choice-copy {
+  min-width: 0;
+}
+
+body.mobile-touch.mobile-portrait.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .relic-draft-choice-copy > :is(strong, small) {
+  overflow: visible;
+  white-space: normal;
+}
+
+body.mobile-touch.mobile-portrait.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay :is(.relic-draft-footer, .relic-draft-skip) {
+  position: sticky;
+  bottom: 0;
+  z-index: 4;
+  flex: 0 0 auto;
+  min-height: 52px;
+}
+
+body.mobile-touch.mobile-portrait.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .overlay-card-relic-exchange {
+  display: grid;
+  grid-template-rows: auto auto auto minmax(0, 1fr) auto;
+  gap: 6px;
+}
+
+body.mobile-touch.mobile-portrait.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .relic-exchange-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 4px;
+}
+
+body.mobile-touch.mobile-portrait.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .relic-exchange-toolbar {
+  min-height: 0;
+}
+
+body.mobile-touch.mobile-portrait.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .relic-exchange-list {
+  min-height: 0;
+  max-height: none;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+body.mobile-touch.mobile-portrait.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay :is(
+  .relic-exchange-row,
+  .relic-exchange-bulk > [role="button"],
+  .relic-exchange-actions > [role="button"]
+) {
+  min-height: 48px;
+}
+
+body.mobile-touch.mobile-portrait.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .relic-exchange-actions {
+  position: sticky;
+  bottom: 0;
+  z-index: 4;
+}
+
+body.mobile-touch.mobile-portrait.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .emergency-extract-confirm > .overlay-menu,
+body.mobile-touch.mobile-portrait.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .overlay-card-success > .overlay-menu {
+  position: sticky;
+  bottom: 0;
+  z-index: 4;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 7px;
+  margin-top: auto;
+}
+
+body.mobile-touch.mobile-portrait.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay :is(.death-requiem-summary, .gameover-requiem-ledger, .record-archive-v2) {
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+body.mobile-touch.mobile-portrait.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay :is(.death-requiem-actions, .gameover-requiem-actions) {
+  position: sticky;
+  bottom: 0;
+  z-index: 4;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 6px;
+}
+
+body.mobile-touch.mobile-portrait.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .gameover-requiem-ledger {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 8px;
+}
+
+body.mobile-touch.mobile-portrait.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay :is(.record-archive-inspect, .record-archive-back, .record-archive-name) {
+  min-height: 48px;
+}
+
+body.mobile-touch.mobile-portrait.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .name-modal-wrap {
+  display: grid;
+  gap: 7px;
+}
+
+body.mobile-touch.mobile-portrait.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .name-input-label {
+  color: #d8bd83;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+body.mobile-touch.mobile-portrait.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .name-input {
+  width: 100%;
+  min-height: 48px;
+  box-sizing: border-box;
+  font-size: 16px;
+}
+
+body.mobile-touch.mobile-portrait.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .camp-start-sanctum {
+  display: grid;
+  grid-template-rows: auto auto auto minmax(0, 1fr) auto auto;
+  gap: 7px;
+}
+
+body.mobile-touch.mobile-portrait.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .camp-start-route-grid {
+  grid-template-columns: minmax(0, 1fr);
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+body.mobile-touch.mobile-portrait.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .camp-start-action {
+  min-height: 48px;
+}
+
+body.mobile-touch.mobile-portrait.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .camp-start-actions {
+  position: sticky;
+  bottom: 0;
+  z-index: 4;
+}
+
+/* Portrait terminal and archive surfaces: keep primary actions in view. */
+body.mobile-touch.mobile-portrait.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay.visible > :is(
+  .record-archive-shell,
+  .camp-start-sanctum,
+  .death-requiem,
+  .gameover-requiem,
+  .overlay-card-success
+) {
+  width: 100% !important;
+  max-width: none !important;
+  height: 100% !important;
+  max-height: none !important;
+  margin: 0 !important;
+  box-sizing: border-box;
+  overflow: hidden !important;
+}
+
+body.mobile-touch.mobile-portrait.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .record-archive-shell {
+  position: absolute !important;
+  inset: 6px !important;
+  width: auto !important;
+  height: auto !important;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto auto;
+  gap: 7px;
+}
+
+body.mobile-touch.mobile-portrait.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .record-archive-shell > [data-practice-record-archive] {
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+
+body.mobile-touch.mobile-portrait.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .record-archive-shell > [data-practice-record-archive] > .ranked-v3-reference-plate {
+  height: 100%;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+body.mobile-touch.mobile-portrait.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .record-archive-shell :is(
+  .ranked-v3-leaderboard-details-button,
+  .ranked-v3-leaderboard-page-control,
+  .ranked-v3-leaderboard-close,
+  .ranked-v3-inspect-back,
+  .ranked-v3-inspect-close
+) {
+  min-height: 48px;
+}
+
+body.mobile-touch.mobile-portrait.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay :is(
+  .record-archive-list,
+  .record-archive-detail,
+  .record-archive-chronicle-page
+) {
+  height: 100%;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+body.mobile-touch.mobile-portrait.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .record-archive-podium {
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-areas: "champion" "silver" "bronze";
+}
+
+body.mobile-touch.mobile-portrait.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .record-archive-podium-card[data-record-rank="1"] {
+  min-height: 180px;
+  transform: none;
+}
+
+body.mobile-touch.mobile-portrait.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .record-archive-ledger-row {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-areas: "rank name" "score depth" "gold gold" "action action";
+}
+
+body.mobile-touch.mobile-portrait.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .record-archive-inspect-button {
+  width: 100%;
+  min-height: 48px;
+}
+
+body.mobile-touch.mobile-portrait.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .camp-start-sanctum {
+  grid-template-rows: auto minmax(0, 1fr) auto;
+}
+
+body.mobile-touch.mobile-portrait.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .camp-start-footer {
+  min-height: 0;
+  overflow: visible;
+}
+
+body.mobile-touch.mobile-portrait.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay :is(
+  .death-requiem-summary,
+  .gameover-requiem-ledger
+) {
+  flex: 1 1 auto;
+}
+
+body.mobile-touch.mobile-portrait.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay :is(
+  .death-requiem-footer,
+  .gameover-requiem-footer
+) {
+  flex: 0 0 auto;
+  min-height: 0;
+}
+
+body.mobile-touch.mobile-portrait.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay :is(
+  .death-requiem-actions,
+  .gameover-requiem-actions
+) {
+  position: sticky;
+  bottom: 0;
+}
+
+/* Portrait information hierarchy: keep labels, values and actions visually distinct. */
+body.mobile-touch.mobile-portrait.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .camp-revamp-stats {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+body.mobile-touch.mobile-portrait.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .camp-revamp-stats > div {
+  grid-template-columns: 24px minmax(0, 1fr) auto;
+  min-height: 40px;
+}
+
+body.mobile-touch.mobile-portrait.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .relic-draft-choice-copy {
+  display: grid;
+  align-content: center;
+  gap: 3px;
+  line-height: 1.2;
+}
+
+body.mobile-touch.mobile-portrait.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .relic-draft-choice-copy > :is(.relic-draft-rarity, strong, small) {
+  display: block;
+  min-width: 0;
+  margin: 0;
+}
+
+body.mobile-touch.mobile-portrait.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .relic-draft-rarity {
+  color: var(--relic-accent, #c3a86d);
+  font: 700 9px/1.1 "Courier New", monospace;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+body.mobile-touch.mobile-portrait.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .relic-draft-choice-copy > strong {
+  font-size: 15px;
+  line-height: 1.16;
+}
+
+body.mobile-touch.mobile-portrait.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .relic-draft-choice-copy > small {
+  color: #c8c0b2;
+  font-size: 11px;
+  line-height: 1.3;
+}
+
+body.mobile-touch.mobile-portrait.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .relic-draft-skip {
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr);
+  grid-template-areas: "key title" "key note";
+  align-items: center;
+  gap: 2px 8px;
+  width: 100%;
+  height: auto !important;
+  min-height: 64px;
+  max-height: 76px;
+  padding: 8px 12px;
+  box-sizing: border-box;
+}
+
+body.mobile-touch.mobile-portrait.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .relic-draft-skip .relic-draft-key {
+  grid-area: key;
+}
+
+body.mobile-touch.mobile-portrait.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .relic-draft-skip > strong {
+  grid-area: title;
+  display: block;
+  line-height: 1.15;
+}
+
+body.mobile-touch.mobile-portrait.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .relic-draft-skip > small {
+  grid-area: note;
+  display: block;
+  line-height: 1.25;
+}
+
+body.mobile-touch.mobile-portrait.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .forge-reward-context {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 4px;
+}
+
+body.mobile-touch.mobile-portrait.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .forge-reward-context > span {
+  display: grid;
+  align-content: center;
+  gap: 2px;
+  min-width: 0;
+  padding: 6px 4px;
+  text-align: center;
+}
+
+body.mobile-touch.mobile-portrait.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .forge-reward-context :is(small, strong) {
+  display: block;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  line-height: 1.15;
+}
+
+body.mobile-touch.mobile-portrait.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .relic-exchange-summary > div {
+  display: grid;
+  align-content: center;
+  gap: 2px;
+  min-width: 0;
+  padding: 5px 3px;
+  text-align: center;
+}
+
+body.mobile-touch.mobile-portrait.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .relic-exchange-summary :is(small, strong, span) {
+  display: block;
+  min-width: 0;
+  line-height: 1.15;
+}
+
+body.mobile-touch.mobile-portrait.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .relic-exchange-toolbar {
+  display: grid;
+  gap: 5px;
+}
+
+body.mobile-touch.mobile-portrait.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .relic-exchange-breakdown {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 2px;
+}
+
+body.mobile-touch.mobile-portrait.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .relic-exchange-breakdown > span {
+  display: grid;
+  justify-items: center;
+  gap: 1px;
+  min-width: 0;
+  font-size: 9px;
+}
+
+body.mobile-touch.mobile-portrait.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay :is(.relic-exchange-bulk, .relic-exchange-actions) {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 5px;
+}
+
+body.mobile-touch.mobile-portrait.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay :is(.relic-exchange-bulk, .relic-exchange-actions) > [role="button"] {
+  display: grid;
+  place-content: center;
+  gap: 2px;
+  min-width: 0;
+  padding: 5px;
+  text-align: center;
+}
+
+body.mobile-touch.mobile-portrait.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay :is(.death-requiem-header, .death-requiem-vigil > div, .gameover-requiem-title-lockup, .gameover-requiem-score) {
+  display: grid;
+  justify-items: center;
+  gap: 5px;
+  text-align: center;
+}
+
+body.mobile-touch.mobile-portrait.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .death-requiem-kicker {
+  display: flex;
+  justify-content: center;
+  gap: .45em;
+}
+
+body.mobile-touch.mobile-portrait.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .death-requiem-summary {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-content: center;
+  gap: 12px;
+}
+
+body.mobile-touch.mobile-portrait.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .death-requiem-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 5px;
+}
+
+body.mobile-touch.mobile-portrait.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .death-requiem-stats > div {
+  display: grid;
+  align-content: center;
+  gap: 3px;
+  min-width: 0;
+  text-align: center;
+}
+
+body.mobile-touch.mobile-portrait.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .death-requiem-penalty {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+}
+
+body.mobile-touch.mobile-portrait.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay :is(.death-requiem-action, .gameover-requiem-action) {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: center;
+  min-width: 0;
+  min-height: 52px;
+  padding: 7px 10px;
+  text-align: left;
+}
+
+body.mobile-touch.mobile-portrait.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay :is(.death-requiem-action, .gameover-requiem-action) > div {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+body.mobile-touch.mobile-portrait.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay :is(.death-requiem-action, .gameover-requiem-action) :is(strong, small) {
+  display: block;
+  min-width: 0;
+  line-height: 1.2;
+}
+
+body.mobile-touch.mobile-portrait.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .gameover-requiem-masthead {
+  display: grid;
+  gap: 8px;
+}
+
+body.mobile-touch.mobile-portrait.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .gameover-requiem-milestones {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px;
+}
+
+body.mobile-touch.mobile-portrait.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay :is(.gameover-requiem-milestones, .gameover-requiem-featured) > div {
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  min-width: 0;
+  text-align: center;
+}
+
+body.mobile-touch.mobile-portrait.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .gameover-requiem-record > header,
+body.mobile-touch.mobile-portrait.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .gameover-requiem-record > header > div {
+  display: grid;
+  gap: 3px;
+}
+
+body.mobile-touch.mobile-portrait.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .gameover-requiem-featured {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 4px;
+}
+
+body.mobile-touch.mobile-portrait.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .gameover-requiem-details {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 3px;
+}
+
+body.mobile-touch.mobile-portrait.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .gameover-requiem-details > div {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+}
+
+body.mobile-touch.mobile-portrait.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .camp-start-choice {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  padding: 6px 8px;
+  box-sizing: border-box;
+}
+
+body.mobile-touch.mobile-portrait.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .camp-start-choice > img {
+  width: 42px;
+  height: 42px;
+  object-fit: contain;
+}
+
+body.mobile-touch.mobile-portrait.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .camp-start-choice-copy,
+body.mobile-touch.mobile-portrait.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .camp-start-selection {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+body.mobile-touch.mobile-portrait.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .camp-start-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+}
+
+body.mobile-touch.mobile-portrait.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .camp-start-action {
+  display: grid;
+  place-content: center;
+  gap: 2px;
+  text-align: center;
+}
+
+body.mobile-touch.mobile-portrait.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay.visible > .overlay-card-dialog {
+  width: 100% !important;
+  height: 100% !important;
+  max-width: none !important;
+  max-height: none !important;
+  justify-content: center;
+  gap: 10px;
+}
+
+/* Portrait Pact chamber: stack choices and keep the refusal action reachable. */
+body.mobile-touch.mobile-portrait.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .overlay-card-pact-sanctum {
+  width: 100% !important;
+  max-width: none !important;
+  height: 100% !important;
+  max-height: none !important;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  overflow: hidden !important;
+}
+
+body.mobile-touch.mobile-portrait.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .pact-sanctum-header {
+  grid-template-columns: 48px minmax(0, 1fr);
+  grid-template-areas: "emblem title" "status status";
+  gap: 5px 8px;
+  min-height: 0;
+  padding: 2px 0 7px;
+}
+
+body.mobile-touch.mobile-portrait.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .pact-sanctum-emblem {
+  position: relative;
+  top: auto;
+  left: auto;
+  grid-area: emblem;
+}
+
+body.mobile-touch.mobile-portrait.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .pact-sanctum-header > :is(.pact-sanctum-kicker, .overlay-title, .overlay-sub) {
+  grid-area: title;
+  align-self: center;
+}
+
+body.mobile-touch.mobile-portrait.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .pact-sanctum-current {
+  position: relative;
+  top: auto;
+  right: auto;
+  grid-area: status;
+  width: 100%;
+  min-height: 44px;
+  text-align: center;
+}
+
+body.mobile-touch.mobile-portrait.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .pact-sanctum-grid {
+  grid-template-columns: minmax(0, 1fr);
+  grid-auto-rows: minmax(210px, auto);
+  gap: 7px;
+  padding-right: 5px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+body.mobile-touch.mobile-portrait.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .pact-sanctum-choice {
+  grid-template: minmax(0, 1fr) 40px / 64px minmax(0, 1fr);
+  min-height: 210px;
+}
+
+body.mobile-touch.mobile-portrait.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .pact-sanctum-copy > :is(h3, p),
+body.mobile-touch.mobile-portrait.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .pact-sanctum-term :is(span, strong) {
+  overflow: visible;
+  text-overflow: clip;
+  white-space: normal;
+}
+
+body.mobile-touch.mobile-portrait.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .pact-sanctum-leave {
+  position: sticky;
+  bottom: 0;
+  z-index: 4;
+  min-height: 56px;
+}
+
+/* Final portrait collision fixes from screenshot review. */
+body.mobile-touch.mobile-portrait.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .overlay-card-relic-exchange {
+  grid-template-rows: auto auto auto auto minmax(0, 1fr) auto;
+}
+
+body.mobile-touch.mobile-portrait.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .pact-sanctum-header {
+  grid-template-rows: auto auto auto auto;
+}
+
+body.mobile-touch.mobile-portrait.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .pact-sanctum-kicker {
+  grid-column: 2;
+  grid-row: 1;
+}
+
+body.mobile-touch.mobile-portrait.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .pact-sanctum-emblem {
+  grid-column: 1;
+  grid-row: 1 / 4;
+}
+
+body.mobile-touch.mobile-portrait.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .pact-sanctum-header > .overlay-title {
+  grid-column: 2;
+  grid-row: 2;
+}
+
+body.mobile-touch.mobile-portrait.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .pact-sanctum-header > .overlay-sub {
+  grid-column: 2;
+  grid-row: 3;
+}
+
+body.mobile-touch.mobile-portrait.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .pact-sanctum-current {
+  grid-column: 1 / -1;
+  grid-row: 4;
+}
+
+body.mobile-touch.mobile-portrait.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .pact-sanctum-leave {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+body.mobile-touch.mobile-portrait.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .pact-sanctum-leave > div :is(strong, small) {
+  overflow: visible;
+  text-overflow: clip;
+  white-space: normal;
+}
+
+body.mobile-touch.mobile-portrait.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .gameover-requiem-record > header > div > span {
+  display: none;
+}

@@ -42,6 +42,11 @@ const ALLOWED_PROTECTED_ONLINE_V3_PATHS = new Set([
   "assets/hd/ui/leaderboard/skull-medallion-bronze.png",
   "assets/hd/ui/leaderboard/skull-medallion-gold.png",
   "assets/hd/ui/leaderboard/skull-medallion-silver.png",
+  "assets/hd/ui/mobile/dpad-arrow.png",
+  "assets/hd/ui/mobile/gothic/gothic-button-frame.png",
+  "assets/hd/ui/mobile/gothic/gothic-dpad-plate-v2.png",
+  "assets/hd/ui/mobile/gothic/gothic-dpad-plate.png",
+  "assets/hd/ui/mobile/gothic/interact-hand.png",
   "assets/hd/ui/ranked-reference-plates/ranked-build-inspect-desktop-plate.png",
   "assets/hd/ui/ranked-reference-plates/ranked-leaderboard-desktop-plate.png",
   "style-hd-boot.css"

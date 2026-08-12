@@ -1009,6 +1009,28 @@
   const mobileSwipeHintEl = document.getElementById("mobileSwipeHint");
   const mobileMenuButtonEl = document.getElementById("mobileMenuButton");
   const mobileControlsEl = document.getElementById("mobileControls");
+  const mobileActionDockEl = document.getElementById("mobileActionDock");
+  const mobileCommandDeckEl = document.getElementById("mobileCommandDeck");
+  const mobileDetailsButtonEl = document.getElementById("mobileDetailsButton");
+  const mobileDepthValueEl = document.getElementById("mobileDepthValue");
+  const mobileRoomValueEl = document.getElementById("mobileRoomValue");
+  const mobileHpMeterEl = document.getElementById("mobileHpMeter");
+  const mobileHpValueEl = document.getElementById("mobileHpValue");
+  const mobileShieldMeterEl = document.getElementById("mobileShieldMeter");
+  const mobileShieldValueEl = document.getElementById("mobileShieldValue");
+  const mobileBarrierMeterEl = document.getElementById("mobileBarrierMeter");
+  const mobileBarrierValueEl = document.getElementById("mobileBarrierValue");
+  const mobileFuryMeterEl = document.getElementById("mobileFuryMeter");
+  const mobileFuryValueEl = document.getElementById("mobileFuryValue");
+  const mobileRunGoldValueEl = document.getElementById("mobileRunGoldValue");
+  const mobilePotionValueEl = document.getElementById("mobilePotionValue");
+  const mobileElixirValueEl = document.getElementById("mobileElixirValue");
+  const mobileDashStatusEl = document.getElementById("mobileDashStatus");
+  const mobileShockwaveStatusEl = document.getElementById("mobileShockwaveStatus");
+  const mobileShieldStatusEl = document.getElementById("mobileShieldStatus");
+  const mobileInteractLabelEl = document.getElementById("mobileInteractLabel");
+  const mobileGameStatusEl = document.getElementById("mobileGameStatus");
+  const mobileRotateOverlayEl = document.getElementById("mobileRotateOverlay");
   const hdUiTooltipEl = document.createElement("div");
   hdUiTooltipEl.id = "hdUiTooltip";
   hdUiTooltipEl.className = "hd-ui-tooltip";
@@ -1023,15 +1045,25 @@
   hdEnemyTooltipEl.setAttribute("role", "tooltip");
   hdEnemyTooltipEl.hidden = true;
   document.body.appendChild(hdEnemyTooltipEl);
+  const MOBILE_VIEWPORT_MAX = 1200;
+  const MOBILE_TOUCH_LONG_EDGE_MAX = 1280;
   const MOBILE_LAYOUT_MEDIA_QUERY = "(max-width: 920px)";
+  const MOBILE_COARSE_POINTER_MEDIA_QUERY = "(pointer: coarse)";
   const MOBILE_PANE_LEFT = 0;
   const MOBILE_PANE_BOARD = 1;
   const MOBILE_PANE_RIGHT = 2;
   const MOBILE_SWIPE_MIN_DISTANCE = 42;
   const MOBILE_SWIPE_VERTICAL_RATIO_LIMIT = 0.65;
   const MOBILE_SWIPE_HINT_AUTO_HIDE_MS = 5600;
+  const MOBILE_TOUCH_DEADZONE_TILES = 0.6;
+  const MOBILE_TOUCH_REPEAT_DELAY_MS = 280;
+  const MOBILE_TOUCH_REPEAT_INTERVAL_MS = 140;
+  const MOBILE_TOUCH_REPEAT_MAX_STEPS = 8;
   const mobileLayoutMedia = typeof window.matchMedia === "function"
     ? window.matchMedia(MOBILE_LAYOUT_MEDIA_QUERY)
+    : null;
+  const mobileCoarsePointerMedia = typeof window.matchMedia === "function"
+    ? window.matchMedia(MOBILE_COARSE_POINTER_MEDIA_QUERY)
     : null;
   const mobileUi = {
     active: false,
@@ -1044,17 +1076,85 @@
     buttonPointerIds: new Set(),
     hintSeen: localStorage.getItem(STORAGE_MOBILE_SWIPE_HINT_SEEN) === "1",
     hintVisible: false,
-    hintHideTimer: null
+    hintHideTimer: null,
+    portraitBlocked: false,
+    touchDevice: false,
+    boardPointerId: null,
+    boardDirection: null,
+    boardRepeatTimer: null,
+    boardRepeatCount: 0,
+    orientationFocusReturn: null,
+    detailsOpen: false,
+    overlayWasOpen: false,
+    overlayFocusReturn: null
   };
-  const MOBILE_UNSUPPORTED_BLOCKED = (() => {
-    if (typeof window === "undefined") return false;
+
+  function setMobileDetailsOpen(open) {
+    const nextOpen = Boolean(
+      open
+      && mobileUi.active
+      && !isScreenOverlayVisible()
+    );
+    mobileUi.detailsOpen = nextOpen;
+    document.body.classList.toggle("mobile-details-open", nextOpen);
+    if (mobileDetailsButtonEl) {
+      mobileDetailsButtonEl.setAttribute("aria-expanded", nextOpen ? "true" : "false");
+      mobileDetailsButtonEl.setAttribute("aria-label", nextOpen ? "Close player details" : "Show player details");
+      mobileDetailsButtonEl.textContent = nextOpen ? "Close" : "Stats";
+    }
+    if (nextOpen) clearMobileBoardRepeat();
+    return nextOpen;
+  }
+
+  function isMobileTouchDevice() {
     const ua = typeof navigator !== "undefined" ? String(navigator.userAgent || "") : "";
     const uaLooksMobile = /android|iphone|ipad|ipod|iemobile|opera mini|mobile/i.test(ua);
     const hasTouch = typeof navigator !== "undefined" && Number(navigator.maxTouchPoints || 0) > 0;
-    const coarsePointer = typeof window.matchMedia === "function" && window.matchMedia("(pointer: coarse)").matches;
-    const narrowViewport = typeof window.matchMedia === "function" && window.matchMedia(MOBILE_LAYOUT_MEDIA_QUERY).matches;
-    return Boolean((uaLooksMobile || hasTouch || coarsePointer) && narrowViewport);
-  })();
+    const coarsePointer = Boolean(mobileCoarsePointerMedia && mobileCoarsePointerMedia.matches);
+    const shortViewportEdge = Math.min(Number(window.innerWidth) || 0, Number(window.innerHeight) || 0);
+    const longViewportEdge = Math.max(Number(window.innerWidth) || 0, Number(window.innerHeight) || 0);
+    const touchCapable = hasTouch || coarsePointer;
+    const mobileUaViewport = uaLooksMobile && shortViewportEdge <= MOBILE_VIEWPORT_MAX;
+    const genericTouchViewport = !uaLooksMobile
+      && Number(window.innerWidth || 0) <= MOBILE_VIEWPORT_MAX
+      && longViewportEdge <= MOBILE_TOUCH_LONG_EDGE_MAX;
+    return Boolean(
+      touchCapable &&
+      shortViewportEdge > 0 &&
+      (mobileUaViewport || genericTouchViewport)
+    );
+  }
+
+  function syncMobileOrientationState() {
+    const touchDevice = isMobileTouchDevice();
+    const mobilePortrait = touchDevice && window.innerHeight > window.innerWidth;
+    const mobileLandscape = touchDevice && !mobilePortrait;
+    mobileUi.touchDevice = touchDevice;
+    mobileUi.portraitBlocked = false;
+    document.body.classList.toggle("mobile-touch", touchDevice);
+    document.body.classList.toggle("mobile-portrait", mobilePortrait);
+    document.body.classList.toggle("mobile-landscape", mobileLandscape);
+    if (!touchDevice && mobileUi.detailsOpen) setMobileDetailsOpen(false);
+    if (mobileRotateOverlayEl) {
+      mobileRotateOverlayEl.hidden = true;
+      mobileRotateOverlayEl.setAttribute("aria-hidden", "true");
+    }
+    syncMobileBackgroundInert();
+    return { touchDevice, mobilePortrait, mobileLandscape };
+  }
+
+  function isMobilePortraitBlocked() {
+    syncMobileOrientationState();
+    return false;
+  }
+  if (mobileRotateOverlayEl) {
+    mobileRotateOverlayEl.addEventListener("keydown", (event) => {
+      if (event.key !== "Tab" || !mobileUi.portraitBlocked) return;
+      event.preventDefault();
+      event.stopPropagation();
+      mobileRotateOverlayEl.focus({ preventScroll: true });
+    });
+  }
   let hoveredEnemy = null;
 
   if (appVersionEl) {
@@ -1082,6 +1182,104 @@
 
   function isScreenOverlayVisible() {
     return Boolean(screenOverlayEl && screenOverlayEl.classList.contains("visible"));
+  }
+
+  function syncMobileBackgroundInert() {
+    const portraitModal = Boolean(mobileUi.portraitBlocked);
+    const overlayModal = Boolean(mobileUi.active && isScreenOverlayVisible() && !portraitModal);
+    const overlayOutsideApp = Boolean(gameAppEl && screenOverlayEl && !gameAppEl.contains(screenOverlayEl));
+    if (gameAppEl) gameAppEl.inert = portraitModal || (overlayModal && overlayOutsideApp);
+    if (bootScreenEl) bootScreenEl.inert = portraitModal;
+    if (screenOverlayEl) screenOverlayEl.inert = portraitModal;
+  }
+
+  const MOBILE_OVERLAY_FOCUSABLE_SELECTOR = [
+    "button:not([disabled]):not([aria-disabled='true'])",
+    "input:not([disabled])",
+    "select:not([disabled])",
+    "textarea:not([disabled])",
+    "[href]",
+    "[tabindex]:not([tabindex='-1'])",
+    "[role='button']:not([aria-disabled='true'])"
+  ].join(", ");
+
+  function getMobileOverlayFocusable() {
+    if (!screenOverlayEl) return [];
+    return [...screenOverlayEl.querySelectorAll(MOBILE_OVERLAY_FOCUSABLE_SELECTOR)].filter((element) => {
+      if (!(element instanceof HTMLElement)) return false;
+      const rect = element.getBoundingClientRect();
+      const style = getComputedStyle(element);
+      return rect.width > 0
+        && rect.height > 0
+        && style.display !== "none"
+        && style.visibility !== "hidden";
+    });
+  }
+
+  function syncMobileOverlayAccessibility() {
+    if (!screenOverlayEl) return;
+    const visible = isScreenOverlayVisible();
+    const mobileModal = visible && mobileUi.active && !mobileUi.portraitBlocked;
+    screenOverlayEl.setAttribute("aria-hidden", visible && !mobileUi.portraitBlocked ? "false" : "true");
+
+    if (mobileModal) {
+      if (!mobileUi.overlayWasOpen) {
+        const activeElement = document.activeElement;
+        mobileUi.overlayFocusReturn = activeElement instanceof HTMLElement
+          && activeElement !== document.body
+          && !screenOverlayEl.contains(activeElement)
+          ? activeElement
+          : mobileMenuButtonEl;
+      }
+      mobileUi.overlayWasOpen = true;
+      screenOverlayEl.setAttribute("role", "dialog");
+      screenOverlayEl.setAttribute("aria-modal", "true");
+      screenOverlayEl.setAttribute("tabindex", "-1");
+      screenOverlayEl.querySelectorAll(".overlay-menu-row").forEach((row) => {
+        if (!(row instanceof HTMLElement)) return;
+        const disabled = row.classList.contains("disabled") || row.getAttribute("aria-disabled") === "true";
+        if (!row.hasAttribute("role")) row.setAttribute("role", "button");
+        row.setAttribute("aria-disabled", disabled ? "true" : "false");
+        row.setAttribute("tabindex", disabled ? "-1" : "0");
+        if (row.classList.contains("selected")) row.setAttribute("aria-current", "true");
+        else row.removeAttribute("aria-current");
+      });
+      const title = screenOverlayEl.querySelector(".overlay-title, h1, h2, h3");
+      if (title instanceof HTMLElement) {
+        if (!title.id) title.id = "mobileOverlayTitle";
+        screenOverlayEl.setAttribute("aria-labelledby", title.id);
+        screenOverlayEl.removeAttribute("aria-label");
+      } else {
+        screenOverlayEl.removeAttribute("aria-labelledby");
+        screenOverlayEl.setAttribute("aria-label", "Game dialog");
+      }
+      syncMobileBackgroundInert();
+      requestAnimationFrame(() => {
+        if (!isScreenOverlayVisible() || !mobileUi.active) return;
+        if (screenOverlayEl.contains(document.activeElement)) return;
+        const firstControl = getMobileOverlayFocusable()[0];
+        (firstControl || screenOverlayEl).focus({ preventScroll: true });
+      });
+      return;
+    }
+
+    screenOverlayEl.removeAttribute("role");
+    screenOverlayEl.removeAttribute("aria-modal");
+    screenOverlayEl.removeAttribute("aria-labelledby");
+    screenOverlayEl.removeAttribute("aria-label");
+    screenOverlayEl.removeAttribute("tabindex");
+    syncMobileBackgroundInert();
+    if (mobileUi.overlayWasOpen) {
+      const focusReturn = mobileUi.overlayFocusReturn;
+      mobileUi.overlayWasOpen = false;
+      mobileUi.overlayFocusReturn = null;
+      requestAnimationFrame(() => {
+        if (isScreenOverlayVisible()) return;
+        if (focusReturn instanceof HTMLElement && focusReturn.isConnected) {
+          focusReturn.focus({ preventScroll: true });
+        }
+      });
+    }
   }
 
   function clearMobileSwipeHintTimer() {
@@ -1146,6 +1344,9 @@
 
   function applyMobilePaneUiState() {
     if (!layoutEl) return;
+    if ((!mobileUi.active || isScreenOverlayVisible()) && mobileUi.detailsOpen) {
+      setMobileDetailsOpen(false);
+    }
     layoutEl.classList.toggle("mobile-layout", mobileUi.active);
     if (mobileUi.active) {
       layoutEl.style.setProperty("--mobile-pane-index", String(mobileUi.paneIndex));
@@ -1153,7 +1354,11 @@
       layoutEl.style.removeProperty("--mobile-pane-index");
     }
     if (mobileMenuButtonEl) {
-      mobileMenuButtonEl.classList.toggle("visible", shouldShowMobileMenuButton());
+      const menuVisible = shouldShowMobileMenuButton();
+      mobileMenuButtonEl.classList.toggle("visible", menuVisible);
+      mobileMenuButtonEl.tabIndex = menuVisible ? 0 : -1;
+      mobileMenuButtonEl.setAttribute("aria-hidden", menuVisible ? "false" : "true");
+      mobileMenuButtonEl.setAttribute("aria-expanded", isScreenOverlayVisible() ? "true" : "false");
     }
     if (mobileSwipeHintEl) {
       mobileSwipeHintEl.classList.toggle("visible", shouldShowMobileSwipeHint());
@@ -1165,27 +1370,27 @@
       const showRestart = onBoard && (phase === "camp" || phase === "dead");
       mobileControlsEl.classList.toggle("hidden", !showPlaying && !showRestart);
       mobileControlsEl.classList.toggle("show-restart", showRestart);
+      if (mobileActionDockEl) {
+        mobileActionDockEl.classList.toggle("hidden", !showPlaying);
+      }
     }
   }
 
   function syncMobileUiState(options = {}) {
-    if (MOBILE_UNSUPPORTED_BLOCKED) {
-      mobileUi.active = false;
-      mobileUi.swipePointerId = null;
-      dismissMobileSwipeHint();
-      applyMobilePaneUiState();
-      return;
-    }
-    const shouldBeActive = Boolean(mobileLayoutMedia && mobileLayoutMedia.matches);
+    const orientation = syncMobileOrientationState();
+    const shouldBeActive = orientation.touchDevice;
     if (mobileUi.active !== shouldBeActive) {
       mobileUi.active = shouldBeActive;
       mobileUi.swipePointerId = null;
       mobileUi.paneIndex = MOBILE_PANE_BOARD;
     }
     if (!mobileUi.active) {
+      clearMobileBoardRepeat();
+      mobileUi.buttonPointerIds.clear();
       dismissMobileSwipeHint();
       mobileUi.paneIndex = MOBILE_PANE_BOARD;
       applyMobilePaneUiState();
+      syncMobileOverlayAccessibility();
       return;
     }
     const forceBoard = Boolean(options.forceBoard) || isScreenOverlayVisible();
@@ -1200,6 +1405,7 @@
       dismissMobileSwipeHint();
     }
     applyMobilePaneUiState();
+    syncMobileOverlayAccessibility();
   }
 
   function setMobilePaneIndex(nextPaneIndex) {
@@ -1223,6 +1429,7 @@
     if (!layoutTrackEl) return;
     if (!canHandleMobileSwipe()) return;
     if (event.pointerType !== "touch") return;
+    if (event.target?.closest?.("#game")) return;
     if (mobileUi.swipePointerId != null) return;
     if (mobileUi.buttonPointerIds.has(event.pointerId)) return;
     mobileUi.swipePointerId = event.pointerId;
@@ -1517,9 +1724,10 @@
   }
 
   function updateCanvasScale() {
-    const compactMobile = Boolean(mobileLayoutMedia && mobileLayoutMedia.matches);
-    const horizontalPadding = compactMobile ? 24 : 40;
-    const verticalPadding = compactMobile ? 146 : 220;
+    const touchLandscape = isMobileTouchDevice() && window.innerWidth >= window.innerHeight;
+    const compactMobile = touchLandscape || Boolean(mobileLayoutMedia && mobileLayoutMedia.matches);
+    const horizontalPadding = touchLandscape ? 200 : compactMobile ? 24 : 40;
+    const verticalPadding = touchLandscape ? 72 : compactMobile ? 146 : 220;
     const viewportMax = Math.max(160, Math.min(window.innerWidth - horizontalPadding, window.innerHeight - verticalPadding, 576));
     const scale = clamp(Math.floor(viewportMax / CANVAS_SIZE), 1, 6);
     const size = CANVAS_SIZE * scale;
@@ -7366,15 +7574,18 @@
         `</div>`
       ].join("");
     }).join("");
-    const closeHint = canCycleTutorialModalPagesFromMenu()
-      ? "Up/Down - scroll | A/D or Left/Right - switch pages | Enter, Esc, or H - close."
-      : "Up/Down - scroll | Enter, Esc, or H - close.";
+    const closeHint = mobileUi.touchDevice
+      ? "Swipe to scroll. Use Close guide to return."
+      : canCycleTutorialModalPagesFromMenu()
+        ? "Up/Down - scroll | A/D or Left/Right - switch pages | Enter, Esc, or H - close."
+        : "Up/Down - scroll | Enter, Esc, or H - close.";
     return [
       `<div class="${cardClass}">`,
       `<h2 class="overlay-title">${model.title}</h2>`,
       `<p class="overlay-sub">${model.subtitle}</p>`,
       `<div class="tutorial-sections">${sectionsHtml}</div>`,
       `<p class="overlay-hint">${closeHint}</p>`,
+      `<div class="mobile-overlay-actions"><button class="mobile-overlay-action" data-action-key="Escape" type="button">Close guide</button></div>`,
       `</div>`
     ].join("");
   }
@@ -13496,6 +13707,32 @@
       pushLog("Scenario override: deterministic HD status emblems arranged.", "warn");
       return true;
     }
+    if (scenario.forceFurySevenHDShowcaseSetup) {
+      state.roomType = "shrine";
+      state.bossRoom = false;
+      state.roomCleared = true;
+      state.player.x = 4;
+      state.player.y = 4;
+      state.player.facing = "south";
+      state.player.maxAdrenaline = 5;
+      state.player.adrenaline = 5;
+      state.player.furyBlessingTurns = 99;
+      state.player.skillShield = 0;
+      state.player.hpShield = 0;
+      state.chests = [];
+      state.spikes = [];
+      state.mines = [];
+      state.volatileBursts = [];
+      state.shrine = null;
+      state.merchant = null;
+      state.forge = null;
+      state.pact = null;
+      state.portal = { x: 7, y: 7, active: true };
+      state.enemies = [];
+      pushLog("Scenario override: deterministic Fury 7/7 arranged.", "warn");
+      return true;
+    }
+
     if (scenario.forceMerchantBuybackHDShowcaseSetup) {
       state.roomType = "merchant";
       state.bossRoom = false;
@@ -13752,6 +13989,151 @@
       state.pact = roomType === "pact" ? { x: 3, y: 3, awakened: true, used: false } : null;
       state.portal = { x: 6, y: 6, active: state.roomCleared };
       pushLog(`Scenario override: ${scenario.id} themed-room showcase arranged.`, "warn");
+      return true;
+    }
+    if (scenario.forceMobileSurfaceSetup) {
+      const profile = String(scenario.forceMobileSurfaceSetup || "");
+      const relicIds = ["executionseal", "merchfavor", "frostamulet", "echostrike", "titanheart", "phasecloak", "plating"];
+      const relicChoices = relicIds
+        .slice(0, 3)
+        .map((id) => getRelicById(id))
+        .filter(Boolean);
+      state.tutorialModalOpen = false;
+      state.tutorialModalKind = null;
+      state.tutorialModalSource = null;
+      state.extractConfirm = null;
+      state.extractRelicPrompt = null;
+      state.finalGameOverPrompt = null;
+      state.finalVictoryPrompt = null;
+      state.leaderboardModalOpen = false;
+      state.nameModalOpen = false;
+      state.merchantMenuOpen = false;
+      clearForgeFlowState();
+
+      if (profile === "reward" || profile === "forge_reward") {
+        state.phase = "relic";
+        state.roomType = profile === "forge_reward" ? "forge" : "treasure";
+        state.relics = profile === "forge_reward" ? ["fang"] : [];
+        state.relicDraft = relicChoices;
+        state.startingRelicDraft = false;
+        if (profile === "forge_reward") {
+          state.forgeTransmutePending = { sacrificedRelicId: "fang" };
+          state.forgeRewardMode = "transmute";
+        }
+      } else if (profile === "extract_exchange") {
+        state.phase = "camp";
+        state.roomType = "combat";
+        state.relics = [...relicIds];
+        state.campGold = 1010;
+        state.lastExtract = { depth: state.depth, gold: 861, campGold: 861, relicReturned: 0, relicGold: 0 };
+        state.extractRelicPrompt = {
+          baseGold: 861,
+          bonusGold: 88,
+          relicReturn: getRelicReturnSummary(relicIds),
+          carriedRelics: [...relicIds],
+          selectedIndices: [1, 3]
+        };
+      } else if (profile === "emergency_extract") {
+        state.phase = "playing";
+        state.roomType = "combat";
+        state.player.gold = 861;
+        state.extractConfirm = { lossRatio: 0.7 };
+      } else if (profile === "death") {
+        state.phase = "dead";
+        state.roomType = "combat";
+        state.lives = Math.max(1, MAX_LIVES - 1);
+        state.player.gold = 375;
+        state.runMaxDepth = Math.max(35, state.depth);
+        state.runGoldEarned = 861;
+        state.lastDeathRelicLossText = "Death penalty: lost relic Frost Amulet.";
+        state.simulation.lastGameOverReason = "The dungeon claimed another life.";
+        state.deathScreenSelection = 0;
+      } else if (profile === "gameover") {
+        state.phase = "dead";
+        state.lives = 0;
+        state.simulation.lastGameOverReason = "The final ember faded in the abyss.";
+        state.finalGameOverSelection = 0;
+        state.finalGameOverPrompt = {
+          depth: 47,
+          gold: 1280,
+          score: 5980,
+          totalGoldCollected: 4830,
+          damageDone: 12840,
+          damageTaken: 2380,
+          potionsUsed: 14,
+          elixirsUsed: 7,
+          wardensKilled: 4,
+          totalKills: 286,
+          eliteKills: 41,
+          deaths: MAX_LIVES,
+          totalMerchantPots: 9,
+          potionFreeExtracts: 3,
+          shieldUses: 28,
+          depthHighscore: 47,
+          bestGold: 1540,
+          reason: "The final ember faded in the abyss."
+        };
+      } else if (profile === "victory") {
+        state.phase = "won";
+        state.depth = MAX_DEPTH;
+        state.finalVictoryPrompt = { depth: MAX_DEPTH, gold: 5420, score: 15420 };
+        buildScreenOverlay();
+      } else if (profile === "records") {
+        state.phase = "menu";
+        state.menuRunPaused = false;
+        state.leaderboardModalOpen = true;
+        state.practiceRecordDetailRunId = "";
+        state.leaderboardSortMode = "score";
+        state.leaderboard = sanitizeLeaderboard([
+          { id: "mobile-record-1", runId: "mobile-record-1", playerName: "Abyss Walker", outcome: "victory", depth: 100, gold: 5420, livesLeft: 2, durationMs: 582000, ts: 1700000005000 },
+          { id: "mobile-record-2", runId: "mobile-record-2", playerName: "Iron Pilgrim", outcome: "death", depth: 73, gold: 3360, livesLeft: 0, durationMs: 474000, ts: 1700000004000 },
+          { id: "mobile-record-3", runId: "mobile-record-3", playerName: "Shrine Seeker", outcome: "death", depth: 51, gold: 2480, livesLeft: 0, durationMs: 361000, ts: 1700000003000 },
+          { id: "mobile-record-4", runId: "mobile-record-4", playerName: "Last Ember", outcome: "death", depth: 38, gold: 1850, livesLeft: 0, durationMs: 286000, ts: 1700000002000 },
+          { id: "mobile-record-5", runId: "mobile-record-5", playerName: "Quiet Blade", outcome: "death", depth: 24, gold: 970, livesLeft: 0, durationMs: 203000, ts: 1700000001000 }
+        ].map((entry, index) => ({
+          ...entry,
+          mutatorIds: index === 0 ? ["greed", "glass"] : index === 1 ? ["haste"] : [],
+          build: {
+            relics: [
+              { relicId: index % 2 === 0 ? "fang" : "plating", stacks: 1 },
+              { relicId: "frostamulet", stacks: 1 }
+            ],
+            pacts: index === 0 ? ["blood_oath"] : [],
+            skillTiers: { dash: Math.min(3, index + 1), aoe: 2, shield: 1 },
+            campUpgrades: { attack: 3, armor: 2 },
+            elixir: { type: index === 0 ? "fury_2" : "", charges: index === 0 ? 1 : 0 }
+          },
+          summary: {
+            roomsCompleted: Math.max(8, entry.depth - 2),
+            bossesCompleted: Math.floor(entry.depth / 10),
+            livesRemaining: entry.livesLeft,
+            damageDone: entry.depth * 137,
+            damageTaken: entry.depth * 41,
+            totalKills: entry.depth * 4,
+            eliteKills: Math.floor(entry.depth / 3),
+            potionsUsed: Math.max(1, Math.floor(entry.depth / 8)),
+            elixirsUsed: Math.floor(entry.depth / 20),
+            totalGoldCollected: entry.gold,
+            deaths: MAX_LIVES - entry.livesLeft
+          }
+        })));
+        buildScreenOverlay();
+      } else if (profile === "nickname") {
+        state.phase = "menu";
+        state.menuRunPaused = false;
+        state.nameDraft = "Abyss Walker";
+        state.nameModalOpen = true;
+        state.nameModalAction = null;
+        buildScreenOverlay();
+      } else if (profile === "camp_start") {
+        state.phase = "camp";
+        state.campPanelView = "shop";
+        state.startDepthUnlocks = Object.fromEntries(START_DEPTH_CHECKPOINTS.map((depth) => [String(depth), true]));
+        state.campStartDepthPromptOpen = true;
+        state.campStartDepthSelectionIndex = 4;
+        buildScreenOverlay();
+      }
+      pushLog(`Scenario override: ${scenario.label} arranged.`, "warn");
       return true;
     }
     if (scenario.id === "forge_transmute" && state.forge && !state.forge.used) {
@@ -22238,7 +22620,9 @@
       ].join("");
     } else if (view === "relics") {
       panelTitle = `Relic Inventory <em>${state.relics.length}/${getRelicSlotCap()} carried</em>`;
-      panelNote = useHdNavigation ? "Enter twice to confirm a relic sale" : "Press a relic key twice to confirm sale";
+      panelNote = mobileUi.touchDevice
+        ? "Tap a relic twice to confirm its sale"
+        : useHdNavigation ? "Enter twice to confirm a relic sale" : "Press a relic key twice to confirm sale";
       rows = state.relics.map((relicId, index) => {
         const relic = getRelicById(relicId);
         const key = relicHotkeyForIndex(index);
@@ -22250,7 +22634,7 @@
         return [
           `<div class="camp-revamp-row camp-revamp-relic${pending ? " pending-sale" : ""}" data-camp-key="${key}" data-camp-grid-row="${index % 5}" data-camp-grid-column="${Math.floor(index / 5)}" data-ui-tooltip-title="${escapeHtmlAttr(titleText)}" data-ui-tooltip="${escapeHtmlAttr(description)}" role="button" tabindex="0" aria-describedby="hdUiTooltip" style="--relic-accent:${rarityInfo.color};--relic-border:${rarityInfo.border};--relic-bg:${rarityInfo.bg}">`,
           itemMarker(key, relic?.icon || "assets/hd/ui/status/shrine-blessing.png"),
-          `<div class="camp-revamp-copy"><strong>${titleText} <em>${rarityInfo.label}</em></strong><small>${pending ? "Press Enter again to confirm this sale." : description}</small></div>`,
+          `<div class="camp-revamp-copy"><strong>${titleText} <em>${rarityInfo.label}</em></strong><small>${pending ? (mobileUi.touchDevice ? "Tap again to confirm this sale." : "Press Enter again to confirm this sale.") : description}</small></div>`,
           `<em class="camp-revamp-status">${pending ? `CONFIRM +${sale.total}g` : `+${sale.total}g`}</em>`,
           `</div>`
         ].join("");
@@ -22290,8 +22674,8 @@
     const actionLabel = view === "mutators" ? "Toggle" : view === "elixirs" ? "Elixir Action" : view === "relics" ? "Sell Relic" : "Purchase";
     const actionRows = useHdNavigation
       ? [
-          `<div class="camp-revamp-action primary" data-camp-key="r" role="button" tabindex="0"><img class="camp-revamp-action-icon" src="assets/hd/ui/status/shrine-blessing.png" alt="" aria-hidden="true" /><strong>Start Next Run</strong><span>ENTER</span></div>`,
-          `<div class="camp-revamp-guide">Left / Right tabs | Up / Down select | Enter ${actionLabel}</div>`
+          `<div class="camp-revamp-action primary" data-camp-key="r" role="button" tabindex="0"><img class="camp-revamp-action-icon" src="assets/hd/ui/status/shrine-blessing.png" alt="" aria-hidden="true" /><strong>Start Next Run</strong><span>${mobileUi.touchDevice ? "TAP" : "ENTER"}</span></div>`,
+          `<div class="camp-revamp-guide">${mobileUi.touchDevice ? `Swipe to scroll | Tap a tab or ${actionLabel.toLowerCase()}` : `Left / Right tabs | Up / Down select | Enter ${actionLabel}`}</div>`
         ].join("")
       : [
           `<div class="camp-revamp-action primary" data-camp-key="r" role="button" tabindex="0"><span>R</span><strong>Start Next Run</strong></div>`,
@@ -22332,8 +22716,8 @@
       `<div class="camp-overlay-stat"><span>Checkpoint Unlocks</span><strong>${unlockedCheckpoints}</strong></div>`,
       `</div>`,
       `<div class="camp-overlay-actions">`,
-      `<div class="camp-overlay-action camp-overlay-action-main"><span class="camp-overlay-key">R</span><strong>Start Next Run</strong></div>`,
-      `<div class="camp-overlay-action"><span class="camp-overlay-key">T</span><strong>Switch Panel</strong></div>`,
+      `<div class="camp-overlay-action camp-overlay-action-main" data-action-key="r"><span class="camp-overlay-key">R</span><strong>Start Next Run</strong></div>`,
+      `<div class="camp-overlay-action" data-action-key="t"><span class="camp-overlay-key">T</span><strong>Switch Panel</strong></div>`,
       `<div class="camp-overlay-action"><span class="camp-overlay-key">1-0</span><strong>${actionLabel}</strong></div>`,
       `</div>`
     ].join("");
@@ -22550,7 +22934,9 @@
         })
       ];
       modeClass = "relic-draft-grid-duel";
-      footer = useHdNavigation ? "Arrows choose | Enter confirms" : "Choose 1 to keep or 2 to replace";
+      footer = mobileUi.touchDevice
+        ? "Tap Keep Current Relic or Take New Legendary."
+        : useHdNavigation ? "Arrows choose | Enter confirms" : "Choose 1 to keep or 2 to replace";
     } else if (state.relicSwapPending) {
       cards = state.relics.map((relicId, index) => {
         const relic = getRelicById(relicId);
@@ -22563,7 +22949,14 @@
         });
       });
       modeClass = cards.length > 6 ? "relic-draft-grid-dense" : "relic-draft-grid-inventory";
-      footer = "Choose a relic to replace | Esc keeps the current setup";
+      footer = mobileUi.touchDevice
+        ? [
+            `<div class="relic-draft-skip" data-relic-key="Escape" role="button" tabindex="0">`,
+            `<strong>Keep Current Setup</strong>`,
+            `<small>Leave every carried relic unchanged</small>`,
+            `</div>`
+          ].join("")
+        : "Choose a relic to replace | Esc keeps the current setup";
     } else {
       cards = (state.relicDraft || []).map((relic, index) => buildChoiceCard(String(index + 1), relic, {
         className: forgeRewardKind ? "forge-reward-choice" : "",
@@ -22726,9 +23119,17 @@
   }
 
   function buildPracticeRecordsModalHtml() {
+    const detailOpen = Boolean(state.practiceRecordDetailRunId);
+    const mobileShellClass = mobileUi.touchDevice ? " record-archive-shell" : "";
+    const mobileActions = mobileUi.touchDevice
+      ? detailOpen
+        ? '<div class="mobile-overlay-actions"><button class="mobile-overlay-action" data-action-key="Enter" type="button">Back to records</button></div>'
+        : '<div class="mobile-overlay-actions"><button class="mobile-overlay-action" data-action-key="t" type="button">Change sort</button><button class="mobile-overlay-action" data-action-key="Escape" type="button">Close</button></div>'
+      : "";
     return [
-      '<div class="ranked-v3-card ranked-v3-card-reference-plate">',
+      `<div class="ranked-v3-card ranked-v3-card-reference-plate${mobileShellClass}">`,
       '<div class="ranked-v3-body ranked-v3-body-reference-plate" data-practice-record-archive></div>',
+      mobileActions,
       '</div>'
     ].join("");
   }
@@ -22811,24 +23212,12 @@
   function buildScreenOverlay() {
     if (!screenOverlayEl) return;
     syncStartDepthOverlayPortal(Boolean(
+      isMobileTouchDevice() ||
       (state.phase === "camp" &&
         state.campStartDepthPromptOpen &&
         isHdGraphics()) ||
       (state.phase === "menu" && state.leaderboardModalOpen)
     ));
-
-    if (MOBILE_UNSUPPORTED_BLOCKED) {
-      screenOverlayEl.className = "screen-overlay visible";
-      screenOverlayEl.innerHTML = [
-        `<div class="overlay-card overlay-card-mobile-lock">`,
-        `<h2 class="overlay-title">Mobile Not Supported Yet</h2>`,
-        `<p class="overlay-sub">This game is currently optimized for desktop/laptop only.</p>`,
-        `<p class="overlay-sub">Use a keyboard on PC to play.</p>`,
-        `<p class="overlay-hint">Support for mobile controls is still in progress.</p>`,
-        `</div>`
-      ].join("");
-      return;
-    }
 
     if (canUseDebugCheats() && state.debugCheatOpen) {
       if (state.debugCheatView === "cheat_merchant") {
@@ -22949,17 +23338,21 @@
       const subtitle = hasName
         ? "Update nickname used in leaderboard entries."
         : "Nickname is required before starting a new run.";
-      const hint = "Enter - save | Esc - cancel";
+      const hint = mobileUi.touchDevice
+        ? "Tap Save nickname or Cancel."
+        : "Enter - save | Esc - cancel";
       screenOverlayEl.className = "screen-overlay visible";
       screenOverlayEl.innerHTML = [
         `<div class="overlay-card overlay-card-wide overlay-card-dialog">`,
         `<h2 class="overlay-title">Set Nickname</h2>`,
         `<p class="overlay-sub">${subtitle}</p>`,
         `<div class="name-modal-wrap">`,
+        `<label class="name-input-label" for="nameInput">Dungeon nickname</label>`,
         `<input id="nameInput" class="name-input" type="text" maxlength="18" placeholder="Your nickname" autocomplete="off" spellcheck="false" />`,
         `<small class="leaderboard-note">Allowed: A-Z, 0-9, space, _ and - (max 18).</small>`,
         `</div>`,
         `<p class="overlay-hint">${hint}</p>`,
+        `<div class="mobile-overlay-actions"><button class="mobile-overlay-action" data-action-key="Enter" type="button">Save nickname</button><button class="mobile-overlay-action" data-action-key="Escape" type="button">Cancel</button></div>`,
         `</div>`
       ].join("");
       requestAnimationFrame(() => {
@@ -23002,7 +23395,7 @@
         `<p class="overlay-sub">You have an active Continue slot.</p>`,
         `<p class="overlay-sub">Starting a new game will delete that saved run.</p>`,
         `<div class="overlay-menu">${rows}</div>`,
-        `<p class="overlay-hint">W/S or Arrows - move | Enter - confirm | 1-3 quick select | Esc - cancel</p>`,
+        `<p class="overlay-hint">${mobileUi.touchDevice ? "Tap the option you want." : "W/S or Arrows - move | Enter - confirm | 1-3 quick select | Esc - cancel"}</p>`,
         `</div>`
       ].join("");
       requestAnimationFrame(() => {
@@ -23101,9 +23494,11 @@
                 `</div>`
               ].join("");
             }).join("");
-      const optionsHint = tutorialContext
-        ? "Arrows move | Enter open | Esc close"
-        : rootView
+      const optionsHint = mobileUi.touchDevice
+        ? rootView || tutorialContext
+          ? "Tap a category or guide. Use Close to return."
+          : "Tap an option to apply it. Use Back to return."
+        : tutorialContext || rootView
           ? "Arrows move | Enter open | Esc close"
           : tutorialView
             ? "Arrows move | Enter open | Esc back"
@@ -23121,6 +23516,7 @@
         }</p>`,
         `<div class="overlay-menu">${rows}</div>`,
         `<p class="overlay-hint">${optionsHint}</p>`,
+        `<div class="mobile-overlay-actions"><button class="mobile-overlay-action" data-action-key="Escape" type="button">${rootView || tutorialContext ? "Close" : "Back"}</button></div>`,
         `</div>`
       ].join("");
       return;
@@ -23220,7 +23616,7 @@
           `</main>`,
           `<footer class="gameover-requiem-footer">`,
           `<div class="gameover-requiem-actions">${hdRows}</div>`,
-          `<p class="gameover-requiem-hint">W / S or arrows to choose &nbsp;&middot;&nbsp; Enter to confirm &nbsp;&middot;&nbsp; Esc for menu</p>`,
+          `<p class="gameover-requiem-hint">${mobileUi.touchDevice ? "Tap Main Menu or Practice Records." : "W / S or arrows to choose &nbsp;&middot;&nbsp; Enter to confirm &nbsp;&middot;&nbsp; Esc for menu"}</p>`,
           `</footer>`,
           `</div>`
         ].join("");
@@ -23261,7 +23657,7 @@
         `</div>`,
         `</div>`,
         `<div class="overlay-menu">${rows}</div>`,
-        `<p class="overlay-hint">W/S or Arrows - move | Enter - select | 1 Main Menu | 2 ${getTerminalRecordsLabel()} | Esc Main Menu</p>`,
+        `<p class="overlay-hint">${mobileUi.touchDevice ? "Tap Main Menu or Practice Records." : `W/S or Arrows - move | Enter - select | 1 Main Menu | 2 ${getTerminalRecordsLabel()} | Esc Main Menu`}</p>`,
         `</div>`
       ].join("");
       return;
@@ -23291,7 +23687,7 @@
         `<p class="overlay-sub">Depth ${MAX_DEPTH} completed. The Final Chamber is broken.</p>`,
         `<p class="overlay-sub">Final run: ${finalScore} pts | Depth ${finalDepth} | Gold ${finalGold}</p>`,
         `<div class="overlay-menu">${rows}</div>`,
-        `<p class="overlay-hint">${isHdGraphics() ? "Arrows - move | Enter - select | Esc - Main Menu" : `1 / Enter / Esc - Main Menu | 2 - ${getTerminalRecordsLabel()}`}</p>`,
+        `<p class="overlay-hint">${mobileUi.touchDevice ? "Tap Main Menu or Practice Records." : isHdGraphics() ? "Arrows - move | Enter - select | Esc - Main Menu" : `1 / Enter / Esc - Main Menu | 2 - ${getTerminalRecordsLabel()}`}</p>`,
         `</div>`
       ].join("");
       return;
@@ -23309,10 +23705,11 @@
         `<div class="tutorial-row"><div class="tutorial-keys"><span class="tutorial-key tutorial-key-good">Armor</span></div><div class="tutorial-text">Armor reduces incoming damage each hit. It keeps you alive through burst windows.</div></div>`,
         `<div class="tutorial-row"><div class="tutorial-keys"><span class="tutorial-key tutorial-key-ability">Attack</span></div><div class="tutorial-text">Attack shortens fights and lowers total damage you take from long Warden fights.</div></div>`,
         `<div class="tutorial-row"><div class="tutorial-keys"><span class="tutorial-key tutorial-key-core">Potions/Elixirs</span></div><div class="tutorial-text">Bring sustain and emergency stats before your next Warden attempt.</div></div>`,
-        `<div class="tutorial-row"><div class="tutorial-keys"><span class="tutorial-key tutorial-key-core">Q</span></div><div class="tutorial-text"><strong>Go to Camp:</strong> after clearing a room, press Q anywhere to extract and buy upgrades.</div></div>`,
+        `<div class="tutorial-row"><div class="tutorial-keys"><span class="tutorial-key tutorial-key-core">${mobileUi.touchDevice ? "Extract" : "Q"}</span></div><div class="tutorial-text"><strong>Go to Camp:</strong> after clearing a room, ${mobileUi.touchDevice ? "tap Extract" : "press Q anywhere"} to extract and buy upgrades.</div></div>`,
         `</div>`,
         `</div>`,
-        `<p class="overlay-hint">Press Enter, Esc, or H to continue.</p>`,
+        `<p class="overlay-hint">${mobileUi.touchDevice ? "Tap Continue when you are ready." : "Press Enter, Esc, or H to continue."}</p>`,
+        `<button class="mobile-overlay-action" data-action-key="Enter" type="button">Continue</button>`,
         `</div>`
       ].join("");
       return;
@@ -23366,7 +23763,7 @@
           `<div class="death-requiem-action${deathSelection === 0 ? " selected" : ""}" data-hd-key="r" role="button" tabindex="0" aria-selected="${deathSelection === 0 ? "true" : "false"}"><span>R</span><div><strong>Rise Again</strong><small>Continue with the next life</small></div></div>`,
           `<div class="death-requiem-action${deathSelection === 1 ? " selected" : ""}" data-hd-key="Escape" role="button" tabindex="0" aria-selected="${deathSelection === 1 ? "true" : "false"}"><span>Esc</span><div><strong>Main Menu</strong><small>Abandon this descent</small></div></div>`,
           `</div>`,
-          `<p class="death-requiem-hint">Left/Right choose &nbsp;&middot;&nbsp; Enter confirms &nbsp;&middot;&nbsp; R rises &nbsp;&middot;&nbsp; Esc leaves</p>`,
+          `<p class="death-requiem-hint">${mobileUi.touchDevice ? "Tap Continue or Main Menu." : "Left/Right choose &nbsp;&middot;&nbsp; Enter confirms &nbsp;&middot;&nbsp; R rises &nbsp;&middot;&nbsp; Esc leaves"}</p>`,
           `</div>`
         ].join("");
         return;
@@ -23383,8 +23780,8 @@
         `</div>`,
         `<p class="overlay-sub death-mini-penalty">${relicLossText}</p>`,
         `<div class="death-mini-actions">`,
-        `<div class="death-mini-action death-mini-action-continue"><span class="death-mini-key">R</span><strong>Continue (Next Life)</strong></div>`,
-        `<div class="death-mini-action death-mini-action-menu"><span class="death-mini-key">Esc</span><strong>Main Menu</strong></div>`,
+        `<div class="death-mini-action death-mini-action-continue" data-action-key="r"><span class="death-mini-key">R</span><strong>Continue (Next Life)</strong></div>`,
+        `<div class="death-mini-action death-mini-action-menu" data-action-key="Escape"><span class="death-mini-key">Esc</span><strong>Main Menu</strong></div>`,
         `</div>`,
         `</div>`
       ].join("");
@@ -23432,7 +23829,7 @@
             `</header>`,
             `<div class="forge-relic-grid${state.relics.length === 1 ? " forge-relic-grid-single" : ""}">${rows}</div>`,
             `<div class="forge-footer" data-forge-key="Escape" role="button" tabindex="0" aria-label="Leave Forge"><strong>Leave Forge</strong><small>Keep every carried relic</small></div>`,
-            `<p class="forge-controls"><span>Arrows</span> choose <i></i><span>Enter</span> sacrifice <i></i><span>Esc</span> leave</p>`,
+            `<p class="forge-controls">${mobileUi.touchDevice ? "Tap a relic to sacrifice · Tap Leave Forge to return" : "<span>Arrows</span> choose <i></i><span>Enter</span> sacrifice <i></i><span>Esc</span> leave"}</p>`,
             `</div>`
           ].join("");
           return;
@@ -23442,7 +23839,8 @@
           `<h2 class="overlay-title">Forge Transmute</h2>`,
           `<p class="overlay-sub">Choose 1 relic to sacrifice. The forge will offer 3 replacement relics.</p>`,
           `<div class="overlay-menu">${rows}</div>`,
-          `<p class="overlay-hint">Press ${getRelicDiscardHotkeyHint()} to choose | Esc leave forge</p>`,
+          `<p class="overlay-hint">${mobileUi.touchDevice ? "Tap a relic to sacrifice, or tap Leave Forge." : `Press ${getRelicDiscardHotkeyHint()} to choose | Esc leave forge`}</p>`,
+          mobileUi.touchDevice ? `<div class="mobile-overlay-actions"><button class="mobile-overlay-action" data-action-key="Escape" type="button">Leave Forge</button></div>` : "",
           `</div>`
         ].join("");
         return;
@@ -23480,7 +23878,7 @@
           `</div>`,
           `</div>`,
           `<div class="forge-footer" data-forge-key="Escape" role="button" tabindex="0" aria-label="Leave Forge"><strong>Leave Forge</strong><small>Let the forge go cold</small></div>`,
-          `<p class="forge-controls"><span>Left / Right</span> choose <i></i><span>Enter</span> confirm <i></i><span>Esc</span> leave</p>`,
+          `<p class="forge-controls">${mobileUi.touchDevice ? "Tap a forge action · Tap Leave Forge to return" : "<span>Left / Right</span> choose <i></i><span>Enter</span> confirm <i></i><span>Esc</span> leave"}</p>`,
           `</div>`
         ].join("");
         return;
@@ -23493,7 +23891,8 @@
         `<div class="overlay-menu-row"><div class="overlay-menu-key">1</div><div><strong>Temper</strong><br /><span>Forge 1 unknown relic. Take it or leave it.</span></div></div>`,
         `<div class="overlay-menu-row"><div class="overlay-menu-key">2</div><div><strong>Transmute</strong><br /><span>Sacrifice 1 relic and choose from 3 replacement options.</span></div></div>`,
         `</div>`,
-        `<p class="overlay-hint">1 temper | 2 transmute | Esc leave</p>`,
+        `<p class="overlay-hint">${mobileUi.touchDevice ? "Tap Temper or Transmute." : "1 temper | 2 transmute | Esc leave"}</p>`,
+        mobileUi.touchDevice ? `<div class="mobile-overlay-actions"><button class="mobile-overlay-action" data-action-key="Escape" type="button">Leave Forge</button></div>` : "",
         `</div>`
       ].join("");
       return;
@@ -23524,7 +23923,7 @@
             `<div class="pact-sanctum-term pact-sanctum-price"><span>Sacrifice</span><strong>${pact.downside}</strong></div>`,
             `</div>`,
             `</div>`,
-            `<div class="pact-sanctum-bind"><span>Bind for this run</span><strong>Enter</strong></div>`,
+            `<div class="pact-sanctum-bind"><span>Bind for this run</span><strong>${mobileUi.touchDevice ? "Tap to bind" : "Enter"}</strong></div>`,
             `</div>`
           ].join("");
         }).join("");
@@ -23546,9 +23945,9 @@
           `<div class="pact-sanctum-leave" data-hd-key="3" role="button" tabindex="0" aria-label="${escapeHtmlAttr(leaveTitle)}. ${escapeHtmlAttr(leaveDescription)}">`,
           `<span class="pact-sanctum-leave-key">03</span>`,
           `<div><strong>${leaveTitle}</strong><small>${leaveDescription}</small></div>`,
-          `<span class="pact-sanctum-leave-action">Enter</span>`,
+          `<span class="pact-sanctum-leave-action">${mobileUi.touchDevice ? "Tap to leave" : "Enter"}</span>`,
           `</div>`,
-          `<p class="pact-sanctum-controls"><span>Arrows</span> choose <i></i><span>Enter</span> confirm <i></i><span>Esc</span> close</p>`,
+          `<p class="pact-sanctum-controls">${mobileUi.touchDevice ? "Tap an oath to bind it or tap Leave to refuse" : "<span>Arrows</span> choose <i></i><span>Enter</span> confirm <i></i><span>Esc</span> close"}</p>`,
           `</div>`
         ].join("");
         return;
@@ -23582,7 +23981,7 @@
         `<p class="overlay-sub">${currentPact ? "Replace your current pact, or break it." : "Take one pact for the rest of this game, or walk away."}</p>`,
         `${currentPact ? `<p class="overlay-sub"><strong>Current Pact:</strong> ${currentPact.name}</p>` : ""}`,
         `<div class="overlay-menu">${rows}${thirdRow}</div>`,
-        `<p class="overlay-hint">${isHdGraphics() ? "Arrows choose | Enter confirms | Esc closes" : `1-2 choose pact | 3 ${currentPact ? "break" : "leave"} | Esc close`}</p>`,
+        `<p class="overlay-hint">${mobileUi.touchDevice ? "Tap an oath or Leave." : isHdGraphics() ? "Arrows choose | Enter confirms | Esc closes" : `1-2 choose pact | 3 ${currentPact ? "break" : "leave"} | Esc close`}</p>`,
         `</div>`
       ].join("");
       return;
@@ -23681,7 +24080,7 @@
         `<p class="overlay-sub">If all are sold: +${gainIfAllSold} camp gold.</p>`,
         `<p class="overlay-sub">N:${relicReturn.byRarity?.normal || 0} R:${relicReturn.byRarity?.rare || 0} E:${relicReturn.byRarity?.epic || 0} L:${relicReturn.byRarity?.legendary || 0} M:${relicReturn.byRarity?.mythic || 0}</p>`,
         `<div class="relic-exchange-list">${relicRowsHtml}</div>`,
-        `<p class="overlay-hint">${getRelicDiscardHotkeyHint()} toggle | A all | C clear | Y/Enter sell selected | N/Esc keep all</p>`,
+        `<p class="overlay-hint">${mobileUi.touchDevice ? "Tap relics to select them, then tap Sell Selected or Keep All Relics." : `${getRelicDiscardHotkeyHint()} toggle | A all | C clear | Y/Enter sell selected | N/Esc keep all`}</p>`,
         `</div>`
       ].join("");
       return;
@@ -23732,7 +24131,7 @@
           `<div class="camp-start-action camp-start-action-cancel" data-camp-key="Escape" role="button" tabindex="0"><span class="camp-start-key">Esc</span><strong>Back</strong></div>`,
           `</div>`,
           `</div>`,
-          `<p class="overlay-hint">Arrows choose | Enter confirms | Esc returns</p>`,
+          `<p class="overlay-hint">${mobileUi.touchDevice ? "Tap a depth, then Start. Use Back to return." : "Arrows choose | Enter confirms | Esc returns"}</p>`,
           `</div>`
         ].join("");
         return;
@@ -23763,7 +24162,7 @@
         `<div class="camp-start-action camp-start-action-confirm" data-camp-key="Enter" role="button" tabindex="0"><span class="camp-start-key">Enter/Y</span><strong>Start Run</strong></div>`,
         `<div class="camp-start-action camp-start-action-cancel" data-camp-key="Escape" role="button" tabindex="0"><span class="camp-start-key">Esc/N</span><strong>Back</strong></div>`,
         `</div>`,
-        `<p class="overlay-hint">W/S or Arrows - move | 1-9 / 0 quick select</p>`,
+        `<p class="overlay-hint">${mobileUi.touchDevice ? "Tap a start depth, then tap Start Run or Back." : "W/S or Arrows - move | 1-9 / 0 quick select"}</p>`,
         `</div>`
       ].join("");
       return;
@@ -23803,7 +24202,7 @@
         0,
         Math.floor(state.player.gold * keepRatio)
       )}.`;
-      hint = "Enter/Y confirm | Esc/N cancel";
+      hint = mobileUi.touchDevice ? "Tap Extract Now or Stay in Dungeon." : "Enter/Y confirm | Esc/N cancel";
     } else if (state.phase === "playing" && state.merchantMenuOpen) {
       if (isHdGraphics()) {
         title = state.blackMarketPending
@@ -23845,7 +24244,9 @@
       return;
     } else if (state.phase === "menu") {
       title = isRunPauseMenuActive() ? "Run Paused" : "Main Menu";
-      subtitle = isRunPauseMenuActive() ? "The dungeon waits." : "W/S or Arrows + Enter";
+      subtitle = isRunPauseMenuActive()
+        ? "The dungeon waits."
+        : mobileUi.touchDevice ? "Tap a menu option." : "W/S or Arrows + Enter";
     } else if (state.phase === "dead") {
       const runDepth = Math.max(0, Number(state.depth) || 0);
       const runGoldLost = Math.max(0, Number(state.player.gold) || 0);
@@ -23872,19 +24273,21 @@
         title = isCrimsonRelicDraft
           ? `Crimson Chest - ${slotLabel[0].toUpperCase()}${slotLabel.slice(1)} Limit`
           : `You can only have 1 ${slotLabel}`;
-        subtitle = `1: Keep ${current ? getRelicOverlayUiName(current) : "current"} | 2: Take ${incoming ? getRelicOverlayUiName(incoming) : "new"}`;
+        subtitle = mobileUi.touchDevice
+          ? `Keep ${current ? getRelicOverlayUiName(current) : "current"}, or take ${incoming ? getRelicOverlayUiName(incoming) : "new"}.`
+          : `1: Keep ${current ? getRelicOverlayUiName(current) : "current"} | 2: Take ${incoming ? getRelicOverlayUiName(incoming) : "new"}`;
       } else if (state.relicSwapPending) {
         const incoming = getRelicById(state.relicSwapPending);
         if (state.relicSwapAdditionalDiscards > 0) {
           title = isCrimsonRelicDraft ? "Crimson Chest - Abyssal Swap" : "Abyssal Swap";
           subtitle = incoming
-            ? `Discard ${state.relicSwapAdditionalDiscards} more relic${state.relicSwapAdditionalDiscards === 1 ? "" : "s"} (${getRelicDiscardHotkeyHint()}) to equip ${getRelicOverlayUiName(incoming)}.`
-            : `Discard ${state.relicSwapAdditionalDiscards} more relic${state.relicSwapAdditionalDiscards === 1 ? "" : "s"} (${getRelicDiscardHotkeyHint()}).`;
+            ? `Discard ${state.relicSwapAdditionalDiscards} more relic${state.relicSwapAdditionalDiscards === 1 ? "" : "s"}${mobileUi.touchDevice ? "" : ` (${getRelicDiscardHotkeyHint()})`} to equip ${getRelicOverlayUiName(incoming)}.`
+            : `Discard ${state.relicSwapAdditionalDiscards} more relic${state.relicSwapAdditionalDiscards === 1 ? "" : "s"}${mobileUi.touchDevice ? "" : ` (${getRelicDiscardHotkeyHint()})`}.`;
         } else {
           title = isCrimsonRelicDraft ? "Crimson Chest - Inventory Full" : "Relic Inventory Full";
           subtitle = incoming
-            ? `Choose relic to replace (${getRelicDiscardHotkeyHint()}) for ${getRelicOverlayUiName(incoming)}.`
-            : `Choose relic to replace (${getRelicDiscardHotkeyHint()}).`;
+            ? `Choose a relic to replace${mobileUi.touchDevice ? "" : ` (${getRelicDiscardHotkeyHint()})`} for ${getRelicOverlayUiName(incoming)}.`
+            : `Choose a relic to replace${mobileUi.touchDevice ? "" : ` (${getRelicDiscardHotkeyHint()})`}.`;
         }
       } else {
         title = state.startingRelicDraft
@@ -23914,7 +24317,11 @@
     }
 
     if (state.phase === "menu") {
-      hint = isHdGraphics()
+      hint = mobileUi.touchDevice
+        ? isRunPauseMenuActive()
+          ? "Tap Continue to resume. Swipe to scroll for more options."
+          : "Tap an option. Swipe to scroll."
+        : isHdGraphics()
         ? isRunPauseMenuActive()
           ? "Arrows move | Enter confirm | Esc resume"
           : "Arrows move | Enter confirm"
@@ -23922,13 +24329,19 @@
           ? `Esc resume | 1-${getMenuOptions().length} quick select`
           : `1-${getMenuOptions().length} quick select`;
     }
-    if (state.phase === "dead") hint = "R continue (next life) | Esc menu";
+    if (state.phase === "dead") hint = mobileUi.touchDevice ? "Tap Continue or Main Menu." : "R continue (next life) | Esc menu";
     if (state.phase === "camp") {
       hint = "";
     }
     if (state.phase === "relic") {
       const draftSize = Math.max(1, (state.relicDraft || []).length);
-      if (isHdGraphics()) {
+      if (mobileUi.touchDevice) {
+        hint = state.relicSwapPending
+          ? "Tap the relic to replace, or keep your current relic."
+          : state.startingRelicDraft
+            ? "Tap a relic to bind it."
+            : "Tap a relic to claim it, or tap Skip.";
+      } else if (isHdGraphics()) {
         hint = state.startingRelicDraft
           ? `Arrows choose | Enter binds relic | 1-${draftSize} quick select`
           : isHdStandardRelicDraft
@@ -23953,7 +24366,9 @@
 
     let menuBlock = "";
     if (state.phase === "playing" && state.extractConfirm) {
-      hint = isHdGraphics()
+      hint = mobileUi.touchDevice
+        ? "Tap Extract Now or Stay in Dungeon."
+        : isHdGraphics()
         ? "Arrows choose | Enter confirm | Esc cancel"
         : "Enter/Y confirm | Esc/N cancel";
       menuBlock = `<div class="overlay-menu"><div class="overlay-menu-row" data-hd-key="y" role="button" tabindex="0"><div class="overlay-menu-key">Enter</div><div><strong>Extract Now</strong><br /><span>Accept the gold loss and return to Camp.</span></div></div><div class="overlay-menu-row" data-hd-key="Escape" role="button" tabindex="0"><div class="overlay-menu-key">Esc</div><div><strong>Stay in Dungeon</strong><br /><span>Cancel emergency extraction and continue the run.</span></div></div></div>`;
@@ -24279,7 +24694,7 @@
         serviceRow = buildMerchantRow(
           "6", "Black Market",
           hasEligible
-            ? `Trade a Normal/Rare relic for a higher tier. Press 6 to choose.`
+            ? `Trade a Normal/Rare relic for a higher tier. ${mobileUi.touchDevice ? "Tap Trade to choose." : "Press 6 to choose."}`
             : `No eligible relics (need Normal or Rare).`,
           {
             disabled: !hasEligible,
@@ -24465,12 +24880,12 @@
         );
         menuBlock = `<div class="overlay-menu merchant-menu-dashboard">${consumablesSection}${skillsSection}${relicSection}${utilitySection}${buybackSection}</div>`;
       }
-    if (
-      isHdGraphics() &&
-      state.phase === "playing" &&
-      state.merchantMenuOpen
-    ) {
-      hint = "Arrows choose | Enter confirms | Esc closes or goes back";
+    if (state.phase === "playing" && state.merchantMenuOpen) {
+      if (mobileUi.touchDevice) {
+        hint = "Tap an offer. Swipe to scroll. Use Back to return.";
+      } else if (isHdGraphics()) {
+        hint = "Arrows choose | Enter confirms | Esc closes or goes back";
+      }
     }
     }
 
@@ -24526,6 +24941,9 @@
       overlayExtraBlock,
       hint ? `<p class="overlay-hint">${hint}</p>` : "",
       menuBlock,
+      isHdMerchantOverlay
+        ? `<div class="mobile-overlay-actions"><button class="mobile-overlay-action" data-action-key="Escape" type="button">${merchantViewClass === "merchant-view-dashboard" ? "Close merchant" : "Back to merchant"}</button></div>`
+        : "",
       `</div>`
     ].join("");
     if (screenOverlayEl.className !== nextOverlayClassName) {
@@ -24625,7 +25043,7 @@
       const activeElixir = getElixirById(state.player.elixirType);
       const activeElixirTurns = Math.max(0, Math.floor(Number(state.player.elixirTurns) || 0));
       if (loadoutElixir) {
-        const elixirTooltip = `Charges: ${loadoutCharges}/${ELIXIR_STACK_MAX}.\n${loadoutElixir.statLabel} for ${loadoutElixir.duration} combat turns. Press G during combat to consume 1 charge; only one elixir can be used per turn.${activeElixir?.id === loadoutElixir.id && activeElixirTurns > 0 ? ` Current effect: ${activeElixirTurns} turns remaining.` : ""}`;
+      const elixirTooltip = `Charges: ${loadoutCharges}/${ELIXIR_STACK_MAX}.\n${loadoutElixir.statLabel} for ${loadoutElixir.duration} combat turns. ${mobileUi.touchDevice ? "Use the Elixir action" : "Press G"} during combat to consume 1 charge; only one elixir can be used per turn.${activeElixir?.id === loadoutElixir.id && activeElixirTurns > 0 ? ` Current effect: ${activeElixirTurns} turns remaining.` : ""}`;
         elixirIconRailEl.innerHTML = Array.from({ length: ELIXIR_STACK_MAX }, (_, index) => iconSlot(
           "assets/hd/ui/status/elixir.png",
           `${loadoutElixir.name} charge ${index + 1}/${ELIXIR_STACK_MAX}${index < loadoutCharges ? " available" : " empty"}`,
@@ -24660,7 +25078,7 @@
       };
       const potionHealMin = potionHealForBase(scaledCombat(4) + potionStrengthBonus);
       const potionHealMax = potionHealForBase(scaledCombat(6) + potionStrengthBonus);
-      const potionTooltip = `Charges: ${potionNow}/${potionMax}.\nPress F to restore ${potionHealMin}-${potionHealMax} HP. A potion also cleanses Bleed and Poison. Some relics or pacts can modify healing or temporarily prevent potion use.`;
+      const potionTooltip = `Charges: ${potionNow}/${potionMax}.\n${mobileUi.touchDevice ? "Use the Potion action" : "Press F"} to restore ${potionHealMin}-${potionHealMax} HP. A potion also cleanses Bleed and Poison. Some relics or pacts can modify healing or temporarily prevent potion use.`;
       potionIconRailEl.innerHTML = Array.from({ length: potionMax }, (_, index) => iconSlot(
         "assets/hd/ui/status/potion.png",
         `Potion ${index + 1}/${potionMax}${index < potionNow ? " available" : " empty"}`,
@@ -24669,6 +25087,173 @@
         "Health Potion",
         potionTooltip
       )).join("");
+    }
+  }
+
+  function syncMobileCommandDeck() {
+    if (!mobileCommandDeckEl) return;
+
+    const runVisible = state.phase === "playing" || state.phase === "relic" || state.phase === "camp" || isRunPauseMenuActive();
+    mobileCommandDeckEl.hidden = !runVisible;
+    if (!runVisible) return;
+
+    const maxHp = Math.max(1, Math.round(Number(state.player.maxHp) || 1));
+    const hp = clamp(Math.round(Number(state.player.hp) || 0), 0, maxHp);
+    const shield = Math.max(0, Math.round(Number(state.player.skillShield) || 0));
+    const barrier = Math.max(
+      0,
+      Math.round(
+        (Number(state.player.hpShield) || 0) +
+        (Number(state.player.fracturedShieldBarrier) || 0) +
+        (Number(state.player.bloodVialShield) || 0) +
+        (Number(state.player.crownShield) || 0)
+      )
+    );
+    const shieldTier = getSkillTier("shield");
+    const shieldMax = Math.max(1, Math.round(maxHp * (shieldTier >= 1 ? 1.25 : 1)), shield);
+    const barrierMax = Math.max(1, Math.round(getPlayerHpShieldCap()), maxHp, barrier);
+
+    const syncMobileMeter = (meterEl, valueEl, value, max, displayValue) => {
+      if (!meterEl || !valueEl) return;
+      const safeMax = Math.max(1, Number(max) || 1);
+      const safeValue = clamp(Number(value) || 0, 0, safeMax);
+      const fill = clamp((safeValue / safeMax) * 100, 0, 100);
+      meterEl.style.setProperty("--meter-fill", `${fill.toFixed(2)}%`);
+      meterEl.setAttribute("aria-valuenow", String(value));
+      meterEl.setAttribute("aria-valuemax", String(max));
+      valueEl.textContent = displayValue ?? `${value}/${max}`;
+    };
+
+    syncMobileMeter(mobileHpMeterEl, mobileHpValueEl, hp, maxHp, `${hp}/${maxHp}`);
+    syncMobileMeter(mobileShieldMeterEl, mobileShieldValueEl, shield, shieldMax, String(shield));
+    syncMobileMeter(mobileBarrierMeterEl, mobileBarrierValueEl, barrier, barrierMax, String(barrier));
+
+    const furyMax = Math.max(0, Math.floor(getEffectiveMaxAdrenaline()));
+    const furyNow = clamp(Math.floor(getEffectiveAdrenaline()), 0, furyMax);
+    if (mobileFuryMeterEl && mobileFuryValueEl) {
+      const furyFill = furyMax > 0 ? clamp((furyNow / furyMax) * 100, 0, 100) : 0;
+      mobileFuryMeterEl.style.setProperty("--mobile-fury-fill", `${furyFill.toFixed(2)}%`);
+      mobileFuryMeterEl.style.setProperty("--meter-fill", `${furyFill.toFixed(2)}%`);
+      mobileFuryMeterEl.setAttribute("aria-valuenow", String(furyNow));
+      mobileFuryMeterEl.setAttribute("aria-valuemax", String(furyMax));
+      mobileFuryValueEl.textContent = `${furyNow}/${furyMax}`;
+      mobileFuryMeterEl.dataset.uiTooltipTitle = "Fury";
+      mobileFuryMeterEl.dataset.uiTooltip = `Effective Fury: ${furyNow}/${furyMax}. Each stack increases attack power; Shockwave spends stored Fury.`;
+    }
+
+    if (mobileDepthValueEl) mobileDepthValueEl.textContent = state.phase === "camp" ? "Camp" : `Depth ${state.depth}`;
+    if (mobileRoomValueEl) mobileRoomValueEl.textContent = state.phase === "camp" ? "Sanctuary" : `${ROOM_TYPE_LABELS[state.roomType] || "Room"} Room`;
+    if (mobileRunGoldValueEl) mobileRunGoldValueEl.textContent = String(Math.max(0, Math.floor(Number(state.player.gold) || 0)));
+
+    const potionMax = Math.max(0, Math.floor(Number(state.player.maxPotions) || 0));
+    const potionNow = clamp(Math.floor(Number(state.player.potions) || 0), 0, potionMax);
+    if (mobilePotionValueEl) mobilePotionValueEl.textContent = `${potionNow}/${potionMax}`;
+
+    const elixirCharges = clamp(Math.floor(Number(state.elixirLoadout?.charges) || 0), 0, ELIXIR_STACK_MAX);
+    if (mobileElixirValueEl) mobileElixirValueEl.textContent = hasElixirLoadout() ? `${elixirCharges}/${ELIXIR_STACK_MAX}` : "NONE";
+
+    const inRun = state.phase === "playing" || isRunPauseMenuActive();
+    const skillStatus = (skillId) => {
+      const cd = getSkillCooldownRemaining(skillId);
+      if (skillId === "dash" && inRun && state.dashAimActive) return "ARMED";
+      if (skillId === "shield") {
+        const activeShield = Math.max(0, Math.round(Number(state.player.skillShield) || 0));
+        const activeBarrier = Math.max(0, Math.round(Number(state.player.fracturedShieldBarrier) || 0));
+        if (activeShield > 0 || activeBarrier > 0) return "ACTIVE";
+        const chargeInfo = getShieldChargesInfo();
+        if (chargeInfo?.enabled) return chargeInfo.charges > 0 ? `CH ${chargeInfo.charges}/${chargeInfo.max}` : `${chargeInfo.regenTurns}T`;
+      }
+      if (cd > 0) return `${cd}T`;
+      return inRun ? "READY" : "IDLE";
+    };
+
+    if (mobileDashStatusEl) mobileDashStatusEl.textContent = skillStatus("dash");
+    if (mobileShockwaveStatusEl) mobileShockwaveStatusEl.textContent = skillStatus("aoe");
+    if (mobileShieldStatusEl) mobileShieldStatusEl.textContent = skillStatus("shield");
+
+    const observerTarget = getObserverTargetType();
+    let interactLabel = "Interact";
+    if (isOnMerchant()) interactLabel = "Merchant";
+    else if (isOnForge()) interactLabel = "Forge";
+    else if (isOnPact()) interactLabel = "Pact";
+    else if (observerTarget === "portal") interactLabel = "Descend";
+    else if (observerTarget === "shrine") interactLabel = "Shrine";
+    else if (observerTarget === "chest") interactLabel = "Open";
+    if (mobileInteractLabelEl) mobileInteractLabelEl.textContent = interactLabel;
+
+    const syncActionTone = (buttonId, status) => {
+      const button = document.getElementById(buttonId);
+      if (!button) return;
+      button.classList.toggle("is-armed", status === "ARMED");
+      button.classList.toggle("is-ready", status === "READY" || status.startsWith("CH "));
+      button.classList.toggle("is-cooling", /T$/u.test(status));
+      button.classList.toggle("is-active", status === "ACTIVE");
+    };
+    syncActionTone("mbtnZ", mobileDashStatusEl?.textContent || "");
+    syncActionTone("mbtnX", mobileShockwaveStatusEl?.textContent || "");
+    syncActionTone("mbtnC", mobileShieldStatusEl?.textContent || "");
+    const potionButton = document.getElementById("mbtnF");
+    const elixirButton = document.getElementById("mbtnG");
+    potionButton?.classList.toggle("is-empty", potionNow <= 0);
+    elixirButton?.classList.toggle("is-empty", !hasElixirLoadout() || elixirCharges <= 0);
+
+    const syncActionAccessibility = (buttonId, label, status, options = {}) => {
+      const button = document.getElementById(buttonId);
+      if (!button) return;
+      const normalizedStatus = String(status || "").trim();
+      button.setAttribute("aria-label", normalizedStatus ? `${label}, ${normalizedStatus.toLowerCase()}` : label);
+      button.setAttribute("aria-disabled", options.disabled ? "true" : "false");
+      if (typeof options.pressed === "boolean") {
+        button.setAttribute("aria-pressed", options.pressed ? "true" : "false");
+      } else {
+        button.removeAttribute("aria-pressed");
+      }
+    };
+    const dashStatus = mobileDashStatusEl?.textContent || "";
+    const shockwaveStatus = mobileShockwaveStatusEl?.textContent || "";
+    const shieldStatus = mobileShieldStatusEl?.textContent || "";
+    syncActionAccessibility("mbtnZ", "Dash", dashStatus, {
+      disabled: !inRun || /T$/u.test(dashStatus),
+      pressed: dashStatus === "ARMED"
+    });
+    syncActionAccessibility("mbtnX", "Shockwave", shockwaveStatus, {
+      disabled: !inRun || /T$/u.test(shockwaveStatus)
+    });
+    syncActionAccessibility("mbtnC", "Shield", shieldStatus, {
+      disabled: !inRun || /T$/u.test(shieldStatus)
+    });
+    syncActionAccessibility("mbtnF", "Potion", `${potionNow} of ${potionMax}`, {
+      disabled: !inRun || potionNow <= 0
+    });
+    syncActionAccessibility(
+      "mbtnG",
+      "Elixir",
+      hasElixirLoadout() ? `${elixirCharges} of ${ELIXIR_STACK_MAX}` : "none equipped",
+      { disabled: !inRun || !hasElixirLoadout() || elixirCharges <= 0 }
+    );
+    syncActionAccessibility("mbtnE", interactLabel, "action", { disabled: !inRun });
+    syncActionAccessibility("mbtnQ", "Emergency extract", "action", { disabled: !inRun });
+
+    if (mobileGameStatusEl) {
+      const enemyCount = Array.isArray(state.enemies)
+        ? state.enemies.filter((enemy) => Number(enemy?.hp) > 0).length
+        : 0;
+      const roomLabel = state.phase === "camp"
+        ? "Camp sanctuary"
+        : `Depth ${state.depth}, ${ROOM_TYPE_LABELS[state.roomType] || "room"}`;
+      const nextMobileGameStatus = [
+        roomLabel,
+        `Health ${hp} of ${maxHp}`,
+        `Shield ${shield}`,
+        `Barrier ${barrier}`,
+        `Fury ${furyNow} of ${furyMax}`,
+        `Player row ${Number(state.player.y) + 1}, column ${Number(state.player.x) + 1}`,
+        `${enemyCount} enemies remain`,
+        `Current action: ${interactLabel}`
+      ].join(". ") + ".";
+      if (mobileGameStatusEl.textContent !== nextMobileGameStatus) {
+        mobileGameStatusEl.textContent = nextMobileGameStatus;
+      }
     }
   }
 
@@ -24685,11 +25270,13 @@
     updateRoomVitalRails();
     buildDepthBadge();
     buildSkillsBar();
+    syncMobileCommandDeck();
     buildActionText();
     buildMutatorPanel();
     buildLog();
     buildScreenOverlay();
     syncHdMenuNavigation();
+    syncMobileOverlayAccessibility();
     syncMobileUiState({ forceBoard: isScreenOverlayVisible() });
     state.uiDirty = false;
   }
@@ -31439,7 +32026,7 @@
   }
 
   window.addEventListener("keydown", (event) => {
-    if (MOBILE_UNSUPPORTED_BLOCKED) return;
+    if (isMobilePortraitBlocked()) return;
     const key = event.key.toLowerCase();
     const isConfirm = key === "enter" || key === " " || key === "spacebar";
     const isNameInputTarget = state.nameModalOpen && event.target && event.target.id === "nameInput";
@@ -32132,7 +32719,9 @@
               tryUseBlackMarket(eligible[0]);
             } else {
               state.blackMarketPending = eligible;
-              pushLog("Black Market: choose relic to trade up (press 6 or Esc to cancel).", "neutral");
+        pushLog(mobileUi.touchDevice
+          ? "Black Market: tap a relic to trade, or use Back to cancel."
+          : "Black Market: choose relic to trade up (press 6 or Esc to cancel).", "neutral");
               markUiDirty();
             }
           }
@@ -32219,7 +32808,9 @@
       } else if (state.phase === "dead") {
         startRun({ carriedRelics: [...state.relics], startDepth: 0 });
       } else if (state.phase === "playing" || state.phase === "relic") {
-        pushLog("Restart disabled during a run. Use Esc -> menu if needed.", "bad");
+      pushLog(mobileUi.touchDevice
+        ? "Restart disabled during a run. Use Menu if needed."
+        : "Restart disabled during a run. Use Esc -> menu if needed.", "bad");
       }
       return;
     }
@@ -32295,7 +32886,9 @@
         cancelDashAim();
         return;
       }
-      pushLog("Dash armed: choose direction (WASD/Arrows) or Esc.", "bad");
+      pushLog(mobileUi.touchDevice
+        ? "Dash armed: tap a direction control or tap around the hero. Tap Dash again to cancel."
+        : "Dash armed: choose direction (WASD/Arrows) or Esc.", "bad");
       return;
     }
 
@@ -32355,8 +32948,17 @@
   window.addEventListener("pointerup", onMobileSwipePointerEnd, { passive: true });
   window.addEventListener("pointercancel", onMobileSwipePointerCancel, { passive: true });
 
+  if (mobileDetailsButtonEl) {
+    mobileDetailsButtonEl.addEventListener("click", () => {
+      if (!mobileUi.active || mobileUi.portraitBlocked || isScreenOverlayVisible()) return;
+      dismissMobileSwipeHint();
+      setMobileDetailsOpen(!mobileUi.detailsOpen);
+    });
+  }
+
   if (mobileMenuButtonEl) {
     mobileMenuButtonEl.addEventListener("click", () => {
+      setMobileDetailsOpen(false);
       dismissMobileSwipeHint();
       openMainMenuFromMobileButton();
       syncMobileUiState({ forceBoard: true });
@@ -32367,16 +32969,61 @@
   function bindMobileButton(id, handler) {
     const el = document.getElementById(id);
     if (!el) return;
+    let pendingPointerId = null;
+    let suppressNextClick = false;
+    const isDisabled = () => el.disabled || el.getAttribute("aria-disabled") === "true";
+    const clearPending = (event) => {
+      if (pendingPointerId == null || event.pointerId !== pendingPointerId) return false;
+      mobileUi.buttonPointerIds.delete(pendingPointerId);
+      pendingPointerId = null;
+      el.classList.remove("is-pressed");
+      return true;
+    };
     el.addEventListener("pointerdown", (e) => {
+      if (e.pointerType === "touch" && e.isPrimary === false) return;
+      if (isDisabled()) return;
+      if (mobileUi.buttonPointerIds.size > 0 && !mobileUi.buttonPointerIds.has(e.pointerId)) return;
+      e.preventDefault();
+      pendingPointerId = e.pointerId;
       mobileUi.buttonPointerIds.add(e.pointerId);
+      el.classList.add("is-pressed");
       ensureAudio();
-      handler(e);
     });
-    const clearId = (e) => { mobileUi.buttonPointerIds.delete(e.pointerId); };
-    el.addEventListener("pointerup", clearId);
-    el.addEventListener("pointercancel", clearId);
-    el.addEventListener("pointerleave", clearId);
+    el.addEventListener("pointerup", (e) => {
+      if (pendingPointerId !== e.pointerId) return;
+      const rect = el.getBoundingClientRect();
+      const releasedInside = e.clientX >= rect.left
+        && e.clientX <= rect.right
+        && e.clientY >= rect.top
+        && e.clientY <= rect.bottom;
+      clearPending(e);
+      if (releasedInside && !isDisabled()) {
+        suppressNextClick = true;
+        handler(e);
+      }
+    });
+    el.addEventListener("pointercancel", clearPending);
+    el.addEventListener("pointerleave", clearPending);
+    el.addEventListener("click", (event) => {
+      if (suppressNextClick) {
+        suppressNextClick = false;
+        event.preventDefault();
+        return;
+      }
+      if (isDisabled()) return;
+      event.preventDefault();
+      ensureAudio();
+      handler(event);
+    });
+    window.addEventListener("pointerup", clearPending, { passive: true });
+    window.addEventListener("pointercancel", clearPending, { passive: true });
   }
+
+  const clearMobileButtonPointerId = (event) => {
+    mobileUi.buttonPointerIds.delete(event.pointerId);
+  };
+  window.addEventListener("pointerup", clearMobileButtonPointerId, { passive: true });
+  window.addEventListener("pointercancel", clearMobileButtonPointerId, { passive: true });
 
   function mobileMoveHandler(dx, dy) {
     return () => {
@@ -32390,71 +33037,127 @@
     };
   }
 
+  function clearMobileBoardRepeat(pointerId = null) {
+    if (pointerId != null && mobileUi.boardPointerId != null && pointerId !== mobileUi.boardPointerId) {
+      return false;
+    }
+    if (mobileUi.boardRepeatTimer != null) {
+      clearTimeout(mobileUi.boardRepeatTimer);
+      mobileUi.boardRepeatTimer = null;
+    }
+    mobileUi.boardPointerId = null;
+    mobileUi.boardDirection = null;
+    mobileUi.boardRepeatCount = 0;
+    return true;
+  }
+
+  function getMobileTouchDirection(clientX, clientY) {
+    const rect = canvas.getBoundingClientRect();
+    if (!rect.width || !rect.height) return null;
+    const logicalX = (clientX - rect.left) * (CANVAS_SIZE / rect.width);
+    const logicalY = (clientY - rect.top) * (CANVAS_SIZE / rect.height);
+    const playerCenterX = (state.player.x + 0.5) * TILE;
+    const playerCenterY = (state.player.y + 0.5) * TILE;
+    const deltaX = logicalX - playerCenterX;
+    const deltaY = logicalY - playerCenterY;
+    const deadzone = TILE * MOBILE_TOUCH_DEADZONE_TILES;
+    if (Math.max(Math.abs(deltaX), Math.abs(deltaY)) < deadzone) return null;
+    if (Math.abs(deltaX) >= Math.abs(deltaY)) {
+      return { dx: deltaX < 0 ? -1 : 1, dy: 0 };
+    }
+    return { dx: 0, dy: deltaY < 0 ? -1 : 1 };
+  }
+
+  function performMobileActionDirection(direction) {
+    if (!direction) return false;
+    if (isMobilePortraitBlocked()) return false;
+    if (!mobileUi.active || mobileUi.paneIndex !== MOBILE_PANE_BOARD) return false;
+    if (state.phase !== "playing" || isScreenOverlayVisible() || isTurnInputLocked()) return false;
+    if (state.dashAimActive) {
+      tryUseDashSkill(direction.dx, direction.dy);
+      clearMobileBoardRepeat();
+      return true;
+    }
+    tryMove(direction.dx, direction.dy);
+    return true;
+  }
+
+  function scheduleMobileBoardRepeat(pointerId) {
+    if (mobileUi.boardRepeatTimer != null) clearTimeout(mobileUi.boardRepeatTimer);
+    const repeat = () => {
+      if (mobileUi.boardPointerId !== pointerId || !mobileUi.boardDirection) {
+        clearMobileBoardRepeat(pointerId);
+        return;
+      }
+      if (
+        isMobilePortraitBlocked() ||
+        !mobileUi.active ||
+        mobileUi.paneIndex !== MOBILE_PANE_BOARD ||
+        state.phase !== "playing" ||
+        isScreenOverlayVisible()
+      ) {
+        clearMobileBoardRepeat(pointerId);
+        return;
+      }
+      if (mobileUi.boardRepeatCount >= MOBILE_TOUCH_REPEAT_MAX_STEPS) {
+        clearMobileBoardRepeat(pointerId);
+        return;
+      }
+      mobileUi.boardRepeatCount += 1;
+      performMobileActionDirection(mobileUi.boardDirection);
+      if (mobileUi.boardPointerId === pointerId) {
+        mobileUi.boardRepeatTimer = setTimeout(repeat, MOBILE_TOUCH_REPEAT_INTERVAL_MS);
+      }
+    };
+    mobileUi.boardRepeatTimer = setTimeout(repeat, MOBILE_TOUCH_REPEAT_DELAY_MS);
+  }
+
+  function onMobileBoardPointerDown(event) {
+    if (event.pointerType !== "touch") return;
+    if (event.isPrimary === false || mobileUi.boardPointerId != null) return;
+    if (isMobilePortraitBlocked()) return;
+    if (!mobileUi.active || mobileUi.paneIndex !== MOBILE_PANE_BOARD) return;
+    if (state.phase !== "playing" || isScreenOverlayVisible() || isTurnInputLocked()) return;
+    const direction = getMobileTouchDirection(event.clientX, event.clientY);
+    if (!direction) return;
+    event.preventDefault();
+    event.stopPropagation();
+    clearMobileBoardRepeat();
+    mobileUi.boardPointerId = event.pointerId;
+    mobileUi.boardDirection = direction;
+    mobileUi.boardRepeatCount = 0;
+    try {
+      canvas.setPointerCapture(event.pointerId);
+    } catch {
+      // Synthetic QA pointers and older mobile browsers may not expose capture.
+    }
+    ensureAudio();
+    performMobileActionDirection(direction);
+    if (mobileUi.boardPointerId === event.pointerId) {
+      scheduleMobileBoardRepeat(event.pointerId);
+    }
+  }
+
+  function onMobileBoardPointerEnd(event) {
+    if (mobileUi.boardPointerId == null || event.pointerId !== mobileUi.boardPointerId) return;
+    event.preventDefault();
+    event.stopPropagation();
+    clearMobileBoardRepeat(event.pointerId);
+  }
+
   bindMobileButton("mbtnUp", mobileMoveHandler(0, -1));
   bindMobileButton("mbtnDown", mobileMoveHandler(0, 1));
   bindMobileButton("mbtnLeft", mobileMoveHandler(-1, 0));
   bindMobileButton("mbtnRight", mobileMoveHandler(1, 0));
 
-  bindMobileButton("mbtnZ", () => {
-    if (state.phase !== "playing") return;
-    if (isTurnInputLocked()) return;
-    tryUseSkillByKey("z");
-  });
-  bindMobileButton("mbtnX", () => {
-    if (state.phase !== "playing") return;
-    if (isTurnInputLocked()) return;
-    tryUseSkillByKey("x");
-  });
-  bindMobileButton("mbtnC", () => {
-    if (MOBILE_UNSUPPORTED_BLOCKED) return;
-    if (state.phase !== "playing") return;
-    if (isTurnInputLocked()) return;
-    tryUseSkillByKey("c");
-  });
-
-  bindMobileButton("mbtnF", () => {
-    if (MOBILE_UNSUPPORTED_BLOCKED) return;
-    if (state.phase !== "playing") return;
-    if (isTurnInputLocked()) return;
-    drinkPotion();
-  });
-  bindMobileButton("mbtnE", () => {
-    if (MOBILE_UNSUPPORTED_BLOCKED) return;
-    if (state.phase !== "playing") return;
-    if (isTurnInputLocked()) return;
-    if (tryConfirmCrossroadsPowerChest()) {
-      return;
-    }
-    if (state.roomType === "merchant" && isOnMerchant()) {
-      if (state.merchantMenuOpen) {
-        closeMerchantMenu();
-      } else {
-        openMerchantMenu();
-      }
-      return;
-    }
-    if (state.roomType === "forge" && isOnForge()) {
-      openForgeRoom();
-      return;
-    }
-    if (state.roomType === "pact" && isOnPact()) {
-      openPactRoom();
-      return;
-    }
-    attemptDescend();
-  });
-  bindMobileButton("mbtnQ", () => {
-    if (MOBILE_UNSUPPORTED_BLOCKED) return;
-    if (state.phase !== "playing") return;
-    if (isTurnInputLocked()) return;
-    if (state.roomCleared) {
-      extractRun({ forced: true });
-    } else {
-      openEmergencyExtractConfirm();
-    }
-  });
+  const dispatchCanonicalMobileKey = (key) => {
+    window.dispatchEvent(new KeyboardEvent("keydown", { key, bubbles: true }));
+  };
+  for (const key of ["z", "x", "c", "f", "g", "e", "q"]) {
+    bindMobileButton(`mbtn${key.toUpperCase()}`, () => dispatchCanonicalMobileKey(key));
+  }
   bindMobileButton("mbtnR", () => {
-    if (MOBILE_UNSUPPORTED_BLOCKED) return;
+    if (isMobilePortraitBlocked()) return;
     if (state.phase === "camp") {
       openCampStartDepthPrompt();
     } else if (state.phase === "dead") {
@@ -32462,9 +33165,10 @@
     }
   });
 
-  window.addEventListener("pointerdown", () => {
-    if (MOBILE_UNSUPPORTED_BLOCKED) return;
+  window.addEventListener("pointerdown", (event) => {
+    if (isMobilePortraitBlocked()) return;
     ensureAudio();
+    if (screenOverlayEl && screenOverlayEl.contains(event.target)) return;
     if (canUseDebugCheats() && state.debugCheatOpen) return;
     if (state.tutorialModalOpen) {
       closeTutorialModal();
@@ -32594,6 +33298,49 @@
       return tryClaimDebugCheatMerchantRelic(relicId);
     };
 
+    const activateCanonicalMobileAction = (control) => {
+      if (!control || control.getAttribute("aria-disabled") === "true") return false;
+      const explicitKey = String(
+        control.dataset.mobileAction ||
+        control.dataset.actionKey ||
+        control.dataset.key ||
+        ""
+      ).trim();
+      const textKeyMatch = String(control.textContent || "").trim().match(/^(?:\[)?([a-z0-9])(?:\]|\s|$)/iu);
+      const namedKeys = {
+        escape: "Escape",
+        enter: "Enter",
+        space: " ",
+        arrowup: "ArrowUp",
+        arrowdown: "ArrowDown",
+        arrowleft: "ArrowLeft",
+        arrowright: "ArrowRight"
+      };
+      const normalizedExplicitKey = namedKeys[explicitKey.toLowerCase()] || explicitKey.toLowerCase();
+      const canonicalKey = explicitKey && explicitKey !== "dock"
+        ? normalizedExplicitKey
+        : textKeyMatch?.[1]?.toLowerCase() || "";
+      ensureAudio();
+      if (canonicalKey) {
+        window.dispatchEvent(new KeyboardEvent("keydown", { key: canonicalKey, bubbles: true }));
+        return true;
+      }
+      if (!control.classList.contains("overlay-menu-row")) return false;
+      const rows = [...screenOverlayEl.querySelectorAll(".overlay-menu-row")]
+        .filter((row) => row.getAttribute("aria-disabled") !== "true");
+      const targetIndex = rows.indexOf(control);
+      if (targetIndex < 0) return false;
+      const selectedIndex = rows.findIndex((row) => row.classList.contains("selected"));
+      if (selectedIndex >= 0) {
+        const steps = (targetIndex - selectedIndex + rows.length) % rows.length;
+        for (let index = 0; index < steps; index += 1) {
+          window.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowDown", bubbles: true }));
+        }
+      }
+      window.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
+      return true;
+    };
+
     screenOverlayEl.addEventListener("click", (event) => {
 
       const row = event.target?.closest?.(".merchant-row[data-merchant-key]");
@@ -32622,8 +33369,17 @@
         return;
       }
       const hdKeyControl = event.target?.closest?.("[data-hd-key]");
-      if (!hdKeyControl || !screenOverlayEl.contains(hdKeyControl)) return;
-      activateHdKeyControl(hdKeyControl);
+      if (hdKeyControl && screenOverlayEl.contains(hdKeyControl)) {
+        activateHdKeyControl(hdKeyControl);
+        return;
+      }
+      const mobileAction = event.target instanceof Element
+        ? event.target.closest(".overlay-menu-row, .camp-overlay-action, .death-mini-action, [data-mobile-action], [data-action-key]")
+        : null;
+      if (!mobileAction || !screenOverlayEl.contains(mobileAction)) return;
+      event.preventDefault();
+      event.stopPropagation();
+      activateCanonicalMobileAction(mobileAction);
     });
     screenOverlayEl.addEventListener("pointerover", (event) => {
       const control = event.target?.closest?.(HD_MENU_NAV_SELECTOR);
@@ -32637,6 +33393,25 @@
     });
 
     screenOverlayEl.addEventListener("keydown", (event) => {
+      if (
+        event.key === "Tab"
+        && mobileUi.active
+        && screenOverlayEl.getAttribute("aria-modal") === "true"
+      ) {
+        const focusable = getMobileOverlayFocusable();
+        event.preventDefault();
+        event.stopPropagation();
+        if (focusable.length <= 0) {
+          screenOverlayEl.focus({ preventScroll: true });
+          return;
+        }
+        const activeIndex = focusable.indexOf(document.activeElement);
+        const nextIndex = event.shiftKey
+          ? (activeIndex <= 0 ? focusable.length - 1 : activeIndex - 1)
+          : (activeIndex < 0 || activeIndex >= focusable.length - 1 ? 0 : activeIndex + 1);
+        focusable[nextIndex].focus({ preventScroll: true });
+        return;
+      }
       if (event.key !== "Enter" && event.key !== " ") return;
 
       const row = event.target?.closest?.(".merchant-row[data-merchant-key]");
@@ -32675,10 +33450,19 @@
         return;
       }
       const hdKeyControl = event.target?.closest?.("[data-hd-key]");
-      if (!hdKeyControl || !screenOverlayEl.contains(hdKeyControl)) return;
+      if (hdKeyControl && screenOverlayEl.contains(hdKeyControl)) {
+        event.preventDefault();
+        event.stopPropagation();
+        activateHdKeyControl(hdKeyControl);
+        return;
+      }
+      const mobileAction = event.target instanceof Element
+        ? event.target.closest(".overlay-menu-row, .camp-overlay-action, .death-mini-action, [data-mobile-action], [data-action-key]")
+        : null;
+      if (!mobileAction || !screenOverlayEl.contains(mobileAction)) return;
       event.preventDefault();
       event.stopPropagation();
-      activateHdKeyControl(hdKeyControl);
+      activateCanonicalMobileAction(mobileAction);
     });
     screenOverlayEl.addEventListener("input", (event) => {
       const target = event.target;
@@ -32719,6 +33503,12 @@
   [hpRailEl, protectionRailEl].forEach(bindHdUiTooltipSurface);
   [leftResourceRailEl, potionResourceRailEl].forEach(bindHdUiTooltipSurface);
   bindHdUiTooltipSurface(screenOverlayEl);
+
+  canvas.addEventListener("pointerdown", onMobileBoardPointerDown);
+  canvas.addEventListener("pointerup", onMobileBoardPointerEnd);
+  canvas.addEventListener("pointercancel", onMobileBoardPointerEnd);
+  canvas.addEventListener("pointerleave", onMobileBoardPointerEnd);
+  canvas.addEventListener("lostpointercapture", onMobileBoardPointerEnd);
 
   canvas.addEventListener("pointermove", (event) => {
     if (state.phase !== "playing") {
@@ -32932,11 +33722,22 @@
   };
 
   window.addEventListener("resize", handleViewportChange);
+  window.addEventListener("orientationchange", handleViewportChange);
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener("resize", handleViewportChange);
+  }
   if (mobileLayoutMedia) {
     if (typeof mobileLayoutMedia.addEventListener === "function") {
       mobileLayoutMedia.addEventListener("change", handleViewportChange);
     } else if (typeof mobileLayoutMedia.addListener === "function") {
       mobileLayoutMedia.addListener(handleViewportChange);
+    }
+  }
+  if (mobileCoarsePointerMedia) {
+    if (typeof mobileCoarsePointerMedia.addEventListener === "function") {
+      mobileCoarsePointerMedia.addEventListener("change", handleViewportChange);
+    } else if (typeof mobileCoarsePointerMedia.addListener === "function") {
+      mobileCoarsePointerMedia.addListener(handleViewportChange);
     }
   }
 
