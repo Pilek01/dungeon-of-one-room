@@ -372,8 +372,8 @@
     },
     {
       "file": "life-policy.js",
-      "byteLength": 8289,
-      "sha256": "7d17e353d668e1f24f5d2dff2c688bb8fbf78f0297486e3b925c5e4f1e6db48c"
+      "byteLength": 8313,
+      "sha256": "b40a39badc1040d48e257b9330f9b116b20ed8cd2057fea312051f1a29b355f4"
     },
     {
       "file": "merchant-policy.js",
@@ -457,8 +457,8 @@
     },
     {
       "file": "ruleset-hash-policy.js",
-      "byteLength": 1044,
-      "sha256": "b199ab809d9faf0b40888e17ac7110917f4cc3ac6b80c2b37a8b7a470f62f1ee"
+      "byteLength": 1198,
+      "sha256": "72b19a55b9006e6ddb2fd824a58f4bd9afecbbc0b11c94ade66ed4c399460470"
     },
     {
       "file": "run-modifiers.js",
@@ -566,5 +566,5 @@
       "sha256": "cfce80fea7bd5d1328020055f2012bcaeaf9b61e5438e437bf948a4288fb8bf0"
     }
   ],
-  "rulesetHash": "sha256:3c6e43e5e9b95d542d7c28a170b468b7b53ca396bf916986f42fc93254cfbe17"
+  "rulesetHash": "sha256:3086ef71f8202993e6657abf04d1a541bf17688e8a5a74b98271d27567a18595"
 }
