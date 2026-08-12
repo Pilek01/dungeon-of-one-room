@@ -1310,7 +1310,9 @@
       const fatalPayload = { classification: "local_fatal_event" };
       if (pendingElixirUsage && pendingElixirUsage.count > 0) fatalPayload.elixirUsage = { ...pendingElixirUsage };
       const presentationCause = normalizePresentationCause(context?.reason);
-      if (presentationCause) fatalPayload.presentationCause = presentationCause;
+      if (
+        presentationCause && protocol.supportsFatalPresentationCause?.(previousState?.rulesetHash) === true
+      ) fatalPayload.presentationCause = presentationCause;
       const response = await createClient().event("report_fatal_event", fatalPayload);
       pendingElixirUsage = null;
       const state = response.metaState;
