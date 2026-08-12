@@ -828,6 +828,10 @@ async function main() {
     await practiceDetail.locator('[data-record-nav-region="detail-action"][data-record-action="back"]').focus();
     await save.page.keyboard.press("Enter");
     await practiceArchive.waitFor({ state: "visible" });
+    await save.page.waitForFunction((runId) => (
+      document.activeElement?.getAttribute("data-record-action") === "inspect" &&
+      document.activeElement?.getAttribute("data-record-run-id") === runId
+    ), openedRunId);
     const restoredFocus = await save.page.evaluate(() => ({
       action: document.activeElement?.getAttribute("data-record-action") || "",
       runId: document.activeElement?.getAttribute("data-record-run-id") || ""
