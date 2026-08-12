@@ -7,6 +7,10 @@ import http from "node:http";
 import path from "node:path";
 import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
+import {
+  injectCheckoutBuildIdentity,
+  readCurrentCheckoutBuildIdentity
+} from "./current-checkout-build-metadata.mjs";
 
 const require = createRequire(import.meta.url);
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -219,6 +223,7 @@ function mimeType(filePath) {
 
 async function startStaticServer() {
   const rootWithSeparator = `${ROOT}${path.sep}`;
+  const buildIdentity = readCurrentCheckoutBuildIdentity(ROOT);
   const server = http.createServer(async (request, response) => {
     try {
       const requestUrl = new URL(request.url || "/", "http://127.0.0.1");
@@ -235,7 +240,12 @@ async function startStaticServer() {
         "content-type": mimeType(resolvedFile),
         "cache-control": "no-store"
       });
-      fs.createReadStream(resolvedFile).pipe(response);
+      if (relative === "config.js") {
+        const source = await fsPromises.readFile(resolvedFile);
+        response.end(injectCheckoutBuildIdentity(source, buildIdentity));
+      } else {
+        fs.createReadStream(resolvedFile).pipe(response);
+      }
     } catch {
       response.writeHead(404, { "content-type": "text/plain; charset=utf-8" }).end("Not found");
     }

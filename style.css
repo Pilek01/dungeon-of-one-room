@@ -6250,3 +6250,566 @@ body.ranked-v3-modal-open #screenOverlay {
     transform: translateX(-2.1cqw);
   }
 }
+
+/* Mobile v1: touch-only landscape shell and portrait orientation gate. */
+body.mobile-touch {
+  --mobile-safe-top: env(safe-area-inset-top, 0px);
+  --mobile-safe-right: env(safe-area-inset-right, 0px);
+  --mobile-safe-bottom: env(safe-area-inset-bottom, 0px);
+  --mobile-safe-left: env(safe-area-inset-left, 0px);
+  width: 100%;
+  min-height: 100vh;
+  min-height: 100svh;
+  padding: 0;
+  overflow: hidden;
+}
+
+#mobileRotateOverlay[hidden] {
+  display: none !important;
+}
+
+.mobile-overlay-action {
+  display: none;
+}
+
+.mobile-overlay-actions {
+  display: none;
+}
+
+body.mobile-touch .mobile-overlay-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 48px;
+  min-height: 48px;
+  margin: 12px auto 0;
+  padding: 10px 18px;
+  border: 1px solid #d7b56599;
+  border-radius: 8px;
+  color: #f4e7c8;
+  font: 700 0.78rem/1 Georgia, "Times New Roman", serif;
+  letter-spacing: 0.08em;
+  background: linear-gradient(180deg, #3a2f25, #17131a);
+  box-shadow: inset 0 0 0 1px #08090c, 0 7px 18px #0008;
+  touch-action: manipulation;
+}
+
+body.mobile-touch .mobile-overlay-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+body.mobile-touch .mobile-overlay-actions .mobile-overlay-action {
+  margin: 0;
+}
+
+body.mobile-touch.mobile-portrait #mobileRotateOverlay:not([hidden]) {
+  display: grid;
+  position: fixed;
+  inset: 0;
+  z-index: 2147483000;
+  place-items: center;
+  box-sizing: border-box;
+  min-height: 100vh;
+  min-height: 100dvh;
+  padding:
+    calc(24px + var(--mobile-safe-top))
+    calc(24px + var(--mobile-safe-right))
+    calc(24px + var(--mobile-safe-bottom))
+    calc(24px + var(--mobile-safe-left));
+  overflow: auto;
+  color: #f6f0df;
+  background:
+    radial-gradient(circle at 50% 0%, #34405d 0%, transparent 42%),
+    radial-gradient(circle at 50% 100%, #171020 0%, transparent 55%),
+    #090b12;
+  touch-action: none;
+}
+
+.mobile-rotate-card {
+  width: min(100%, 27rem);
+  max-height: calc(100dvh - var(--mobile-safe-top, 0px) - var(--mobile-safe-bottom, 0px) - 32px);
+  box-sizing: border-box;
+  padding: clamp(24px, 7vw, 44px);
+  overflow: auto;
+  border: 1px solid #e7c1678c;
+  border-radius: 20px;
+  color: #f6f0df;
+  text-align: center;
+  background:
+    linear-gradient(145deg, #181d2cf7, #0a0c14f7),
+    url("assets/hd/ui/abyssal-gothic/panel-texture.png");
+  box-shadow: 0 24px 80px #0000008c, inset 0 1px #ffffff14;
+}
+
+.mobile-rotate-glyph {
+  display: block;
+  margin: 0 auto 12px;
+  color: #e8bc63;
+  font-size: 3rem;
+  line-height: 1;
+  text-shadow: 0 0 24px #d8a84b66;
+}
+
+.mobile-rotate-kicker {
+  margin: 0 0 8px;
+  color: #d7b565;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+}
+
+.mobile-rotate-card h2 {
+  margin: 0 0 12px;
+  font: 700 clamp(1.35rem, 5vw, 2rem)/1.1 Georgia, serif;
+}
+
+.mobile-rotate-card p:last-child {
+  margin: 0;
+  color: #c8c9d2;
+  line-height: 1.5;
+}
+
+body.mobile-touch.mobile-landscape,
+body.mobile-touch.mobile-landscape .app,
+body.mobile-touch.mobile-landscape .layout,
+body.mobile-touch.mobile-landscape .layout-track {
+  height: 100vh;
+  min-height: 100vh;
+  height: 100dvh;
+  min-height: 100svh;
+}
+
+body.mobile-touch.mobile-landscape .app {
+  width: 100%;
+  max-width: 100vw;
+  box-sizing: border-box;
+  padding:
+    var(--mobile-safe-top)
+    var(--mobile-safe-right)
+    var(--mobile-safe-bottom)
+    var(--mobile-safe-left);
+  gap: 0;
+  overflow: hidden;
+}
+
+body.mobile-touch.mobile-landscape .layout {
+  width: 100%;
+  min-width: 0;
+  min-height: 0;
+  border-radius: 0;
+  overflow: hidden;
+}
+
+body.mobile-touch.mobile-landscape .layout-track {
+  display: flex;
+  align-items: stretch;
+  width: 300%;
+  min-width: 0;
+  min-height: 0;
+  gap: 0;
+  transform: translate3d(calc(var(--mobile-pane-index, 1) * -33.333%), 0, 0);
+}
+
+body.mobile-touch.mobile-landscape .layout-track > .panel,
+body.mobile-touch.mobile-landscape .layout-track > .board {
+  width: 33.333%;
+  max-width: 33.333%;
+  min-height: 0;
+  flex: 0 0 33.333%;
+}
+
+body.mobile-touch.mobile-landscape .layout-track > .panel {
+  height: 100%;
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+
+body.mobile-touch.mobile-landscape .board {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(112px, 152px);
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  gap: clamp(4px, 1vw, 10px);
+  width: 33.333%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  box-sizing: border-box;
+  padding: clamp(6px, 1vw, 10px);
+  overflow: hidden;
+  align-content: stretch;
+}
+
+body.mobile-touch.mobile-landscape.graphics-hd-ui:has(#game.graphics-hd) .board {
+  grid-template-columns: minmax(0, 1fr) minmax(112px, 152px);
+  grid-template-rows: 36px minmax(0, 1fr) 72px;
+  gap: clamp(4px, 1vw, 10px);
+  padding: clamp(6px, 1vw, 10px);
+}
+
+body.mobile-touch.mobile-landscape .board > .titlebar {
+  display: none;
+}
+
+body.mobile-touch.mobile-landscape .board > .depth-badge {
+  position: relative;
+  grid-column: 1;
+  grid-row: 1;
+  width: 100%;
+  height: 36px;
+  min-height: 36px;
+  min-width: 0;
+  margin: 0;
+  padding-block: 3px;
+  overflow: hidden;
+  font-size: clamp(0.62rem, 1.4vw, 0.78rem);
+  line-height: 1.1;
+}
+
+body.mobile-touch.mobile-landscape .depth-badge-meta {
+  position: absolute;
+  inset: 4px 20px;
+  min-height: 0;
+}
+
+body.mobile-touch.mobile-landscape .depth-badge strong {
+  align-self: center;
+  font-size: 0.78rem;
+  line-height: 1;
+}
+
+body.mobile-touch.mobile-landscape .depth-badge .depth-subtitle {
+  display: none;
+}
+
+body.mobile-touch.mobile-landscape .depth-meta {
+  font-size: 0.48rem;
+  line-height: 1;
+}
+
+body.mobile-touch.mobile-landscape.graphics-hd-ui:has(#game.graphics-hd) .board > .depth-badge {
+  grid-column: 1;
+  grid-row: 1;
+  width: 100%;
+  height: 36px;
+  min-height: 36px;
+  padding: 4px 84px;
+}
+
+body.mobile-touch.mobile-landscape.graphics-hd-ui:has(#game.graphics-hd) .depth-badge-meta {
+  inset: 4px 20px;
+}
+
+body.mobile-touch.mobile-landscape.graphics-hd-ui:has(#game.graphics-hd) .depth-badge strong {
+  font-size: 0.78rem;
+}
+
+body.mobile-touch.mobile-landscape.graphics-hd-ui:has(#game.graphics-hd) .depth-badge .depth-subtitle,
+body.mobile-touch.mobile-landscape.graphics-hd-ui:has(#game.graphics-hd) .depth-meta {
+  font-size: 0.48rem;
+}
+
+body.mobile-touch.mobile-landscape .board > .room-stage {
+  grid-column: 1;
+  grid-row: 2;
+  display: grid;
+  place-items: center;
+  width: 100%;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+body.mobile-touch.mobile-landscape.graphics-hd-ui:has(#game.graphics-hd) .board > .room-stage {
+  grid-column: 1;
+  grid-row: 2;
+}
+
+body.mobile-touch.mobile-landscape .room-stage .canvas-wrap {
+  width: min(100%, 576px, calc(100dvh - 144px));
+  height: min(100%, 576px, calc(100dvh - 144px));
+  max-width: 100%;
+  max-height: 100%;
+  aspect-ratio: 1;
+}
+
+body.mobile-touch.mobile-landscape.graphics-hd-ui:has(#game.graphics-hd) .room-stage .canvas-wrap {
+  width: min(100%, 576px, calc(100dvh - 144px));
+  height: min(100%, 576px, calc(100dvh - 144px));
+  max-width: 100%;
+  max-height: 100%;
+  aspect-ratio: 1;
+}
+
+body.mobile-touch.mobile-landscape .room-stage canvas {
+  width: 100% !important;
+  height: 100% !important;
+  box-sizing: border-box;
+  max-width: 100%;
+  max-height: 100%;
+  touch-action: none;
+}
+
+body.mobile-touch.mobile-landscape.graphics-hd-ui:has(#game.graphics-hd) .room-stage canvas {
+  width: 100% !important;
+  height: 100% !important;
+  box-sizing: border-box;
+}
+
+body.mobile-touch.mobile-landscape .board > #skillsBar {
+  grid-column: 1;
+  grid-row: 3;
+  width: 100%;
+  max-width: 100%;
+  max-height: 72px;
+  min-width: 0;
+  margin: 0;
+  overflow: auto;
+}
+
+body.mobile-touch.mobile-landscape.graphics-hd-ui:has(#game.graphics-hd) .board > #skillsBar {
+  grid-column: 1;
+  grid-row: 3;
+}
+
+body.mobile-touch.mobile-landscape .board > #skillsBar {
+  height: 72px;
+  max-height: 72px;
+  gap: 4px;
+  padding: 0;
+  align-items: stretch;
+  overflow: hidden;
+}
+
+body.mobile-touch.mobile-landscape #skillsBar .skill-card,
+body.mobile-touch.mobile-landscape #skillsBar .skill-card.ready,
+body.mobile-touch.mobile-landscape #skillsBar .skill-card.armed,
+body.mobile-touch.mobile-landscape #skillsBar .skill-card.cooling,
+body.mobile-touch.mobile-landscape #skillsBar .skill-card.idle {
+  height: 68px;
+  min-height: 68px;
+  box-sizing: border-box;
+  gap: 0;
+  padding: 7px 9px 6px;
+  overflow: hidden;
+}
+
+body.mobile-touch.mobile-landscape #skillsBar .skill-rarity {
+  min-height: 16px;
+  padding: 0 5px;
+}
+
+body.mobile-touch.mobile-landscape #skillsBar .skill-rarity strong {
+  font-size: 0.58rem;
+  letter-spacing: 0.08em;
+}
+
+body.mobile-touch.mobile-landscape #skillsBar .skill-card-body {
+  grid-template-columns: 32px minmax(0, 1fr);
+  gap: 4px;
+  min-height: 38px;
+  padding: 0 3px;
+}
+
+body.mobile-touch.mobile-landscape #skillsBar .skill-art {
+  width: 32px;
+  height: 32px;
+}
+
+body.mobile-touch.mobile-landscape #skillsBar .skill-copy {
+  gap: 1px;
+}
+
+body.mobile-touch.mobile-landscape #skillsBar .skill-head {
+  gap: 3px;
+}
+
+body.mobile-touch.mobile-landscape #skillsBar .skill-key {
+  min-width: 18px;
+  height: 18px;
+  font-size: 0.58rem;
+}
+
+body.mobile-touch.mobile-landscape #skillsBar .skill-name {
+  overflow: hidden;
+  font-size: clamp(0.58rem, 1.35vw, 0.72rem);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+body.mobile-touch.mobile-landscape #skillsBar .skill-cd {
+  font-size: 0.58rem;
+}
+
+body.mobile-touch.mobile-landscape #skillsBar .skill-desc {
+  display: none;
+}
+
+body.mobile-touch.mobile-landscape #mobileControls,
+body.mobile-touch.mobile-landscape #mobileControls.hidden,
+body.mobile-touch.mobile-landscape #mobileControls .mobile-controls-row {
+  display: contents !important;
+}
+
+body.mobile-touch.mobile-landscape #mobileControls .mobile-dpad,
+body.mobile-touch.mobile-landscape #mobileControls .mobile-restart-row {
+  display: none !important;
+  pointer-events: none;
+}
+
+body.mobile-touch #mobileActionDock {
+  display: none;
+}
+
+body.mobile-touch.mobile-landscape #mobileActionDock {
+  grid-column: 2;
+  grid-row: 1 / span 3;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(48px, 1fr));
+  grid-template-rows: repeat(4, minmax(48px, 1fr));
+  gap: clamp(4px, 0.8vw, 8px);
+  align-self: center;
+  width: 100%;
+  max-height: 320px;
+  min-width: 0;
+  min-height: 216px;
+  box-sizing: border-box;
+  padding: clamp(4px, 0.8vw, 8px);
+  border: 1px solid #bba06338;
+  border-radius: 14px;
+  background: linear-gradient(160deg, #111825e8, #090d15ed);
+  box-shadow: 0 12px 30px #00000066, inset 0 1px #ffffff10;
+}
+
+body.mobile-touch #mobileActionDock.hidden {
+  display: none !important;
+}
+
+body.mobile-touch.mobile-landscape #mobileActionDock .mact-btn {
+  position: relative;
+  width: 100%;
+  min-width: 48px;
+  min-height: 48px;
+  height: auto;
+  padding: 5px;
+  border-radius: 12px;
+  font-size: clamp(0.8rem, 2.3vw, 1.05rem);
+  touch-action: manipulation;
+  box-shadow: inset 0 1px #ffffff17, 0 5px 12px #00000045;
+}
+
+body.mobile-touch.mobile-landscape #mobileActionDock .mact-skill {
+  color: #a8d6ff;
+  border-color: #497cad;
+  background: radial-gradient(circle at 50% 16%, #315982, #142438 72%);
+}
+
+body.mobile-touch.mobile-landscape #mobileActionDock .mact-action {
+  color: #f2cf88;
+  border-color: #8e6735;
+  background: radial-gradient(circle at 50% 16%, #64461f, #271a0c 72%);
+}
+
+body.mobile-touch.mobile-landscape #mobileActionDock .mact-g {
+  color: #a9efc1;
+  border-color: #3f845b;
+  background: radial-gradient(circle at 50% 16%, #285f42, #10271c 72%);
+}
+
+body.mobile-touch.mobile-portrait #mobileControls,
+body.mobile-touch.mobile-portrait #mobileActionDock {
+  display: none !important;
+  pointer-events: none;
+}
+
+body.mobile-touch.mobile-landscape #mobileMenuButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  position: fixed;
+  top: max(8px, calc(8px + var(--mobile-safe-top)));
+  right: max(8px, calc(8px + var(--mobile-safe-right)));
+  bottom: auto;
+  z-index: 2147482000;
+  min-width: 48px;
+  min-height: 48px;
+}
+
+body.mobile-touch.mobile-landscape #mobileMenuButton:not(.visible) {
+  pointer-events: none;
+}
+
+body.mobile-touch.mobile-landscape #mobileMenuButton.visible {
+  pointer-events: auto;
+}
+
+body.mobile-touch.mobile-landscape #mobileSwipeHint {
+  display: none !important;
+}
+
+body.mobile-touch.mobile-landscape #mobileSwipeHint.visible {
+  transform: translateY(0);
+}
+
+body.mobile-touch #screenOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 7000;
+  width: 100vw;
+  max-width: 100vw;
+  height: 100vh;
+  max-height: 100vh;
+  height: 100dvh;
+  max-height: 100dvh;
+  box-sizing: border-box;
+  padding:
+    calc(12px + var(--mobile-safe-top))
+    calc(12px + var(--mobile-safe-right))
+    calc(12px + var(--mobile-safe-bottom))
+    calc(12px + var(--mobile-safe-left));
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+
+body.mobile-touch #screenOverlay > * {
+  max-width: min(100%, 42rem);
+  max-height: calc(100dvh - var(--mobile-safe-top) - var(--mobile-safe-bottom) - 24px);
+  box-sizing: border-box;
+  overflow: auto;
+}
+
+body.mobile-touch .ranked-v3-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 7100;
+  width: 100vw;
+  max-width: 100vw;
+  height: 100vh;
+  max-height: 100vh;
+  height: 100dvh;
+  max-height: 100dvh;
+  box-sizing: border-box;
+  padding:
+    calc(12px + var(--mobile-safe-top))
+    calc(12px + var(--mobile-safe-right))
+    calc(12px + var(--mobile-safe-bottom))
+    calc(12px + var(--mobile-safe-left));
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+
+body.mobile-touch .ranked-v3-overlay .ranked-v3-card {
+  max-width: 100%;
+  max-height: calc(100dvh - var(--mobile-safe-top) - var(--mobile-safe-bottom) - 24px);
+  overflow: auto;
+}
+
+@media (max-width: 1200px) {
+  body.mobile-touch.mobile-landscape .board {
+    max-width: 33.333%;
+  }
+}

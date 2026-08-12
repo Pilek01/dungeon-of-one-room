@@ -561,3 +561,101 @@ final result: passed
 - The final lifecycle completed with zero unexpected console or page errors.
 
 final result: passed
+
+## 2026-08-12 - Mobile Gothic command-deck fidelity comparison
+
+**Status: BLOCKED**
+
+**Scope and evidence**
+
+- Fresh comparison uses the strict normalized target
+  `docs/design-references/mobile-gothic-ui-approved.png` at 844 x 390.
+- Full comparison: `output/mobile-button-audit/20-fresh-current-vs-approved.jpg`.
+- Panel comparison: `output/mobile-button-audit/12-panel-normalized.jpg`.
+- The comparison is not a directional review; visible geometry, frame continuity,
+  material treatment, control balance, icon scale and label hierarchy are release
+  acceptance criteria.
+
+**Severity-ranked differences**
+
+- **P0 - missing framed left control bay / continuous deck frame.** The D-pad
+  sits without the approved framed left bay, so the command deck does not read as
+  one continuous console.
+- **P1 - material treatment mismatch.** The fresh implementation is cool slate
+  rather than the approved blackened iron with aged-silver bevels and restrained
+  antique-gold accents.
+- **P1 - label/status hierarchy mismatch.** Large `READY`, `NONE`, `ACTION` and
+  `EMERGENCY` ribbons and labels overpower the action icons instead of leaving
+  the real art primary.
+- **P1 - control alignment and gutters mismatch.** The D-pad is approximately
+  34 px down/right from the approved anchor and the action grid is cramped
+  against its outer edge.
+- **P2 - HUD proportion drift.** The mobile HUD is approximately 12 px taller
+  than the normalized target, reducing the lower control region.
+- **P2 - D-pad arrow contrast drift.** The arrows are too bright relative to the
+  subdued plate and approved HUD hierarchy.
+- **P2 - asset proportion drift.** The frame assets are visibly stretched rather
+  than preserving their approved native proportions.
+
+**Disposition**
+
+The evidence remains BLOCKED until the P0/P1/P2 differences are corrected and a
+new 844 x 390 full-view plus 12-panel normalized comparison shows no actionable
+P0, P1 or P2 mismatch.
+
+## 2026-08-12 - Mobile Gothic command-deck reference pass
+
+**Status: PASSED**
+
+**Final evidence**
+
+- Approved reference: `docs/design-references/mobile-gothic-ui-approved.png`.
+- Fresh 844 x 390 gameplay: `output/mobile-v1-gallery/01-gameplay.png`.
+- Normalized full comparison:
+  `output/mobile-button-audit/47-final-current-vs-approved.jpg`.
+- Normalized command-panel comparison:
+  `output/mobile-button-audit/45-final-panel-vs-approved.jpg`.
+- Responsive evidence:
+  `output/mobile-v1/iphone-browser-chrome-gameplay.png`,
+  `output/mobile-v1/android-gameplay.png`,
+  `output/mobile-v1/tablet-gameplay.png`, and
+  `output/mobile-v1/ipad-gameplay.png`.
+
+**Resolved findings**
+
+- The command deck is now one continuous blackened-iron console with a framed
+  left D-pad bay, textured action bay, aged-silver bevels and restrained gold.
+- The 844 x 390 panel divider, canvas scale, HUD height, D-pad anchor and lower
+  control region follow the normalized reference rather than the former compact
+  shelf.
+- Real icons dominate 9 px engraved uppercase labels. The visible
+  READY/NONE/ACTION/EMERGENCY ribbons are removed while current state remains
+  available through accessible control labels.
+- The action columns use narrower target-like plaques and wider gutters.
+  Extract keeps a two-column touch target while its visible centered plaque
+  matches the reference proportion.
+- The full four-way D-pad uses a dedicated gothic plate with subdued brass
+  direction art. All directional hit targets remain at least 48 x 48 CSS px.
+- The 844 x 288 and 800 x 360 arrangements fit without clipping or overlap.
+  Tablet and iPad controls scale and center within the lower deck.
+- The full SHOCKWAVE label remains visible at 844 x 390 and in the constrained
+  844 x 288 three-column bank.
+- Generated interaction and D-pad assets were optimized for mobile. The unused
+  frame experiment and temporary source exports were removed.
+
+**Verification**
+
+- Focused mobile tests: 20/20 PASS.
+- Mobile gallery: PASS for gameplay, Fury 7/7, Camp, Forge, Merchant, Menu,
+  Options, Tutorial, Pact and portrait rotation.
+- Mobile smoke: PASS for iPhone, Android, 844 x 288 browser chrome, tablet,
+  iPad, narrow no-touch, desktop and hybrid touch-laptop.
+- `verify:ui-current -- --scenario hd`: PASS.
+- `verify:baseline`: PASS, including the clean committed headed baseline.
+- `verify:guard`: 14/14 PASS.
+- JavaScript syntax and `git diff --check`: PASS.
+
+No actionable P0, P1 or P2 visual, interaction, overflow or desktop-regression
+finding remains in the audited matrix.
+
+final result: passed

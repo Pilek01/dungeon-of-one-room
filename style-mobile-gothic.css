@@ -1,0 +1,1649 @@
+/* Mobile gothic visual system. Layout and input remain owned by style-mobile-hd.css/game.js. */
+
+body.mobile-touch.graphics-hd-ui {
+  --mg-void: #050607;
+  --mg-stone: #0c0e10;
+  --mg-silver: #9b968c;
+  --mg-gold: #c19a51;
+  --mg-gold-bright: #f0d495;
+  --mg-arcane: #4da4d4;
+  --mg-potion: #c7463d;
+  --mg-elixir: #35a79f;
+  --mg-danger: #a83b36;
+  --mg-panel-texture: url("assets/hd/ui/abyssal-gothic/panel-texture.png");
+  --mg-button-frame: url("assets/hd/ui/mobile/gothic/gothic-button-frame.png");
+  --mg-board-frame: url("assets/hd/ui/abyssal-gothic/board-frame.png");
+  --mg-mobile-label-size: clamp(11px, 1.7dvh, 13px);
+  --mg-mobile-status-size: clamp(9px, 1.3dvh, 11px);
+  --mg-mobile-support-size: clamp(10px, 1.45dvh, 12px);
+}
+
+/* Gameplay chrome */
+body.mobile-touch.mobile-landscape.graphics-hd-ui #mobileCommandDeck {
+  border: 14px solid transparent;
+  border-image: var(--mg-board-frame) 92 fill / 14px / 0 stretch;
+  border-radius: 0;
+  color: #ddd8ce;
+  background:
+    linear-gradient(rgba(3, 4, 4, 0.84), rgba(0, 1, 1, 0.97)),
+    var(--mg-panel-texture) center / 190px 190px repeat;
+  box-shadow: inset 0 0 34px rgba(0, 0, 0, 0.76), 0 10px 26px rgba(0, 0, 0, 0.62);
+  margin-bottom: 14px;
+}
+
+body.mobile-touch.mobile-landscape.graphics-hd-ui:has(#game.graphics-hd) .layout-track > .board {
+  position: relative;
+  border: 0;
+  border-radius: 0;
+  background:
+    linear-gradient(rgba(2, 3, 3, 0.28), rgba(1, 2, 2, 0.7)),
+    url("assets/hd/ui/abyssal-gothic/screen-chrome.png") center / cover no-repeat;
+  box-shadow: inset 0 0 34px rgba(0, 0, 0, 0.72);
+}
+
+body.mobile-touch.mobile-landscape.graphics-hd-ui:has(#game.graphics-hd) .layout-track > .board::before {
+  content: "";
+  position: absolute;
+  z-index: 20;
+  inset: 0;
+  border: 14px solid transparent;
+  border-image: var(--mg-board-frame) 92 / 14px / 0 stretch;
+  pointer-events: none;
+}
+
+body.mobile-touch.mobile-landscape.graphics-hd-ui .mobile-command-header {
+  border-bottom: 1px solid rgba(193, 154, 81, 0.42);
+}
+
+body.mobile-touch.mobile-landscape.graphics-hd-ui .mobile-command-location {
+  position: relative;
+  isolation: isolate;
+}
+
+body.mobile-touch.mobile-landscape.graphics-hd-ui .mobile-command-location::before {
+  content: "";
+  position: absolute;
+  z-index: 0;
+  inset: -5px -10px -4px;
+  border: 7px solid transparent;
+  border-image: url("assets/hd/ui/abyssal-gothic/section-plaque.png") 70 118 fill / 7px 10px / 0 stretch;
+  pointer-events: none;
+}
+
+body.mobile-touch.mobile-landscape.graphics-hd-ui .mobile-command-location > * {
+  position: relative;
+  z-index: 1;
+}
+
+body.mobile-touch.mobile-landscape.graphics-hd-ui :is(.mobile-details-button, #mobileMenuButton) {
+  border: 10px solid transparent;
+  border-image: var(--mg-button-frame) 30% 12% fill / 10px 13px / 0 stretch;
+  border-radius: 0;
+  color: var(--mg-gold-bright);
+  background: var(--mg-panel-texture) center / 180px 180px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.58);
+  text-shadow: 0 1px 2px #000;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body.mobile-touch.mobile-landscape.graphics-hd-ui :is(#mobileControls, #mobileActionDock, .mobile-dpad) * {
+  -webkit-tap-highlight-color: transparent;
+}
+
+body.mobile-touch.mobile-landscape.graphics-hd-ui :is(.mobile-details-button, #mobileMenuButton):focus-visible,
+body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay :is(button, [role="button"], input):focus-visible {
+  outline: 2px solid var(--mg-gold-bright);
+  outline-offset: 2px;
+}
+
+body.mobile-touch.mobile-landscape.graphics-hd-ui :is(.mobile-details-button, #mobileMenuButton):active,
+body.mobile-touch.mobile-landscape.graphics-hd-ui #mobileActionDock .mact-btn:active,
+body.mobile-touch.mobile-landscape.graphics-hd-ui .mobile-dpad .dpad-btn:active {
+  filter: brightness(1.24);
+  transform: translateY(1px);
+}
+
+body.mobile-touch.mobile-landscape.graphics-hd-ui :is(.mobile-hud-meter-track, .mobile-fury-meter-track) {
+  height: 7px;
+  border-color: rgba(155, 150, 140, 0.52);
+  border-radius: 0;
+  background: #020303;
+  box-shadow: inset 0 0 4px #000;
+}
+
+body.mobile-touch.mobile-landscape.graphics-hd-ui :is(.mobile-hud-meter-fill, .mobile-fury-meter-fill) {
+  border-radius: 0;
+  box-shadow: 0 0 6px currentColor;
+}
+
+body.mobile-touch.mobile-landscape.graphics-hd-ui .mobile-dpad {
+  position: relative;
+  isolation: isolate;
+  z-index: 2;
+}
+
+body.mobile-touch.mobile-landscape.graphics-hd-ui #mobileControls .mobile-controls-row {
+  position: relative;
+  padding: 4px 12px 4px 10px;
+  border: 0;
+  background:
+    linear-gradient(rgba(2, 3, 3, 0.7), rgba(0, 1, 1, 0.9)),
+    var(--mg-panel-texture) center / 176px 176px repeat;
+  box-sizing: border-box;
+  box-shadow: inset 0 0 28px rgba(0, 0, 0, 0.78);
+}
+
+body.mobile-touch.mobile-landscape.graphics-hd-ui #mobileControls .mobile-controls-row::before {
+  content: "";
+  position: absolute;
+  z-index: 1;
+  top: 4px;
+  bottom: 4px;
+  left: 4px;
+  width: calc(var(--mobile-dpad-size) + 24px);
+  border: 10px solid transparent;
+  border-image: url("assets/hd/ui/abyssal-gothic/menu-frame.png") 14% 14% fill / 10px / 0 stretch;
+  background:
+    linear-gradient(rgba(2, 3, 3, 0.58), rgba(0, 0, 0, 0.86)),
+    var(--mg-panel-texture) center / 150px 150px repeat;
+  box-sizing: border-box;
+  pointer-events: none;
+}
+
+body.mobile-touch.mobile-landscape.graphics-hd-ui #mobileControls .mobile-controls-row::after {
+  content: "";
+  position: absolute;
+  z-index: 0;
+  inset: 0;
+  border: 11px solid transparent;
+  border-image: var(--mg-board-frame) 92 fill / 11px / 0 stretch;
+  pointer-events: none;
+}
+
+body.mobile-touch.mobile-landscape.graphics-hd-ui #mobileActionDock {
+  position: relative;
+  z-index: 2;
+  padding: 4px 3px;
+  border: 0;
+  background:
+    linear-gradient(rgba(3, 4, 4, 0.54), rgba(0, 1, 1, 0.84)),
+    var(--mg-panel-texture) center / 150px 150px repeat;
+  box-sizing: border-box;
+}
+
+body.mobile-touch.mobile-landscape.graphics-hd-ui .mobile-dpad::before {
+  content: "";
+  position: absolute;
+  inset: -6px;
+  z-index: 0;
+  background: url("assets/hd/ui/mobile/gothic/gothic-dpad-plate.png") center / contain no-repeat;
+  filter: brightness(0.92) contrast(0.98) drop-shadow(0 5px 7px rgba(0, 0, 0, 0.72));
+  pointer-events: none;
+}
+
+body.mobile-touch.mobile-landscape.graphics-hd-ui .mobile-dpad .dpad-btn {
+  z-index: 1;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+body.mobile-touch.mobile-landscape.graphics-hd-ui .mobile-dpad .dpad-btn::before {
+  width: 29px;
+  height: 29px;
+  filter: sepia(0.7) saturate(0.65) brightness(0.94) contrast(0.98) drop-shadow(0 1px 2px #000);
+}
+
+body.mobile-touch.mobile-landscape.graphics-hd-ui .mobile-dpad .dpad-center {
+  background: transparent;
+}
+
+body.mobile-touch.mobile-landscape.graphics-hd-ui #mobileActionDock .mact-btn,
+body.mobile-touch.mobile-landscape.graphics-hd-ui #mobileRestartRow .mact-restart {
+  min-height: 48px;
+  border: 8px solid transparent;
+  border-image: var(--mg-button-frame) 30% 12% fill / 8px 10px / 0 stretch;
+  border-radius: 0;
+  color: #e6dfd2;
+  background:
+    linear-gradient(rgba(8, 10, 10, 0.35), rgba(1, 2, 2, 0.82)),
+    var(--mg-panel-texture) center / 140px 140px repeat;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.58);
+}
+
+body.mobile-touch.mobile-landscape.graphics-hd-ui #mobileActionDock .mact-btn > img {
+  width: clamp(32px, 9.6dvh, 40px);
+  height: clamp(32px, 9.6dvh, 40px);
+  filter: drop-shadow(0 2px 3px #000);
+}
+
+body.mobile-touch.mobile-landscape.graphics-hd-ui #mobileActionDock .mact-skill.is-ready {
+  border-image: var(--mg-button-frame) 30% 12% fill / 8px 10px / 0 stretch;
+  box-shadow: inset 0 0 8px rgba(77, 164, 212, 0.18), 0 0 5px rgba(77, 164, 212, 0.16);
+}
+
+body.mobile-touch.mobile-landscape.graphics-hd-ui #mobileActionDock .mact-btn.is-armed {
+  border-image-source: var(--mg-button-frame);
+  background: #251b0d var(--mg-panel-texture) center / 150px 150px;
+  box-shadow: 0 0 10px rgba(193, 154, 81, 0.48);
+}
+
+body.mobile-touch.mobile-landscape.graphics-hd-ui #mobileActionDock .mact-f {
+  box-shadow: inset 0 0 9px rgba(199, 70, 61, 0.18), 0 3px 8px rgba(0, 0, 0, 0.58);
+}
+
+body.mobile-touch.mobile-landscape.graphics-hd-ui #mobileActionDock .mact-g {
+  box-shadow: inset 0 0 9px rgba(53, 167, 159, 0.18), 0 3px 8px rgba(0, 0, 0, 0.58);
+}
+
+body.mobile-touch.mobile-landscape.graphics-hd-ui .mobile-action-copy strong {
+  color: #e9e0d1;
+  text-shadow: 0 1px 2px #000;
+}
+
+body.mobile-touch.mobile-landscape.graphics-hd-ui .mobile-action-copy {
+  display: block;
+  line-height: 1.05;
+}
+
+body.mobile-touch.mobile-landscape.graphics-hd-ui .mobile-action-copy strong {
+  display: block;
+  transform: translateY(-1px);
+}
+
+body.mobile-touch.mobile-landscape.graphics-hd-ui .mobile-action-copy small {
+  display: none;
+}
+
+body.mobile-touch.mobile-landscape.graphics-hd-ui .mobile-action-copy small {
+  color: #b99a5d;
+}
+
+body.mobile-touch.mobile-landscape #mobileActionDock .mobile-action-key {
+  width: clamp(29px, 8.5dvh, 36px);
+  height: clamp(29px, 8.5dvh, 36px);
+  border: 0;
+  border-radius: 0;
+  color: transparent;
+  font-size: 0;
+  background: center / contain no-repeat;
+  filter: drop-shadow(0 2px 3px #000);
+}
+
+body.mobile-touch.mobile-landscape #mobileActionDock .mact-e .mobile-action-key {
+  background-image: url("assets/hd/ui/mobile/gothic/interact-hand.png");
+}
+
+body.mobile-touch.mobile-landscape #mobileActionDock .mact-q .mobile-action-key {
+  background-image: url("assets/hd/ui/status/chest-upgrade.png");
+}
+
+body.mobile-touch.mobile-landscape.graphics-hd-ui #mobileActionDock :is(.is-cooling, .is-empty),
+body.mobile-touch.mobile-landscape.graphics-hd-ui #mobileActionDock :is(button:disabled, [aria-disabled="true"]) {
+  opacity: 0.5;
+  filter: grayscale(0.72) brightness(0.74);
+}
+
+body.mobile-touch.mobile-landscape.graphics-hd-ui #mobileActionDock .mact-q {
+  justify-self: center;
+  width: 62%;
+  box-shadow:
+    inset 0 0 12px rgba(168, 59, 54, 0.2),
+    0 3px 8px rgba(0, 0, 0, 0.58);
+}
+
+@media (min-height: 321px) {
+  body.mobile-touch.mobile-landscape.graphics-hd-ui #mobileActionDock .mact-x wbr {
+    display: none;
+  }
+
+  body.mobile-touch.mobile-landscape.graphics-hd-ui #mobileActionDock .mact-x .mobile-action-copy strong {
+    font-size: var(--mg-mobile-label-size);
+    letter-spacing: -0.07em;
+    transform: translateY(-1px) scaleX(0.92);
+    white-space: nowrap;
+  }
+}
+
+@media (max-height: 320px) {
+  body.mobile-touch.mobile-landscape.graphics-hd-ui #mobileActionDock .mact-btn > img,
+  body.mobile-touch.mobile-landscape #mobileActionDock .mobile-action-key {
+    width: 26px;
+    height: 26px;
+  }
+
+  body.mobile-touch.mobile-landscape.graphics-hd-ui #mobileActionDock .mobile-action-copy strong {
+    font-size: 10px;
+  }
+
+  body.mobile-touch.mobile-landscape.graphics-hd-ui #mobileActionDock .mact-x .mobile-action-copy strong {
+    font-size: 9px;
+    letter-spacing: -0.1em;
+    transform: scaleX(0.58);
+    transform-origin: center;
+  }
+}
+
+/* Shared overlay shell and interactive pieces */
+body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay.visible {
+  background: rgba(0, 0, 0, 0.82);
+}
+
+body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay.visible > .overlay-card {
+  border: 16px solid transparent;
+  border-image: var(--mg-board-frame) 92 fill / 16px / 0 stretch;
+  border-radius: 0;
+  color: #d8d2c6;
+  background: linear-gradient(rgba(6, 8, 9, 0.88), rgba(2, 3, 4, 0.97)), var(--mg-panel-texture) center / 240px 240px;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.86);
+}
+
+body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay :is(.overlay-title, .tutorial-section-title, .overlay-menu-section-title, .camp-revamp-panel-head) {
+  color: #ede2cf;
+  text-shadow: 0 2px 3px #000;
+}
+
+body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay :is(
+  .overlay-menu-row, .mobile-overlay-action, .camp-revamp-tab, .camp-revamp-row, .camp-revamp-action,
+  .forge-choice, .forge-footer, .merchant-row, .merchant-buyback-summary, .overlay-menu-section,
+  .pact-sanctum-choice, .pact-sanctum-leave, .relic-draft-choice, .relic-draft-skip,
+  .death-requiem-action, .gameover-requiem-action, .death-mini-action
+) {
+  min-height: 48px;
+  border: 8px solid transparent;
+  border-image: var(--mg-button-frame) 30% 12% fill / 8px 11px / 0 stretch;
+  border-radius: 0;
+  background: var(--mg-panel-texture) center / 170px 170px;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.46);
+}
+
+body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay :is(
+  .overlay-menu-row, .camp-revamp-tab, .camp-revamp-row, .forge-choice, .merchant-row,
+  .pact-sanctum-choice, .relic-draft-choice, .death-requiem-action, .gameover-requiem-action
+).selected,
+body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .camp-revamp-tab.active {
+  color: var(--mg-gold-bright);
+  filter: brightness(1.16);
+  box-shadow: 0 0 0 1px var(--mg-gold), 0 0 14px rgba(193, 154, 81, 0.38);
+}
+
+body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay :is(button, [role="button"]):active {
+  filter: brightness(1.22);
+  transform: translateY(1px);
+}
+
+body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay :is(button:disabled, [aria-disabled="true"], .disabled) {
+  opacity: 0.46;
+  filter: grayscale(0.8);
+}
+
+body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay :is(.overlay-menu-key, .tutorial-key, .camp-revamp-key, .forge-choice-key, .pact-sanctum-key, .relic-draft-key, .death-mini-key) {
+  border: 6px solid transparent;
+  border-image: var(--mg-button-frame) 30% 12% fill / 6px 8px / 0 stretch;
+  border-radius: 0;
+  color: var(--mg-gold-bright);
+  background: #050607;
+}
+
+body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay :is(.mobile-overlay-actions, .camp-revamp-actions, .forge-footer, .pact-sanctum-footer, .relic-draft-footer, .death-requiem-actions, .gameover-requiem-actions) {
+  position: sticky;
+  bottom: 0;
+  z-index: 4;
+  padding-top: 5px;
+  background: linear-gradient(transparent, rgba(2, 3, 4, 0.96) 35%);
+}
+
+/* Menu, options, tutorials, dialogs, records and nickname */
+body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay.visible > :is(
+  .overlay-card.overlay-card-main-menu, .overlay-card.overlay-card-options, .overlay-card.tutorial-overlay-card, .overlay-card.overlay-card-dialog,
+  .overlay-card.overlay-card-confirm, .overlay-card.record-archive-shell, .overlay-card.overlay-card-leaderboard
+) {
+  background-color: #060708;
+  background-image: url("assets/hd/ui/abyssal-gothic/menu-frame.png"), var(--mg-panel-texture);
+  background-position: center, center;
+  background-repeat: no-repeat, repeat;
+  background-size: 100% 100%, 220px 220px;
+}
+
+body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .overlay-card-main-menu .overlay-menu-row,
+body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .camp-revamp-tab {
+  min-height: 48px;
+}
+
+body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay :is(.overlay-card-options, .tutorial-overlay-card, .overlay-card-dialog, .record-archive-shell) {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay :is(.overlay-card-options, .tutorial-overlay-card, .record-archive-shell) > :is(.overlay-menu, .tutorial-sections, .record-archive-v2) {
+  min-height: 0;
+  overflow-y: auto;
+}
+
+body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .overlay-card-main-menu {
+  height: calc(100dvh - 16px);
+  padding: 14px 34px 12px;
+}
+
+body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .overlay-card-main-menu > .overlay-hint {
+  display: none;
+}
+
+body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay.visible > .overlay-card.overlay-card-main-menu.overlay-card-pause-menu > .overlay-hint {
+  display: block;
+  min-height: 0;
+  margin: 1px 0 3px;
+  color: #b8ad9c;
+  font-size: var(--mg-mobile-support-size);
+  line-height: 1.2;
+  text-align: center;
+}
+
+body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .overlay-card-main-menu > .overlay-menu {
+  gap: 2px;
+  margin-top: 3px;
+}
+
+body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .mobile-overlay-action {
+  color: var(--mg-gold-bright);
+  font-family: Georgia, "Times New Roman", serif;
+  text-transform: uppercase;
+}
+
+/* Camp */
+body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay.visible > .overlay-card.overlay-card-camp {
+  border-image-source: var(--mg-board-frame);
+  background: linear-gradient(rgba(5, 5, 5, 0.36), rgba(3, 3, 3, 0.78)), url("assets/hd/ui/camp/ember-sanctuary-background.png") center / cover no-repeat;
+}
+
+body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay :is(.camp-revamp-stats > div, .camp-revamp-content) {
+  border: 1px solid rgba(155, 150, 140, 0.55);
+  background: rgba(4, 5, 5, 0.88) var(--mg-panel-texture) center / 190px 190px;
+  box-shadow: inset 0 0 12px #000;
+}
+
+body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .camp-revamp-action.primary {
+  color: var(--mg-gold-bright);
+}
+
+/* Forge */
+body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay.visible > .overlay-card.forge-sanctuary {
+  border-image-source: var(--mg-board-frame);
+  background: linear-gradient(rgba(3, 3, 3, 0.42), rgba(2, 2, 2, 0.78)), url("assets/hd/ui/forge/anvil-sanctuary-background.png") center / cover no-repeat;
+}
+
+body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .forge-choice {
+  border-image-width: 12px 16px;
+  background: rgba(4, 5, 5, 0.9) var(--mg-panel-texture) center / 180px 180px;
+}
+
+/* Merchant */
+body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay.visible > .overlay-card.merchant-sanctuary {
+  border-image-source: var(--mg-board-frame);
+  background: linear-gradient(rgba(2, 3, 3, 0.36), rgba(2, 3, 3, 0.82)), url("assets/hd/ui/merchant/curio-market-background.png") center / cover no-repeat;
+}
+
+body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay :is(.merchant-wallet > *, .merchant-summary-line, .merchant-buyback-summary) {
+  border: 1px solid rgba(155, 150, 140, 0.5);
+  background: rgba(3, 4, 4, 0.9) var(--mg-panel-texture) center / 170px 170px;
+  box-shadow: inset 0 0 10px #000;
+}
+
+body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .merchant-buyback-action {
+  color: var(--mg-gold-bright);
+}
+
+/* Pact, relic choices and emergency extraction */
+body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay.visible > .overlay-card.overlay-card-pact-sanctum,
+body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay.visible > .overlay-card.overlay-card-relic-draft,
+body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay.visible > .overlay-card.emergency-extract-confirm {
+  background: radial-gradient(circle at 50% 28%, rgba(91, 62, 38, 0.22), transparent 44%), var(--mg-panel-texture) center / 220px 220px;
+}
+
+body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .relic-draft {
+  min-height: 0;
+}
+
+body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .overlay-card-pact-sanctum {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  gap: 5px;
+  width: min(820px, 100%);
+  height: 100%;
+  min-height: 0;
+  padding: 12px 16px;
+  overflow: hidden;
+  text-align: center;
+}
+
+body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .pact-sanctum-header {
+  position: relative;
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  min-height: 56px;
+  padding: 0 150px 5px 58px;
+  border-bottom: 1px solid rgba(155, 91, 108, 0.44);
+}
+
+body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .pact-sanctum-kicker {
+  margin: 0;
+  color: #ad7481;
+  font-size: 8px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+}
+
+body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .pact-sanctum-header > :is(.overlay-title, .overlay-sub) {
+  margin: 2px 0 0;
+}
+
+body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .pact-sanctum-emblem {
+  position: absolute;
+  top: 7px;
+  left: 10px;
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border: 1px solid #754451;
+  background: #0b080a;
+}
+
+body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .pact-sanctum-emblem img {
+  width: 34px;
+  height: 34px;
+  object-fit: contain;
+}
+
+body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .pact-sanctum-current {
+  position: absolute;
+  top: 5px;
+  right: 0;
+  display: grid;
+  align-content: center;
+  width: 140px;
+  min-height: 46px;
+  padding: 5px 8px;
+  box-sizing: border-box;
+  border: 1px solid #5d4a50;
+  background: rgba(8, 7, 8, 0.9) var(--mg-panel-texture) center / 140px 140px;
+  text-align: left;
+}
+
+body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .pact-sanctum-current :is(span, strong, small) {
+  display: block;
+  overflow: hidden;
+  font-size: 8px;
+  line-height: 1.1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .pact-sanctum-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 7px;
+  min-height: 0;
+  overflow: hidden;
+}
+
+body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .pact-sanctum-choice {
+  display: grid;
+  grid-template: minmax(0, 1fr) 32px / 64px minmax(0, 1fr);
+  gap: 4px 8px;
+  min-width: 0;
+  min-height: 0;
+  padding: 8px 8px 0;
+  overflow: hidden;
+  text-align: left;
+}
+
+body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .pact-sanctum-leave > div {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .pact-sanctum-leave :is(strong, small) {
+  display: block;
+  overflow: hidden;
+  line-height: 1.1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .pact-sanctum-term strong {
+  display: -webkit-box;
+  overflow: hidden;
+  white-space: normal;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .pact-sanctum-key {
+  position: absolute;
+  top: 7px;
+  left: 8px;
+  z-index: 3;
+}
+
+body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .pact-sanctum-seal {
+  grid-column: 1;
+  grid-row: 1;
+  align-self: center;
+  justify-self: center;
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+}
+
+body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .pact-sanctum-seal img {
+  width: 46px;
+  height: 46px;
+  object-fit: contain;
+}
+
+body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .pact-sanctum-copy {
+  grid-column: 2;
+  grid-row: 1;
+  display: grid;
+  align-content: center;
+  gap: 3px;
+  min-width: 0;
+  padding: 0;
+}
+
+body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .pact-sanctum-copy > p,
+body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .pact-sanctum-copy h3 {
+  margin: 0;
+  font-size: 10px;
+}
+
+body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .pact-sanctum-tags {
+  display: none;
+}
+
+body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .pact-sanctum-terms {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 3px;
+}
+
+body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .pact-sanctum-term {
+  min-width: 0;
+  padding: 3px 5px;
+  font-size: 7px;
+}
+
+body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .pact-sanctum-term :is(span, strong) {
+  display: block;
+  overflow: hidden;
+  font-size: 7px;
+  line-height: 1.15;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .pact-sanctum-bind {
+  grid-column: 1 / -1;
+  grid-row: 2;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 32px;
+  margin: 0 -8px;
+  padding: 0 10px;
+  border-top: 1px solid rgba(155, 91, 108, 0.5);
+}
+
+body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .pact-sanctum-leave {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  min-height: 48px;
+  padding: 4px 10px;
+  text-align: left;
+}
+
+body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .pact-sanctum-controls {
+  display: none;
+}
+
+body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .pact-sanctum-choice.hd-nav-selected {
+  box-shadow: 0 0 0 1px var(--pact-tone, var(--mg-gold)), 0 0 16px rgba(193, 154, 81, 0.34);
+  filter: brightness(1.12);
+}
+
+/* Death, final defeat and victory */
+body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay.visible > .overlay-card.overlay-card-death-mini,
+body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay.visible > .overlay-card.overlay-card-gameover {
+  background: radial-gradient(circle at 50% 0, rgba(119, 26, 25, 0.2), transparent 44%), var(--mg-panel-texture) center / 220px 220px;
+  box-shadow: inset 0 0 48px rgba(94, 20, 20, 0.28), 0 18px 50px rgba(0, 0, 0, 0.86);
+}
+
+body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay.visible > .overlay-card.overlay-card-success {
+  background: radial-gradient(circle at 50% 0, rgba(154, 117, 48, 0.2), transparent 48%), var(--mg-panel-texture) center / 220px 220px;
+  box-shadow: inset 0 0 48px rgba(135, 101, 38, 0.22), 0 18px 50px rgba(0, 0, 0, 0.86);
+}
+
+@media (max-height: 320px) {
+  body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay :is(.overlay-card-options, .tutorial-overlay-card) {
+    padding-top: 10px;
+    padding-bottom: 10px;
+  }
+
+  body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay :is(.overlay-card-options, .tutorial-overlay-card) > .overlay-sub {
+    margin-block: 1px 4px;
+  }
+
+  body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay :is(.overlay-card-options, .tutorial-overlay-card) .overlay-menu {
+    gap: 3px;
+  }
+
+  body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay :is(.overlay-card-options, .tutorial-overlay-card) .overlay-menu-row {
+    grid-template-columns: 32px minmax(0, 1fr);
+    align-items: center;
+    min-height: 52px;
+    padding: 2px 8px;
+  }
+
+  body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay :is(.overlay-card-options, .tutorial-overlay-card) .overlay-menu-row :is(br, span) {
+    display: none;
+  }
+}
+
+body.mobile-touch.mobile-landscape.mobile-details-open.graphics-hd-ui .layout-track > .panel-left {
+  border: 16px solid transparent;
+  border-image: var(--mg-board-frame) 92 fill / 16px / 0 stretch;
+  border-radius: 0;
+  background: var(--mg-panel-texture) center / 240px 240px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body.mobile-touch.graphics-hd-ui :is(button, [role="button"], .mact-btn, .overlay-menu-row) {
+    transition: none !important;
+  }
+}
+
+/* Mobile standards repair: readable labels, touch-first guidance and deliberate
+   scroll regions. Desktop keyboard copy and composition remain unchanged. */
+body.mobile-touch.mobile-landscape.graphics-hd-ui :is(.mobile-command-kicker, #mobileRoomValue) {
+  font-size: var(--mg-mobile-status-size);
+}
+
+body.mobile-touch.mobile-landscape.graphics-hd-ui :is(
+  .mobile-hud-meter,
+  .mobile-hud-fury,
+  .mobile-hud-gold
+) {
+  font-size: var(--mg-mobile-status-size);
+}
+
+body.mobile-touch.mobile-landscape.graphics-hd-ui #mobileActionDock .mobile-action-copy strong {
+  font-size: var(--mg-mobile-label-size);
+}
+
+body.mobile-touch.mobile-landscape.graphics-hd-ui #mobileActionDock .mobile-action-copy small {
+  font-size: var(--mg-mobile-status-size);
+}
+
+body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay :is(
+  .overlay-hint,
+  .camp-revamp-guide,
+  .camp-revamp-panel-head > small,
+  .forge-controls,
+  .forge-context small,
+  .merchant-summary-line,
+  .merchant-row-copy > span,
+  .merchant-buyback-copy > span,
+  .pact-sanctum-controls,
+  .pact-sanctum-copy > p,
+  .pact-sanctum-current small
+) {
+  font-size: var(--mg-mobile-support-size);
+  line-height: 1.25;
+}
+
+body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay :is(
+  .overlay-menu-key,
+  .camp-revamp-tab-key,
+  .forge-choice-key,
+  .pact-sanctum-key,
+  .pact-sanctum-leave-key,
+  .relic-draft-key,
+  .death-mini-key,
+  .camp-start-key
+) {
+  display: none !important;
+}
+
+/* Touch copy never exposes keyboard legends, including the Classic renderer. */
+body.mobile-touch #screenOverlay :is(
+  .overlay-menu-key,
+  .camp-revamp-tab-key,
+  .forge-choice-key,
+  .pact-sanctum-key,
+  .pact-sanctum-leave-key,
+  .relic-draft-key,
+  .death-mini-key,
+  .camp-start-key,
+  .gameover-requiem-key
+) {
+  display: none !important;
+}
+
+body.mobile-touch #screenOverlay .camp-revamp-key:not(.camp-revamp-icon) {
+  display: none !important;
+}
+
+body.mobile-touch #screenOverlay .overlay-menu-row:has(> .overlay-menu-key) {
+  grid-template-columns: minmax(0, 1fr) !important;
+}
+
+body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .overlay-menu-row:has(> .overlay-menu-key) {
+  grid-template-columns: minmax(0, 1fr) !important;
+}
+
+body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .merchant-row:has(> .overlay-menu-key) {
+  grid-template-columns: 38px minmax(0, 1fr) auto !important;
+}
+
+body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .tutorial-overlay-card .tutorial-keys {
+  display: none;
+}
+
+body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .tutorial-overlay-card .tutorial-row {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .overlay-card-options > .overlay-hint {
+  display: none;
+}
+
+body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .pact-sanctum-leave {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay :is(
+  .death-requiem-action,
+  .gameover-requiem-action
+) > span,
+body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay :is(
+  .relic-exchange-bulk,
+  .relic-exchange-actions
+) [role="button"] > span:first-child {
+  display: none;
+}
+
+body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .camp-revamp-grid {
+  grid-template-columns: minmax(0, 1fr);
+  padding-right: 8px;
+  scroll-padding-block: 6px 58px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--mg-gold) #050607;
+}
+
+body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay :is(
+  .camp-revamp-grid,
+  .tutorial-sections,
+  .overlay-card-main-menu > .overlay-menu,
+  .merchant-sanctuary > .overlay-menu,
+  .merchant-buyback-grid,
+  .forge-relic-grid,
+  .record-archive-v2
+)::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+
+body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay :is(
+  .camp-revamp-grid,
+  .tutorial-sections,
+  .overlay-card-main-menu > .overlay-menu,
+  .merchant-sanctuary > .overlay-menu,
+  .merchant-buyback-grid,
+  .forge-relic-grid,
+  .record-archive-v2
+)::-webkit-scrollbar-thumb {
+  border: 1px solid #050607;
+  background: var(--mg-gold);
+}
+
+body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay :is(
+  .overlay-card-main-menu > .overlay-menu,
+  .merchant-sanctuary > .overlay-menu,
+  .merchant-buyback-grid
+) {
+  scrollbar-width: thin;
+  scrollbar-color: var(--mg-gold) #050607;
+}
+
+body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .camp-revamp-row {
+  min-height: 64px;
+}
+
+body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .camp-revamp-copy strong {
+  overflow: visible;
+  font-size: var(--mg-mobile-label-size);
+  line-height: 1.1;
+  text-overflow: clip;
+  white-space: normal;
+}
+
+body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .camp-revamp-copy small {
+  display: -webkit-box;
+  overflow: hidden;
+  color: #aaa094;
+  font-size: var(--mg-mobile-support-size);
+  line-height: 1.2;
+  text-overflow: clip;
+  white-space: normal;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .camp-revamp-mutator-effects small {
+  -webkit-line-clamp: 1;
+}
+
+body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .forge-sanctuary {
+  grid-template-rows: auto minmax(0, 1fr) auto auto;
+}
+
+body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .forge-footer {
+  align-self: end;
+  max-height: 52px;
+}
+
+body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .forge-choice[aria-disabled="true"] {
+  opacity: 0.68;
+  filter: grayscale(0.42) saturate(0.72);
+}
+
+body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .pact-sanctum-term,
+body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .pact-sanctum-term :is(span, strong) {
+  font-size: var(--mg-mobile-support-size);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay *,
+  body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay *::before,
+  body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay *::after,
+  body.mobile-touch.graphics-hd-ui canvas.boss-pulse {
+    transition: none !important;
+    animation: none !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .merchant-sanctuary > .merchant-menu-buyback {
+  width: calc(100% + 20px);
+  max-width: none;
+  margin-inline: -10px;
+}
+
+/* Standards hardening: semantics remain invisible until announced, while touch
+   and keyboard states use the same gothic focus language as the visible UI. */
+.sr-only {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  clip-path: inset(50%) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+
+body.mobile-touch.graphics-hd-ui :is(
+  .mobile-details-button,
+  .mobile-menu-button,
+  .dpad-btn,
+  #mobileActionDock .mact-btn,
+  #mobileRestartRow .mact-btn,
+  #screenOverlay button,
+  #screenOverlay [role="button"],
+  #screenOverlay [tabindex]
+):focus-visible {
+  outline: 3px solid var(--mg-gold-bright);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 2px #050607, 0 0 12px rgba(224, 190, 108, 0.78);
+}
+
+body.mobile-touch.mobile-landscape.graphics-hd-ui #mobileActionDock .mact-btn.is-pressed,
+body.mobile-touch.mobile-landscape.graphics-hd-ui .mobile-dpad .dpad-btn.is-pressed {
+  filter: brightness(1.2);
+  transform: translateY(1px);
+}
+
+body.mobile-touch.mobile-landscape.graphics-hd-ui #mobileActionDock .mobile-action-copy strong {
+  font-size: max(10px, 1.5dvh);
+  overflow: visible;
+  line-height: 0.92;
+  text-overflow: clip;
+  white-space: normal;
+}
+
+body.mobile-touch.mobile-landscape.graphics-hd-ui #mobileActionDock .mobile-action-copy small {
+  font-size: max(8px, 1.15dvh);
+}
+
+body.mobile-touch.mobile-landscape.graphics-hd-ui #mobileActionDock .mact-btn[aria-disabled="true"] {
+  cursor: not-allowed;
+  opacity: 0.56;
+  filter: grayscale(0.55);
+}
+
+body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .mobile-overlay-actions {
+  display: flex;
+  flex: 0 0 auto;
+  justify-content: flex-end;
+  gap: 8px;
+  min-height: 48px;
+  margin-top: 4px;
+}
+
+body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .mobile-overlay-action {
+  min-width: 148px;
+  min-height: 48px;
+  padding: 8px 16px;
+  border: 8px solid transparent;
+  border-image: var(--mg-button-frame) 30% 12% fill / 8px 10px / 0 stretch;
+  border-radius: 0;
+  color: var(--mg-gold-bright);
+  background: #08090a var(--mg-panel-texture) center / 140px 140px;
+  font: 700 11px/1.1 Georgia, "Times New Roman", serif;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .pact-sanctum-term {
+  min-height: 38px;
+  font-size: 9px;
+}
+
+body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .pact-sanctum-term :is(span, strong),
+body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay .pact-sanctum-term strong {
+  display: block;
+  overflow: visible;
+  font-size: 9px;
+  line-height: 1.22;
+  text-overflow: clip;
+  white-space: normal;
+  -webkit-line-clamp: unset;
+}
+
+body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay :is(
+  .camp-revamp-copy small,
+  .merchant-row-copy > span,
+  .merchant-buyback-copy > span,
+  .pact-sanctum-copy > p
+) {
+  font-size: max(9px, 1.3dvh);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body.mobile-touch.graphics-hd-ui :is(
+    .mobile-hud-meter-fill,
+    .mobile-fury-meter-fill,
+    .room-vital-fill,
+    #mobileActionDock .mact-btn,
+    .mobile-dpad .dpad-btn,
+    #screenOverlay,
+    #screenOverlay > .overlay-card
+  ) {
+    transition: none !important;
+    animation: none !important;
+  }
+}
+
+/* Keep the standards repair authoritative after the legacy hardening layer. */
+body.mobile-touch.mobile-landscape.graphics-hd-ui {
+  --mobile-command-width: clamp(360px, 44.8vw, 378px);
+}
+
+body.mobile-touch.mobile-landscape.graphics-hd-ui #mobileCommandDeck {
+  align-self: start;
+  height: calc(100% - 14px);
+  margin-bottom: 0;
+}
+
+body.mobile-touch.mobile-landscape.graphics-hd-ui:has(#game.graphics-hd) #mobileCommandDeck {
+  height: calc(100% - 14px);
+}
+
+body.mobile-touch.mobile-landscape.graphics-hd-ui #mobileControls .mobile-controls-row {
+  grid-template-columns: minmax(var(--mobile-dpad-size), 0.95fr) minmax(0, 1.05fr);
+  gap: 16px;
+}
+
+body.mobile-touch.mobile-landscape.graphics-hd-ui .mobile-dpad {
+  margin-top: 35px;
+}
+
+body.mobile-touch.mobile-landscape.graphics-hd-ui #mobileActionDock {
+  grid-template-columns: repeat(2, 70px);
+  justify-content: space-between;
+  row-gap: 3px;
+  padding-right: 13px;
+}
+
+body.mobile-touch.mobile-landscape.graphics-hd-ui #mobileActionDock .mact-q {
+  justify-self: center;
+  width: 100%;
+  border-image: none;
+  background: transparent;
+  box-shadow: none;
+}
+
+body.mobile-touch.mobile-landscape.graphics-hd-ui #mobileActionDock .mact-q::before {
+  content: "";
+  position: absolute;
+  z-index: 0;
+  inset-block: 0;
+  left: 50%;
+  width: 59%;
+  transform: translateX(-50%);
+  border: 8px solid transparent;
+  border-image: var(--mg-button-frame) 30% 12% fill / 8px 10px / 0 stretch;
+  background:
+    linear-gradient(rgba(8, 10, 10, 0.35), rgba(1, 2, 2, 0.82)),
+    var(--mg-panel-texture) center / 140px 140px repeat;
+  box-sizing: border-box;
+  pointer-events: none;
+}
+
+body.mobile-touch.mobile-landscape.graphics-hd-ui #mobileActionDock .mact-q > * {
+  position: relative;
+  z-index: 1;
+}
+
+body.mobile-touch.mobile-landscape.graphics-hd-ui #mobileActionDock .mobile-action-copy strong {
+  width: max-content;
+  max-width: none;
+  margin-inline: auto;
+  color: #cfc4b1;
+  font-size: 9px;
+  line-height: 0.95;
+  letter-spacing: 0.015em;
+  text-transform: uppercase;
+  transform: none;
+  white-space: nowrap;
+  overflow: visible;
+}
+
+body.mobile-touch.mobile-landscape.graphics-hd-ui #mobileActionDock .mact-z .mobile-action-copy strong,
+body.mobile-touch.mobile-landscape.graphics-hd-ui #mobileActionDock .mact-q .mobile-action-copy strong {
+  transform: scaleX(0.88);
+}
+
+body.mobile-touch.mobile-landscape.graphics-hd-ui #mobileActionDock .mact-x .mobile-action-copy strong {
+  font-size: 9px;
+  letter-spacing: -0.09em;
+  transform: scaleX(0.64);
+}
+
+body.mobile-touch.mobile-landscape.graphics-hd-ui #mobileActionDock .mact-x .mobile-action-copy {
+  width: 130%;
+  margin-inline: -15%;
+  overflow: visible;
+}
+
+body.mobile-touch.mobile-landscape.graphics-hd-ui #mobileActionDock :is(.mact-c, .mact-f, .mact-g) .mobile-action-copy strong {
+  transform: scaleX(0.82);
+}
+
+body.mobile-touch.mobile-landscape.graphics-hd-ui #mobileActionDock .mact-e .mobile-action-copy strong {
+  transform: scaleX(0.64);
+}
+
+body.mobile-touch.mobile-landscape.graphics-hd-ui #mobileActionDock .mobile-action-copy small {
+  font-size: var(--mg-mobile-status-size);
+}
+
+body.mobile-touch.mobile-landscape.graphics-hd-ui .mobile-dpad::before {
+  inset: -20px -10px;
+  background-image: url("assets/hd/ui/mobile/gothic/gothic-dpad-plate-v2.png");
+  background-size: 152px auto;
+  filter: brightness(0.92) contrast(0.98) drop-shadow(0 5px 7px rgba(0, 0, 0, 0.72));
+}
+
+body.mobile-touch.mobile-landscape.graphics-hd-ui .mobile-dpad .dpad-btn::before {
+  display: none;
+}
+
+body.mobile-touch.mobile-landscape.graphics-hd-ui #mobileActionDock .mact-btn {
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.62);
+}
+
+body.mobile-touch.mobile-landscape.graphics-hd-ui #mobileActionDock :is(
+  .mact-skill.is-ready,
+  .mact-f,
+  .mact-g,
+  .mact-q
+) {
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.62);
+}
+
+body.mobile-touch.graphics-hd-ui:has(#game.graphics-hd) #screenOverlay :is(
+  .camp-revamp-copy small,
+  .merchant-row-copy > span,
+  .merchant-buyback-copy > span,
+  .pact-sanctum-copy > p,
+  .pact-sanctum-term,
+  .pact-sanctum-term span,
+  .pact-sanctum-term strong
+) {
+  font-size: var(--mg-mobile-support-size);
+}
+
+@media (min-height: 521px) {
+  body.mobile-touch.mobile-landscape.graphics-hd-ui {
+    --mobile-command-width: clamp(400px, 34vw, 440px);
+    --mobile-controls-max-height: 321px;
+    --mobile-dpad-cell: 64px;
+  }
+
+  body.mobile-touch.mobile-landscape.graphics-hd-ui #mobileControls {
+    position: relative;
+  }
+
+  body.mobile-touch.mobile-landscape.graphics-hd-ui #mobileControls .mobile-controls-row {
+    position: absolute;
+    top: calc(50% - 117px);
+    right: 7px;
+    left: 7px;
+    width: auto;
+    height: var(--mobile-controls-max-height);
+    align-self: auto;
+  }
+
+  body.mobile-touch.mobile-landscape.graphics-hd-ui .mobile-dpad {
+    margin-top: 60px;
+  }
+
+  body.mobile-touch.mobile-landscape.graphics-hd-ui .mobile-dpad::before {
+    background-size: 194px auto;
+  }
+
+  body.mobile-touch.mobile-landscape.graphics-hd-ui #mobileActionDock {
+    grid-template-columns: repeat(2, 80px);
+  }
+
+  body.mobile-touch.mobile-landscape.graphics-hd-ui #mobileActionDock .mact-btn > img,
+  body.mobile-touch.mobile-landscape #mobileActionDock .mobile-action-key {
+    width: 52px;
+    height: 52px;
+  }
+
+  body.mobile-touch.mobile-landscape.graphics-hd-ui #mobileActionDock .mobile-action-copy strong {
+    font-size: 10px;
+  }
+
+  body.mobile-touch.mobile-landscape.graphics-hd-ui #mobileActionDock .mact-x .mobile-action-copy strong {
+    font-size: 9px;
+    letter-spacing: -0.06em;
+    transform: scaleX(0.76);
+  }
+}
+
+@media (min-height: 321px) and (max-height: 370px) {
+  body.mobile-touch.mobile-landscape.graphics-hd-ui #mobileCommandDeck,
+  body.mobile-touch.mobile-landscape.graphics-hd-ui:has(#game.graphics-hd) #mobileCommandDeck {
+    height: 100%;
+  }
+
+  body.mobile-touch.mobile-landscape.graphics-hd-ui .mobile-dpad {
+    margin-top: 37px;
+  }
+
+  body.mobile-touch.mobile-landscape.graphics-hd-ui .room-stage .canvas-wrap {
+    padding: 22px !important;
+  }
+}
+
+@media (min-height: 321px) and (max-height: 370px) and (max-width: 820px) {
+  body.mobile-touch.mobile-landscape.graphics-hd-ui {
+    --mobile-controls-max-height: 243px;
+  }
+}
+
+@media (max-height: 320px) {
+  body.mobile-touch.mobile-landscape.graphics-hd-ui {
+    --mobile-command-width: clamp(350px, 42.7vw, 360px);
+    --mobile-controls-max-height: 172px;
+  }
+
+  body.mobile-touch.mobile-landscape.graphics-hd-ui #mobileCommandDeck,
+  body.mobile-touch.mobile-landscape.graphics-hd-ui:has(#game.graphics-hd) #mobileCommandDeck {
+    height: 100%;
+  }
+
+  body.mobile-touch.mobile-landscape.graphics-hd-ui #mobileControls .mobile-controls-row {
+    padding: 2px 4px;
+    gap: 6px;
+  }
+
+  body.mobile-touch.mobile-landscape.graphics-hd-ui #mobileControls .mobile-controls-row::before {
+    display: none;
+  }
+
+  body.mobile-touch.mobile-landscape.graphics-hd-ui #mobileActionDock {
+    padding: 2px;
+  }
+
+  body.mobile-touch.mobile-landscape.graphics-hd-ui .mobile-dpad {
+    margin-top: 8px;
+  }
+
+  body.mobile-touch.mobile-landscape.graphics-hd-ui #mobileActionDock {
+    grid-template-columns: repeat(3, minmax(48px, 1fr));
+  }
+
+  body.mobile-touch.mobile-landscape.graphics-hd-ui #mobileActionDock .mact-q {
+    width: 100%;
+  }
+}
+
+@media (max-width: 760px) and (max-height: 320px) and (orientation: landscape) {
+  body.mobile-touch.mobile-landscape.graphics-hd-ui {
+    --mobile-command-width: clamp(276px, 58vw, 302px);
+    --mobile-controls-max-height: 208px;
+  }
+
+  body.mobile-touch.mobile-landscape.graphics-hd-ui #mobileActionDock {
+    grid-template-columns: repeat(2, minmax(48px, 1fr));
+    grid-template-rows: repeat(4, minmax(48px, 1fr));
+  }
+}
+
+@media (max-height: 320px) {
+  body.mobile-touch.mobile-landscape.graphics-hd-ui #mobileActionDock .mact-x .mobile-action-copy strong {
+    display: inline-block;
+    width: 54px;
+    font-size: 0;
+    line-height: 9px;
+    letter-spacing: 0;
+    transform: none;
+  }
+
+  body.mobile-touch.mobile-landscape.graphics-hd-ui #mobileActionDock .mact-x .mobile-action-copy strong::after {
+    content: "SHOCKWAVE";
+    display: block;
+    width: 54px;
+    font-size: 7px;
+    letter-spacing: -0.08em;
+    transform: none;
+    transform-origin: center;
+  }
+}
+
+/* Portrait gothic finish: the same blackened-iron console, re-composed vertically. */
+body.mobile-touch.mobile-portrait.graphics-hd-ui #mobileCommandDeck {
+  border: 12px solid transparent;
+  border-image: var(--mg-board-frame) 92 fill / 12px / 0 stretch;
+  border-radius: 0;
+  color: #ddd8ce;
+  background:
+    linear-gradient(rgba(3, 4, 4, 0.82), rgba(0, 1, 1, 0.96)),
+    var(--mg-panel-texture) center / 190px 190px repeat;
+  box-shadow: inset 0 0 28px rgba(0, 0, 0, 0.76), 0 8px 18px rgba(0, 0, 0, 0.58);
+}
+
+body.mobile-touch.mobile-portrait.graphics-hd-ui:has(#game.graphics-hd) .layout-track > .board {
+  position: relative;
+  border: 0;
+  border-radius: 0;
+  background:
+    linear-gradient(rgba(2, 3, 3, 0.24), rgba(1, 2, 2, 0.72)),
+    url(assets/hd/ui/abyssal-gothic/screen-chrome.png) center / cover no-repeat;
+  box-shadow: inset 0 0 32px rgba(0, 0, 0, 0.72);
+}
+
+body.mobile-touch.mobile-portrait.graphics-hd-ui:has(#game.graphics-hd) .layout-track > .board::before {
+  content: "";
+  position: absolute;
+  z-index: 20;
+  inset: 0;
+  border: 12px solid transparent;
+  border-image: var(--mg-board-frame) 92 / 12px / 0 stretch;
+  pointer-events: none;
+}
+
+body.mobile-touch.mobile-portrait.graphics-hd-ui .mobile-command-header {
+  border-bottom: 1px solid rgba(193, 154, 81, 0.42);
+}
+
+body.mobile-touch.mobile-portrait.graphics-hd-ui .mobile-command-location {
+  position: relative;
+  isolation: isolate;
+}
+
+body.mobile-touch.mobile-portrait.graphics-hd-ui .mobile-command-location::before {
+  content: "";
+  position: absolute;
+  z-index: 0;
+  inset: -4px -8px -3px;
+  border: 7px solid transparent;
+  border-image: url(assets/hd/ui/abyssal-gothic/section-plaque.png) 70 118 fill / 7px 10px / 0 stretch;
+  pointer-events: none;
+}
+
+body.mobile-touch.mobile-portrait.graphics-hd-ui .mobile-command-location > * {
+  position: relative;
+  z-index: 1;
+}
+
+body.mobile-touch.mobile-portrait.graphics-hd-ui :is(.mobile-details-button, #mobileMenuButton) {
+  border: 10px solid transparent;
+  border-image: var(--mg-button-frame) 30% 12% fill / 10px 13px / 0 stretch;
+  border-radius: 0;
+  color: var(--mg-gold-bright);
+  background: var(--mg-panel-texture) center / 180px 180px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.58);
+  text-shadow: 0 1px 2px #000;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body.mobile-touch.mobile-portrait.graphics-hd-ui :is(.mobile-hud-meter-track, .mobile-fury-meter-track) {
+  height: 7px;
+  border-color: rgba(155, 150, 140, 0.52);
+  border-radius: 0;
+  background: #020303;
+  box-shadow: inset 0 0 4px #000;
+}
+
+body.mobile-touch.mobile-portrait.graphics-hd-ui #mobileControls .mobile-controls-row {
+  position: relative;
+  padding: 5px 8px;
+  border: 0;
+  background:
+    linear-gradient(rgba(2, 3, 3, 0.7), rgba(0, 1, 1, 0.92)),
+    var(--mg-panel-texture) center / 176px 176px repeat;
+  box-sizing: border-box;
+  box-shadow: inset 0 0 28px rgba(0, 0, 0, 0.78);
+}
+
+body.mobile-touch.mobile-portrait.graphics-hd-ui #mobileControls .mobile-controls-row::before {
+  content: "";
+  position: absolute;
+  z-index: 1;
+  top: 4px;
+  bottom: 4px;
+  left: 4px;
+  width: 164px;
+  border: 10px solid transparent;
+  border-image: url(assets/hd/ui/abyssal-gothic/menu-frame.png) 14% 14% fill / 10px / 0 stretch;
+  background:
+    linear-gradient(rgba(2, 3, 3, 0.58), rgba(0, 0, 0, 0.86)),
+    var(--mg-panel-texture) center / 150px 150px repeat;
+  box-sizing: border-box;
+  pointer-events: none;
+}
+
+body.mobile-touch.mobile-portrait.graphics-hd-ui #mobileControls .mobile-controls-row::after {
+  content: "";
+  position: absolute;
+  z-index: 0;
+  inset: 0;
+  border: 10px solid transparent;
+  border-image: var(--mg-board-frame) 92 fill / 10px / 0 stretch;
+  pointer-events: none;
+}
+
+body.mobile-touch.mobile-portrait.graphics-hd-ui .mobile-dpad,
+body.mobile-touch.mobile-portrait.graphics-hd-ui #mobileActionDock {
+  position: relative;
+  z-index: 2;
+}
+
+body.mobile-touch.mobile-portrait.graphics-hd-ui .mobile-dpad {
+  isolation: isolate;
+}
+
+body.mobile-touch.mobile-portrait.graphics-hd-ui .mobile-dpad::before {
+  content: "";
+  position: absolute;
+  inset: -12px -8px;
+  z-index: 0;
+  background: url(assets/hd/ui/mobile/gothic/gothic-dpad-plate-v2.png) center / 152px auto no-repeat;
+  filter: brightness(0.9) contrast(0.98) drop-shadow(0 5px 7px rgba(0, 0, 0, 0.72));
+  pointer-events: none;
+}
+
+body.mobile-touch.mobile-portrait.graphics-hd-ui .mobile-dpad .dpad-btn {
+  position: relative;
+  z-index: 1;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+body.mobile-touch.mobile-portrait.graphics-hd-ui .mobile-dpad .dpad-btn::before {
+  display: none;
+}
+
+body.mobile-touch.mobile-portrait.graphics-hd-ui .mobile-dpad .dpad-center {
+  background: transparent;
+}
+
+body.mobile-touch.mobile-portrait.graphics-hd-ui #mobileActionDock {
+  padding: 4px 3px;
+  border: 0;
+  background:
+    linear-gradient(rgba(3, 4, 4, 0.54), rgba(0, 1, 1, 0.84)),
+    var(--mg-panel-texture) center / 150px 150px repeat;
+  box-sizing: border-box;
+}
+
+body.mobile-touch.mobile-portrait.graphics-hd-ui #mobileActionDock .mact-btn {
+  min-height: 48px;
+  border: 8px solid transparent;
+  border-image: var(--mg-button-frame) 30% 12% fill / 8px 10px / 0 stretch;
+  border-radius: 0;
+  color: #e6dfd2;
+  background:
+    linear-gradient(rgba(8, 10, 10, 0.35), rgba(1, 2, 2, 0.82)),
+    var(--mg-panel-texture) center / 140px 140px repeat;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.58);
+}
+
+body.mobile-touch.mobile-portrait.graphics-hd-ui #mobileActionDock .mact-btn > img,
+body.mobile-touch.mobile-portrait #mobileActionDock .mobile-action-key {
+  width: 30px;
+  height: 30px;
+  object-fit: contain;
+  filter: drop-shadow(0 2px 3px #000);
+}
+
+body.mobile-touch.mobile-portrait #mobileActionDock .mobile-action-key {
+  border: 0;
+  border-radius: 0;
+  color: transparent;
+  font-size: 0;
+  background: center / contain no-repeat;
+}
+
+body.mobile-touch.mobile-portrait #mobileActionDock .mact-e .mobile-action-key {
+  background-image: url(assets/hd/ui/mobile/gothic/interact-hand.png);
+}
+
+body.mobile-touch.mobile-portrait #mobileActionDock .mact-q .mobile-action-key {
+  background-image: url(assets/hd/ui/status/chest-upgrade.png);
+}
+
+body.mobile-touch.mobile-portrait.graphics-hd-ui .mobile-action-copy {
+  display: block;
+  min-width: 0;
+  line-height: 1.05;
+}
+
+body.mobile-touch.mobile-portrait.graphics-hd-ui .mobile-action-copy strong {
+  display: block;
+  overflow: hidden;
+  color: #e9e0d1;
+  font-size: 10px;
+  text-overflow: clip;
+  text-shadow: 0 1px 2px #000;
+  white-space: nowrap;
+}
+
+body.mobile-touch.mobile-portrait.graphics-hd-ui .mobile-action-copy small {
+  display: none;
+}
+
+body.mobile-touch.mobile-portrait.graphics-hd-ui #mobileActionDock .mact-x .mobile-action-copy strong {
+  letter-spacing: -0.08em;
+  transform: scaleX(0.86);
+}
+
+body.mobile-touch.mobile-portrait.graphics-hd-ui #mobileActionDock .mact-q {
+  justify-self: center;
+  width: 64%;
+}
+
+body.mobile-touch.mobile-portrait.graphics-hd-ui #mobileActionDock :is(.is-cooling, .is-empty),
+body.mobile-touch.mobile-portrait.graphics-hd-ui #mobileActionDock :is(button:disabled, [aria-disabled=true]) {
+  opacity: 0.5;
+  filter: grayscale(0.72) brightness(0.74);
+}
+
+body.mobile-touch.mobile-portrait.graphics-hd-ui :is(.mobile-details-button, #mobileMenuButton):focus-visible,
+body.mobile-touch.mobile-portrait.graphics-hd-ui :is(.mobile-dpad .dpad-btn, #mobileActionDock .mact-btn):focus-visible {
+  outline: 2px solid var(--mg-gold-bright);
+  outline-offset: 2px;
+}
+
+body.mobile-touch.mobile-portrait.graphics-hd-ui :is(.mobile-details-button, #mobileMenuButton):active,
+body.mobile-touch.mobile-portrait.graphics-hd-ui #mobileActionDock .mact-btn:active,
+body.mobile-touch.mobile-portrait.graphics-hd-ui .mobile-dpad .dpad-btn:active {
+  filter: brightness(1.24);
+  transform: translateY(1px);
+}
+
+@media (max-width: 374px) and (orientation: portrait) {
+  body.mobile-touch.mobile-portrait #mobileControls .mobile-controls-row {
+    grid-template-columns: 144px minmax(0, 1fr);
+    gap: 5px;
+  }
+
+  body.mobile-touch.mobile-portrait #mobileActionDock {
+    gap: 3px;
+  }
+
+  body.mobile-touch.mobile-portrait #mobileActionDock .mact-btn {
+    padding-inline: 2px;
+  }
+
+  body.mobile-touch.mobile-portrait.graphics-hd-ui #mobileActionDock .mobile-action-copy strong {
+    font-size: 9px;
+  }
+}
