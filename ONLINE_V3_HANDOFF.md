@@ -1,6 +1,6 @@
 # Online v3 - Current handoff
 
-Updated: 2026-08-12
+Updated: 2026-08-14
 
 ## Task authority
 
@@ -24,58 +24,53 @@ Do not describe the system as server-authoritative combat or cheat-proof.
 
 ## Current production snapshot
 
-- Production Worker source commit:
-  `4041faa4836183b819a64a58d0ef351cd07ba020` on
-  `codex/ranked-fatal-worker-compat`. It is a direct child of the live/GitHub
-  base `f67eb9554a1395d8399e23fda6094c6e22d7305d`.
-- Remote provenance is the release branch plus annotated tag
-  `online-v3-worker-production-2026-08-12-4041faa`, which points exactly to
-  `4041faa4836183b819a64a58d0ef351cd07ba020`.
-- `origin/main` remains at
-  `f67eb9554a1395d8399e23fda6094c6e22d7305d`. Local `main` is a separate,
-  stale/diverged line and is not a release source.
+- Deployed source commit:
+  `59aaaa283f223f2b5c17ec74a9c3aa4a397daee8` from `main`.
+- Release provenance is the annotated tag
+  `online-v3-production-2026-08-14-59aaaa2`, which points exactly to the
+  deployed source commit.
 - Production Worker version:
-  `b03cb1ae-25e2-458f-8297-6aeeb298778d` at 100% in deployment
-  `cc896f3f-eb6f-40ba-989f-663e423af6c7`.
+  `671304f1-de75-4eed-8d1c-a8556d72093b` at 100%.
 - Recorded Worker rollback version:
-  `19b9174c-f720-4484-8f7b-c0918215c29b`.
-- Production Pages stayed unchanged at deployment
-  `4236fef9-1e2d-4e6c-aac8-752cc2f71b55`, source `f67eb95`, during this
-  Worker-only release.
+  `b03cb1ae-25e2-458f-8297-6aeeb298778d`.
+- Production Pages deployment:
+  `40e1cb47-99ed-4c33-a4f2-9faebc5306c3`, source `59aaaa2`.
 - Active production ruleset:
-  `sha256:bc0d548d204557d0cc0ec7f8a358e18246778a13b27c58f5c6cdd73e73621711`.
+  `sha256:0672eb9aaae11865ebae75a4c6d6dc77cc29f4a079afe562355172d26f073bca`.
 - Retained previous ruleset:
-  `sha256:d784208aad891119b71c52324cea358997ee376313914d5799affa68c8678ff3`.
-- D1 reports `No migrations to apply`. No D1 migration, backfill, restore, or
-  schema/data release action was performed.
+  `sha256:bc0d548d204557d0cc0ec7f8a358e18246778a13b27c58f5c6cdd73e73621711`.
+- D1 migration `0006_leaderboard_snapshots.sql` is applied. The pre-migration
+  Time Travel bookmark is
+  `00000712-00000000-000050c7-dcc35a66a3fd387efd989c1bce79b263`, and D1 now
+  reports `No migrations to apply`.
 
-The Worker hotfix accepts and validates the legacy f67 cause-bearing fatal
-payload, then strips `presentationCause` before applying the legacy `bc0d`
-ruleset. Cause-free clients remain valid, and omitted versus stripped cause
-produces identical canonical `bc0d` state, digests, checkpoint tokens, and
-terminal summaries. Genuine unexpected internal failures remain 500-class.
-No Pages/UI artifact, visual receipt, D1 state, or ruleset activation changed.
+The release activates the ranked playtest ruleset with campaign-best extract
+and death snapshots, assisted-run markers, special-room record-depth scaling,
+the Forge/relic-flow fixes, the elixir and first-Warden balance changes, and
+the refreshed Ranked UI/client behavior. Existing runs pinned to `bc0d` remain
+supported by the retained runtime.
 
 ## Latest release evidence
 
-- Exact clean source `4041faa4836183b819a64a58d0ef351cd07ba020` passed
-  fresh `verify:full`: 815/815, including the committed baseline, committed
-  Ranked lifecycle, and Wrangler/D1 coverage.
-- Candidate-version override smoke passed for malformed cause validation,
-  legacy cause-bearing fatal events, cause-free fatal events, idempotent replay,
-  changed-body idempotency conflict, Resume, and cleanup. All six disposable
-  diagnostic runs were abandoned.
-- Worker rollout passed inactive override testing, 5%/95% and 25%/75% canary
-  holds, then 100% promotion. Post-promotion default-routing smoke passed and
-  the candidate-version error tail remained quiet. No rollback was required.
-- Read-only post-release checks confirm deployment
-  `cc896f3f-eb6f-40ba-989f-663e423af6c7` serves Worker version
-  `b03cb1ae-25e2-458f-8297-6aeeb298778d` at 100%, Pages remains
-  `4236fef9-1e2d-4e6c-aac8-752cc2f71b55`, D1 reports
-  `No migrations to apply`, and public availability remains active on the
-  exact `bc0d` hash above.
-- No migration, backfill, Pages deployment, visual-receipt change, new ruleset
-  activation, or rollback occurred.
+- Exact clean source `59aaaa283f223f2b5c17ec74a9c3aa4a397daee8`
+  passed fresh `npm run verify:full -- --force`: 846/846. The release log is
+  `output/verification/full-20260814T044527015Z.log`.
+- The approved six-screenshot visual receipt passed with fingerprint
+  `sha256:6048d842512a34d47f6b98fb0a811d827f8f4fe357d78b722bdc719b52460e51`.
+- Candidate-version override smoke proved that the inactive candidate served
+  `0672...` while default traffic remained on `bc0d...`.
+- Worker rollout completed a clean 15-minute 5% hold, a clean 30-minute 25%
+  hold, and 100% promotion. Availability and leaderboard probes passed on both
+  versions during canary, and the error-only tail stayed quiet.
+- The first Pages upload from the Worker subdirectory omitted the Pages
+  Functions bundle. The release smoke caught it immediately; deployment
+  `40e1cb47-99ed-4c33-a4f2-9faebc5306c3` superseded it from the repository root
+  with the Functions bundle and service binding. No D1 mutation or data loss
+  occurred during that short static-only deployment.
+- Post-release checks confirm Pages and its versioned URL return HTTP 200,
+  `config.js` identifies `59aaaa2`, availability reports the exact active
+  `0672...` hash, leaderboard reads pass, 30/30 default-routing probes reached
+  the new Worker, and D1 reports no pending migrations.
 
 These totals are point-in-time release evidence. They do not require rerunning
 the same suites for unrelated small changes.
@@ -102,17 +97,14 @@ receipts.
 
 ## Protected working trees and release refs
 
-- The production Worker release was built from the isolated clean worktree on
-  `codex/ranked-fatal-worker-compat`; do not reconstruct it from local `main`.
-- Local `main` is at `22eb0626404cc61b9c8a6260d0dbcefb8d404683`, diverges
-  from `origin/main` at `1c087ec3bc23598399fbd3dfbc9aff74c1ae0e1b`, and
-  contains unrelated changes.
-- `codex/mobile-v1` remains based at
-  `1c087ec3bc23598399fbd3dfbc9aff74c1ae0e1b` with substantial isolated WIP.
-  Do not merge, stage, clean, or otherwise modify that worktree as part of an
-  Online v3 release.
-- `codex/ranked-fatal-reconciled` contains separate uncommitted QA/test work
-  and is not the deployed source.
+- The deployed source is fixed by
+  `online-v3-production-2026-08-14-59aaaa2`; subsequent documentation commits
+  on `main` are not part of the Worker or Pages artifact.
+- `npm run status:compact` reported zero protected Vault Guardian WIP entries
+  and zero local Wrangler-state entries before the release record was written.
+- The untracked user file
+  `docs/plans/2026-08-13-ranked-playtest-fixes.md` remains intentionally
+  untouched and is not part of the release.
 
 Always confirm with `npm run status:compact`. Before staging or committing,
 inspect the full `git status --short` and stage only explicit paths.
