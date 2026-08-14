@@ -179,12 +179,25 @@ async function issueMetaOffer(state, payload, ruleset, context) {
     return ruleset.issueMerchantInventory(state, context);
   }
   if (roomType === "forge") {
-    const request = exactPayload(payload, ["mode"], "FORGE_OPEN_PAYLOAD_INVALID");
+    const rawRequest = requireObject(payload, "FORGE_OPEN_PAYLOAD_INVALID");
+    const request = rawRequest.mode === "transmute"
+      ? exactPayload(
+        rawRequest,
+        ["mode", "sacrificeRelicId"],
+        "FORGE_OPEN_PAYLOAD_INVALID"
+      )
+      : exactPayload(rawRequest, ["mode"], "FORGE_OPEN_PAYLOAD_INVALID");
     if (request.mode === "temper") {
       return ruleset.issueForgeTemperOffer(state, context);
     }
     if (request.mode === "transmute") {
-      return ruleset.issueForgeTransmuteOffer(state, context);
+      if (!String(request.sacrificeRelicId || "")) {
+        throw new TypeError("FORGE_TRANSMUTE_SACRIFICE_REQUIRED");
+      }
+      return ruleset.issueForgeTransmuteOffer(state, {
+        ...context,
+        sacrificeRelicId: String(request.sacrificeRelicId)
+      });
     }
     throw new TypeError("FORGE_MODE_INVALID");
   }

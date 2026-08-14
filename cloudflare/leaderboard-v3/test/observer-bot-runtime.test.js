@@ -312,6 +312,7 @@ test("player Forge offer stays on the native Practice surface through canonical 
     async onEvent(action, payload) {
       if (action === "open_meta_offer") {
         assert.equal(payload.mode, "transmute");
+        assert.equal(payload.sacrificeRelicId, "fang");
         return { metaState: metaState({
           build: { relics: [{ relicId: "fang", stacks: 1 }] },
           metaTransactionOffer: {

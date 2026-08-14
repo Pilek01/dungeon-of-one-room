@@ -329,14 +329,26 @@ export async function issueForgeTransmuteOfferV08(metaState, context = {}) {
     throw new TypeError("FORGE_TRANSMUTE_REQUIRES_RELIC");
   }
   const profile = profileForDepth(binding.depth);
+  const requestedSacrificeRelicId = String(context.sacrificeRelicId || "");
+  const sourceEntries = requestedSacrificeRelicId
+    ? metaState.build.relics.filter(
+      (entry) => entry.relicId === requestedSacrificeRelicId
+    )
+    : metaState.build.relics;
+  if (requestedSacrificeRelicId && !sourceEntries.length) {
+    throw new TypeError("FORGE_TRANSMUTE_SACRIFICE_NOT_OWNED");
+  }
   const choices = [];
-  for (const sourceEntry of metaState.build.relics) {
+  for (const sourceEntry of sourceEntries) {
     choices.push(...await transmuteChoicesForSource(
       metaState,
       sourceEntry,
       profile,
       context
     ));
+  }
+  if (requestedSacrificeRelicId && choices.length !== policy.transmute.outputCount) {
+    throw new TypeError("FORGE_TRANSMUTE_REQUIRES_THREE_CHOICES");
   }
   if (!choices.length) return structuredClone(metaState);
   const prepared = structuredClone(metaState);

@@ -1209,7 +1209,10 @@
     if (isRankedObserverBotActive()) {
       void runObserverBotBoundary(async () => {
         session.transition(root.DungeonRankedV3Session.STATES.offer);
-        const response = await createClient().event("open_meta_offer", { mode });
+        const payload = mode === "transmute"
+          ? { mode, sacrificeRelicId: String(context.sacrificeRelicId || "") }
+          : { mode };
+        const response = await createClient().event("open_meta_offer", payload);
         await continueBoundary(response.metaState);
       });
       return true;
@@ -1221,7 +1224,10 @@
     forgeMutationPending = true;
     root.DungeonOnlineV3GameBridge?.beginRankedForgeRequest?.();
     session.transition(root.DungeonRankedV3Session.STATES.offer);
-    createClient().event("open_meta_offer", { mode })
+    const payload = mode === "transmute"
+      ? { mode, sacrificeRelicId: currentForgeContext.sacrificeRelicId }
+      : { mode };
+    createClient().event("open_meta_offer", payload)
       .then((response) => continueBoundary(response.metaState))
       .catch(presentForgeError)
       .finally(() => { forgeMutationPending = false; });

@@ -400,7 +400,12 @@ test("real HTTP lifecycle reaches canonical relic and meta transaction systems",
       ) {
         return;
       }
-      await event("open_meta_offer", { mode });
+      await event("open_meta_offer", mode === "transmute"
+        ? {
+          mode,
+          sacrificeRelicId: session.metaState.build.relics[0].relicId
+        }
+        : { mode });
       const offer = session.metaState.metaTransactionOffer;
       const wanted = offer?.choices.find(
         (entry) =>

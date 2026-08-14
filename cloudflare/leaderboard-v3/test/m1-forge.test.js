@@ -258,6 +258,42 @@ test("Transmute binds canonical sacrifice and result and commits both atomically
   );
 });
 
+test("Transmute with eight relics offers exactly three results for the selected sacrifice", async () => {
+  const result = setup("forge_transmute_full_selected", 25);
+  result.meta = await addRelics(result.meta, [
+    "fang", "plating", "lucky", "flask",
+    "lifebloom", "idol", "quickloader", "bloodvial"
+  ]);
+  result.meta = await issueForgeTransmuteOfferV08(result.meta, {
+    ...result.context,
+    sacrificeRelicId: "fang"
+  });
+  const choices = result.meta.pendingInventory.choices.filter(
+    (entry) => entry.privateData.action === "transmute"
+  );
+  assert.equal(choices.length, 3);
+  assert.equal(choices.every(
+    (entry) => entry.privateData.sacrificeRelicId === "fang"
+  ), true);
+  assert.equal(new Set(choices.map(
+    (entry) => entry.privateData.resultRelicId
+  )).size, 3);
+});
+
+test("Transmute rejects a sacrifice that is not in the canonical build", async () => {
+  const result = setup("forge_transmute_missing_selected", 25);
+  result.meta = await addRelics(result.meta, ["fang"]);
+  await assert.rejects(
+    issueForgeTransmuteOfferV08(result.meta, {
+      ...result.context,
+      sacrificeRelicId: "idol"
+    }),
+    /FORGE_TRANSMUTE_SACRIFICE_NOT_OWNED/u
+  );
+  assert.equal(result.meta.pendingInventory, null);
+  assert.equal(result.meta.currentRoomDirective.forgeConsumed, undefined);
+});
+
 test("leave retains build while Forge stays consumed across serialization restart", async () => {
   const result = setup("forge_transmute_leave", 45);
   result.meta = await addRelics(result.meta, ["quickloader"]);
