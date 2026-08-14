@@ -1670,6 +1670,10 @@ Updated next good targets
   `TEST RUN - NOT RANKED` in details.
 - Updated the lifecycle browser scenario to cover ordinary Ranked start,
   F9/password unlock, the full test menu, and Observer Bot toggling.
-- Focused pure, HTTP, boundary, leaderboard UI, style, and publication tests
-  are passing. Full generated, phase, baseline, and headed verification is
-  still pending for this work item.
+- Focused pure, HTTP, boundary, leaderboard UI, style, publication, and
+  campaign-parity tests pass. Generator drift and guard pass (14/14), phase
+  passes (822/822), the current-tree save UI and Ranked lifecycle scenarios
+  pass, and the committed protected baseline passes (3/3).
+- Automated behavior and screenshot generation completed, but manual visual
+  approval was not recorded because both Windows image viewers failed during
+  environment setup; no visual receipt was fabricated.
