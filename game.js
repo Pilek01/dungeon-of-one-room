@@ -12658,8 +12658,8 @@
         name: bossProfile?.name || "Warden",
         x,
         y,
-        hp: Math.round(scaledCombat(16 + state.depth * 2) * Math.max(1, Number(bossProfile?.hpMultiplier) || 1)),
-        attack: Math.round(scaledCombat(4 + Math.floor(state.depth / 3)) * Math.max(1, Number(bossProfile?.attackMultiplier) || 1)),
+        hp: Math.round(scaledCombat(16 + state.depth * 2) * Math.max(0.1, Number(bossProfile?.hpMultiplier) || 1)),
+        attack: Math.round(scaledCombat(4 + Math.floor(state.depth / 3)) * Math.max(0.1, Number(bossProfile?.attackMultiplier) || 1)),
         range: Math.max(3, Number(bossProfile?.pulseRange) || 4),
         cooldown: 0,
         aiming: false

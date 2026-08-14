@@ -1,4 +1,6 @@
 const assert = require("node:assert/strict");
+const fs = require("node:fs");
+const path = require("node:path");
 
 const {
   getBossProfile,
@@ -7,6 +9,35 @@ const {
 } = require("../boss-campaign.js");
 
 function run() {
+  {
+    const first = getBossEncounterProfile(5);
+    const laterGate = getBossEncounterProfile(10);
+    assert.equal(first.id, "descent");
+    assert.equal(first.hpMultiplier, 0.8);
+    assert.equal(first.attackMultiplier, 0.9);
+    assert.equal(first.pulseDamageMultiplier, laterGate.pulseDamageMultiplier);
+    assert.equal(first.burstDamageMultiplier, laterGate.burstDamageMultiplier);
+    assert.equal(laterGate.hpMultiplier, 1);
+    assert.equal(laterGate.attackMultiplier, 1);
+
+    const gameSource = fs.readFileSync(
+      path.resolve(__dirname, "..", "game.js"),
+      "utf8"
+    );
+    assert.match(
+      gameSource,
+      /hpMultiplier\) \|\| 1\)/
+    );
+    assert.doesNotMatch(
+      gameSource,
+      /Math\.max\(1, Number\(bossProfile\?\.hpMultiplier\)/
+    );
+    assert.doesNotMatch(
+      gameSource,
+      /Math\.max\(1, Number\(bossProfile\?\.attackMultiplier\)/
+    );
+  }
+
   {
     const profile = getBossProfile(5);
     assert.equal(profile.id, "descent");

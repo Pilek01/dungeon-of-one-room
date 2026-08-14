@@ -6,8 +6,8 @@
   "sources": [
     {
       "file": "boss-campaign.js",
-      "byteLength": 8058,
-      "sha256": "a0dd505008e16b4c5cd7b948c43ddd49297b20f52bed2818b4651884754cf03a",
+      "byteLength": 8314,
+      "sha256": "d476994df5b378d432dd80fb0488599fd187b020ab92a0cf0491f44e9dd86626",
       "evidenceSymbols": [
         "BOSS_PROFILES"
       ]
@@ -67,8 +67,8 @@
     },
     {
       "file": "game.js",
-      "byteLength": 1339955,
-      "sha256": "46d431e5ffcefb062609e73c81cadd80902bd2fd9a73942764faf34dbde5aeb2",
+      "byteLength": 1339959,
+      "sha256": "afdc2b1e3dfe1bc23e4f3e5902d1e619621dde42803e96977c0586229f8facfc",
       "evidenceSymbols": [
         "MAX_DEPTH",
         "MAX_RELICS",

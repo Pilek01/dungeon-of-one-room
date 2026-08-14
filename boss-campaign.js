@@ -259,7 +259,15 @@
     if (safeDepth === 100) {
       return getFinalBossPhaseProfile(phase);
     }
-    return getBossProfile(safeDepth);
+    const profile = getBossProfile(safeDepth);
+    if (safeDepth === 5 && profile.id === "descent") {
+      return Object.freeze({
+        ...profile,
+        hpMultiplier: profile.hpMultiplier * 0.8,
+        attackMultiplier: profile.attackMultiplier * 0.9
+      });
+    }
+    return profile;
   }
 
   const api = {
