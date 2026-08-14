@@ -86,7 +86,7 @@ test("pure domain boundaries return state, response, and declarative effects", (
   );
   assert.deepEqual(
     finalized.storageEffects.map((effect) => effect.type),
-    ["finalize_run", "insert_leaderboard"]
+    ["finalize_run", "upsert_leaderboard_snapshot"]
   );
   assert.deepEqual(event.nextState, eventSnapshot);
   assert.equal(finalized.nextState.status, "finalized");

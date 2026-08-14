@@ -4,6 +4,9 @@ import {
   encodeLeaderboardCursor,
   isAfterLeaderboardCursor
 } from "../../src/domain/leaderboard-cursor.js";
+import {
+  isLeaderboardSnapshotBetter
+} from "../../src/domain/leaderboard-snapshot.js";
 
 function clone(value) {
   return value === null || value === undefined ? value : structuredClone(value);
@@ -31,6 +34,28 @@ export function createMemoryRepositories() {
       recoveryIssuedAt: metadata.recoveryIssuedAt ?? current?.recoveryIssuedAt ?? null,
       lastAccessedAt: metadata.recoveryIssuedAt ?? current?.lastAccessedAt ?? null
     });
+  }
+
+  function currentLeaderboardEntry(entry) {
+    return [...leaderboardRows.values()].find((published) =>
+      published.profileId === entry.profileId &&
+      published.season === entry.season &&
+      (published.assistanceClass || "none") === (entry.assistanceClass || "none")
+    ) || null;
+  }
+
+  function upsertLeaderboard(entry, stateDigest) {
+    const candidate = clone({
+      ...entry,
+      snapshotKind: entry.snapshotKind || "final",
+      assistanceClass: entry.assistanceClass || "none",
+      stateDigest
+    });
+    const current = currentLeaderboardEntry(candidate);
+    if (!isLeaderboardSnapshotBetter(candidate, current)) return false;
+    if (current) leaderboardRows.delete(current.runId);
+    leaderboardRows.set(candidate.runId, candidate);
+    return true;
   }
 
   const runs = {
@@ -128,6 +153,64 @@ export function createMemoryRepositories() {
       profileRows.set(profile.profileId, clone(profile));
       return true;
     },
+
+    async updateWithLeaderboardAtomic(
+      state,
+      expectedRevision,
+      metadata,
+      leaderboardEntry
+    ) {
+      metrics.batches += 1;
+      metrics.writes += 2;
+      metrics.statements.push("batch_update_run", "batch_upsert_leaderboard");
+      const current = runRows.get(state.runId);
+      if (
+        !current ||
+        current.state.revision !== expectedRevision ||
+        current.state.status !== (metadata.expectedStatus || "active") ||
+        metadata.expectedStateDigest !== undefined &&
+          current.stateDigest !== metadata.expectedStateDigest
+      ) {
+        return false;
+      }
+      storeRun(state, metadata);
+      upsertLeaderboard(leaderboardEntry, metadata.stateDigest);
+      return true;
+    },
+
+    async updateWithProfileAndLeaderboardAtomic(
+      state,
+      expectedRevision,
+      metadata,
+      profile,
+      expectedProfileRevision,
+      leaderboardEntry
+    ) {
+      metrics.batches += 1;
+      metrics.writes += 3;
+      metrics.statements.push(
+        "batch_update_run",
+        "batch_update_profile",
+        "batch_upsert_leaderboard"
+      );
+      const current = runRows.get(state.runId);
+      const currentProfile = profileRows.get(profile.profileId);
+      if (
+        !current ||
+        !currentProfile ||
+        current.state.revision !== expectedRevision ||
+        current.state.status !== (metadata.expectedStatus || "active") ||
+        currentProfile.revision !== expectedProfileRevision ||
+        metadata.expectedStateDigest !== undefined &&
+          current.stateDigest !== metadata.expectedStateDigest
+      ) {
+        return false;
+      }
+      storeRun(state, metadata);
+      profileRows.set(profile.profileId, clone(profile));
+      upsertLeaderboard(leaderboardEntry, metadata.stateDigest);
+      return true;
+    },
     async deleteExpired(now) {
       let deleted = 0;
       for (const [runId, row] of runRows) {
@@ -151,26 +234,12 @@ export function createMemoryRepositories() {
         current.state.revision !== expectedRevision ||
         current.state.status !== (metadata.expectedStatus || "active") ||
         metadata.expectedStateDigest !== undefined &&
-          current.stateDigest !== metadata.expectedStateDigest ||
-        leaderboardRows.has(state.runId)
+          current.stateDigest !== metadata.expectedStateDigest
       ) {
         return false;
       }
       storeRun(state, metadata);
-      if (leaderboardEntry.profileId) {
-        for (const [publishedRunId, published] of leaderboardRows) {
-          if (
-            published.profileId === leaderboardEntry.profileId &&
-            published.season === leaderboardEntry.season
-          ) {
-            leaderboardRows.delete(publishedRunId);
-          }
-        }
-      }
-      leaderboardRows.set(state.runId, clone({
-        ...leaderboardEntry,
-        stateDigest: metadata.stateDigest
-      }));
+      upsertLeaderboard(leaderboardEntry, metadata.stateDigest);
       return true;
     }
   };
@@ -216,7 +285,10 @@ export function createMemoryRepositories() {
       const limit = Math.max(1, Math.min(50, Number(options.limit) || 20));
       const cursor = decodeLeaderboardCursor(options.cursor);
       const rows = [...leaderboardRows.values()]
-        .filter((entry) => entry.season === season && ["defeat", "victory"].includes(entry.outcome))
+        .filter((entry) =>
+          entry.season === season &&
+          (entry.assistanceClass || "none") === "none"
+        )
         .sort(compareLeaderboardEntries)
         .filter((entry) => isAfterLeaderboardCursor(entry, cursor))
         .slice(0, limit + 1);
@@ -231,6 +303,8 @@ export function createMemoryRepositories() {
           gold: entry.gold,
           durationMs: entry.durationMs,
           outcome: entry.outcome,
+          snapshotKind: entry.snapshotKind || "final",
+          assistanceClass: entry.assistanceClass || "none",
           verificationLevel: entry.verificationLevel,
           createdAt: entry.createdAt
         }));
@@ -244,7 +318,9 @@ export function createMemoryRepositories() {
       metrics.reads += 1;
       metrics.statements.push("read_leaderboard_detail");
       const entry = leaderboardRows.get(runId);
-      return ["defeat", "victory"].includes(entry?.outcome) ? clone(entry) : null;
+      return entry && (entry.assistanceClass || "none") === "none"
+        ? clone(entry)
+        : null;
     }
   };
 

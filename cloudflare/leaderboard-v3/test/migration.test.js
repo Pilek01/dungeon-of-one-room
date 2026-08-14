@@ -179,3 +179,61 @@ test("0004 and 0005 preserve legacy rows while indexing terminal leaderboard que
   `).run(), /UNIQUE constraint failed/iu);
   database.close();
 });
+
+test("0006 adds ranked snapshots and separates official from assisted campaign rows", async () => {
+  const database = new DatabaseSync(":memory:");
+  for (const name of [
+    "0001_initial.sql",
+    "0002_r2_ranked_profiles.sql",
+    "0003_r2_run_recovery.sql",
+    "0004_r2_leaderboard_campaign_identity.sql",
+    "0005_r2_terminal_leaderboard_filter.sql",
+    "0006_leaderboard_snapshots.sql"
+  ]) {
+    database.exec(await readFile(new URL(`../migrations/${name}`, import.meta.url), "utf8"));
+  }
+  const columns = database.prepare("PRAGMA table_info(leaderboard_entries)").all();
+  assert.equal(columns.find((row) => row.name === "snapshot_kind").dflt_value, "'final'");
+  assert.equal(columns.find((row) => row.name === "assistance_class").dflt_value, "'none'");
+  const indexes = database.prepare(`
+    SELECT name FROM sqlite_master WHERE type = 'index' ORDER BY name
+  `).all().map((row) => row.name);
+  assert(indexes.includes("leaderboard_entries_season_profile_assistance"));
+  assert(indexes.includes("leaderboard_entries_official_season_score_created"));
+  assert.equal(indexes.includes("leaderboard_entries_season_profile"), false);
+  assert.equal(indexes.includes("leaderboard_entries_terminal_season_score_created"), false);
+
+  const insertRun = database.prepare(`
+    INSERT INTO ranked_runs (
+      run_id, season, protocol_version, ruleset_hash, status, revision,
+      player_name, depth, room_index, gold, lives, canonical_state_json,
+      state_digest, recent_ops_json, started_at, updated_at, expires_at,
+      start_idempotency_key, start_request_digest
+    ) VALUES (?, 'season-a', 'ranked-v3-checkpoint-1', 'sha256:test',
+      'active', 1, 'Player', 1, 1, 1, 1, '{}', 'digest', '[]', 1, 1, 2, ?, ?)
+  `);
+  for (const runId of [
+    "run_snapshot_official",
+    "run_snapshot_official_conflict",
+    "run_snapshot_assisted"
+  ]) {
+    insertRun.run(runId, `start:${runId}`, `request:${runId}`);
+  }
+  const insert = database.prepare(`
+    INSERT INTO leaderboard_entries (
+      run_id, profile_id, season, player_name, score, depth, gold, duration_ms,
+      outcome, build_json, summary_json, verification_level, state_digest,
+      created_at, snapshot_kind, assistance_class
+    ) VALUES (?, 'profile_snapshot_test', 'season-a', 'Player', 1, 1, 1, 1,
+      'defeat', '{}', '{}', 'checkpoint_verified_v3', 'digest', 1, ?, ?)
+  `);
+  insert.run("run_snapshot_official", "death", "none");
+  assert.throws(
+    () => insert.run("run_snapshot_official_conflict", "extract", "none"),
+    /UNIQUE constraint failed/iu
+  );
+  assert.doesNotThrow(
+    () => insert.run("run_snapshot_assisted", "death", "observer_bot")
+  );
+  database.close();
+});

@@ -72,10 +72,16 @@ async function nextDescent(profile, runId) {
   profileInput.campGold = 0;
   profileInput.goldLedger.campEarnedServerDerived = 0;
   profileInput.goldLedger.campSpentServerDerived = 0;
-  const state = await ruleset.createRun({ startDepth: 0, profileState: profileInput }, {
+  const state = await ruleset.createRun({
+    startDepth: 0,
+    profileState: profileInput,
+    playerName: "Campaign Score",
+    season: CONTEXT.season
+  }, {
     ...CONTEXT,
     runId
   });
+  state.playerName = "Campaign Score";
   state.expiresAt = STARTED_AT + RUN_TTL_MS;
   return state;
 }
@@ -237,6 +243,10 @@ test("Extract retry persists one score carry snapshot and never folds the descen
   assert.equal(retry.response.headers.get("x-idempotent-replay"), "1");
   assert.deepEqual(retry.payload, first.payload);
   assert.deepEqual(harness.repositories.snapshotProfile(PROFILE_ID), profileAfterFirst);
+  assert.equal(harness.repositories.leaderboardCount(), 1);
+  const page = await harness.repositories.leaderboard.list(CONTEXT.season, { limit: 20 });
+  assert.equal(page.entries[0].outcome, "extract");
+  assert.equal(page.entries[0].snapshotKind, "extract");
 });
 
 test("public state, terminal finalization, and leaderboard use the same carried canonical score", async () => {
@@ -251,7 +261,9 @@ test("public state, terminal finalization, and leaderboard use the same carried 
   const extractedPublicState = publicRulesetMetaState(extractedFinalization.nextState, ruleset);
   const publicState = publicRulesetMetaState(second, ruleset);
   const result = finalizeRunV08(second, { finalizedAt: STARTED_AT + 1_000 });
-  const entry = result.storageEffects.find((effect) => effect.type === "insert_leaderboard").entry;
+  const entry = result.storageEffects.find(
+    (effect) => effect.type === "upsert_leaderboard_snapshot"
+  ).entry;
   assert.equal(extractedFinalization.response.score, 4_486);
   assert.equal(extractedPublicState.score.score, 4_486);
   assert.equal(result.response.score, 4_992);

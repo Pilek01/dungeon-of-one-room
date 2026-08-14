@@ -78,14 +78,15 @@ test("real D1 finalize batch never leaves a split run/leaderboard state", {
       "0002_r2_ranked_profiles.sql",
       "0003_r2_run_recovery.sql",
       "0004_r2_leaderboard_campaign_identity.sql",
-      "0005_r2_terminal_leaderboard_filter.sql"
+      "0005_r2_terminal_leaderboard_filter.sql",
+      "0006_leaderboard_snapshots.sql"
     ].map((name) => readFile(path.join(WORKER_ROOT, "migrations", name), "utf8")));
     const migrationStatements = migrations
       .flatMap((migration) => migration.split(";"))
       .map((statement) => statement.trim())
       .filter(Boolean)
       .map((statement) => db.prepare(statement));
-    assert.equal(migrationStatements.length, 16);
+    assert.equal(migrationStatements.length, 22);
     await db.batch(migrationStatements);
 
     const initial = createInitialRun({
@@ -124,11 +125,11 @@ test("real D1 finalize batch never leaves a split run/leaderboard state", {
     };
     const finalDigest = await canonicalDigest(stateForDigest(nextState));
     const entry = transition.storageEffects.find(
-      (effect) => effect.type === "insert_leaderboard"
+      (effect) => effect.type === "upsert_leaderboard_snapshot"
     ).entry;
 
     const beforeBatchFailure = createD1RunRepository(db, {
-      prepareInsert() {
+      prepareUpsert() {
         throw new Error("CONTROLLED_BEFORE_BATCH_FAILURE");
       }
     });
@@ -148,7 +149,7 @@ test("real D1 finalize batch never leaves a split run/leaderboard state", {
     });
 
     const duringBatchFailure = createD1RunRepository(db, {
-      prepareInsert() {
+      prepareUpsert() {
         return db.prepare(`
           INSERT INTO leaderboard_table_that_does_not_exist (run_id)
           VALUES (?)
@@ -204,6 +205,7 @@ test("real D1 finalize batch never leaves a split run/leaderboard state", {
       protocolVersion: "ranked-v3-checkpoint-1",
       gameVersion: "0.8.1",
       clientInstallIdHash: "real_atomicity_install_hash",
+      profileId: "profile_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
       status: "defeat",
       expiresAt: realStartedAt + RUN_TTL_MS,
       finalizedAt: null,
@@ -232,10 +234,10 @@ test("real D1 finalize batch never leaves a split run/leaderboard state", {
     };
     const realFinalDigest = await canonicalDigest(stateForDigest(realNextState));
     const realEntry = realTransition.storageEffects.find(
-      (effect) => effect.type === "insert_leaderboard"
+      (effect) => effect.type === "upsert_leaderboard_snapshot"
     ).entry;
     const realDuringBatchFailure = createD1RunRepository(db, {
-      prepareInsert() {
+      prepareUpsert() {
         return db.prepare(`
           INSERT INTO leaderboard_table_that_does_not_exist (run_id)
           VALUES (?)

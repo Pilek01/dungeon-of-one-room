@@ -193,6 +193,74 @@ export function createD1RunRepository(db, leaderboardRepository, profileReposito
       const results = await db.batch([updateRun, updateProfile]);
       return changes(results[0]) === 1 && changes(results[1]) === 1;
     },
+
+    async updateWithLeaderboardAtomic(state, expectedRevision, metadata, leaderboardEntry) {
+      const update = this.prepareConditionalUpdate
+        ? this.prepareConditionalUpdate(state, expectedRevision, metadata)
+        : db.prepare(`
+          UPDATE ranked_runs SET
+            season = ?, protocol_version = ?, ruleset_hash = ?, status = ?,
+            revision = ?, player_name = ?, depth = ?, room_index = ?,
+            room_directive_id = ?, room_type = ?, room_nonce = ?, gold = ?,
+            lives = ?, canonical_state_json = ?, state_digest = ?,
+            journal_digest = ?, recent_ops_json = ?, anomaly_score = ?,
+            updated_at = ?, expires_at = ?, finalized_at = ?, outcome = ?
+          WHERE run_id = ? AND revision = ? AND status = ?
+            AND (? IS NULL OR state_digest = ?)
+        `).bind(
+          ...runValues(state, metadata.stateDigest, metadata.recentOps),
+          state.runId,
+          expectedRevision,
+          metadata.expectedStatus || "active",
+          metadata.expectedStateDigest ?? null,
+          metadata.expectedStateDigest ?? null
+        );
+      const upsert = leaderboardRepository.prepareUpsert({
+        ...leaderboardEntry,
+        stateDigest: metadata.stateDigest
+      });
+      const results = await db.batch([update, upsert]);
+      return changes(results[0]) === 1;
+    },
+
+    async updateWithProfileAndLeaderboardAtomic(
+      state,
+      expectedRevision,
+      metadata,
+      profile,
+      expectedProfileRevision,
+      leaderboardEntry
+    ) {
+      if (!profileRepository) throw new TypeError("PROFILE_REPOSITORY_REQUIRED");
+      const updateRun = db.prepare(`
+        UPDATE ranked_runs SET
+          season = ?, protocol_version = ?, ruleset_hash = ?, status = ?,
+          revision = ?, player_name = ?, depth = ?, room_index = ?,
+          room_directive_id = ?, room_type = ?, room_nonce = ?, gold = ?,
+          lives = ?, canonical_state_json = ?, state_digest = ?,
+          journal_digest = ?, recent_ops_json = ?, anomaly_score = ?,
+          updated_at = ?, expires_at = ?, finalized_at = ?, outcome = ?
+        WHERE run_id = ? AND revision = ? AND status = ?
+          AND (? IS NULL OR state_digest = ?)
+      `).bind(
+        ...runValues(state, metadata.stateDigest, metadata.recentOps),
+        state.runId,
+        expectedRevision,
+        metadata.expectedStatus || "active",
+        metadata.expectedStateDigest ?? null,
+        metadata.expectedStateDigest ?? null
+      );
+      const updateProfile = profileRepository.prepareConditionalUpdate(
+        profile,
+        expectedProfileRevision
+      );
+      const upsert = leaderboardRepository.prepareUpsert({
+        ...leaderboardEntry,
+        stateDigest: metadata.stateDigest
+      });
+      const results = await db.batch([updateRun, updateProfile, upsert]);
+      return changes(results[0]) === 1 && changes(results[1]) === 1;
+    },
     async deleteExpired(now) {
       const result = await db.prepare(`
         DELETE FROM ranked_runs
@@ -221,13 +289,13 @@ export function createD1RunRepository(db, leaderboardRepository, profileReposito
         metadata.expectedStateDigest ?? null,
         metadata.expectedStateDigest ?? null
       );
-      const insert = leaderboardRepository.prepareInsert({
+      const insert = leaderboardRepository.prepareUpsert({
         ...leaderboardEntry,
         stateDigest: metadata.stateDigest,
         resultingRevision: state.revision
       });
       const results = await db.batch([update, insert]);
-      return changes(results[0]) === 1 && changes(results[1]) === 1;
+      return changes(results[0]) === 1;
     }
   };
 }

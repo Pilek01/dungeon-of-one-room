@@ -148,7 +148,7 @@ test("M3 finalization golden corpus has 12 exact terminal cases", () => {
     assert.equal(result.response.score, fixture.score);
     assert.equal(result.response.durationMs, fixture.durationMs);
     const leaderboardEffect = result.storageEffects.find(
-      (effect) => effect.type === "insert_leaderboard"
+      (effect) => effect.type === "upsert_leaderboard_snapshot"
     );
     if (fixture.status === "extraction") {
       assert.equal(leaderboardEffect, undefined);
@@ -186,6 +186,48 @@ test("detail endpoint returns the finalized display-only defeat cause without a 
   assert.equal(detail.response.status, 200);
   assert.equal(detail.payload.entry.summary.presentationCause, "Defeated by The Hollow Seraph");
 });
+
+test("a nonterminal death publishes one retry-safe snapshot while the run stays active", async () => {
+  const harness = createRealHarness();
+  const started = (await harness.call("/api/v3/runs/start", {
+    playerName: "M3Runtime",
+    season: "m3-season",
+    gameVersion: "0.8.1",
+    rulesetId: "v08-meta-1",
+    rulesetHash: manifest.rulesetHash,
+    clientInstallIdHash: "install_nonterminal_death",
+    profileId: "profile_11111111111111111111111111111111",
+    profileCredential: "ppppppppppppppppppppppppppppppppppppppppppp",
+    recoveryCredential: "rrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrr"
+  }, "nonterminal-start")).payload;
+  const selected = (await harness.call("/api/v3/runs/event", {
+    runId: started.runId,
+    type: "select_starting_relic",
+    bootstrapToken: started.bootstrapToken,
+    offerId: started.metaState.startingRelicOffer.offerId,
+    choiceId: started.metaState.startingRelicOffer.publicChoices[0].choiceId
+  }, "nonterminal-select")).payload;
+  const directive = selected.metaState.currentRoomDirective;
+  const body = {
+    runId: selected.runId,
+    checkpointToken: selected.checkpointToken,
+    roomDirectiveId: directive.directiveId,
+    roomNonce: directive.roomNonce,
+    type: "report_fatal_event",
+    payload: { classification: "local_fatal_event" }
+  };
+  const first = await harness.call("/api/v3/runs/event", body, "nonterminal-fatal");
+  assert.equal(first.response.status, 200);
+  assert.equal(first.payload.metaState.status, "active");
+  assert.equal(harness.repositories.leaderboardCount(), 1);
+  const detail = await harness.get(`/api/v3/leaderboard/${selected.runId}`);
+  assert.equal(detail.payload.entry.snapshotKind, "death");
+  const retry = await harness.call("/api/v3/runs/event", body, "nonterminal-fatal");
+  assert.equal(retry.response.headers.get("x-idempotent-replay"), "1");
+  assert.deepEqual(retry.payload, first.payload);
+  assert.equal(harness.repositories.leaderboardCount(), 1);
+});
+
 test("HTTP finalization is terminal-token-bound, server-derived and exactly retryable", async () => {
   const harness = createRealHarness();
   const terminal = await harness.terminalDefeat("exact");
@@ -226,7 +268,7 @@ test("client outcome, score, lives and extraction claims are forbidden", async (
     assert.equal(result.payload.error.code, "FINALIZE_REQUEST_FIELDS_INVALID");
   }
   assert.equal(harness.repositories.snapshotRun(terminal.runId).status, "defeat");
-  assert.equal(harness.repositories.leaderboardCount(), 0);
+  assert.equal(harness.repositories.leaderboardCount(), 1);
 });
 
 test("conflicting retry and stale terminal boundary fail closed", async () => {
@@ -279,8 +321,9 @@ test("atomic storage failure rolls back both run and leaderboard", async () => {
     ...base,
     runs: {
       ...base.runs,
-      async finalizeAtomic() {
-        return false;
+      async updateWithLeaderboardAtomic(...args) {
+        if (args[0].status === "finalized") return false;
+        return base.runs.updateWithLeaderboardAtomic(...args);
       }
     }
   };
@@ -293,7 +336,7 @@ test("atomic storage failure rolls back both run and leaderboard", async () => {
   assert.equal(result.response.status, 409);
   assert.equal(result.payload.error.code, "REVISION_CONFLICT");
   assert.equal(base.snapshotRun(terminal.runId).status, "defeat");
-  assert.equal(base.leaderboardCount(), 0);
+  assert.equal(base.leaderboardCount(), 1);
 });
 
 test("128 terminal seeds preserve exact outcome and bounded immutable projections", () => {
@@ -313,7 +356,7 @@ test("128 terminal seeds preserve exact outcome and bounded immutable projection
     );
     assert(JSON.stringify(result.response).length < 16_384);
     const leaderboardEffect = result.storageEffects.find(
-      (effect) => effect.type === "insert_leaderboard"
+      (effect) => effect.type === "upsert_leaderboard_snapshot"
     );
     assert.equal(Boolean(leaderboardEffect), status !== "extraction");
     if (leaderboardEffect) {

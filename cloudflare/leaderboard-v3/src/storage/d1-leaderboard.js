@@ -17,6 +17,8 @@ function compactEntry(row) {
     gold: row.gold,
     durationMs: row.duration_ms,
     outcome: row.outcome,
+    snapshotKind: row.snapshot_kind,
+    assistanceClass: row.assistance_class,
     verificationLevel: row.verification_level,
     createdAt: row.created_at
   };
@@ -24,20 +26,17 @@ function compactEntry(row) {
 
 export function createD1LeaderboardRepository(db) {
   return {
-    prepareInsert(entry) {
+    prepareUpsert(entry) {
       return db.prepare(`
         INSERT INTO leaderboard_entries (
           run_id, profile_id, season, player_name, score, depth, gold,
           duration_ms, outcome, build_json, summary_json,
-          verification_level, state_digest, created_at
+          verification_level, state_digest, created_at, snapshot_kind,
+          assistance_class
         )
-        SELECT ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+        SELECT ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
         WHERE changes() = 1
-          AND EXISTS (
-          SELECT 1 FROM ranked_runs
-          WHERE run_id = ? AND revision = ? AND status = 'finalized'
-        )
-        ON CONFLICT(season, profile_id) DO UPDATE SET
+        ON CONFLICT(season, profile_id, assistance_class) DO UPDATE SET
           run_id = excluded.run_id,
           player_name = excluded.player_name,
           score = excluded.score,
@@ -49,7 +48,20 @@ export function createD1LeaderboardRepository(db) {
           summary_json = excluded.summary_json,
           verification_level = excluded.verification_level,
           state_digest = excluded.state_digest,
-          created_at = excluded.created_at
+          created_at = excluded.created_at,
+          snapshot_kind = excluded.snapshot_kind
+        WHERE
+          excluded.score > leaderboard_entries.score OR
+          (excluded.score = leaderboard_entries.score AND excluded.depth > leaderboard_entries.depth) OR
+          (excluded.score = leaderboard_entries.score AND excluded.depth = leaderboard_entries.depth AND excluded.gold > leaderboard_entries.gold) OR
+          (excluded.score = leaderboard_entries.score AND excluded.depth = leaderboard_entries.depth AND excluded.gold = leaderboard_entries.gold AND excluded.run_id = leaderboard_entries.run_id AND
+            CASE excluded.snapshot_kind WHEN 'final' THEN 2 WHEN 'extract' THEN 1 ELSE 0 END >
+            CASE leaderboard_entries.snapshot_kind WHEN 'final' THEN 2 WHEN 'extract' THEN 1 ELSE 0 END) OR
+          (excluded.score = leaderboard_entries.score AND excluded.depth = leaderboard_entries.depth AND excluded.gold = leaderboard_entries.gold AND excluded.created_at < leaderboard_entries.created_at AND
+            (excluded.run_id <> leaderboard_entries.run_id OR
+              CASE excluded.snapshot_kind WHEN 'final' THEN 2 WHEN 'extract' THEN 1 ELSE 0 END =
+              CASE leaderboard_entries.snapshot_kind WHEN 'final' THEN 2 WHEN 'extract' THEN 1 ELSE 0 END)) OR
+          (excluded.score = leaderboard_entries.score AND excluded.depth = leaderboard_entries.depth AND excluded.gold = leaderboard_entries.gold AND excluded.created_at = leaderboard_entries.created_at AND excluded.run_id < leaderboard_entries.run_id)
       `).bind(
         entry.runId,
         entry.profileId || entry.runId,
@@ -65,9 +77,13 @@ export function createD1LeaderboardRepository(db) {
         entry.verificationLevel,
         entry.stateDigest,
         entry.createdAt,
-        entry.runId,
-        entry.resultingRevision
+        entry.snapshotKind || "final",
+        entry.assistanceClass || "none"
       );
+    },
+
+    prepareInsert(entry) {
+      return this.prepareUpsert(entry);
     },
 
     async list(season, options = {}) {
@@ -85,9 +101,10 @@ export function createD1LeaderboardRepository(db) {
         : "";
       const statement = db.prepare(`
         SELECT run_id, player_name, score, depth, gold, duration_ms,
-               outcome, verification_level, created_at
+               outcome, verification_level, created_at, snapshot_kind,
+               assistance_class
         FROM leaderboard_entries
-        WHERE season = ? AND outcome IN ('defeat', 'victory') ${cursorClause}
+        WHERE season = ? AND assistance_class = 'none' ${cursorClause}
         ORDER BY score DESC, created_at ASC, run_id ASC
         LIMIT ?
       `);
@@ -117,9 +134,9 @@ export function createD1LeaderboardRepository(db) {
       const row = await db.prepare(`
         SELECT run_id, season, player_name, score, depth, gold, duration_ms,
                outcome, build_json, summary_json, verification_level,
-               state_digest, created_at
+               state_digest, created_at, snapshot_kind, assistance_class
         FROM leaderboard_entries
-        WHERE run_id = ? AND outcome IN ('defeat', 'victory')
+        WHERE run_id = ? AND assistance_class = 'none'
       `).bind(runId).first();
       if (!row) return null;
       return {

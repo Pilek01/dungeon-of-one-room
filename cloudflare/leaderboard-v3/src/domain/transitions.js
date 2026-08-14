@@ -206,7 +206,7 @@ export function finalizeRun(runState, finalizeRequest, rulesetInput) {
     storageEffects: [
       { type: "finalize_run", expectedRevision: runState.revision },
       ...(publishesLeaderboard
-        ? [{ type: "insert_leaderboard", entry: leaderboardEntry }]
+        ? [{ type: "upsert_leaderboard_snapshot", entry: leaderboardEntry }]
         : [])
     ]
   };

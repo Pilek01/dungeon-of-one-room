@@ -5,6 +5,7 @@ import {
   buildFinalProjectionsV08,
   deriveFinalDurationV08
 } from "./leaderboard-summary.js";
+import { createLeaderboardSnapshot } from "../../domain/leaderboard-snapshot.js";
 
 export const FINALIZATION_POLICY_VERSION = "v08-finalization-2";
 
@@ -40,7 +41,7 @@ export function finalizeRunV08(state, context = {}) {
     build: structuredClone(projections.build),
     summary: structuredClone(projections.summary)
   };
-  const leaderboardEntry = {
+  const leaderboardEntry = createLeaderboardSnapshot({
     runId: nextState.runId,
     profileId: nextState.profileId,
     season: nextState.season,
@@ -50,11 +51,13 @@ export function finalizeRunV08(state, context = {}) {
     gold: scoreProjection.inputs.acceptedRunGoldEarned,
     durationMs: durationProjection.durationMs,
     outcome,
+    snapshotKind: "final",
+    assistanceClass: state.assistanceClass || "none",
     build: structuredClone(projections.build),
     summary: structuredClone(projections.summary),
     verificationLevel: VERIFICATION_LEVEL,
     createdAt: finalizedAt
-  };
+  });
   return {
     nextState,
     response: {
@@ -72,7 +75,7 @@ export function finalizeRunV08(state, context = {}) {
     storageEffects: [
       { type: "finalize_run", expectedRevision: state.revision },
       ...(publishesLeaderboard
-        ? [{ type: "insert_leaderboard", entry: leaderboardEntry }]
+        ? [{ type: "upsert_leaderboard_snapshot", entry: leaderboardEntry }]
         : [])
     ]
   };

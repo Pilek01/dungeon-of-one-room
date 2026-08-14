@@ -695,21 +695,34 @@ async function persistRegisteredMutation(context, transition, repositories, opti
     expectedStateDigest: context.state.stateDigest,
     expectedStatus: context.state.status
   };
-  const persisted = profileMutation
-    ? await repositories.runs.updateWithProfileAtomic(
+  const leaderboardSnapshot = options.leaderboardSnapshot || options.leaderboardEntry;
+  const persisted = profileMutation && leaderboardSnapshot
+    ? await repositories.runs.updateWithProfileAndLeaderboardAtomic(
+        nextState,
+        context.state.revision,
+        metadata,
+        profileMutation.next,
+        profileMutation.expectedRevision,
+        {
+          ...leaderboardSnapshot,
+          stateDigest
+        }
+      )
+    : profileMutation
+      ? await repositories.runs.updateWithProfileAtomic(
         nextState,
         context.state.revision,
         metadata,
         profileMutation.next,
         profileMutation.expectedRevision
       )
-    : options.leaderboardEntry
-      ? await repositories.runs.finalizeAtomic(
+    : leaderboardSnapshot
+      ? await repositories.runs.updateWithLeaderboardAtomic(
           nextState,
           context.state.revision,
           metadata,
           {
-            ...options.leaderboardEntry,
+            ...leaderboardSnapshot,
             stateDigest
           }
         )
@@ -1273,12 +1286,16 @@ async function handleRegisteredEvent(request, env, options, repositories) {
     context.state,
     body,
     context.ruleset,
-    { secret: context.secret }
+    { secret: context.secret, now: context.now }
+  );
+  const snapshotEffect = transition.storageEffects.find(
+    (effect) => effect.type === "upsert_leaderboard_snapshot"
   );
   return persistRegisteredMutation(context, transition, repositories, {
     operationType: "event",
     responseKind: body.type,
-    profileExtraction: body.type === "request_extraction"
+    profileExtraction: body.type === "request_extraction",
+    leaderboardSnapshot: snapshotEffect?.entry
   });
 }
 
@@ -1335,13 +1352,13 @@ async function handleRegisteredFinalize(request, env, options, repositories) {
     { now: context.now }
   );
   const leaderboardEffect = transition.storageEffects.find(
-    (effect) => effect.type === "insert_leaderboard"
+    (effect) => effect.type === "upsert_leaderboard_snapshot"
   );
   recordMetric(env, options, "finalizations", 1, transition.nextState.outcome || "terminal");
   return persistRegisteredMutation(context, transition, repositories, {
     operationType: "finalize",
     responseKind: "finalize",
-    leaderboardEntry: leaderboardEffect?.entry
+    leaderboardSnapshot: leaderboardEffect?.entry
   });
 }
 
@@ -1584,7 +1601,7 @@ async function handleFinalize(request, env, options, repositories) {
     now: context.now
   }, context.ruleset);
   const leaderboardEffect = transition.storageEffects.find(
-    (effect) => effect.type === "insert_leaderboard"
+    (effect) => effect.type === "upsert_leaderboard_snapshot"
   );
   return persistMutation(context, transition, repositories, {
     operationType: "finalize",

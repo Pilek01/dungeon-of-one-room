@@ -347,8 +347,8 @@
     },
     {
       "file": "finalization-policy.js",
-      "byteLength": 2827,
-      "sha256": "351e34215b5ac30df1457c1f303813657424a6c6b0f5d31bd6fa83784bc0ebec"
+      "byteLength": 3026,
+      "sha256": "090847b6b86e74ae4c3c67149e16bfc0cd14f9bbb9673d01ee5b34fbd361b4c5"
     },
     {
       "file": "forge-policy.js",
@@ -362,13 +362,13 @@
     },
     {
       "file": "index.js",
-      "byteLength": 14671,
-      "sha256": "00e583c99405a4cf8d86839d19b4fe6a92552d1673a909f604dca24818d9b276"
+      "byteLength": 15796,
+      "sha256": "a2e7ac3f6eb592e6fc0822a72d4f22d8111c6d8d44650292e20b286531bdea05"
     },
     {
       "file": "leaderboard-summary.js",
-      "byteLength": 5347,
-      "sha256": "954763aedf5894c8ed973cfb21bf12789a32cd9dbef41d1f5a47604541ca7c05"
+      "byteLength": 5356,
+      "sha256": "4ff1321f4eebbe8be4356bcfee23a23d9b5aa9f8c921fd96ff5a77235cef0510"
     },
     {
       "file": "life-policy.js",
@@ -566,5 +566,5 @@
       "sha256": "cfce80fea7bd5d1328020055f2012bcaeaf9b61e5438e437bf948a4288fb8bf0"
     }
   ],
-  "rulesetHash": "sha256:532eabb01550e6502fa3ec56122a47a77e1a664711565e26a53cdb83c52a803e"
+  "rulesetHash": "sha256:fe96fd376a7e15f7f9674d7198f6dd589aff836b656ea004fc5b047f2ca28ee3"
 }

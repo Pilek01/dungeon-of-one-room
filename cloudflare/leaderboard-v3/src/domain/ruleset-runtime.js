@@ -20,7 +20,8 @@ function runtimeContext(state, context = {}) {
     secret: context.secret,
     cryptoProvider: context.cryptoProvider,
     randomOracle: context.randomOracle,
-    elapsedMs: context.elapsedMs
+    elapsedMs: context.elapsedMs,
+    now: context.now
   };
 }
 
@@ -236,6 +237,10 @@ export async function applyRulesetEvent(state, body, ruleset, context = {}) {
   if (state.status !== "active") throw new TypeError("RUN_NOT_ACTIVE");
   const rulesetContext = runtimeContext(state, context);
   let nextState;
+  const storageEffects = [{
+    type: "update_run",
+    expectedRevision: state.revision
+  }];
   switch (body.type) {
     case "issue_relic_offer": {
       const request = exactPayload(
@@ -360,6 +365,16 @@ export async function applyRulesetEvent(state, body, ruleset, context = {}) {
         rulesetContext
       );
       nextState = result.nextState;
+      if (result.publicResult?.resolution === "life_lost") {
+        storageEffects.push({
+          type: "upsert_leaderboard_snapshot",
+          entry: ruleset.createLeaderboardSnapshot(nextState, {
+            snapshotKind: "death",
+            outcome: "death",
+            createdAt: context.now
+          })
+        });
+      }
       break;
     }
     case "request_extraction": {
@@ -373,6 +388,14 @@ export async function applyRulesetEvent(state, body, ruleset, context = {}) {
         request
       );
       nextState = result.nextState;
+      storageEffects.push({
+        type: "upsert_leaderboard_snapshot",
+        entry: ruleset.createLeaderboardSnapshot(nextState, {
+          snapshotKind: "extract",
+          outcome: "extract",
+          createdAt: context.now
+        })
+      });
       break;
     }
     case "open_camp_offer":
@@ -406,10 +429,7 @@ export async function applyRulesetEvent(state, body, ruleset, context = {}) {
           : null
       }
     },
-    storageEffects: [{
-      type: "update_run",
-      expectedRevision: state.revision
-    }]
+    storageEffects
   };
 }
 

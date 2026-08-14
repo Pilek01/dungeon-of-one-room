@@ -57,6 +57,7 @@ import {
   deriveFinalDurationV08
 } from "./leaderboard-summary.js";
 import { finalizeRunV08 } from "./finalization-policy.js";
+import { createLeaderboardSnapshot } from "../../domain/leaderboard-snapshot.js";
 import { projectPublicRunModifiers } from "./run-modifiers.js";
 import {
   applyPracticeMutatorImportV08,
@@ -499,6 +500,33 @@ export function createV08Meta1Ruleset(options = {}) {
 
     deriveFinalDuration(state, finalizedAt) {
       return deriveFinalDurationV08(state, finalizedAt);
+    },
+
+    createLeaderboardSnapshot(state, options = {}) {
+      const scoreProjection = deriveFinalScoreV08(state);
+      const durationProjection = deriveFinalDurationV08(state, options.createdAt);
+      const projections = buildFinalProjectionsV08(state, {
+        outcome: options.outcome,
+        scoreProjection,
+        durationProjection
+      });
+      return createLeaderboardSnapshot({
+        runId: state.runId,
+        profileId: state.profileId,
+        season: state.season,
+        playerName: state.playerName,
+        score: scoreProjection.score,
+        depth: scoreProjection.inputs.acceptedMaxDepth,
+        gold: scoreProjection.inputs.acceptedRunGoldEarned,
+        durationMs: durationProjection.durationMs,
+        outcome: options.outcome,
+        snapshotKind: options.snapshotKind,
+        assistanceClass: state.assistanceClass || "none",
+        build: projections.build,
+        summary: projections.summary,
+        verificationLevel: state.verificationLevel,
+        createdAt: options.createdAt
+      });
     },
 
     finalizeRun(state, context = {}) {

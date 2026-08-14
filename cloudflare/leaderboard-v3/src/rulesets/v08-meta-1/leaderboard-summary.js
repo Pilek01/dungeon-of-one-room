@@ -34,7 +34,7 @@ function requireTimestamp(value, code) {
 }
 
 function requireOutcome(value) {
-  if (!["victory", "defeat", "extract"].includes(value)) {
+  if (!["victory", "defeat", "extract", "death"].includes(value)) {
     throw new TypeError("FINAL_OUTCOME_INVALID");
   }
   return value;
