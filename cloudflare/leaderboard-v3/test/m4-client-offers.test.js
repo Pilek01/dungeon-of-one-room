@@ -49,6 +49,7 @@ test("M4 relic and replacement adapters keep opaque choices and public stack dat
     resultingStacks: 2
   });
   const replacement = offers.replacementChoices({
+    incoming: { relicId: "new", rarity: "epic", stacks: 1 },
     choices: [{
       replacementChoiceId: "replace_opaque",
       removals: [{ relicId: "old", currentStacks: 2, resultingStacks: 1 }],
@@ -57,6 +58,9 @@ test("M4 relic and replacement adapters keep opaque choices and public stack dat
     }]
   })[0];
   assert.equal(replacement.choiceId, "replace_opaque");
+  assert.equal(replacement.incomingRelicId, "new");
+  assert.equal(replacement.incomingRarity, "epic");
+  assert.deepEqual(replacement.removalRelicIds, ["old"]);
   assert.match(replacement.label, /old \(2→1\)/u);
 });
 

@@ -35,6 +35,8 @@ function createHarness(options = {}) {
   const directives = [];
   const forgePresentations = [];
   const forgeCompletions = [];
+  const replacementPresentations = [];
+  const replacementCompletions = [];
   const uiChoiceCalls = [];
   let snapshot = {
     publicState: metaState({
@@ -180,10 +182,26 @@ function createHarness(options = {}) {
       enterRankedForge(publicState, offer, context) {
         forgePresentations.push({ publicState, offer, context });
       },
-      completeRankedForge(publicState) { forgeCompletions.push(publicState); }
+      completeRankedForge(publicState) { forgeCompletions.push(publicState); },
+      enterRankedRelicReplacement(publicState, replacement, choices) {
+        replacementPresentations.push({ publicState, replacement, choices });
+        return true;
+      },
+      completeRankedRelicReplacement(publicState) {
+        replacementCompletions.push(publicState);
+      }
     }
   };
-  return { root, calls, directives, forgePresentations, forgeCompletions, uiChoiceCalls };
+  return {
+    root,
+    calls,
+    directives,
+    forgePresentations,
+    forgeCompletions,
+    replacementPresentations,
+    replacementCompletions,
+    uiChoiceCalls
+  };
 }
 
 async function installRuntime(harness) {
@@ -253,6 +271,58 @@ test("Observer Bot resolves relic and replacement choices before checkpoint", as
   assert.equal(harness.calls[1].payload.choiceId, "choice_a");
   assert.equal(harness.calls[2].payload.replacementChoiceId, "replace_a");
   assert.equal(harness.directives.length, 1);
+});
+
+test("player relic replacement uses the native game surface instead of generic choices", async () => {
+  const harness = createHarness({
+    observerBotActive: false,
+    rewardSlots: [{ slotId: "slot_1" }],
+    async onEvent(action) {
+      if (action === "issue_relic_offer") {
+        return { metaState: metaState({
+          relicOffer: {
+            offerId: "offer_1",
+            publicChoices: [{ choiceId: "choice_a", relicId: "vampfang" }]
+          }
+        }) };
+      }
+      if (action === "select_relic") {
+        return { metaState: metaState({
+          build: { relics: [{ relicId: "fang", stacks: 1 }] },
+          relicReplacement: {
+            transactionId: "replace_1",
+            incoming: { relicId: "vampfang", rarity: "rare", stacks: 1 },
+            cancelAllowed: true,
+            publicChoices: [{
+              replacementChoiceId: "replace_fang",
+              incomingRelicId: "vampfang",
+              removalRelicIds: ["fang"]
+            }]
+          }
+        }) };
+      }
+      if (action === "commit_relic_replacement") return { metaState: metaState() };
+      throw new Error(`Unexpected event: ${action}`);
+    }
+  });
+  const runtime = await installRuntime(harness);
+  await runtime.onLocalRoomCleared({ turnCount: 4, rewardClaims: [] });
+  assert.equal(harness.uiChoiceCalls.length, 1);
+  harness.uiChoiceCalls[0][3]("choice_a");
+  await waitFor(
+    () => harness.replacementPresentations.length === 1,
+    "replacement was not handed to the native game surface"
+  );
+  assert.equal(harness.uiChoiceCalls.length, 1);
+  assert.equal(
+    harness.replacementPresentations[0].replacement.incoming.relicId,
+    "vampfang"
+  );
+  assert.equal(runtime.onRelicReplacementChoice("replace_fang"), true);
+  await waitFor(
+    () => harness.replacementCompletions.length === 1,
+    "replacement completion did not return to the native surface"
+  );
 });
 
 test("Observer Bot completes Forge choice and checkpoint under one busy boundary", async () => {

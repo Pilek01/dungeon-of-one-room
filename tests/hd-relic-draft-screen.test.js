@@ -6,6 +6,7 @@ const root = path.resolve(__dirname, "..");
 const game = fs.readFileSync(path.join(root, "game.js"), "utf8");
 const css = fs.readFileSync(path.join(root, "style-hd-composition.css"), "utf8");
 const forgeCss = fs.readFileSync(path.join(root, "style-hd-forge.css"), "utf8");
+const pagesBuilder = fs.readFileSync(path.join(root, "scripts", "build-pages-v3.mjs"), "utf8");
 
 assert.match(game, /function buildRelicDraftOverlayContent\(\)/);
 assert.match(game, /relic-draft-grid-standard/);
@@ -38,5 +39,9 @@ assert.match(forgeCss, /\.forge-reward-sanctuary\s*\{[\s\S]*grid-template-areas:
 assert.match(forgeCss, /\.relic-draft-grid-forge-transmute\s*\{[\s\S]*repeat\(3,/);
 assert.match(forgeCss, /\.forge-reward-panel \.forge-reward-choice\.hd-nav-selected/);
 assert.match(forgeCss, /\.forge-reward-panel \.relic-draft-skip\.hd-nav-selected/);
+assert.match(pagesBuilder, /enterRankedRelicReplacement\(publicState, replacement, choices/);
+assert.match(pagesBuilder, /state\.onlineV3RelicReplacementPresentation/);
+assert.match(pagesBuilder, /onRelicReplacementChoice/);
+assert.match(pagesBuilder, /onRelicReplacementCancel/);
 
 console.log("HD relic draft screen contract tests passed");

@@ -40,9 +40,16 @@
 
   function replacementChoices(replacement) {
     if (!replacement || !Array.isArray(replacement.choices)) return [];
+    const incomingRelicId = safeText(replacement.incoming?.relicId);
+    const incomingRarity = safeText(replacement.incoming?.rarity);
     return replacement.choices.map((choice) => Object.freeze({
       choiceId: safeText(choice.replacementChoiceId),
       replacementChoiceId: safeText(choice.replacementChoiceId),
+      incomingRelicId,
+      incomingRarity,
+      removalRelicIds: (choice.removals || [])
+        .map((removal) => safeText(removal?.relicId))
+        .filter(Boolean),
       label: (choice.removals || []).map((removal) =>
         `${safeText(removal.relicId)} (${removal.currentStacks}→${removal.resultingStacks})`
       ).join(", "),

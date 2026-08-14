@@ -744,6 +744,27 @@ const productionGameReplacements = [
     if (state.phase !== "relic") return;`,
 `  function chooseRelic(index) {
     if (state.phase !== "relic") return;
+    if (state.onlineV3Ranked && state.onlineV3RelicReplacementPresentation) {
+      const presentation = state.onlineV3RelicReplacementPresentation;
+      const outgoingRelicId = String(state.relics[index] || "");
+      const replacement = presentation.choices.find((choice) =>
+        choice.removalRelicIds.includes(outgoingRelicId)
+      );
+      if (!replacement) {
+        pushLog("That carried relic cannot be replaced by this offer.", "bad");
+        return;
+      }
+      const accepted = window.DungeonOnlineV3?.onRelicReplacementChoice?.(
+        replacement.replacementChoiceId
+      );
+      if (!accepted) {
+        pushLog("That relic replacement is still resolving.", "warn");
+        return;
+      }
+      state.turnInProgress = true;
+      markUiDirty();
+      return;
+    }
     if (state.onlineV3Ranked && state.onlineV3ForgePresentation) {
       const presentation = state.onlineV3ForgePresentation;
       const skipIndex = getRelicDraftSkipIndex();
@@ -1530,7 +1551,73 @@ if (!game.includes(rankedMerchantBridgeMarker)) throw new Error("Missing Ranked 
 game = game.replace(rankedMerchantBridgeMarker, rankedMerchantBridge);
 
 const rankedForgeBridgeMarker = `    enterRankedCamp(profile, offer) {`;
-const rankedForgeBridge = `    beginRankedForgeRequest() {
+const rankedForgeBridge = `    enterRankedRelicReplacement(publicState, replacement, choices = []) {
+      if (!state.onlineV3Ranked) return false;
+      const incomingRelicId = String(replacement?.incoming?.relicId || "");
+      const incoming = getRelicById(incomingRelicId);
+      const mappedChoices = (Array.isArray(choices) ? choices : [])
+        .map((choice) => ({
+          replacementChoiceId: String(choice?.replacementChoiceId || choice?.choiceId || ""),
+          removalRelicIds: (Array.isArray(choice?.removalRelicIds)
+            ? choice.removalRelicIds
+            : []
+          ).map((relicId) => String(relicId || "")).filter(Boolean)
+        }))
+        .filter((choice) => choice.replacementChoiceId && choice.removalRelicIds.length > 0);
+      if (!incoming || !mappedChoices.length) return false;
+      const buildRelics = Array.isArray(publicState?.build?.relics)
+        ? publicState.build.relics
+        : [];
+      state.relics = buildRelics.flatMap((relic) =>
+        Array.from(
+          { length: Math.max(1, Number(relic?.stacks) || 1) },
+          () => String(relic?.relicId || relic?.id || "")
+        )
+      ).filter(Boolean);
+      normalizeRelicInventory();
+      state.turnInProgress = false;
+      state.onlineV3RelicReplacementPresentation = {
+        transactionId: String(replacement?.transactionId || ""),
+        incomingRelicId,
+        cancelAllowed: replacement?.cancelAllowed === true,
+        choices: mappedChoices
+      };
+      state.legendarySwapPending = null;
+      state.relicSwapPending = incomingRelicId;
+      state.relicSwapAdditionalDiscards = 0;
+      state.relicDraft = [incoming];
+      state.startingRelicDraft = false;
+      state.phase = "relic";
+      syncBgmWithState();
+      pushLog("Inventory full. Choose a carried relic to replace with " + incoming.name + ".", "warn");
+      markUiDirty();
+      return true;
+    },
+    beginRankedRelicReplacementCommit() {
+      if (!state.onlineV3Ranked || !state.onlineV3RelicReplacementPresentation) return;
+      state.turnInProgress = true;
+      markUiDirty();
+    },
+    failRankedRelicReplacement(message = "Relic replacement failed. Try again.") {
+      if (!state.onlineV3Ranked || !state.onlineV3RelicReplacementPresentation) return;
+      state.turnInProgress = false;
+      pushLog(String(message || "Relic replacement failed. Try again."), "bad");
+      markUiDirty();
+    },
+    completeRankedRelicReplacement(publicState) {
+      if (!state.onlineV3Ranked) return;
+      state.turnInProgress = false;
+      state.onlineV3RelicReplacementPresentation = null;
+      state.legendarySwapPending = null;
+      state.relicSwapPending = null;
+      state.relicSwapAdditionalDiscards = 0;
+      state.relicDraft = null;
+      state.phase = "playing";
+      syncBgmWithState();
+      pushLog("Canonical relic replacement resolved.", "good");
+      markUiDirty();
+    },
+    beginRankedForgeRequest() {
       if (!state.onlineV3Ranked) return;
       state.turnInProgress = true;
       markUiDirty();
@@ -1646,6 +1733,26 @@ const rankedForgeBridge = `    beginRankedForgeRequest() {
     enterRankedCamp(profile, offer) {`;
 if (!game.includes(rankedForgeBridgeMarker)) throw new Error("Missing Ranked Forge bridge marker.");
 game = game.replace(rankedForgeBridgeMarker, rankedForgeBridge);
+const rankedRelicReplacementCancelSource = `  function cancelRelicSwapPendingKeepCurrent() {
+    if (state.phase !== "relic") return false;`;
+const rankedRelicReplacementCancel = `  function cancelRelicSwapPendingKeepCurrent() {
+    if (state.phase !== "relic") return false;
+    if (state.onlineV3Ranked && state.onlineV3RelicReplacementPresentation) {
+      if (!state.onlineV3RelicReplacementPresentation.cancelAllowed) {
+        pushLog("This incoming relic cannot be declined.", "warn");
+        return true;
+      }
+      const accepted = window.DungeonOnlineV3?.onRelicReplacementCancel?.();
+      if (accepted) {
+        state.turnInProgress = true;
+        markUiDirty();
+      }
+      return true;
+    }`;
+if (!game.includes(rankedRelicReplacementCancelSource)) {
+  throw new Error("Missing Ranked relic replacement cancel source.");
+}
+game = game.replace(rankedRelicReplacementCancelSource, rankedRelicReplacementCancel);
 const rankedSetNextMarker = `    setNextDirective(directive) {
       state.onlineV3NextDirective = directive;`;
 if (!game.includes(rankedSetNextMarker)) throw new Error("Missing Ranked setNextDirective marker.");

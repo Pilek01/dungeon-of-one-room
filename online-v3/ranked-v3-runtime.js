@@ -37,6 +37,7 @@
   let currentForgeOffer = null;
   let currentForgeContext = null;
   let forgeMutationPending = false;
+  let pendingNativeRelicReplacement = null;
   let observerBotBoundaryPending = false;
   let observerBotAutomationHalted = false;
   const recoveryStore = root.DungeonRankedV3Storage.createStore(root.localStorage);
@@ -132,6 +133,7 @@
     currentForgeOffer = null;
     currentForgeContext = null;
     forgeMutationPending = false;
+    pendingNativeRelicReplacement = null;
     observerBotBoundaryPending = false;
     observerBotAutomationHalted = false;
     client?.releaseWriter?.();
@@ -707,8 +709,49 @@
       transactionId: replacement.transactionId,
       replacementChoiceId
     });
+    pendingNativeRelicReplacement = null;
     root.DungeonOnlineV3GameBridge.syncCanonicalProjection(response.metaState);
+    root.DungeonOnlineV3GameBridge?.completeRankedRelicReplacement?.(response.metaState);
     await continueBoundary(response.metaState);
+  }
+
+  function onRelicReplacementChoice(replacementChoiceId) {
+    const replacement = pendingNativeRelicReplacement;
+    const choiceId = String(replacementChoiceId || "");
+    const choices = offers.replacementChoices(replacement);
+    if (
+      !replacement ||
+      !choiceId ||
+      !choices.some((choice) => choice.replacementChoiceId === choiceId)
+    ) return false;
+    root.DungeonOnlineV3GameBridge?.beginRankedRelicReplacementCommit?.();
+    commitReplacement(replacement, choiceId).catch((error) => {
+      root.DungeonOnlineV3GameBridge?.failRankedRelicReplacement?.(
+        "That relic replacement is no longer available."
+      );
+      presentError(error);
+    });
+    return true;
+  }
+
+  function onRelicReplacementCancel() {
+    const replacement = pendingNativeRelicReplacement;
+    if (!replacement?.cancelAllowed) return false;
+    root.DungeonOnlineV3GameBridge?.beginRankedRelicReplacementCommit?.();
+    createClient().event("cancel_relic_replacement", {
+      transactionId: replacement.transactionId
+    }).then(async (response) => {
+      pendingNativeRelicReplacement = null;
+      root.DungeonOnlineV3GameBridge.syncCanonicalProjection(response.metaState);
+      root.DungeonOnlineV3GameBridge?.completeRankedRelicReplacement?.(response.metaState);
+      await continueBoundary(response.metaState);
+    }).catch((error) => {
+      root.DungeonOnlineV3GameBridge?.failRankedRelicReplacement?.(
+        "The incoming relic could not be declined."
+      );
+      presentError(error);
+    });
+    return true;
   }
 
   async function presentReplacement(replacement) {
@@ -726,6 +769,17 @@
         return continueBoundary(response.metaState);
       });
     }
+    pendingNativeRelicReplacement = replacement;
+    const bridge = root.DungeonOnlineV3GameBridge;
+    if (bridge?.enterRankedRelicReplacement?.(
+      createClient().getSnapshot()?.publicState || null,
+      replacement,
+      choices
+    )) {
+      ui.hide();
+      return;
+    }
+    pendingNativeRelicReplacement = null;
     ui.showChoices(
       "Choose a relic to replace",
       `Incoming: ${displayRelicName(replacement.incoming?.relicId)}.`,
@@ -1503,6 +1557,8 @@
     onForgeMode,
     onForgeChoice,
     onForgeLeave,
+    onRelicReplacementChoice,
+    onRelicReplacementCancel,
     isObserverBotBoundaryPending,
     getSessionState: () => session.getState(),
     getSnapshot: () => client?.getSnapshot() || null
