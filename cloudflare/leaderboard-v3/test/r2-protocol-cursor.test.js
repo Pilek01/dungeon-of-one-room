@@ -72,15 +72,12 @@ test("R2 registered mutations reject unknown fields and protocol mismatch", asyn
   assert.equal((await mismatch.json()).error.code, "PROTOCOL_VERSION_MISMATCH");
 });
 
-test("R2 client schema rejects bootstrap from a local-only candidate", async () => {
+test("R2 client schema accepts bootstrap from the activated manifest hash", async () => {
   const localWorker = registeredWorker();
   const localStartedResponse = await postStart(localWorker, startBody());
   assert.equal(localStartedResponse.status, 201);
   const localStarted = await localStartedResponse.json();
-  assert.throws(
-    () => protocol.validateMutationResponse(localStarted),
-    /PROTOCOL_RULESET_HASH_UNSUPPORTED/u,
-  );
+  assert.doesNotThrow(() => protocol.validateMutationResponse(localStarted));
 });
 
 test("R2 availability descriptor is explicit and does not require D1", async () => {
@@ -127,8 +124,8 @@ test("R2 public seek cursor is versioned, strict, and malformed input returns 40
 
 test("R2 client accepts released save hashes and rejects local-only or unknown hashes", () => {
   assert.equal(protocol.RULESET_HASH, V08_META_1_PRODUCTION_RELEASE_DESCRIPTOR.rulesetHash);
-  assert.notEqual(protocol.RULESET_HASH, manifest.rulesetHash);
-  assert.equal(protocol.isSupportedRulesetHash(manifest.rulesetHash), false);
+  assert.equal(protocol.RULESET_HASH, manifest.rulesetHash);
+  assert.equal(protocol.isSupportedRulesetHash(manifest.rulesetHash), true);
   for (const hash of protocol.SUPPORTED_RULESET_HASHES) {
     assert.equal(protocol.isSupportedRulesetHash(hash), true);
   }

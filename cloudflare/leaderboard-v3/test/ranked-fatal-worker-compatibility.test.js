@@ -8,6 +8,7 @@ import {
   V08_META_1_HD_BOOT_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR,
   V08_META_1_LEGACY_PRODUCTION_RELEASE_DESCRIPTOR,
   V08_META_1_LOCAL_RELEASE_DESCRIPTOR,
+  V08_META_1_PLAYTEST_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR,
   V08_META_1_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR,
   V08_META_1_PRODUCTION_RELEASE_DESCRIPTOR,
   V08_META_1_R2_PRODUCTION_RELEASE_DESCRIPTOR,
@@ -17,7 +18,7 @@ import {
 import { createMemoryRepositories } from "./fixtures/memory-repositories.js";
 import { TEST_SECRET } from "./fixtures/harness.js";
 
-const PRODUCTION_RELEASES = Object.freeze([
+const LEGACY_PRODUCTION_RELEASES = Object.freeze([
   V08_META_1_LEGACY_PRODUCTION_RELEASE_DESCRIPTOR,
   V08_META_1_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR,
   V08_META_1_R2_PRODUCTION_RELEASE_DESCRIPTOR,
@@ -25,6 +26,10 @@ const PRODUCTION_RELEASES = Object.freeze([
   V08_META_1_SCORE_CARRY_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR,
   V08_META_1_HD_BOOT_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR,
   V08_META_1_BOUNDARY_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR,
+  V08_META_1_PLAYTEST_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR
+]);
+const PRODUCTION_RELEASES = Object.freeze([
+  ...LEGACY_PRODUCTION_RELEASES,
   V08_META_1_PRODUCTION_RELEASE_DESCRIPTOR
 ]);
 
@@ -160,8 +165,8 @@ function operationComparableState(repositories, runId) {
   return stateForDigest(repositories.snapshotRun(runId));
 }
 
-test("every production descriptor strips fatal presentation cause while local retains it", () => {
-  for (const descriptor of PRODUCTION_RELEASES) {
+test("historical production descriptors strip fatal cause while current production retains it", () => {
+  for (const descriptor of LEGACY_PRODUCTION_RELEASES) {
     assert.deepEqual(
       descriptor.capabilities,
       { fatalPresentationCauseMode: "strip" },
@@ -176,6 +181,10 @@ test("every production descriptor strips fatal presentation cause while local re
   }
   assert.deepEqual(
     V08_META_1_LOCAL_RELEASE_DESCRIPTOR.capabilities,
+    { fatalPresentationCauseMode: "retain" }
+  );
+  assert.deepEqual(
+    V08_META_1_PRODUCTION_RELEASE_DESCRIPTOR.capabilities,
     { fatalPresentationCauseMode: "retain" }
   );
 });
@@ -195,8 +204,8 @@ test("every retained production hash can create its own initial state", () => {
 
 for (const useElixir of [false, true]) {
   test(`bc0d cause-bearing and omitted fatal requests are canonical equivalents${useElixir ? " with elixir usage" : ""}`, async () => {
-    const omittedHarness = createHttpHarness(V08_META_1_PRODUCTION_RELEASE_DESCRIPTOR);
-    const causedHarness = createHttpHarness(V08_META_1_PRODUCTION_RELEASE_DESCRIPTOR);
+    const omittedHarness = createHttpHarness(V08_META_1_PLAYTEST_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR);
+    const causedHarness = createHttpHarness(V08_META_1_PLAYTEST_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR);
     const omittedStart = await omittedHarness.startSelect("equivalent");
     const causedStart = await causedHarness.startSelect("equivalent");
     if (useElixir) {
@@ -237,7 +246,7 @@ for (const useElixir of [false, true]) {
 }
 
 test("a recovered bc0d run accepts the live f67 cause-bearing fatal payload", async () => {
-  const harness = createHttpHarness(V08_META_1_PRODUCTION_RELEASE_DESCRIPTOR);
+  const harness = createHttpHarness(V08_META_1_PLAYTEST_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR);
   const started = await harness.startSelect("recovered");
   const resumed = await harness.resume(started);
   const result = await harness.fatal(resumed, {
@@ -245,40 +254,40 @@ test("a recovered bc0d run accepts the live f67 cause-bearing fatal payload", as
     presentationCause: "You bled out."
   }, "recovered-fatal");
   assert.equal(result.response.status, 200, JSON.stringify(result.payload));
-  assert.equal(result.payload.metaState.rulesetHash, V08_META_1_PRODUCTION_RELEASE_DESCRIPTOR.rulesetHash);
+  assert.equal(result.payload.metaState.rulesetHash, V08_META_1_PLAYTEST_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR.rulesetHash);
   assert.equal(result.payload.metaState.lives, 4);
 });
 
-test("production terminal summary is cause-free while local candidate retains the normalized cause", async () => {
-  const production = createHttpHarness(V08_META_1_PRODUCTION_RELEASE_DESCRIPTOR);
-  const local = createHttpHarness(V08_META_1_LOCAL_RELEASE_DESCRIPTOR, "local");
-  let productionSession = (await production.startSelect("terminal-production")).session;
-  let localSession = (await local.startSelect("terminal-local")).session;
+test("bc0d terminal summary is cause-free while current production retains the normalized cause", async () => {
+  const historical = createHttpHarness(V08_META_1_PLAYTEST_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR);
+  const current = createHttpHarness(V08_META_1_PRODUCTION_RELEASE_DESCRIPTOR);
+  let historicalSession = (await historical.startSelect("terminal-historical")).session;
+  let currentSession = (await current.startSelect("terminal-current")).session;
   for (let index = 0; index < 5; index += 1) {
-    const productionFatal = await production.fatal(productionSession, {
+    const historicalFatal = await historical.fatal(historicalSession, {
       classification: "local_fatal_event",
       presentationCause: "Defeated by The Hollow Seraph"
-    }, `terminal-production-fatal-${index}`);
-    const localFatal = await local.fatal(localSession, {
+    }, `terminal-historical-fatal-${index}`);
+    const currentFatal = await current.fatal(currentSession, {
       classification: "local_fatal_event",
       presentationCause: "  Defeated   by The Hollow Seraph  "
-    }, `terminal-local-fatal-${index}`);
-    assert.equal(productionFatal.response.status, 200, JSON.stringify(productionFatal.payload));
-    assert.equal(localFatal.response.status, 200, JSON.stringify(localFatal.payload));
-    productionSession = productionFatal.payload;
-    localSession = localFatal.payload;
+    }, `terminal-current-fatal-${index}`);
+    assert.equal(historicalFatal.response.status, 200, JSON.stringify(historicalFatal.payload));
+    assert.equal(currentFatal.response.status, 200, JSON.stringify(currentFatal.payload));
+    historicalSession = historicalFatal.payload;
+    currentSession = currentFatal.payload;
   }
-  assert.equal(productionSession.metaState.status, "defeat");
-  assert.equal(localSession.metaState.status, "defeat");
-  const productionFinal = await production.finalize(productionSession, "terminal-production-finalize");
-  const localFinal = await local.finalize(localSession, "terminal-local-finalize");
-  assert.equal(productionFinal.response.status, 200, JSON.stringify(productionFinal.payload));
-  assert.equal(localFinal.response.status, 200, JSON.stringify(localFinal.payload));
-  const productionDetail = await production.get(`/api/v3/leaderboard/${productionSession.runId}`);
-  const localDetail = await local.get(`/api/v3/leaderboard/${localSession.runId}`);
-  assert.equal(Object.hasOwn(productionDetail.payload.entry.summary, "presentationCause"), false);
+  assert.equal(historicalSession.metaState.status, "defeat");
+  assert.equal(currentSession.metaState.status, "defeat");
+  const historicalFinal = await historical.finalize(historicalSession, "terminal-historical-finalize");
+  const currentFinal = await current.finalize(currentSession, "terminal-current-finalize");
+  assert.equal(historicalFinal.response.status, 200, JSON.stringify(historicalFinal.payload));
+  assert.equal(currentFinal.response.status, 200, JSON.stringify(currentFinal.payload));
+  const historicalDetail = await historical.get(`/api/v3/leaderboard/${historicalSession.runId}`);
+  const currentDetail = await current.get(`/api/v3/leaderboard/${currentSession.runId}`);
+  assert.equal(Object.hasOwn(historicalDetail.payload.entry.summary, "presentationCause"), false);
   assert.equal(
-    localDetail.payload.entry.summary.presentationCause,
+    currentDetail.payload.entry.summary.presentationCause,
     "Defeated by The Hollow Seraph"
   );
 });

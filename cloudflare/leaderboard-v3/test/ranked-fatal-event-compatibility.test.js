@@ -8,6 +8,7 @@ import {
   V08_META_1_HD_BOOT_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR,
   V08_META_1_LEGACY_PRODUCTION_RELEASE_DESCRIPTOR,
   V08_META_1_LOCAL_RELEASE_DESCRIPTOR,
+  V08_META_1_PLAYTEST_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR,
   V08_META_1_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR,
   V08_META_1_PRODUCTION_RELEASE_DESCRIPTOR,
   V08_META_1_R2_PRODUCTION_RELEASE_DESCRIPTOR,
@@ -25,7 +26,7 @@ const LEGACY_RELEASES = Object.freeze([
   V08_META_1_SCORE_CARRY_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR,
   V08_META_1_HD_BOOT_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR,
   V08_META_1_BOUNDARY_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR,
-  V08_META_1_PRODUCTION_RELEASE_DESCRIPTOR
+  V08_META_1_PLAYTEST_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR
 ]);
 
 function createRecoverableRepositories() {
@@ -145,7 +146,7 @@ function createHttpHarness(descriptor, environment) {
   return { repositories, startSelect, resume, fatal };
 }
 
-test("production ruleset releases explicitly strip fatal presentation causes", () => {
+test("historical production releases strip fatal causes while the activated release retains them", () => {
   for (const descriptor of LEGACY_RELEASES) {
     assert.deepEqual(descriptor.capabilities, { fatalPresentationCauseMode: "strip" }, descriptor.rulesetHash);
     assert.equal(Object.isFrozen(descriptor.capabilities), true, descriptor.rulesetHash);
@@ -157,10 +158,14 @@ test("production ruleset releases explicitly strip fatal presentation causes", (
     V08_META_1_LOCAL_RELEASE_DESCRIPTOR.capabilities,
     { fatalPresentationCauseMode: "retain" }
   );
+  assert.deepEqual(
+    V08_META_1_PRODUCTION_RELEASE_DESCRIPTOR.capabilities,
+    { fatalPresentationCauseMode: "retain" }
+  );
 });
 
 test("every retained production hash can create its own initial state", () => {
-  for (const descriptor of LEGACY_RELEASES) {
+  for (const descriptor of [...LEGACY_RELEASES, V08_META_1_PRODUCTION_RELEASE_DESCRIPTOR]) {
     const state = descriptor.createRuleset().createInitialMetaState({
       rulesetHash: descriptor.rulesetHash
     }, {
@@ -174,19 +179,19 @@ test("every retained production hash can create its own initial state", () => {
 
 test("bc0d recovered runs report death with legacy payload shapes", async (t) => {
   await t.test("classification only", async () => {
-    const harness = createHttpHarness(V08_META_1_PRODUCTION_RELEASE_DESCRIPTOR, "production");
+    const harness = createHttpHarness(V08_META_1_PLAYTEST_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR, "production");
     const started = await harness.startSelect("bc-classification");
     const resumed = await harness.resume(started, "bcclassification");
     const result = await harness.fatal(resumed, {
       classification: "local_fatal_event"
     }, "bc-classification-fatal");
     assert.equal(result.response.status, 200, JSON.stringify(result.payload));
-    assert.equal(result.payload.metaState.rulesetHash, V08_META_1_PRODUCTION_RELEASE_DESCRIPTOR.rulesetHash);
+    assert.equal(result.payload.metaState.rulesetHash, V08_META_1_PLAYTEST_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR.rulesetHash);
     assert.equal(result.payload.metaState.lives, 4);
   });
 
   await t.test("classification plus elixir usage", async () => {
-    const harness = createHttpHarness(V08_META_1_PRODUCTION_RELEASE_DESCRIPTOR, "production");
+    const harness = createHttpHarness(V08_META_1_PLAYTEST_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR, "production");
     const started = await harness.startSelect("bc-elixir");
     harness.repositories.markHistoricalElixir(started.session.runId);
     const resumed = await harness.resume(started, "bcelixir");
@@ -195,7 +200,7 @@ test("bc0d recovered runs report death with legacy payload shapes", async (t) =>
       elixirUsage: { elixirId: "fury_1", count: 1 }
     }, "bc-elixir-fatal");
     assert.equal(result.response.status, 200, JSON.stringify(result.payload));
-    assert.equal(result.payload.metaState.rulesetHash, V08_META_1_PRODUCTION_RELEASE_DESCRIPTOR.rulesetHash);
+    assert.equal(result.payload.metaState.rulesetHash, V08_META_1_PLAYTEST_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR.rulesetHash);
     assert.equal(result.payload.metaState.build.elixirs[0].charges, 2);
     assert.equal(result.payload.metaState.lives, 4);
   });
@@ -219,8 +224,8 @@ test("supporting local ruleset accepts classification, elixir usage, and present
   );
 });
 
-test("production cause payload is accepted and stripped while unknown failures remain 500", async () => {
-  const harness = createHttpHarness(V08_META_1_PRODUCTION_RELEASE_DESCRIPTOR, "production");
+test("bc0d cause payload is accepted and stripped while unknown failures remain 500", async () => {
+  const harness = createHttpHarness(V08_META_1_PLAYTEST_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR, "production");
   const started = await harness.startSelect("bc-cause");
   const result = await harness.fatal(started.session, {
     classification: "local_fatal_event",
