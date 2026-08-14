@@ -172,8 +172,8 @@
     },
     {
       "file": "data/camp-transaction-policy.generated.json",
-      "byteLength": 3934,
-      "sha256": "c4eaa28d75785ba9c75df523289c383305a97c2cda62ad11a066b23b3494da08"
+      "byteLength": 4167,
+      "sha256": "e5f25d0468d5ba62259745847f1ababa9617ca176ee61da511c160e70736be49"
     },
     {
       "file": "data/chest-reward-bounds.generated.json",
@@ -323,7 +323,7 @@
     {
       "file": "data/source-manifest.generated.json",
       "byteLength": 5614,
-      "sha256": "42e093b6a66967bb0f20b60660d70a61f69b3ad3d920b691d9877b46bddb2599"
+      "sha256": "06292aee783fc22dcba37d0b0370951d2e940ab7782178549ae7e02577972ed0"
     },
     {
       "file": "data/special-relic-source-audit.generated.json",
@@ -566,5 +566,5 @@
       "sha256": "cfce80fea7bd5d1328020055f2012bcaeaf9b61e5438e437bf948a4288fb8bf0"
     }
   ],
-  "rulesetHash": "sha256:6e87bac83cf1a866ed72526159a43cccdd74572c80523b0f762a47cbef58df75"
+  "rulesetHash": "sha256:667daa1a611db19e1e8d7527e25c7e76c95e0d579605d1d8d942da3929df0e53"
 }

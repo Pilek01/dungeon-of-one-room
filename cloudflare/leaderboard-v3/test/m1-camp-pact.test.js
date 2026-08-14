@@ -163,8 +163,27 @@ test("Camp and Pact policies preserve exact active baseline tables", () => {
     ]
   );
   assert.equal(campPolicy.elixirStackMaximum, 5);
-  assert.equal(campPolicy.elixirDurationTurns, 5);
+  assert.equal(campPolicy.elixirDurationTurns, 6);
   assert.equal(campPolicy.elixirDiscardRefundRatio, 0.5);
+  assert.deepEqual(
+    campPolicy.elixirs.map(({ id, armorBonus, attackBonus, critBonus }) => ({
+      id,
+      armorBonus: armorBonus ?? 0,
+      attackBonus: attackBonus ?? 0,
+      critBonus: critBonus ?? 0
+    })),
+    [
+      { id: "iron_1", armorBonus: 3, attackBonus: 0, critBonus: 0 },
+      { id: "fury_1", armorBonus: 0, attackBonus: 3, critBonus: 0 },
+      { id: "focus_1", armorBonus: 0, attackBonus: 0, critBonus: 0.15 },
+      { id: "iron_2", armorBonus: 6, attackBonus: 0, critBonus: 0 },
+      { id: "fury_2", armorBonus: 0, attackBonus: 6, critBonus: 0 },
+      { id: "focus_2", armorBonus: 0, attackBonus: 0, critBonus: 0.3 },
+      { id: "iron_3", armorBonus: 9, attackBonus: 0, critBonus: 0 },
+      { id: "fury_3", armorBonus: 0, attackBonus: 9, critBonus: 0 },
+      { id: "focus_3", armorBonus: 0, attackBonus: 0, critBonus: 0.45 }
+    ]
+  );
   assert.equal(pactPolicy.offerCount, 2);
   assert.equal(pactPolicy.maximumActivePacts, 1);
   assert.equal(pactPolicy.pacts.length, 11);

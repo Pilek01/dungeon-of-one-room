@@ -1,6 +1,6 @@
 (() => {
   const ELIXIR_STACK_MAX = 5;
-  const ELIXIR_DURATION_TURNS = 5;
+  const ELIXIR_DURATION_TURNS = 6;
   const ELIXIR_DISCARD_REFUND_RATIO = 0.5;
 
   const ELIXIRS = Object.freeze([
@@ -10,10 +10,10 @@
       tier: 1,
       unlockDepth: 0,
       name: "Ironskin Elixir I",
-      statLabel: "+20 ARM",
+      statLabel: "+30 ARM",
       duration: ELIXIR_DURATION_TURNS,
       cost: 75,
-      armorBonus: 2
+      armorBonus: 3
     },
     {
       id: "fury_1",
@@ -21,10 +21,10 @@
       tier: 1,
       unlockDepth: 0,
       name: "Battle Tonic I",
-      statLabel: "+20 ATK",
+      statLabel: "+30 ATK",
       duration: ELIXIR_DURATION_TURNS,
       cost: 75,
-      attackBonus: 2
+      attackBonus: 3
     },
     {
       id: "focus_1",
@@ -32,10 +32,10 @@
       tier: 1,
       unlockDepth: 0,
       name: "Focus Elixir I",
-      statLabel: "+10% Crit",
+      statLabel: "+15% Crit",
       duration: ELIXIR_DURATION_TURNS,
       cost: 75,
-      critBonus: 0.1
+      critBonus: 0.15
     },
     {
       id: "iron_2",
@@ -43,10 +43,10 @@
       tier: 2,
       unlockDepth: 20,
       name: "Ironskin Elixir II",
-      statLabel: "+40 ARM",
+      statLabel: "+60 ARM",
       duration: ELIXIR_DURATION_TURNS,
       cost: 200,
-      armorBonus: 4
+      armorBonus: 6
     },
     {
       id: "fury_2",
@@ -54,10 +54,10 @@
       tier: 2,
       unlockDepth: 20,
       name: "Battle Tonic II",
-      statLabel: "+40 ATK",
+      statLabel: "+60 ATK",
       duration: ELIXIR_DURATION_TURNS,
       cost: 200,
-      attackBonus: 4
+      attackBonus: 6
     },
     {
       id: "focus_2",
@@ -65,10 +65,10 @@
       tier: 2,
       unlockDepth: 20,
       name: "Focus Elixir II",
-      statLabel: "+20% Crit",
+      statLabel: "+30% Crit",
       duration: ELIXIR_DURATION_TURNS,
       cost: 200,
-      critBonus: 0.2
+      critBonus: 0.3
     },
     {
       id: "iron_3",
@@ -76,10 +76,10 @@
       tier: 3,
       unlockDepth: 40,
       name: "Ironskin Elixir III",
-      statLabel: "+60 ARM",
+      statLabel: "+90 ARM",
       duration: ELIXIR_DURATION_TURNS,
       cost: 500,
-      armorBonus: 6
+      armorBonus: 9
     },
     {
       id: "fury_3",
@@ -87,10 +87,10 @@
       tier: 3,
       unlockDepth: 40,
       name: "Battle Tonic III",
-      statLabel: "+60 ATK",
+      statLabel: "+90 ATK",
       duration: ELIXIR_DURATION_TURNS,
       cost: 500,
-      attackBonus: 6
+      attackBonus: 9
     },
     {
       id: "focus_3",
@@ -98,10 +98,10 @@
       tier: 3,
       unlockDepth: 40,
       name: "Focus Elixir III",
-      statLabel: "+30% Crit",
+      statLabel: "+45% Crit",
       duration: ELIXIR_DURATION_TURNS,
       cost: 500,
-      critBonus: 0.3
+      critBonus: 0.45
     }
   ]);
 

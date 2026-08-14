@@ -3181,7 +3181,7 @@ function buildCanonicalData(records, textByFile) {
   }
   for (const marker of [
     "const ELIXIR_STACK_MAX = 5;",
-    "const ELIXIR_DURATION_TURNS = 5;",
+    "const ELIXIR_DURATION_TURNS = 6;",
     "const ELIXIR_DISCARD_REFUND_RATIO = 0.5;"
   ]) {
     if (!elixirSource.includes(marker)) {
@@ -3217,18 +3217,18 @@ function buildCanonicalData(records, textByFile) {
         { id: "bounty_contract", baseCost: 70, costGrowth: 1.4, max: 5 }
       ],
       elixirs: [
-        { id: "iron_1", tier: 1, unlockDepth: 0, cost: 75 },
-        { id: "fury_1", tier: 1, unlockDepth: 0, cost: 75 },
-        { id: "focus_1", tier: 1, unlockDepth: 0, cost: 75 },
-        { id: "iron_2", tier: 2, unlockDepth: 20, cost: 200 },
-        { id: "fury_2", tier: 2, unlockDepth: 20, cost: 200 },
-        { id: "focus_2", tier: 2, unlockDepth: 20, cost: 200 },
-        { id: "iron_3", tier: 3, unlockDepth: 40, cost: 500 },
-        { id: "fury_3", tier: 3, unlockDepth: 40, cost: 500 },
-        { id: "focus_3", tier: 3, unlockDepth: 40, cost: 500 }
+        { id: "iron_1", tier: 1, unlockDepth: 0, cost: 75, armorBonus: 3 },
+        { id: "fury_1", tier: 1, unlockDepth: 0, cost: 75, attackBonus: 3 },
+        { id: "focus_1", tier: 1, unlockDepth: 0, cost: 75, critBonus: 0.15 },
+        { id: "iron_2", tier: 2, unlockDepth: 20, cost: 200, armorBonus: 6 },
+        { id: "fury_2", tier: 2, unlockDepth: 20, cost: 200, attackBonus: 6 },
+        { id: "focus_2", tier: 2, unlockDepth: 20, cost: 200, critBonus: 0.3 },
+        { id: "iron_3", tier: 3, unlockDepth: 40, cost: 500, armorBonus: 9 },
+        { id: "fury_3", tier: 3, unlockDepth: 40, cost: 500, attackBonus: 9 },
+        { id: "focus_3", tier: 3, unlockDepth: 40, cost: 500, critBonus: 0.45 }
       ],
       elixirStackMaximum: 5,
-      elixirDurationTurns: 5,
+      elixirDurationTurns: 6,
       elixirRefillCost: "ceil(baseCost * missingCharges / 5)",
       elixirDiscardRefundRatio: 0.5,
       relicReturnValues: {

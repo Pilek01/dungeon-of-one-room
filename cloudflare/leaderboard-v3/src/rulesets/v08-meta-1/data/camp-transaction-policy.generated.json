@@ -10,8 +10,8 @@
     },
     {
       "file": "elixir-data.js",
-      "byteLength": 2325,
-      "sha256": "438c951c7d44bb74a4564bfa8f381aafc8c66d4772cff3b526d2e3f42b471f63"
+      "byteLength": 2327,
+      "sha256": "8c2e24d63f5cc2dcb1fd7158da3f2527e5bf139ea4b5c2923601f7cfb0be94e6"
     },
     {
       "file": "game.js",
@@ -101,59 +101,68 @@
         "id": "iron_1",
         "tier": 1,
         "unlockDepth": 0,
-        "cost": 75
+        "cost": 75,
+        "armorBonus": 3
       },
       {
         "id": "fury_1",
         "tier": 1,
         "unlockDepth": 0,
-        "cost": 75
+        "cost": 75,
+        "attackBonus": 3
       },
       {
         "id": "focus_1",
         "tier": 1,
         "unlockDepth": 0,
-        "cost": 75
+        "cost": 75,
+        "critBonus": 0.15
       },
       {
         "id": "iron_2",
         "tier": 2,
         "unlockDepth": 20,
-        "cost": 200
+        "cost": 200,
+        "armorBonus": 6
       },
       {
         "id": "fury_2",
         "tier": 2,
         "unlockDepth": 20,
-        "cost": 200
+        "cost": 200,
+        "attackBonus": 6
       },
       {
         "id": "focus_2",
         "tier": 2,
         "unlockDepth": 20,
-        "cost": 200
+        "cost": 200,
+        "critBonus": 0.3
       },
       {
         "id": "iron_3",
         "tier": 3,
         "unlockDepth": 40,
-        "cost": 500
+        "cost": 500,
+        "armorBonus": 9
       },
       {
         "id": "fury_3",
         "tier": 3,
         "unlockDepth": 40,
-        "cost": 500
+        "cost": 500,
+        "attackBonus": 9
       },
       {
         "id": "focus_3",
         "tier": 3,
         "unlockDepth": 40,
-        "cost": 500
+        "cost": 500,
+        "critBonus": 0.45
       }
     ],
     "elixirStackMaximum": 5,
-    "elixirDurationTurns": 5,
+    "elixirDurationTurns": 6,
     "elixirRefillCost": "ceil(baseCost * missingCharges / 5)",
     "elixirDiscardRefundRatio": 0.5,
     "relicReturnValues": {
