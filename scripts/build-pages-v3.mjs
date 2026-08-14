@@ -1021,6 +1021,130 @@ for (const [sourceText, replacement] of productionGameReplacements) {
   if (!game.includes(sourceText)) throw new Error(`Missing production game source: ${sourceText.slice(0, 80)}`);
   game = game.replace(sourceText, replacement);
 }
+const rankedSpecialRoomScalingReplacements = [
+  [
+`  function getCampaignRegionConfig(depth = state.depth) {
+    const region = getCampaignRegion(depth);
+    return CAMPAIGN_REGION_CONFIGS[region.id] || CAMPAIGN_REGION_CONFIGS.descent;
+  }`,
+`  function getCampaignRegionConfig(depth = state.depth) {
+    const region = getCampaignRegion(depth);
+    return CAMPAIGN_REGION_CONFIGS[region.id] || CAMPAIGN_REGION_CONFIGS.descent;
+  }
+
+  function getRankedSpecialRoomScalingDepth() {
+    if (!state.onlineV3Ranked || !["vault", "forge", "otter"].includes(state.roomType)) {
+      return Math.max(0, Math.floor(Number(state.depth) || 0));
+    }
+    return Math.max(
+      Math.max(0, Math.floor(Number(state.depth) || 0)),
+      Math.max(
+        0,
+        Math.floor(Number(state.onlineV3Directive?.specialRoomPayload?.scalingDepth) || 0)
+      )
+    );
+  }`
+  ],
+  [
+`  function createEnemy(type, x, y, options = {}) {
+    const depthScale = Math.floor(state.depth / 2);`,
+`  function createEnemy(type, x, y, options = {}) {
+    const encounterDepth = Math.max(0, Math.floor(Number(options.depthOverride) || state.depth));
+    const depthScale = Math.floor(encounterDepth / 2);`
+  ],
+  [
+`        hp: scaledCombat(2 + Math.floor(state.depth / 5)),
+        attack: scaledCombat(1 + Math.floor(state.depth / 12)),`,
+`        hp: scaledCombat(2 + Math.floor(encounterDepth / 5)),
+        attack: scaledCombat(1 + Math.floor(encounterDepth / 12)),`
+  ],
+  [
+`        hp: Math.round(scaledCombat(12 + Math.floor(state.depth * 1.8)) * vaultGuardianHpMultiplier),
+        attack: scaledCombat(4 + Math.floor(state.depth / 3)),`,
+`        hp: Math.round(scaledCombat(12 + Math.floor(encounterDepth * 1.8)) * vaultGuardianHpMultiplier),
+        attack: scaledCombat(4 + Math.floor(encounterDepth / 3)),`
+  ],
+  [
+`        hp: Math.round(scaledCombat(12 + Math.floor(state.depth * 1.8)) * BLACKSMITH_GUARDIAN_HP_MULTIPLIER),
+        attack: scaledCombat(4 + Math.floor(state.depth / 3)),`,
+`        hp: Math.round(scaledCombat(12 + Math.floor(encounterDepth * 1.8)) * BLACKSMITH_GUARDIAN_HP_MULTIPLIER),
+        attack: scaledCombat(4 + Math.floor(encounterDepth / 3)),`
+  ],
+  [
+`    const lateScale = getEnemyLateDepthMultiplier(state.depth);`,
+`    const lateScale = getEnemyLateDepthMultiplier(encounterDepth);`
+  ],
+  [
+`  function handleChestAttackUpgrade(inTreasureRoom) {
+    const bucketIndex = getChestAttackBucketIndex(state.depth);`,
+`  function handleChestAttackUpgrade(inTreasureRoom) {
+    const rewardDepth = getRankedSpecialRoomScalingDepth();
+    const bucketIndex = getChestAttackBucketIndex(rewardDepth);`
+  ],
+  [
+`    const chestAttackFlat = getChestUpgradeFlatByDepth(CHEST_ATTACK_UPGRADE_FLAT, state.depth);
+    state.sessionChestAttackFlat += chestAttackFlat;`,
+`    const chestAttackFlat = getChestUpgradeFlatByDepth(CHEST_ATTACK_UPGRADE_FLAT, rewardDepth);
+    state.sessionChestAttackFlat += chestAttackFlat;`
+  ],
+  [
+`  function handleChestArmorUpgrade(inTreasureRoom) {
+    const bucketIndex = getChestAttackBucketIndex(state.depth);`,
+`  function handleChestArmorUpgrade(inTreasureRoom) {
+    const rewardDepth = getRankedSpecialRoomScalingDepth();
+    const bucketIndex = getChestAttackBucketIndex(rewardDepth);`
+  ],
+  [
+`    const chestArmorFlat = getChestUpgradeFlatByDepth(CHEST_ARMOR_UPGRADE_FLAT, state.depth);
+    state.sessionChestArmorFlat += chestArmorFlat;`,
+`    const chestArmorFlat = getChestUpgradeFlatByDepth(CHEST_ARMOR_UPGRADE_FLAT, rewardDepth);
+    state.sessionChestArmorFlat += chestArmorFlat;`
+  ],
+  [
+`  function handleChestHealthUpgrade(inTreasureRoom) {
+    const bucketIndex = getChestAttackBucketIndex(state.depth);`,
+`  function handleChestHealthUpgrade(inTreasureRoom) {
+    const rewardDepth = getRankedSpecialRoomScalingDepth();
+    const bucketIndex = getChestAttackBucketIndex(rewardDepth);`
+  ],
+  [
+`    const chestHealthFlat = getChestHealthUpgradeFlatByDepth(state.depth);
+    state.sessionChestHealthFlat += chestHealthFlat;`,
+`    const chestHealthFlat = getChestHealthUpgradeFlatByDepth(rewardDepth);
+    state.sessionChestHealthFlat += chestHealthFlat;`
+  ],
+  [
+`    state.roomType = state.onlineV3Ranked && state.onlineV3Directive
+      ? state.onlineV3Directive.roomType
+      : chooseRoomType();`,
+`    state.roomType = state.onlineV3Ranked && state.onlineV3Directive
+      ? state.onlineV3Directive.roomType
+      : chooseRoomType();
+    const specialRoomScalingDepth = getRankedSpecialRoomScalingDepth();`
+  ],
+  [
+`        ? forgeRoomApi.getForgeEncounterProfileForDepth(state.depth)`,
+`        ? forgeRoomApi.getForgeEncounterProfileForDepth(specialRoomScalingDepth)`
+  ],
+  [
+`      const extra = Math.floor(Math.max(0, Number(state.depth) || 0) / OTTER_ROOM_ENEMY_DEPTH_STEP) * OTTER_ROOM_ENEMY_STEP_GAIN;`,
+`      const extra = Math.floor(specialRoomScalingDepth / OTTER_ROOM_ENEMY_DEPTH_STEP) * OTTER_ROOM_ENEMY_STEP_GAIN;`
+  ],
+  [
+`        ? vaultRoomApi.getVaultEncounterProfile(state.depth)`,
+`        ? vaultRoomApi.getVaultEncounterProfile(specialRoomScalingDepth)`
+  ],
+  [
+`      const spawnedEnemy = createEnemy(enemyType, spot.x, spot.y, { elite });`,
+`      const spawnedEnemy = createEnemy(enemyType, spot.x, spot.y, { elite, depthOverride: specialRoomScalingDepth });`
+  ]
+];
+for (const [sourceText, replacement] of rankedSpecialRoomScalingReplacements) {
+  if (!game.includes(sourceText)) {
+    throw new Error(`Missing Ranked special-room scaling source: ${sourceText.slice(0, 80)}`);
+  }
+  game = game.replace(sourceText, replacement);
+}
 const rankedGoldGameReplacements = [
   [
 `  window.DungeonOnlineV3GameBridge = Object.freeze({`,

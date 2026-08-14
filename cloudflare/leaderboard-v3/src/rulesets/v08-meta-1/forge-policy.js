@@ -46,6 +46,10 @@ function forgeRoomBinding(metaState) {
   return {
     directiveId: directive.directiveId,
     depth: directive.depth,
+    scalingDepth: Math.max(
+      directive.depth,
+      Number(directive.specialRoomPayload?.scalingDepth) || directive.depth
+    ),
     roomIndex: directive.roomIndex
   };
 }
@@ -167,7 +171,7 @@ export async function issueForgeTemperOfferV08(metaState, context = {}) {
     return structuredClone(metaState);
   }
   const binding = forgeRoomBinding(metaState);
-  const profile = profileForDepth(binding.depth);
+  const profile = profileForDepth(binding.scalingDepth);
   const pool = catalog.filter(
     (relic) =>
       profile.allowedRarities.includes(relic.rarity) &&
@@ -328,7 +332,7 @@ export async function issueForgeTransmuteOfferV08(metaState, context = {}) {
   if (!metaState.build.relics.length) {
     throw new TypeError("FORGE_TRANSMUTE_REQUIRES_RELIC");
   }
-  const profile = profileForDepth(binding.depth);
+  const profile = profileForDepth(binding.scalingDepth);
   const requestedSacrificeRelicId = String(context.sacrificeRelicId || "");
   const sourceEntries = requestedSacrificeRelicId
     ? metaState.build.relics.filter(

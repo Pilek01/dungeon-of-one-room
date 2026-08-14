@@ -67,6 +67,14 @@ function roomClearBase(depth, roomType) {
   return Math.max(1, base);
 }
 
+function rewardScalingDepth(directive) {
+  if (directive?.roomCategory !== "special") return directive.depth;
+  return Math.max(
+    directive.depth,
+    Number(directive.specialRoomPayload?.scalingDepth) || directive.depth
+  );
+}
+
 function enemyMaximumForRoom(roomType) {
   return Math.max(0, Number(rewardBounds.enemyClaims.maximumEnemiesByRoom[roomType]) || 0);
 }
@@ -280,11 +288,12 @@ export async function createRoomRewardEnvelopeV3({
   cryptoProvider
 }) {
   await assertCanonicalRunModifierDigestV08(state.runModifiers, cryptoProvider);
+  const scalingDepth = rewardScalingDepth(directive);
   const buildModifier = resolveGoldModifierV08({
     canonicalBuild: state.build,
     canonicalRunModifiers: state.runModifiers,
     sourceId: "room-clear",
-    baseAmount: roomClearBase(directive.depth, directive.roomType),
+    baseAmount: roomClearBase(scalingDepth, directive.roomType),
     context: { roomType: directive.roomType }
   });
   const boundedClaims = claimDefinitions(directive.roomType);
@@ -298,12 +307,13 @@ export async function createRoomRewardEnvelopeV3({
     revision: state.revision,
     roomIndex: directive.roomIndex,
     depth: directive.depth,
+    scalingDepth,
     roomType: directive.roomType,
     claimPolicyVersion: rewardBounds.policyVersion,
     fixedAwards: [{
       awardId: "room-clear",
       sourceId: "room-clear",
-      baseAmount: roomClearBase(directive.depth, directive.roomType),
+      baseAmount: roomClearBase(scalingDepth, directive.roomType),
       amount: buildModifier.amount
     }],
     boundedClaims,
@@ -312,7 +322,7 @@ export async function createRoomRewardEnvelopeV3({
     maximumGoldDelta: maximumGoldDeltaForEnvelope(
       state.build,
       state.runModifiers,
-      directive.depth,
+      scalingDepth,
       directive.roomType,
       boundedClaims,
       slots
@@ -324,6 +334,7 @@ export async function createRoomRewardEnvelopeV3({
       revision: state.revision,
       roomIndex: directive.roomIndex,
       depth: directive.depth,
+      scalingDepth,
       roomType: directive.roomType,
       gold: state.gold,
       build: state.build,
@@ -341,10 +352,13 @@ export function assertRoomRewardEnvelopeV3(envelope) {
       throw new TypeError(`REWARD_ENVELOPE_INVALID:${field}`);
     }
   }
-  for (const field of ["revision", "roomIndex", "depth", "maximumGoldDelta"]) {
+  for (const field of ["revision", "roomIndex", "depth", "scalingDepth", "maximumGoldDelta"]) {
     if (!Number.isSafeInteger(envelope[field]) || envelope[field] < 0) {
       throw new TypeError(`REWARD_ENVELOPE_INVALID:${field}`);
     }
+  }
+  if (envelope.scalingDepth < envelope.depth) {
+    throw new TypeError("REWARD_ENVELOPE_INVALID:scalingDepth");
   }
   if (
     !Array.isArray(envelope.fixedAwards) ||

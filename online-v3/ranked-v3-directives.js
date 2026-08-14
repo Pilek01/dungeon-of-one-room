@@ -36,6 +36,13 @@
     if (expectedCategory && directive.roomCategory !== expectedCategory) {
       throw new TypeError("RANKED_DIRECTIVE_CATEGORY_MISMATCH");
     }
+    const specialRoomPayload = directive.specialRoomPayload ?? null;
+    if (directive.roomCategory === "special") {
+      const scalingDepth = specialRoomPayload?.scalingDepth;
+      if (!Number.isSafeInteger(scalingDepth) || scalingDepth < directive.depth) {
+        throw new TypeError("RANKED_DIRECTIVE_SCALING_DEPTH_INVALID");
+      }
+    }
     return Object.freeze({
       directiveId: directive.directiveId,
       runId: directive.runId,
@@ -47,7 +54,9 @@
       directiveSeed: directive.directiveSeed,
       roomNonce: directive.roomNonce,
       rewardEnvelopeRef: directive.rewardEnvelopeRef,
-      specialRoomPayload: directive.specialRoomPayload ?? null
+      specialRoomPayload: specialRoomPayload
+        ? Object.freeze({ ...specialRoomPayload })
+        : null
     });
   }
 

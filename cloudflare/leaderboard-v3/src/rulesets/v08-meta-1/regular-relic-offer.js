@@ -484,7 +484,11 @@ export async function issueRegularRelicOffer(metaState, rawRequest = {}, context
     }
     ({ selected } = await chooseRelics(metaState, context, tier));
   } else if (binding.sourcePolicy === otterPolicy) {
-    const depth = binding.directive.depth;
+    const depth = Math.max(
+      binding.directive.depth,
+      Number(binding.directive.specialRoomPayload?.scalingDepth) ||
+        binding.directive.depth
+    );
     const occurrences = Math.max(
       0,
       Number(metaState.specialRoomScheduleState.otterRoomsSeenThisRun) || 0

@@ -36,6 +36,15 @@ export function assertRoomDirectiveV3(directive) {
   if (typeof directive.consumed !== "boolean") {
     throw new TypeError("ROOM_DIRECTIVE_INVALID:consumed");
   }
+  if (directive.roomCategory === "special") {
+    const scalingDepth = directive.specialRoomPayload?.scalingDepth;
+    if (
+      !Number.isSafeInteger(scalingDepth) ||
+      scalingDepth < directive.depth
+    ) {
+      throw new TypeError("ROOM_DIRECTIVE_INVALID:specialRoomPayload.scalingDepth");
+    }
+  }
   return directive;
 }
 

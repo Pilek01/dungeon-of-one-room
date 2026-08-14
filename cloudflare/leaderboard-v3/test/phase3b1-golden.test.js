@@ -17,6 +17,7 @@ import {
 } from "../src/rulesets/v08-meta-1/meta-state.js";
 import {
   issueNextRoomDirectiveV08,
+  specialRoomScalingDepthV08,
   V08_ROOM_POLICY_DATA
 } from "../src/rulesets/v08-meta-1/room-policy.js";
 
@@ -384,3 +385,37 @@ for (const fixture of fixtures) {
     await runners[fixture.fixtureId](fixture);
   });
 }
+
+test("Vault, Forge and Otter scale to campaign max depth regardless of room depth", () => {
+  const state = {
+    maxDepth: 31,
+    campaign: { scoreCarry: { highWaterDepth: 50, earnedGold: 0 } }
+  };
+  assert.equal(specialRoomScalingDepthV08(state, "vault", 12), 50);
+  assert.equal(specialRoomScalingDepthV08(state, "forge", 21), 50);
+  assert.equal(specialRoomScalingDepthV08(state, "otter", 31), 50);
+  assert.equal(specialRoomScalingDepthV08(state, "combat", 12), 12);
+  assert.equal(specialRoomScalingDepthV08(state, "vault", 60), 60);
+});
+
+test("special room directive and reward envelope carry the same campaign scaling depth", async () => {
+  const fixture = {
+    runId: "run_special_scaling_depth",
+    initialMetaState: {}
+  };
+  const oracle = zeroOracle();
+  const context = contextFor(fixture, { randomOracle: oracle });
+  const state = createInitialMetaStateV08({}, context);
+  state.status = "active";
+  state.depth = 11;
+  state.roomIndex = 11;
+  state.maxDepth = 31;
+  state.campaign.scoreCarry = { highWaterDepth: 50, earnedGold: 0 };
+  state.campaign.forcedNextRoomType = "vault";
+  const issued = await issueNextRoomDirectiveV08(state, context);
+  assert.equal(issued.currentRoomDirective.depth, 12);
+  assert.equal(issued.currentRoomDirective.specialRoomPayload.scalingDepth, 50);
+  assert.equal(issued.currentRewardEnvelope.depth, 12);
+  assert.equal(issued.currentRewardEnvelope.scalingDepth, 50);
+  assert.equal(issued.currentRewardEnvelope.fixedAwards[0].baseAmount, 25);
+});

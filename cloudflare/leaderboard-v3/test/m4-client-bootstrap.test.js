@@ -400,6 +400,34 @@ test("M4 directive adapter supports the complete active v08-meta-1 set and rejec
   );
 });
 
+test("M4 directive adapter preserves and validates special-room scaling depth", () => {
+  const result = directives.applyOnlineV3RoomDirective({
+    directiveId: "vault_12",
+    runId: "run_a1",
+    revision: 12,
+    roomIndex: 12,
+    depth: 12,
+    roomType: "vault",
+    roomCategory: "special",
+    directiveSeed: "seed",
+    roomNonce: "nonce",
+    rewardEnvelopeRef: "reward",
+    specialRoomPayload: {
+      policySource: "vault-roll",
+      scheduleStateVersion: 1,
+      scalingDepth: 50
+    }
+  });
+  assert.equal(result.specialRoomPayload.scalingDepth, 50);
+  assert.throws(
+    () => directives.applyOnlineV3RoomDirective({
+      ...result,
+      specialRoomPayload: { ...result.specialRoomPayload, scalingDepth: 11 }
+    }),
+    /RANKED_DIRECTIVE_SCALING_DEPTH_INVALID/u
+  );
+});
+
 test("M4 session state machine fails closed on illegal transitions", () => {
   const machine = sessionApi.createStateMachine();
   machine.transition(sessionApi.STATES.starting);

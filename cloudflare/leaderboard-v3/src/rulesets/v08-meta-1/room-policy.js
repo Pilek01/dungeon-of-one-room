@@ -36,6 +36,18 @@ const roomEligibility = new Map(
   eligibility.roomEligibility.map((entry) => [entry.id, entry])
 );
 const ONE_MILLION = 1_000_000;
+const MAX_DEPTH_SCALED_SPECIAL_ROOMS = new Set(["vault", "forge", "otter"]);
+
+export function specialRoomScalingDepthV08(state, roomType, roomDepth) {
+  const depth = Math.max(1, Math.floor(Number(roomDepth) || 1));
+  if (!MAX_DEPTH_SCALED_SPECIAL_ROOMS.has(String(roomType || ""))) return depth;
+  const activeMaxDepth = Math.max(0, Math.floor(Number(state?.maxDepth) || 0));
+  const campaignMaxDepth = Math.max(
+    0,
+    Math.floor(Number(state?.campaign?.scoreCarry?.highWaterDepth) || 0)
+  );
+  return Math.max(depth, activeMaxDepth, campaignMaxDepth);
+}
 
 export const ROOM_POLICY_SPEC = Object.freeze({
   moduleFile: "room-policy.js",
@@ -288,6 +300,11 @@ export async function issueNextRoomDirectiveV08(state, context = {}) {
   const selection = await selectRoomType(state, context, depth, roomIndex);
   const roomDefinition = roomTypes.get(selection.roomType);
   if (!roomDefinition) throw new TypeError("ROOM_TYPE_UNSUPPORTED");
+  const scalingDepth = specialRoomScalingDepthV08(
+    state,
+    selection.roomType,
+    depth
+  );
   const directiveIdBytes = await randomBytes(
     state,
     context,
@@ -331,7 +348,8 @@ export async function issueNextRoomDirectiveV08(state, context = {}) {
     specialRoomPayload: roomDefinition.category === "special"
       ? {
           policySource: selection.source,
-          scheduleStateVersion: state.specialRoomScheduleState.schemaVersion
+          scheduleStateVersion: state.specialRoomScheduleState.schemaVersion,
+          scalingDepth
         }
       : null,
     issuedAt: state.startedAt + state.revision
