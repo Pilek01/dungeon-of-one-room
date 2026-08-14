@@ -568,10 +568,15 @@ describe("Online v3 real ruleset Wrangler and D1 lifecycle", {
     assert.equal(finalized.response.status, 200);
     assert.equal(finalized.payload.outcome, "extract");
     assert.equal(finalized.payload.summary.score, finalized.payload.score);
-    assert.equal(await d1Query(`
-      SELECT COUNT(*) AS count FROM leaderboard_entries
+    const extractEntries = await d1Query(`
+      SELECT score, outcome, snapshot_kind FROM leaderboard_entries
       WHERE run_id = '${session.runId}'
-    `).then((rows) => Number(rows[0].count)), 0);
+    `);
+    assert.deepEqual(extractEntries, [{
+      score: finalized.payload.score,
+      outcome: "extract",
+      snapshot_kind: "extract"
+    }]);
   }, { timeout: 45_000 });
 
   test("extraction profile persists through restart and opens canonical Camp in real D1", async () => {
