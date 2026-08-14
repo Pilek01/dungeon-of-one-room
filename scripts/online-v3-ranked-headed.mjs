@@ -2258,6 +2258,9 @@ ${fatalTestHookAnchor}`;
     });
     await page.reload({ waitUntil: "domcontentloaded" });
     await dismissBoot(page, diagnostics);
+    await page.evaluate((password) => {
+      window.prompt = () => password;
+    }, TEST_BOT_PASSWORD);
     await openRankedChoice(page, "Start New Ranked");
 
     await page.locator(".ranked-v3-choice-relic").first().waitFor({ state: "visible" });
