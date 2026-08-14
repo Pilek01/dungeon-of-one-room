@@ -59,15 +59,14 @@
         "ruleId": "special-room-priority",
         "sourceReference": "game.js:chooseRoomType/maybeQueueOtterRoom",
         "reason": "Priority is encoded by procedural branch order."
+      },
+      {
+        "ruleId": "forge-pity-campaign-scope",
+        "sourceReference": "game.js:forgeSeenThisGame/forgePityUsedThisGame",
+        "reason": "Online v3 campaign carry preserves the baseline game-scope Forge pity across Ranked descents."
       }
     ],
     "unresolvedSourceRules": [
-      {
-        "ruleId": "forge-pity-game-scope",
-        "marker": "UNRESOLVED_SOURCE_RULE",
-        "sourceReference": "game.js:forgeSeenThisGame/forgePityUsedThisGame",
-        "reason": "Baseline persists pity across runs in one local game; Online v3 has no canonical cross-run game session."
-      },
       {
         "ruleId": "otter-pity-game-scope",
         "marker": "UNRESOLVED_SOURCE_RULE",

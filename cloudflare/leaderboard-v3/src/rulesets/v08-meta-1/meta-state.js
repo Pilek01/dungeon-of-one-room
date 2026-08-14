@@ -138,6 +138,8 @@ function createCampaignState(input = {}) {
     forcedNextRoomType,
     wardenFirstDropDepths,
     unlockedStartDepths,
+    forgeSeenInCampaign: Boolean(source.forgeSeenInCampaign),
+    forgePityUsedInCampaign: Boolean(source.forgePityUsedInCampaign),
     scoreCarry
   };
 }
@@ -168,6 +170,8 @@ function assertCampaignState(campaign) {
     campaign.forcedNextRoomType !== normalized.forcedNextRoomType ||
     JSON.stringify(campaign.wardenFirstDropDepths) !== JSON.stringify(normalized.wardenFirstDropDepths) ||
     JSON.stringify(campaign.unlockedStartDepths) !== JSON.stringify(normalized.unlockedStartDepths) ||
+    campaign.forgeSeenInCampaign !== normalized.forgeSeenInCampaign ||
+    campaign.forgePityUsedInCampaign !== normalized.forgePityUsedInCampaign ||
     (
       hasCarry && (
         JSON.stringify(carryKeys) !== JSON.stringify(expectedCarryKeys) ||

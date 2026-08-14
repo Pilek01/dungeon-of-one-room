@@ -69,6 +69,10 @@ export async function hydrateRunFromProfileV08(state, profile, context = {}) {
     activeModifierIds: next.runModifiers.active.map((entry) => entry.modifierId)
   });
   next.campaign = normalizeCampaignStateV08({ campaign: profile.campaign || next.campaign });
+  next.specialRoomScheduleState.forgeSeenInGame =
+    next.campaign.forgeSeenInCampaign;
+  next.specialRoomScheduleState.forgePityUsedInGame =
+    next.campaign.forgePityUsedInCampaign;
   return next;
 }
 

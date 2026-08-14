@@ -220,7 +220,9 @@ async function selectRoomType(state, context, depth, roomIndex) {
   if (
     depth === specialPolicy.forgePityDepth &&
     !schedule.forgeSeenInGame &&
-    !schedule.forgePityUsedInGame
+    !schedule.forgePityUsedInGame &&
+    !state.campaign.forgeSeenInCampaign &&
+    !state.campaign.forgePityUsedInCampaign
   ) {
     return { roomType: "forge", source: "forge-pity" };
   }
@@ -373,6 +375,12 @@ export async function issueNextRoomDirectiveV08(state, context = {}) {
     directive.roomType,
     directive.depth
   );
+  if (directive.roomType === "forge") {
+    next.campaign.forgeSeenInCampaign = true;
+  }
+  if (selection.source === "forge-pity") {
+    next.campaign.forgePityUsedInCampaign = true;
+  }
   next.statistics.roomsIssued += 1;
   if (directive.roomCategory === "boss") next.statistics.bossRoomsIssued += 1;
   if (directive.roomCategory === "special") next.statistics.specialRoomsIssued += 1;

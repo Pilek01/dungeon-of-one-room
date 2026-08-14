@@ -419,3 +419,52 @@ test("special room directive and reward envelope carry the same campaign scaling
   assert.equal(issued.currentRewardEnvelope.scalingDepth, 50);
   assert.equal(issued.currentRewardEnvelope.fixedAwards[0].baseAmount, 25);
 });
+
+test("Forge pity at depth 21 is available only once per campaign", async () => {
+  assert.ok(
+    V08_ROOM_POLICY_DATA.specialPolicy.manualVersionedRules.some(
+      (rule) => rule.ruleId === "forge-pity-campaign-scope"
+    )
+  );
+  assert.equal(
+    V08_ROOM_POLICY_DATA.specialPolicy.unresolvedSourceRules.some(
+      (rule) => rule.ruleId === "forge-pity-game-scope"
+    ),
+    false
+  );
+  const firstFixture = { runId: "run_forge_pity_first", initialMetaState: {} };
+  const firstContext = contextFor(firstFixture, { randomOracle: zeroOracle() });
+  const firstState = createInitialMetaStateV08({}, firstContext);
+  firstState.status = "active";
+  firstState.depth = 20;
+  firstState.roomIndex = 20;
+  const first = await issueNextRoomDirectiveV08(firstState, firstContext);
+  assert.equal(first.currentRoomDirective.roomType, "forge");
+  assert.equal(first.currentRoomDirective.specialRoomPayload.policySource, "forge-pity");
+  assert.equal(first.campaign.forgeSeenInCampaign, true);
+  assert.equal(first.campaign.forgePityUsedInCampaign, true);
+
+  const secondFixture = { runId: "run_forge_pity_second", initialMetaState: {} };
+  const secondContext = contextFor(secondFixture, { randomOracle: zeroOracle() });
+  const secondState = createInitialMetaStateV08(
+    { campaign: first.campaign },
+    secondContext
+  );
+  secondState.status = "active";
+  secondState.depth = 20;
+  secondState.roomIndex = 20;
+  const second = await issueNextRoomDirectiveV08(secondState, secondContext);
+  assert.notEqual(
+    second.currentRoomDirective.specialRoomPayload?.policySource,
+    "forge-pity"
+  );
+
+  const freshFixture = { runId: "run_forge_pity_fresh", initialMetaState: {} };
+  const freshContext = contextFor(freshFixture, { randomOracle: zeroOracle() });
+  const freshState = createInitialMetaStateV08({}, freshContext);
+  freshState.status = "active";
+  freshState.depth = 20;
+  freshState.roomIndex = 20;
+  const fresh = await issueNextRoomDirectiveV08(freshState, freshContext);
+  assert.equal(fresh.currentRoomDirective.specialRoomPayload.policySource, "forge-pity");
+});
