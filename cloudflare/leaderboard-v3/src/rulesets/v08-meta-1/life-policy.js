@@ -4,6 +4,7 @@ import {
   getRelicCatalogEntryV08
 } from "./relic-policy.js";
 import { chooseIndex } from "./rng.js";
+import { clearRunGoldWalletV08 } from "./gold-policy.js";
 
 const policy = sourceAuditDocument.canonicalData;
 const HISTORY_LIMIT = 32;
@@ -203,6 +204,7 @@ export async function applyFatalEventV08(state, request, context = {}) {
 
   let resolution;
   let lostRelicId = null;
+  let goldLost = null;
   if (chronoLoopAvailable(next)) {
     const entry = chronoLoopEntry(next);
     next.lifeLedger.chronoLoopConsumedAcquiredRevision = entry.acquiredRevision;
@@ -228,6 +230,7 @@ export async function applyFatalEventV08(state, request, context = {}) {
       };
       resolution = "terminal_defeat";
     } else {
+      goldLost = clearRunGoldWalletV08(next);
       next.depth = 0;
       next.roomIndex = 0;
       next.lifeLedger.currentLife += 1;
@@ -243,6 +246,7 @@ export async function applyFatalEventV08(state, request, context = {}) {
     livesAfter: next.lives,
     lostRelicId,
     elixirUsage,
+    ...(goldLost !== null ? { goldLost } : {}),
     ...(presentationCause ? { presentationCause } : {})
   };
   next.lifeLedger.history = appendHistory(next.lifeLedger.history, receipt);

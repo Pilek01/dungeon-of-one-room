@@ -11,6 +11,7 @@ import {
 } from "../src/domain/run-bootstrap.js";
 import { TEST_SECRET } from "./fixtures/harness.js";
 import manifest from "../src/rulesets/v08-meta-1/data/ruleset-manifest.json" with { type: "json" };
+import { deriveFinalScoreV08 } from "../src/rulesets/v08-meta-1/score-policy.js";
 
 const NOW = 1_810_000_000_000;
 const fixtures = JSON.parse(await readFile(new URL(
@@ -115,6 +116,32 @@ test("actual nonterminal death loses one life and one non-Mythic copy then resta
   assert.equal(result.nextState.currentRoomDirective.depth, 1);
   assert.equal(result.nextState.lifeLedger.currentLife, 2);
   assert.equal(result.publicResult.resolution, "life_lost");
+});
+
+test("nonterminal death clears run gold while preserving earned campaign score", async () => {
+  const value = await activeState(303);
+  value.state.gold = 200;
+  value.state.goldLedger.earnedServerDerived = 200;
+  const scoreBefore = deriveFinalScoreV08(value.state);
+
+  const first = await fatal(value);
+  assert.equal(first.nextState.gold, 0);
+  assert.equal(first.nextState.goldLedger.earnedServerDerived, 200);
+  assert.equal(first.nextState.goldLedger.spentServerDerived, 200);
+  assert.equal(first.publicResult.goldLost, 200);
+  assert.deepEqual(deriveFinalScoreV08(first.nextState), scoreBefore);
+
+  const retry = await fatal(value);
+  assert.deepEqual(retry, first);
+
+  const second = await value.ruleset.reportFatalEvent(
+    first.nextState,
+    { classification: "local_fatal_event" },
+    { secret: TEST_SECRET }
+  );
+  assert.equal(second.nextState.gold, 0);
+  assert.equal(second.nextState.goldLedger.spentServerDerived, 200);
+  assert.equal(second.publicResult.goldLost, 0);
 });
 
 test("Mythic relic copies are excluded from the death penalty", async () => {

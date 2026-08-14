@@ -207,4 +207,18 @@ export function assertGoldLedgerV08(state) {
   return state;
 }
 
+export function clearRunGoldWalletV08(state) {
+  assertGoldLedgerV08(state);
+  const goldLost = state.gold;
+  const spentAfterLoss = state.goldLedger.spentServerDerived + goldLost;
+  if (!Number.isSafeInteger(spentAfterLoss)) {
+    throw new TypeError("GOLD_LEDGER_SPEND_OVERFLOW");
+  }
+  state.goldLedger.spentServerDerived = spentAfterLoss;
+  state.goldLedger.lastDelta = 0;
+  state.gold = 0;
+  assertGoldLedgerV08(state);
+  return goldLost;
+}
+
 export const V08_GOLD_POLICY_DATA = Object.freeze({ modifiers, sources, rewardBounds });
