@@ -17,25 +17,63 @@
   const element = (documentRef, tag, className, value = "") => { const node = documentRef.createElement(tag); node.className = className; node.textContent = String(value); return node; };
   const relicName = (id) => String(root?.DungeonRelicData?.RELICS?.find((relic) => relic.id === id)?.name || humanize(id));
   const normalizeBuild = (value) => { const build = value && typeof value === "object" ? value : {}; return { relics: Array.isArray(build.relics) ? build.relics.map((relic) => ({ relicId: String(relic?.relicId || relic?.id || ""), stacks: Math.max(1, integer(relic?.stacks)) })).filter((relic) => relic.relicId) : [], pacts: Array.isArray(build.pacts) ? build.pacts.filter((id) => typeof id === "string") : [], skillTiers: build.skillTiers && typeof build.skillTiers === "object" ? { ...build.skillTiers } : {}, campUpgrades: build.campUpgrades && typeof build.campUpgrades === "object" ? { ...build.campUpgrades } : {}, elixirs: Array.isArray(build.elixirs) ? build.elixirs.map((item) => ({ ...item })) : [], runModifiers: Array.isArray(build.runModifiers?.active) ? build.runModifiers.active.map((item) => ({ ...item })) : [] }; };
-  const toLeaderboardRow = (entry, index = 0) => Object.freeze({ runId: String(entry?.runId || ""), rank: Math.max(1, integer(entry?.rank) || index + 1), playerName: String(entry?.playerName || "Anonymous"), score: integer(entry?.score), depth: integer(entry?.depth), gold: integer(entry?.gold), durationMs: integer(entry?.durationMs), outcome: String(entry?.outcome || ""), verificationLevel: String(entry?.verificationLevel || ""), createdAt: integer(entry?.createdAt) });
-  const createLeaderboardViewModel = (payload = {}, rankOffset = 0) => Object.freeze({ season: String(payload.season || ""), status: String(payload.status || "ready"), cursor: typeof payload.cursor === "string" && payload.cursor ? payload.cursor : null, rows: Object.freeze((Array.isArray(payload.entries) ? payload.entries : []).slice(0, MAX_ROWS).map((entry, index) => toLeaderboardRow(entry, rankOffset + index))) });
+  const toLeaderboardRow = (entry, index = 0, officialRank = 0) => {
+    const assistanceClass = String(entry?.assistanceClass || "none");
+    const ranked = assistanceClass === "none";
+    return Object.freeze({
+      runId: String(entry?.runId || ""),
+      rank: ranked ? Math.max(1, integer(entry?.rank) || integer(officialRank) || index + 1) : 0,
+      ranked,
+      assistanceClass,
+      rowIndex: Math.max(0, integer(entry?.rowIndex) || index),
+      playerName: String(entry?.playerName || "Anonymous"),
+      score: integer(entry?.score),
+      depth: integer(entry?.depth),
+      gold: integer(entry?.gold),
+      durationMs: integer(entry?.durationMs),
+      outcome: String(entry?.outcome || ""),
+      verificationLevel: String(entry?.verificationLevel || ""),
+      createdAt: integer(entry?.createdAt)
+    });
+  };
+  const createLeaderboardViewModel = (payload = {}, rankOffset = 0) => {
+    let officialRank = integer(rankOffset);
+    const rows = (Array.isArray(payload.entries) ? payload.entries : [])
+      .slice(0, MAX_ROWS)
+      .map((entry, index) => {
+        const ranked = String(entry?.assistanceClass || "none") === "none";
+        if (ranked) officialRank += 1;
+        return toLeaderboardRow(entry, index, ranked ? officialRank : 0);
+      });
+    return Object.freeze({
+      season: String(payload.season || ""),
+      status: String(payload.status || "ready"),
+      cursor: typeof payload.cursor === "string" && payload.cursor ? payload.cursor : null,
+      rows: Object.freeze(rows)
+    });
+  };
   const createLeaderboardPresentation = (rows = [], requestedPage = 1) => {
     const source = (Array.isArray(rows) ? rows : []).slice(0, MAX_ROWS);
-    const podium = source.slice(0, PODIUM_SIZE);
-    const ledgerSource = source.slice(PODIUM_SIZE);
+    const podium = source.filter((row) => row.ranked !== false).slice(0, PODIUM_SIZE);
+    const podiumIds = new Set(podium.map((row) => row.runId));
+    const ledgerSource = source.filter((row) => !podiumIds.has(row.runId));
     const pageCount = Math.min(MAX_LEDGER_PAGES, Math.max(1, Math.ceil(ledgerSource.length / LEDGER_ROWS_PER_PAGE)));
     const page = Math.min(pageCount, Math.max(1, integer(requestedPage) || 1));
     const offset = (page - 1) * LEDGER_ROWS_PER_PAGE;
     const ledger = ledgerSource.slice(offset, offset + LEDGER_ROWS_PER_PAGE);
-    const firstRank = ledger[0]?.rank || 0;
-    const lastRank = ledger.at(-1)?.rank || 0;
+    const rankedLedger = ledger.filter((row) => row.ranked !== false);
+    const firstRank = rankedLedger[0]?.rank || 0;
+    const lastRank = rankedLedger.at(-1)?.rank || 0;
+    const hasTestRuns = ledger.some((row) => row.ranked === false);
     return Object.freeze({
       podium: Object.freeze(podium),
       ledger: Object.freeze(ledger),
       page,
       pageCount,
       pageLabel: `Page ${page} / ${pageCount}`,
-      rangeLabel: ledger.length ? `Ranks ${firstRank}-${lastRank}` : "No ranked entries",
+      rangeLabel: rankedLedger.length
+        ? `Ranks ${firstRank}-${lastRank}${hasTestRuns ? " + TEST" : ""}`
+        : hasTestRuns ? "TEST runs - not ranked" : "No ranked entries",
       canGoPrevious: page > 1,
       canGoNext: page < pageCount
     });
@@ -47,7 +85,10 @@
     let cursor = "";
     while (rows.length < MAX_ROWS) {
       const payload = await list({ season, limit: 50, cursor });
-      const page = createLeaderboardViewModel(payload, rows.length);
+      const page = createLeaderboardViewModel(
+        payload,
+        rows.filter((row) => row.ranked !== false).length
+      );
       rows.push(...page.rows.slice(0, MAX_ROWS - rows.length));
       if (rows.length >= MAX_ROWS || !page.cursor || page.cursor === cursor || seenCursors.has(page.cursor)) break;
       seenCursors.add(page.cursor);
@@ -289,8 +330,16 @@
       return slot;
     }
     slot.setAttribute("data-record-rank", String(row.rank));
+    slot.setAttribute("data-ranked", String(row.ranked !== false));
+    slot.setAttribute("data-assistance-class", row.assistanceClass);
+    if (row.ranked === false) slot.className += " ranked-v3-test-run";
     const identity = element(documentRef, "div", "ranked-v3-leaderboard-slot-identity");
-    const rank = element(documentRef, "span", "ranked-v3-leaderboard-rank", String(row.rank));
+    const rank = element(
+      documentRef,
+      "span",
+      "ranked-v3-leaderboard-rank",
+      row.ranked === false ? "TEST" : String(row.rank)
+    );
     if (layout === "podium") {
       rank.setAttribute("aria-hidden", "true");
       identity.append(
@@ -618,13 +667,26 @@
     const overlay = element(documentRef, "div", `${SELECTORS.overlay} ranked-v3-inspect-overlay`);
     const tooltipPanel = createInspectTooltipPanel(documentRef);
     const header = element(documentRef, "header", "ranked-v3-inspect-header");
-    const rank = element(documentRef, "p", "ranked-v3-inspect-rank", String(detail.rank));
+    const rank = element(
+      documentRef,
+      "p",
+      "ranked-v3-inspect-rank",
+      detail.ranked === false ? "TEST" : String(detail.rank)
+    );
     rank.setAttribute("data-record-rank", String(detail.rank));
-    rank.setAttribute("data-rank-digits", integer(detail.rank) >= 10 ? "double" : "single");
+    rank.setAttribute(
+      "data-rank-digits",
+      detail.ranked === false ? "test" : integer(detail.rank) >= 10 ? "double" : "single"
+    );
     header.append(
       rank,
       element(documentRef, "h3", "ranked-v3-inspect-player", detail.playerName)
     );
+    if (detail.ranked === false) {
+      header.append(
+        element(documentRef, "p", "ranked-v3-test-run-notice", "TEST RUN - NOT RANKED")
+      );
+    }
     if (detailsAvailable || presentationFields.score) header.append(scoreDisplay(documentRef, "ranked-v3-inspect-score", detail.score, "p"), element(documentRef, "p", "ranked-v3-inspect-score-label", "Final Score"));
     if (detailsAvailable || presentationFields.depth) header.append(inspectStat(documentRef, "ranked-v3-inspect-depth", "Depth", detail.depth));
     if (detailsAvailable || presentationFields.gold) header.append(inspectStat(documentRef, "ranked-v3-inspect-gold", "Gold", detail.gold));

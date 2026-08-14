@@ -231,6 +231,55 @@ test("Ranked presentation keeps the Top 3 while paging ranks 4 through 73", () =
   assert.equal(finalPage.canGoNext, false);
 });
 
+test("assisted runs stay visible as TEST without taking an official rank or podium", () => {
+  const ui = loadUi();
+  const rows = ui.createLeaderboardViewModel({
+    entries: [
+      {
+        runId: "run_test_assisted",
+        playerName: "Observer",
+        score: 999_999,
+        depth: 99,
+        gold: 999,
+        assistanceClass: "observer_bot"
+      },
+      ...Array.from({ length: 4 }, (_, index) => ({
+        runId: `run_official_${index + 1}`,
+        playerName: `Official ${index + 1}`,
+        score: 100 - index,
+        depth: 10 - index,
+        gold: index,
+        assistanceClass: "none"
+      }))
+    ]
+  }).rows;
+  assert.deepEqual(rows.map((row) => row.rank), [0, 1, 2, 3, 4]);
+  assert.equal(rows[0].ranked, false);
+  const presentation = ui.createLeaderboardPresentation(rows, 1);
+  assert.deepEqual(
+    presentation.podium.map((row) => row.playerName),
+    ["Official 1", "Official 2", "Official 3"]
+  );
+  assert.equal(presentation.ledger[0].playerName, "Observer");
+  const plate = ui.renderList(createDocument(), presentation);
+  const testRows = visit(
+    plate,
+    (node) => String(node.className).split(/\s+/u).includes("ranked-v3-test-run")
+  );
+  assert.equal(testRows.length, 1);
+  assert.equal(testRows[0].attributes.get("data-ranked"), "false");
+  assert.match(allText(testRows[0]), /TEST.*Observer.*999,999 pts/isu);
+
+  const detail = ui.renderDetail(createDocument(), ui.createDetailViewModel({
+    entry: {
+      ...rows[0],
+      build: { relics: [] },
+      summary: {}
+    }
+  }));
+  assert.match(allText(detail), /TEST RUN.*NOT RANKED/isu);
+});
+
 test("Practice adapter rows use the canonical leaderboard presentation and DOM shape", () => {
   const ui = loadUi();
   const adapter = loadPracticeAdapter();

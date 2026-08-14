@@ -57,6 +57,7 @@ function createRealHarness(options = {}) {
     ]),
     rulesetEnvironment: "local",
     repositories,
+    onError: options.onError,
     now: () => now,
     randomUUID() {
       const suffix = String(sequence).padStart(12, "0");
@@ -187,8 +188,9 @@ test("detail endpoint returns the finalized display-only defeat cause without a 
   assert.equal(detail.payload.entry.summary.presentationCause, "Defeated by The Hollow Seraph");
 });
 
-test("a nonterminal death publishes one retry-safe snapshot while the run stays active", async () => {
-  const harness = createRealHarness();
+test("an assisted nonterminal death publishes one marked retry-safe snapshot while the run stays active", async () => {
+  const errors = [];
+  const harness = createRealHarness({ onError: (error) => errors.push(error) });
   const started = (await harness.call("/api/v3/runs/start", {
     playerName: "M3Runtime",
     season: "m3-season",
@@ -207,10 +209,24 @@ test("a nonterminal death publishes one retry-safe snapshot while the run stays 
     offerId: started.metaState.startingRelicOffer.offerId,
     choiceId: started.metaState.startingRelicOffer.publicChoices[0].choiceId
   }, "nonterminal-select")).payload;
-  const directive = selected.metaState.currentRoomDirective;
-  const body = {
+  const selectedDirective = selected.metaState.currentRoomDirective;
+  const marked = await harness.call("/api/v3/runs/event", {
     runId: selected.runId,
     checkpointToken: selected.checkpointToken,
+    roomDirectiveId: selectedDirective.directiveId,
+    roomNonce: selectedDirective.roomNonce,
+    type: "mark_test_assistance",
+    payload: { assistanceClass: "observer_bot" }
+  }, "nonterminal-assistance");
+  assert.equal(
+    marked.response.status,
+    200,
+    `${JSON.stringify(marked.payload)} ${errors.map((error) => error?.stack || error).join("\n")}`
+  );
+  const directive = marked.payload.metaState.currentRoomDirective;
+  const body = {
+    runId: marked.payload.runId,
+    checkpointToken: marked.payload.checkpointToken,
     roomDirectiveId: directive.directiveId,
     roomNonce: directive.roomNonce,
     type: "report_fatal_event",
@@ -222,6 +238,7 @@ test("a nonterminal death publishes one retry-safe snapshot while the run stays 
   assert.equal(harness.repositories.leaderboardCount(), 1);
   const detail = await harness.get(`/api/v3/leaderboard/${selected.runId}`);
   assert.equal(detail.payload.entry.snapshotKind, "death");
+  assert.equal(detail.payload.entry.assistanceClass, "observer_bot");
   const retry = await harness.call("/api/v3/runs/event", body, "nonterminal-fatal");
   assert.equal(retry.response.headers.get("x-idempotent-replay"), "1");
   assert.deepEqual(retry.payload, first.payload);

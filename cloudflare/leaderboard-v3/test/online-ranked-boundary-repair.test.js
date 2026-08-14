@@ -221,6 +221,8 @@ test("legacy profiles without elixirs remain valid for fatal events", async () =
 test("deployed test bot remains password-gated and test music is muted", async () => {
   const builder = await readFile(new URL("../../../scripts/build-pages-v3.mjs", import.meta.url), "utf8");
   const runtime = await readFile(new URL("../../../online-v3/ranked-v3-runtime.js", import.meta.url), "utf8");
+  const protocol = await readFile(new URL("../../../online-v3/ranked-v3-protocol.js", import.meta.url), "utf8");
+  const game = await readFile(new URL("../../../game.js", import.meta.url), "utf8");
   const headed = await readFile(new URL("../../../scripts/online-v3-ranked-headed.mjs", import.meta.url), "utf8");
   const releaseConfig = observerBotReleaseConfig({
     DUNGEON_ONLINE_TEST_BOT_PASSWORD: "boundary-observer-password"
@@ -234,7 +236,27 @@ test("deployed test bot remains password-gated and test music is muted", async (
   );
   assert.match(builder, /unlockRankedTestBot/u);
   assert.match(builder, /canUseDebugCheats/u);
-  assert.match(runtime, /Observer Bot/u);
+  assert.doesNotMatch(runtime, /Start \+ Observer Bot|Continue \+ Observer Bot/u);
+  assert.doesNotMatch(runtime, /pendingBotPassword/u);
+  assert.match(runtime, /requestTestControlsUnlock: unlockTestBot/u);
+  assert.match(protocol, /"mark_test_assistance"/u);
+  assert.match(
+    game,
+    /DEBUG_MENU_TOGGLE_KEY[\s\S]*DUNGEON_ONLINE_TEST_BOT_ENABLED[\s\S]*!state\.onlineV3TestBotUnlocked[\s\S]*requestTestControlsUnlock/u
+  );
+  assert.match(
+    builder,
+    /markTestAssistance\?\.\("observer_bot"\)[\s\S]*onlineV3TestBotUnlocked = true/u
+  );
+  assert.match(
+    builder,
+    /toggleDebugCheatMenu\(true, \{ botOnly: false \}\)/u
+  );
+  assert.doesNotMatch(headed, /Start \+ Observer Bot|Continue \+ Observer Bot/u);
+  assert.match(
+    headed,
+    /button[^\n]*Start Ranked[\s\S]*keyboard\.press\("F9"\)[\s\S]*Toggle Observer Bot/u
+  );
   assert.match(headed, /dungeonOneRoomAudioMuted/u);
 });
 

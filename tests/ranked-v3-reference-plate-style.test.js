@@ -33,5 +33,7 @@ test("Ranked reference plates use isolated desktop artwork, focus, and reduced-m
   assert.match(css, /\.ranked-v3-inspect-tooltip\s*\{[^}]*font:\s*600\s+clamp\(1rem,\s*2cqw,\s*1\.95rem\)\/1\.35/u);
   assert.match(css, /\.ranked-v3-inspect-tooltip\s*\{[^}]*padding:\s*clamp\(\.75rem,\s*1\.2cqw,\s*1\.25rem\)/u);
   assert.match(css, /ranked-v3-reference-plate--inspect\s+\[data-record-tooltip\]::after\s*\{[^}]*content:\s*none\s*!important/u);
+  assert.match(css, /\.ranked-v3-test-run\s*\{[^}]*box-shadow:\s*inset/u);
+  assert.match(css, /\.ranked-v3-test-run-notice\s*\{[^}]*color:\s*#f2c46d/u);
   assert.match(css, /@media \(max-width:\s*760px\)\s*\{\s*\.ranked-v3-inspect-tooltip\s*\{[^}]*width:\s*min\(calc\(100vw - 32px\),\s*100%\)/u);
 });

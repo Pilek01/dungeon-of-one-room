@@ -881,7 +881,7 @@ ${fatalTestHookAnchor}`;
     assert.equal(storagePressure.errorName, "QuotaExceededError", JSON.stringify(storagePressure));
     assert.equal(storagePressure.errorCode, 22, JSON.stringify(storagePressure));
     const quotaApiBefore = diagnostics.apiRequests.length;
-    await openRankedChoice(page, "Start New Ranked");
+    await openRankedChoice(page, "Start Ranked");
     await page.locator(".ranked-v3-choice-relic").first().waitFor({ state: "visible" });
     assert.equal(
       diagnostics.apiRequests.slice(quotaApiBefore)
@@ -1037,22 +1037,55 @@ ${fatalTestHookAnchor}`;
       window.prompt = () => password;
     }, TEST_BOT_PASSWORD);
     await openNativeMenuOption(page, "Ranked (Online)");
-    await page.getByRole("button", { name: "Start + Observer Bot", exact: true }).click();
+    await page.getByRole("button", { name: "Start Ranked", exact: true }).click();
     await page.locator(".ranked-v3-choice-relic").first().waitFor({ state: "visible" });
     await chooseRelicWithoutFatalPrevention(page);
     await sessionState(page, "ROOM_ACTIVE", diagnostics);
+    const runTutorial = page.locator(".tutorial-overlay-card");
+    if (await runTutorial.isVisible()) {
+      await page.keyboard.press("Enter");
+      await runTutorial.waitFor({ state: "hidden" });
+    }
+    await page.keyboard.press("F9");
+    const testMenu = page.locator(".overlay-card-debug-cheats");
+    try {
+      await testMenu.waitFor({ state: "visible" });
+    } catch (error) {
+      const unlockState = await page.evaluate(() => ({
+        sessionState: window.DungeonOnlineV3?.getSessionState?.() || null,
+        snapshot: window.DungeonOnlineV3?.getSnapshot?.() || null,
+        rankedOverlay: document.querySelector(".ranked-v3-overlay:not(.hidden)")?.innerText || "",
+        screenOverlay: document.querySelector("#screenOverlay")?.innerText || "",
+        game: JSON.parse(window.render_game_to_text())
+      }));
+      throw new Error(`Ranked F9 unlock did not open test controls: ${JSON.stringify({
+        unlockState,
+        network: diagnostics
+      })}`, { cause: error });
+    }
+    await testMenu.getByText("Toggle Observer Bot", { exact: true }).waitFor({ state: "visible" });
+    await page.screenshot({
+      path: path.join(ARTIFACT_ROOT, "ranked-f9-test-controls.png"),
+      fullPage: true
+    });
+    await page.keyboard.press("b");
+    const observerAfterMenuHotkey = await page.evaluate(() => ({
+      active: window.DungeonOnlineV3GameBridge?.isRankedTestBotActive?.() === true,
+      game: JSON.parse(window.render_game_to_text()),
+      menu: document.querySelector(".overlay-card-debug-cheats")?.innerText || ""
+    }));
     assert.equal(
-      await page.evaluate(() => window.__DUNGEON_TEST_TOGGLE_OBSERVER_BOT?.()),
-      true
+      observerAfterMenuHotkey.active,
+      true,
+      `Observer Bot menu hotkey did not activate the bot: ${JSON.stringify(observerAfterMenuHotkey)}`
     );
+    await page.keyboard.press("F9");
+    await testMenu.waitFor({ state: "hidden" });
     await page.waitForFunction(() => (
       window.DungeonOnlineV3GameBridge?.isRankedTestBotActive?.() === true
     ));
 
-    assert.equal(
-      await page.evaluate(() => window.__DUNGEON_TEST_TOGGLE_OBSERVER_BOT?.()),
-      true
-    );
+    await runDebugAction(page, "F9", "b", "Toggle Observer Bot");
     await page.waitForFunction(() => (
       window.DungeonOnlineV3GameBridge?.isRankedTestBotActive?.() === false
     ));
@@ -1152,50 +1185,15 @@ ${fatalTestHookAnchor}`;
 
     await chooseForgeRewardWithCanonicalReplacement(page, diagnostics);
     await crossVisiblePortal(page, forgeRoom.depth + 1);
-    assert.equal(
-      await page.evaluate(() => window.__DUNGEON_TEST_TOGGLE_OBSERVER_BOT?.()),
-      true
-    );
-    await page.waitForFunction(() => (
-      window.DungeonOnlineV3GameBridge?.isRankedTestBotActive?.() === true
-    ));
-    const observerBotForgeAudit = await page.evaluate(() => ({
-      game: JSON.parse(window.render_game_to_text()),
-      session: window.DungeonOnlineV3?.getSessionState?.() || "",
-      active: window.DungeonOnlineV3GameBridge?.isRankedTestBotActive?.() === true,
-      boundaryPending: window.DungeonOnlineV3?.isObserverBotBoundaryPending?.() === true,
-      overlay: document.querySelector(".ranked-v3-overlay")?.textContent || "",
-      logText: document.getElementById("log")?.innerText || ""
-    }));
-    assert.equal(observerBotForgeAudit.session, "ROOM_ACTIVE", JSON.stringify(observerBotForgeAudit));
-    assert.equal(observerBotForgeAudit.active, true, JSON.stringify(observerBotForgeAudit));
-    assert.equal(observerBotForgeAudit.boundaryPending, false, JSON.stringify(observerBotForgeAudit));
-    assert.doesNotMatch(
-      `${observerBotForgeAudit.game.latestLog || ""}\n${observerBotForgeAudit.logText}`,
-      /Online v3 is still resolving the next room\./u,
-      JSON.stringify(observerBotForgeAudit)
-    );
-    assert.doesNotMatch(observerBotForgeAudit.overlay, /reconnect|required|unavailable/iu);
     assert(
       diagnostics.apiRequests.slice(forgeRequestsBefore)
         .filter((entry) => entry.path === "/api/v3/runs/checkpoint").length >= 1,
       "Native Ranked Forge lifecycle did not checkpoint its room boundary"
     );
-    await page.screenshot({
-      path: path.join(ARTIFACT_ROOT, "ranked-observer-bot-after-forge-portal.png"),
-      fullPage: true
-    });
-    assert.equal(
-      await page.evaluate(() => window.__DUNGEON_TEST_TOGGLE_OBSERVER_BOT?.()),
-      true
-    );
-    await page.waitForFunction(() => (
-      window.__DUNGEON_TEST_IS_TURN_INPUT_LOCKED?.() === false
-    ));
-    await page.keyboard.press("Escape");
-    await page.waitForFunction(() => (
-      JSON.parse(window.render_game_to_text()).phase === "menu"
-    ));
+    const assistedCleanup = await abandonCurrentRankedAndClearLocal(page);
+    assert.equal(assistedCleanup.status, "abandoned");
+    await page.reload({ waitUntil: "domcontentloaded" });
+    await dismissBoot(page, diagnostics);
 
     await openRankedChoice(page, "Start New Ranked");
     await page.locator(".ranked-v3-choice-relic").first().waitFor({ state: "visible" });
@@ -1276,6 +1274,20 @@ ${fatalTestHookAnchor}`;
       await page.evaluate(() => window.DungeonOnlineV3.getSnapshot().runId),
       runId
     );
+    await page.evaluate((password) => {
+      window.prompt = () => password;
+    }, TEST_BOT_PASSWORD);
+    const resumedRunTutorial = page.locator(".tutorial-overlay-card");
+    if (await resumedRunTutorial.isVisible()) {
+      await page.keyboard.press("Enter");
+      await resumedRunTutorial.waitFor({ state: "hidden" });
+    }
+    await page.keyboard.press("F9");
+    const resumedTestMenu = page.locator(".overlay-card-debug-cheats");
+    await resumedTestMenu.waitFor({ state: "visible" });
+    await resumedTestMenu.getByText("Toggle Observer Bot", { exact: true }).waitFor({ state: "visible" });
+    await page.keyboard.press("F9");
+    await resumedTestMenu.waitFor({ state: "hidden" });
 
     const firstRoom = await visibleGameState(page);
     const firstCanonicalGold = await page.evaluate(() => (
@@ -1434,8 +1446,9 @@ ${fatalTestHookAnchor}`;
     assert.equal(deathAudit.nativeDeathVisible, true, JSON.stringify(deathAudit));
     assert.equal(deathAudit.onlineOverlayVisible, false, JSON.stringify(deathAudit));
     assert.match(deathAudit.game.overlayText, /You Died[\s\S]*Rise Again/u);
-    assert(
+    assert.equal(
       deathAudit.playedAudio.some((audioPath) => audioPath.endsWith("/assets/death.mp3")),
+      false,
       JSON.stringify(deathAudit)
     );
     await page.screenshot({
@@ -1543,11 +1556,32 @@ ${fatalTestHookAnchor}`;
     const terminalLeaderboard = page.locator(
       ".ranked-v3-overlay:not(.hidden) .ranked-v3-reference-plate--leaderboard"
     );
-    await terminalLeaderboard.waitFor({ state: "visible" });
+    try {
+      await terminalLeaderboard.waitFor({ state: "visible" });
+    } catch (error) {
+      const leaderboardFailure = await page.evaluate(() => ({
+        phase: JSON.parse(window.render_game_to_text()).phase,
+        rankedOverlay: document.querySelector(".ranked-v3-overlay:not(.hidden)")?.innerText || "",
+        screenOverlay: document.querySelector("#screenOverlay")?.innerText || ""
+      }));
+      throw new Error(`Final Defeat leaderboard did not open: ${JSON.stringify({
+        leaderboardFailure,
+        network: diagnostics
+      })}`, { cause: error });
+    }
     assert.equal(
       await page.evaluate(() => JSON.parse(window.render_game_to_text()).phase),
       "menu",
       "Final Defeat Leaderboard action did not return the game to menu state"
+    );
+    const terminalTestRow = terminalLeaderboard.locator(
+      '.ranked-v3-leaderboard-row.ranked-v3-test-run[data-ranked="false"]'
+    ).first();
+    await terminalTestRow.waitFor({ state: "visible" });
+    assert.match(
+      await terminalTestRow.innerText(),
+      /TEST/,
+      "Assisted Ranked result is not visibly marked as a non-ranked test run"
     );
     await terminalLeaderboard.locator(".ranked-v3-leaderboard-close").click();
     await page.waitForFunction(() => document.querySelector(".ranked-v3-overlay")?.hidden === true);

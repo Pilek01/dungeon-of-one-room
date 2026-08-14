@@ -177,6 +177,8 @@ test("fresh Ranked profile starts with the exact v0.8 campaign defaults", () => 
     forcedNextRoomType: "",
     wardenFirstDropDepths: [],
     unlockedStartDepths: [],
+    forgeSeenInCampaign: false,
+    forgePityUsedInCampaign: false,
     scoreCarry: { highWaterDepth: 0, earnedGold: 0 }
   });
 });

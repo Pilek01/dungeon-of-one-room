@@ -398,6 +398,18 @@ export async function applyRulesetEvent(state, body, ruleset, context = {}) {
       });
       break;
     }
+    case "mark_test_assistance": {
+      const request = exactPayload(
+        body.payload,
+        ["assistanceClass"],
+        "TEST_ASSISTANCE_PAYLOAD_INVALID"
+      );
+      nextState = ruleset.markTestAssistance(
+        structuredClone(state),
+        request
+      );
+      break;
+    }
     case "open_camp_offer":
       exactPayload(body.payload, [], "CAMP_OPEN_PAYLOAD_INVALID");
       nextState = await ruleset.issueCampTransactions(

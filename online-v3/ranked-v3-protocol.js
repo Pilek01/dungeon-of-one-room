@@ -238,7 +238,8 @@
       "open_meta_offer",
       "commit_meta_transaction",
       "report_fatal_event",
-      "request_extraction"
+      "request_extraction",
+      "mark_test_assistance"
     ].includes(value.acceptedEvent)) {
       throw new TypeError("PROTOCOL_RESPONSE_KIND_UNKNOWN");
     }

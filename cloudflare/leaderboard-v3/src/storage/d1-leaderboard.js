@@ -104,7 +104,7 @@ export function createD1LeaderboardRepository(db) {
                outcome, verification_level, created_at, snapshot_kind,
                assistance_class
         FROM leaderboard_entries
-        WHERE season = ? AND assistance_class = 'none' ${cursorClause}
+        WHERE season = ? ${cursorClause}
         ORDER BY score DESC, created_at ASC, run_id ASC
         LIMIT ?
       `);
@@ -136,7 +136,7 @@ export function createD1LeaderboardRepository(db) {
                outcome, build_json, summary_json, verification_level,
                state_digest, created_at, snapshot_kind, assistance_class
         FROM leaderboard_entries
-        WHERE run_id = ? AND assistance_class = 'none'
+        WHERE run_id = ?
       `).bind(runId).first();
       if (!row) return null;
       return {

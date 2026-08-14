@@ -32,6 +32,7 @@ import {
   isCompatibleRulesetHashV08,
   requireCompatibleRulesetHashV08
 } from "./ruleset-hash-policy.js";
+import { normalizeTestAssistanceV08 } from "./test-assistance.js";
 
 const progression = progressionDocument.canonicalData;
 
@@ -249,6 +250,7 @@ export function createInitialMetaStateV08(input = {}, context = {}) {
     anomalies: Array.isArray(input.anomalies)
       ? input.anomalies.filter((entry) => typeof entry === "string").slice(0, 32)
       : [],
+    assistanceClass: "none",
     verificationLevel: "checkpoint_verified_v3"
   };
 }
@@ -287,6 +289,7 @@ export function assertMetaStateV08(state) {
   }
   requireText(state.runId, "META_STATE_INVALID:runId");
   requireText(state.season, "META_STATE_INVALID:season");
+  normalizeTestAssistanceV08(state.assistanceClass);
   if (!state.build || typeof state.build !== "object") throw new TypeError("META_STATE_INVALID:build");
   assertCanonicalRelicBuildV08(state.build);
   assertCanonicalRunModifierLedgerV08(state.runModifiers);

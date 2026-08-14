@@ -1655,3 +1655,21 @@ Updated next good targets
   `docs/superpowers/plans/2026-08-11-mobile-button-layout.md`.
 - No commit, push, deployment, migration, ruleset activation, or gameplay
   behavior change was performed.
+
+## 2026-08-14 - Ranked test controls and assisted leaderboard rows
+
+- Removed the separate Observer Bot start/continue choices. Test-enabled
+  Ranked builds now always use the ordinary Ranked lifecycle.
+- Added password-gated F9 unlock for the full test/cheat menu. A successful
+  unlock canonically and irreversibly marks the run as assisted before any
+  test controls become available.
+- Added revision-safe assistance state transitions, including active room and
+  reward-envelope rebinding, plus HTTP coverage for a later death snapshot.
+- Assisted snapshots remain visible for QA but render as amber `TEST` rows,
+  are excluded from official rank numbers and the podium, and show
+  `TEST RUN - NOT RANKED` in details.
+- Updated the lifecycle browser scenario to cover ordinary Ranked start,
+  F9/password unlock, the full test menu, and Observer Bot toggling.
+- Focused pure, HTTP, boundary, leaderboard UI, style, and publication tests
+  are passing. Full generated, phase, baseline, and headed verification is
+  still pending for this work item.

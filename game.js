@@ -32143,6 +32143,16 @@
       return;
     }
 
+    if (
+      key === DEBUG_MENU_TOGGLE_KEY &&
+      state.onlineV3Ranked &&
+      window.DUNGEON_ONLINE_TEST_BOT_ENABLED === true &&
+      !state.onlineV3TestBotUnlocked
+    ) {
+      void window.DungeonOnlineV3?.requestTestControlsUnlock?.();
+      return;
+    }
+
     if (canUseDebugCheats() && key === DEBUG_MENU_TOGGLE_KEY) {
       toggleDebugCheatMenu(null, { botOnly: false });
       return;

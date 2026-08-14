@@ -316,3 +316,21 @@ test("extract snapshots are visible in public list and detail", async () => {
   const detail = await get(worker, `/api/v3/leaderboard/${legacy.runId}`);
   assert.equal(detail.response.status, 200);
 });
+
+test("assisted snapshots remain public with an explicit non-ranked class", async () => {
+  const repositories = createMemoryRepositories();
+  const assisted = {
+    ...entry("run_0000000000000120", 77777, 75),
+    snapshotKind: "death",
+    assistanceClass: "observer_bot"
+  };
+  assert.equal(await publish(repositories, assisted), true);
+  const worker = createWorker({ repositories });
+  const list = await get(worker, `/api/v3/leaderboard?season=${SEASON}&limit=20`);
+  assert.equal(list.response.status, 200);
+  assert.equal(list.payload.entries.length, 1);
+  assert.equal(list.payload.entries[0].assistanceClass, "observer_bot");
+  const detail = await get(worker, `/api/v3/leaderboard/${assisted.runId}`);
+  assert.equal(detail.response.status, 200);
+  assert.equal(detail.payload.entry.assistanceClass, "observer_bot");
+});

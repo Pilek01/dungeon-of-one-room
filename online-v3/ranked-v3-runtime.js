@@ -31,7 +31,6 @@
   let campMutationPending = false;
   let pendingFreshCampaign = false;
   let pendingElixirUsage = null;
-  let pendingBotPassword = null;
   let currentMerchantOffer = null;
   let merchantMutationPending = false;
   let currentForgeOffer = null;
@@ -129,7 +128,6 @@
     extractedProfileReady = false;
     pendingFreshCampaign = false;
     pendingElixirUsage = null;
-    pendingBotPassword = null;
     currentForgeOffer = null;
     currentForgeContext = null;
     forgeMutationPending = false;
@@ -345,7 +343,6 @@
   function returnToPractice() {
     pendingFreshCampaign = false;
     pendingElixirUsage = null;
-    pendingBotPassword = null;
     if (session.getState() === root.DungeonRankedV3Session.STATES.finalized) {
       clearEndedRecovery();
       return;
@@ -369,7 +366,6 @@
   function clearEndedRecovery() {
     pendingFreshCampaign = false;
     pendingElixirUsage = null;
-    pendingBotPassword = null;
     client?.releaseWriter?.();
     client?.clearRecovery?.();
     client?.clear();
@@ -414,7 +410,6 @@
   async function abandonCanonical() {
     pendingFreshCampaign = false;
     pendingElixirUsage = null;
-    pendingBotPassword = null;
     ui.setStatus("Abandoning your Ranked run...");
     await createClient().abandonCanonical();
     client = null;
@@ -589,12 +584,6 @@
       bridge.startRanked(directive, state, { newCampaign });
       pendingFreshCampaign = false;
       session.transition(root.DungeonRankedV3Session.STATES.active);
-      if (pendingBotPassword !== null) {
-        const password = pendingBotPassword;
-        pendingBotPassword = null;
-        const unlocked = await bridge.unlockRankedTestBot?.(password);
-        if (!unlocked) ui.showMessage("Observer Bot locked", "The test password was not accepted.", [ui.button("Close", () => ui.hide())]);
-      }
       return;
     }
     if (["victory", "defeat", "extraction"].includes(state.status)) {
@@ -1436,27 +1425,23 @@
     }
   }
 
-  async function startRankedWithObserverBot() {
-    const password = typeof root.prompt === "function" ? root.prompt("Observer Bot password") : "";
-    if (password === null) return;
-    prepareFreshRankedStart();
-    pendingBotPassword = String(password || "");
-    markFreshCampaign();
-    await startRanked();
-  }
-  async function continueRankedWithObserverBot() {
-    const password = typeof root.prompt === "function" ? root.prompt("Observer Bot password") : "";
-    if (password === null) return;
-    pendingBotPassword = String(password || "");
-    await resumeRanked();
+  async function markTestAssistance(assistanceClass) {
+    return createClient().event("mark_test_assistance", {
+      assistanceClass: String(assistanceClass || "")
+    });
   }
   async function unlockTestBot() {
     const password = typeof root.prompt === "function" ? root.prompt("Observer Bot password") : "";
     if (password === null) return false;
-    const unlocked = await root.DungeonOnlineV3GameBridge?.unlockRankedTestBot?.(password);
-    if (!unlocked) ui.setStatus("The test password was not accepted.");
-    else ui.hide();
-    return Boolean(unlocked);
+    try {
+      const unlocked = await root.DungeonOnlineV3GameBridge?.unlockRankedTestBot?.(password);
+      if (!unlocked) ui.setStatus("The test password was not accepted.");
+      else ui.hide();
+      return Boolean(unlocked);
+    } catch (error) {
+      presentError(error);
+      return false;
+    }
   }
   function openRankedEntry() {
     const hasRecovery = Boolean(recoveryStore.loadRecovery());
@@ -1469,7 +1454,6 @@
             markFreshCampaign();
             startRanked().catch(presentError);
           }),
-          ui.button("Start + Observer Bot", () => startRankedWithObserverBot().catch(presentError)),
           ui.button("Cancel", () => ui.hide())
         ]);
       } else {
@@ -1485,9 +1469,6 @@
       [
         ui.button("Start New Ranked", () => startNewRanked().catch(presentError)),
         ui.button("Continue Ranked", () => resumeRanked().catch(presentError)),
-        ...(testBotEnabled ? [
-          ui.button("Continue + Observer Bot", () => continueRankedWithObserverBot().catch(presentError))
-        ] : []),
         ui.button("Cancel", () => ui.hide())
       ]
     );
@@ -1552,6 +1533,8 @@
     onCampStartRun,
     onElixirUsed: recordElixirUsage,
     unlockTestBot,
+    requestTestControlsUnlock: unlockTestBot,
+    markTestAssistance,
     openLeaderboard: (opener = null) => openLeaderboard(true, opener),
     leaveToMainMenu: returnToPractice,
     onForgeMode,

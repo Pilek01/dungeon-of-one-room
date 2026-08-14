@@ -333,16 +333,6 @@ const productionGameReplacements = [
     }`
   ],
   [
-`    if (canUseDebugCheats() && key === DEBUG_MENU_TOGGLE_KEY) {
-      toggleDebugCheatMenu(null, { botOnly: false });
-      return;
-    }`,
-`    if (canUseDebugCheats() && key === DEBUG_MENU_TOGGLE_KEY) {
-      toggleDebugCheatMenu(null, { botOnly: Boolean(state.onlineV3Ranked && state.onlineV3TestBotUnlocked) });
-      return;
-    }`
-  ],
-  [
 `    state.elixirLoadout.charges = Math.max(0, charges - 1);`,
 `    state.elixirLoadout.charges = Math.max(0, charges - 1);
     window.DungeonOnlineV3?.onElixirUsed?.({
@@ -923,11 +913,13 @@ const productionGameReplacements = [
       const digest = await window.crypto.subtle.digest("SHA-256", bytes);
       const actual = "sha256:" + Array.from(new Uint8Array(digest), (value) => value.toString(16).padStart(2, "0")).join("");
       if (actual !== expected) return false;
+      await window.DungeonOnlineV3?.markTestAssistance?.("observer_bot");
       state.onlineV3TestBotUnlocked = true;
       state.audioMuted = true;
       setStorageItem(STORAGE_AUDIO_MUTED, "1");
       syncBgmWithState(true);
-      pushLog("Observer Bot unlocked for this Ranked test session. Press F10.", "warn");
+      toggleDebugCheatMenu(true, { botOnly: false });
+      pushLog("Ranked test controls unlocked for this run.", "warn");
       markUiDirty();
       return true;
     },

@@ -168,42 +168,42 @@
     {
       "file": "data/arena-relic-offer-policy.generated.json",
       "byteLength": 5024,
-      "sha256": "39e899ea03806d2a7af9177da97cfa6aff2dae9e1f9a6ce7b6ae92cd7f5d2bab"
+      "sha256": "cba6cb41bcd0a624be7e5d7be789d64ee7b730a4aa1e8b1053eccb81f5b4edcc"
     },
     {
       "file": "data/camp-transaction-policy.generated.json",
       "byteLength": 4167,
-      "sha256": "63de360d3379fb5ebf8c3338a37ce709227e6ba09925e65b0dfcf5d715cbd997"
+      "sha256": "d15e2c0e06a8abf42c910ea3d2e18ad3175b639fac573e233853511ef76bd2b0"
     },
     {
       "file": "data/chest-reward-bounds.generated.json",
       "byteLength": 1430,
-      "sha256": "305bef1956b2989b74e808b2cbe3b685f377d5b48025c939fa3c9eacf3bb9910"
+      "sha256": "0d38501a8c3e8266bc6ec3d15d9b6b707e5230f553d2e70aa97db227b367ab2f"
     },
     {
       "file": "data/crossroads-transaction-policy.generated.json",
       "byteLength": 2322,
-      "sha256": "25602c832fe25cce67609480af00400c324bde4b335045eb7ab3bf6b8e6f1fe6"
+      "sha256": "a8a0a5399152440308a77c2a14d78a41766756eac729f4cc2848270239f5bff1"
     },
     {
       "file": "data/deferred-special-relic-spec.generated.json",
       "byteLength": 9771,
-      "sha256": "cc3ed33ee932bd2f34a8e3806ff3fdedc7d43412e6735fcdd20ad852260215de"
+      "sha256": "d374a2151e2cc53532495e6f40ce5d5ef5c00dd95a7a05c0b43c7be8b7d0a1dc"
     },
     {
       "file": "data/forge-transaction-policy.generated.json",
       "byteLength": 3227,
-      "sha256": "0e77444aa98f765e0ed87ddcdd0927d666fb5a7557936bded4f30b334a84efa1"
+      "sha256": "7f5a7f011992785a79f13b1d3ea0835188500a9123a16b7c5832a04f4be8b60f"
     },
     {
       "file": "data/gold-modifiers.generated.json",
       "byteLength": 5716,
-      "sha256": "8dab94bc92d7f1708bee479e1918356fd1075a14b953c733545c28bba60d77f2"
+      "sha256": "ceca86622ba9860e4bd1f805749660938dd19599fe2f46b9f9a2cd9bdf9aacd3"
     },
     {
       "file": "data/gold-sources.generated.json",
       "byteLength": 34366,
-      "sha256": "dc22aede9844b17b795b624f550cae7e3ae59c371cf9df604927d45cef2e8083"
+      "sha256": "67eb2ba331bda62c8d31b80011286d8b716788a99ea06b94162d7201dd05ba28"
     },
     {
       "file": "data/golden-fixtures.manifest.json",
@@ -218,132 +218,132 @@
     {
       "file": "data/merchant-transaction-policy.generated.json",
       "byteLength": 4568,
-      "sha256": "e608ee8ffc599fa00e2e9d14e52aae81f2706cd47ad63cf4287c400e57fdb15c"
+      "sha256": "13cb40686a5e57b6dde114ea721fee4fd96cf1c211309837d0cfaa005f91a80c"
     },
     {
       "file": "data/meta-transaction-policy.generated.json",
       "byteLength": 1926,
-      "sha256": "67f493211bf47f3d97069396deae40e4fea67f92a655b8a46a18c0c81e555b4c"
+      "sha256": "a6fd33e15d157e0aafdd5784154dce3659d7345a4184d35ac3c45c948636cf2a"
     },
     {
       "file": "data/otter-relic-offer-policy.generated.json",
       "byteLength": 4420,
-      "sha256": "75698bf0b4d755f470adf0613356095b23197a413940932bda557141bcf47910"
+      "sha256": "fcfc4be1232c48a7eb15c729a4bb1164cb1c4b6c0fd15f405cc72120c43111bc"
     },
     {
       "file": "data/pact-transaction-policy.generated.json",
       "byteLength": 2040,
-      "sha256": "bb290ec266260d1e84651ed4a11bfe92b9164b8a7f509511a4870e06ac28641e"
+      "sha256": "53cf26abaed9c6613e231c823a468a3487a8640e2a581648f24f45fa127fbd70"
     },
     {
       "file": "data/regular-relic-offer-policy.generated.json",
       "byteLength": 3063,
-      "sha256": "d750cbee8d179e58dd2a82b41e0972e8d00bbb44dd8b75b0c567a77ac95ae373"
+      "sha256": "105282a1a86fa7707142aaf224d2ce030d948eb41e7cd566d514ae9bc43ad30d"
     },
     {
       "file": "data/relic-build-metadata.generated.json",
       "byteLength": 1682,
-      "sha256": "06043c127d1a22dfa21e5c7eb395662f2e9d52f9ef493740fc9641ee3ccbc2dd"
+      "sha256": "2597e3add5ddfd97864e39a8b09eb63b93202d60485c5d3ee30fce59c09c12b1"
     },
     {
       "file": "data/relic-catalog.generated.json",
       "byteLength": 68212,
-      "sha256": "83b99b7a11da52caf8bf52ec3615e1aab02ddde30d44e68c1f88225e44822607"
+      "sha256": "e533207178dd36171cd3db1c6241f68169e52f25348111c1958d5b272239b9e7"
     },
     {
       "file": "data/relic-pity-policy.generated.json",
       "byteLength": 3380,
-      "sha256": "5543f09af9f80a589d6f6146a941816cf8c53b5f0e958bc01ff763c71eba18d7"
+      "sha256": "67288ebe6371621dd034c30b33112ad05bb022b844dff14fc707ebd4844cb969"
     },
     {
       "file": "data/relic-rarity-policy.generated.json",
       "byteLength": 4049,
-      "sha256": "64cefbf37ae956a31843d8e9cd43be5c6b3b8ccae8af7abea214e6a838f87485"
+      "sha256": "c29aa3f7d1459cd22ae9936dc04b3137c46d8d2b8b870cdc961a66136e2cecdb"
     },
     {
       "file": "data/relic-reward-fallback-policy.generated.json",
       "byteLength": 3198,
-      "sha256": "438b8c83ad2861e53b9149dfe4c45fec27c4a535a351bc68d77981ed6cd25d08"
+      "sha256": "d66bfa348db01bb26349c73f378e4e3f443b367aa90daa8ada6322cae140ec0e"
     },
     {
       "file": "data/relic-reward-sources.generated.json",
       "byteLength": 12841,
-      "sha256": "f8f9fd44c7b5bf8c2119371bb502f7c12f1763412f8d671f8f9c3f3a50bc7b10"
+      "sha256": "41806a4e8f983e85c0f644fbdcb217e67ec2d73544b8e9bce585e7b5c7630d7a"
     },
     {
       "file": "data/relic-slot-policy.generated.json",
       "byteLength": 1355,
-      "sha256": "ada0bccdff60547237731edaa983290094fb5d8fde1374861c41cfbef9215166"
+      "sha256": "9c023379d96d47d8502bdbff9859a88bc129bb03700cdbff7a2c9587afa33e23"
     },
     {
       "file": "data/relic-stack-policy.generated.json",
       "byteLength": 2407,
-      "sha256": "ea309202ef6d26cfefd647e2eb6850ef8a2e2f18527d953ef4f841bfd4abca7a"
+      "sha256": "b83d6b7388433f453547412e9d0c72e372214474c7846514134db2bcaf334ed5"
     },
     {
       "file": "data/room-eligibility.generated.json",
       "byteLength": 10525,
-      "sha256": "b4a27112a1315ba640f266a38affb592cd63374964e194de58e2d6ef3eb5aa5c"
+      "sha256": "4a7f3d38364776360aa33459953feb80f6c250199001e73974f658e0210719f6"
     },
     {
       "file": "data/room-reward-bounds.generated.json",
       "byteLength": 2529,
-      "sha256": "05af381b7202d6df2171b288a6fdc2ab2a73992d00e4e01b4517c3bb847d4ac0"
+      "sha256": "23c32281b63568d706e2f7c194a03ee4a5b9ecf0dec3b615bd6b5f622ec208cb"
     },
     {
       "file": "data/room-types.generated.json",
       "byteLength": 5070,
-      "sha256": "c47b44a4ea754dc2bf19f98cc271f012cf7bd09f41a9aed80001ac30cb07c097"
+      "sha256": "fe5256e122edd1472b37ac333aded0c165d4163e5801122a2fa51f44027334a0"
     },
     {
       "file": "data/run-modifier-catalog.generated.json",
       "byteLength": 19037,
-      "sha256": "20cd6b0bc51b247f7908c331c433009f77f893c728860f4f8e874e2f18996626"
+      "sha256": "233eea06579f7d9d547e219f0890727c45507c8095ac9ea95b757c44ec67b383"
     },
     {
       "file": "data/run-modifier-effects.generated.json",
       "byteLength": 5943,
-      "sha256": "370cf7c76e1852b9f047747cd9cb44931016837ae3677cf3936d95ec827a6a14"
+      "sha256": "af8fe885e39f852a57bf591a0c00f9e1bf922c51dbb5a223e359c60de9146715"
     },
     {
       "file": "data/run-modifier-metadata.generated.json",
       "byteLength": 4402,
-      "sha256": "acdafebabf50efa551bf6539b2f8a640a4ec4bd7f6451a7424c1c9d23a04d577"
+      "sha256": "a5c841f7825a56f9ab5fa5d8ae7188083901ba60c09b2a5460c68a5e2416e4fd"
     },
     {
       "file": "data/run-modifier-selection-policy.generated.json",
       "byteLength": 1120,
-      "sha256": "a14d8e56c4b526b2c53ba632872df4cbca6fe49a1ca334c36b3637d4a21efc7e"
+      "sha256": "72e995b34ae604c6afd496a18d86d728f9e1dbc121a49d4dda95359526376ed4"
     },
     {
       "file": "data/run-progression.generated.json",
       "byteLength": 827,
-      "sha256": "7aa25a261a17252e5da34b3d848e0a1ddb2e62eaa091b4afa7a89fd743c6d4bc"
+      "sha256": "92e60ff2adb9c047613e716e778e3980930878ff3283bf0b6aef897035390040"
     },
     {
       "file": "data/source-manifest.generated.json",
       "byteLength": 5614,
-      "sha256": "18f096cef54bfb9a922f9a3a763bea46bacb01ae4a348a59f911bcd6caf9709a"
+      "sha256": "968058b275ff38f8d89d019a20a91c4dd3a5b370fa27af5f98b915e7f8ae865d"
     },
     {
       "file": "data/special-relic-source-audit.generated.json",
       "byteLength": 20694,
-      "sha256": "b33b89bb50afda399ca024cf7e9aebdad4148758d6c9d623e67bacaf82e1bf7a"
+      "sha256": "012836dcdf68d7b04ad6d951896b1c787706d51c403bd0c54e8fdba9e1c4b0ad"
     },
     {
       "file": "data/special-room-policy.generated.json",
       "byteLength": 2769,
-      "sha256": "f33b5fae9948802056c69fd155a21359fea05e58ac6db61b2341d45218c9474c"
+      "sha256": "78053800d9988559822d7f5ff0872397ae2feb22f57b7e1ba9b25bd64fefbafc"
     },
     {
       "file": "data/starting-relic-policy.generated.json",
       "byteLength": 1431,
-      "sha256": "c8b5f9f609af529a81c41d88d62a79ee55d19b69a0c6dfb2cc30d4b5fc7bf9d0"
+      "sha256": "bc4562aafbbb15003dbf2016ec7f0b9ed48fae1ddb32d89d026205fe128fe962"
     },
     {
       "file": "data/vault-arena-relic-classification.generated.json",
       "byteLength": 7283,
-      "sha256": "a55d69e0751ff784e7ee438bcea73167ec42ebd1c45de529b00c28242464c7b9"
+      "sha256": "73f674fcf06c8354041c05373c5aa9c5bc3d981f303aea4abd8c0afff6cd7e2c"
     },
     {
       "file": "finalization-policy.js",
@@ -362,8 +362,8 @@
     },
     {
       "file": "index.js",
-      "byteLength": 15796,
-      "sha256": "a2e7ac3f6eb592e6fc0822a72d4f22d8111c6d8d44650292e20b286531bdea05"
+      "byteLength": 16666,
+      "sha256": "80cb60ab4f10c90c2934639f4e1c1b5757b039709945419a6cb4bb3fe95a70b4"
     },
     {
       "file": "leaderboard-summary.js",
@@ -382,8 +382,8 @@
     },
     {
       "file": "meta-state.js",
-      "byteLength": 13675,
-      "sha256": "6f2e688f8258693ab39d25fc554c6de7f87c5baec17aa758a5636b293b855140"
+      "byteLength": 13824,
+      "sha256": "018b02badaf222986f753191996785ea5957f300647ef1cd3f6f78e0f2709af2"
     },
     {
       "file": "meta-transaction.js",
@@ -476,6 +476,11 @@
       "sha256": "35b8cd00a9812e2dd6c17c26caef3288daa3e23f7b2cae04b0da1342f8f0dc5e"
     },
     {
+      "file": "test-assistance.js",
+      "byteLength": 890,
+      "sha256": "55f377ac260507cc56269e8c79b1b6bb0da21c64508088e1d9cbce47a3bc02df"
+    },
+    {
       "file": "test/m1-camp-pact-golden-fixtures.json",
       "byteLength": 2877,
       "sha256": "37eb197aec20a4f506c2aaaa6894a021af03e8566c4e91224cd1d68031cf1222"
@@ -566,5 +571,5 @@
       "sha256": "cfce80fea7bd5d1328020055f2012bcaeaf9b61e5438e437bf948a4288fb8bf0"
     }
   ],
-  "rulesetHash": "sha256:fe96fd376a7e15f7f9674d7198f6dd589aff836b656ea004fc5b047f2ca28ee3"
+  "rulesetHash": "sha256:0672eb9aaae11865ebae75a4c6d6dc77cc29f4a079afe562355172d26f073bca"
 }

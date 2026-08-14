@@ -285,10 +285,7 @@ export function createMemoryRepositories() {
       const limit = Math.max(1, Math.min(50, Number(options.limit) || 20));
       const cursor = decodeLeaderboardCursor(options.cursor);
       const rows = [...leaderboardRows.values()]
-        .filter((entry) =>
-          entry.season === season &&
-          (entry.assistanceClass || "none") === "none"
-        )
+        .filter((entry) => entry.season === season)
         .sort(compareLeaderboardEntries)
         .filter((entry) => isAfterLeaderboardCursor(entry, cursor))
         .slice(0, limit + 1);
@@ -318,9 +315,7 @@ export function createMemoryRepositories() {
       metrics.reads += 1;
       metrics.statements.push("read_leaderboard_detail");
       const entry = leaderboardRows.get(runId);
-      return entry && (entry.assistanceClass || "none") === "none"
-        ? clone(entry)
-        : null;
+      return entry ? clone(entry) : null;
     }
   };
 

@@ -7082,3 +7082,24 @@ body.mobile-touch .ranked-v3-overlay .ranked-v3-card {
     max-width: 33.333%;
   }
 }
+.ranked-v3-test-run {
+  box-shadow:
+    inset 0 0 0 1px #f2c46d99,
+    inset 0 0 22px #b86f2438;
+  background: linear-gradient(90deg, #2b170da8, #160f0bc2);
+}
+
+.ranked-v3-test-run .ranked-v3-leaderboard-rank {
+  color: #f2c46d !important;
+  font-weight: 800 !important;
+  letter-spacing: .06em;
+}
+
+.ranked-v3-test-run-notice {
+  margin: .25rem 0 0;
+  color: #f2c46d;
+  font: 800 clamp(.7rem, 1.15cqw, 1.15rem)/1.1 Georgia, serif;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  text-shadow: 0 1px 3px #000;
+}

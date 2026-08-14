@@ -58,6 +58,7 @@ import {
 } from "./leaderboard-summary.js";
 import { finalizeRunV08 } from "./finalization-policy.js";
 import { createLeaderboardSnapshot } from "../../domain/leaderboard-snapshot.js";
+import { applyTestAssistanceV08 } from "./test-assistance.js";
 import { projectPublicRunModifiers } from "./run-modifiers.js";
 import {
   applyPracticeMutatorImportV08,
@@ -527,6 +528,32 @@ export function createV08Meta1Ruleset(options = {}) {
         verificationLevel: state.verificationLevel,
         createdAt: options.createdAt
       });
+    },
+
+    markTestAssistance(state, request = {}) {
+      if (state.status !== "active") {
+        throw new TypeError("TEST_ASSISTANCE_RUN_NOT_ACTIVE");
+      }
+      if (
+        state.pendingOffer ||
+        state.pendingRelicTransaction ||
+        state.pendingInventory ||
+        state.campSession
+      ) {
+        throw new TypeError("TEST_ASSISTANCE_BOUNDARY_BUSY");
+      }
+      const nextState = applyTestAssistanceV08(
+        state,
+        request.assistanceClass
+      );
+      nextState.revision = state.revision + 1;
+      if (nextState.currentRoomDirective) {
+        nextState.currentRoomDirective.revision = nextState.revision;
+      }
+      if (nextState.currentRewardEnvelope) {
+        nextState.currentRewardEnvelope.revision = nextState.revision;
+      }
+      return nextState;
     },
 
     finalizeRun(state, context = {}) {
