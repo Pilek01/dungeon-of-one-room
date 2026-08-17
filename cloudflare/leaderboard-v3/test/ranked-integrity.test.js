@@ -17,6 +17,7 @@ import {
 } from "../src/domain/rank-eligibility.js";
 import { calculateEnemyGoldV08 } from "../src/rulesets/v08-meta-1/gold-policy.js";
 import { createV08Meta1Ruleset } from "../src/rulesets/v08-meta-1/index.js";
+import { applyRelicAcquisition } from "../src/rulesets/v08-meta-1/relic-policy.js";
 import manifest from "../src/rulesets/v08-meta-1/data/ruleset-manifest.json" with { type: "json" };
 import { TEST_SECRET } from "./fixtures/harness.js";
 
@@ -165,6 +166,57 @@ test("the local v0.8 elite bonus is accepted with canonical build and mutator mu
     ["REPORTED_GOLD_DELTA_MISMATCH", "REPORTED_GOLD_TOTAL_MISMATCH"]
   );
 });
+
+test("the first active room captures its gold integrity context", async () => {
+  const value = await activeState(32);
+  assert.equal(
+    value.state.rankIntegrity.roomGoldContext.directiveId,
+    value.state.currentRoomDirective.directiveId
+  );
+  assert.deepEqual(value.state.rankIntegrity.roomGoldContext.build, value.state.build);
+  assert.deepEqual(
+    value.state.rankIntegrity.roomGoldContext.runModifiers,
+    value.state.runModifiers
+  );
+});
+
+test("a relic acquired after room clear does not change the room gold integrity baseline", async () => {
+  const value = await activeState(33);
+  const roomStartState = structuredClone(value.state);
+  value.state.build = await applyRelicAcquisition(value.state.build, {
+    relicId: "idol",
+    acquiredRevision: value.state.revision,
+    acquisitionSource: "boss_drop",
+    sourceOfferId: "offer_integrity_timing"
+  }, { cryptoProvider: webcrypto });
+  const fixedGold = roomStartState.currentRewardEnvelope.fixedAwards.reduce(
+    (sum, award) => sum + award.amount,
+    0
+  );
+  const localEnemyGold = calculateEnemyGoldV08({
+    canonicalBuild: roomStartState.build,
+    canonicalRunModifiers: roomStartState.runModifiers,
+    enemyType: "skeleton",
+    elite: true,
+    rewardBonus: V08_LOCAL_ELITE_REWARD_BONUS
+  });
+  const reportedGoldDelta = fixedGold + localEnemyGold;
+  const result = await checkpoint(value, {
+    rewardClaims: [{ claimType: "elite", claimId: "elite:skeleton", count: 1 }],
+    reportedGoldDelta,
+    reportedGoldTotal: value.state.gold + reportedGoldDelta
+  });
+  assert.equal(result.nextState.rankEligibility, "official");
+  assert.equal(
+    result.nextState.rankIntegrity.roomGoldContext.directiveId,
+    result.nextState.currentRoomDirective.directiveId
+  );
+  assert.deepEqual(
+    result.nextState.rankIntegrity.roomGoldContext.build,
+    result.nextState.build
+  );
+});
+
 
 test("a new run cannot bypass integrity by omitting the whole envelope", async () => {
   const value = await activeState(31);

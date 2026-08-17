@@ -1,9 +1,11 @@
 import {
   applyCheckpointRankEligibility,
+  captureRankIntegrityRoomContext,
   checkpointGoldIntegrityReasons,
   initializeRankEligibility,
   isOfficialRankEligible,
-  rankEligibilityOf
+  rankEligibilityOf,
+  rankIntegrityRoomState
 } from "./rank-eligibility.js";
 
 function requireObject(value, code) {
@@ -157,13 +159,32 @@ export async function applyRulesetCheckpoint(state, body, ruleset, context = {})
       compactRoomProof: JSON.stringify(body.compactRoomProof)
     }
   };
+  const rulesetContext = runtimeContext(state, {
+    ...context,
+    elapsedMs: body.elapsedMs
+  });
+  const roomIntegrityState = body.integrityVersion === 1
+    ? rankIntegrityRoomState(state)
+    : null;
+  let integrityGoldDelta = null;
+  if (
+    roomIntegrityState &&
+    typeof ruleset.settleRoomRewardEnvelope === "function"
+  ) {
+    const integritySettlement = await ruleset.settleRoomRewardEnvelope(
+      roomIntegrityState,
+      structuredClone(operation.rewardClaim),
+      rulesetContext
+    );
+    integrityGoldDelta = Math.max(
+      0,
+      Number(integritySettlement.authoritativeGoldDelta) || 0
+    );
+  }
   const nextState = await ruleset.consumeRoomDirective(
     structuredClone(state),
     operation,
-    runtimeContext(state, {
-      ...context,
-      elapsedMs: body.elapsedMs
-    })
+    rulesetContext
   );
   if (nextState.revision !== state.revision + 1) {
     throw new TypeError("ROOM_CHECKPOINT_REVISION_INVALID");
@@ -176,11 +197,12 @@ export async function applyRulesetCheckpoint(state, body, ruleset, context = {})
     integrityVersion: body.integrityVersion,
     integritySignals: body.integritySignals,
     goldIntegrityReasons: checkpointGoldIntegrityReasons(
-      state,
+      roomIntegrityState || state,
       body,
-      authoritativeGoldDelta
+      integrityGoldDelta ?? authoritativeGoldDelta
     )
   });
+  captureRankIntegrityRoomContext(nextState);
   const becameProvisional = wasOfficialRankEligible && !isOfficialRankEligible(nextState);
   return {
     nextState,
@@ -465,6 +487,7 @@ export async function applyRulesetEvent(state, body, ruleset, context = {}) {
   ) {
     throw new TypeError("RUNTIME_EVENT_BINDING_CHANGED");
   }
+  captureRankIntegrityRoomContext(nextState);
   return {
     nextState,
     response: {

@@ -3,7 +3,10 @@ import {
   RUN_TTL_MS,
   TOKEN_TTL_MS
 } from "../config.js";
-import { initializeRankEligibility } from "./rank-eligibility.js";
+import {
+  captureRankIntegrityRoomContext,
+  initializeRankEligibility
+} from "./rank-eligibility.js";
 
 function requireText(value, code) {
   const text = String(value || "").trim();
@@ -125,6 +128,9 @@ export async function createAuthenticatedRunBootstrap(input, context) {
     finalizedAt: null,
     outcome: null
   }, { integrityVersion: 1 });
+  if (nextState.status === "active") {
+    captureRankIntegrityRoomContext(nextState);
+  }
   if (nextState.status === "awaiting_starting_relic") {
     assertAwaitingRunBootstrap(nextState);
   } else if (nextState.status !== "active" || !nextState.currentRoomDirective) {
@@ -280,7 +286,7 @@ export async function selectAuthenticatedStartingRelic(
   if (JSON.stringify(state) !== JSON.stringify(before)) {
     throw new TypeError("STARTING_RELIC_TRANSITION_MUTATED_INPUT");
   }
-  const nextState = {
+  const nextState = captureRankIntegrityRoomContext({
     ...selected,
     bootstrapBoundary: {
       ...state.bootstrapBoundary,
@@ -290,7 +296,7 @@ export async function selectAuthenticatedStartingRelic(
       firstRoomDirectiveId: selected.currentRoomDirective.directiveId,
       firstRoomNonce: selected.currentRoomDirective.roomNonce
     }
-  };
+  });
   return {
     nextState,
     response: selectionResponse(nextState, false),
