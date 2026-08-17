@@ -3,6 +3,7 @@ import {
   RUN_TTL_MS,
   TOKEN_TTL_MS
 } from "../config.js";
+import { initializeRankEligibility } from "./rank-eligibility.js";
 
 function requireText(value, code) {
   const text = String(value || "").trim();
@@ -99,7 +100,7 @@ export async function createAuthenticatedRunBootstrap(input, context) {
   ) {
     throw new TypeError("RUN_BOOTSTRAP_RULESET_OUTPUT_MISMATCH");
   }
-  const nextState = {
+  const nextState = initializeRankEligibility({
     ...canonical,
     protocolVersion: PROTOCOL_VERSION,
     gameVersion: requireText(input?.gameVersion, "GAME_VERSION_REQUIRED"),
@@ -123,7 +124,7 @@ export async function createAuthenticatedRunBootstrap(input, context) {
     expiresAt: now + RUN_TTL_MS,
     finalizedAt: null,
     outcome: null
-  };
+  }, { integrityVersion: 1 });
   if (nextState.status === "awaiting_starting_relic") {
     assertAwaitingRunBootstrap(nextState);
   } else if (nextState.status !== "active" || !nextState.currentRoomDirective) {

@@ -178,6 +178,30 @@ export function createMemoryRepositories() {
       return true;
     },
 
+    async updateWithLeaderboardDeleteAtomic(
+      state,
+      expectedRevision,
+      metadata,
+      runId
+    ) {
+      metrics.batches += 1;
+      metrics.writes += 2;
+      metrics.statements.push("batch_update_run", "batch_delete_leaderboard");
+      const current = runRows.get(state.runId);
+      if (
+        !current ||
+        current.state.revision !== expectedRevision ||
+        current.state.status !== (metadata.expectedStatus || "active") ||
+        metadata.expectedStateDigest !== undefined &&
+          current.stateDigest !== metadata.expectedStateDigest
+      ) {
+        return false;
+      }
+      storeRun(state, metadata);
+      leaderboardRows.delete(runId);
+      return true;
+    },
+
     async updateWithProfileAndLeaderboardAtomic(
       state,
       expectedRevision,

@@ -1,3 +1,11 @@
+import {
+  applyCheckpointRankEligibility,
+  checkpointGoldIntegrityReasons,
+  initializeRankEligibility,
+  isOfficialRankEligible,
+  rankEligibilityOf
+} from "./rank-eligibility.js";
+
 function requireObject(value, code) {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     throw new TypeError(code);
@@ -109,6 +117,7 @@ export function publicRulesetMetaState(state, ruleset) {
           active: state.campSession.active
         }
       : null,
+    rankEligibility: rankEligibilityOf(state),
     verificationLevel: state.verificationLevel
   };
 }
@@ -118,6 +127,7 @@ export async function applyRulesetCheckpoint(state, body, ruleset, context = {})
   const directive = state.currentRoomDirective;
   if (!directive) throw new TypeError("ROOM_DIRECTIVE_REQUIRED");
   if (body.roomResult !== "cleared") throw new TypeError("ROOM_RESULT_INVALID");
+  const wasOfficialRankEligible = isOfficialRankEligible(state);
   const operation = {
     directiveId: directive.directiveId,
     runId: state.runId,
@@ -135,8 +145,12 @@ export async function applyRulesetCheckpoint(state, body, ruleset, context = {})
       claims: Array.isArray(body.rewardClaims)
         ? structuredClone(body.rewardClaims)
         : [],
-      reportedGoldDelta: 0,
-      reportedGoldTotal: state.gold,
+      reportedGoldDelta: body.integrityVersion === 1
+        ? body.reportedGoldDelta
+        : 0,
+      reportedGoldTotal: body.integrityVersion === 1
+        ? body.reportedGoldTotal
+        : state.gold,
       turnCount: body.turnCount,
       elapsedMs: body.elapsedMs,
       commandJournalDigest: body.commandJournalDigest,
@@ -154,6 +168,20 @@ export async function applyRulesetCheckpoint(state, body, ruleset, context = {})
   if (nextState.revision !== state.revision + 1) {
     throw new TypeError("ROOM_CHECKPOINT_REVISION_INVALID");
   }
+  const authoritativeGoldDelta = Math.max(
+    0,
+    Number(nextState.rewardSettlementHistory?.at(-1)?.authoritativeGoldDelta) || 0
+  );
+  applyCheckpointRankEligibility(nextState, {
+    integrityVersion: body.integrityVersion,
+    integritySignals: body.integritySignals,
+    goldIntegrityReasons: checkpointGoldIntegrityReasons(
+      state,
+      body,
+      authoritativeGoldDelta
+    )
+  });
+  const becameProvisional = wasOfficialRankEligible && !isOfficialRankEligible(nextState);
   return {
     nextState,
     response: {
@@ -166,10 +194,15 @@ export async function applyRulesetCheckpoint(state, body, ruleset, context = {})
           : null
       }
     },
-    storageEffects: [{
-      type: "update_run",
-      expectedRevision: state.revision
-    }]
+    storageEffects: [
+      {
+        type: "update_run",
+        expectedRevision: state.revision
+      },
+      ...(becameProvisional
+        ? [{ type: "delete_leaderboard_snapshot", runId: state.runId }]
+        : [])
+    ]
   };
 }
 
@@ -365,7 +398,10 @@ export async function applyRulesetEvent(state, body, ruleset, context = {}) {
         rulesetContext
       );
       nextState = result.nextState;
-      if (result.publicResult?.resolution === "life_lost") {
+      if (
+        result.publicResult?.resolution === "life_lost" &&
+        isOfficialRankEligible(nextState)
+      ) {
         storageEffects.push({
           type: "upsert_leaderboard_snapshot",
           entry: ruleset.createLeaderboardSnapshot(nextState, {
@@ -388,14 +424,16 @@ export async function applyRulesetEvent(state, body, ruleset, context = {}) {
         request
       );
       nextState = result.nextState;
-      storageEffects.push({
-        type: "upsert_leaderboard_snapshot",
-        entry: ruleset.createLeaderboardSnapshot(nextState, {
-          snapshotKind: "extract",
-          outcome: "extract",
-          createdAt: context.now
-        })
-      });
+      if (isOfficialRankEligible(nextState)) {
+        storageEffects.push({
+          type: "upsert_leaderboard_snapshot",
+          entry: ruleset.createLeaderboardSnapshot(nextState, {
+            snapshotKind: "extract",
+            outcome: "extract",
+            createdAt: context.now
+          })
+        });
+      }
       break;
     }
     case "mark_test_assistance": {
@@ -449,7 +487,17 @@ export function finalizeRulesetRun(state, ruleset, context = {}) {
   if (typeof ruleset?.finalizeRun !== "function") {
     throw new TypeError("RULESET_METHOD_MISSING:finalizeRun");
   }
-  return ruleset.finalizeRun(structuredClone(state), {
+  const transition = ruleset.finalizeRun(structuredClone(state), {
     finalizedAt: context.now
   });
+  initializeRankEligibility(transition.nextState);
+  const rankEligibility = rankEligibilityOf(transition.nextState);
+  transition.response.rankEligibility = rankEligibility;
+  if (rankEligibility === "provisional") {
+    delete transition.response.leaderboardEntryId;
+    transition.storageEffects = transition.storageEffects.filter(
+      (effect) => effect.type !== "upsert_leaderboard_snapshot"
+    );
+  }
+  return transition;
 }

@@ -5812,9 +5812,9 @@ body.ranked-v3-modal-open #screenOverlay {
     top: 59.4%;
     left: 8.55%;
     right: 8.55%;
-    height: 31.1%;
+    height: 31.8%;
     display: grid;
-    grid-template-rows: 10.4% 1fr;
+    grid-template-rows: 10.2% 1fr;
   }
   body:has(#game.graphics-hd) .ranked-v3-leaderboard-columns,
   body:has(#game.graphics-hd) .ranked-v3-ledger-slot {
@@ -5822,6 +5822,7 @@ body.ranked-v3-modal-open #screenOverlay {
     grid-template-columns: 10.5% 31.5% 20% 10.5% 13% 14.5%;
     align-items: center;
     column-gap: 0;
+    row-gap: 0;
   }
   body:has(#game.graphics-hd) .ranked-v3-leaderboard-columns {
     color: #d8bd86;
@@ -5863,7 +5864,9 @@ body.ranked-v3-modal-open #screenOverlay {
   body:has(#game.graphics-hd) .ranked-v3-ledger-slot .ranked-v3-leaderboard-gold { grid-column: 5; font: inherit; text-align: center; }
   body:has(#game.graphics-hd) .ranked-v3-ledger-slot .ranked-v3-leaderboard-details-button {
     grid-column: 6;
+    grid-row: auto;
     justify-self: center;
+    min-height: 0;
     padding: .35em .55em;
     color: #c9a874;
     background: #0505054d;

@@ -1141,6 +1141,13 @@ const rankedGoldGameReplacements = [
   [
 `  window.DungeonOnlineV3GameBridge = Object.freeze({`,
 `  window.DungeonOnlineV3GameBridge = Object.freeze({
+    setRoomIntegrityContext(context = {}) {
+      onlineV3RoomCompletionCapability = context.completionCapability || null;
+      onlineV3RoomStartingGold = Math.max(
+        0,
+        Math.floor(Number(context.startingGold) || 0)
+      );
+    },
     getPracticeMutatorImport() {
       return {
         metrics: {
@@ -1176,6 +1183,8 @@ const rankedGoldGameReplacements = [
 `  const state = {`,
 `  let onlineV3RewardRecorder = null;
   let onlineV3ActiveChestClaimId = null;
+  let onlineV3RoomCompletionCapability = null;
+  let onlineV3RoomStartingGold = 0;
   function syncRankedStartDepthUnlocks(campaign = {}) {
     const unlocked = Array.isArray(campaign?.unlockedStartDepths)
       ? campaign.unlockedStartDepths
@@ -1369,9 +1378,16 @@ const rankedGoldGameReplacements = [
       ) || 0);
       const scaled = grantGold(roomClearBase);
       pushLog("Room clear bonus: +" + scaled + " gold.", "good");
+      const completionCapability = onlineV3RoomCompletionCapability;
+      onlineV3RoomCompletionCapability = null;
       window.DungeonOnlineV3?.onLocalRoomCleared?.({
         turnCount: Math.max(0, Number(state.turn) || 0),
-        rewardClaims: onlineV3RewardRecorder?.snapshot() || []
+        rewardClaims: onlineV3RewardRecorder?.snapshot() || [],
+        reportedGoldDelta: Math.max(
+          0,
+          Math.floor(Number(state.player.gold) || 0) - onlineV3RoomStartingGold
+        ),
+        completionCapability
       });`
   ]
 ];

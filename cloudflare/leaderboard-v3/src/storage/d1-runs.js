@@ -223,6 +223,30 @@ export function createD1RunRepository(db, leaderboardRepository, profileReposito
       return changes(results[0]) === 1;
     },
 
+    async updateWithLeaderboardDeleteAtomic(state, expectedRevision, metadata, runId) {
+      const update = db.prepare(`
+        UPDATE ranked_runs SET
+          season = ?, protocol_version = ?, ruleset_hash = ?, status = ?,
+          revision = ?, player_name = ?, depth = ?, room_index = ?,
+          room_directive_id = ?, room_type = ?, room_nonce = ?, gold = ?,
+          lives = ?, canonical_state_json = ?, state_digest = ?,
+          journal_digest = ?, recent_ops_json = ?, anomaly_score = ?,
+          updated_at = ?, expires_at = ?, finalized_at = ?, outcome = ?
+        WHERE run_id = ? AND revision = ? AND status = ?
+          AND (? IS NULL OR state_digest = ?)
+      `).bind(
+        ...runValues(state, metadata.stateDigest, metadata.recentOps),
+        state.runId,
+        expectedRevision,
+        metadata.expectedStatus || "active",
+        metadata.expectedStateDigest ?? null,
+        metadata.expectedStateDigest ?? null
+      );
+      const remove = leaderboardRepository.prepareDeleteRun(runId);
+      const results = await db.batch([update, remove]);
+      return changes(results[0]) === 1;
+    },
+
     async updateWithProfileAndLeaderboardAtomic(
       state,
       expectedRevision,

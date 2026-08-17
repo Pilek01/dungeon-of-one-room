@@ -86,6 +86,13 @@ export function createD1LeaderboardRepository(db) {
       return this.prepareUpsert(entry);
     },
 
+    prepareDeleteRun(runId) {
+      return db.prepare(`
+        DELETE FROM leaderboard_entries
+        WHERE run_id = ? AND changes() = 1
+      `).bind(runId);
+    },
+
     async list(season, options = {}) {
       const limit = Math.min(
         MAX_LEADERBOARD_LIMIT,

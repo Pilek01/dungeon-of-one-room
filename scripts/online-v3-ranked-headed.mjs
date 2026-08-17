@@ -1104,11 +1104,33 @@ ${fatalTestHookAnchor}`;
         await page.waitForFunction(() => [
           "AWAITING_REWARD_OR_TRANSACTION",
           "ENTERING_NEXT_ROOM"
-        ].includes(window.DungeonOnlineV3?.getSessionState?.()));
+        ].includes(window.DungeonOnlineV3?.getSessionState?.()) || (
+          window.DungeonOnlineV3?.getSessionState?.() === "RESOLVING_ROOM" &&
+          window.DungeonOnlineV3?.getSnapshot?.()?.publicState?.rankEligibility === "provisional"
+        ));
         if (await page.locator(".ranked-v3-choice-relic:visible").count() > 0) {
           await chooseRelicWithoutFatalPrevention(page);
         }
-        await sessionState(page, "ENTERING_NEXT_ROOM");
+        const integrityAudit = await page.evaluate(() => ({
+          rankEligibility: window.DungeonOnlineV3.getSnapshot()?.publicState?.rankEligibility,
+          session: window.DungeonOnlineV3.getSessionState()
+        }));
+        if (integrityAudit.rankEligibility === "provisional") {
+          throw new Error(
+            `Ranked lifecycle integrity false positive: ${JSON.stringify({
+              integrityAudit,
+              checkpoint: diagnostics.checkpointBodies.at(-1)
+            })}`
+          );
+        }
+        try {
+          await sessionState(page, "ENTERING_NEXT_ROOM");
+        } catch (error) {
+          throw new Error(
+            `Ranked lifecycle checkpoint diagnostics: ${JSON.stringify(diagnostics.checkpointBodies.at(-1))}`,
+            { cause: error }
+          );
+        }
       }
       await crossVisiblePortal(page, sourceRoom.depth + 1);
       forgeRoom = await visibleGameState(page);
@@ -1779,6 +1801,20 @@ ${fatalTestHookAnchor}`;
         goldFontSize: Number.parseFloat(getComputedStyle(document.querySelector(".ranked-v3-ledger-slot[data-record-rank] .ranked-v3-leaderboard-gold")).fontSize),
         populatedPodium: document.querySelectorAll(".ranked-v3-podium-slot[data-record-rank]").length,
         populatedLedger: document.querySelectorAll(".ranked-v3-ledger-slot[data-record-rank]").length,
+        ledgerRowCenterRatios: [...document.querySelectorAll(".ranked-v3-ledger-slot[data-record-rank] .ranked-v3-leaderboard-rank")]
+          .map((rank) => {
+            const box = rank.getBoundingClientRect();
+            return ((box.top + box.height / 2) - plate.top) / plate.height;
+          }),
+        ledgerRowLayout: (() => {
+          const slot = document.querySelector(".ranked-v3-ledger-slot[data-record-rank]");
+          const details = slot?.querySelector(".ranked-v3-leaderboard-details-button");
+          return {
+            rowGap: getComputedStyle(slot).rowGap,
+            detailsGridRowEnd: getComputedStyle(details).gridRowEnd,
+            detailsMinHeight: getComputedStyle(details).minHeight
+          };
+        })(),
         podiumCenters: [1, 2, 3].map((rank) => centerXRatio(`.ranked-v3-podium-slot[data-record-rank="${rank}"]`)),
         ledgerOffsets,
         titleLines,
@@ -1804,6 +1840,20 @@ ${fatalTestHookAnchor}`;
     for (const key of ["name", "score", "depth", "gold", "inspect"]) {
       assert.ok(Math.abs(referencePlateAudit.ledgerOffsets[key]) <= 3, JSON.stringify(referencePlateAudit));
     }
+    const expectedLedgerRowCenters = [698.5, 743.25, 787.75, 832, 875.5, 919, 962.5]
+      .map((center) => center / 1080);
+    assert.equal(referencePlateAudit.ledgerRowCenterRatios.length, expectedLedgerRowCenters.length);
+    referencePlateAudit.ledgerRowCenterRatios.forEach((center, index) => {
+      assert.ok(
+        Math.abs(center - expectedLedgerRowCenters[index]) <= 0.004,
+        JSON.stringify({ expectedLedgerRowCenters, actual: referencePlateAudit.ledgerRowCenterRatios })
+      );
+    });
+    assert.deepEqual(
+      referencePlateAudit.ledgerRowLayout,
+      { rowGap: "0px", detailsGridRowEnd: "auto", detailsMinHeight: "0px" },
+      JSON.stringify(referencePlateAudit)
+    );
     assert.deepEqual(referencePlateAudit.podiumRankDisplays, ["none", "none", "none"], JSON.stringify(referencePlateAudit));
     assert.deepEqual(referencePlateAudit.accessibleRanks, ["Rank 1", "Rank 2", "Rank 3"], JSON.stringify(referencePlateAudit));
     assert.ok(referencePlateAudit.nameRatio >= 0.445 && referencePlateAudit.nameRatio <= 0.458, JSON.stringify(referencePlateAudit));
@@ -1827,6 +1877,73 @@ ${fatalTestHookAnchor}`;
     assert.ok(referencePlateAudit.ledgerFontSize >= 17, JSON.stringify(referencePlateAudit));
     assert.ok(referencePlateAudit.depthFontSize >= 16, JSON.stringify(referencePlateAudit));
     assert.ok(referencePlateAudit.goldFontSize >= 16, JSON.stringify(referencePlateAudit));
+    const baseViewport = page.viewportSize();
+    const zoomViewportMatrix = [
+      { zoom: 80, width: 1920, height: 1350 },
+      { zoom: 90, width: 1707, height: 1200 },
+      { zoom: 100, width: 1536, height: 1080 },
+      { zoom: 110, width: 1396, height: 982 },
+      { zoom: 125, width: 1229, height: 864 }
+    ];
+    for (const sample of zoomViewportMatrix) {
+      await page.setViewportSize({ width: sample.width, height: sample.height });
+      await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+      const zoomAudit = await page.evaluate(() => {
+        const plate = document.querySelector(".ranked-v3-reference-plate");
+        const plateBox = plate.getBoundingClientRect();
+        const rowSelectors = [
+          ".ranked-v3-leaderboard-rank",
+          ".record-archive-name",
+          ".ranked-v3-leaderboard-score",
+          ".ranked-v3-leaderboard-depth",
+          ".ranked-v3-leaderboard-gold",
+          ".ranked-v3-leaderboard-details-button"
+        ];
+        const rows = [...document.querySelectorAll(".ranked-v3-ledger-slot[data-record-rank]")].map((slot) => {
+          const slotBox = slot.getBoundingClientRect();
+          const rankBox = slot.querySelector(".ranked-v3-leaderboard-rank").getBoundingClientRect();
+          return {
+            centerRatio: ((rankBox.top + rankBox.height / 2) - plateBox.top) / plateBox.height,
+            contentContained: rowSelectors.every((selector) => {
+              const box = slot.querySelector(selector).getBoundingClientRect();
+              return box.top >= slotBox.top - 1.5 && box.bottom <= slotBox.bottom + 1.5;
+            })
+          };
+        });
+        return {
+          plate: {
+            top: plateBox.top,
+            left: plateBox.left,
+            right: plateBox.right,
+            bottom: plateBox.bottom,
+            aspectRatio: plateBox.width / plateBox.height
+          },
+          rows,
+          viewport: { width: innerWidth, height: innerHeight },
+          overflowX: document.documentElement.scrollWidth > innerWidth,
+          overflowY: document.documentElement.scrollHeight > innerHeight
+        };
+      });
+      const details = JSON.stringify({ sample, zoomAudit });
+      assert.equal(zoomAudit.rows.length, expectedLedgerRowCenters.length, details);
+      assert.equal(zoomAudit.overflowX, false, details);
+      assert.equal(zoomAudit.overflowY, false, details);
+      assert.ok(zoomAudit.plate.top >= -1 && zoomAudit.plate.left >= -1, details);
+      assert.ok(zoomAudit.plate.right <= zoomAudit.viewport.width + 1, details);
+      assert.ok(zoomAudit.plate.bottom <= zoomAudit.viewport.height + 1, details);
+      assert.ok(Math.abs(zoomAudit.plate.aspectRatio - (1536 / 1080)) <= 0.002, details);
+      zoomAudit.rows.forEach((row, index) => {
+        assert.ok(Math.abs(row.centerRatio - expectedLedgerRowCenters[index]) <= 0.004, details);
+        assert.equal(row.contentContained, true, details);
+      });
+      await page.screenshot({
+        path: path.join(ARTIFACT_ROOT, `ranked-leaderboard-zoom-${sample.zoom}.png`),
+        fullPage: true,
+        animations: "disabled"
+      });
+    }
+    await page.setViewportSize(baseViewport);
+    await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
     const initialName = page.locator('.ranked-v3-podium-slot[data-record-rank="1"] .record-archive-name');
     await initialName.focus();
     assert.equal(await page.evaluate(() => document.activeElement?.getAttribute("data-record-action")), "name");

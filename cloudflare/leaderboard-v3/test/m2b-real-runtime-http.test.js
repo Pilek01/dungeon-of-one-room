@@ -264,6 +264,24 @@ test("real room checkpoint consumes one directive and returns the next sequentia
   assert.deepEqual(retry.payload, cleared.payload);
 });
 
+test("versioned checkpoint integrity signals are accepted and make the run provisional", async () => {
+  const harness = createRealHarness();
+  const started = (await harness.start("integrity-start")).payload;
+  const selected = (await harness.select(started, 0, "integrity-select")).payload;
+  const fixedGold = selected.metaState.currentRewardEnvelope.fixedAwards.reduce(
+    (sum, award) => sum + award.amount,
+    0
+  );
+  const cleared = await harness.checkpoint(selected, "integrity-checkpoint", {
+    integrityVersion: 1,
+    integritySignals: ["local_room_completion_capability_invalid"],
+    reportedGoldDelta: fixedGold,
+    reportedGoldTotal: selected.metaState.gold + fixedGold
+  });
+  assert.equal(cleared.response.status, 200);
+  assert.equal(cleared.payload.metaState.rankEligibility, "provisional");
+});
+
 test("HTTP depth 5 Warden checkpoint accepts bounded potion use", async () => {
   const harness = createRealHarness();
   const started = (await harness.start("warden-potion-start")).payload;

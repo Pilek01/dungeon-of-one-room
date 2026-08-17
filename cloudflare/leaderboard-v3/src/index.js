@@ -32,6 +32,7 @@ import {
   finalizeRulesetRun,
   publicRulesetMetaState,
 } from "./domain/ruleset-runtime.js";
+import { ROOM_INTEGRITY_SIGNAL } from "./domain/rank-eligibility.js";
 import {
   createInitialRun,
   publicMetaState,
@@ -485,7 +486,7 @@ function validateBootstrapSelectionBody(body) {
 
 function validateRegisteredRoomEnvelope(body, policyName) {
   rejectUnknownRequestFields(body, policyName);
-  return {
+  const value = {
     ...body,
     runId: validateRegisteredRunId(body.runId),
     checkpointToken: requireString(body.checkpointToken, "checkpointToken", {
@@ -499,6 +500,36 @@ function validateRegisteredRoomEnvelope(body, policyName) {
       ? PROTOCOL_VERSION
       : requireString(body.clientProtocolVersion, "clientProtocolVersion", { maximum: 64 })
   };
+  if (policyName !== "checkpoint") return value;
+  const fields = [
+    "integrityVersion",
+    "integritySignals",
+    "reportedGoldDelta",
+    "reportedGoldTotal"
+  ];
+  const present = fields.filter((field) => body[field] !== undefined);
+  if (present.length === 0) return value;
+  const signals = body.integritySignals;
+  const allowedSignals = new Set(Object.values(ROOM_INTEGRITY_SIGNAL));
+  if (
+    present.length !== fields.length ||
+    body.integrityVersion !== 1 ||
+    !Array.isArray(signals) ||
+    signals.length > 4 ||
+    new Set(signals).size !== signals.length ||
+    signals.some((entry) => !allowedSignals.has(entry)) ||
+    !Number.isSafeInteger(body.reportedGoldDelta) ||
+    body.reportedGoldDelta < 0 ||
+    !Number.isSafeInteger(body.reportedGoldTotal) ||
+    body.reportedGoldTotal < 0
+  ) {
+    throw new HttpError(
+      422,
+      "CHECKPOINT_INTEGRITY_INVALID",
+      "Checkpoint integrity telemetry is invalid."
+    );
+  }
+  return value;
 }
 
 function validateRegisteredFinalizeBody(body) {
@@ -696,6 +727,10 @@ async function persistRegisteredMutation(context, transition, repositories, opti
     expectedStatus: context.state.status
   };
   const leaderboardSnapshot = options.leaderboardSnapshot || options.leaderboardEntry;
+  const leaderboardDeleteRunId = options.leaderboardDeleteRunId || null;
+  if (profileMutation && leaderboardDeleteRunId) {
+    throw new TypeError("PROFILE_LEADERBOARD_DELETE_UNSUPPORTED");
+  }
   const persisted = profileMutation && leaderboardSnapshot
     ? await repositories.runs.updateWithProfileAndLeaderboardAtomic(
         nextState,
@@ -726,6 +761,13 @@ async function persistRegisteredMutation(context, transition, repositories, opti
             stateDigest
           }
         )
+      : leaderboardDeleteRunId
+        ? await repositories.runs.updateWithLeaderboardDeleteAtomic(
+            nextState,
+            context.state.revision,
+            metadata,
+            leaderboardDeleteRunId
+          )
       : await repositories.runs.updateConditional(
           nextState,
           context.state.revision,
@@ -1326,9 +1368,13 @@ async function handleRegisteredCheckpoint(request, env, options, repositories) {
     context.ruleset,
     { secret: context.secret }
   );
+  const deleteEffect = transition.storageEffects.find(
+    (effect) => effect.type === "delete_leaderboard_snapshot"
+  );
   return persistRegisteredMutation(context, transition, repositories, {
     operationType: "checkpoint",
-    responseKind: "checkpoint"
+    responseKind: "checkpoint",
+    leaderboardDeleteRunId: deleteEffect?.runId
   });
 }
 
