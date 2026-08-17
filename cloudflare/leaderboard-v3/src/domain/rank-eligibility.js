@@ -35,6 +35,26 @@ function canonicalReasons(value) {
   )].slice(0, 16);
 }
 
+function canonicalRoomGoldContext(value) {
+  if (
+    !value ||
+    typeof value !== "object" ||
+    Array.isArray(value) ||
+    !String(value.directiveId || "") ||
+    !value.build ||
+    typeof value.build !== "object" ||
+    Array.isArray(value.build) ||
+    !value.runModifiers ||
+    typeof value.runModifiers !== "object" ||
+    Array.isArray(value.runModifiers)
+  ) return null;
+  return {
+    directiveId: String(value.directiveId),
+    build: structuredClone(value.build),
+    runModifiers: structuredClone(value.runModifiers)
+  };
+}
+
 export function initializeRankEligibility(state, options = {}) {
   const next = state;
   const provisional = next.rankEligibility === RANK_ELIGIBILITY.provisional;
@@ -52,9 +72,38 @@ export function initializeRankEligibility(state, options = {}) {
     reasonCodes: canonicalReasons(next.rankIntegrity?.reasonCodes),
     firstDetectedRevision: Number.isSafeInteger(next.rankIntegrity?.firstDetectedRevision)
       ? next.rankIntegrity.firstDetectedRevision
-      : null
+      : null,
+    roomGoldContext: canonicalRoomGoldContext(next.rankIntegrity?.roomGoldContext)
   };
   return next;
+}
+
+export function captureRankIntegrityRoomContext(state) {
+  initializeRankEligibility(state);
+  const directiveId = String(state.currentRoomDirective?.directiveId || "");
+  if (!directiveId) {
+    state.rankIntegrity.roomGoldContext = null;
+    return state;
+  }
+  if (state.rankIntegrity.roomGoldContext?.directiveId === directiveId) {
+    return state;
+  }
+  state.rankIntegrity.roomGoldContext = {
+    directiveId,
+    build: structuredClone(state.build),
+    runModifiers: structuredClone(state.runModifiers)
+  };
+  return state;
+}
+
+export function rankIntegrityRoomState(state) {
+  const context = canonicalRoomGoldContext(state?.rankIntegrity?.roomGoldContext);
+  const directiveId = String(state?.currentRoomDirective?.directiveId || "");
+  if (!context || !directiveId || context.directiveId !== directiveId) return null;
+  const roomState = structuredClone(state);
+  roomState.build = structuredClone(context.build);
+  roomState.runModifiers = structuredClone(context.runModifiers);
+  return roomState;
 }
 
 export function rankEligibilityOf(state) {
