@@ -1,6 +1,6 @@
 # Online v3 - Current handoff
 
-Updated: 2026-08-14
+Updated: 2026-08-18
 
 ## Task authority
 
@@ -25,16 +25,17 @@ Do not describe the system as server-authoritative combat or cheat-proof.
 ## Current production snapshot
 
 - Deployed source commit:
-  `59aaaa283f223f2b5c17ec74a9c3aa4a397daee8` from `main`.
+  `d441a856cb7d3360ea1579a80cdbc25f92f703a6` from `main`.
 - Release provenance is the annotated tag
-  `online-v3-production-2026-08-14-59aaaa2`, which points exactly to the
+  `online-v3-production-2026-08-18-d441a85`, which points exactly to the
   deployed source commit.
 - Production Worker version:
-  `671304f1-de75-4eed-8d1c-a8556d72093b` at 100%.
+  `ad6dd38c-cb91-43c2-a0ef-20890695a2d2` at 100% (deployment
+  `94680f03-4e60-4119-a116-276c699e62d1`).
 - Recorded Worker rollback version:
-  `b03cb1ae-25e2-458f-8297-6aeeb298778d`.
+  `671304f1-de75-4eed-8d1c-a8556d72093b`.
 - Production Pages deployment:
-  `40e1cb47-99ed-4c33-a4f2-9faebc5306c3`, source `59aaaa2`.
+  `b7d11cb2-c951-4912-bf60-fca4cec4cfeb`, source `d441a85`.
 - Active production ruleset:
   `sha256:0672eb9aaae11865ebae75a4c6d6dc77cc29f4a079afe562355172d26f073bca`.
 - Retained previous ruleset:
@@ -44,33 +45,34 @@ Do not describe the system as server-authoritative combat or cheat-proof.
   `00000712-00000000-000050c7-dcc35a66a3fd387efd989c1bce79b263`, and D1 now
   reports `No migrations to apply`.
 
-The release activates the ranked playtest ruleset with campaign-best extract
-and death snapshots, assisted-run markers, special-room record-depth scaling,
-the Forge/relic-flow fixes, the elixir and first-Warden balance changes, and
-the refreshed Ranked UI/client behavior. Existing runs pinned to `bc0d` remain
-supported by the retained runtime.
+This release preserves the active ranked playtest ruleset while aligning the
+leaderboard rows and adding checkpoint-time Ranked integrity checks. Suspicious
+runs become provisional instead of being published, and the room-start gold
+context prevents post-combat rewards from causing a false positive. Combat
+simulation remains local and no movement or combat-event traffic was added.
+Existing runs pinned to `bc0d` remain supported by the retained runtime.
 
 ## Latest release evidence
 
-- Exact clean source `59aaaa283f223f2b5c17ec74a9c3aa4a397daee8`
-  passed fresh `npm run verify:full -- --force`: 846/846. The release log is
-  `output/verification/full-20260814T044527015Z.log`.
-- The approved six-screenshot visual receipt passed with fingerprint
-  `sha256:6048d842512a34d47f6b98fb0a811d827f8f4fe357d78b722bdc719b52460e51`.
-- Candidate-version override smoke proved that the inactive candidate served
-  `0672...` while default traffic remained on `bc0d...`.
-- Worker rollout completed a clean 15-minute 5% hold, a clean 30-minute 25%
-  hold, and 100% promotion. Availability and leaderboard probes passed on both
-  versions during canary, and the error-only tail stayed quiet.
-- The first Pages upload from the Worker subdirectory omitted the Pages
-  Functions bundle. The release smoke caught it immediately; deployment
-  `40e1cb47-99ed-4c33-a4f2-9faebc5306c3` superseded it from the repository root
-  with the Functions bundle and service binding. No D1 mutation or data loss
-  occurred during that short static-only deployment.
-- Post-release checks confirm Pages and its versioned URL return HTTP 200,
-  `config.js` identifies `59aaaa2`, availability reports the exact active
-  `0672...` hash, leaderboard reads pass, 30/30 default-routing probes reached
-  the new Worker, and D1 reports no pending migrations.
+- Exact clean source `d441a856cb7d3360ea1579a80cdbc25f92f703a6`
+  passed fresh `npm run verify:full`: 864/864. The release log is
+  `output/verification/full-20260817T224954099Z.log`.
+- Kamil approved all six current screenshots. The recorded visual source
+  fingerprint is
+  `sha256:095cda65922fa5434226e7c4263fe8d67331a532b70903f33a4dd9b72622df87`.
+- Candidate-version override smoke proved the inactive Worker accepted the new
+  checkpoint-integrity schema while default traffic still served the prior
+  version. Both paths reported the unchanged active `0672...` ruleset.
+- The candidate remained at 0% until validation, then Worker and Pages used a
+  coordinated cutover to avoid client/Worker checkpoint-schema version skew.
+  The Pages upload came from the repository root and included the Functions
+  bundle, routes, and service binding.
+- Post-release checks confirm the stable and versioned Pages URLs return the
+  exact local `d441a85` assets, availability and leaderboard reads pass, 30/30
+  default-routing probes reached the new Worker, and a real Chromium boot test
+  found no JavaScript errors on either URL.
+- No release smoke mutated D1. The production database still reports no
+  pending migrations.
 
 These totals are point-in-time release evidence. They do not require rerunning
 the same suites for unrelated small changes.
@@ -98,7 +100,7 @@ receipts.
 ## Protected working trees and release refs
 
 - The deployed source is fixed by
-  `online-v3-production-2026-08-14-59aaaa2`; subsequent documentation commits
+  `online-v3-production-2026-08-18-d441a85`; subsequent documentation commits
   on `main` are not part of the Worker or Pages artifact.
 - `npm run status:compact` reported zero protected Vault Guardian WIP entries
   and zero local Wrangler-state entries before the release record was written.
