@@ -238,6 +238,10 @@ async function selectStarting(started, key, choiceIndex = 0, overrides = {}) {
 
 async function checkpoint(active, key) {
   const directive = active.metaState.currentRoomDirective;
+  const reportedGoldDelta = active.metaState.currentRewardEnvelope.fixedAwards.reduce(
+    (sum, award) => sum + award.amount,
+    0
+  );
   const commands = [{ code: "move", count: 3 }, { code: "attack", count: 2 }];
   return request("/api/v3/runs/checkpoint", {
     runId: active.runId,
@@ -245,6 +249,11 @@ async function checkpoint(active, key) {
     roomDirectiveId: directive.directiveId,
     roomNonce: directive.roomNonce,
     roomResult: "cleared",
+    rewardClaims: [],
+    integrityVersion: 1,
+    integritySignals: [],
+    reportedGoldDelta,
+    reportedGoldTotal: active.metaState.gold + reportedGoldDelta,
     turnCount: 5,
     elapsedMs: 1_500,
     commandJournalDigest: await canonicalDigest(commands),

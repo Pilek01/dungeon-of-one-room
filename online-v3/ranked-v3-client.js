@@ -332,6 +332,12 @@
         ...roomBinding(undefined),
         roomResult: "cleared",
         rewardClaims: Array.isArray(input.rewardClaims) ? clone(input.rewardClaims) : [],
+        integrityVersion: 1,
+        integritySignals: Array.isArray(input.integritySignals)
+          ? [...new Set(input.integritySignals.map((entry) => String(entry || "")).filter(Boolean))].slice(0, 4)
+          : [],
+        reportedGoldDelta: Math.max(0, Math.floor(Number(input.reportedGoldDelta) || 0)),
+        reportedGoldTotal: Math.max(0, Math.floor(Number(input.reportedGoldTotal) || 0)),
         turnCount: Math.max(0, Math.floor(Number(input.turnCount) || 0)),
         elapsedMs: Math.max(0, Math.floor(Number(input.elapsedMs) || 0)),
         commandJournalDigest,

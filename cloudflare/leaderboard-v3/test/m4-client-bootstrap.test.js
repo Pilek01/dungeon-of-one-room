@@ -446,6 +446,66 @@ test("M4 session state permits only explicit room-boundary UI and portal transit
   assert.equal(offerMachine.getState(), sessionApi.STATES.active);
 });
 
+test("M4 checkpoint sends the versioned integrity envelope with gold telemetry", async () => {
+  const directive = {
+    directiveId: "directive_integrity_1",
+    roomNonce: "nonce_integrity_1",
+    depth: 1,
+    roomType: "combat"
+  };
+  const store = memoryStore({
+    schemaVersion: 1,
+    mode: "ranked",
+    runId: "run_a1",
+    revision: 1,
+    token: { kind: protocol.TOKEN_KINDS.room, value: "checkpoint-secret" },
+    publicState: meta("active", 1, directive),
+    pendingOperation: null
+  });
+  let sentBody = null;
+  const client = clientApi.createRankedClient({
+    store,
+    transport: {
+      createOperationId: () => "op_integrity_checkpoint",
+      async request(endpoint, request) {
+        assert.equal(endpoint.path, "/api/v3/runs/checkpoint");
+        sentBody = structuredClone(request.body);
+        return {
+          payload: {
+            ok: true,
+            protocolVersion: protocol.PROTOCOL_VERSION,
+            runId: "run_a1",
+            revision: 2,
+            checkpointToken: "checkpoint-next",
+            acceptedBoundary: "room_cleared",
+            metaState: meta("active", 2, {
+              ...directive,
+              directiveId: "directive_integrity_2",
+              roomNonce: "nonce_integrity_2",
+              depth: 2
+            })
+          }
+        };
+      }
+    }
+  });
+  await client.checkpoint({
+    turnCount: 7,
+    elapsedMs: 2_000,
+    rewardClaims: [],
+    reportedGoldDelta: 11,
+    reportedGoldTotal: 21,
+    integritySignals: ["local_room_completion_capability_invalid"],
+    commands: []
+  });
+  assert.equal(sentBody.integrityVersion, 1);
+  assert.equal(sentBody.reportedGoldDelta, 11);
+  assert.equal(sentBody.reportedGoldTotal, 21);
+  assert.deepEqual(sentBody.integritySignals, [
+    "local_room_completion_capability_invalid"
+  ]);
+});
+
 test("M4 game integration remains a narrow directive/checkpoint bridge", () => {
   const game = fs.readFileSync(new URL("../../../game.js", import.meta.url), "utf8");
   const runtime = fs.readFileSync(new URL("../../../online-v3/ranked-v3-runtime.js", import.meta.url), "utf8");

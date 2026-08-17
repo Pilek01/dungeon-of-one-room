@@ -20,7 +20,9 @@ function element() {
 
 function metaState(overrides = {}) {
   return {
+    runId: "run_integrity",
     status: "active",
+    rankEligibility: "official",
     currentRoomDirective: {
       directiveId: "directive_2",
       depth: 2,
@@ -38,6 +40,8 @@ function createHarness(options = {}) {
   const replacementPresentations = [];
   const replacementCompletions = [];
   const uiChoiceCalls = [];
+  const uiMessages = [];
+  const integrityContexts = [];
   let snapshot = {
     publicState: metaState({
       currentRoomDirective: {
@@ -58,7 +62,9 @@ function createHarness(options = {}) {
     },
     async checkpoint(payload) {
       calls.push({ action: "checkpoint", payload });
-      const response = { metaState: metaState() };
+      const response = typeof options.onCheckpoint === "function"
+        ? await options.onCheckpoint(payload)
+        : { metaState: metaState() };
       snapshot = { publicState: response.metaState };
       return response;
     },
@@ -91,13 +97,13 @@ function createHarness(options = {}) {
   const ui = {
     entry: uiEntry,
     overlay: element(),
-    button() { return element(); },
+    button(label, onClick) { return { ...element(), label, onClick }; },
     hide() {},
     setStatus() {},
     setEntryVisible() {},
     showChoices(...args) { uiChoiceCalls.push(args); },
     showMenu() {},
-    showMessage() {},
+    showMessage(...args) { uiMessages.push(args); },
     showSync() {}
   };
   const root = {
@@ -120,11 +126,14 @@ function createHarness(options = {}) {
       body: { append() {} },
       createElement: element
     },
-    localStorage: {
-      getItem() { return null; },
-      setItem() {},
-      removeItem() {}
-    },
+    localStorage: (() => {
+      const values = new Map();
+      return {
+        getItem(key) { return values.has(key) ? values.get(key) : null; },
+        setItem(key, value) { values.set(key, String(value)); },
+        removeItem(key) { values.delete(key); }
+      };
+    })(),
     crypto: {
       randomUUID() { return "00000000-0000-4000-8000-000000000000"; }
     },
@@ -178,6 +187,7 @@ function createHarness(options = {}) {
     DungeonOnlineV3GameBridge: {
       isRankedTestBotActive() { return options.observerBotActive !== false; },
       syncCanonicalProjection() {},
+      setRoomIntegrityContext(context) { integrityContexts.push(context); },
       setNextDirective(directive) { directives.push(directive); },
       enterRankedForge(publicState, offer, context) {
         forgePresentations.push({ publicState, offer, context });
@@ -200,7 +210,9 @@ function createHarness(options = {}) {
     forgeCompletions,
     replacementPresentations,
     replacementCompletions,
-    uiChoiceCalls
+    uiChoiceCalls,
+    uiMessages,
+    integrityContexts
   };
 }
 
@@ -225,6 +237,78 @@ async function waitFor(predicate, message) {
   }
   assert.fail(message);
 }
+
+test("a local room clear without its active capability emits an integrity downgrade signal", async () => {
+  const harness = createHarness({
+    observerBotActive: false,
+    async onCheckpoint() { return { metaState: metaState() }; }
+  });
+  const runtime = await installRuntime(harness);
+  await runtime.onRoomEntered(metaState().currentRoomDirective);
+  await runtime.onLocalRoomCleared({
+    turnCount: 4,
+    rewardClaims: [],
+    reportedGoldDelta: 2
+  });
+  const payload = harness.calls.find((entry) => entry.action === "checkpoint").payload;
+  assert.equal(
+    Array.from(payload.integritySignals).join(","),
+    "local_room_completion_capability_invalid"
+  );
+  assert.equal(payload.reportedGoldDelta, 2);
+});
+
+test("a valid room capability stays private to the bridge and sends no downgrade signal", async () => {
+  const harness = createHarness({
+    observerBotActive: false,
+    async onCheckpoint() { return { metaState: metaState() }; }
+  });
+  const runtime = await installRuntime(harness);
+  await runtime.onRoomEntered({
+    directiveId: "directive_1",
+    depth: 1,
+    roomType: "combat"
+  });
+  assert.equal(harness.integrityContexts.length, 1);
+  const completionCapability = harness.integrityContexts[0].completionCapability;
+  await runtime.onLocalRoomCleared({
+    turnCount: 4,
+    rewardClaims: [],
+    reportedGoldDelta: 2,
+    completionCapability
+  });
+  const payload = harness.calls.find((entry) => entry.action === "checkpoint").payload;
+  assert.equal(Array.from(payload.integritySignals).join(","), "");
+});
+
+test("a provisional response shows the continuation notice only once per run", async () => {
+  const harness = createHarness({
+    observerBotActive: false,
+    async onCheckpoint() {
+      return { metaState: metaState({ rankEligibility: "provisional" }) };
+    }
+  });
+  const runtime = await installRuntime(harness);
+  await runtime.onRoomEntered(metaState().currentRoomDirective);
+  await runtime.onLocalRoomCleared({
+    turnCount: 4,
+    rewardClaims: [],
+    reportedGoldDelta: 2,
+    completionCapability: harness.integrityContexts[0].completionCapability
+  });
+  assert.equal(harness.uiMessages.length, 1);
+  assert.equal(harness.uiMessages[0][0], "Ranked integrity check failed");
+  await harness.uiMessages[0][2][0].onClick();
+  await waitFor(() => harness.directives.length === 1, "notice did not continue the boundary");
+  await runtime.onRoomEntered(metaState().currentRoomDirective);
+  await runtime.onLocalRoomCleared({
+    turnCount: 5,
+    rewardClaims: [],
+    reportedGoldDelta: 2,
+    completionCapability: harness.integrityContexts[1].completionCapability
+  });
+  assert.equal(harness.uiMessages.length, 1);
+});
 
 test("Observer Bot resolves relic and replacement choices before checkpoint", async () => {
   const harness = createHarness({

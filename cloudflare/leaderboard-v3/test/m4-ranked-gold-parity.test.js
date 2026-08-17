@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { createRequire } from "node:module";
 import { readFile } from "node:fs/promises";
+import { V08_LOCAL_ELITE_REWARD_BONUS } from "../src/domain/rank-eligibility.js";
 
 const require = createRequire(import.meta.url);
 const recorderApi = require("../../../online-v3/ranked-v3-recorder.js");
@@ -18,6 +19,14 @@ test("Ranked reward recorder preserves v0.8 room-clear and default combat gold",
     claimId: "enemy:slime",
     count: 2
   }]);
+});
+
+test("Ranked integrity elite adjustment stays bound to the v0.8 source bonus", async () => {
+  const gameSource = await readFile(new URL("../../../game.js", import.meta.url), "utf8");
+  assert.match(
+    gameSource,
+    new RegExp(`enemy\\.rewardBonus\\s*\\+=\\s*${V08_LOCAL_ELITE_REWARD_BONUS}`, "u")
+  );
 });
 
 test("Ranked reward recorder aggregates elite, hazard, and bounded chest evidence", () => {

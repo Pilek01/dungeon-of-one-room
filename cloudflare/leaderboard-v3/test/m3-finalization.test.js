@@ -11,6 +11,7 @@ import {
   decodeBoundaryToken,
   signBoundaryToken
 } from "../src/security/checkpoint-token.js";
+import { canonicalDigest } from "../src/security/digests.js";
 import { createMemoryRepositories } from "./fixtures/memory-repositories.js";
 import { TEST_SECRET } from "./fixtures/harness.js";
 import manifest from "../src/rulesets/v08-meta-1/data/ruleset-manifest.json" with { type: "json" };
@@ -243,6 +244,70 @@ test("an assisted nonterminal death publishes one marked retry-safe snapshot whi
   assert.equal(retry.response.headers.get("x-idempotent-replay"), "1");
   assert.deepEqual(retry.payload, first.payload);
   assert.equal(harness.repositories.leaderboardCount(), 1);
+});
+
+test("a later provisional checkpoint removes this run's earlier death snapshot", async () => {
+  const harness = createRealHarness();
+  const started = (await harness.call("/api/v3/runs/start", {
+    playerName: "IntegrityCleanup",
+    season: "m3-season",
+    gameVersion: "0.8.1",
+    rulesetId: "v08-meta-1",
+    rulesetHash: manifest.rulesetHash,
+    clientInstallIdHash: "install_integrity_cleanup",
+    profileId: "profile_22222222222222222222222222222222",
+    profileCredential: "ppppppppppppppppppppppppppppppppppppppppppp",
+    recoveryCredential: "rrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrr"
+  }, "integrity-cleanup-start")).payload;
+  const selected = (await harness.call("/api/v3/runs/event", {
+    runId: started.runId,
+    type: "select_starting_relic",
+    bootstrapToken: started.bootstrapToken,
+    offerId: started.metaState.startingRelicOffer.offerId,
+    choiceId: started.metaState.startingRelicOffer.publicChoices[0].choiceId
+  }, "integrity-cleanup-select")).payload;
+  const firstDirective = selected.metaState.currentRoomDirective;
+  const lifeLost = (await harness.call("/api/v3/runs/event", {
+    runId: selected.runId,
+    checkpointToken: selected.checkpointToken,
+    roomDirectiveId: firstDirective.directiveId,
+    roomNonce: firstDirective.roomNonce,
+    type: "report_fatal_event",
+    payload: { classification: "local_fatal_event" }
+  }, "integrity-cleanup-fatal")).payload;
+  assert.equal(lifeLost.metaState.status, "active");
+  assert.equal(harness.repositories.leaderboardCount(), 1);
+
+  const directive = lifeLost.metaState.currentRoomDirective;
+  const fixedGold = lifeLost.metaState.currentRewardEnvelope.fixedAwards.reduce(
+    (sum, award) => sum + award.amount,
+    0
+  );
+  const commands = [];
+  const provisional = await harness.call("/api/v3/runs/checkpoint", {
+    runId: lifeLost.runId,
+    checkpointToken: lifeLost.checkpointToken,
+    roomDirectiveId: directive.directiveId,
+    roomNonce: directive.roomNonce,
+    roomResult: "cleared",
+    rewardClaims: [],
+    integrityVersion: 1,
+    integritySignals: ["local_room_completion_capability_invalid"],
+    reportedGoldDelta: fixedGold,
+    reportedGoldTotal: lifeLost.metaState.gold + fixedGold,
+    turnCount: 3,
+    elapsedMs: 1_000,
+    commandJournalDigest: await canonicalDigest(commands),
+    compactRoomProof: {
+      version: 1,
+      roomDirectiveId: directive.directiveId,
+      roomNonce: directive.roomNonce,
+      commands
+    }
+  }, "integrity-cleanup-checkpoint");
+  assert.equal(provisional.response.status, 200);
+  assert.equal(provisional.payload.metaState.rankEligibility, "provisional");
+  assert.equal(harness.repositories.leaderboardCount(), 0);
 });
 
 test("HTTP finalization is terminal-token-bound, server-derived and exactly retryable", async () => {

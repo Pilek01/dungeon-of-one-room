@@ -39,7 +39,49 @@
   let pendingNativeRelicReplacement = null;
   let observerBotBoundaryPending = false;
   let observerBotAutomationHalted = false;
+  let activeRoomIntegrity = null;
+  const shownRankIntegrityNotices = new Set();
   const recoveryStore = root.DungeonRankedV3Storage.createStore(root.localStorage);
+
+  const ROOM_COMPLETION_CAPABILITY_INVALID = "local_room_completion_capability_invalid";
+  const RANK_INTEGRITY_NOTICE_PREFIX = "dungeonOnlineV3RankIntegrityNotice:";
+
+  function presentRankIntegrityNotice(state, onContinue) {
+    if (state?.rankEligibility !== "provisional") return false;
+    const runId = String(state.runId || "unknown");
+    const storageKey = `${RANK_INTEGRITY_NOTICE_PREFIX}${runId}`;
+    let alreadyShown = shownRankIntegrityNotices.has(runId);
+    try {
+      alreadyShown ||= root.localStorage.getItem(storageKey) === "1";
+    } catch {}
+    if (alreadyShown) return false;
+    shownRankIntegrityNotices.add(runId);
+    try {
+      root.localStorage.setItem(storageKey, "1");
+    } catch {}
+    ui.showMessage(
+      "Ranked integrity check failed",
+      "The run can continue, but this result will not be included in the official leaderboard.",
+      [ui.button("Continue", onContinue)]
+    );
+    return true;
+  }
+
+  function installRoomIntegrityContext(directive) {
+    const completionCapability = root.crypto.randomUUID();
+    activeRoomIntegrity = {
+      directiveId: String(directive?.directiveId || ""),
+      completionCapability
+    };
+    const startingGold = Math.max(
+      0,
+      Math.floor(Number(createClient().getSnapshot()?.publicState?.gold) || 0)
+    );
+    root.DungeonOnlineV3GameBridge?.setRoomIntegrityContext?.({
+      completionCapability,
+      startingGold
+    });
+  }
 
   function normalizePresentationCause(value) {
     if (typeof value !== "string") return "";
@@ -547,6 +589,9 @@
     if (!state || !protocol.isSupportedRulesetHash(state.rulesetHash)) {
       throw new TypeError("RANKED_RULESET_MISMATCH");
     }
+    if (presentRankIntegrityNotice(state, () => {
+      acceptResponse(response).catch(presentError);
+    })) return;
     if (state.status === "awaiting_starting_relic") {
       session.transition(root.DungeonRankedV3Session.STATES.startingRelic);
       const offer = state.startingRelicOffer;
@@ -1209,6 +1254,21 @@
     ui.hide();
   }
 
+  async function continueResolvedCheckpoint(state) {
+    if (["victory", "defeat", "extraction"].includes(state.status)) {
+      session.transition(root.DungeonRankedV3Session.STATES.terminal);
+      showTerminal(state);
+      return;
+    }
+    if (pendingExtractionMode) {
+      const extractionMode = pendingExtractionMode;
+      pendingExtractionMode = null;
+      await performExtraction(extractionMode);
+      return;
+    }
+    await continueBoundary(state);
+  }
+
   async function resolveCheckpoint(options = {}) {
     const summary = pendingRoomSummary || {};
     pendingRoomSummary = null;
@@ -1217,27 +1277,32 @@
         session.transition(root.DungeonRankedV3Session.STATES.resolving);
       }
       if (options.silent !== true) ui.showSync("Saving progress...");
+      const reportedGoldDelta = Math.max(
+        0,
+        Math.floor(Number(summary?.reportedGoldDelta) || 0)
+      );
+      const canonicalGoldBeforeSettlement = Math.max(
+        0,
+        Math.floor(Number(createClient().getSnapshot()?.publicState?.gold) || 0)
+      );
       const response = await createClient().checkpoint({
         turnCount: summary?.turnCount,
         elapsedMs: Math.max(0, Date.now() - startedAt),
         rewardClaims: appendElixirUsageClaim(summary?.rewardClaims || []),
+        integritySignals: Array.isArray(summary?.integritySignals)
+          ? summary.integritySignals
+          : [],
+        reportedGoldDelta,
+        reportedGoldTotal: canonicalGoldBeforeSettlement + reportedGoldDelta,
         commands: []
       });
       pendingElixirUsage = null;
       const state = response.metaState;
       root.DungeonOnlineV3GameBridge.syncCanonicalProjection(state);
-      if (["victory", "defeat", "extraction"].includes(state.status)) {
-        session.transition(root.DungeonRankedV3Session.STATES.terminal);
-        showTerminal(state);
-        return;
-      }
-      if (pendingExtractionMode) {
-        const extractionMode = pendingExtractionMode;
-        pendingExtractionMode = null;
-        await performExtraction(extractionMode);
-        return;
-      }
-      await continueBoundary(state);
+      if (presentRankIntegrityNotice(state, () => {
+        continueResolvedCheckpoint(state).catch(presentError);
+      })) return true;
+      await continueResolvedCheckpoint(state);
     } catch (error) {
       pendingRoomSummary = summary;
       (typeof options.onError === "function" ? options.onError : presentError)(error);
@@ -1289,8 +1354,24 @@
     return true;
   }
   async function onLocalRoomCleared(summary) {
-    pendingRoomSummary = summary || {};
+    const sourceSummary = summary && typeof summary === "object" ? summary : {};
+    const completionCapability = sourceSummary.completionCapability;
+    const roomSummary = { ...sourceSummary };
+    delete roomSummary.completionCapability;
     const state = createClient().getSnapshot()?.publicState;
+    const directiveId = String(state?.currentRoomDirective?.directiveId || "");
+    const completionValid = Boolean(
+      activeRoomIntegrity &&
+      activeRoomIntegrity.directiveId === directiveId &&
+      completionCapability === activeRoomIntegrity.completionCapability
+    );
+    activeRoomIntegrity = null;
+    pendingRoomSummary = {
+      ...roomSummary,
+      integritySignals: completionValid
+        ? []
+        : [ROOM_COMPLETION_CAPABILITY_INVALID]
+    };
     const roomType = state?.currentRoomDirective?.roomType;
     if (roomType === "forge") {
       ui.hide();
@@ -1318,18 +1399,29 @@
 
   async function onRoomEntered(directive) {
     if (!directive) return;
+    installRoomIntegrityContext(directive);
     if (session.getState() === root.DungeonRankedV3Session.STATES.next) {
       session.transition(root.DungeonRankedV3Session.STATES.active);
     }
     if (directive.roomType === "merchant") {
       currentMerchantOffer = null;
       merchantMutationPending = false;
-      pendingRoomSummary = { turnCount: 0, rewardClaims: [] };
+      pendingRoomSummary = {
+        turnCount: 0,
+        rewardClaims: [],
+        reportedGoldDelta: 0,
+        integritySignals: []
+      };
       ui.hide();
       return;
     }
     if (directive.roomType !== "crossroads") return;
-    pendingRoomSummary = { turnCount: 0, rewardClaims: [] };
+    pendingRoomSummary = {
+      turnCount: 0,
+      rewardClaims: [],
+      reportedGoldDelta: 0,
+      integritySignals: []
+    };
     const openBoundary = async () => {
       session.transition(root.DungeonRankedV3Session.STATES.offer);
       await openMetaOffer(directive.roomType);

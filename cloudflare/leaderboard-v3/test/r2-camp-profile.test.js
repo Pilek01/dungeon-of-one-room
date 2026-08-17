@@ -133,6 +133,10 @@ test("canonical extraction creates an authenticated profile Camp and next run", 
     choiceId: started.metaState.startingRelicOffer.publicChoices[0].choiceId
   }, "r2-camp-select-extract")).payload;
   const directive = selected.metaState.currentRoomDirective;
+  const reportedGoldDelta = selected.metaState.currentRewardEnvelope.fixedAwards.reduce(
+    (sum, award) => sum + award.amount,
+    0
+  );
   const commands = [{ code: "move", count: 2 }, { code: "attack", count: 1 }];
   const checkpointed = (await harness.post("/api/v3/runs/checkpoint", {
     runId: selected.runId,
@@ -141,6 +145,10 @@ test("canonical extraction creates an authenticated profile Camp and next run", 
     roomNonce: directive.roomNonce,
     roomResult: "cleared",
     rewardClaims: [],
+    integrityVersion: 1,
+    integritySignals: [],
+    reportedGoldDelta,
+    reportedGoldTotal: selected.metaState.gold + reportedGoldDelta,
     turnCount: 3,
     elapsedMs: 1_000,
     commandJournalDigest: await canonicalDigest(commands),

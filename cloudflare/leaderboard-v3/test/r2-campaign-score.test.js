@@ -201,6 +201,10 @@ test("Extract retry persists one score carry snapshot and never folds the descen
     choiceId: started.metaState.startingRelicOffer.publicChoices[0].choiceId
   }, "score-carry-select")).payload;
   const firstDirective = selected.metaState.currentRoomDirective;
+  const reportedGoldDelta = selected.metaState.currentRewardEnvelope.fixedAwards.reduce(
+    (sum, award) => sum + award.amount,
+    0
+  );
   const commands = [{ code: "move", count: 2 }, { code: "attack", count: 1 }];
   const checkpointed = (await harness.post("/api/v3/runs/checkpoint", {
     runId: selected.runId,
@@ -209,6 +213,10 @@ test("Extract retry persists one score carry snapshot and never folds the descen
     roomNonce: firstDirective.roomNonce,
     roomResult: "cleared",
     rewardClaims: [],
+    integrityVersion: 1,
+    integritySignals: [],
+    reportedGoldDelta,
+    reportedGoldTotal: selected.metaState.gold + reportedGoldDelta,
     turnCount: 3,
     elapsedMs: 1_000,
     commandJournalDigest: await canonicalDigest(commands),

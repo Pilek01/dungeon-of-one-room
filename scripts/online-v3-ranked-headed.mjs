@@ -1104,11 +1104,33 @@ ${fatalTestHookAnchor}`;
         await page.waitForFunction(() => [
           "AWAITING_REWARD_OR_TRANSACTION",
           "ENTERING_NEXT_ROOM"
-        ].includes(window.DungeonOnlineV3?.getSessionState?.()));
+        ].includes(window.DungeonOnlineV3?.getSessionState?.()) || (
+          window.DungeonOnlineV3?.getSessionState?.() === "RESOLVING_ROOM" &&
+          window.DungeonOnlineV3?.getSnapshot?.()?.publicState?.rankEligibility === "provisional"
+        ));
         if (await page.locator(".ranked-v3-choice-relic:visible").count() > 0) {
           await chooseRelicWithoutFatalPrevention(page);
         }
-        await sessionState(page, "ENTERING_NEXT_ROOM");
+        const integrityAudit = await page.evaluate(() => ({
+          rankEligibility: window.DungeonOnlineV3.getSnapshot()?.publicState?.rankEligibility,
+          session: window.DungeonOnlineV3.getSessionState()
+        }));
+        if (integrityAudit.rankEligibility === "provisional") {
+          throw new Error(
+            `Ranked lifecycle integrity false positive: ${JSON.stringify({
+              integrityAudit,
+              checkpoint: diagnostics.checkpointBodies.at(-1)
+            })}`
+          );
+        }
+        try {
+          await sessionState(page, "ENTERING_NEXT_ROOM");
+        } catch (error) {
+          throw new Error(
+            `Ranked lifecycle checkpoint diagnostics: ${JSON.stringify(diagnostics.checkpointBodies.at(-1))}`,
+            { cause: error }
+          );
+        }
       }
       await crossVisiblePortal(page, sourceRoom.depth + 1);
       forgeRoom = await visibleGameState(page);
