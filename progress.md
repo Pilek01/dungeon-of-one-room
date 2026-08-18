@@ -25,7 +25,9 @@
   Camp, and error-to-Main-Menu screenshots were visually inspected with no
   visible regression.
 - Worker, protocol, ruleset, D1, combat, and protected `game.js` remain
-  unchanged. Production Pages deployment is pending verification.
+  unchanged. Commit `80014dc` passed the full 877/877 release gate and is live
+  in production Pages deployment `97a82dee-c155-4169-ac52-f0bf3c2f0e0d`.
+  Stable and versioned asset, API, leaderboard, and Chromium boot smoke pass.
 
 ## 2026-08-01 - Online Ranked boundary state and test controls repair
 

@@ -24,19 +24,21 @@ Do not describe the system as server-authoritative combat or cheat-proof.
 
 ## Current production snapshot
 
-- Deployed source commit:
-  `b9e8999988c5e49347da64154852c6f66c1f23fb` from
+- Production Pages source commit:
+  `80014dcbda77367aa849c9ad46c9c680d3eeb52b` from
   `codex/ranked-boundary-checkpoints-release`.
-- Release provenance is the annotated tag
-  `online-v3-production-2026-08-18-b9e8999`, which points exactly to the
-  deployed source commit.
+- Pages hotfix provenance is the annotated tag
+  `online-v3-pages-production-2026-08-18-80014dc`, which points exactly to the
+  deployed Pages source commit. The Worker remains sourced from
+  `b9e8999988c5e49347da64154852c6f66c1f23fb`, fixed by tag
+  `online-v3-production-2026-08-18-b9e8999`.
 - Production Worker version:
   `2e19d227-7c2e-4da4-b375-3c1995673de3` at 100% (deployment
   `83be5f16-66e3-4120-890b-3c57600d3da4`).
 - Recorded Worker rollback version:
   `ad6dd38c-cb91-43c2-a0ef-20890695a2d2`.
 - Production Pages deployment:
-  `b0e329a1-a037-41a3-aca9-7e2907a8e2a7`, source `b9e8999`.
+  `97a82dee-c155-4169-ac52-f0bf3c2f0e0d`, source `80014dc`.
 - Active production ruleset:
   `sha256:87c30b2c011b5103398f9b03f6bf018d71f2a35427c0a04ef7a31b2559a7a6d9`.
 - Retained previous ruleset:
@@ -55,14 +57,20 @@ provisional without disqualifying transport failures. Combat simulation remains
 local and no movement, combat, AI, animation, audio, or render traffic was
 added. Existing runs pinned to `0672` remain supported by the retained runtime.
 
+The Pages-only reconnect hotfix preserves an in-flight normal extraction when
+a committed room checkpoint response is lost and the player returns through
+Reconnect -> Main Menu -> Continue. Repeated Main Menu activation after the
+local session is already abandoned is idempotent. No Worker, ruleset, D1,
+protocol, combat, or protected `game.js` change was made for this hotfix.
+
 ## Latest release evidence
 
-- Exact clean source `b9e8999988c5e49347da64154852c6f66c1f23fb`
-  passed fresh `npm run verify:full -- --force`: 875/875. The release log is
-  `output/verification/full-20260818T201431512Z.log`.
-- Kamil approved all six current screenshots. The recorded visual source
-  fingerprint is
-  `sha256:1025da4527ce115f5b8ae53faab85084144705853e059f9b2d84371cf0a48ad1`.
+- Exact clean Pages source `80014dcbda77367aa849c9ad46c9c680d3eeb52b`
+  passed fresh `npm run verify:full -- --force`: 877/877. The release log is
+  `output/verification/full-20260818T214352071Z.log`.
+- Codex visually inspected and approved all six current archive screenshots.
+  The recorded visual source fingerprint is
+  `sha256:8bde824af7d3755856c5d62245a0922ae3e86052b9e79b07b6e04d9693a5f603`.
 - Candidate-version override smoke proved the inactive Worker accepted the new
   boundary-settlement capability and reported the candidate `87c3...` ruleset
   while default traffic still served the prior `0672...` ruleset.
@@ -70,10 +78,11 @@ added. Existing runs pinned to `0672` remain supported by the retained runtime.
   coordinated cutover to avoid client/Worker checkpoint-schema version skew.
   The Pages upload came from the repository root and included the Functions
   bundle, routes, and service binding.
-- Post-release checks confirm the stable and versioned Pages URLs return the
-  exact local `b9e8999` assets, availability and leaderboard reads pass, 30/30
-  routing probes on each URL reached the new Worker, and a real Chromium boot
-  test found no JavaScript errors on either URL.
+- Post-hotfix checks confirm the stable and versioned Pages URLs return the
+  exact local `80014dc` `index.html`, `config.js`, `game.js`, and Ranked runtime
+  assets. Availability still reports active ruleset `87c3...`, leaderboard
+  reads pass, and real Chromium boot tests found no JavaScript errors on either
+  URL. The Worker remains version `2e19d227...` at 100%.
 - No release smoke mutated D1. The production database still reports no
   pending migrations.
 
@@ -97,14 +106,15 @@ coverage without reducing release scope:
 Ranked QA uses the marked `output/pages-test-dist` bundle. The deployable
 `output/pages-dist` contains no QA marker or test-only boot-readiness hook.
 Passing receipts are scenario-specific and reusable when their fingerprint is
-unchanged. The Worker-only release did not modify Pages/UI sources or visual
-receipts.
+unchanged. The Pages-only hotfix did not modify archive UI, but the shared
+runtime source fingerprint required a fresh visual receipt.
 
 ## Protected working trees and release refs
 
-- The deployed source is fixed by
-  `online-v3-production-2026-08-18-b9e8999`; subsequent documentation commits
-  are not part of the Worker or Pages artifact.
+- The deployed Pages source is fixed by
+  `online-v3-pages-production-2026-08-18-80014dc`; the Worker source remains
+  fixed by `online-v3-production-2026-08-18-b9e8999`. Subsequent documentation
+  commits are not part of either deployed artifact.
 - `npm run status:compact` reported zero protected Vault Guardian WIP entries
   and zero local Wrangler-state entries before the release record was written.
 - The untracked user file
