@@ -25,6 +25,7 @@
   let leaderboardFocusToken = null;
   let startedAt = 0;
   let pendingRoomSummary = null;
+  let pendingBoundaryExit = null;
   let pendingExtractionMode = null;
   let extractedProfileReady = false;
   let currentCampResponse = null;
@@ -60,8 +61,8 @@
       root.localStorage.setItem(storageKey, "1");
     } catch {}
     ui.showMessage(
-      "Ranked integrity check failed",
-      "The run can continue, but this result will not be included in the official leaderboard.",
+      "Ranked integrity check failed.",
+      "You can continue playing, but this run will not be submitted to the leaderboard.",
       [ui.button("Continue", onContinue)]
     );
     return true;
@@ -81,6 +82,73 @@
       completionCapability,
       startingGold
     });
+  }
+
+  function usesBoundarySettlement() {
+    const rulesetHash = createClient().getSnapshot()?.publicState?.rulesetHash;
+    return protocol.supportsBoundarySettlement?.(rulesetHash) === true;
+  }
+
+  function captureRankedBoundary() {
+    const captured = root.DungeonOnlineV3GameBridge?.captureRankedBoundary?.();
+    if (!captured || typeof captured !== "object") {
+      throw new TypeError("RANKED_BOUNDARY_CAPTURE_UNAVAILABLE");
+    }
+    const snapshot = createClient().getSnapshot()?.publicState;
+    const directive = snapshot?.currentRoomDirective;
+    const envelope = snapshot?.currentRewardEnvelope;
+    if (!directive || !envelope) throw new TypeError("RANKED_BOUNDARY_BINDING_UNAVAILABLE");
+    const reportedGoldDelta = Math.max(0, Math.floor(Number(captured.reportedGoldDelta) || 0));
+    return {
+      summary: {
+        turnCount: Math.max(0, Math.floor(Number(captured.turnCount) || 0)),
+        rewardClaims: Array.isArray(captured.rewardClaims) ? captured.rewardClaims : [],
+        reportedGoldDelta,
+        integritySignals: Array.isArray(pendingRoomSummary?.integritySignals)
+          ? pendingRoomSummary.integritySignals
+          : []
+      },
+      eventPayload: {
+        envelopeId: envelope.envelopeId,
+        roomDirectiveId: directive.directiveId,
+        roomNonce: directive.roomNonce,
+        claims: Array.isArray(captured.rewardClaims) ? captured.rewardClaims : [],
+        reportedGoldDelta,
+        reportedGoldTotal: Math.max(0, Math.floor(Number(snapshot.gold) || 0)) + reportedGoldDelta,
+        turnCount: Math.max(0, Math.floor(Number(captured.turnCount) || 0)),
+        elapsedMs: Math.max(0, Date.now() - startedAt),
+        commandJournalDigest: `boundary:${directive.directiveId}:${Math.max(0, Math.floor(Number(captured.turnCount) || 0))}`,
+        compactRoomProof: JSON.stringify({
+          version: 1,
+          roomDirectiveId: directive.directiveId,
+          roomNonce: directive.roomNonce
+        })
+      }
+    };
+  }
+
+  function mergeCapturedBoundary(captured) {
+    const previousGoldDelta = Math.max(
+      0,
+      Math.floor(Number(pendingRoomSummary?.reportedGoldDelta) || 0)
+    );
+    const capturedGoldDelta = Math.max(
+      0,
+      Math.floor(Number(captured?.summary?.reportedGoldDelta) || 0)
+    );
+    const reportedGoldDelta = Math.max(previousGoldDelta, capturedGoldDelta);
+    return {
+      summary: {
+        ...captured.summary,
+        reportedGoldDelta
+      },
+      eventPayload: {
+        ...captured.eventPayload,
+        reportedGoldDelta,
+        reportedGoldTotal:
+          Math.max(0, Number(captured.eventPayload?.reportedGoldTotal) || 0) - capturedGoldDelta + reportedGoldDelta
+      }
+    };
   }
 
   function normalizePresentationCause(value) {
@@ -167,6 +235,7 @@
 
   function resetLocalRankedSession() {
     pendingExtractionMode = null;
+    pendingBoundaryExit = null;
     extractedProfileReady = false;
     pendingFreshCampaign = false;
     pendingElixirUsage = null;
@@ -1131,8 +1200,17 @@
         currentMerchantOffer = null;
         root.DungeonOnlineV3GameBridge.syncCanonicalProjection(response.metaState);
       }
-      const resolved = await resolveCheckpoint({ onError: presentMerchantError, silent: true });
-      if (resolved && options.enterPortal === true) {
+      if (usesBoundarySettlement()) {
+        const captured = mergeCapturedBoundary(captureRankedBoundary());
+        pendingRoomSummary = captured.summary;
+        if (options.enterPortal === true) pendingBoundaryExit = "portal";
+      }
+      const resolved = await resolveCheckpoint({
+        onError: presentMerchantError,
+        silent: true,
+        loadingMessage: options.enterPortal === true ? "Loading next depth…" : ""
+      });
+      if (resolved && options.enterPortal === true && !usesBoundarySettlement()) {
         root.DungeonOnlineV3GameBridge?.enterNextDirective?.();
       }
     } catch (error) {
@@ -1245,7 +1323,24 @@
       roomClearPending: Boolean(pendingRoomSummary)
     })[0];
     if (slot) return issueRelicSlot(slot);
-    if (pendingRoomSummary) return resolveCheckpoint();
+    if (pendingRoomSummary && pendingBoundaryExit) {
+      return resolveCheckpoint({
+        loadingMessage: pendingBoundaryExit === "portal" ? "Loading next depth…" : "Extracting…"
+      });
+    }
+    if (pendingRoomSummary) {
+      if (usesBoundarySettlement()) {
+        if (session.getState() === root.DungeonRankedV3Session.STATES.offer) {
+          session.transition(root.DungeonRankedV3Session.STATES.resolving);
+        }
+        if (session.getState() !== root.DungeonRankedV3Session.STATES.active) {
+          session.transition(root.DungeonRankedV3Session.STATES.active);
+        }
+        ui.hide();
+        return;
+      }
+      return resolveCheckpoint();
+    }
     if (state.currentRoomDirective) {
       const directive = directives.applyOnlineV3RoomDirective(state.currentRoomDirective);
       root.DungeonOnlineV3GameBridge.setNextDirective(directive);
@@ -1266,24 +1361,45 @@
       await performExtraction(extractionMode);
       return;
     }
+    if (pendingBoundaryExit === "portal") {
+      pendingBoundaryExit = null;
+      const directive = directives.applyOnlineV3RoomDirective(state.currentRoomDirective);
+      root.DungeonOnlineV3GameBridge.setNextDirective(directive);
+      session.transition(root.DungeonRankedV3Session.STATES.next);
+      ui.hide();
+      root.DungeonOnlineV3GameBridge?.enterNextDirective?.();
+      return;
+    }
     await continueBoundary(state);
   }
 
   async function resolveCheckpoint(options = {}) {
     const summary = pendingRoomSummary || {};
     pendingRoomSummary = null;
+    let loadingTimer = null;
     try {
       if (session.getState() !== root.DungeonRankedV3Session.STATES.resolving) {
         session.transition(root.DungeonRankedV3Session.STATES.resolving);
       }
-      if (options.silent !== true) ui.showSync("Saving progress...");
-      const reportedGoldDelta = Math.max(
+      if (options.loadingMessage) {
+        loadingTimer = root.setTimeout(() => ui.showSync(options.loadingMessage), 180);
+      } else if (options.silent !== true) {
+        ui.showSync("Saving progress...");
+      }
+      const checkpointState = createClient().getSnapshot()?.publicState;
+      const fixedAwardGold = usesBoundarySettlement()
+        ? (Array.isArray(checkpointState?.currentRewardEnvelope?.fixedAwards)
+            ? checkpointState.currentRewardEnvelope.fixedAwards
+            : [])
+          .reduce((sum, award) => sum + Math.max(0, Math.floor(Number(award?.amount) || 0)), 0)
+        : 0;
+      const reportedGoldDelta = fixedAwardGold + Math.max(
         0,
         Math.floor(Number(summary?.reportedGoldDelta) || 0)
       );
       const canonicalGoldBeforeSettlement = Math.max(
         0,
-        Math.floor(Number(createClient().getSnapshot()?.publicState?.gold) || 0)
+        Math.floor(Number(checkpointState?.gold) || 0)
       );
       const response = await createClient().checkpoint({
         turnCount: summary?.turnCount,
@@ -1296,6 +1412,8 @@
         reportedGoldTotal: canonicalGoldBeforeSettlement + reportedGoldDelta,
         commands: []
       });
+      if (loadingTimer !== null) root.clearTimeout(loadingTimer);
+      root.DungeonOnlineV3GameBridge?.showRankedRoomClearAward?.(fixedAwardGold);
       pendingElixirUsage = null;
       const state = response.metaState;
       root.DungeonOnlineV3GameBridge.syncCanonicalProjection(state);
@@ -1304,6 +1422,7 @@
       })) return true;
       await continueResolvedCheckpoint(state);
     } catch (error) {
+      if (loadingTimer !== null) root.clearTimeout(loadingTimer);
       pendingRoomSummary = summary;
       (typeof options.onError === "function" ? options.onError : presentError)(error);
       return false;
@@ -1346,11 +1465,34 @@
     if (isObserverBotBoundaryPending()) return true;
     if (!pendingRoomSummary) return false;
     Promise.resolve().then(async () => {
-      const resolved = await resolveCheckpoint({ silent: true });
-      if (resolved && options.enterPortal === true) {
+      if (usesBoundarySettlement()) {
+        const captured = mergeCapturedBoundary(captureRankedBoundary());
+        pendingRoomSummary = captured.summary;
+        if (options.enterPortal === true) pendingBoundaryExit = "portal";
+      }
+      const resolved = await resolveCheckpoint({
+        silent: true,
+        loadingMessage: options.enterPortal === true ? "Loading next depth…" : ""
+      });
+      if (resolved && options.enterPortal === true && !usesBoundarySettlement()) {
         root.DungeonOnlineV3GameBridge?.enterNextDirective?.();
       }
     }).catch(presentError);
+    return true;
+  }
+
+  function onPortalEntry() {
+    if (!usesBoundarySettlement() || !pendingRoomSummary) return false;
+    if (session.getState() === root.DungeonRankedV3Session.STATES.resolving) return true;
+    const captured = mergeCapturedBoundary(captureRankedBoundary());
+    pendingRoomSummary = {
+      ...captured.summary,
+      integritySignals: pendingRoomSummary.integritySignals || []
+    };
+    pendingBoundaryExit = "portal";
+    const state = createClient().getSnapshot()?.publicState;
+    const task = () => continueBoundary(state);
+    void (isRankedObserverBotActive() ? runObserverBotBoundary(task) : task()).catch(presentError);
     return true;
   }
   async function onLocalRoomCleared(summary) {
@@ -1366,6 +1508,18 @@
       completionCapability === activeRoomIntegrity.completionCapability
     );
     activeRoomIntegrity = null;
+    const integritySignals = completionValid
+      ? []
+      : [ROOM_COMPLETION_CAPABILITY_INVALID];
+    if (usesBoundarySettlement()) {
+      pendingRoomSummary = {
+        ...roomSummary,
+        roomCleared: true,
+        integritySignals
+      };
+      ui.hide();
+      return;
+    }
     pendingRoomSummary = {
       ...roomSummary,
       integritySignals: completionValid
@@ -1445,10 +1599,15 @@
   async function onFatalEvent(context = {}) {
     try {
       session.transition(root.DungeonRankedV3Session.STATES.resolving);
-      ui.showSync("Checking your fate...");
+      const boundaryEnabled = usesBoundarySettlement();
+      if (!boundaryEnabled) ui.showSync("Checking your fate...");
       const previousState = createClient().getSnapshot()?.publicState;
       const previousDirectiveId = previousState?.currentRoomDirective?.directiveId || null;
       const fatalPayload = { classification: "local_fatal_event" };
+      if (boundaryEnabled) {
+        fatalPayload.boundarySettlement = mergeCapturedBoundary(captureRankedBoundary()).eventPayload;
+        pendingRoomSummary = null;
+      }
       if (pendingElixirUsage && pendingElixirUsage.count > 0) fatalPayload.elixirUsage = { ...pendingElixirUsage };
       const presentationCause = normalizePresentationCause(context?.reason);
       if (
@@ -1458,38 +1617,53 @@
       pendingElixirUsage = null;
       const state = response.metaState;
       root.DungeonOnlineV3GameBridge.syncCanonicalProjection(state);
-      if (["defeat", "victory", "extraction"].includes(state.status)) {
-        session.transition(root.DungeonRankedV3Session.STATES.terminal);
-        showTerminal(state);
-        return;
-      }
-      const directive = directives.applyOnlineV3RoomDirective(state.currentRoomDirective);
-      if (previousDirectiveId && directive.directiveId === previousDirectiveId) {
-        root.DungeonOnlineV3GameBridge.resumePreventedFatal(state);
-        session.transition(root.DungeonRankedV3Session.STATES.active);
+      const continueFatal = () => {
+        if (["defeat", "victory", "extraction"].includes(state.status)) {
+          session.transition(root.DungeonRankedV3Session.STATES.terminal);
+          showTerminal(state);
+          return;
+        }
+        const directive = directives.applyOnlineV3RoomDirective(state.currentRoomDirective);
+        if (previousDirectiveId && directive.directiveId === previousDirectiveId) {
+          root.DungeonOnlineV3GameBridge?.resetRankedBoundaryRecorder?.();
+          installRoomIntegrityContext(state.currentRoomDirective);
+          root.DungeonOnlineV3GameBridge.resumePreventedFatal(state);
+          session.transition(root.DungeonRankedV3Session.STATES.active);
+          ui.hide();
+          return;
+        }
+        root.DungeonOnlineV3GameBridge.resumeAfterFatal(directive, state, {
+          reason: String(context?.reason || ""),
+          lostRelicId: offers.lostRelicId(previousState?.build, state?.build)
+        });
+        session.transition(root.DungeonRankedV3Session.STATES.next);
+        // The native death screen remains visible until the player starts the next canonical life.
         ui.hide();
-        return;
-      }
-      root.DungeonOnlineV3GameBridge.resumeAfterFatal(directive, state, {
-        reason: String(context?.reason || ""),
-        lostRelicId: offers.lostRelicId(previousState?.build, state?.build)
-      });
-      session.transition(root.DungeonRankedV3Session.STATES.next);
-      // The native death screen remains visible until the player starts the next canonical life.
-      ui.hide();
+      };
+      if (presentRankIntegrityNotice(state, continueFatal)) return;
+      continueFatal();
     } catch (error) {
       presentError(error);
     }
   }
 
-  async function performExtraction(mode) {
+  async function performExtraction(mode, boundarySettlement = null) {
     const resolving = root.DungeonRankedV3Session.STATES.resolving;
     if (session.getState() !== resolving) session.transition(resolving);
     root.DungeonOnlineV3GameBridge?.beginRankedExtraction?.();
-    const response = await createClient().event("request_extraction", { mode });
-    extractedProfileReady = response.metaState?.status === "extraction" && Boolean(response.profile);
-    session.transition(root.DungeonRankedV3Session.STATES.terminal);
-    await finalize();
+    pendingBoundaryExit = null;
+    const payload = boundarySettlement ? { mode, boundarySettlement } : { mode };
+    const response = await createClient().event("request_extraction", payload);
+    root.DungeonOnlineV3GameBridge.syncCanonicalProjection(response.metaState);
+    const finishExtraction = async () => {
+      extractedProfileReady = response.metaState?.status === "extraction" && Boolean(response.profile);
+      session.transition(root.DungeonRankedV3Session.STATES.terminal);
+      await finalize();
+    };
+    if (presentRankIntegrityNotice(response.metaState, () => {
+      finishExtraction().catch(presentError);
+    })) return;
+    await finishExtraction();
   }
 
   async function onExtraction(mode) {
@@ -1500,7 +1674,21 @@
       return;
     }
     try {
-      await performExtraction(extractionMode);
+      if (!usesBoundarySettlement()) {
+        await performExtraction(extractionMode);
+        return;
+      }
+      ui.showSync("Extracting…");
+      const captured = mergeCapturedBoundary(captureRankedBoundary());
+      if (extractionMode === "emergency") {
+        pendingRoomSummary = null;
+        await performExtraction(extractionMode, captured.eventPayload);
+        return;
+      }
+      pendingRoomSummary = captured.summary;
+      pendingExtractionMode = extractionMode;
+      pendingBoundaryExit = "normal_extract";
+      await continueBoundary(createClient().getSnapshot()?.publicState);
     } catch (error) {
       presentError(error);
     }
@@ -1614,7 +1802,9 @@
   root.DungeonOnlineV3 = Object.freeze({
     mode: "practice",
     startRanked,
+    usesBoundarySettlement,
     onLocalRoomCleared,
+    onPortalEntry,
     onRoomEntered,
     onMerchantOpen,
     onMerchantAction,

@@ -500,7 +500,15 @@ async function chooseRelicWithoutFatalPrevention(page) {
     const safeIndex = choices.findIndex((choice) => choice?.relicId !== "chronoloop");
     return safeIndex >= 0 ? safeIndex : 0;
   });
-  await page.locator(".ranked-v3-choice-relic").nth(choiceIndex).click();
+  const choice = page.locator(".ranked-v3-choice-relic:visible").nth(choiceIndex);
+  const choiceId = await choice.getAttribute("data-choice-id");
+  await choice.focus();
+  await page.keyboard.press("Enter");
+  await page.waitForFunction((selectedChoiceId) => (
+    ![...document.querySelectorAll(".ranked-v3-choice-relic")]
+      .some((element) => element.getClientRects().length > 0 &&
+        element.getAttribute("data-choice-id") === selectedChoiceId)
+  ), choiceId, { timeout: 15_000 });
 }
 
 async function chooseForgeRewardWithCanonicalReplacement(page, diagnostics) {
@@ -509,11 +517,48 @@ async function chooseForgeRewardWithCanonicalReplacement(page, diagnostics) {
     const session = window.DungeonOnlineV3?.getSessionState?.() || "";
     const replacement = [...document.querySelectorAll("#screenOverlay .relic-draft-grid-inventory [data-relic-key]")]
       .some((element) => element.getClientRects().length > 0);
-    return session === "ENTERING_NEXT_ROOM" || replacement;
+    return ["ROOM_ACTIVE", "AWAITING_REWARD_OR_TRANSACTION", "ENTERING_NEXT_ROOM"].includes(session) || replacement;
   }, null, { timeout: 20_000 });
 
   const session = await page.evaluate(() => window.DungeonOnlineV3?.getSessionState?.() || "");
-  if (session !== "ENTERING_NEXT_ROOM") {
+  if (!["ROOM_ACTIVE", "ENTERING_NEXT_ROOM"].includes(session)) {
+    if (await page.locator(".ranked-v3-choice-relic:visible").count() > 0) {
+      await chooseRelicWithoutFatalPrevention(page);
+      await page.waitForFunction(() => ["ROOM_ACTIVE", "ENTERING_NEXT_ROOM"].includes(
+        window.DungeonOnlineV3?.getSessionState?.() || ""
+      ));
+      return;
+    }
+    try {
+      await page.waitForFunction(() => (
+        ["ROOM_ACTIVE", "ENTERING_NEXT_ROOM"].includes(
+          window.DungeonOnlineV3?.getSessionState?.() || ""
+        ) ||
+        [...document.querySelectorAll(".ranked-v3-choice-relic")]
+          .some((element) => element.getClientRects().length > 0) ||
+        [...document.querySelectorAll("#screenOverlay .relic-draft-grid-inventory [data-relic-key]")]
+          .some((element) => element.getClientRects().length > 0)
+      ), null, { timeout: 5_000 });
+    } catch (error) {
+      const diagnostic = await page.evaluate(() => ({
+        session: window.DungeonOnlineV3?.getSessionState?.() || "",
+        game: JSON.parse(window.render_game_to_text()),
+        state: window.DungeonOnlineV3?.getSnapshot?.()?.publicState || null,
+        nativeOverlay: document.querySelector("#screenOverlay")?.textContent || "",
+        rankedOverlay: document.querySelector(".ranked-v3-overlay")?.textContent || ""
+      }));
+      throw new Error(`Ranked Forge replacement did not resolve: ${JSON.stringify(diagnostic)}`, { cause: error });
+    }
+    if (["ROOM_ACTIVE", "ENTERING_NEXT_ROOM"].includes(
+      await page.evaluate(() => window.DungeonOnlineV3?.getSessionState?.() || "")
+    )) return;
+    if (await page.locator(".ranked-v3-choice-relic:visible").count() > 0) {
+      await chooseRelicWithoutFatalPrevention(page);
+      await page.waitForFunction(() => ["ROOM_ACTIVE", "ENTERING_NEXT_ROOM"].includes(
+        window.DungeonOnlineV3?.getSessionState?.() || ""
+      ));
+      return;
+    }
     const replacement = await page.evaluate(() => {
       const state = window.DungeonOnlineV3?.getSnapshot?.()?.publicState;
       const choice = state?.metaTransactionOffer?.choices?.find((candidate) =>
@@ -530,7 +575,9 @@ async function chooseForgeRewardWithCanonicalReplacement(page, diagnostics) {
     assert.equal(replacement.visible, true, JSON.stringify(replacement));
     await page.keyboard.press(replacement.key);
   }
-  await sessionState(page, "ENTERING_NEXT_ROOM", diagnostics);
+  await page.waitForFunction(() => ["ROOM_ACTIVE", "ENTERING_NEXT_ROOM"].includes(
+    window.DungeonOnlineV3?.getSessionState?.() || ""
+  ));
 }
 
 async function waitForStartingRelic(page, label) {
@@ -610,8 +657,37 @@ async function clearVisibleRoom(page) {
   await page.waitForFunction(() => JSON.parse(window.render_game_to_text()).roomCleared === true);
 }
 
-async function crossVisiblePortal(page, expectedDepth) {
+async function enterVisiblePortal(page) {
   assert.equal(await page.evaluate(() => window.__DUNGEON_TEST_CROSS_PORTAL?.()), true);
+}
+
+async function completeVisiblePortal(page, expectedDepth, diagnostics = null) {
+  try {
+    await page.waitForFunction(
+      (depth) => {
+        const game = JSON.parse(window.render_game_to_text());
+        return (game.depth >= depth && window.DungeonOnlineV3?.getSessionState?.() === "ROOM_ACTIVE") ||
+          [...document.querySelectorAll(".ranked-v3-choice-relic")]
+            .some((element) => element.getClientRects().length > 0);
+      },
+      expectedDepth,
+      { timeout: 30_000 }
+    );
+  } catch (error) {
+    const diagnostic = await page.evaluate(() => ({
+      game: JSON.parse(window.render_game_to_text()),
+      session: window.DungeonOnlineV3?.getSessionState?.() || "",
+      snapshot: window.DungeonOnlineV3?.getSnapshot?.() || null,
+      overlay: document.querySelector(".ranked-v3-overlay:not(.hidden)")?.innerText || ""
+    }));
+    if (diagnostics) {
+      diagnostic.checkpointBodies = diagnostics.checkpointBodies.slice(-12);
+    }
+    throw new Error(`Ranked portal boundary did not resolve: ${JSON.stringify(diagnostic)}`, { cause: error });
+  }
+  if (await page.locator(".ranked-v3-choice-relic:visible").count() > 0) {
+    await chooseRelicWithoutFatalPrevention(page);
+  }
   await page.waitForFunction(
     (depth) => {
       const game = JSON.parse(window.render_game_to_text());
@@ -625,12 +701,15 @@ async function crossVisiblePortal(page, expectedDepth) {
   assert.notEqual(state.latestLog, "Online v3 is still resolving the next room.");
 }
 
+async function crossVisiblePortal(page, expectedDepth, diagnostics = null) {
+  await enterVisiblePortal(page);
+  await completeVisiblePortal(page, expectedDepth, diagnostics);
+}
+
 async function advanceVisibleRoom(page, expectedDepth) {
   const sourceRoom = await visibleGameState(page);
   await clearVisibleRoom(page);
-  if (sourceRoom.roomType !== "merchant") {
-    await sessionState(page, "ENTERING_NEXT_ROOM");
-  }
+  assert.equal(await page.evaluate(() => window.DungeonOnlineV3?.getSessionState?.()), "ROOM_ACTIVE");
   await crossVisiblePortal(page, expectedDepth);
   return sourceRoom;
 }
@@ -750,6 +829,13 @@ async function main() {
     state.player.hp = Math.max(1, state.player.maxHp - 1);
     drinkPotion();
     return state.player.potions === before - 1;
+  };
+  window.__DUNGEON_TEST_OPEN_LATE_CHEST = () => {
+    if (!canUseDebugCheats() || state.phase !== "playing" || !state.roomCleared) return null;
+    const chest = state.chests.find((candidate) => candidate && !candidate.opened && !candidate.destroyed);
+    if (!chest) return null;
+    openChest(chest);
+    return { opened: chest.opened === true, type: String(chest.type || "normal") };
   };
   window.__DUNGEON_TEST_TOGGLE_OBSERVER_BOT = () => {
     if (!canUseDebugCheats() || state.phase !== "playing") return false;
@@ -1100,39 +1186,24 @@ ${fatalTestHookAnchor}`;
         );
         await page.waitForFunction(() => JSON.parse(window.render_game_to_text()).roomCleared === true);
       }
-      if (sourceRoom.roomType !== "merchant") {
-        await page.waitForFunction(() => [
-          "AWAITING_REWARD_OR_TRANSACTION",
-          "ENTERING_NEXT_ROOM"
-        ].includes(window.DungeonOnlineV3?.getSessionState?.()) || (
-          window.DungeonOnlineV3?.getSessionState?.() === "RESOLVING_ROOM" &&
-          window.DungeonOnlineV3?.getSnapshot?.()?.publicState?.rankEligibility === "provisional"
-        ));
-        if (await page.locator(".ranked-v3-choice-relic:visible").count() > 0) {
-          await chooseRelicWithoutFatalPrevention(page);
-        }
-        const integrityAudit = await page.evaluate(() => ({
-          rankEligibility: window.DungeonOnlineV3.getSnapshot()?.publicState?.rankEligibility,
-          session: window.DungeonOnlineV3.getSessionState()
-        }));
-        if (integrityAudit.rankEligibility === "provisional") {
-          throw new Error(
-            `Ranked lifecycle integrity false positive: ${JSON.stringify({
-              integrityAudit,
-              checkpoint: diagnostics.checkpointBodies.at(-1)
-            })}`
-          );
-        }
-        try {
-          await sessionState(page, "ENTERING_NEXT_ROOM");
-        } catch (error) {
-          throw new Error(
-            `Ranked lifecycle checkpoint diagnostics: ${JSON.stringify(diagnostics.checkpointBodies.at(-1))}`,
-            { cause: error }
-          );
-        }
+      assert.equal(
+        await page.evaluate(() => window.DungeonOnlineV3?.getSessionState?.()),
+        "ROOM_ACTIVE",
+        "A cleared Ranked room must remain interactive until its portal boundary"
+      );
+      await crossVisiblePortal(page, sourceRoom.depth + 1, diagnostics);
+      const integrityAudit = await page.evaluate(() => ({
+        rankEligibility: window.DungeonOnlineV3.getSnapshot()?.publicState?.rankEligibility,
+        session: window.DungeonOnlineV3.getSessionState()
+      }));
+      if (integrityAudit.rankEligibility === "provisional") {
+        throw new Error(
+          `Ranked lifecycle integrity false positive: ${JSON.stringify({
+            integrityAudit,
+            checkpoint: diagnostics.checkpointBodies.at(-1)
+          })}`
+        );
       }
-      await crossVisiblePortal(page, sourceRoom.depth + 1);
       forgeRoom = await visibleGameState(page);
     }
     assert.equal(
@@ -1315,21 +1386,37 @@ ${fatalTestHookAnchor}`;
     const firstCanonicalGold = await page.evaluate(() => (
       window.DungeonOnlineV3.getSnapshot()?.publicState?.gold || 0
     ));
+    const checkpointsBeforeFirstClear = diagnostics.checkpointBodies.length;
     await clearVisibleRoom(page);
-    await sessionState(page, "ENTERING_NEXT_ROOM");
+    const openRoomAudit = await page.evaluate(() => ({
+      session: window.DungeonOnlineV3.getSessionState(),
+      game: JSON.parse(window.render_game_to_text()),
+      canonicalGold: window.DungeonOnlineV3.getSnapshot()?.publicState?.gold || 0,
+      logText: document.getElementById("log")?.innerText || ""
+    }));
+    assert.equal(openRoomAudit.session, "ROOM_ACTIVE", JSON.stringify(openRoomAudit));
+    assert.equal(openRoomAudit.canonicalGold, firstCanonicalGold, JSON.stringify(openRoomAudit));
+    assert.equal(diagnostics.checkpointBodies.length, checkpointsBeforeFirstClear);
+    assert.doesNotMatch(openRoomAudit.logText, /Room clear bonus: \+\d+ gold\./u);
+    const lateChest = await page.evaluate(() => window.__DUNGEON_TEST_OPEN_LATE_CHEST?.());
+    assert.deepEqual(lateChest, { opened: true, type: "normal" });
+    assert.equal(await page.evaluate(() => window.DungeonOnlineV3.getSessionState()), "ROOM_ACTIVE");
+    assert.equal(diagnostics.checkpointBodies.length, checkpointsBeforeFirstClear);
+    await crossVisiblePortal(page, firstRoom.depth + 1);
     const firstGoldAudit = await page.evaluate(() => ({
       game: JSON.parse(window.render_game_to_text()),
       canonicalGold: window.DungeonOnlineV3.getSnapshot()?.publicState?.gold || 0,
       logText: document.getElementById("log")?.innerText || ""
     }));
     const firstCheckpoint = diagnostics.checkpointBodies.at(-1);
-    assert(firstCheckpoint, "First Ranked clear did not send a checkpoint body");
+    assert(firstCheckpoint, "First Ranked portal did not send a checkpoint body");
     assert.equal(
       firstCheckpoint.rewardClaims
         .filter((claim) => ["enemy", "elite", "hazard"].includes(claim.claimType))
         .reduce((sum, claim) => sum + claim.count, 0),
       firstRoom.enemies.length
     );
+    assert.equal(firstCheckpoint.rewardClaims.some((claim) => claim.claimType === "chest"), true);
     assert(firstGoldAudit.canonicalGold > firstCanonicalGold);
     assert.equal(firstGoldAudit.game.player.gold, firstGoldAudit.canonicalGold);
     assert.match(firstGoldAudit.logText, /Room clear bonus: \+\d+ gold\./u);
@@ -1337,7 +1424,6 @@ ${fatalTestHookAnchor}`;
       path: path.join(ARTIFACT_ROOT, "ranked-room-clear-gold-parity.png"),
       fullPage: true
     });
-    await crossVisiblePortal(page, firstRoom.depth + 1);
 
     await advanceVisibleRoom(page, firstRoom.depth + 2);
     await page.screenshot({
@@ -1350,12 +1436,9 @@ ${fatalTestHookAnchor}`;
     const requestsBeforePreWardenClear = diagnostics.apiRequests.length;
     const preWardenSourceRoom = await visibleGameState(page);
     await clearVisibleRoom(page);
-    const merchantBoundary = preWardenSourceRoom.roomType === "merchant";
-    if (merchantBoundary) {
-      await crossVisiblePortal(page, firstRoom.depth + 4);
-    } else {
-      await sessionState(page, "ENTERING_NEXT_ROOM");
-    }
+    assert.equal(await page.evaluate(() => window.DungeonOnlineV3.getSessionState()), "ROOM_ACTIVE");
+    assert.equal(diagnostics.apiRequests.length, requestsBeforePreWardenClear);
+    await crossVisiblePortal(page, firstRoom.depth + 4);
     const preWardenAudit = await page.evaluate(() => {
       const snapshot = window.DungeonOnlineV3.getSnapshot();
       return {
@@ -1393,9 +1476,6 @@ ${fatalTestHookAnchor}`;
       fullPage: true
     });
 
-    if (!merchantBoundary) {
-      await crossVisiblePortal(page, firstRoom.depth + 4);
-    }
     assert.equal(await page.locator(".ranked-v3-choice-relic:visible").count(), 0);
     const wardenPotionsBefore = await page.evaluate(() => (
       window.DungeonOnlineV3.getSnapshot()?.publicState?.build?.resources?.potions || 0
@@ -1403,9 +1483,12 @@ ${fatalTestHookAnchor}`;
     assert(wardenPotionsBefore > 0, "Warden potion regression requires a canonical potion");
     assert.equal(await page.evaluate(() => window.__DUNGEON_TEST_USE_POTION?.()), true);
     await clearVisibleRoom(page);
+    assert.equal(await page.evaluate(() => window.DungeonOnlineV3.getSessionState()), "ROOM_ACTIVE");
+    await enterVisiblePortal(page);
     await page.waitForFunction(() => [
       "AWAITING_REWARD_OR_TRANSACTION",
-      "ENTERING_NEXT_ROOM"
+      "ENTERING_NEXT_ROOM",
+      "ROOM_ACTIVE"
     ].includes(window.DungeonOnlineV3?.getSessionState?.()), null, { timeout: 15_000 });
     if (await page.locator(".ranked-v3-choice-relic:visible").count() > 0) {
       await page.screenshot({
@@ -1413,10 +1496,8 @@ ${fatalTestHookAnchor}`;
         fullPage: true
       });
       await chooseRelicWithoutFatalPrevention(page);
-      await sessionState(page, "ENTERING_NEXT_ROOM");
-    } else {
-      await sessionState(page, "ENTERING_NEXT_ROOM");
     }
+    await completeVisiblePortal(page, firstRoom.depth + 5);
     const wardenCheckpoint = diagnostics.checkpointBodies.at(-1);
     assert(wardenCheckpoint, "Warden clear did not send a checkpoint body");
     assert.deepEqual(
@@ -1436,8 +1517,6 @@ ${fatalTestHookAnchor}`;
       path: path.join(ARTIFACT_ROOT, "ranked-warden-potion-checkpoint.png"),
       fullPage: true
     });
-    await crossVisiblePortal(page, firstRoom.depth + 5);
-
     const livesBeforeDeath = await page.evaluate(() => (
       window.DungeonOnlineV3.getSnapshot()?.publicState?.lives || 0
     ));
@@ -2416,12 +2495,14 @@ ${fatalTestHookAnchor}`;
       await route.continue();
     });
     await clearVisibleRoom(page);
-    await checkpointStarted;
+    assert.equal(await page.evaluate(() => window.DungeonOnlineV3.getSessionState()), "ROOM_ACTIVE");
     await page.keyboard.press("q");
+    await checkpointStarted;
     assert.equal(
       await page.evaluate(() => window.DungeonOnlineV3.getSessionState()),
       "RESOLVING_ROOM"
     );
+    await page.getByText("Extracting…", { exact: true }).waitFor({ state: "visible" });
     assert.equal(await page.getByRole("heading", { name: "Ranked reconnect required" }).count(), 0);
     releaseCheckpoint();
     await sessionState(page, "FINALIZED");

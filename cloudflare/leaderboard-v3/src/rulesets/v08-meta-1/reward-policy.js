@@ -579,13 +579,19 @@ function calculateClaimAmount(state, envelope, claim, slotById) {
   return { amount: unit * claim.count, authority: "BOUNDED_CLIENT_ATTESTED" };
 }
 
-export async function settleRoomRewardEnvelopeV3(state, request, context = {}) {
+async function settleRewardEnvelopeV3(state, request, context = {}, options = {}) {
+  const outcome = options.outcome || "cleared";
+  if (!["cleared", "emergency", "fatal"].includes(outcome)) {
+    throw new TypeError("REWARD_SETTLEMENT_OUTCOME_INVALID");
+  }
   await assertCanonicalRelicBuildDigestV08(state.build, context.cryptoProvider);
   await assertCanonicalRunModifierDigestV08(state.runModifiers, context.cryptoProvider);
   const envelope = assertRoomRewardEnvelopeV3(state.currentRewardEnvelope);
   const digest = await sha256(requestDigestInput(request), context.cryptoProvider);
-  const previous = (state.rewardSettlementHistory || []).find(
-    (entry) => entry.envelopeId === request.envelopeId
+  const previous = (state.rewardSettlementHistory || []).find((entry) =>
+    entry.envelopeId === request.envelopeId &&
+    (entry.outcome || "cleared") === outcome &&
+    (outcome !== "fatal" || entry.requestDigest === digest)
   );
   if (previous) {
     if (previous.requestDigest !== digest) throw new TypeError("REWARD_IDEMPOTENCY_PAYLOAD_MISMATCH");
@@ -607,22 +613,47 @@ export async function settleRoomRewardEnvelopeV3(state, request, context = {}) {
   const seen = new Set();
   let enemyCount = 0;
   let eliteCount = 0;
+  let validatedEnemyCount = 0;
+  let validatedEliteCount = 0;
   let potionUseCount = 0;
   let shieldUseCount = 0;
   let boundedDelta = 0;
   const evidence = new Set();
+  const validationState = outcome === "fatal" ? structuredClone(next) : null;
+  const validationEnvelope = validationState?.currentRewardEnvelope || null;
+  const validationSlots = validationEnvelope
+    ? new Map(validationEnvelope.claimSlots.map((slot) => [slot.slotId, slot]))
+    : null;
   for (const claim of request.claims) {
+    const appliesToOutcome = outcome !== "fatal" || (
+      claim?.claimType === "resource" ||
+      (
+        claim?.claimType === "chest" &&
+        claim?.localEvidence?.outcome === "map_fragment"
+      )
+    );
     const key = `${claim?.claimType}:${claim?.claimId}`;
     if (seen.has(key)) throw new TypeError("REWARD_CLAIM_DUPLICATE");
     seen.add(key);
     if (claim.claimType === "enemy" || claim.claimType === "elite" || claim.claimType === "hazard") {
-      enemyCount += requireInteger(claim.count, "REWARD_CLAIM_COUNT_INVALID");
+      validatedEnemyCount += requireInteger(claim.count, "REWARD_CLAIM_COUNT_INVALID");
     }
-    if (claim.claimType === "elite") eliteCount += claim.count;
-    if (claim.claimType === "resource" && claim.claimId === "potion-use") potionUseCount += claim.count;
-    if (claim.claimType === "resource" && claim.claimId === "shield-use") shieldUseCount += claim.count;
-    const result = calculateClaimAmount(next, mutableEnvelope, claim, slotById);
-    boundedDelta += result.amount;
+    if (claim.claimType === "elite") validatedEliteCount += claim.count;
+    const result = calculateClaimAmount(
+      appliesToOutcome ? next : validationState,
+      appliesToOutcome ? mutableEnvelope : validationEnvelope,
+      claim,
+      appliesToOutcome ? slotById : validationSlots
+    );
+    if (appliesToOutcome) {
+      if (claim.claimType === "enemy" || claim.claimType === "elite" || claim.claimType === "hazard") {
+        enemyCount += claim.count;
+      }
+      if (claim.claimType === "elite") eliteCount += claim.count;
+      if (claim.claimType === "resource" && claim.claimId === "potion-use") potionUseCount += claim.count;
+      if (claim.claimType === "resource" && claim.claimId === "shield-use") shieldUseCount += claim.count;
+      boundedDelta += result.amount;
+    }
     const evidenceId = typeof claim.localEvidence?.evidenceId === "string"
       ? claim.localEvidence.evidenceId
       : "";
@@ -631,27 +662,29 @@ export async function settleRoomRewardEnvelopeV3(state, request, context = {}) {
       evidence.add(evidenceId);
     }
   }
-  if (enemyCount > enemyMaximumForRoom(envelope.roomType)) {
+  if (validatedEnemyCount > enemyMaximumForRoom(envelope.roomType)) {
     throw new TypeError("REWARD_CLAIM_ROOM_ENEMY_BUDGET");
   }
-  if (eliteCount > rewardBounds.enemyClaims.maximumElitesPerRoom) {
+  if (validatedEliteCount > rewardBounds.enemyClaims.maximumElitesPerRoom) {
     throw new TypeError("REWARD_CLAIM_ROOM_ELITE_BUDGET");
   }
 
-  const fixedDelta = mutableEnvelope.fixedAwards.reduce(
-    (sum, award) => sum + requireInteger(award.amount, "REWARD_FIXED_AWARD_INVALID"),
-    0
-  );
+  const fixedDelta = outcome === "cleared"
+    ? mutableEnvelope.fixedAwards.reduce(
+      (sum, award) => sum + requireInteger(award.amount, "REWARD_FIXED_AWARD_INVALID"),
+      0
+    )
+    : 0;
   const authoritativeGoldDelta = fixedDelta + boundedDelta;
   if (authoritativeGoldDelta > mutableEnvelope.maximumGoldDelta) {
     throw new TypeError("REWARD_ENVELOPE_MAXIMUM_EXCEEDED");
   }
   const expectedGold = next.gold + authoritativeGoldDelta;
   const anomalies = [];
-  if (Number(request.reportedGoldDelta) !== authoritativeGoldDelta) {
+  if (outcome !== "fatal" && Number(request.reportedGoldDelta) !== authoritativeGoldDelta) {
     pushAnomaly(anomalies, "REPORTED_GOLD_DELTA_MISMATCH");
   }
-  if (Number(request.reportedGoldTotal) !== expectedGold) {
+  if (outcome !== "fatal" && Number(request.reportedGoldTotal) !== expectedGold) {
     pushAnomaly(anomalies, "REPORTED_GOLD_TOTAL_MISMATCH");
   }
   if (!String(request.commandJournalDigest || "").trim()) {
@@ -673,6 +706,7 @@ export async function settleRoomRewardEnvelopeV3(state, request, context = {}) {
     pushAnomaly(anomalies, "COMPACT_ROOM_PROOF_MISSING");
   }
   if (
+    outcome !== "fatal" &&
     mutableEnvelope.maximumGoldDelta > 0 &&
     authoritativeGoldDelta === mutableEnvelope.maximumGoldDelta
   ) {
@@ -681,7 +715,9 @@ export async function settleRoomRewardEnvelopeV3(state, request, context = {}) {
 
   next.gold = Math.max(0, expectedGold);
   next.build.buildDigest = await computeRelicBuildDigestV08(next.build, context.cryptoProvider);
-  const unlockIndex = progression.startDepthUnlockBossDepths.indexOf(mutableEnvelope.depth);
+  const unlockIndex = outcome === "cleared"
+    ? progression.startDepthUnlockBossDepths.indexOf(mutableEnvelope.depth)
+    : -1;
   if (unlockIndex >= 0) {
     const unlockedDepth = progression.allowedStartDepths[unlockIndex + 1];
     if (unlockedDepth && !next.campaign.unlockedStartDepths.includes(unlockedDepth)) {
@@ -693,7 +729,9 @@ export async function settleRoomRewardEnvelopeV3(state, request, context = {}) {
   next.mutatorProgress = applyMutatorProgressDeltaV08(next.mutatorProgress, {
     totalKills: next.mutatorProgress.totalKills + enemyCount,
     eliteKills: next.mutatorProgress.eliteKills + eliteCount,
-    depthHighscore: Math.max(next.mutatorProgress.depthHighscore, mutableEnvelope.depth),
+    depthHighscore: outcome === "cleared"
+      ? Math.max(next.mutatorProgress.depthHighscore, mutableEnvelope.depth)
+      : next.mutatorProgress.depthHighscore,
     totalGoldEarned: next.mutatorProgress.totalGoldEarned + authoritativeGoldDelta,
     shieldUsesThisGame: next.mutatorProgress.shieldUsesThisGame + shieldUseCount
   });
@@ -715,9 +753,10 @@ export async function settleRoomRewardEnvelopeV3(state, request, context = {}) {
     ...next.goldLedger.anomalyFlags,
     ...anomalies
   ].slice(-HISTORY_LIMIT);
-  mutableEnvelope.consumed = true;
+  mutableEnvelope.consumed = outcome !== "fatal";
   const historyEntry = {
     envelopeId: mutableEnvelope.envelopeId,
+    ...(outcome === "cleared" ? {} : { outcome }),
     requestDigest: digest,
     authoritativeGoldDelta,
     anomalies
@@ -732,6 +771,22 @@ export async function settleRoomRewardEnvelopeV3(state, request, context = {}) {
     anomalies,
     replayed: false
   };
+}
+
+export async function settleRoomRewardEnvelopeV3(state, request, context = {}) {
+  return settleRewardEnvelopeV3(state, request, context, { outcome: "cleared" });
+}
+
+export async function settleBoundaryRewardEnvelopeV3(
+  state,
+  request,
+  options = {},
+  context = {}
+) {
+  if (!["emergency", "fatal"].includes(options.outcome)) {
+    throw new TypeError("REWARD_BOUNDARY_OUTCOME_INVALID");
+  }
+  return settleRewardEnvelopeV3(state, request, context, options);
 }
 
 export const V08_REWARD_POLICY_DATA = Object.freeze({

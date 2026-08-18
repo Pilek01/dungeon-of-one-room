@@ -6,6 +6,7 @@ import { createRulesetRegistry } from "../src/rulesets/registry.js";
 import {
   V08_META_1_BOUNDARY_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR,
   V08_META_1_HD_BOOT_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR,
+  V08_META_1_INTEGRITY_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR,
   V08_META_1_LEGACY_PRODUCTION_RELEASE_DESCRIPTOR,
   V08_META_1_LOCAL_RELEASE_DESCRIPTOR,
   V08_META_1_PLAYTEST_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR,
@@ -30,6 +31,7 @@ const LEGACY_PRODUCTION_RELEASES = Object.freeze([
 ]);
 const PRODUCTION_RELEASES = Object.freeze([
   ...LEGACY_PRODUCTION_RELEASES,
+  V08_META_1_INTEGRITY_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR,
   V08_META_1_PRODUCTION_RELEASE_DESCRIPTOR
 ]);
 
@@ -181,10 +183,20 @@ test("historical production descriptors strip fatal cause while current producti
   }
   assert.deepEqual(
     V08_META_1_LOCAL_RELEASE_DESCRIPTOR.capabilities,
-    { fatalPresentationCauseMode: "retain" }
+    {
+      fatalPresentationCauseMode: "retain",
+      boundarySettlementMode: "event-journal-v1"
+    }
   );
   assert.deepEqual(
     V08_META_1_PRODUCTION_RELEASE_DESCRIPTOR.capabilities,
+    {
+      fatalPresentationCauseMode: "retain",
+      boundarySettlementMode: "event-journal-v1"
+    }
+  );
+  assert.deepEqual(
+    V08_META_1_INTEGRITY_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR.capabilities,
     { fatalPresentationCauseMode: "retain" }
   );
 });

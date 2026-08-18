@@ -123,6 +123,7 @@ test("R2 public seek cursor is versioned, strict, and malformed input returns 40
 });
 
 test("R2 client accepts released save hashes and rejects local-only or unknown hashes", () => {
+  assert.equal(protocol.RULESET_HASH, V08_META_1_LOCAL_RELEASE_DESCRIPTOR.rulesetHash);
   assert.equal(protocol.RULESET_HASH, V08_META_1_PRODUCTION_RELEASE_DESCRIPTOR.rulesetHash);
   assert.equal(protocol.RULESET_HASH, manifest.rulesetHash);
   assert.equal(protocol.isSupportedRulesetHash(manifest.rulesetHash), true);

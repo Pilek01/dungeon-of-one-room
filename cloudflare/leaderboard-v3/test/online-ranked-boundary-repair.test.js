@@ -291,3 +291,33 @@ test("Ranked Observer Bot owns canonical offers and waits for the full boundary"
     /function runObserverBotStep\(\)[\s\S]*isObserverBotBoundaryPending[\s\S]*state\.phase/u
   );
 });
+
+test("capable Ranked rooms keep the journal open until portal, extract, or fatal settlement", async () => {
+  const builder = await readFile(new URL("../../../scripts/build-pages-v3.mjs", import.meta.url), "utf8");
+  const runtime = await readFile(new URL("../../../online-v3/ranked-v3-runtime.js", import.meta.url), "utf8");
+  const protocol = await readFile(new URL("../../../online-v3/ranked-v3-protocol.js", import.meta.url), "utf8");
+
+  const clearStart = builder.indexOf("const completionCapability = onlineV3RoomCompletionCapability;");
+  const clearEnd = builder.indexOf("`\n  ]\n];", clearStart);
+  assert.ok(clearStart >= 0 && clearEnd > clearStart, "expected injected Ranked room-clear block");
+  const clearBlock = builder.slice(clearStart, clearEnd);
+  assert.equal((clearBlock.match(/onlineV3RewardRecorder\?\.snapshot/gu) || []).length, 1);
+  assert.match(
+    clearBlock,
+    /if \(!window\.DungeonOnlineV3\?\.usesBoundarySettlement\?\.\(\)\)[\s\S]*onlineV3RewardRecorder\?\.snapshot/u
+  );
+  assert.match(clearBlock, /onLocalRoomCleared/u);
+  assert.match(clearBlock, /reportedGoldDelta/u);
+
+  assert.match(builder, /captureRankedBoundary\(\)[\s\S]*onlineV3RewardRecorder\?\.snapshot/u);
+  assert.match(builder, /state\.onlineV3NextDirective[\s\S]*onPortalEntry/u);
+  assert.match(builder, /resetRankedBoundaryRecorder/u);
+  assert.match(protocol, /function supportsBoundarySettlement\(value\)/u);
+  assert.match(runtime, /function onPortalEntry\(\)[\s\S]*captureRankedBoundary/u);
+  assert.match(runtime, /mergeCapturedBoundary[\s\S]*Math\.max/u);
+  assert.match(runtime, /Loading next depth…/u);
+  assert.match(runtime, /Extracting…/u);
+  assert.match(runtime, /fixedAwardGold[\s\S]*reportedGoldDelta/u);
+  assert.match(runtime, /onFatalEvent[\s\S]*captureRankedBoundary/u);
+  assert.match(runtime, /resetRankedBoundaryRecorder[\s\S]*resumePreventedFatal/u);
+});

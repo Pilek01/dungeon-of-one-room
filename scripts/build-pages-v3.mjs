@@ -816,6 +816,10 @@ const productionGameReplacements = [
           pushLog("Saving Forge choice and descending...", "good");
           return;
         }
+        if (window.DungeonOnlineV3?.onPortalEntry?.()) {
+          pushLog("Descending...", "good");
+          return;
+        }
         pushLog("Online v3 is still resolving the next room.", "warn");
         return;`
   ],
@@ -1148,6 +1152,33 @@ const rankedGoldGameReplacements = [
         Math.floor(Number(context.startingGold) || 0)
       );
     },
+    captureRankedBoundary() {
+      if (!state.onlineV3Ranked) return null;
+      const boundary = {
+        turnCount: Math.max(0, Number(state.turn) || 0),
+        rewardClaims: onlineV3RewardRecorder?.snapshot() || [],
+        reportedGoldDelta: Math.max(
+          0,
+          Math.floor(Number(state.player.gold) || 0) - onlineV3RoomStartingGold
+        ),
+        completionCapability: onlineV3RoomCompletionCapability
+      };
+      onlineV3RoomCompletionCapability = null;
+      return boundary;
+    },
+    resetRankedBoundaryRecorder() {
+      if (!state.onlineV3Ranked) return false;
+      onlineV3RewardRecorder = window.DungeonRankedV3Recorder?.createRewardClaimRecorder?.() || null;
+      onlineV3ActiveChestClaimId = null;
+      onlineV3RoomStartingGold = Math.max(0, Math.floor(Number(state.player.gold) || 0));
+      return true;
+    },
+    showRankedRoomClearAward(amount) {
+      const canonicalAmount = Math.max(0, Math.floor(Number(amount) || 0));
+      if (!state.onlineV3Ranked || canonicalAmount <= 0) return false;
+      pushLog("Room clear bonus: +" + canonicalAmount + " gold.", "good");
+      return true;
+    },
     getPracticeMutatorImport() {
       return {
         metrics: {
@@ -1373,16 +1404,19 @@ const rankedGoldGameReplacements = [
         rewardClaims: []
       });`,
 `      revealPortalFx();
-      const roomClearBase = Math.max(0, Number(
-        window.DungeonRankedV3Recorder?.roomClearBaseV08?.(state.depth, state.roomType)
-      ) || 0);
-      const scaled = grantGold(roomClearBase);
-      pushLog("Room clear bonus: +" + scaled + " gold.", "good");
       const completionCapability = onlineV3RoomCompletionCapability;
-      onlineV3RoomCompletionCapability = null;
+      let rewardClaims = [];
+      if (!window.DungeonOnlineV3?.usesBoundarySettlement?.()) {
+        const roomClearBase = Math.max(0, Number(
+          window.DungeonRankedV3Recorder?.roomClearBaseV08?.(state.depth, state.roomType)
+        ) || 0);
+        const scaled = grantGold(roomClearBase);
+        pushLog("Room clear bonus: +" + scaled + " gold.", "good");
+        rewardClaims = onlineV3RewardRecorder?.snapshot() || [];
+      }
       window.DungeonOnlineV3?.onLocalRoomCleared?.({
         turnCount: Math.max(0, Number(state.turn) || 0),
-        rewardClaims: onlineV3RewardRecorder?.snapshot() || [],
+        rewardClaims,
         reportedGoldDelta: Math.max(
           0,
           Math.floor(Number(state.player.gold) || 0) - onlineV3RoomStartingGold

@@ -5,7 +5,10 @@ import {
   consumeRoomDirectiveV08,
   issueNextRoomDirectiveV08
 } from "./room-policy.js";
-import { settleRoomRewardEnvelopeV3 } from "./reward-policy.js";
+import {
+  settleBoundaryRewardEnvelopeV3,
+  settleRoomRewardEnvelopeV3
+} from "./reward-policy.js";
 import {
   issueStartingRelicOfferV08,
   projectPublicStartingRelicOfferV08,
@@ -564,6 +567,15 @@ export function createV08Meta1Ruleset(options = {}) {
       return settleRoomRewardEnvelopeV3(
         state,
         request,
+        mergeContext(options, context)
+      );
+    },
+
+    async settleBoundaryRewardEnvelope(state, request, settlement, context = {}) {
+      return settleBoundaryRewardEnvelopeV3(
+        state,
+        request,
+        settlement,
         mergeContext(options, context)
       );
     }

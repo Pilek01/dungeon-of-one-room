@@ -9,9 +9,10 @@
 
   const PROTOCOL_VERSION = "ranked-v3-checkpoint-1";
   const RULESET_ID = "v08-meta-1";
-  const RULESET_HASH = "sha256:0672eb9aaae11865ebae75a4c6d6dc77cc29f4a079afe562355172d26f073bca";
+  const RULESET_HASH = "sha256:87c30b2c011b5103398f9b03f6bf018d71f2a35427c0a04ef7a31b2559a7a6d9";
   const SUPPORTED_RULESET_HASHES = Object.freeze([
     RULESET_HASH,
+    "sha256:0672eb9aaae11865ebae75a4c6d6dc77cc29f4a079afe562355172d26f073bca",
     "sha256:bc0d548d204557d0cc0ec7f8a358e18246778a13b27c58f5c6cdd73e73621711",
     "sha256:d784208aad891119b71c52324cea358997ee376313914d5799affa68c8678ff3",
     "sha256:7027a84ff06d6d9304e3d8e4343dbd6b3071c8bec734fad10b85981fa92347e8",
@@ -38,6 +39,10 @@
     "sha256:3f6044453414e636c6a41f40ceaf00dc221624ea54af2f61489b930b27c628e3"
   ]);
   const fatalPresentationCauseRulesetHashes = new Set(FATAL_PRESENTATION_CAUSE_RULESET_HASHES);
+  const BOUNDARY_SETTLEMENT_RULESET_HASHES = Object.freeze([
+    "sha256:87c30b2c011b5103398f9b03f6bf018d71f2a35427c0a04ef7a31b2559a7a6d9"
+  ]);
+  const boundarySettlementRulesetHashes = new Set(BOUNDARY_SETTLEMENT_RULESET_HASHES);
   const API_PREFIX = "/api/v3";
   const TOKEN_KINDS = Object.freeze({
     bootstrap: "run_bootstrap",
@@ -92,6 +97,10 @@
   function supportsFatalPresentationCause(value) {
     const hash = String(value || "");
     return !legacyFatalPresentationCauseRulesetHashes.has(hash) && fatalPresentationCauseRulesetHashes.has(hash);
+  }
+
+  function supportsBoundarySettlement(value) {
+    return boundarySettlementRulesetHashes.has(String(value || ""));
   }
 
   function requireOptionalRecord(value, field) {
@@ -307,6 +316,8 @@
     SUPPORTED_RULESET_HASHES,
     isSupportedRulesetHash,
     supportsFatalPresentationCause,
+    BOUNDARY_SETTLEMENT_RULESET_HASHES,
+    supportsBoundarySettlement,
     API_PREFIX,
     TOKEN_KINDS,
     ENDPOINTS,

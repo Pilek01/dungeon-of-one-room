@@ -297,7 +297,7 @@ test("a provisional response shows the continuation notice only once per run", a
     completionCapability: harness.integrityContexts[0].completionCapability
   });
   assert.equal(harness.uiMessages.length, 1);
-  assert.equal(harness.uiMessages[0][0], "Ranked integrity check failed");
+  assert.equal(harness.uiMessages[0][0], "Ranked integrity check failed.");
   await harness.uiMessages[0][2][0].onClick();
   await waitFor(() => harness.directives.length === 1, "notice did not continue the boundary");
   await runtime.onRoomEntered(metaState().currentRoomDirective);

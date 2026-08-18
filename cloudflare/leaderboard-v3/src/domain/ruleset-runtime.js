@@ -35,6 +35,91 @@ function runtimeContext(state, context = {}) {
   };
 }
 
+function supportsEventJournalBoundary(ruleset) {
+  return ruleset?.capabilities?.boundarySettlementMode === "event-journal-v1";
+}
+
+function exactBoundarySettlement(payload) {
+  return exactPayload(payload, [
+    "envelopeId",
+    "roomDirectiveId",
+    "roomNonce",
+    "claims",
+    "reportedGoldDelta",
+    "reportedGoldTotal",
+    "turnCount",
+    "elapsedMs",
+    "commandJournalDigest",
+    "compactRoomProof"
+  ], "BOUNDARY_SETTLEMENT_PAYLOAD_INVALID");
+}
+
+async function settleEventJournalBoundary(state, payload, outcome, ruleset, context) {
+  if (!supportsEventJournalBoundary(ruleset) || typeof ruleset.settleBoundaryRewardEnvelope !== "function") {
+    throw new TypeError("BOUNDARY_SETTLEMENT_UNSUPPORTED");
+  }
+  const request = exactBoundarySettlement(payload);
+  const roomIntegrityState = rankIntegrityRoomState(state);
+  let settlement;
+  let boundaryInvalid = false;
+  try {
+    settlement = await ruleset.settleBoundaryRewardEnvelope(
+      structuredClone(state),
+      request,
+      { outcome },
+      runtimeContext(state, { ...context, elapsedMs: request.elapsedMs })
+    );
+  } catch (error) {
+    if (!(error instanceof TypeError) || !/^REWARD_/u.test(String(error.message || ""))) {
+      throw error;
+    }
+    boundaryInvalid = true;
+    settlement = await ruleset.settleBoundaryRewardEnvelope(
+      structuredClone(state),
+      {
+        ...request,
+        envelopeId: state.currentRewardEnvelope.envelopeId,
+        roomDirectiveId: state.currentRoomDirective.directiveId,
+        roomNonce: state.currentRoomDirective.roomNonce,
+        claims: [],
+        reportedGoldDelta: 0,
+        reportedGoldTotal: state.gold,
+        commandJournalDigest: "invalid-boundary-settlement",
+        compactRoomProof: "invalid-boundary-settlement"
+      },
+      { outcome },
+      runtimeContext(state, { ...context, elapsedMs: request.elapsedMs })
+    );
+  }
+  applyCheckpointRankEligibility(settlement.state, {
+    integrityVersion: 1,
+    integritySignals: [],
+    goldIntegrityReasons: outcome === "emergency"
+      ? checkpointGoldIntegrityReasons(
+        roomIntegrityState || state,
+        {
+          ...request,
+          integrityVersion: 1,
+          rewardClaims: request.claims
+        },
+        settlement.authoritativeGoldDelta
+      )
+      : []
+  });
+  if (boundaryInvalid) {
+    initializeRankEligibility(settlement.state, { integrityVersion: 1 });
+    settlement.state.rankEligibility = "provisional";
+    settlement.state.rankIntegrity.reasonCodes = [...new Set([
+      ...settlement.state.rankIntegrity.reasonCodes,
+      "BOUNDARY_SETTLEMENT_INVALID"
+    ])].slice(0, 16);
+    if (settlement.state.rankIntegrity.firstDetectedRevision === null) {
+      settlement.state.rankIntegrity.firstDetectedRevision = settlement.state.revision;
+    }
+  }
+  return settlement.state;
+}
+
 function publicPendingOffer(state, ruleset) {
   if (!state.pendingOffer) return null;
   if (state.pendingOffer.offerType === "starting_relic") {
@@ -405,17 +490,33 @@ export async function applyRulesetEvent(state, body, ruleset, context = {}) {
       break;
     case "report_fatal_event": {
       const fatalPayload = body.payload === undefined ? {} : requireObject(body.payload, "FATAL_EVENT_PAYLOAD_INVALID");
-      const fatalFields = Object.keys(fatalPayload).sort();
+      const boundarySettlement = fatalPayload.boundarySettlement;
+      const fatalFields = Object.keys(fatalPayload)
+        .filter((field) => field !== "boundarySettlement")
+        .sort();
       const fatalAllowed = [
         "classification",
         "classification,elixirUsage",
         "classification,presentationCause",
         "classification,elixirUsage,presentationCause"
       ].includes(fatalFields.join(","));
-      if (!fatalAllowed) throw new TypeError("FATAL_EVENT_PAYLOAD_INVALID_FIELDS");
-      const request = fatalPayload;
+      if (
+        !fatalAllowed ||
+        (boundarySettlement !== undefined && !supportsEventJournalBoundary(ruleset))
+      ) throw new TypeError("FATAL_EVENT_PAYLOAD_INVALID_FIELDS");
+      const eventState = boundarySettlement === undefined
+        ? state
+        : await settleEventJournalBoundary(
+          state,
+          boundarySettlement,
+          "fatal",
+          ruleset,
+          context
+        );
+      const request = { ...fatalPayload };
+      delete request.boundarySettlement;
       const result = await ruleset.reportFatalEvent(
-        structuredClone(state),
+        structuredClone(eventState),
         request,
         rulesetContext
       );
@@ -436,14 +537,26 @@ export async function applyRulesetEvent(state, body, ruleset, context = {}) {
       break;
     }
     case "request_extraction": {
-      const request = exactPayload(
-        body.payload,
-        ["mode"],
-        "EXTRACTION_PAYLOAD_INVALID"
-      );
+      const rawRequest = requireObject(body.payload, "EXTRACTION_PAYLOAD_INVALID");
+      const hasBoundarySettlement = Object.hasOwn(rawRequest, "boundarySettlement");
+      const request = exactPayload(rawRequest, hasBoundarySettlement
+        ? ["mode", "boundarySettlement"]
+        : ["mode"], "EXTRACTION_PAYLOAD_INVALID");
+      if (hasBoundarySettlement && !supportsEventJournalBoundary(ruleset)) {
+        throw new TypeError("EXTRACTION_PAYLOAD_INVALID_FIELDS");
+      }
+      const eventState = hasBoundarySettlement
+        ? await settleEventJournalBoundary(
+          state,
+          request.boundarySettlement,
+          "emergency",
+          ruleset,
+          context
+        )
+        : state;
       const result = ruleset.requestExtraction(
-        structuredClone(state),
-        request
+        structuredClone(eventState),
+        { mode: request.mode }
       );
       nextState = result.nextState;
       if (isOfficialRankEligible(nextState)) {

@@ -1,3 +1,15 @@
+## 2026-08-18 - Ranked boundary checkpoints
+
+- Moved capable Ranked room settlement from enemy clear to portal,
+  normal extraction, emergency extraction, or fatal boundaries while keeping
+  historical ruleset contracts unchanged.
+- Added durable fatal/emergency claim settlement, idempotent retry coverage,
+  provisional fallback for impossible boundary claims, and a late-chest headed
+  regression. The production release descriptor activates the new capability
+  while retaining the prior checkpoint-integrity runtime for pinned runs.
+- Activated ruleset hash: sha256:87c30b2c011b5103398f9b03f6bf018d71f2a35427c0a04ef7a31b2559a7a6d9.
+  Retained previous hash: sha256:0672eb9aaae11865ebae75a4c6d6dc77cc29f4a079afe562355172d26f073bca.
+
 ## 2026-08-01 - Online Ranked boundary state and test controls repair
 
 - Completed the separate Online-only repair for fresh-campaign reset

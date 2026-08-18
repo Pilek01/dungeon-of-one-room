@@ -18,12 +18,14 @@ import {
   V08_META_1_WARDEN_HOTFIX_RELEASE_DESCRIPTOR,
   V08_META_1_PRODUCTION_RELEASE_DESCRIPTOR
 } from "../src/rulesets/releases.js";
+import * as releases from "../src/rulesets/releases.js";
 import manifest from "../src/rulesets/v08-meta-1/data/ruleset-manifest.json" with { type: "json" };
 import { createMemoryRepositories } from "./fixtures/memory-repositories.js";
 import { TEST_SECRET } from "./fixtures/harness.js";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../..");
-const EXPECTED_HASH = "sha256:0672eb9aaae11865ebae75a4c6d6dc77cc29f4a079afe562355172d26f073bca";
+const EXPECTED_HASH = "sha256:87c30b2c011b5103398f9b03f6bf018d71f2a35427c0a04ef7a31b2559a7a6d9";
+const INTEGRITY_PREVIOUS_HASH = "sha256:0672eb9aaae11865ebae75a4c6d6dc77cc29f4a079afe562355172d26f073bca";
 const PLAYTEST_PREVIOUS_HASH = "sha256:bc0d548d204557d0cc0ec7f8a358e18246778a13b27c58f5c6cdd73e73621711";
 const BOUNDARY_PREVIOUS_HASH = "sha256:d784208aad891119b71c52324cea358997ee376313914d5799affa68c8678ff3";
 const HD_BOOT_PREVIOUS_HASH = "sha256:7027a84ff06d6d9304e3d8e4343dbd6b3071c8bec734fad10b85981fa92347e8";
@@ -37,12 +39,16 @@ async function rootFile(relative) {
   return readFile(path.join(ROOT, relative), "utf8");
 }
 
-test("production entry keeps the deployed v08-meta-1 hash while retaining prior runs", async () => {
+test("production entry activates the boundary-checkpoint ruleset", async () => {
   assert.equal(manifest.rulesetHash, EXPECTED_HASH);
   assert.equal(V08_META_1_LOCAL_RELEASE_DESCRIPTOR.rulesetHash, manifest.rulesetHash);
   assert.equal(V08_META_1_LOCAL_RELEASE_DESCRIPTOR.status, RULESET_RELEASE_STATES.LOCAL_RELEASE_CANDIDATE);
   assert.equal(V08_META_1_PRODUCTION_RELEASE_DESCRIPTOR.rulesetHash, EXPECTED_HASH);
   assert.equal(V08_META_1_PRODUCTION_RELEASE_DESCRIPTOR.status, RULESET_RELEASE_STATES.PRODUCTION_RELEASED);
+  assert.equal(
+    V08_META_1_PRODUCTION_RELEASE_DESCRIPTOR.capabilities.boundarySettlementMode,
+    "event-journal-v1"
+  );
   const registry = createRulesetRegistry([
     V08_META_1_LEGACY_PRODUCTION_RELEASE_DESCRIPTOR,
     V08_META_1_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR,
@@ -135,6 +141,48 @@ test("production availability reports the activated ruleset", async () => {
   assert.equal(body.productionActivated, true);
   assert.equal(body.rulesetId, "v08-meta-1");
   assert.equal(body.rulesetHash, EXPECTED_HASH);
+});
+
+test("production retains runs pinned to the previous checkpoint-integrity ruleset", async () => {
+  const retainedDescriptor = releases.V08_META_1_INTEGRITY_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR;
+  assert.ok(retainedDescriptor, "previous checkpoint-integrity descriptor must be retained");
+  const worker = createWorker({
+    rulesetRegistry: createRulesetRegistry([retainedDescriptor]),
+    rulesetEnvironment: "production",
+    repositories: createMemoryRepositories()
+  });
+  const response = await worker.fetch(new Request(
+    "https://production.invalid/api/v3/runs/start",
+    {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "Idempotency-Key": "retained-integrity-start"
+      },
+      body: JSON.stringify({
+        playerName: "Retained Integrity",
+        season: "season-1",
+        gameVersion: "v0.8.2",
+        rulesetId: "v08-meta-1",
+        rulesetHash: INTEGRITY_PREVIOUS_HASH,
+        clientInstallIdHash: "install_retained_integrity_123456",
+        profileId: "profile_bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        profileCredential: "ppppppppppppppppppppppppppppppppppppppppppp",
+        recoveryCredential: "rrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrr",
+        clientProtocolVersion: "ranked-v3-checkpoint-1"
+      })
+    }
+  ), {
+    RANKED_V3_HMAC_SECRET: TEST_SECRET,
+    RANKED_V3_ABUSE_CONTROL: {
+      async limit() {
+        return { success: true };
+      }
+    }
+  });
+  const body = await response.json();
+  assert.equal(response.status, 201, JSON.stringify(body));
+  assert.equal(body.metaState.rulesetHash, INTEGRITY_PREVIOUS_HASH);
 });
 
 test("production registry starts and abandons the retained R2 ruleset hash", async () => {
