@@ -454,11 +454,15 @@
   function returnToPractice() {
     pendingFreshCampaign = false;
     pendingElixirUsage = null;
+    if (session.getState() === root.DungeonRankedV3Session.STATES.abandoned) {
+      root.DungeonOnlineV3GameBridge?.returnToPractice?.();
+      ui.hide();
+      return;
+    }
     if (session.getState() === root.DungeonRankedV3Session.STATES.finalized) {
       clearEndedRecovery();
       return;
     }
-    pendingExtractionMode = null;
     if (![root.DungeonRankedV3Session.STATES.reconnect, root.DungeonRankedV3Session.STATES.protocolError].includes(session.getState())) {
       moveToRecoveryState(root.DungeonRankedV3Session.STATES.reconnect);
     }

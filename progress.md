@@ -10,6 +10,23 @@
 - Activated ruleset hash: sha256:87c30b2c011b5103398f9b03f6bf018d71f2a35427c0a04ef7a31b2559a7a6d9.
   Retained previous hash: sha256:0672eb9aaae11865ebae75a4c6d6dc77cc29f4a079afe562355172d26f073bca.
 
+## 2026-08-18 - Ranked extraction reconnect hotfix
+
+- Production evidence showed the room checkpoint committed successfully, but
+  the follow-up normal extraction did not reach canonical storage after the
+  client entered reconnect recovery.
+- Added runtime regressions for preserving an in-flight normal extraction
+  across a reconnect/Main Menu/Continue round trip and for repeated Main Menu
+  activation after the local session is already abandoned.
+- TDD RED reproduced both failures; the minimal runtime change keeps the
+  in-memory extraction intent until canonical resync and makes the abandoned
+  Main Menu path idempotent. Focused runtime tests pass 9/9.
+- Current-tree Ranked Recovery and Camp headed scenarios pass. Their recovery,
+  Camp, and error-to-Main-Menu screenshots were visually inspected with no
+  visible regression.
+- Worker, protocol, ruleset, D1, combat, and protected `game.js` remain
+  unchanged. Production Pages deployment is pending verification.
+
 ## 2026-08-01 - Online Ranked boundary state and test controls repair
 
 - Completed the separate Online-only repair for fresh-campaign reset

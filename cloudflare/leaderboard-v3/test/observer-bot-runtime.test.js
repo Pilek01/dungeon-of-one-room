@@ -41,6 +41,7 @@ function createHarness(options = {}) {
   const replacementCompletions = [];
   const uiChoiceCalls = [];
   const uiMessages = [];
+  const uiMenus = [];
   const integrityContexts = [];
   let snapshot = {
     publicState: metaState({
@@ -68,11 +69,17 @@ function createHarness(options = {}) {
       snapshot = { publicState: response.metaState };
       return response;
     },
+    async resumeCanonical() {
+      calls.push({ action: "resume" });
+      const response = await options.onResume();
+      snapshot = { publicState: response.metaState };
+      return response;
+    },
     releaseWriter() {},
     clear() {}
   };
   const states = {
-    abandoned: "ABANDONED",
+    abandoned: "ABANDONED_LOCAL_SESSION",
     active: "ROOM_ACTIVE",
     offer: "AWAITING_REWARD_OR_TRANSACTION",
     resolving: "RESOLVING_ROOM",
@@ -82,14 +89,16 @@ function createHarness(options = {}) {
     starting: "STARTING",
     startingRelic: "STARTING_RELIC",
     retrying: "RETRYING",
-    finalizing: "FINALIZING"
+    finalizing: "FINALIZING",
+    reconnect: "RECONNECT_REQUIRED",
+    protocolError: "UNRECOVERABLE_PROTOCOL_ERROR"
   };
   const store = {
     clearSession() {},
     clearWriterLease() {},
     clearRecovery() {},
     clearProfile() {},
-    loadRecovery() { return null; },
+    loadRecovery() { return options.hasRecovery ? { runId: "run_integrity" } : null; },
     loadProfile() { return null; },
     getInstallationId() { return "installation"; }
   };
@@ -102,7 +111,7 @@ function createHarness(options = {}) {
     setStatus() {},
     setEntryVisible() {},
     showChoices(...args) { uiChoiceCalls.push(args); },
-    showMenu() {},
+    showMenu(...args) { uiMenus.push(args); },
     showMessage(...args) { uiMessages.push(args); },
     showSync() {}
   };
@@ -140,7 +149,8 @@ function createHarness(options = {}) {
     addEventListener() {},
     setInterval() { return 0; },
     DungeonRankedV3Protocol: {
-      isSupportedRulesetHash() { return true; }
+      isSupportedRulesetHash() { return true; },
+      supportsBoundarySettlement() { return options.boundarySettlement === true; }
     },
     DungeonRankedV3Client: {
       createRankedClient() { return client; },
@@ -187,6 +197,16 @@ function createHarness(options = {}) {
     DungeonOnlineV3GameBridge: {
       isRankedTestBotActive() { return options.observerBotActive !== false; },
       syncCanonicalProjection() {},
+      captureRankedBoundary() {
+        return {
+          turnCount: 4,
+          rewardClaims: [],
+          reportedGoldDelta: 0
+        };
+      },
+      beginRankedExtraction() {},
+      returnToPractice() {},
+      startRanked(directive) { directives.push(directive); },
       setRoomIntegrityContext(context) { integrityContexts.push(context); },
       setNextDirective(directive) { directives.push(directive); },
       enterRankedForge(publicState, offer, context) {
@@ -212,11 +232,16 @@ function createHarness(options = {}) {
     replacementCompletions,
     uiChoiceCalls,
     uiMessages,
+    uiMenus,
     integrityContexts
   };
 }
 
-async function installRuntime(harness) {
+async function installRuntime(harness, options = {}) {
+  if (options.realSession === true) {
+    const sessionSource = await readFile(new URL("../../../online-v3/ranked-v3-session.js", import.meta.url), "utf8");
+    vm.runInNewContext(sessionSource, harness.root, { filename: "ranked-v3-session.js" });
+  }
   const source = await readFile(new URL("../../../online-v3/ranked-v3-runtime.js", import.meta.url), "utf8");
   vm.runInNewContext(source, harness.root, { filename: "ranked-v3-runtime.js" });
   return harness.root.DungeonOnlineV3;
@@ -308,6 +333,94 @@ test("a provisional response shows the continuation notice only once per run", a
     completionCapability: harness.integrityContexts[1].completionCapability
   });
   assert.equal(harness.uiMessages.length, 1);
+});
+
+test("normal extraction intent survives a reconnect Main Menu round trip after the room checkpoint committed", async () => {
+  const nextRoom = metaState({
+    revision: 2,
+    rulesetHash: "sha256:boundary",
+    currentRoomDirective: {
+      directiveId: "directive_2",
+      roomNonce: "nonce_2",
+      depth: 2,
+      roomType: "combat"
+    },
+    currentRewardEnvelope: { envelopeId: "reward_2" }
+  });
+  const harness = createHarness({
+    observerBotActive: false,
+    boundarySettlement: true,
+    hasRecovery: true,
+    async onCheckpoint() {
+      throw new TypeError("CHECKPOINT_RESPONSE_REJECTED_AFTER_COMMIT");
+    },
+    async onResume() {
+      return { metaState: nextRoom };
+    },
+    async onEvent(action) {
+      assert.equal(action, "request_extraction");
+      return {
+        metaState: metaState({
+          revision: 2,
+          rulesetHash: "sha256:boundary",
+          status: "extraction",
+          currentRoomDirective: null,
+          currentRewardEnvelope: null
+        }),
+        profile: { profileId: "profile_integrity" }
+      };
+    }
+  });
+  const runtime = await installRuntime(harness);
+  const firstRoom = {
+    directiveId: "directive_1",
+    roomNonce: "nonce_1",
+    depth: 1,
+    roomType: "combat"
+  };
+  harness.root.DungeonRankedV3Client.createRankedClient().getSnapshot().publicState = metaState({
+    revision: 1,
+    rulesetHash: "sha256:boundary",
+    currentRoomDirective: firstRoom,
+    currentRewardEnvelope: { envelopeId: "reward_1" }
+  });
+  await runtime.onRoomEntered(firstRoom);
+  await runtime.onLocalRoomCleared({
+    turnCount: 4,
+    rewardClaims: [],
+    reportedGoldDelta: 0,
+    completionCapability: harness.integrityContexts[0].completionCapability
+  });
+  await runtime.onExtraction("normal");
+
+  assert.equal(harness.uiMessages.at(-1)[0], "Ranked reconnect required");
+  runtime.leaveToMainMenu();
+  harness.root.DungeonOnlineV3Menu.openRanked();
+  const continueButton = harness.uiMenus.at(-1)[2].find((button) => button.label === "Continue Ranked");
+  await continueButton.onClick();
+  await waitFor(
+    () => harness.calls.some((entry) => entry.action === "request_extraction"),
+    "saved normal extraction intent did not continue after canonical resync"
+  );
+});
+
+test("Main Menu is idempotent after the local Ranked session is already abandoned", async () => {
+  const harness = createHarness({
+    observerBotActive: false,
+    hasRecovery: true,
+    async onResume() { throw new Error("resume unavailable"); },
+    async onEvent() { throw new Error("unexpected event"); }
+  });
+  const runtime = await installRuntime(harness, { realSession: true });
+
+  harness.root.DungeonOnlineV3Menu.openRanked();
+  const continueButton = harness.uiMenus.at(-1)[2].find((button) => button.label === "Continue Ranked");
+  await continueButton.onClick();
+  assert.equal(runtime.getSessionState(), "RECONNECT_REQUIRED");
+  assert.doesNotThrow(() => runtime.leaveToMainMenu());
+  assert.equal(runtime.getSessionState(), "ABANDONED_LOCAL_SESSION");
+  assert.doesNotThrow(() => runtime.leaveToMainMenu());
+  assert.equal(runtime.getSessionState(), "ABANDONED_LOCAL_SESSION");
 });
 
 test("Observer Bot resolves relic and replacement choices before checkpoint", async () => {
