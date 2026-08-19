@@ -310,7 +310,15 @@ test("a provisional response shows the continuation notice only once per run", a
   const harness = createHarness({
     observerBotActive: false,
     async onCheckpoint() {
-      return { metaState: metaState({ rankEligibility: "provisional" }) };
+      return {
+        metaState: metaState({
+          rankEligibility: "provisional",
+          rankIntegrity: {
+            reasonCodes: ["REPORTED_GOLD_TOTAL_MISMATCH"],
+            firstDetectedRevision: 2
+          }
+        })
+      };
     }
   });
   const runtime = await installRuntime(harness);
@@ -323,6 +331,10 @@ test("a provisional response shows the continuation notice only once per run", a
   });
   assert.equal(harness.uiMessages.length, 1);
   assert.equal(harness.uiMessages[0][0], "Ranked integrity check failed.");
+  assert.match(harness.uiMessages[0][1], /REPORTED_GOLD_TOTAL_MISMATCH/u);
+  assert.deepEqual(Array.from(runtime.getDiagnostics().at(-1)?.reasonCodes || []), [
+    "REPORTED_GOLD_TOTAL_MISMATCH"
+  ]);
   await harness.uiMessages[0][2][0].onClick();
   await waitFor(() => harness.directives.length === 1, "notice did not continue the boundary");
   await runtime.onRoomEntered(metaState().currentRoomDirective);
@@ -402,6 +414,88 @@ test("normal extraction intent survives a reconnect Main Menu round trip after t
     () => harness.calls.some((entry) => entry.action === "request_extraction"),
     "saved normal extraction intent did not continue after canonical resync"
   );
+});
+
+test("normal extraction intent is cancelled when resync returns the same uncommitted room", async () => {
+  const firstRoom = {
+    directiveId: "directive_1",
+    roomNonce: "nonce_1",
+    depth: 1,
+    roomType: "combat"
+  };
+  const sameRoom = metaState({
+    revision: 1,
+    rulesetHash: "sha256:boundary",
+    currentRoomDirective: firstRoom,
+    currentRewardEnvelope: { envelopeId: "reward_1" },
+    statistics: { roomsCompleted: 0 }
+  });
+  const harness = createHarness({
+    observerBotActive: false,
+    boundarySettlement: true,
+    hasRecovery: true,
+    async onCheckpoint() {
+      const error = new Error("Checkpoint token is expired.");
+      error.code = "TOKEN_EXPIRED";
+      error.status = 401;
+      error.traceId = "trace-expired-checkpoint";
+      error.traceId = "trace-expired-checkpoint";
+      error.checkpointToken = "secret-checkpoint-token";
+      error.payload = { recoveryCredential: "secret-recovery-credential" };
+      throw error;
+    },
+    async onResume() {
+      return { metaState: sameRoom };
+    },
+    async onEvent() {
+      throw new Error("normal extraction must not run before the room checkpoint commits");
+    }
+  });
+  const runtime = await installRuntime(harness);
+  harness.root.DungeonRankedV3Client.createRankedClient().getSnapshot().publicState = metaState({
+    revision: 1,
+    rulesetHash: "sha256:boundary",
+    currentRoomDirective: firstRoom,
+    currentRewardEnvelope: { envelopeId: "reward_1" },
+    statistics: { roomsCompleted: 0 }
+  });
+  harness.root.DungeonRankedV3Client.createRankedClient().getSnapshot().pendingOperation = {
+    endpoint: "checkpoint",
+    operationId: "op_diagnostic",
+    body: { checkpointToken: "secret-checkpoint-token" }
+  };
+  await runtime.onRoomEntered(firstRoom);
+  await runtime.onLocalRoomCleared({
+    turnCount: 4,
+    rewardClaims: [],
+    reportedGoldDelta: 0,
+    completionCapability: harness.integrityContexts[0].completionCapability
+  });
+
+  await runtime.onExtraction("normal");
+  assert.equal(harness.uiMessages.at(-1)?.[0], "Ranked reconnect required");
+  const resync = harness.uiMessages.at(-1)?.[2].find((button) => button.label === "Resync Ranked Run");
+  assert.ok(resync, "reconnect did not offer canonical resync");
+  await resync.onClick();
+
+  assert.equal(
+    harness.calls.some((entry) => entry.action === "request_extraction"),
+    false,
+    "same-room resync incorrectly continued normal extraction"
+  );
+  assert.equal(harness.directives.at(-1)?.directiveId, firstRoom.directiveId);
+  const diagnostics = runtime.getDiagnostics();
+  assert.equal(diagnostics.at(-1)?.kind, "client_error");
+  assert.equal(diagnostics.at(-1)?.code, "TOKEN_EXPIRED");
+  assert.equal(diagnostics.at(-1)?.status, 401);
+  assert.equal(diagnostics.at(-1)?.endpoint, "checkpoint");
+  assert.equal(diagnostics.at(-1)?.runId, "run_integrity");
+  assert.equal(diagnostics.at(-1)?.revision, 1);
+  assert.equal(diagnostics.at(-1)?.traceId, "trace-expired-checkpoint");
+  assert.equal(diagnostics.at(-1)?.traceId, "trace-expired-checkpoint");
+  assert.doesNotMatch(JSON.stringify(diagnostics), /checkpointToken|recoveryCredential|secret-/u);
+  assert.match(harness.uiMessages[0][1], /TOKEN_EXPIRED/u);
+  assert.match(harness.uiMessages[0][1], /run_integrity/u);
 });
 
 test("Main Menu is idempotent after the local Ranked session is already abandoned", async () => {

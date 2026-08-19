@@ -27,6 +27,7 @@
   let pendingRoomSummary = null;
   let pendingBoundaryExit = null;
   let pendingExtractionMode = null;
+  let pendingExtractionSource = null;
   let extractedProfileReady = false;
   let currentCampResponse = null;
   let campMutationPending = false;
@@ -46,6 +47,94 @@
 
   const ROOM_COMPLETION_CAPABILITY_INVALID = "local_room_completion_capability_invalid";
   const RANK_INTEGRITY_NOTICE_PREFIX = "dungeonOnlineV3RankIntegrityNotice:";
+  const RANKED_DIAGNOSTICS_KEY = "dungeonOnlineV3Diagnostics:v1";
+  const RANKED_DIAGNOSTICS_LIMIT = 20;
+  let diagnosticEntries = loadDiagnostics();
+
+  function loadDiagnostics() {
+    try {
+      const parsed = JSON.parse(root.localStorage.getItem(RANKED_DIAGNOSTICS_KEY) || "[]");
+      if (!Array.isArray(parsed)) return [];
+      return parsed.slice(-RANKED_DIAGNOSTICS_LIMIT).filter((entry) => (
+        entry && typeof entry === "object" && !Array.isArray(entry)
+      ));
+    } catch {
+      return [];
+    }
+  }
+
+  function persistDiagnostics() {
+    try {
+      root.localStorage.setItem(RANKED_DIAGNOSTICS_KEY, JSON.stringify(diagnosticEntries));
+    } catch {}
+  }
+
+  function diagnosticSnapshot() {
+    const snapshot = client?.getSnapshot?.() || null;
+    return {
+      snapshot,
+      state: snapshot?.publicState || null
+    };
+  }
+
+  function recordDiagnostic(kind, input = {}) {
+    const { snapshot, state } = diagnosticSnapshot();
+    const reasonCodes = Array.isArray(input.reasonCodes)
+      ? input.reasonCodes.map((entry) => String(entry || "")).filter(Boolean).slice(0, 16)
+      : [];
+    const entry = {
+      at: new root.Date().toISOString(),
+      kind: String(kind || "unknown").slice(0, 48),
+      code: String(input.code || "UNKNOWN").slice(0, 96),
+      status: Math.max(0, Math.floor(Number(input.status) || 0)),
+      traceId: String(input.traceId || "").slice(0, 128),
+      runId: String(state?.runId || snapshot?.runId || "unknown").slice(0, 80),
+      revision: Math.max(0, Math.floor(Number(state?.revision ?? snapshot?.revision) || 0)),
+      sessionState: String(session?.getState?.() || "unknown").slice(0, 64),
+      endpoint: String(input.endpoint || snapshot?.pendingOperation?.endpoint || "unknown").slice(0, 48),
+      rankEligibility: String(state?.rankEligibility || "unknown").slice(0, 32),
+      reasonCodes
+    };
+    diagnosticEntries = [...diagnosticEntries, entry].slice(-RANKED_DIAGNOSTICS_LIMIT);
+    persistDiagnostics();
+    return entry;
+  }
+
+  function diagnosticLabel(entry) {
+    const runId = String(entry?.runId || "unknown");
+    const shortRunId = runId.length > 16 ? `${runId.slice(0, 16)}…` : runId;
+    return `${entry?.code || "UNKNOWN"} · ${shortRunId} · rev ${entry?.revision ?? 0} · ${entry?.endpoint || "unknown"}`;
+  }
+
+  function clearPendingExtractionIntent() {
+    pendingExtractionMode = null;
+    pendingExtractionSource = null;
+  }
+
+  function rememberPendingExtraction(mode) {
+    if (pendingExtractionMode) return;
+    const state = createClient().getSnapshot()?.publicState;
+    pendingExtractionMode = mode;
+    pendingExtractionSource = {
+      directiveId: String(state?.currentRoomDirective?.directiveId || ""),
+      revision: Math.max(0, Math.floor(Number(state?.revision) || 0)),
+      roomsCompleted: Math.max(0, Math.floor(Number(state?.statistics?.roomsCompleted) || 0))
+    };
+  }
+
+  function extractionCheckpointCommitted(state) {
+    if (pendingExtractionMode !== "normal" || !pendingExtractionSource) return true;
+    const directiveId = String(state?.currentRoomDirective?.directiveId || "");
+    const revision = Math.max(0, Math.floor(Number(state?.revision) || 0));
+    const roomsCompleted = Math.max(0, Math.floor(Number(state?.statistics?.roomsCompleted) || 0));
+    return Boolean(
+      (
+        directiveId !== pendingExtractionSource.directiveId &&
+        revision > pendingExtractionSource.revision
+      ) ||
+      roomsCompleted > pendingExtractionSource.roomsCompleted
+    );
+  }
 
   function presentRankIntegrityNotice(state, onContinue) {
     if (state?.rankEligibility !== "provisional") return false;
@@ -60,9 +149,17 @@
     try {
       root.localStorage.setItem(storageKey, "1");
     } catch {}
+    const reasons = Array.isArray(state?.rankIntegrity?.reasonCodes)
+      ? state.rankIntegrity.reasonCodes
+      : [];
+    const diagnostic = recordDiagnostic("rank_integrity_provisional", {
+      code: reasons[0] || "RANK_INTEGRITY_PROVISIONAL",
+      reasonCodes: reasons,
+      endpoint: "integrity"
+    });
     ui.showMessage(
       "Ranked integrity check failed.",
-      "You can continue playing, but this run will not be submitted to the leaderboard.",
+      `You can continue playing, but this run will not be submitted to the leaderboard. Diagnostic: ${diagnosticLabel(diagnostic)}.`,
       [ui.button("Continue", onContinue)]
     );
     return true;
@@ -234,7 +331,7 @@
   }
 
   function resetLocalRankedSession() {
-    pendingExtractionMode = null;
+    clearPendingExtractionIntent();
     pendingBoundaryExit = null;
     extractedProfileReady = false;
     pendingFreshCampaign = false;
@@ -566,6 +663,11 @@
   function presentError(error) {
     if (isRankedObserverBotActive()) observerBotAutomationHalted = true;
     const code = String(error?.code || "");
+    const diagnostic = recordDiagnostic("client_error", {
+      code: code || String(error?.message || "UNKNOWN_ERROR"),
+      status: error?.status,
+      traceId: error?.traceId
+    });
     const conflict = error?.conflict || error?.status === 409;
     const writerHeld = ["RANKED_WRITER_LEASE_HELD", "RANKED_MUTATION_LOCKED"].includes(String(error?.message || ""));
     const protocolFailure = error instanceof TypeError && !writerHeld || [
@@ -625,8 +727,8 @@
     ui.showMessage(
       conflict ? "Ranked state conflict" : "Ranked reconnect required",
       conflict
-        ? "Your Ranked run changed. Refresh it before continuing."
-        : "Recovery is preserved. Main Menu does not abandon the Ranked run.",
+        ? `Your Ranked run changed. Refresh it before continuing. Diagnostic: ${diagnosticLabel(diagnostic)}.`
+        : `Recovery is preserved. Main Menu does not abandon the Ranked run. Diagnostic: ${diagnosticLabel(diagnostic)}.`,
       controls
     );
     if ((conflict || ["TOKEN_EXPIRED", "REVISION_CONFLICT", "STATE_DIGEST_CONFLICT", "ROOM_TOKEN_CONFLICT"].includes(code)) && !protocolFailure) {
@@ -686,10 +788,15 @@
     }
     if (state.status === "active" && state.currentRoomDirective) {
       if (pendingExtractionMode) {
-        const extractionMode = pendingExtractionMode;
-        pendingExtractionMode = null;
-        await performExtraction(extractionMode);
-        return;
+        if (extractionCheckpointCommitted(state)) {
+          const extractionMode = pendingExtractionMode;
+          clearPendingExtractionIntent();
+          await performExtraction(extractionMode);
+          return;
+        }
+        clearPendingExtractionIntent();
+        pendingBoundaryExit = null;
+        pendingRoomSummary = null;
       }
       const directive = directives.applyOnlineV3RoomDirective(state.currentRoomDirective);
       session.transition(root.DungeonRankedV3Session.STATES.entering);
@@ -1361,7 +1468,7 @@
     }
     if (pendingExtractionMode) {
       const extractionMode = pendingExtractionMode;
-      pendingExtractionMode = null;
+      clearPendingExtractionIntent();
       await performExtraction(extractionMode);
       return;
     }
@@ -1673,7 +1780,7 @@
   async function onExtraction(mode) {
     const extractionMode = mode === "normal" ? "normal" : "emergency";
     if (session.getState() === root.DungeonRankedV3Session.STATES.resolving) {
-      if (!pendingExtractionMode) pendingExtractionMode = extractionMode;
+      rememberPendingExtraction(extractionMode);
       root.DungeonOnlineV3GameBridge?.beginRankedExtraction?.();
       return;
     }
@@ -1690,7 +1797,7 @@
         return;
       }
       pendingRoomSummary = captured.summary;
-      pendingExtractionMode = extractionMode;
+      rememberPendingExtraction(extractionMode);
       pendingBoundaryExit = "normal_extract";
       await continueBoundary(createClient().getSnapshot()?.publicState);
     } catch (error) {
@@ -1830,6 +1937,14 @@
     onRelicReplacementCancel,
     isObserverBotBoundaryPending,
     getSessionState: () => session.getState(),
-    getSnapshot: () => client?.getSnapshot() || null
+    getSnapshot: () => client?.getSnapshot() || null,
+    getDiagnostics: () => diagnosticEntries.map((entry) => ({
+      ...entry,
+      reasonCodes: Array.isArray(entry.reasonCodes) ? [...entry.reasonCodes] : []
+    })),
+    clearDiagnostics: () => {
+      diagnosticEntries = [];
+      try { root.localStorage.removeItem(RANKED_DIAGNOSTICS_KEY); } catch {}
+    }
   });
 })(typeof globalThis === "object" ? globalThis : null);

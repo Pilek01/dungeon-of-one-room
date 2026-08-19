@@ -21,6 +21,7 @@ function createRealHarness(options = {}) {
     V08_META_1_LOCAL_RELEASE_DESCRIPTOR
   ]);
   const causes = [];
+  const diagnostics = [];
   let now = 1_800_000_000_000;
   let sequence = 1;
   const worker = createWorker({
@@ -29,6 +30,9 @@ function createRealHarness(options = {}) {
     repositories,
     onError(cause) {
       causes.push(cause);
+    },
+    onDiagnostic(entry) {
+      diagnostics.push(entry);
     },
     now: () => now,
     randomUUID() {
@@ -125,6 +129,7 @@ function createRealHarness(options = {}) {
     select,
     checkpoint,
     event,
+    diagnostics,
     lastCause() {
       return causes.at(-1) || null;
     },
@@ -155,6 +160,22 @@ test("real start returns authenticated bootstrap state without a synthetic room"
   const conflict = await harness.start("real-start-0001", { playerName: "Other" });
   assert.equal(conflict.response.status, 409);
   assert.equal(conflict.payload.error.code, "IDEMPOTENCY_KEY_REUSED");
+});
+
+test("rejected registered requests emit a traceable diagnostic without request data", async () => {
+  const harness = createRealHarness();
+  const rejected = await harness.start("diagnostic-reject", {
+    unexpectedClientField: "must-not-be-logged"
+  });
+  assert.equal(rejected.response.status, 400);
+  assert.equal(harness.diagnostics.length, 1);
+  assert.equal(harness.diagnostics[0].event, "ranked_request_error");
+  assert.equal(harness.diagnostics[0].path, "/api/v3/runs/start");
+  assert.equal(harness.diagnostics[0].method, "POST");
+  assert.equal(harness.diagnostics[0].status, 400);
+  assert.equal(harness.diagnostics[0].code, "REQUEST_FIELDS_INVALID");
+  assert.match(harness.diagnostics[0].traceId, /^[0-9a-f-]{36}$/u);
+  assert.doesNotMatch(JSON.stringify(harness.diagnostics), /unexpectedClientField|must-not-be-logged/u);
 });
 
 test("authenticated starting selection returns one deterministic first room and exact retry", async () => {
@@ -280,6 +301,13 @@ test("versioned checkpoint integrity signals are accepted and make the run provi
   });
   assert.equal(cleared.response.status, 200);
   assert.equal(cleared.payload.metaState.rankEligibility, "provisional");
+  assert.deepEqual(harness.diagnostics, [{
+    event: "ranked_integrity_provisional",
+    runId: cleared.payload.runId,
+    revision: cleared.payload.revision,
+    operationType: "checkpoint",
+    reasonCodes: ["local_room_completion_capability_invalid"]
+  }]);
 });
 
 test("HTTP depth 5 Warden checkpoint accepts bounded potion use", async () => {

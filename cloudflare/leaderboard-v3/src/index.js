@@ -776,6 +776,20 @@ async function persistRegisteredMutation(context, transition, repositories, opti
   if (!persisted) {
     throw new HttpError(409, "REVISION_CONFLICT", "Run changed before this operation committed.");
   }
+  if (
+    context.state.rankEligibility !== "provisional" &&
+    nextState.rankEligibility === "provisional"
+  ) {
+    options.onDiagnostic?.({
+      event: "ranked_integrity_provisional",
+      runId: nextState.runId,
+      revision: nextState.revision,
+      operationType,
+      reasonCodes: Array.isArray(nextState.rankIntegrity?.reasonCodes)
+        ? nextState.rankIntegrity.reasonCodes.slice(0, 16)
+        : []
+    });
+  }
   return jsonResponse(responseBody, 200);
 }
 
@@ -1337,7 +1351,8 @@ async function handleRegisteredEvent(request, env, options, repositories) {
     operationType: "event",
     responseKind: body.type,
     profileExtraction: body.type === "request_extraction",
-    leaderboardSnapshot: snapshotEffect?.entry
+    leaderboardSnapshot: snapshotEffect?.entry,
+    onDiagnostic: options.onDiagnostic
   });
 }
 
@@ -1374,7 +1389,8 @@ async function handleRegisteredCheckpoint(request, env, options, repositories) {
   return persistRegisteredMutation(context, transition, repositories, {
     operationType: "checkpoint",
     responseKind: "checkpoint",
-    leaderboardDeleteRunId: deleteEffect?.runId
+    leaderboardDeleteRunId: deleteEffect?.runId,
+    onDiagnostic: options.onDiagnostic
   });
 }
 
@@ -1702,6 +1718,7 @@ export function createWorker(workerOptions = {}) {
     repositories: workerOptions.repositories,
     metrics: workerOptions.metrics,
     onError: workerOptions.onError,
+    onDiagnostic: workerOptions.onDiagnostic,
     now: workerOptions.now || (() => Date.now()),
     randomUUID: workerOptions.randomUUID || (() => crypto.randomUUID()),
     productionActivation: workerOptions.productionActivation
@@ -1711,8 +1728,10 @@ export function createWorker(workerOptions = {}) {
   return {
     async fetch(request, env) {
       const traceId = crypto.randomUUID();
+      let requestPath = "unknown";
       try {
         const url = new URL(request.url);
+        requestPath = url.pathname;
         if (request.method === "GET" && url.pathname === "/api/v3/availability") {
           return handleAvailability(url, options);
         }
@@ -1774,8 +1793,17 @@ export function createWorker(workerOptions = {}) {
         if (/D1|storage|database/iu.test(String(cause?.code || cause?.message || ""))) {
           recordMetric(env, options, "d1_write_failures", 1, "worker_error");
         }
+        const error = errorFromCause(cause);
+        options.onDiagnostic?.({
+          event: "ranked_request_error",
+          traceId,
+          path: requestPath,
+          method: String(request.method || "").slice(0, 16),
+          status: error.status,
+          code: error.code
+        });
         options.onError?.(cause);
-        return errorResponse(errorFromCause(cause), traceId);
+        return errorResponse(error, traceId);
       }
     },
     async scheduled(_controller, env) {

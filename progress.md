@@ -1,3 +1,42 @@
+## 2026-08-19 - Ranked Warden portal forewarning repair
+
+- Restored the pre-Warden visual warning from the canonical five-depth
+  schedule, so cleared Ranked depths 4, 9, 14, and later predecessors render
+  the crimson Warden portal without requiring an early next-room directive.
+- Checkpoint timing remains unchanged: the room journal stays open after
+  clear, late chest interaction remains available, and the request occurs only
+  on portal entry.
+- TDD RED reproduced the missing warning in two assertions; GREEN passes
+  17/17. Focused renderer/boundary coverage passes 40/40, Ranked lifecycle
+  headed passes, and `ranked-warden-warning-before-entry.png` was visually
+  inspected with the red portal visible on depth 4 before checkpoint.
+- Protected `game.js`, Ranked runtime, build injection, Worker, protocol,
+  ruleset, and D1 are unchanged. Commit, push, and deployment are not part of
+  this local implementation.
+
+## 2026-08-19 - Ranked checkpoint recovery diagnostics repair
+
+- Reproduced the production `401 checkpoint -> canonical resync -> 422 normal
+  extraction` chain. The reconnect hotfix preserved extraction intent but did
+  not distinguish a committed checkpoint with a lost response from an expired
+  or rejected checkpoint that resynced to the same room.
+- Normal extraction intent now records its source directive, revision, and
+  accepted-room count. Canonical resync continues extraction only after the
+  server proves the checkpoint advanced; a same-room resync clears the local
+  intent and restarts that uncommitted room without submitting extraction.
+- Added a bounded, token-free browser diagnostic ring (20 entries), visible
+  error identifiers, `DungeonOnlineV3.getDiagnostics()`, and
+  `DungeonOnlineV3.clearDiagnostics()`. Provisional public projections now
+  include bounded reason codes and the first detected revision.
+- Production Worker diagnostics emit one structured log when a run first
+  becomes provisional. No request payload, checkpoint token, recovery
+  credential, combat state, or local save is logged.
+- TDD RED/GREEN covers same-room recovery cancellation, committed-checkpoint
+  continuation, diagnostic redaction, provisional projection, strict protocol
+  validation, and structured Worker diagnostic emission. No `game.js`, D1,
+  ruleset, ruleset hash, combat, movement, AI, renderer, or checkpoint timing
+  change was made.
+
 ## 2026-08-18 - Ranked boundary checkpoints
 
 - Moved capable Ranked room settlement from enemy clear to portal,

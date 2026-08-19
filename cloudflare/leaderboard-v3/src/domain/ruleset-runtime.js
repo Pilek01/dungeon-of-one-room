@@ -152,6 +152,7 @@ export function publicRulesetMetaState(state, ruleset) {
     ? ruleset.projectPublicRelicReplacement(state)
     : null;
   const score = ruleset.computeFinalScore(state);
+  const rankEligibility = rankEligibilityOf(state);
   return {
     runId: state.runId,
     profileId: state.profileId || null,
@@ -204,7 +205,23 @@ export function publicRulesetMetaState(state, ruleset) {
           active: state.campSession.active
         }
       : null,
-    rankEligibility: rankEligibilityOf(state),
+    rankEligibility,
+    ...(rankEligibility === "provisional"
+      ? {
+          rankIntegrity: {
+            reasonCodes: [...new Set(
+              (Array.isArray(state.rankIntegrity?.reasonCodes)
+                ? state.rankIntegrity.reasonCodes
+                : [])
+                .map((entry) => String(entry || ""))
+                .filter(Boolean)
+            )].slice(0, 16),
+            firstDetectedRevision: Number.isSafeInteger(state.rankIntegrity?.firstDetectedRevision)
+              ? state.rankIntegrity.firstDetectedRevision
+              : null
+          }
+        }
+      : {}),
     verificationLevel: state.verificationLevel
   };
 }

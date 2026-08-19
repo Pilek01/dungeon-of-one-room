@@ -505,25 +505,37 @@ test("copies Vault Guardian ability state and chest countdown fields without ref
   assert.strictEqual(snapshot.chests[0].vaultCondemnTurns, 3);
 });
 
-test("derives a Warden portal from local boss depth or an issued Ranked directive", () => {
+test("derives scheduled Ranked Warden warnings before the next directive is issued", () => {
+  for (const depth of [4, 9, 14, 19, 24, 29, 99]) {
+    const snapshot = api.createVisualSnapshot({
+      depth,
+      onlineV3Ranked: true,
+      portal: { x: 1, y: 1 }
+    }, 100);
+
+    assert.deepStrictEqual(snapshot.portal, { x: 1, y: 1, kind: "warden" });
+  }
+});
+
+test("keeps Warden directive compatibility without warning on ordinary depths", () => {
   const local = api.createVisualSnapshot({
     depth: 4,
     portal: { x: 1, y: 1 }
   }, 100);
   const rankedBoss = api.createVisualSnapshot({
-    depth: 4,
+    depth: 3,
     onlineV3Ranked: true,
     onlineV3NextDirective: { roomType: "boss" },
     portal: { x: 1, y: 1 }
   }, 100);
   const rankedFinal = api.createVisualSnapshot({
-    depth: 99,
+    depth: 98,
     onlineV3Ranked: true,
     onlineV3NextDirective: { roomType: "final" },
     portal: { x: 1, y: 1 }
   }, 100);
   const rankedUnknown = api.createVisualSnapshot({
-    depth: 4,
+    depth: 3,
     onlineV3Ranked: true,
     portal: { x: 1, y: 1 }
   }, 100);
@@ -538,6 +550,6 @@ test("derives a Warden portal from local boss depth or an issued Ranked directiv
   assert.deepStrictEqual(rankedBoss.portal, { x: 1, y: 1, kind: "warden" });
   assert.deepStrictEqual(rankedFinal.portal, { x: 1, y: 1, kind: "warden" });
   assert.strictEqual(rankedUnknown.portal.kind, "default");
-  assert.strictEqual(rankedCombat.portal.kind, "default");
+  assert.strictEqual(rankedCombat.portal.kind, "warden");
   assert.strictEqual("onlineV3NextDirective" in rankedBoss, false);
 });

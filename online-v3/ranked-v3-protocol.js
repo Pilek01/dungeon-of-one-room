@@ -164,6 +164,24 @@
     if (!Number.isSafeInteger(value.revision) || value.revision < 0) {
       throw new TypeError("PROTOCOL_FIELD_INVALID:metaState.revision");
     }
+    requireOptionalRecord(value.rankIntegrity, "rankIntegrity");
+    if (value.rankIntegrity) {
+      requireOptionalArray(value.rankIntegrity.reasonCodes, "rankIntegrity.reasonCodes");
+      if (
+        !Array.isArray(value.rankIntegrity.reasonCodes) ||
+        value.rankIntegrity.reasonCodes.length > 16 ||
+        value.rankIntegrity.reasonCodes.some((entry) => typeof entry !== "string" || !entry)
+      ) {
+        throw new TypeError("PROTOCOL_PROJECTION_INVALID:rankIntegrity.reasonCodes");
+      }
+      if (
+        value.rankIntegrity.firstDetectedRevision !== null &&
+        (!Number.isSafeInteger(value.rankIntegrity.firstDetectedRevision) ||
+          value.rankIntegrity.firstDetectedRevision < 0)
+      ) {
+        throw new TypeError("PROTOCOL_PROJECTION_INVALID:rankIntegrity.firstDetectedRevision");
+      }
+    }
     if (!["awaiting_starting_relic", "active", "victory", "defeat", "extraction", "finalized", "abandoned"].includes(value.status)) {
       throw new TypeError("PROTOCOL_STATUS_UNKNOWN");
     }

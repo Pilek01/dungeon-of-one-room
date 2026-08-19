@@ -1438,6 +1438,10 @@ ${fatalTestHookAnchor}`;
     await clearVisibleRoom(page);
     assert.equal(await page.evaluate(() => window.DungeonOnlineV3.getSessionState()), "ROOM_ACTIVE");
     assert.equal(diagnostics.apiRequests.length, requestsBeforePreWardenClear);
+    await page.screenshot({
+      path: path.join(ARTIFACT_ROOT, "ranked-warden-warning-before-entry.png"),
+      fullPage: true
+    });
     await crossVisiblePortal(page, firstRoom.depth + 4);
     const preWardenAudit = await page.evaluate(() => {
       const snapshot = window.DungeonOnlineV3.getSnapshot();

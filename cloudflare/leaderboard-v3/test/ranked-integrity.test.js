@@ -117,6 +117,13 @@ test("an invalid local room-completion capability makes the run provisional", as
     publicRulesetMetaState(result.nextState, value.ruleset).rankEligibility,
     "provisional"
   );
+  assert.deepEqual(
+    publicRulesetMetaState(result.nextState, value.ruleset).rankIntegrity,
+    {
+      reasonCodes: ["local_room_completion_capability_invalid"],
+      firstDetectedRevision: result.nextState.rankIntegrity.firstDetectedRevision
+    }
+  );
 });
 
 test("a local gold delta that disagrees with canonical rewards makes the run provisional", async () => {

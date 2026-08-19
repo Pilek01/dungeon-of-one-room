@@ -29,6 +29,9 @@ const productionRegistry = createRulesetRegistry([
 const productionWorker = createWorker({
   rulesetRegistry: productionRegistry,
   rulesetEnvironment: "production",
+  onDiagnostic(entry) {
+    console.warn(entry);
+  },
   productionActivation: Object.freeze({
     rulesetId: V08_META_1_PRODUCTION_RELEASE_DESCRIPTOR.rulesetId,
     rulesetHash: V08_META_1_PRODUCTION_RELEASE_DESCRIPTOR.rulesetHash

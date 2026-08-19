@@ -289,9 +289,10 @@
     const nextDepth = Math.max(0, Number(visualState.depth) || 0) + 1;
     const nextRoomIsBoss = nextDepth > 0 && nextDepth % 5 === 0;
     const rankedNextRoomType = visualState.onlineV3NextDirective?.roomType;
-    const nextRoomIsWarden = visualState.onlineV3Ranked === true
-      ? rankedNextRoomType === "boss" || rankedNextRoomType === "final"
-      : nextRoomIsBoss;
+    const nextRoomIsWarden = nextRoomIsBoss || (
+      visualState.onlineV3Ranked === true &&
+      (rankedNextRoomType === "boss" || rankedNextRoomType === "final")
+    );
     const forcedKind = visualState.forcedNextRoomType;
     copy.kind = nextRoomIsWarden
       ? "warden"
