@@ -1,3 +1,22 @@
+## 2026-08-19 - Ranked recovery diagnostics and Warden warning production release
+
+- Released source commit `b89678f0de4b77098ad4086c4b5221949a42463f`
+  from `codex/ranked-boundary-checkpoints-release`, fixed by annotated tag
+  `online-v3-production-2026-08-19-b89678f`.
+- Production Worker version `1811ba2d-986d-4271-a577-d6b7796ad8ba` is active
+  at 100% in deployment `cc4ca52e-d1ab-4366-90eb-e5992d5bc52a`.
+- Production Pages deployment `fdfdb0fa-c787-4e6c-a1d6-ef64f776f267` serves
+  source `b89678f` on `main`.
+- No canonical ruleset bytes changed. Production remains activated on
+  `sha256:87c30b2c011b5103398f9b03f6bf018d71f2a35427c0a04ef7a31b2559a7a6d9`,
+  with previous hashes retained for existing runs.
+- Fresh `npm run verify:full -- --force` passed 879/879. Codex visually
+  approved all six archive screenshots at fingerprint
+  `sha256:466f3515e0d44adc8d45f5f29da0e5df89cb1a79d489893668e24464d983938c`.
+- Post-deploy checks matched stable production `index.html`, `config.js`,
+  `game.js`, and Ranked runtime byte-for-byte with the local release bundle;
+  availability reports the expected active production ruleset.
+
 ## 2026-08-19 - Ranked Warden portal forewarning repair
 
 - Restored the pre-Warden visual warning from the canonical five-depth

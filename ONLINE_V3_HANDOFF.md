@@ -1,6 +1,6 @@
 # Online v3 - Current handoff
 
-Updated: 2026-08-18
+Updated: 2026-08-19
 
 ## Task authority
 
@@ -24,21 +24,19 @@ Do not describe the system as server-authoritative combat or cheat-proof.
 
 ## Current production snapshot
 
-- Production Pages source commit:
-  `80014dcbda77367aa849c9ad46c9c680d3eeb52b` from
+- Production Pages and Worker source commit:
+  `b89678f0de4b77098ad4086c4b5221949a42463f` from
   `codex/ranked-boundary-checkpoints-release`.
-- Pages hotfix provenance is the annotated tag
-  `online-v3-pages-production-2026-08-18-80014dc`, which points exactly to the
-  deployed Pages source commit. The Worker remains sourced from
-  `b9e8999988c5e49347da64154852c6f66c1f23fb`, fixed by tag
-  `online-v3-production-2026-08-18-b9e8999`.
+- Production provenance is the annotated tag
+  `online-v3-production-2026-08-19-b89678f`, which points exactly to the
+  deployed source commit.
 - Production Worker version:
-  `2e19d227-7c2e-4da4-b375-3c1995673de3` at 100% (deployment
-  `83be5f16-66e3-4120-890b-3c57600d3da4`).
+  `1811ba2d-986d-4271-a577-d6b7796ad8ba` at 100% (deployment
+  `cc4ca52e-d1ab-4366-90eb-e5992d5bc52a`).
 - Recorded Worker rollback version:
-  `ad6dd38c-cb91-43c2-a0ef-20890695a2d2`.
+  `2e19d227-7c2e-4da4-b375-3c1995673de3`.
 - Production Pages deployment:
-  `97a82dee-c155-4169-ac52-f0bf3c2f0e0d`, source `80014dc`.
+  `fdfdb0fa-c787-4e6c-a1d6-ef64f776f267`, source `b89678f`.
 - Active production ruleset:
   `sha256:87c30b2c011b5103398f9b03f6bf018d71f2a35427c0a04ef7a31b2559a7a6d9`.
 - Retained previous ruleset:
@@ -48,41 +46,33 @@ Do not describe the system as server-authoritative combat or cheat-proof.
   `00000712-00000000-000050c7-dcc35a66a3fd387efd989c1bce79b263`, and D1 now
   reports `No migrations to apply`.
 
-This release moves Ranked room settlement from enemy clear to explicit portal,
-normal extraction, emergency extraction, and fatal boundaries. Emergency and
-fatal settlement do not clear the room, award a room-clear reward, or advance
-depth. Identical retries remain idempotent, prevented fatal events keep the
-same room journal open, and impossible integrity state makes the run
-provisional without disqualifying transport failures. Combat simulation remains
-local and no movement, combat, AI, animation, audio, or render traffic was
-added. Existing runs pinned to `0672` remain supported by the retained runtime.
+This release repairs normal-extraction recovery after a rejected or expired
+checkpoint. A resync now continues extraction only when canonical state proves
+that the room checkpoint committed; a same-room resync cancels the stale local
+intent and safely restarts the uncommitted room. It also adds bounded,
+token-free browser diagnostics and structured Worker diagnostics for the first
+provisional transition and sanitized request errors.
 
-The Pages-only reconnect hotfix preserves an in-flight normal extraction when
-a committed room checkpoint response is lost and the player returns through
-Reconnect -> Main Menu -> Continue. Repeated Main Menu activation after the
-local session is already abandoned is idempotent. No Worker, ruleset, D1,
-protocol, combat, or protected `game.js` change was made for this hotfix.
+The release also restores the crimson pre-Warden portal warning on every depth
+before the canonical five-depth Warden schedule (4, 9, 14, and so on) without
+moving checkpoint timing. No `game.js`, D1 schema, canonical ruleset source,
+ruleset manifest, or ruleset hash changed. Existing runs pinned to older hashes
+remain supported, and the active production ruleset remains `87c3...`.
 
 ## Latest release evidence
 
-- Exact clean Pages source `80014dcbda77367aa849c9ad46c9c680d3eeb52b`
-  passed fresh `npm run verify:full -- --force`: 877/877. The release log is
-  `output/verification/full-20260818T214352071Z.log`.
+- Exact committed source `b89678f0de4b77098ad4086c4b5221949a42463f`
+  passed fresh `npm run verify:full -- --force`: 879/879. The release log is
+  `output/verification/full-20260819T162110879Z.log`.
 - Codex visually inspected and approved all six current archive screenshots.
   The recorded visual source fingerprint is
-  `sha256:8bde824af7d3755856c5d62245a0922ae3e86052b9e79b07b6e04d9693a5f603`.
-- Candidate-version override smoke proved the inactive Worker accepted the new
-  boundary-settlement capability and reported the candidate `87c3...` ruleset
-  while default traffic still served the prior `0672...` ruleset.
-- The candidate remained at 0% until validation, then Worker and Pages used a
-  coordinated cutover to avoid client/Worker checkpoint-schema version skew.
-  The Pages upload came from the repository root and included the Functions
+  `sha256:466f3515e0d44adc8d45f5f29da0e5df89cb1a79d489893668e24464d983938c`.
+- The Pages upload came from the repository root and included the Functions
   bundle, routes, and service binding.
-- Post-hotfix checks confirm the stable and versioned Pages URLs return the
-  exact local `80014dc` `index.html`, `config.js`, `game.js`, and Ranked runtime
-  assets. Availability still reports active ruleset `87c3...`, leaderboard
-  reads pass, and real Chromium boot tests found no JavaScript errors on either
-  URL. The Worker remains version `2e19d227...` at 100%.
+- Post-deploy byte checks confirm the stable Pages URL returns the exact local
+  `b89678f` `index.html`, `config.js`, `game.js`, and Ranked runtime assets.
+  Availability reports production active with ruleset `87c3...`, and Worker
+  deployment `cc4ca52e...` serves version `1811ba2d...` at 100%.
 - No release smoke mutated D1. The production database still reports no
   pending migrations.
 
@@ -111,10 +101,9 @@ runtime source fingerprint required a fresh visual receipt.
 
 ## Protected working trees and release refs
 
-- The deployed Pages source is fixed by
-  `online-v3-pages-production-2026-08-18-80014dc`; the Worker source remains
-  fixed by `online-v3-production-2026-08-18-b9e8999`. Subsequent documentation
-  commits are not part of either deployed artifact.
+- The deployed Pages and Worker source is fixed by
+  `online-v3-production-2026-08-19-b89678f`. Subsequent documentation commits
+  are not part of either deployed artifact.
 - `npm run status:compact` reported zero protected Vault Guardian WIP entries
   and zero local Wrangler-state entries before the release record was written.
 - The untracked user file
