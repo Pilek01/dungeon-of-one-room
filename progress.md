@@ -9,7 +9,9 @@ Original prompt: Diagnose and repair the Ranked Observer Bot production crashes,
 - The first implementation attempt imported the concrete Camp catalog into the Worker and was rejected by the source-isolation tests. The final implementation exposes a read-only membership predicate through each registered release descriptor, preserving the Worker/ruleset boundary and every historical ruleset hash.
 - TDD reproduced the production HTTP 422 before implementation. The endpoint regression now proves the known exhausted elixir opens Camp and persists `elixirs: []`, while an unknown exhausted elixir still returns `CAMP_ELIXIR_LOADOUT_INVALID`.
 - Focused Camp/anti-tamper tests pass 32/32, isolation tests pass 9/9, and the complete Worker phase suite passes 863/863. Independent review found no P0-P2 correctness, anti-cheat, historical-ruleset, pending-offer, or idempotency issues.
-- No D1 migration, ruleset source/hash/activation, Pages artifact, or gameplay/client change is required. Production Worker deployment is pending.
+- Released code commit `c2f90d395b97da0988a6a352cbe9365aaeab5543` from `main`.
+- No D1 migration, ruleset source/hash/activation, Pages artifact, or gameplay/client change was required. Production Worker version `96a46a6a-d408-4502-99a0-6eb742c86415` is deployed at 100% in deployment `96018ab8-eea7-4de0-b1a4-f4ec47a9144b`; previous stable version `dda4c227-9ba4-461c-a475-016771500c1a` remains the rollback target.
+- Candidate availability and disposable start/abandon smoke passed before traffic. Canary stages at 5% and 25% passed 30/30 public availability checks; final availability is active and compatible on unchanged ruleset `sha256:87c30b2c011b5103398f9b03f6bf018d71f2a35427c0a04ef7a31b2559a7a6d9`.
 
 ## 2026-08-20 - Ranked Camp lost-response recovery
 
