@@ -263,6 +263,54 @@ async function waitFor(predicate, message) {
   assert.fail(message);
 }
 
+test("portal entry restores a missing persisted Ranked boundary before Observer Bot settlement", async () => {
+  const firstRoom = {
+    directiveId: "directive_1",
+    roomNonce: "nonce_1",
+    depth: 1,
+    roomType: "combat"
+  };
+  const restoredRoom = metaState({
+    revision: 1,
+    rulesetHash: "sha256:boundary",
+    currentRoomDirective: firstRoom,
+    currentRewardEnvelope: { envelopeId: "reward_1", fixedAwards: [] }
+  });
+  const harness = createHarness({
+    observerBotActive: true,
+    boundarySettlement: true,
+    hasRecovery: true,
+    async onResume() {
+      return { metaState: restoredRoom };
+    },
+    async onCheckpoint() {
+      return { metaState: metaState({ revision: 2, rulesetHash: "sha256:boundary" }) };
+    }
+  });
+  const runtime = await installRuntime(harness);
+  await runtime.onRoomEntered(firstRoom);
+  const client = harness.root.DungeonRankedV3Client.createRankedClient();
+  client.getSnapshot().publicState = metaState({
+    revision: 1,
+    rulesetHash: "sha256:boundary",
+    currentRoomDirective: null,
+    currentRewardEnvelope: null
+  });
+  await runtime.onLocalRoomCleared({
+    turnCount: 4,
+    rewardClaims: [],
+    reportedGoldDelta: 0,
+    completionCapability: harness.integrityContexts[0].completionCapability
+  });
+
+  assert.doesNotThrow(() => assert.equal(runtime.onPortalEntry(), true));
+  await waitFor(
+    () => harness.calls.some((entry) => entry.action === "checkpoint"),
+    "portal settlement did not continue after canonical boundary recovery"
+  );
+  assert.deepEqual(harness.calls.map((entry) => entry.action), ["resume", "checkpoint"]);
+});
+
 test("a local room clear without its active capability emits an integrity downgrade signal", async () => {
   const harness = createHarness({
     observerBotActive: false,

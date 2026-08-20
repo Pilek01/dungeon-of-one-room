@@ -42,6 +42,7 @@
   let observerBotBoundaryPending = false;
   let observerBotAutomationHalted = false;
   let activeRoomIntegrity = null;
+  let activeRoomDirectiveId = "";
   const shownRankIntegrityNotices = new Set();
   const recoveryStore = root.DungeonRankedV3Storage.createStore(root.localStorage);
 
@@ -184,6 +185,26 @@
   function usesBoundarySettlement() {
     const rulesetHash = createClient().getSnapshot()?.publicState?.rulesetHash;
     return protocol.supportsBoundarySettlement?.(rulesetHash) === true;
+  }
+
+  function hasRankedBoundaryBinding(state) {
+    return Boolean(state?.currentRoomDirective && state?.currentRewardEnvelope);
+  }
+
+  async function ensureRankedBoundaryBinding() {
+    const current = createClient().getSnapshot()?.publicState;
+    if (hasRankedBoundaryBinding(current)) return current;
+    ui.showSync("Restoring Ranked room…");
+    const response = await createClient().resumeCanonical();
+    const restored = response?.metaState || createClient().getSnapshot()?.publicState;
+    if (!hasRankedBoundaryBinding(restored)) {
+      throw new TypeError("RANKED_BOUNDARY_BINDING_UNAVAILABLE");
+    }
+    const restoredDirectiveId = String(restored.currentRoomDirective.directiveId || "");
+    if (activeRoomDirectiveId && restoredDirectiveId !== activeRoomDirectiveId) {
+      throw new TypeError("RANKED_BOUNDARY_BINDING_MISMATCH");
+    }
+    return restored;
   }
 
   function captureRankedBoundary() {
@@ -1577,6 +1598,7 @@
     if (!pendingRoomSummary) return false;
     Promise.resolve().then(async () => {
       if (usesBoundarySettlement()) {
+        await ensureRankedBoundaryBinding();
         const captured = mergeCapturedBoundary(captureRankedBoundary());
         pendingRoomSummary = captured.summary;
         if (options.enterPortal === true) pendingBoundaryExit = "portal";
@@ -1595,14 +1617,16 @@
   function onPortalEntry() {
     if (!usesBoundarySettlement() || !pendingRoomSummary) return false;
     if (session.getState() === root.DungeonRankedV3Session.STATES.resolving) return true;
-    const captured = mergeCapturedBoundary(captureRankedBoundary());
-    pendingRoomSummary = {
-      ...captured.summary,
-      integritySignals: pendingRoomSummary.integritySignals || []
+    const task = async () => {
+      const state = await ensureRankedBoundaryBinding();
+      const captured = mergeCapturedBoundary(captureRankedBoundary());
+      pendingRoomSummary = {
+        ...captured.summary,
+        integritySignals: pendingRoomSummary.integritySignals || []
+      };
+      pendingBoundaryExit = "portal";
+      return continueBoundary(state);
     };
-    pendingBoundaryExit = "portal";
-    const state = createClient().getSnapshot()?.publicState;
-    const task = () => continueBoundary(state);
     void (isRankedObserverBotActive() ? runObserverBotBoundary(task) : task()).catch(presentError);
     return true;
   }
@@ -1664,6 +1688,7 @@
 
   async function onRoomEntered(directive) {
     if (!directive) return;
+    activeRoomDirectiveId = String(directive.directiveId || "");
     installRoomIntegrityContext(directive);
     if (session.getState() === root.DungeonRankedV3Session.STATES.next) {
       session.transition(root.DungeonRankedV3Session.STATES.active);
@@ -1716,6 +1741,7 @@
       const previousDirectiveId = previousState?.currentRoomDirective?.directiveId || null;
       const fatalPayload = { classification: "local_fatal_event" };
       if (boundaryEnabled) {
+        await ensureRankedBoundaryBinding();
         fatalPayload.boundarySettlement = mergeCapturedBoundary(captureRankedBoundary()).eventPayload;
         pendingRoomSummary = null;
       }
@@ -1790,6 +1816,7 @@
         return;
       }
       ui.showSync("Extracting…");
+      await ensureRankedBoundaryBinding();
       const captured = mergeCapturedBoundary(captureRankedBoundary());
       if (extractionMode === "emergency") {
         pendingRoomSummary = null;

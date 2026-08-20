@@ -1779,3 +1779,23 @@ Updated next good targets
 - All six release archive screenshots were freshly generated and visually
   inspected. No Worker, D1 schema/data, ruleset source, ruleset manifest,
   ruleset hash, combat, movement, renderer, or `game.js` change was made.
+
+## 2026-08-20 - Persisted Observer Bot boundary self-recovery
+
+- Production `0dac1dd` proved the compatibility fallback was too narrow: it
+  preserved a valid pre-event binding, but could not repair a browser snapshot
+  that was already missing both boundary fields.
+- Added a RED/GREEN runtime regression for portal entry with an already-missing
+  directive and reward envelope. Portal settlement now resumes canonical state,
+  verifies it belongs to the locally active room, and only then captures and
+  checkpoints the boundary.
+- The same recovery guard protects Forge exit, fatal settlement, extraction,
+  and the post-assistance response. Focused runtime/client tests pass 26/26;
+  `verify:phase` passes 857/857.
+- Stabilized the browser QA hook so its late-chest assertion no longer depends
+  on a randomly generated chest. The full headed Ranked scenario then passed,
+  including lifecycle, network loss, reload, multi-tab ownership, reward
+  boundaries, death presentation, Forge, and Camp. Fresh screenshots were
+  visually inspected.
+- Pending: release commit/push, Pages build/deploy, and production byte/boot
+  verification.

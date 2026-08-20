@@ -832,8 +832,18 @@ async function main() {
   };
   window.__DUNGEON_TEST_OPEN_LATE_CHEST = () => {
     if (!canUseDebugCheats() || state.phase !== "playing" || !state.roomCleared) return null;
-    const chest = state.chests.find((candidate) => candidate && !candidate.opened && !candidate.destroyed);
-    if (!chest) return null;
+    let chest = state.chests.find((candidate) => candidate && !candidate.opened && !candidate.destroyed);
+    if (!chest) {
+      chest = {
+        id: "qa-late-chest",
+        type: "normal",
+        x: state.player.x,
+        y: state.player.y,
+        opened: false,
+        destroyed: false
+      };
+      state.chests.push(chest);
+    }
     openChest(chest);
     return { opened: chest.opened === true, type: String(chest.type || "normal") };
   };
