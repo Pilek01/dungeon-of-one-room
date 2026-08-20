@@ -194,6 +194,15 @@
         }
         throw cause;
       }
+      const nextPublicState = clone(validated.metaState);
+      if (
+        operation.body?.type === "mark_test_assistance" &&
+        protocol.supportsBoundarySettlement?.(nextPublicState.rulesetHash) &&
+        nextPublicState.status === "active"
+      ) {
+        nextPublicState.currentRoomDirective ??= clone(current.publicState?.currentRoomDirective);
+        nextPublicState.currentRewardEnvelope ??= clone(current.publicState?.currentRewardEnvelope);
+      }
       persist({
         ...snapshot,
         runId: validated.metaState.runId,
@@ -201,7 +210,7 @@
         rulesetId: validated.metaState.rulesetId,
         rulesetHash: validated.metaState.rulesetHash,
         token: validated.token,
-        publicState: clone(validated.metaState),
+        publicState: nextPublicState,
         pendingOperation: null,
         lastAcknowledgedOperationId: operation.operationId
       });

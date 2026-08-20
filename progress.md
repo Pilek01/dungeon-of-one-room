@@ -1766,3 +1766,16 @@ Updated next good targets
 - Automated behavior and screenshot generation completed, but manual visual
   approval was not recorded because both Windows image viewers failed during
   environment setup; no visual receipt was fabricated.
+
+## 2026-08-20 - Observer Bot Ranked boundary compatibility repair
+
+- Preserved the active room directive and reward envelope when a legacy
+  `mark_test_assistance` response omits those optional projection fields.
+- The client still adopts the canonical revision, checkpoint token, assistance
+  classification, and all other response state; the fallback is limited to
+  active boundary-settlement runs and missing fields only.
+- Added a RED/GREEN client regression. Focused client tests pass 15/15, the
+  Ranked phase gate passes 856/856, and the headed Ranked lifecycle passes.
+- All six release archive screenshots were freshly generated and visually
+  inspected. No Worker, D1 schema/data, ruleset source, ruleset manifest,
+  ruleset hash, combat, movement, renderer, or `game.js` change was made.

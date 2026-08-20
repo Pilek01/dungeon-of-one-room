@@ -446,6 +446,75 @@ test("M4 session state permits only explicit room-boundary UI and portal transit
   assert.equal(offerMachine.getState(), sessionApi.STATES.active);
 });
 
+test("M4 test-assistance event preserves the active Ranked boundary binding", async () => {
+  const directive = {
+    directiveId: "directive_a",
+    runId: "run_a1",
+    revision: 4,
+    roomIndex: 1,
+    depth: 0,
+    roomType: "combat",
+    roomCategory: "normal",
+    directiveSeed: "seed",
+    roomNonce: "nonce_a",
+    rewardEnvelopeRef: "envelope_a",
+    specialRoomPayload: null
+  };
+  const rewardEnvelope = {
+    envelopeId: "envelope_a",
+    rewardSlots: [],
+    fixedAwards: []
+  };
+  const store = memoryStore({
+    schemaVersion: 1,
+    mode: "ranked",
+    runId: "run_a1",
+    revision: 4,
+    rulesetId: protocol.RULESET_ID,
+    rulesetHash: protocol.RULESET_HASH,
+    token: { kind: protocol.TOKEN_KINDS.room, value: "room-secret-4" },
+    publicState: {
+      ...meta("active", 4, directive),
+      currentRewardEnvelope: rewardEnvelope
+    },
+    pendingOperation: null
+  });
+  const client = clientApi.createRankedClient({
+    store,
+    transport: {
+      createOperationId: () => "op_test_assistance",
+      async request() {
+        return {
+          payload: {
+            ok: true,
+            protocolVersion: protocol.PROTOCOL_VERSION,
+            runId: "run_a1",
+            revision: 5,
+            acceptedEvent: "mark_test_assistance",
+            checkpointToken: "room-secret-5",
+            metaState: {
+              ...meta("active", 5),
+              rankEligibility: "provisional",
+              rankIntegrity: {
+                reasonCodes: ["test_assistance"],
+                firstDetectedRevision: 5
+              }
+            }
+          }
+        };
+      }
+    }
+  });
+
+  await client.event("mark_test_assistance", { assistanceClass: "observer_bot" });
+
+  const snapshot = client.getSnapshot();
+  assert.deepEqual(snapshot.publicState.currentRoomDirective, directive);
+  assert.deepEqual(snapshot.publicState.currentRewardEnvelope, rewardEnvelope);
+  assert.equal(snapshot.revision, 5);
+  assert.equal(snapshot.token.value, "room-secret-5");
+});
+
 test("M4 checkpoint sends the versioned integrity envelope with gold telemetry", async () => {
   const directive = {
     directiveId: "directive_integrity_1",
