@@ -3,7 +3,10 @@ import { execFileSync } from "node:child_process";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { observerBotReleaseConfig } from "./pages-release-preflight.mjs";
-import { patchObserverBotCampStart } from "./online-v3-game-patches.mjs";
+import {
+  patchObserverBotCampStart,
+  patchRankedEmergencyExtraction
+} from "./online-v3-game-patches.mjs";
 import { RELEASE_RECEIPT_FILE, sanitizedReleaseReceipt, verifyRecordArchiveVisualApproval } from "./record-archive-visual-receipt.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -221,6 +224,7 @@ await writeFile(bootStylePath, bootStyle, "utf8");
 const gamePath = path.join(output, "game.js");
 let game = await readFile(gamePath, "utf8");
 game = patchObserverBotCampStart(game);
+game = patchRankedEmergencyExtraction(game);
 const practiceSource = 'title: "Start New Game",';
 if (!game.includes(practiceSource)) {
   throw new Error("Missing Practice menu source label.");
@@ -910,6 +914,9 @@ const productionGameReplacements = [
     },
     isRankedTestBotActive() {
       return Boolean(state.onlineV3Ranked && state.onlineV3TestBotUnlocked && isObserverBotActive());
+    },
+    requiresRankedTestAssistance() {
+      return Boolean(state.onlineV3Ranked && state.onlineV3TestBotUnlocked);
     },
     async unlockRankedTestBot(password) {
       if (!state.onlineV3Ranked || window.DUNGEON_ONLINE_TEST_BOT_ENABLED !== true) return false;

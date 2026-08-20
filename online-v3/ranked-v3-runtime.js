@@ -32,6 +32,7 @@
   let currentCampResponse = null;
   let campMutationPending = false;
   let pendingFreshCampaign = false;
+  let pendingTestAssistance = false;
   let pendingElixirUsage = null;
   let currentMerchantOffer = null;
   let merchantMutationPending = false;
@@ -356,6 +357,7 @@
     pendingBoundaryExit = null;
     extractedProfileReady = false;
     pendingFreshCampaign = false;
+    pendingTestAssistance = false;
     pendingElixirUsage = null;
     currentForgeOffer = null;
     currentForgeContext = null;
@@ -781,7 +783,19 @@
   }
 
   async function acceptResponse(response) {
-    const state = response.metaState;
+    let state = response.metaState;
+    if (pendingTestAssistance && state?.status === "active") {
+      if (String(state.assistanceClass || "none") === "none") {
+        response = await createClient().event("mark_test_assistance", {
+          assistanceClass: "observer_bot"
+        });
+        state = response.metaState;
+      }
+      if (!["observer_bot", "cheats", "mixed"].includes(String(state?.assistanceClass || "none"))) {
+        throw new TypeError("RANKED_TEST_ASSISTANCE_UNCONFIRMED");
+      }
+      pendingTestAssistance = false;
+    }
     if (!state || !protocol.isSupportedRulesetHash(state.rulesetHash)) {
       throw new TypeError("RANKED_RULESET_MISMATCH");
     }
@@ -896,11 +910,12 @@
       ]);
       return;
     }
+    let acceptedStart = false;
     try {
       session.transition(root.DungeonRankedV3Session.STATES.starting);
       ui.showMessage("Entering Ranked", "Preparing your descent...");
       startedAt = Date.now();
-      const response = await createClient().start({
+      let response = await createClient().start({
         playerName: publicName(),
         season: String(root.DUNGEON_ONLINE_V3_SEASON || "local-m4"),
         gameVersion: String(root.DUNGEON_GAME_VERSION || root.GAME_VERSION || "v0.8.2"),
@@ -909,8 +924,16 @@
         newCampaign: pendingFreshCampaign,
         clientInstallIdHash: await installationHash()
       });
+      acceptedStart = true;
+      pendingTestAssistance = Boolean(
+        root.DungeonOnlineV3GameBridge?.requiresRankedTestAssistance?.()
+      );
       await acceptResponse(response);
     } catch (error) {
+      if (acceptedStart) {
+        presentError(error);
+        return;
+      }
       const repairProfile = allowProfileRepair && String(error?.code || "") === "PROFILE_UNAUTHORIZED";
       try {
         discardFailedStart(repairProfile);

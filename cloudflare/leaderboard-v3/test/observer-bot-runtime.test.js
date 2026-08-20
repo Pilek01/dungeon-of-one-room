@@ -56,6 +56,18 @@ function createHarness(options = {}) {
   };
   const client = {
     getSnapshot() { return snapshot; },
+    async start(input) {
+      calls.push({ action: "start", payload: input });
+      const response = await options.onStart(input);
+      snapshot = { publicState: response.metaState };
+      return response;
+    },
+    async selectStartingRelic(offerId, choiceId) {
+      calls.push({ action: "select_starting_relic", payload: { offerId, choiceId } });
+      const response = await options.onSelectStartingRelic(offerId, choiceId);
+      snapshot = { publicState: response.metaState };
+      return response;
+    },
     async event(action, payload) {
       calls.push({ action, payload });
       const response = await options.onEvent(action, payload);
@@ -213,6 +225,7 @@ function createHarness(options = {}) {
     },
     DungeonOnlineV3GameBridge: {
       isRankedTestBotActive() { return options.observerBotActive !== false; },
+      requiresRankedTestAssistance() { return options.testAssistanceRequired === true; },
       syncCanonicalProjection() {},
       captureRankedBoundary() {
         return {
@@ -281,6 +294,206 @@ async function waitFor(predicate, message) {
   }
   assert.fail(message);
 }
+
+test("a post-Camp Observer Bot run is marked assisted before gameplay starts", async () => {
+  const freshRoom = metaState({
+    runId: "run_post_camp_bot",
+    revision: 1,
+    currentRoomDirective: {
+      directiveId: "directive_post_camp",
+      depth: 5,
+      roomType: "boss"
+    }
+  });
+  const harness = createHarness({
+    observerBotActive: true,
+    testAssistanceRequired: true,
+    async onStart() { return { metaState: freshRoom }; },
+    async onEvent(action, payload) {
+      assert.equal(action, "mark_test_assistance");
+      assert.equal(payload.assistanceClass, "observer_bot");
+      return {
+        metaState: {
+          ...freshRoom,
+          revision: 2,
+          assistanceClass: "observer_bot",
+          testAssistance: { class: "observer_bot" }
+        }
+      };
+    }
+  });
+  const runtime = await installRuntime(harness);
+
+  assert.equal(runtime.onCampStartRun(4), true);
+  await waitFor(() => harness.directives.length === 1, "fresh bot run did not enter gameplay");
+
+  assert.deepEqual(harness.calls.map((entry) => entry.action), [
+    "start",
+    "mark_test_assistance"
+  ]);
+  assert.equal(harness.directives[0].directiveId, "directive_post_camp");
+});
+
+test("a post-Camp Observer Bot run stays out of gameplay when assistance marking fails", async () => {
+  const markError = Object.assign(new Error("TEST_ASSISTANCE_MARK_FAILED"), {
+    code: "TEST_ASSISTANCE_MARK_FAILED",
+    status: 503
+  });
+  const harness = createHarness({
+    observerBotActive: true,
+    testAssistanceRequired: true,
+    async onStart() {
+      return {
+        metaState: metaState({
+          runId: "run_unmarked_bot",
+          revision: 1,
+          currentRoomDirective: {
+            directiveId: "directive_unmarked",
+            depth: 1,
+            roomType: "combat"
+          }
+        })
+      };
+    },
+    async onEvent(action) {
+      assert.equal(action, "mark_test_assistance");
+      throw markError;
+    }
+  });
+  const runtime = await installRuntime(harness);
+
+  assert.equal(runtime.onCampStartRun(0), true);
+  await waitFor(
+    () => harness.uiMessages.length > 0 || harness.uiMenus.length > 0,
+    "failed assistance mark did not surface a recovery state"
+  );
+
+  assert.equal(harness.directives.length, 0);
+  assert.deepEqual(harness.calls.map((entry) => entry.action), [
+    "start",
+    "mark_test_assistance"
+  ]);
+});
+
+test("an ordinary post-Camp Ranked run starts without test assistance", async () => {
+  const harness = createHarness({
+    observerBotActive: false,
+    testAssistanceRequired: false,
+    async onStart() {
+      return {
+        metaState: metaState({
+          runId: "run_manual_post_camp",
+          currentRoomDirective: {
+            directiveId: "directive_manual",
+            depth: 1,
+            roomType: "combat"
+          }
+        })
+      };
+    },
+    async onEvent(action) {
+      throw new Error(`ordinary run emitted unexpected event: ${action}`);
+    }
+  });
+  const runtime = await installRuntime(harness);
+
+  assert.equal(runtime.onCampStartRun(0), true);
+  await waitFor(() => harness.directives.length === 1, "ordinary run did not enter gameplay");
+
+  assert.deepEqual(harness.calls.map((entry) => entry.action), ["start"]);
+});
+
+test("test assistance waits for starting relic activation but still precedes gameplay", async () => {
+  const activeRoom = metaState({
+    runId: "run_fresh_campaign_bot",
+    revision: 2,
+    currentRoomDirective: {
+      directiveId: "directive_fresh_campaign",
+      depth: 1,
+      roomType: "combat"
+    }
+  });
+  const harness = createHarness({
+    observerBotActive: true,
+    testAssistanceRequired: true,
+    async onStart() {
+      return {
+        metaState: metaState({
+          runId: "run_fresh_campaign_bot",
+          revision: 1,
+          status: "awaiting_starting_relic",
+          currentRoomDirective: null,
+          startingRelicOffer: {
+            offerId: "starting_offer",
+            publicChoices: [{ choiceId: "fang", relicId: "fang" }]
+          }
+        })
+      };
+    },
+    async onSelectStartingRelic(offerId, choiceId) {
+      assert.equal(offerId, "starting_offer");
+      assert.equal(choiceId, "fang");
+      return { metaState: activeRoom };
+    },
+    async onEvent(action) {
+      assert.equal(action, "mark_test_assistance");
+      return {
+        metaState: {
+          ...activeRoom,
+          revision: 3,
+          assistanceClass: "observer_bot",
+          testAssistance: { class: "observer_bot" }
+        }
+      };
+    }
+  });
+  const runtime = await installRuntime(harness);
+
+  assert.equal(runtime.onCampStartRun(0), true);
+  await waitFor(() => harness.uiChoiceCalls.length === 1, "starting relic choice was not shown");
+  assert.deepEqual(harness.calls.map((entry) => entry.action), ["start"]);
+
+  await harness.uiChoiceCalls[0][3]("fang");
+  await waitFor(() => harness.directives.length === 1, "fresh campaign did not enter gameplay");
+
+  assert.deepEqual(harness.calls.map((entry) => entry.action), [
+    "start",
+    "select_starting_relic",
+    "mark_test_assistance"
+  ]);
+});
+
+test("gameplay stays blocked when the assistance response is not canonically marked", async () => {
+  const activeRoom = metaState({
+    runId: "run_unconfirmed_assistance",
+    revision: 1,
+    assistanceClass: "none",
+    currentRoomDirective: {
+      directiveId: "directive_unconfirmed",
+      depth: 1,
+      roomType: "combat"
+    }
+  });
+  const harness = createHarness({
+    observerBotActive: true,
+    testAssistanceRequired: true,
+    async onStart() { return { metaState: activeRoom }; },
+    async onEvent(action) {
+      assert.equal(action, "mark_test_assistance");
+      return { metaState: { ...activeRoom, revision: 2, assistanceClass: "none" } };
+    }
+  });
+  const runtime = await installRuntime(harness);
+
+  assert.equal(runtime.onCampStartRun(0), true);
+  await waitFor(
+    () => harness.uiMessages.length > 0 || harness.uiMenus.length > 0,
+    "unconfirmed assistance did not surface a recovery state"
+  );
+
+  assert.equal(harness.directives.length, 0);
+  assert.equal(runtime.getDiagnostics().at(-1)?.code, "RANKED_TEST_ASSISTANCE_UNCONFIRMED");
+});
 
 test("finalized extraction keeps Camp recovery separate from Ranked run resync", async () => {
   let campAttempts = 0;

@@ -15,3 +15,19 @@ ${indent}  startRun({ carriedRelics: [...state.relics], startDepth });
 ${indent}}
 ${indent}state.observerBot.lastDecision = "camp_start_run";`);
 }
+
+export function patchRankedEmergencyExtraction(gameSource) {
+  const source = String(gameSource);
+  const rankedBranch = /function confirmEmergencyExtract\(\) \{\r?\n\s+if \(!state\.extractConfirm\) return false;\r?\n\s+if \(state\.onlineV3Ranked\) \{/u;
+  if (rankedBranch.test(source)) return source;
+  const marker = /(function confirmEmergencyExtract\(\) \{\r?\n\s+if \(!state\.extractConfirm\) return false;)/u;
+  if (!marker.test(source)) {
+    throw new Error("Missing Ranked emergency extraction marker.");
+  }
+  return source.replace(marker, `$1
+    if (state.onlineV3Ranked) {
+      state.extractConfirm = null;
+      extractRun({ forced: true });
+      return true;
+    }`);
+}

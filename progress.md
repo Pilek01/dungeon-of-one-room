@@ -1,5 +1,16 @@
 Original prompt: Diagnose and repair the Ranked Observer Bot production crashes, verify the smallest robust fixes, merge them to main, and deploy a working release.
 
+## 2026-08-20 - Observer Bot post-Camp assistance and emergency-extract gold repair (in progress)
+
+- Production D1 evidence showed post-Camp Observer Bot runs were starting with `assistanceClass: none`: F9 marked only the run where test controls were unlocked, while the unlocked controls persisted into later Camp-started runs.
+- Fresh Ranked starts now issue canonical `mark_test_assistance(observer_bot)` after the server accepts the new run but before the first room is handed to the game. A failed mark preserves the active recovery and blocks gameplay; ordinary runs without unlocked test controls do not emit the event.
+- Reproduced the Warden-room gold mismatch at its source: Ranked emergency extraction applied the local loss before capturing the room boundary, so a `67 -> 73` room gain could be reduced to `21` and reported as delta `0` while the server correctly settled the recorded enemy/elite claim.
+- The Pages patch now bypasses local emergency-loss mutation only in Ranked and captures the full pre-loss wallet for server settlement. Practice keeps its existing local loss behavior.
+- TDD RED observed missing post-Camp assistance, gameplay continuing after mark failure, the fresh-campaign starting-relic ordering edge, an unconfirmed canonical mark response, and the absent emergency-extraction patch. GREEN focused verification passes 26/26, and the broader targeted security/gold suite passed 63/63 before the final edge-case additions.
+- Fresh phase verification passes 872/872. Independent review found no remaining P0-P2 issues after assistance marking was deferred until `active` and its canonical response class was verified before gameplay.
+- The generated test Pages bundle contained the expected Ranked-only extraction branch and assistance bridge wiring. The full headed scenario could not progress past its first screenshot because the C: drive had zero free bytes (`ENOSPC`); two retries proved this was an artifact-write failure rather than a game assertion.
+- Pending: release commit/push, release Pages build, controlled Pages deployment, and production smoke. Worker/ruleset/D1 changes are not expected.
+
 ## 2026-08-20 - Exhausted Ranked elixir Camp recovery hotfix
 
 - Production screenshot identifies `CAMP_ELIXIR_LOADOUT_INVALID` after an Observer Bot run bought and later consumed an elixir.
