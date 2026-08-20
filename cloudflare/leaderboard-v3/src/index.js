@@ -312,6 +312,20 @@ function normalizeProfileCampLedger(state) {
   return next;
 }
 
+function normalizeExhaustedProfileElixirForFreshCamp(state, ruleset) {
+  const elixirs = state?.build?.elixirs;
+  if (!Array.isArray(elixirs) || elixirs.length !== 1) return state;
+  const [entry] = elixirs;
+  if (
+    !entry ||
+    entry.charges !== 0 ||
+    typeof ruleset.isKnownElixirId !== "function" ||
+    !ruleset.isKnownElixirId(entry.elixirId)
+  ) return state;
+  state.build.elixirs = [];
+  return state;
+}
+
 function profileStateForRulesetBootstrap(profileState) {
   if (!profileState) return { carried: null, input: null };
   const carried = normalizeProfileCampLedger(profileState);
@@ -873,6 +887,7 @@ async function handleProfileCamp(request, env, options, repositories) {
     }, 200);
   }
   if (body.action === "open") {
+    state = normalizeExhaustedProfileElixirForFreshCamp(state, ruleset);
     state.revision += 1;
     state = await ruleset.beginCampSession(state, { secret: requireSecret(env) });
     state = await ruleset.issueCampTransactions(state, { secret: requireSecret(env) });

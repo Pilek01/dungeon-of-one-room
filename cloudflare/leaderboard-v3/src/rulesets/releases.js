@@ -1,5 +1,6 @@
 import { RULESET_RELEASE_STATES } from "./registry.js";
 import {
+  V08_CAMP_TRANSACTION_POLICY,
   V08_META_1_DESCRIPTOR,
   createV08Meta1Ruleset
 } from "./v08-meta-1/index.js";
@@ -17,6 +18,9 @@ const LOCAL_BOUNDARY_CAPABILITIES = Object.freeze({
 });
 const LOCAL_ENVIRONMENTS = Object.freeze(["test", "local"]);
 const PRODUCTION_ENVIRONMENTS = Object.freeze(["test", "local", "production"]);
+const V08_ELIXIR_IDS = new Set(
+  V08_CAMP_TRANSACTION_POLICY.elixirs.map((entry) => entry.id)
+);
 
 function compatibleFatalRequest(request, capabilities) {
   if (
@@ -38,6 +42,9 @@ function createCapabilityBoundRuleset(rulesetHash, capabilities) {
   return Object.freeze({
     ...ruleset,
     capabilities,
+    isKnownElixirId(elixirId) {
+      return V08_ELIXIR_IDS.has(elixirId);
+    },
     async reportFatalEvent(state, request, context = {}) {
       return ruleset.reportFatalEvent(
         state,

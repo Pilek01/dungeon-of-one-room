@@ -207,10 +207,33 @@ test("canonical extraction creates an authenticated profile Camp and next run", 
   const fundedProfile = structuredClone(unfundedProfile);
   fundedProfile.state.campGold = 1_000;
   fundedProfile.state.goldLedger.campEarnedServerDerived = 1_000;
+  fundedProfile.state.build.elixirs = [{ elixirId: "unknown_elixir", charges: 0 }];
   assert.equal(
     await harness.repositories.profiles.updateConditional(
       fundedProfile,
       unfundedProfile.revision
+    ),
+    true
+  );
+
+  const unknownExhaustedElixir = await harness.post(
+    "/api/v3/profiles/camp",
+    harness.profileBody({ action: "open" }),
+    "r2-camp-open-unknown-exhausted-elixir"
+  );
+  assert.equal(unknownExhaustedElixir.response.status, 422);
+  assert.equal(
+    unknownExhaustedElixir.payload.error.code,
+    "CAMP_ELIXIR_LOADOUT_INVALID"
+  );
+
+  const invalidProfile = await harness.repositories.profiles.get(PROFILE_ID);
+  const exhaustedProfile = structuredClone(invalidProfile);
+  exhaustedProfile.state.build.elixirs = [{ elixirId: "fury_1", charges: 0 }];
+  assert.equal(
+    await harness.repositories.profiles.updateConditional(
+      exhaustedProfile,
+      invalidProfile.revision
     ),
     true
   );
@@ -223,6 +246,11 @@ test("canonical extraction creates an authenticated profile Camp and next run", 
   assert.equal(opened.response.status, 200);
   assert.equal(opened.payload.profile.profileId, PROFILE_ID);
   assert.equal(opened.payload.profile.campSession.active, true);
+  assert.deepEqual(opened.payload.profile.build.elixirs, []);
+  assert.deepEqual(
+    harness.repositories.snapshotProfile(PROFILE_ID).state.build.elixirs,
+    []
+  );
   const reopenedAfterLostResponse = await harness.post(
     "/api/v3/profiles/camp",
     harness.profileBody({ action: "open" }),

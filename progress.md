@@ -1,5 +1,16 @@
 Original prompt: Diagnose and repair the Ranked Observer Bot production crashes, verify the smallest robust fixes, merge them to main, and deploy a working release.
 
+## 2026-08-20 - Exhausted Ranked elixir Camp recovery hotfix
+
+- Production screenshot identifies `CAMP_ELIXIR_LOADOUT_INVALID` after an Observer Bot run bought and later consumed an elixir.
+- Root cause reproduced locally: canonical reward and fatal settlement decrement the last elixir charge to `0` but retain the loadout entry, while Camp accepts only an empty loadout or exactly one known elixir with `1..5` charges.
+- A direct Camp-policy reproduction with `{ elixirId: "fury_1", charges: 0 }` throws the exact production diagnostic.
+- Added a Worker compatibility repair on fresh authenticated Camp open: only a singleton known elixir with `charges === 0` becomes an empty loadout before the canonical Camp offer is issued and persisted. Unknown, negative, non-integer, multiple, and positive out-of-range loadouts remain fail-closed.
+- The first implementation attempt imported the concrete Camp catalog into the Worker and was rejected by the source-isolation tests. The final implementation exposes a read-only membership predicate through each registered release descriptor, preserving the Worker/ruleset boundary and every historical ruleset hash.
+- TDD reproduced the production HTTP 422 before implementation. The endpoint regression now proves the known exhausted elixir opens Camp and persists `elixirs: []`, while an unknown exhausted elixir still returns `CAMP_ELIXIR_LOADOUT_INVALID`.
+- Focused Camp/anti-tamper tests pass 32/32, isolation tests pass 9/9, and the complete Worker phase suite passes 863/863. Independent review found no P0-P2 correctness, anti-cheat, historical-ruleset, pending-offer, or idempotency issues.
+- No D1 migration, ruleset source/hash/activation, Pages artifact, or gameplay/client change is required. Production Worker deployment is pending.
+
 ## 2026-08-20 - Ranked Camp lost-response recovery
 
 - Reproduced `POST /api/v3/profiles/camp` returning `422 CAMP_SESSION_PENDING_TRANSACTION` when a successful Camp open response is lost and the finalized run is resynced before Camp is opened again.
