@@ -5,7 +5,12 @@ Original prompt: Diagnose and repair the Ranked Observer Bot production crashes,
 - Reproduced `POST /api/v3/profiles/camp` returning `422 CAMP_SESSION_PENDING_TRANSACTION` when a successful Camp open response is lost and the finalized run is resynced before Camp is opened again.
 - Added endpoint coverage proving a repeated Camp open returns the existing canonical offer without advancing its revision.
 - Kept post-extraction Camp failures in `FINALIZED`, preserved the original diagnostic, replaced run resync with `Retry Camp`, and added the indeterminate `Synchronizing Camp…` surface.
-- Focused TDD coverage passes 17/17; phase verification passes 863/863. Independent review found no remaining P0/P1 after preserving recovery on Main Menu and resuming Observer Bot after a successful Camp retry. Browser playtest, commit, push, Worker deploy, and Pages deploy remain pending.
+- Released code commit `e02e410d3329527b7e72a5c4947899e6729be47f` from `main`.
+- Focused TDD coverage passes 17/17; phase verification passes 863/863; local Wrangler/D1 passes 21/21; current-tree Practice `save` and Ranked `lifecycle` browser scenarios pass. Independent review found no remaining P0/P1 after preserving recovery on Main Menu and resuming Observer Bot after a successful Camp retry.
+- Codex visually inspected and approved all six archive screenshots at source fingerprint `sha256:765f99803c5d4b68af3ed555492c8edc6f5685817d10bce10ed103df5ac7fd5c`.
+- The monolithic `verify:full -- --force` could not complete its clean-worktree baseline step because the C: drive lacked enough space to duplicate the tracked 584 MB `art/` tree. Its preceding gates passed (863/863, Wrangler/D1 21/21, protected baseline 3/3); the same committed source separately passed the current-tree browser scenarios and visual gate.
+- Production Worker version `dda4c227-9ba4-461c-a475-016771500c1a` is deployed. Production Pages deployment `86f02925.dungeon-of-one-room.pages.dev` is live; stable `index.html`, `config.js`, `game.js`, and Ranked runtime match the local release bundle byte-for-byte. Availability reports the expected active `87c30...` production ruleset.
+- Removed only reproducible `output/pages-*` and local Worker/D1 test directories while recovering from `SQLITE_FULL`; the production Pages bundle was rebuilt and verified before upload.
 
 ## 2026-08-19 - Ranked recovery diagnostics and Warden warning production release
 
