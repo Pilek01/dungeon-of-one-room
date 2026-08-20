@@ -1,3 +1,12 @@
+Original prompt: Diagnose and repair the Ranked Observer Bot production crashes, verify the smallest robust fixes, merge them to main, and deploy a working release.
+
+## 2026-08-20 - Ranked Camp lost-response recovery
+
+- Reproduced `POST /api/v3/profiles/camp` returning `422 CAMP_SESSION_PENDING_TRANSACTION` when a successful Camp open response is lost and the finalized run is resynced before Camp is opened again.
+- Added endpoint coverage proving a repeated Camp open returns the existing canonical offer without advancing its revision.
+- Kept post-extraction Camp failures in `FINALIZED`, preserved the original diagnostic, replaced run resync with `Retry Camp`, and added the indeterminate `Synchronizing Camp…` surface.
+- Focused TDD coverage passes 17/17; phase verification passes 863/863. Independent review found no remaining P0/P1 after preserving recovery on Main Menu and resuming Observer Bot after a successful Camp retry. Browser playtest, commit, push, Worker deploy, and Pages deploy remain pending.
+
 ## 2026-08-19 - Ranked recovery diagnostics and Warden warning production release
 
 - Released source commit `b89678f0de4b77098ad4086c4b5221949a42463f`

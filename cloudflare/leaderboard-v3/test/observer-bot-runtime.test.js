@@ -42,6 +42,7 @@ function createHarness(options = {}) {
   const uiChoiceCalls = [];
   const uiMessages = [];
   const uiMenus = [];
+  const uiSyncCalls = [];
   const integrityContexts = [];
   let snapshot = {
     publicState: metaState({
@@ -75,8 +76,19 @@ function createHarness(options = {}) {
       snapshot = { publicState: response.metaState };
       return response;
     },
+    async finalize() {
+      calls.push({ action: "finalize" });
+      const response = await options.onFinalize();
+      snapshot = { publicState: response.metaState };
+      return response;
+    },
+    async camp(action, input) {
+      calls.push({ action: `camp:${action}`, payload: input });
+      return options.onCamp(action, input);
+    },
     releaseWriter() {},
-    clear() {}
+    clear() {},
+    clearRecovery() {}
   };
   const states = {
     abandoned: "ABANDONED_LOCAL_SESSION",
@@ -113,7 +125,7 @@ function createHarness(options = {}) {
     showChoices(...args) { uiChoiceCalls.push(args); },
     showMenu(...args) { uiMenus.push(args); },
     showMessage(...args) { uiMessages.push(args); },
-    showSync() {}
+    showSync(message) { uiSyncCalls.push(message); }
   };
   const root = {
     console,
@@ -187,7 +199,12 @@ function createHarness(options = {}) {
         let state = initial;
         return {
           getState() { return state; },
-          transition(next) { state = next; }
+          transition(next) {
+            if (state === states.finalized) {
+              throw new TypeError(`INVALID_TRANSITION:${state}:${next}`);
+            }
+            state = next;
+          }
         };
       }
     },
@@ -205,6 +222,7 @@ function createHarness(options = {}) {
         };
       },
       beginRankedExtraction() {},
+      enterRankedCamp() {},
       returnToPractice() {},
       startRanked(directive) { directives.push(directive); },
       setRoomIntegrityContext(context) { integrityContexts.push(context); },
@@ -233,6 +251,7 @@ function createHarness(options = {}) {
     uiChoiceCalls,
     uiMessages,
     uiMenus,
+    uiSyncCalls,
     integrityContexts
   };
 }
@@ -262,6 +281,92 @@ async function waitFor(predicate, message) {
   }
   assert.fail(message);
 }
+
+test("finalized extraction keeps Camp recovery separate from Ranked run resync", async () => {
+  let campAttempts = 0;
+  const campError = Object.assign(new Error("CAMP_SESSION_PENDING_TRANSACTION"), {
+    code: "CAMP_SESSION_PENDING_TRANSACTION",
+    status: 422,
+    traceId: "trace-camp-reopen"
+  });
+  const harness = createHarness({
+    observerBotActive: true,
+    async onEvent(action) {
+      assert.equal(action, "request_extraction");
+      return {
+        metaState: metaState({ status: "extraction", rulesetHash: "sha256:boundary" }),
+        profile: { profileId: "profile_test" }
+      };
+    },
+    async onFinalize() {
+      return { metaState: metaState({ status: "finalized", rulesetHash: "sha256:boundary" }) };
+    },
+    async onCamp(action) {
+      assert.equal(action, "open");
+      campAttempts += 1;
+      if (campAttempts === 1) throw campError;
+      return {
+        ok: true,
+        protocolVersion: "ranked-v3-checkpoint-1",
+        profileId: "profile_test",
+        revision: 8,
+        profile: { profileId: "profile_test" },
+        metaState: { profileId: "profile_test" },
+        metaTransactionOffer: { choices: [] }
+      };
+    }
+  });
+  const runtime = await installRuntime(harness);
+
+  await runtime.onExtraction("emergency");
+
+  assert.equal(runtime.getSessionState(), "FINALIZED");
+  assert.equal(harness.uiSyncCalls.at(-1), "Synchronizing Camp…");
+  assert.equal(harness.uiMessages.at(-1)?.[0], "Camp synchronization needed");
+  const actions = harness.uiMessages.at(-1)?.[2] || [];
+  assert.ok(actions.some((button) => button.label === "Retry Camp"));
+  assert.equal(actions.some((button) => button.label === "Resync Ranked Run"), false);
+  assert.equal(runtime.getDiagnostics().at(-1)?.code, "CAMP_SESSION_PENDING_TRANSACTION");
+  assert.equal(runtime.isObserverBotBoundaryPending(), true);
+
+  await actions.find((button) => button.label === "Retry Camp").onClick();
+
+  assert.equal(campAttempts, 2);
+  assert.equal(runtime.isObserverBotBoundaryPending(), false);
+});
+
+test("Main Menu preserves finalized Camp recovery for a later Continue Ranked", async () => {
+  const campError = Object.assign(new Error("CAMP_SESSION_PENDING_TRANSACTION"), {
+    code: "CAMP_SESSION_PENDING_TRANSACTION",
+    status: 422
+  });
+  const harness = createHarness({
+    observerBotActive: false,
+    hasRecovery: true,
+    async onEvent() {
+      return {
+        metaState: metaState({ status: "extraction", rulesetHash: "sha256:boundary" }),
+        profile: { profileId: "profile_test" }
+      };
+    },
+    async onFinalize() {
+      return { metaState: metaState({ status: "finalized", rulesetHash: "sha256:boundary" }) };
+    },
+    async onCamp() { throw campError; }
+  });
+  const runtime = await installRuntime(harness);
+  await runtime.onExtraction("emergency");
+
+  const mainMenu = harness.uiMessages.at(-1)[2]
+    .find((button) => button.label === "Main Menu");
+  mainMenu.onClick();
+
+  assert.equal(runtime.getSessionState(), "ABANDONED_LOCAL_SESSION");
+  harness.root.DungeonOnlineV3Menu.openRanked();
+  assert.ok(
+    harness.uiMenus.at(-1)[2].some((button) => button.label === "Continue Ranked")
+  );
+});
 
 test("portal entry restores a missing persisted Ranked boundary before Observer Bot settlement", async () => {
   const firstRoom = {

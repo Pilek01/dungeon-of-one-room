@@ -223,6 +223,21 @@ test("canonical extraction creates an authenticated profile Camp and next run", 
   assert.equal(opened.response.status, 200);
   assert.equal(opened.payload.profile.profileId, PROFILE_ID);
   assert.equal(opened.payload.profile.campSession.active, true);
+  const reopenedAfterLostResponse = await harness.post(
+    "/api/v3/profiles/camp",
+    harness.profileBody({ action: "open" }),
+    "r2-camp-reopen-after-lost-response"
+  );
+  assert.equal(
+    reopenedAfterLostResponse.response.status,
+    200,
+    JSON.stringify(reopenedAfterLostResponse.payload)
+  );
+  assert.equal(reopenedAfterLostResponse.payload.revision, opened.payload.revision);
+  assert.deepEqual(
+    reopenedAfterLostResponse.payload.metaTransactionOffer,
+    opened.payload.metaTransactionOffer
+  );
   const upgrade = opened.payload.metaTransactionOffer.choices.find(
     (choice) => choice.action === "upgrade" && choice.upgradeId === "vitality"
   );

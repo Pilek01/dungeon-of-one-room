@@ -1391,13 +1391,45 @@
     currentCampResponse = response;
     client?.clearRecovery?.();
     bridge.enterRankedCamp(response.profile, response.metaTransactionOffer);
+    observerBotAutomationHalted = false;
     ui.hide();
   }
 
   async function openCamp() {
+    ui.showSync("Synchronizing Camp…");
     const response = await createClient().camp("open");
     presentNativeCamp(response);
     return response;
+  }
+
+  function leaveFinalizedCampPending() {
+    pendingFreshCampaign = false;
+    pendingElixirUsage = null;
+    client?.releaseWriter?.();
+    client?.clear?.();
+    client = null;
+    session = root.DungeonRankedV3Session.createStateMachine(
+      root.DungeonRankedV3Session.STATES.abandoned
+    );
+    root.DungeonOnlineV3GameBridge?.returnToPractice?.();
+    ui.hide();
+  }
+
+  function presentFinalizedCampError(error) {
+    if (isRankedObserverBotActive()) observerBotAutomationHalted = true;
+    const diagnostic = recordDiagnostic("client_error", {
+      code: String(error?.code || error?.message || "CAMP_SYNC_FAILED"),
+      status: error?.status,
+      traceId: error?.traceId
+    });
+    ui.showMessage(
+      "Camp synchronization needed",
+      `Your completed Ranked run is safe. Camp could not be synchronized yet. Diagnostic: ${diagnosticLabel(diagnostic)}.`,
+      [
+        ui.button("Retry Camp", () => openCamp().catch(presentFinalizedCampError)),
+        ui.button("Main Menu", leaveFinalizedCampPending)
+      ]
+    );
   }
 
   function presentCampError(error) {
@@ -1722,9 +1754,15 @@
   }
 
   async function acceptFinal() {
-    session.transition(root.DungeonRankedV3Session.STATES.finalized);
+    if (session.getState() !== root.DungeonRankedV3Session.STATES.finalized) {
+      session.transition(root.DungeonRankedV3Session.STATES.finalized);
+    }
     if (extractedProfileReady) {
-      await openCamp();
+      try {
+        await openCamp();
+      } catch (error) {
+        presentFinalizedCampError(error);
+      }
       return;
     }
     client?.clearRecovery?.();

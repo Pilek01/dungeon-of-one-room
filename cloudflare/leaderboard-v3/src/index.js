@@ -856,6 +856,22 @@ async function handleProfileCamp(request, env, options, repositories) {
   if (replay) return replay;
   const ruleset = resolveRegisteredRuleset(options, current);
   let state = normalizeProfileCampLedger(current.state);
+  if (
+    body.action === "open" &&
+    state.campSession?.active === true &&
+    state.pendingInventory?.sourceType === "camp"
+  ) {
+    const publicProfile = ruleset.publicProfileState(state);
+    return jsonResponse({
+      ok: true,
+      protocolVersion: PROTOCOL_VERSION,
+      profileId: current.profileId,
+      revision: state.revision,
+      profile: publicProfile,
+      metaState: publicProfile,
+      metaTransactionOffer: ruleset.projectPublicCampTransactions(state)
+    }, 200);
+  }
   if (body.action === "open") {
     state.revision += 1;
     state = await ruleset.beginCampSession(state, { secret: requireSecret(env) });
