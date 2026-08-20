@@ -313,11 +313,10 @@ test("a post-Camp Observer Bot run is marked assisted before gameplay starts", a
       assert.equal(action, "mark_test_assistance");
       assert.equal(payload.assistanceClass, "observer_bot");
       return {
+        acceptedEvent: "mark_test_assistance",
         metaState: {
           ...freshRoom,
-          revision: 2,
-          assistanceClass: "observer_bot",
-          testAssistance: { class: "observer_bot" }
+          revision: 2
         }
       };
     }
@@ -438,6 +437,7 @@ test("test assistance waits for starting relic activation but still precedes gam
     async onEvent(action) {
       assert.equal(action, "mark_test_assistance");
       return {
+        acceptedEvent: "mark_test_assistance",
         metaState: {
           ...activeRoom,
           revision: 3,
@@ -480,7 +480,10 @@ test("gameplay stays blocked when the assistance response is not canonically mar
     async onStart() { return { metaState: activeRoom }; },
     async onEvent(action) {
       assert.equal(action, "mark_test_assistance");
-      return { metaState: { ...activeRoom, revision: 2, assistanceClass: "none" } };
+      return {
+        acceptedEvent: "mark_test_assistance",
+        metaState: { ...activeRoom, revision: 2, assistanceClass: "none" }
+      };
     }
   });
   const runtime = await installRuntime(harness);

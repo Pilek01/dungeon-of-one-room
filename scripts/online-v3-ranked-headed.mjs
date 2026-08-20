@@ -2684,11 +2684,25 @@ ${fatalTestHookAnchor}`;
     const nextRunRequestsBefore = diagnostics.apiRequests.length;
     const nextRunDebugBefore = diagnostics.debugMessages.length;
     await page.getByRole("button", { name: /Start Next Run/u }).click();
-    await page.waitForFunction(() => (
-      window.DungeonOnlineV3?.getSessionState?.() === "ROOM_ACTIVE" ||
-      Boolean(document.querySelector(".ranked-v3-choice-relic")) ||
-      /Ranked Unavailable/u.test(document.querySelector(".ranked-v3-overlay")?.textContent || "")
-    ), null, { timeout: 15_000 });
+    try {
+      await page.waitForFunction(() => (
+        window.DungeonOnlineV3?.getSessionState?.() === "ROOM_ACTIVE" ||
+        Boolean(document.querySelector(".ranked-v3-choice-relic")) ||
+        /Ranked Unavailable/u.test(document.querySelector(".ranked-v3-overlay")?.textContent || "")
+      ), null, { timeout: 15_000 });
+    } catch (error) {
+      const startAudit = await page.evaluate(() => ({
+        session: window.DungeonOnlineV3?.getSessionState?.(),
+        snapshot: window.DungeonOnlineV3?.getSnapshot?.(),
+        overlay: document.querySelector(".ranked-v3-overlay")?.textContent || ""
+      }));
+      throw new Error(`NEXT_RANKED_START_TIMEOUT:${JSON.stringify({
+        startAudit,
+        apiRequests: diagnostics.apiRequests.slice(nextRunRequestsBefore),
+        apiErrors: diagnostics.apiErrors,
+        debugMessages: diagnostics.debugMessages.slice(nextRunDebugBefore)
+      })}`, { cause: error });
+    }
     if (await page.locator(".ranked-v3-choice-relic").count() > 0) {
       await page.locator(".ranked-v3-choice-relic").first().click();
     }

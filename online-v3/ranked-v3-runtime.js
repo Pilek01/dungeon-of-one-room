@@ -791,7 +791,15 @@
         });
         state = response.metaState;
       }
-      if (!["observer_bot", "cheats", "mixed"].includes(String(state?.assistanceClass || "none"))) {
+      const assistanceClassProjected = Object.prototype.hasOwnProperty.call(
+        state && typeof state === "object" ? state : {},
+        "assistanceClass"
+      );
+      if (
+        response.acceptedEvent !== "mark_test_assistance" ||
+        (assistanceClassProjected &&
+          !["observer_bot", "cheats", "mixed"].includes(String(state.assistanceClass || "none")))
+      ) {
         throw new TypeError("RANKED_TEST_ASSISTANCE_UNCONFIRMED");
       }
       pendingTestAssistance = false;
