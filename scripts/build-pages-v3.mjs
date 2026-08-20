@@ -3,6 +3,7 @@ import { execFileSync } from "node:child_process";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { observerBotReleaseConfig } from "./pages-release-preflight.mjs";
+import { patchObserverBotCampStart } from "./online-v3-game-patches.mjs";
 import { RELEASE_RECEIPT_FILE, sanitizedReleaseReceipt, verifyRecordArchiveVisualApproval } from "./record-archive-visual-receipt.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -219,6 +220,7 @@ bootStyle = `${bootStyle.trimEnd()}\n${bootLoadingCss}\n`;
 await writeFile(bootStylePath, bootStyle, "utf8");
 const gamePath = path.join(output, "game.js");
 let game = await readFile(gamePath, "utf8");
+game = patchObserverBotCampStart(game);
 const practiceSource = 'title: "Start New Game",';
 if (!game.includes(practiceSource)) {
   throw new Error("Missing Practice menu source label.");
