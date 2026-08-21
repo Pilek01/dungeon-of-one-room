@@ -8,6 +8,7 @@ Original prompt: Diagnose and repair the Ranked Observer Bot production crashes,
 - Server reward bounds, claim validation, tokens, envelopes, ruleset bytes/hash, and monotonic provisional eligibility were not relaxed. Existing affected runs remain provisional; the repair applies to new room settlements after the updated Pages bundle is loaded.
 - TDD first reproduced the missing initial-wave bonus and the absent elite reservation. Focused Ranked/Observer coverage passes `53/53`; the complete phase suite passes `882/882`; test Pages output contains both scoped changes and parses successfully. Independent anti-cheat review found no P0/P1 blockers.
 - The generic headed lifecycle separately exposed an existing Combat-room gold mismatch at depth 11 and timed out while its integrity notice was open. That trace is not attributed to the Arena patch and remains a separate follow-up; deterministic Arena coverage and the full phase gate pass.
+- Released Pages source commit `a46b2bc` to deployment `3b363cfe.dungeon-of-one-room.pages.dev`. The immutable deployment and stable production hostname both serve build `a46b2bc`; production `config.js` and `game.js` match the verified local bundle byte-for-byte. This was a Pages-only release: Worker, D1, protocol, ruleset hash, and server anti-cheat remained unchanged.
 
 ## 2026-08-21 - Ranked Shrine summoned-wave duplicate-clear repair
 
