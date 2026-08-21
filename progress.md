@@ -1,5 +1,15 @@
 Original prompt: Diagnose and repair the Ranked Observer Bot production crashes, verify the smallest robust fixes, merge them to main, and deploy a working release.
 
+## 2026-08-21 - Ranked fatal-pending room completion capability repair
+
+- Production screenshot: `Ranked integrity check failed` with diagnostic `local_room_completion_capability_invalid`, run prefix `run_8a6aacb73e87...`, revision `3`. The run may continue but is permanently excluded from the leaderboard, as intended by the fail-closed integrity policy.
+- Root cause confirmed: Ranked `gameOver()` leaves the native phase playing while the asynchronous fatal settlement is pending. The fatal boundary capture correctly consumes the one-use room completion capability, but the Observer Bot could execute another action after the current turn released its native lock. If that action cleared the room, the bridge reported a missing capability and the server correctly downgraded the run.
+- What the signal means in current code: `onRoomEntered()` creates a random, room-local completion capability and binds it to the canonical directive ID; the Pages bridge stores it privately. At local room clear, the game returns that capability to `onLocalRoomCleared()`. The exact signal is emitted when the returned capability is missing/different, the runtime context is missing, or the runtime directive ID no longer matches the current canonical directive.
+- This is distinct from the earlier gold-delta mismatch and from server credential/recovery failures. The server accepted the integrity downgrade instead of trusting an unverifiable local completion, so anti-cheat remained strict.
+- Repair: generated Pages gameplay now freezes player input, Observer Bot actions (including the debug merchant branch), and local room-clear reporting while `onlineV3FatalPending` is true. The freeze is released only by a validated canonical active response or an existing authoritative fatal continuation/terminal handler. Practice remains unchanged.
+- Anti-cheat remains fail-closed: no server rule, token, reward envelope, rank eligibility rule, or capability validation was relaxed. The repair prevents local simulation from advancing after its capability has already been consumed.
+- TDD covered the Ranked freeze, Practice control path, debug-bot bypass, idempotent build patching, and authoritative recovery reset. Final verification: focused observer suites `29/29`, fatal/integrity review suite `39/39`, phase suite `875/875`, and headed Ranked lifecycle passed.
+
 ## 2026-08-21 - Observer Bot post-Camp assistance and emergency-extract gold repair
 
 - Production D1 evidence showed post-Camp Observer Bot runs were starting with `assistanceClass: none`: F9 marked only the run where test controls were unlocked, while the unlocked controls persisted into later Camp-started runs.

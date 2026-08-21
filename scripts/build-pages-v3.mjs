@@ -5,7 +5,8 @@ import { fileURLToPath } from "node:url";
 import { observerBotReleaseConfig } from "./pages-release-preflight.mjs";
 import {
   patchObserverBotCampStart,
-  patchRankedEmergencyExtraction
+  patchRankedEmergencyExtraction,
+  patchRankedFatalPendingFreeze
 } from "./online-v3-game-patches.mjs";
 import { RELEASE_RECEIPT_FILE, sanitizedReleaseReceipt, verifyRecordArchiveVisualApproval } from "./record-archive-visual-receipt.mjs";
 
@@ -225,6 +226,7 @@ const gamePath = path.join(output, "game.js");
 let game = await readFile(gamePath, "utf8");
 game = patchObserverBotCampStart(game);
 game = patchRankedEmergencyExtraction(game);
+game = patchRankedFatalPendingFreeze(game);
 const practiceSource = 'title: "Start New Game",';
 if (!game.includes(practiceSource)) {
   throw new Error("Missing Practice menu source label.");
@@ -349,6 +351,7 @@ const productionGameReplacements = [
   [
 `    startRanked(directive, publicState) {`,
 `    startRanked(directive, publicState, options = {}) {
+      state.onlineV3FatalPending = false;
       if (options.newCampaign === true) resetMetaProgressForFreshStart();`
   ],
   [
