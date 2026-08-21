@@ -6,7 +6,8 @@ import { observerBotReleaseConfig } from "./pages-release-preflight.mjs";
 import {
   patchObserverBotCampStart,
   patchRankedEmergencyExtraction,
-  patchRankedFatalPendingFreeze
+  patchRankedFatalPendingFreeze,
+  patchRankedRoomClearOnce
 } from "./online-v3-game-patches.mjs";
 import { RELEASE_RECEIPT_FILE, sanitizedReleaseReceipt, verifyRecordArchiveVisualApproval } from "./record-archive-visual-receipt.mjs";
 
@@ -227,6 +228,7 @@ let game = await readFile(gamePath, "utf8");
 game = patchObserverBotCampStart(game);
 game = patchRankedEmergencyExtraction(game);
 game = patchRankedFatalPendingFreeze(game);
+game = patchRankedRoomClearOnce(game);
 const practiceSource = 'title: "Start New Game",';
 if (!game.includes(practiceSource)) {
   throw new Error("Missing Practice menu source label.");
@@ -352,6 +354,8 @@ const productionGameReplacements = [
 `    startRanked(directive, publicState) {`,
 `    startRanked(directive, publicState, options = {}) {
       state.onlineV3FatalPending = false;
+      onlineV3RoomClearDirectiveId = String(directive?.directiveId || "");
+      onlineV3RoomClearReported = false;
       if (options.newCampaign === true) resetMetaProgressForFreshStart();`
   ],
   [
@@ -1158,6 +1162,11 @@ const rankedGoldGameReplacements = [
 `  window.DungeonOnlineV3GameBridge = Object.freeze({`,
 `  window.DungeonOnlineV3GameBridge = Object.freeze({
     setRoomIntegrityContext(context = {}) {
+      const directiveId = String(state.onlineV3Directive?.directiveId || "");
+      if (directiveId && directiveId !== onlineV3RoomClearDirectiveId) {
+        onlineV3RoomClearDirectiveId = directiveId;
+        onlineV3RoomClearReported = false;
+      }
       onlineV3RoomCompletionCapability = context.completionCapability || null;
       onlineV3RoomStartingGold = Math.max(
         0,
@@ -1228,6 +1237,8 @@ const rankedGoldGameReplacements = [
   let onlineV3ActiveChestClaimId = null;
   let onlineV3RoomCompletionCapability = null;
   let onlineV3RoomStartingGold = 0;
+  let onlineV3RoomClearDirectiveId = "";
+  let onlineV3RoomClearReported = false;
   function syncRankedStartDepthUnlocks(campaign = {}) {
     const unlocked = Array.isArray(campaign?.unlockedStartDepths)
       ? campaign.unlockedStartDepths
@@ -1426,6 +1437,7 @@ const rankedGoldGameReplacements = [
         pushLog("Room clear bonus: +" + scaled + " gold.", "good");
         rewardClaims = onlineV3RewardRecorder?.snapshot() || [];
       }
+      onlineV3RoomClearReported = window.DungeonOnlineV3?.usesBoundarySettlement?.() === true;
       window.DungeonOnlineV3?.onLocalRoomCleared?.({
         turnCount: Math.max(0, Number(state.turn) || 0),
         rewardClaims,

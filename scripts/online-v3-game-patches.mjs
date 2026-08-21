@@ -77,3 +77,24 @@ ${bodyIndent}${botGuard}`);
 
   return source;
 }
+
+export function patchRankedRoomClearOnce(gameSource) {
+  const source = String(gameSource);
+  const guardCondition = "state.onlineV3Ranked && onlineV3RoomClearReported";
+  if (source.includes(guardCondition)) return source;
+  const checkRoomClearStart = /(^[ \t]*)function checkRoomClearBonus\(\) \{\r?\n/mu;
+  if (!checkRoomClearStart.test(source)) {
+    throw new Error("Missing Ranked one-clear-per-room marker.");
+  }
+  return source.replace(
+    checkRoomClearStart,
+    (_match, functionIndent) => `${functionIndent}function checkRoomClearBonus() {
+${functionIndent}  if (${guardCondition}) {
+${functionIndent}    if (state.enemies.length > 0) return;
+${functionIndent}    state.roomCleared = true;
+${functionIndent}    markUiDirty();
+${functionIndent}    return;
+${functionIndent}  }
+`
+  );
+}

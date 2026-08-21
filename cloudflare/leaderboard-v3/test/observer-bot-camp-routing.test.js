@@ -1,12 +1,17 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
+import { createRequire } from "node:module";
 import test from "node:test";
 import vm from "node:vm";
 import {
   patchObserverBotCampStart,
   patchRankedEmergencyExtraction,
-  patchRankedFatalPendingFreeze
+  patchRankedFatalPendingFreeze,
+  patchRankedRoomClearOnce
 } from "../../../scripts/online-v3-game-patches.mjs";
+
+const require = createRequire(import.meta.url);
+const recorderApi = require("../../../online-v3/ranked-v3-recorder.js");
 
 function runCampStart(onlineV3Ranked) {
   const original = `
@@ -113,6 +118,57 @@ function runFatalPendingFrame({ onlineV3Ranked, fatalPending }) {
   return context.result;
 }
 
+function runShrineSummonDoubleClear(onlineV3Ranked) {
+  const recorder = recorderApi.createRewardClaimRecorder();
+  const original = `
+    const calls = [];
+    let onlineV3RoomClearReported = false;
+    const state = {
+      onlineV3Ranked: ${JSON.stringify(onlineV3Ranked)},
+      roomCleared: false,
+      enemies: [],
+      campaignRoomsCompleted: 0
+    };
+    function markUiDirty() { calls.push("ui"); }
+    function checkRoomClearBonus() {
+      if (state.roomCleared || state.enemies.length > 0) return;
+      calls.push("clear_effects");
+      state.roomCleared = true;
+      state.campaignRoomsCompleted += 1;
+      if (state.onlineV3Ranked) {
+        onlineV3RoomClearReported = true;
+        calls.push("online_clear");
+        return;
+      }
+      calls.push("practice_clear");
+    }
+    if (state.onlineV3Ranked) {
+      recorder.recordEnemy({ enemyType: "slime", elite: false });
+    }
+    checkRoomClearBonus();
+    state.roomCleared = false;
+    state.enemies = [{ id: "shrine-summon" }];
+    checkRoomClearBonus();
+    const clearedWhileSummonAlive = state.roomCleared;
+    const summonClaimRecorded = state.onlineV3Ranked
+      ? recorder.recordEnemy({ enemyType: "skeleton", elite: false })
+      : false;
+    state.enemies.length = 0;
+    checkRoomClearBonus();
+    result = {
+      calls,
+      clearedWhileSummonAlive,
+      campaignRoomsCompleted: state.campaignRoomsCompleted,
+      roomCleared: state.roomCleared,
+      summonClaimRecorded,
+      portalRewardClaims: state.onlineV3Ranked ? recorder.snapshot() : []
+    };
+  `;
+  const context = { recorder };
+  vm.runInNewContext(patchRankedRoomClearOnce(original), context);
+  return context.result;
+}
+
 test("Observer Bot Camp build patch is safe to apply more than once", () => {
   const original = `
     const startDepth = chooseObserverBotCampStartDepth();
@@ -196,6 +252,69 @@ test("Pages fatal-pending freeze is idempotent and applies to the canonical game
   assert.match(
     patched,
     /function runObserverBotStep\(\)[\s\S]*state\.onlineV3Ranked && state\.onlineV3FatalPending/u
+  );
+});
+
+test("Ranked Shrine summon reports room completion only once per canonical room", () => {
+  const result = runShrineSummonDoubleClear(true);
+
+  assert.deepEqual(Array.from(result.calls), ["clear_effects", "online_clear", "ui"]);
+  assert.equal(result.clearedWhileSummonAlive, false);
+  assert.equal(result.campaignRoomsCompleted, 1);
+  assert.equal(result.roomCleared, true);
+  assert.equal(result.summonClaimRecorded, true);
+  assert.deepEqual(
+    Array.from(result.portalRewardClaims, (claim) => ({ ...claim })),
+    [
+      { claimType: "enemy", claimId: "enemy:slime", count: 1 },
+      { claimType: "enemy", claimId: "enemy:skeleton", count: 1 }
+    ]
+  );
+});
+
+test("Practice Shrine summon retains its local second-wave clear behavior", () => {
+  const result = runShrineSummonDoubleClear(false);
+
+  assert.deepEqual(Array.from(result.calls), [
+    "clear_effects",
+    "practice_clear",
+    "clear_effects",
+    "practice_clear"
+  ]);
+  assert.equal(result.campaignRoomsCompleted, 2);
+  assert.equal(result.roomCleared, true);
+  assert.equal(result.clearedWhileSummonAlive, false);
+  assert.equal(result.summonClaimRecorded, false);
+  assert.deepEqual(Array.from(result.portalRewardClaims), []);
+});
+
+test("Pages Shrine clear latch is idempotent and wired to canonical directive changes", async () => {
+  const game = await readFile(new URL("../../../game.js", import.meta.url), "utf8");
+  const builder = await readFile(new URL("../../../scripts/build-pages-v3.mjs", import.meta.url), "utf8");
+  const patched = patchRankedRoomClearOnce(game);
+
+  assert.equal(patchRankedRoomClearOnce(patched), patched);
+  assert.match(
+    patched,
+    /function checkRoomClearBonus\(\)[\s\S]*state\.onlineV3Ranked && onlineV3RoomClearReported[\s\S]*if \(state\.enemies\.length > 0\) return;[\s\S]*state\.roomCleared = true;[\s\S]*markUiDirty\(\);[\s\S]*return;/u
+  );
+  assert.match(builder, /game = patchRankedRoomClearOnce\(game\)/u);
+  assert.match(builder, /let onlineV3RoomClearDirectiveId = "";[\s\S]*let onlineV3RoomClearReported = false;/u);
+  assert.match(
+    builder,
+    /const directiveId = String\(state\.onlineV3Directive\?\.directiveId \|\| ""\);[\s\S]*directiveId !== onlineV3RoomClearDirectiveId[\s\S]*onlineV3RoomClearReported = false;/u
+  );
+  assert.match(
+    builder,
+    /onlineV3RoomClearReported = window\.DungeonOnlineV3\?\.usesBoundarySettlement\?\.\(\) === true;[\s\S]*onLocalRoomCleared/u
+  );
+  const startRankedStart = builder.indexOf("    startRanked(directive, publicState, options = {}) {");
+  const startRankedEnd = builder.indexOf("`", startRankedStart);
+  assert.ok(startRankedStart >= 0 && startRankedEnd > startRankedStart);
+  assert.match(
+    builder.slice(startRankedStart, startRankedEnd),
+    /onlineV3RoomClearDirectiveId = String\(directive\?\.directiveId \|\| ""\);[\s\S]*onlineV3RoomClearReported = false;/u,
+    "a validated canonical rebuild must reset the latch even for a same-directive resync"
   );
 });
 
