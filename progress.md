@@ -1,5 +1,16 @@
 Original prompt: Diagnose and repair the Ranked Observer Bot production crashes, verify the smallest robust fixes, merge them to main, and deploy a working release.
 
+## 2026-08-21 - Ranked Shrine summoned-wave duplicate-clear repair
+
+- Production evidence for active run prefix `run_07096036775a4b66...` showed `rankEligibility: provisional` with first reason `local_room_completion_capability_invalid` at revision 10 immediately after a Shrine checkpoint.
+- Root cause confirmed: the initial Shrine clear correctly reported the one-use local room-completion capability. A cursed Shrine could then summon another wave and set the native room back to uncleared; killing that wave emitted a second `onLocalRoomCleared` for the same canonical directive after the capability had already been consumed.
+- The Pages bridge now reports local completion at most once for the current boundary-settlement room. It does not mark the room cleared while summoned enemies remain, and the reward recorder stays open so all summoned-enemy claims are included in the later portal settlement.
+- The latch is enabled only for the current event-journal boundary protocol. Practice and retained eager-settlement rulesets keep their existing behavior. A validated room rebuild resets the latch; server tokens, directive/envelope checks, bounded claims, revision checks, and monotonic provisional eligibility are unchanged.
+- TDD covers the duplicate Shrine clear, live-summon extraction safety, Practice behavior, same-directive canonical rebuild, idempotent source patching, and a real reward-recorder snapshot containing both the original and summoned-wave claims.
+- Verification passed: focused Ranked/Observer coverage `49/49`, full phase suite `878/878`, production Pages bundle validation, syntax/diff checks, and the complete headed Ranked lifecycle (network loss, reload, multi-tab, reward boundary, and death presentation).
+- Released Pages source commit `d952f5c` to deployment `a6107911.dungeon-of-one-room.pages.dev`. The immutable deployment and stable production hostname both serve build `d952f5c`; production `config.js` and `game.js` match the verified local bundle byte-for-byte.
+- This was a Pages-only release. Worker, D1, protocol, ruleset bytes/hash, and server anti-cheat were unchanged. A separate pre-existing same-directive prevented-fatal-after-clear lifecycle edge remains explicitly tracked for a dedicated regression/fix; it was not introduced or hidden by this Shrine repair.
+
 ## 2026-08-21 - Ranked fatal-pending room completion capability repair
 
 - Production screenshot: `Ranked integrity check failed` with diagnostic `local_room_completion_capability_invalid`, run prefix `run_8a6aacb73e87...`, revision `3`. The run may continue but is permanently excluded from the leaderboard, as intended by the fail-closed integrity policy.
