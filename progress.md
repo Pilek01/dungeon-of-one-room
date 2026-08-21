@@ -9,6 +9,7 @@ Original prompt: Diagnose and repair the Ranked Observer Bot production crashes,
 - Repair: generated Pages gameplay now freezes player input, Observer Bot actions (including the debug merchant branch), and local room-clear reporting while `onlineV3FatalPending` is true. The freeze is released only by a validated canonical active response or an existing authoritative fatal continuation/terminal handler. Practice remains unchanged.
 - Anti-cheat remains fail-closed: no server rule, token, reward envelope, rank eligibility rule, or capability validation was relaxed. The repair prevents local simulation from advancing after its capability has already been consumed.
 - TDD covered the Ranked freeze, Practice control path, debug-bot bypass, idempotent build patching, and authoritative recovery reset. Final verification: focused observer suites `29/29`, fatal/integrity review suite `39/39`, phase suite `875/875`, and headed Ranked lifecycle passed.
+- Released Pages source commit `2cd676f` to deployment `a1d985ba.dungeon-of-one-room.pages.dev`. Both the immutable deployment URL and the production alias reported `DUNGEON_BUILD_COMMIT = "2cd676f"` and contained the fatal-pending Observer Bot guard. This was a Pages-only release; Worker, D1, protocol, ruleset hash, and server anti-cheat were unchanged.
 
 ## 2026-08-21 - Observer Bot post-Camp assistance and emergency-extract gold repair
 
