@@ -1,5 +1,14 @@
 Original prompt: Diagnose and repair the Ranked Observer Bot production crashes, verify the smallest robust fixes, merge them to main, and deploy a working release.
 
+## 2026-08-21 - Ranked Arena gold and elite-budget parity repair
+
+- Observer Bot exposed `REPORTED_GOLD_DELTA_MISMATCH` / `REPORTED_GOLD_TOTAL_MISMATCH`. The server correctly applies Arena's canonical `+2` reward bonus to every enemy, while the initial local Arena wave was created through `buildRegularRoom()` with reward bonus `0`; only the later wave received `+2`.
+- The Pages build now assigns the canonical `+2` only to the initial Online Ranked Arena wave. Practice retains its existing initial-wave curve and the second Arena wave keeps its existing `+2` without double counting.
+- Security review found a second Arena parity edge: the initial wave could consume all four local elite slots before wave two forced another elite. Online Ranked now reserves one slot by capping the initial wave at three elites, so the room total remains within the unchanged server limit of four. Practice and other rooms remain unchanged.
+- Server reward bounds, claim validation, tokens, envelopes, ruleset bytes/hash, and monotonic provisional eligibility were not relaxed. Existing affected runs remain provisional; the repair applies to new room settlements after the updated Pages bundle is loaded.
+- TDD first reproduced the missing initial-wave bonus and the absent elite reservation. Focused Ranked/Observer coverage passes `53/53`; the complete phase suite passes `882/882`; test Pages output contains both scoped changes and parses successfully. Independent anti-cheat review found no P0/P1 blockers.
+- The generic headed lifecycle separately exposed an existing Combat-room gold mismatch at depth 11 and timed out while its integrity notice was open. That trace is not attributed to the Arena patch and remains a separate follow-up; deterministic Arena coverage and the full phase gate pass.
+
 ## 2026-08-21 - Ranked Shrine summoned-wave duplicate-clear repair
 
 - Production evidence for active run prefix `run_07096036775a4b66...` showed `rankEligibility: provisional` with first reason `local_room_completion_capability_invalid` at revision 10 immediately after a Shrine checkpoint.

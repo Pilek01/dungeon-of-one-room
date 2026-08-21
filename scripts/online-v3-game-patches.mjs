@@ -98,3 +98,30 @@ ${functionIndent}  }
 `
   );
 }
+
+export function patchRankedArenaWaveGoldParity(gameSource) {
+  let source = String(gameSource);
+  const rankedBonus = "roomEnemyRewardBonus = state.onlineV3Ranked ? 2 : 0;";
+  if (!source.includes(rankedBonus)) {
+    const arenaMarker = /(if \(state\.roomType === "arena"\) \{\r?\n\s+state\.arena = \{ wave: 1, maxWaves: ARENA_WAVE_COUNT, rewardSpawned: false \};)/u;
+    if (!arenaMarker.test(source)) {
+      throw new Error("Missing Ranked Arena wave gold marker.");
+    }
+    source = source.replace(
+      arenaMarker,
+      `$1\n      ${rankedBonus}`
+    );
+  }
+
+  const rankedEliteCap = `eliteCount < (state.onlineV3Ranked && state.roomType === "arena"
+        ? MAX_ELITES_PER_ROOM - 1
+        : MAX_ELITES_PER_ROOM)`;
+  if (!source.includes(rankedEliteCap)) {
+    const eliteCapMarker = /(forceEliteOnly \|\| \(elitesEnabled &&\r?\n\s+)eliteCount < MAX_ELITES_PER_ROOM/u;
+    if (!eliteCapMarker.test(source)) {
+      throw new Error("Missing Ranked Arena elite reservation marker.");
+    }
+    source = source.replace(eliteCapMarker, `$1${rankedEliteCap}`);
+  }
+  return source;
+}

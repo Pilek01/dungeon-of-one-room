@@ -5,6 +5,7 @@ import { fileURLToPath } from "node:url";
 import { observerBotReleaseConfig } from "./pages-release-preflight.mjs";
 import {
   patchObserverBotCampStart,
+  patchRankedArenaWaveGoldParity,
   patchRankedEmergencyExtraction,
   patchRankedFatalPendingFreeze,
   patchRankedRoomClearOnce
@@ -226,6 +227,7 @@ await writeFile(bootStylePath, bootStyle, "utf8");
 const gamePath = path.join(output, "game.js");
 let game = await readFile(gamePath, "utf8");
 game = patchObserverBotCampStart(game);
+game = patchRankedArenaWaveGoldParity(game);
 game = patchRankedEmergencyExtraction(game);
 game = patchRankedFatalPendingFreeze(game);
 game = patchRankedRoomClearOnce(game);
