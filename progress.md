@@ -1975,6 +1975,23 @@ Updated next good targets
   the generated game keeps the new room-local turn payload. Generator check,
   focused integration tests (84/84), guard (14/14), and the complete Worker
   phase (925/925) pass.
-- The release `verify:full` gate still requires its separate human approval
-  receipt for the historical six-image record archive; no receipt was
-  fabricated. Worker/Pages deployment and production smoke remain pending.
+- The six-image record archive was regenerated from passing browser scenarios,
+  visually inspected, and approved with receipt fingerprint
+  `sha256:b2c985536891a63fcf9fc6169013caff4342982c0ace9b1325358c9532e7`.
+  The current-tree Ranked browser suite and UI suite pass; the full local
+  Worker+D1 E2E suite passes 21/21 after its depth-100 helper was corrected to
+  resolve the canonical post-room Pact offer. The Worker phase passes 925/925.
+- Released source `46e2c44eba681834dbe16a1a1a0cd23aa4d8a65f` to production without a D1
+  migration. Worker version `da14b0a3-180b-499d-a634-93f41f555d9c` passed a
+  staged 5% deployment (`6246b6e4-804c-46e1-93a6-66879e87c8ed`), 25%
+  deployment (`8aff4a92-5626-41c3-8f0c-06712a4f720f`), and 100% deployment
+  (`9a0b2f9d-3be1-4915-9913-73669f6c03da`). The immediate Worker rollback
+  target is `c931c69e-2947-4b2d-9d78-2ab7964e4e42`.
+- Cloudflare Pages production deployment
+  `34fdb003-25b2-471f-9e96-ebc1bcfd92d8` serves the same bytes as the local
+  release at both the stable and immutable URLs. The previous Pages rollback
+  target is `73eaf41c-24f7-4ba9-84f2-2b548744cce2`.
+- Production smoke confirmed exact byte matches for `index.html`, `config.js`,
+  `game.js`, and `online-v3/ranked-v3-runtime.js`; active/compatible availability
+  with the new ruleset hash; and deterministic JSON 400 rejection envelopes on
+  start, resume, abandon, and Camp invalid-request probes.
