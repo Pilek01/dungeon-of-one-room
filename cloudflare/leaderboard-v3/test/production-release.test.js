@@ -16,6 +16,7 @@ import {
   V08_META_1_BOUNDARY_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR,
   V08_META_1_PLAYTEST_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR,
   V08_META_1_WARDEN_HOTFIX_RELEASE_DESCRIPTOR,
+  V08_META_1_GOLD_SYNC_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR,
   V08_META_1_PRODUCTION_RELEASE_DESCRIPTOR
 } from "../src/rulesets/releases.js";
 import * as releases from "../src/rulesets/releases.js";
@@ -24,7 +25,8 @@ import { createMemoryRepositories } from "./fixtures/memory-repositories.js";
 import { TEST_SECRET } from "./fixtures/harness.js";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../..");
-const EXPECTED_HASH = "sha256:87c30b2c011b5103398f9b03f6bf018d71f2a35427c0a04ef7a31b2559a7a6d9";
+const EXPECTED_HASH = "sha256:5c3df81af373b68fce4d8fa242fb61c29b7c3d4ca78d6865d2ee51a58bbab3dd";
+const GOLD_SYNC_PREVIOUS_HASH = "sha256:87c30b2c011b5103398f9b03f6bf018d71f2a35427c0a04ef7a31b2559a7a6d9";
 const INTEGRITY_PREVIOUS_HASH = "sha256:0672eb9aaae11865ebae75a4c6d6dc77cc29f4a079afe562355172d26f073bca";
 const PLAYTEST_PREVIOUS_HASH = "sha256:bc0d548d204557d0cc0ec7f8a358e18246778a13b27c58f5c6cdd73e73621711";
 const BOUNDARY_PREVIOUS_HASH = "sha256:d784208aad891119b71c52324cea358997ee376313914d5799affa68c8678ff3";
@@ -58,6 +60,7 @@ test("production entry activates the boundary-checkpoint ruleset", async () => {
     V08_META_1_HD_BOOT_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR,
     V08_META_1_BOUNDARY_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR,
     V08_META_1_PLAYTEST_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR,
+    V08_META_1_GOLD_SYNC_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR,
     V08_META_1_PRODUCTION_RELEASE_DESCRIPTOR
   ]);
   const resolved = registry.resolve({
@@ -67,6 +70,13 @@ test("production entry activates the boundary-checkpoint ruleset", async () => {
     lifecycle: "ranked"
   });
   assert.equal(resolved.rulesetHash, EXPECTED_HASH);
+  const goldSyncPrevious = registry.resolve({
+    rulesetId: "v08-meta-1",
+    rulesetHash: GOLD_SYNC_PREVIOUS_HASH,
+    environment: "production",
+    lifecycle: "ranked"
+  });
+  assert.equal(goldSyncPrevious.rulesetHash, GOLD_SYNC_PREVIOUS_HASH);
   const playtestPrevious = registry.resolve({
     rulesetId: "v08-meta-1",
     rulesetHash: PLAYTEST_PREVIOUS_HASH,

@@ -14570,10 +14570,8 @@
     // Full reset happens in resetMetaProgressForFreshStart() on game over.
 
     applyCampUpgradesToRun();
-    if (!state.onlineV3Ranked) {
-      applyMutatorsToRun();
-      applyPersistentPactsToRun();
-    }
+    applyMutatorsToRun();
+    applyPersistentPactsToRun();
     if (carryRelics) {
       for (const relicId of carriedRelics) {
         applyRelic(relicId);

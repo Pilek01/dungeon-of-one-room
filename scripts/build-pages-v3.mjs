@@ -356,6 +356,10 @@ const productionGameReplacements = [
 `    startRanked(directive, publicState) {`,
 `    startRanked(directive, publicState, options = {}) {
       state.onlineV3FatalPending = false;
+      state.observerBot.unlimitedGold = false;
+      state.observerBot.unlimitedGoldRunBaseline = 0;
+      state.observerBot.unlimitedGoldCampBaseline = 0;
+      state.pactBasePlayerStats = null;
       onlineV3RoomClearDirectiveId = String(directive?.directiveId || "");
       onlineV3RoomClearReported = false;
       if (options.newCampaign === true) resetMetaProgressForFreshStart();`
@@ -365,7 +369,12 @@ const productionGameReplacements = [
       state.onlineV3Ranked = false;`,
 `    returnToPractice() {
       state.onlineV3TestBotUnlocked = false;
-      state.onlineV3Ranked = false;`
+      state.onlineV3Ranked = false;
+      state.activeMutators = sanitizeMutatorMap(readJsonStorage(STORAGE_MUT_ACTIVE, {}));
+      state.unlockedMutators = sanitizeMutatorMap(readJsonStorage(STORAGE_MUT_UNLOCK, {}));
+      state.activePacts = [];
+      state.pactBasePlayerStats = null;
+      resetRunModifiers();`
   ],
   [
 `      window.DungeonOnlineV3?.onExtraction?.(forced ? "emergency" : "normal");`,
@@ -1289,8 +1298,17 @@ const rankedGoldGameReplacements = [
       MUTATORS.map((mutator) => [mutator.id, activeIds.has(mutator.id)])
     );
     state.unlockedMutators = Object.fromEntries(
-      MUTATORS.map((mutator) => [mutator.id, unlockedIds.has(mutator.id)])
+      MUTATORS.map((mutator) => [mutator.id, unlockedIds.has(mutator.id) || activeIds.has(mutator.id)])
     );
+    const legalPactIds = new Set((pactRoomApi?.PACTS || []).map((pact) => pact.id));
+    const canonicalPacts = (Array.isArray(publicState?.build?.pacts) ? publicState.build.pacts : [])
+      .map((id) => String(id || ""))
+      .filter((id, index, values) => legalPactIds.has(id) && values.indexOf(id) === index)
+      .slice(-1);
+    if (canonicalPacts.join("|") !== (Array.isArray(state.activePacts) ? state.activePacts : []).join("|")) {
+      state.pactBasePlayerStats = null;
+    }
+    state.activePacts = canonicalPacts;
   }
 
   const state = {`

@@ -4,10 +4,83 @@ import test from "node:test";
 import { createRequire } from "node:module";
 import { readFile } from "node:fs/promises";
 import { V08_LOCAL_ELITE_REWARD_BONUS } from "../src/domain/rank-eligibility.js";
+import {
+  calculateChestGoldV08,
+  calculateEnemyGoldV08
+} from "../src/rulesets/v08-meta-1/gold-policy.js";
 import * as gamePatches from "../../../scripts/online-v3-game-patches.mjs";
 
 const require = createRequire(import.meta.url);
 const recorderApi = require("../../../online-v3/ranked-v3-recorder.js");
+
+function runModifierLedger(...modifierIds) {
+  const active = [...modifierIds].sort().map((modifierId) => ({
+    modifierId,
+    stacks: 1,
+    activatedRevision: 0,
+    activationSource: "server-issued-run-start"
+  }));
+  return {
+    active,
+    activeCount: active.length,
+    modifierDigest: `sha256:${"0".repeat(64)}`,
+    derivedEffectsVersion: "v08-run-modifier-effects-1"
+  };
+}
+
+async function localRankedGoldProjection(modifierIds) {
+  const gameSource = await readFile(new URL("../../../game.js", import.meta.url), "utf8");
+  const extractFunction = (name, nextName) => {
+    const start = gameSource.indexOf(`  function ${name}(`);
+    const end = gameSource.indexOf(`  function ${nextName}(`, start);
+    assert.ok(start >= 0 && end > start, `Could not extract ${name}`);
+    return gameSource.slice(start, end).replace(/^  /gmu, "");
+  };
+  const context = {
+    result: null,
+    state: {
+      player: {
+        attack: 20,
+        maxHp: 100,
+        hp: 100,
+        armor: 0,
+        crit: 0.1,
+        potions: 1,
+        maxPotions: 5,
+        gold: 0
+      },
+      runMods: {},
+      runGoldEarned: 0,
+      totalGoldEarned: 0
+    },
+    MUTATORS: modifierIds.map((id) => ({ id })),
+    isMutatorActive: (id) => modifierIds.includes(id),
+    scaledCombat: (amount) => amount * 10,
+    clamp: (value, min, max) => Math.min(max, Math.max(min, value)),
+    CRIT_CHANCE_CAP: 0.55,
+    getBountyContractMultiplier: () => 1.3,
+    getPactGoldGainMultiplier: () => 1.4,
+    setStorageItem: () => {},
+    STORAGE_TOTAL_GOLD: "test"
+  };
+  vm.runInNewContext(`
+${extractFunction("resetRunModifiers", "applyCampUpgradesToRun")}
+${extractFunction("applyMutatorsToRun", "applyMutatorMidRun")}
+${extractFunction("grantGold", "grantPotion")}
+${extractFunction("rewardForEnemy", "tryKnockbackEnemyFromPoint")}
+applyMutatorsToRun();
+state.runMods.goldMultiplier += 0.15;
+const normalBase = rewardForEnemy({ type: "skeleton", elite: false, rewardBonus: 0 });
+const eliteBase = rewardForEnemy({ type: "skeleton", elite: true, rewardBonus: 0 });
+const normal = grantGold(normalBase);
+state.player.gold = 0;
+const elite = grantGold(eliteBase);
+state.player.gold = 0;
+const chest = grantGold(Math.round(8 * 1.4));
+result = { runMods: { ...state.runMods }, normal, elite, chest };
+`, context);
+  return context.result;
+}
 
 async function initialArenaEnemyRewardBonus({ onlineV3Ranked }) {
   assert.equal(
@@ -94,6 +167,74 @@ test("Ranked Arena parity patch is idempotent and wired into the Pages build", a
   const builder = await readFile(new URL("../../../scripts/build-pages-v3.mjs", import.meta.url), "utf8");
   assert.match(builder, /patchRankedArenaWaveGoldParity/u);
   assert.match(builder, /game = patchRankedArenaWaveGoldParity\(game\);/u);
+});
+
+test("Ranked start rebuilds local modifier and pact effects from the canonical build", async () => {
+  const gameSource = await readFile(new URL("../../../game.js", import.meta.url), "utf8");
+  const builder = await readFile(new URL("../../../scripts/build-pages-v3.mjs", import.meta.url), "utf8");
+
+  assert.doesNotMatch(
+    gameSource,
+    /if \(!state\.onlineV3Ranked\) \{\s*applyMutatorsToRun\(\);\s*applyPersistentPactsToRun\(\);\s*\}/u,
+    "Ranked must reset and apply numeric run effects instead of inheriting stale runMods"
+  );
+  assert.match(
+    gameSource,
+    /applyCampUpgradesToRun\(\);\s*applyMutatorsToRun\(\);\s*applyPersistentPactsToRun\(\);/u
+  );
+  assert.match(
+    builder,
+    /const canonicalPacts = \(Array\.isArray\(publicState\?\.build\?\.pacts\)[\s\S]*state\.activePacts = canonicalPacts;/u,
+    "the Pages bridge must hydrate canonical pacts before the run starts"
+  );
+  assert.match(
+    builder,
+    /state\.observerBot\.unlimitedGold = false;[\s\S]*startRun\(/u,
+    "Ranked must not inherit the Observer Bot unlimited-gold test toggle"
+  );
+  assert.match(
+    builder,
+    /returnToPractice\(\)[\s\S]*STORAGE_MUT_ACTIVE[\s\S]*STORAGE_MUT_UNLOCK[\s\S]*state\.activePacts = \[\];/u,
+    "returning to Practice must restore local mutators and clear the Ranked pact"
+  );
+});
+
+test("three mutators compose with Camp enemy and chest upgrades in canonical rounding order", async () => {
+  const canonicalRunModifiers = runModifierLedger("berserker", "elitist", "greed");
+  const canonicalBuild = {
+    relics: [{ relicId: "idol", stacks: 1 }],
+    pacts: ["avarice"],
+    campUpgrades: {
+      bounty_contract: 3,
+      treasure_sense: 4
+    }
+  };
+
+  assert.equal(calculateEnemyGoldV08({
+    canonicalBuild,
+    canonicalRunModifiers,
+    enemyType: "skeleton",
+    elite: false
+  }), 11);
+  assert.equal(calculateEnemyGoldV08({
+    canonicalBuild,
+    canonicalRunModifiers,
+    enemyType: "skeleton",
+    elite: true
+  }), 16);
+  assert.equal(calculateChestGoldV08({
+    canonicalBuild,
+    canonicalRunModifiers,
+    baseAmount: 8
+  }), 30);
+
+  const local = await localRankedGoldProjection(["berserker", "elitist", "greed"]);
+  assert.ok(Math.abs(local.runMods.goldMultiplier - 1.95) < 1e-12);
+  assert.equal(local.runMods.eliteGoldMult, 1.6);
+  assert.deepEqual(
+    { normal: local.normal, elite: local.elite, chest: local.chest },
+    { normal: 11, elite: 16, chest: 30 }
+  );
 });
 
 test("Ranked Arena reserves the fourth elite slot for its forced second-wave elite", async () => {

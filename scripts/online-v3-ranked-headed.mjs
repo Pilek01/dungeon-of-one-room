@@ -653,7 +653,11 @@ async function runDebugAction(page, menuKey, actionKey, actionName) {
 }
 
 async function clearVisibleRoom(page) {
-  await runDebugAction(page, "F9", "5", "Clear Room");
+  assert.equal(
+    await page.evaluate(() => window.__DUNGEON_TEST_CLEAR_VISIBLE_ROOM?.()),
+    true,
+    "QA hook could not clear the visible Ranked room"
+  );
   await page.waitForFunction(() => JSON.parse(window.render_game_to_text()).roomCleared === true);
 }
 
@@ -1175,13 +1179,13 @@ ${fatalTestHookAnchor}`;
       true,
       `Observer Bot menu hotkey did not activate the bot: ${JSON.stringify(observerAfterMenuHotkey)}`
     );
+    assert.equal(
+      await page.evaluate(() => window.__DUNGEON_TEST_TOGGLE_OBSERVER_BOT?.()),
+      true,
+      "QA hook could not disable the Observer Bot immediately after the menu hotkey check"
+    );
     await page.keyboard.press("F9");
     await testMenu.waitFor({ state: "hidden" });
-    await page.waitForFunction(() => (
-      window.DungeonOnlineV3GameBridge?.isRankedTestBotActive?.() === true
-    ));
-
-    await runDebugAction(page, "F9", "b", "Toggle Observer Bot");
     await page.waitForFunction(() => (
       window.DungeonOnlineV3GameBridge?.isRankedTestBotActive?.() === false
     ));
