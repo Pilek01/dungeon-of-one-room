@@ -1100,6 +1100,7 @@ async function handleRegisteredAbandon(request, env, options, repositories) {
     pendingOffer: null,
     pendingRelicTransaction: null,
     pendingInventory: null,
+    pendingPostRoomPact: null,
     updatedAt: now,
     expiresAt: now + ABANDONED_RUN_TTL_MS,
     outcome: "abandoned"

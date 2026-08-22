@@ -308,6 +308,27 @@ game = `${game.slice(0, menuRenderStart)}${menuRenderSource}${game.slice(menuRen
 
 const productionGameReplacements = [
   [
+`  function openPactRoom() {
+    if (!isOnPact()) return false;`,
+`  function openPactRoom() {
+    if (state.onlineV3Ranked) return false;
+    if (!isOnPact()) return false;`
+  ],
+  [
+`  function applyPactChoice(pactId) {
+    const pact = pactRoomApi?.PACTS?.find((entry) => entry.id === pactId) || null;`,
+`  function applyPactChoice(pactId) {
+    if (state.onlineV3Ranked) return false;
+    const pact = pactRoomApi?.PACTS?.find((entry) => entry.id === pactId) || null;`
+  ],
+  [
+`  function breakCurrentPact() {
+    const currentPactId = getCurrentPactId();`,
+`  function breakCurrentPact() {
+    if (state.onlineV3Ranked) return false;
+    const currentPactId = getCurrentPactId();`
+  ],
+  [
 `  function syncBgmWithState(force = false) {
     if (isSimulationActive() && state.simulation.suppressAudio) {`,
 `  function syncBgmWithState(force = false) {
@@ -323,7 +344,7 @@ const productionGameReplacements = [
 `    state.onlineV3Ranked = true;
       state.onlineV3Directive = directive;`,
 `    state.onlineV3Ranked = true;
-      syncRankedRunModifiers(publicState);
+      syncRankedRunModifiers(publicState, { hydrateOnly: true });
       state.onlineV3Directive = directive;`
   ],
   [
@@ -339,7 +360,11 @@ const productionGameReplacements = [
     if (!isObserverBotActive()) return false;`,
 `  function runObserverBotStep() {
     if (!isObserverBotActive()) return false;
-    if (state.onlineV3Ranked && window.DungeonOnlineV3?.isObserverBotBoundaryPending?.()) {
+    if (state.onlineV3Ranked && (
+      state.turnInProgress ||
+      window.DungeonOnlineV3?.isRankedAutomationBlocked?.() ||
+      window.DungeonOnlineV3?.isObserverBotBoundaryPending?.()
+    )) {
       state.observerBot.lastDecision = "online_v3_wait";
       return false;
     }`
@@ -1265,7 +1290,7 @@ const rankedGoldGameReplacements = [
     return true;
   }
 
-  function syncRankedRunModifiers(publicState) {
+  function syncRankedRunModifiers(publicState, options = {}) {
     const activeIds = new Set(
       (Array.isArray(publicState?.runModifiers?.active) ? publicState.runModifiers.active : [])
         .map((entry) => String(entry?.modifierId || ""))
@@ -1289,10 +1314,38 @@ const rankedGoldGameReplacements = [
       .map((id) => String(id || ""))
       .filter((id, index, values) => legalPactIds.has(id) && values.indexOf(id) === index)
       .slice(-1);
-    if (canonicalPacts.join("|") !== (Array.isArray(state.activePacts) ? state.activePacts : []).join("|")) {
+    const previousPacts = Array.isArray(state.activePacts) ? state.activePacts : [];
+    const pactChanged = canonicalPacts.join("|") !== previousPacts.join("|");
+    if (options.hydrateOnly === true) {
+      state.activePacts = canonicalPacts;
+      state.pactBasePlayerStats = null;
+      return;
+    }
+    if (pactChanged && previousPacts.length > 0 && state.pactBasePlayerStats &&
+      pactEffectsApi && typeof pactEffectsApi.removeSinglePactEffect === "function") {
+      for (const pactId of previousPacts) {
+        pactEffectsApi.removeSinglePactEffect(state.player, pactId, {
+          critCap: CRIT_CHANCE_CAP,
+          minEffectiveDamage: MIN_EFFECTIVE_DAMAGE,
+          chainsArmorBonus: scaledCombat(2),
+          basePlayer: state.pactBasePlayerStats
+        });
+      }
+    }
+    if (pactChanged) {
       state.pactBasePlayerStats = null;
     }
     state.activePacts = canonicalPacts;
+    if (pactChanged && canonicalPacts.length > 0 && state.phase === "playing") {
+      capturePactBasePlayerStats();
+      if (pactEffectsApi && typeof pactEffectsApi.applySinglePactEffect === "function") {
+        pactEffectsApi.applySinglePactEffect(state.player, canonicalPacts[0], {
+          critCap: CRIT_CHANCE_CAP,
+          minEffectiveDamage: MIN_EFFECTIVE_DAMAGE,
+          chainsArmorBonus: scaledCombat(2)
+        });
+      }
+    }
   }
 
   const state = {`
@@ -1460,6 +1513,22 @@ for (const [sourceText, replacement] of rankedGoldGameReplacements) {
   game = game.replace(sourceText, replacement);
 }
 const rankedMerchantGameReplacements = [
+  [
+`  function runObserverMerchantAction() {
+    if (state.phase !== "playing" || state.roomType !== "merchant" || !isOnMerchant()) return false;`,
+`  function runObserverMerchantAction() {
+    if (state.phase !== "playing" || state.roomType !== "merchant" || !isOnMerchant()) return false;
+    if (state.onlineV3Ranked && !state.merchantMenuOpen) {
+      openMerchantMenu();
+      state.observerBot.lastDecision = "merchant_open";
+      return true;
+    }
+    if (state.onlineV3Ranked && (
+      state.turnInProgress ||
+      window.DungeonOnlineV3?.isRankedAutomationBlocked?.() ||
+      window.DungeonOnlineV3?.isObserverBotBoundaryPending?.()
+    )) return false;`
+  ],
   [
 `  function openMerchantMenu() {
     if (state.debugCheatMerchantActive) return openDebugCheatMerchantMenu();`,
@@ -1644,6 +1713,42 @@ for (const [sourceText, replacement] of rankedMerchantGameReplacements) {
   if (!game.includes(sourceText)) throw new Error(`Missing Ranked Merchant source: ${sourceText.slice(0, 80)}`);
   game = game.replace(sourceText, replacement);
 }
+
+const rankedObserverPactStart = game.indexOf("  function runObserverBotPlayingAction() {");
+const rankedObserverPactEnd = game.indexOf("  function chooseObserverBotCampStartDepth()", rankedObserverPactStart);
+if (rankedObserverPactStart < 0 || rankedObserverPactEnd <= rankedObserverPactStart) {
+  throw new Error("Missing Ranked Observer Bot playing action boundaries.");
+}
+let rankedObserverPactSource = game.slice(rankedObserverPactStart, rankedObserverPactEnd);
+const rankedPactPhaseSource = `  function runObserverBotPlayingAction() {
+    if (state.phase !== "playing") return false;`;
+const rankedPactPhaseReplacement = `  function runObserverBotPlayingAction() {
+    if (state.phase !== "playing") return false;
+    const rankedPactRoom = Boolean(
+      state.onlineV3Ranked && state.roomType === "pact" && state.roomCleared
+    );`;
+if (!rankedObserverPactSource.includes(rankedPactPhaseSource)) {
+  throw new Error("Missing Ranked Observer Bot Pact phase source.");
+}
+rankedObserverPactSource = rankedObserverPactSource.replace(
+  rankedPactPhaseSource,
+  rankedPactPhaseReplacement
+);
+if (!rankedObserverPactSource.includes("      if (isOnPact()) {")) {
+  throw new Error("Missing Ranked Observer Bot Pact altar source.");
+}
+rankedObserverPactSource = rankedObserverPactSource.replace(
+  "      if (isOnPact()) {",
+  "      if (!rankedPactRoom && isOnPact()) {"
+);
+if (!rankedObserverPactSource.includes("      if (state.pact && !state.pact.used) {")) {
+  throw new Error("Missing Ranked Observer Bot Pact routing source.");
+}
+rankedObserverPactSource = rankedObserverPactSource.replace(
+  "      if (state.pact && !state.pact.used) {",
+  "      if (!rankedPactRoom && state.pact && !state.pact.used) {"
+);
+game = `${game.slice(0, rankedObserverPactStart)}${rankedObserverPactSource}${game.slice(rankedObserverPactEnd)}`;
 
 const rankedMerchantBridgeMarker = `    enterRankedCamp(profile, offer) {`;
 const rankedMerchantBridge = `    beginRankedMerchantRequest() {

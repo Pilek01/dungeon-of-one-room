@@ -17,6 +17,7 @@ import {
   V08_META_1_PLAYTEST_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR,
   V08_META_1_WARDEN_HOTFIX_RELEASE_DESCRIPTOR,
   V08_META_1_GOLD_SYNC_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR,
+  V08_META_1_PACT_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR,
   V08_META_1_PRODUCTION_RELEASE_DESCRIPTOR
 } from "../src/rulesets/releases.js";
 import * as releases from "../src/rulesets/releases.js";
@@ -25,7 +26,8 @@ import { createMemoryRepositories } from "./fixtures/memory-repositories.js";
 import { TEST_SECRET } from "./fixtures/harness.js";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../..");
-const EXPECTED_HASH = "sha256:5c3df81af373b68fce4d8fa242fb61c29b7c3d4ca78d6865d2ee51a58bbab3dd";
+const EXPECTED_HASH = "sha256:76514cf9e5c89079571a5be117ce84f949d7a3f5ed441d973adc05c95c6dde3c";
+const PACT_PREVIOUS_HASH = "sha256:5c3df81af373b68fce4d8fa242fb61c29b7c3d4ca78d6865d2ee51a58bbab3dd";
 const GOLD_SYNC_PREVIOUS_HASH = "sha256:87c30b2c011b5103398f9b03f6bf018d71f2a35427c0a04ef7a31b2559a7a6d9";
 const INTEGRITY_PREVIOUS_HASH = "sha256:0672eb9aaae11865ebae75a4c6d6dc77cc29f4a079afe562355172d26f073bca";
 const PLAYTEST_PREVIOUS_HASH = "sha256:bc0d548d204557d0cc0ec7f8a358e18246778a13b27c58f5c6cdd73e73621711";
@@ -41,7 +43,7 @@ async function rootFile(relative) {
   return readFile(path.join(ROOT, relative), "utf8");
 }
 
-test("production entry activates the boundary-checkpoint ruleset", async () => {
+test("production entry activates the post-room Pact ruleset", async () => {
   assert.equal(manifest.rulesetHash, EXPECTED_HASH);
   assert.equal(V08_META_1_LOCAL_RELEASE_DESCRIPTOR.rulesetHash, manifest.rulesetHash);
   assert.equal(V08_META_1_LOCAL_RELEASE_DESCRIPTOR.status, RULESET_RELEASE_STATES.LOCAL_RELEASE_CANDIDATE);
@@ -50,6 +52,10 @@ test("production entry activates the boundary-checkpoint ruleset", async () => {
   assert.equal(
     V08_META_1_PRODUCTION_RELEASE_DESCRIPTOR.capabilities.boundarySettlementMode,
     "event-journal-v1"
+  );
+  assert.equal(
+    V08_META_1_PRODUCTION_RELEASE_DESCRIPTOR.capabilities.postRoomPactSettlement,
+    "post-room-pact-v1"
   );
   const registry = createRulesetRegistry([
     V08_META_1_LEGACY_PRODUCTION_RELEASE_DESCRIPTOR,
@@ -61,6 +67,7 @@ test("production entry activates the boundary-checkpoint ruleset", async () => {
     V08_META_1_BOUNDARY_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR,
     V08_META_1_PLAYTEST_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR,
     V08_META_1_GOLD_SYNC_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR,
+    V08_META_1_PACT_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR,
     V08_META_1_PRODUCTION_RELEASE_DESCRIPTOR
   ]);
   const resolved = registry.resolve({
@@ -77,6 +84,13 @@ test("production entry activates the boundary-checkpoint ruleset", async () => {
     lifecycle: "ranked"
   });
   assert.equal(goldSyncPrevious.rulesetHash, GOLD_SYNC_PREVIOUS_HASH);
+  const pactPrevious = registry.resolve({
+    rulesetId: "v08-meta-1",
+    rulesetHash: PACT_PREVIOUS_HASH,
+    environment: "production",
+    lifecycle: "ranked"
+  });
+  assert.equal(pactPrevious.rulesetHash, PACT_PREVIOUS_HASH);
   const playtestPrevious = registry.resolve({
     rulesetId: "v08-meta-1",
     rulesetHash: PLAYTEST_PREVIOUS_HASH,

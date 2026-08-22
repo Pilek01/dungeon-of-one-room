@@ -285,6 +285,80 @@ test("real room checkpoint consumes one directive and returns the next sequentia
   assert.deepEqual(retry.payload, cleared.payload);
 });
 
+test("real HTTP post-room Pact pins the new hash, resumes the opaque offer, and commits once", async () => {
+  const harness = createRealHarness();
+  const started = (await harness.start("post-room-pact-http-start")).payload;
+  assert.equal(started.metaState.rulesetHash, RULESET_HASH);
+  let session = (await harness.select(started, 0, "post-room-pact-http-select")).payload;
+
+  for (let room = 0; room < 100 && session.metaState.currentRoomDirective.roomType !== "pact"; room += 1) {
+    const advanced = await harness.checkpoint(session, `post-room-pact-http-room-${room}`);
+    assert.equal(advanced.response.status, 200);
+    session = advanced.payload;
+  }
+  assert.equal(session.metaState.currentRoomDirective.roomType, "pact");
+  const pactDirective = session.metaState.currentRoomDirective;
+  const pactCheckpoint = await harness.checkpoint(session, "post-room-pact-http-checkpoint");
+  assert.equal(pactCheckpoint.response.status, 200);
+  assert.equal(pactCheckpoint.payload.metaState.currentRoomDirective.consumed, true);
+  assert.equal(pactCheckpoint.payload.metaState.currentRoomDirective.directiveId, pactDirective.directiveId);
+  assert.equal(pactCheckpoint.payload.metaState.metaTransactionOffer.sourceType, "pact");
+  assert.equal("privateData" in pactCheckpoint.payload.metaState.metaTransactionOffer.choices[0], false);
+  assert.equal(pactCheckpoint.payload.metaState.currentRoomDirective.roomType, "pact");
+
+  const resumed = await harness.call("/api/v3/runs/resume", {
+    operationId: "op_0123456789abcdef0123456789abcdef",
+    runId: pactCheckpoint.payload.runId,
+    recoveryCredential: "rrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrr",
+    clientProtocolVersion: "ranked-v3-checkpoint-1",
+    lastKnownRevision: pactCheckpoint.payload.revision
+  }, "op_0123456789abcdef0123456789abcdef");
+  assert.equal(resumed.response.status, 200);
+  assert.deepEqual(resumed.payload.metaState.metaTransactionOffer, pactCheckpoint.payload.metaState.metaTransactionOffer);
+
+  const offer = resumed.payload.metaState.metaTransactionOffer;
+  const choice = offer.choices[0];
+  const checkpointBypass = await harness.checkpoint(resumed.payload, "post-room-pact-http-checkpoint-bypass");
+  assert.notEqual(checkpointBypass.response.status, 200);
+  const openBypass = await harness.event(resumed.payload, "open_meta_offer", {}, "post-room-pact-http-open-bypass");
+  assert.notEqual(openBypass.response.status, 200);
+  const stale = await harness.call("/api/v3/runs/event", {
+    runId: resumed.payload.runId,
+    checkpointToken: session.checkpointToken,
+    roomDirectiveId: pactDirective.directiveId,
+    roomNonce: pactDirective.roomNonce,
+    type: "commit_meta_transaction",
+    payload: { transactionId: choice.transactionId, choiceId: choice.choiceId }
+  }, "post-room-pact-http-stale");
+  assert.notEqual(stale.response.status, 200);
+
+  const forged = await harness.event(resumed.payload, "commit_meta_transaction", {
+    transactionId: choice.transactionId,
+    choiceId: "forged-choice"
+  }, "post-room-pact-http-forged");
+  assert.notEqual(forged.response.status, 200);
+
+  const beforeCommit = harness.repositories.snapshotRun(resumed.payload.runId);
+  const committed = await harness.event(resumed.payload, "commit_meta_transaction", {
+    transactionId: choice.transactionId,
+    choiceId: choice.choiceId
+  }, "post-room-pact-http-commit");
+  assert.equal(committed.response.status, 200);
+  assert.equal(committed.payload.metaState.currentRoomDirective.consumed, false);
+  assert.notEqual(committed.payload.metaState.currentRoomDirective.directiveId, pactDirective.directiveId);
+  assert.equal(committed.payload.metaState.metaTransactionOffer, null);
+  assert.equal(committed.payload.revision, beforeCommit.revision);
+  assert.equal(harness.repositories.snapshotRun(resumed.payload.runId).revision, beforeCommit.revision);
+
+  const retry = await harness.event(resumed.payload, "commit_meta_transaction", {
+    transactionId: choice.transactionId,
+    choiceId: choice.choiceId
+  }, "post-room-pact-http-commit");
+  assert.equal(retry.response.status, 200);
+  assert.equal(retry.response.headers.get("x-idempotent-replay"), "1");
+  assert.deepEqual(retry.payload, committed.payload);
+});
+
 test("versioned checkpoint integrity signals are accepted and make the run provisional", async () => {
   const harness = createRealHarness();
   const started = (await harness.start("integrity-start")).payload;
@@ -478,8 +552,15 @@ test("real HTTP lifecycle reaches canonical relic and meta transaction systems",
         });
         covered.add("crossroads");
       }
-    } else if (roomType === "pact" && !covered.has("pact")) {
-      await event("open_meta_offer", {});
+    } else if (roomType === "pact") {
+      if (covered.has("pact")) return true;
+      // Active post-room Pact settles the room before issuing its offer.
+      const checkpointed = await harness.checkpoint(
+        session,
+        `lifecycle-pact-checkpoint-${session.metaState.revision}`
+      );
+      assert.equal(checkpointed.response.status, 200);
+      session = checkpointed.payload;
       const offer = session.metaState.metaTransactionOffer;
       const choice = offer?.choices.find(
         (entry) => entry.status === "available"
@@ -491,7 +572,9 @@ test("real HTTP lifecycle reaches canonical relic and meta transaction systems",
         });
         covered.add("pact");
       }
+      return true;
     }
+    return false;
   }
 
   lifecycleRuns:
@@ -514,7 +597,7 @@ test("real HTTP lifecycle reaches canonical relic and meta transaction systems",
     }
     for (let room = 0; room < 90; room += 1) {
       await handleRelicSlot();
-      await handleMetaRoom(session.metaState.currentRoomDirective.roomType);
+      const metaRoomSettled = await handleMetaRoom(session.metaState.currentRoomDirective.roomType);
       if (
         ["merchant", "forge_temper", "forge_transmute", "crossroads", "pact"]
           .every((name) => covered.has(name)) &&
@@ -522,6 +605,7 @@ test("real HTTP lifecycle reaches canonical relic and meta transaction systems",
       ) {
         break lifecycleRuns;
       }
+      if (metaRoomSettled) continue;
       const tokenPayload = decodeBoundaryToken(session.checkpointToken).payload;
       const stored = harness.repositories.snapshotRun(session.runId);
       assert.equal(

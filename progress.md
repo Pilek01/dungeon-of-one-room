@@ -1,5 +1,43 @@
 Original prompt: Diagnose and repair the Ranked Observer Bot production crashes, verify the smallest robust fixes, merge them to main, and deploy a working release.
 
+## 2026-08-22 - Merchant + post-room Pact implementation verified
+
+- Observer Bot now opens the authoritative Ranked Merchant offer before evaluating skill upgrades, waits on open/commit locks, and cannot count a missing canonical choice as a purchase.
+- New ruleset `sha256:76514cf9e5c89079571a5be117ce84f949d7a3f5ed441d973adc05c95c6dde3c` settles a Pact room before issuing its opaque post-room offer. The next directive is withheld until apply/replace/break/leave commits exactly once.
+- The pending Pact marker is bound to run, ruleset, completed revision/depth/room/directive/nonce, post-settlement revision, and build digest. Checkpoint replay, extraction, fatal, assistance, pre-open, stale and forged commits fail closed. Authenticated abandon remains possible and clears the marker.
+- Avarice cannot retroactively modify the room just completed. The final transaction receipt digest now covers the persisted next-room state, not an intermediate sentinel.
+- Client resume presents a pending Pact offer before its consumed directive sentinel. Mutation locks prevent double commits; teardown clears transient locks. Pact effects hydrate once on the freshly reset next room. Native local Pact open/apply/break paths reject Ranked while Practice is unchanged.
+- Every previously released ruleset hash remains registered and pinned. The prior `5c3df81...` release retains its exact boundary behavior; no historical run is silently upgraded.
+- Verification is green: guard 14/14, phase 907/907, focused client 31/31, real Worker HTTP lifecycle 12/12, generator/syntax/diff checks, and independent client/server anti-cheat reviews. Six archive screenshots were re-inspected and approved at source fingerprint `sha256:8d653f88f71d35c5ca2c44a7dc5236b5e684e81b7f837b4ca621cee0e375869b`.
+
+## 2026-08-22 - Approved Merchant + post-settlement Pact implementation
+
+- User approved a coordinated Worker + Pages release. Merchant stays a client/runtime repair; Pact receives a new versioned ruleset capability while every prior hash remains pinned and registered.
+- A direct server experiment proved that applying Avarice before checkpoint changes bounded enemy gold for the just-completed room (26 without Pact vs 27 with simulated pre-checkpoint Avarice), although the fixed award stays unchanged. Therefore the earlier plan to open Pact before checkpoint was rejected.
+- Selected flow: checkpoint settles the Pact room with its pre-Pact build, consumes the room, increments revision, returns an opaque revision-bound post-room Pact offer, and withholds the next directive. Apply/replace/break/leave commits the canonical transaction and then issues exactly one next directive.
+- Existing old-hash runs fail closed on Pages: Observer Bot skips the dormant local Pact altar and proceeds to the portal; no local Ranked Pact mutation is enabled. New runs use the post-settlement canonical flow. Practice remains local and separate.
+- Design and implementation plan are committed in `docs/plans/2026-08-22-ranked-observer-merchant-pact-design.md` and `docs/plans/2026-08-22-ranked-observer-merchant-pact.md` at commit `efea543`.
+- RED evidence before production changes: the focused Merchant/Pact client suite fails 8/8 for the intended missing contracts. Server RED coverage is being added separately for ordering, old-hash compatibility, replay/stale handling, resume, and next-directive issuance.
+
+## 2026-08-22 - Ranked Pact room / Observer Bot altar-loop diagnosis
+
+- The production Ranked Pact integration is broken even though the canonical server Pact policy itself is healthy. Focused server/domain tests passed 14/14, including deterministic offers, depth gates, apply/replace/break/leave, rollback, Pact effects, and 128 property cases.
+- Active production uses boundary settlement. On local Pact-room clear, the runtime stores `pendingRoomSummary` and returns before the legacy `openMetaOffer("pact")` branch. Portal entry then settles the room and immediately installs the next directive; neither checkpoint nor post-checkpoint continuation issues a Pact offer. Therefore the canonical Pact transaction is never presented.
+- The native Ranked clear path also returns before Practice's `state.pact.awakened = true`. The altar remains dormant. However, the Observer Bot post-clear target selection checks only `state.pact && !state.pact.used`, so it repeatedly routes toward the dormant altar. `isOnPact()` requires `awakened`, so no prompt opens. Once the bot reaches it, the next fallback heads toward the portal; on the following tick Pact again wins priority, producing the observed altar/portal up-down loop.
+- Existing stall recovery cannot break this loop: post-clear handling resets the stall tracker every tick, and generic A-B-A-B detection is telemetry-only. Movement is counted as progress, so force-aggro/stall thresholds never fire.
+- Simply awakening the local altar would be unsafe: local `applyPactChoice()` mutates Pact IDs/effects without a canonical server transaction. Server authority must remain the only source of Ranked Pact choices.
+- A second integration defect exists after any future canonical Pact commit: `syncRankedRunModifiers()` copies canonical Pact IDs but does not remove/reapply direct numeric effects (`precision`, `blood`, `chains`) or rebuild `pactBasePlayerStats`; apply/replace/break can therefore leave local combat stats divergent from the canonical build.
+- Planned robust repair for the later two-fix release: while the current Pact directive is still bound, open the canonical server Pact offer on boundary room clear; keep automation blocked during open/commit; consume/disable the local altar for Ranked; reconcile local direct Pact effects from the accepted canonical projection; then allow portal settlement. Practice remains on its native altar path. Add deterministic Observer Bot coverage for clear -> offer -> opaque canonical commit -> projection/effects -> portal, delayed responses/no duplicate commits, leave/break/replace, and no post-clear oscillation.
+
+## 2026-08-22 - Observer Bot Ranked Merchant skill-upgrade diagnosis
+
+- Production read-only evidence confirmed the symptom: recent `observer_bot` Ranked snapshots retained empty `build.skillTiers` even after depth 20 and with enough combined run/Camp gold to afford early upgrades (one snapshot had 628 run gold plus 1079 Camp Gold).
+- Root cause is a Ranked-only state-order mismatch. The bot walks onto the Merchant and calls `tryBuySkillUpgradeFromMerchant` directly, but it never calls `openMerchantMenu`. In the production Ranked bridge, only `openMerchantMenu` invokes `DungeonOnlineV3.onMerchantOpen`, which fetches and installs the canonical `currentMerchantOffer`.
+- Without that offer, `onMerchantAction` cannot find a legal canonical choice, reports `That Merchant offer is not available.`, and still returns `true` as a handled asynchronous UI action. The bot misreads that truthy return as a successful purchase, increments its per-room purchase count, and eventually marks the Merchant room done without committing any transaction.
+- This is separate from the bot's conservative economy reserves. Those reserves can legitimately defer a purchase, but they do not explain the production snapshots with ample funds and permanently empty skill tiers.
+- Existing Worker Merchant policy and manual headed Merchant flow are valid and fail closed. The test gap is specifically Ranked Observer Bot automation: no test covers bot open -> canonical offer -> skill commit -> projection sync -> leave/checkpoint, or the asynchronous mutation lock.
+- Smallest robust repair: make Ranked Observer Bot explicitly open the Merchant first and wait for the canonical offer/mutation lock before evaluating purchases. Do not synthesize choices, bypass server prices, weaken legendary requirements, or change anti-cheat validation.
+
 ## 2026-08-22 - Pages Ranked API proxy deployment recovery
 
 - Production `RESPONSE_NOT_JSON` was reproduced at the HTTP boundary: deployment `904810b1` returned an empty `405` for every Ranked POST (`start`, `resume`, `abandon`, and `camp`) while the previous `b8084ef7` deployment returned the expected JSON error envelope.

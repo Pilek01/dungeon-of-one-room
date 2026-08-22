@@ -362,8 +362,8 @@
     },
     {
       "file": "index.js",
-      "byteLength": 16938,
-      "sha256": "5f51013a1f70d54c5ec484f027b952f35086520185d34c44644c7b83b4e2d344"
+      "byteLength": 17073,
+      "sha256": "b2dd0385172753876b211cf743ee06b701d5e1d8c6f2f4dad2907f64b9bc229a"
     },
     {
       "file": "leaderboard-summary.js",
@@ -382,13 +382,13 @@
     },
     {
       "file": "meta-state.js",
-      "byteLength": 13824,
-      "sha256": "018b02badaf222986f753191996785ea5957f300647ef1cd3f6f78e0f2709af2"
+      "byteLength": 15843,
+      "sha256": "dbe0ce2be5c45104e441f665fc86fc5c3fd701e40adf83a3d062866f5c31d2b4"
     },
     {
       "file": "meta-transaction.js",
-      "byteLength": 18174,
-      "sha256": "80288cc9fb46e33d78d41c45b3fbec187a8b5a149a51d9214e2a691e55549513"
+      "byteLength": 18285,
+      "sha256": "a29c7ef326fe403e9d61f153c1ad91bb446109b6c9146f223f74fba661b27b5a"
     },
     {
       "file": "mutator-progression.js",
@@ -402,8 +402,8 @@
     },
     {
       "file": "pact-policy.js",
-      "byteLength": 6216,
-      "sha256": "d7a0485b0f411b78a0a33dc0019b8a10c3e8b9ea3a89a3dae8a09fbefd160266"
+      "byteLength": 8336,
+      "sha256": "e78ab24dc06629095e2af312a7c9e646a03d2a83bad798de68bba340d9c511ef"
     },
     {
       "file": "profile-policy.js",
@@ -452,13 +452,13 @@
     },
     {
       "file": "room-policy.js",
-      "byteLength": 16423,
-      "sha256": "5b1895ad14ce3c4d449b34d7b9adc7920593008f0b193515aba3f5de2e9a7783"
+      "byteLength": 17237,
+      "sha256": "3ad2e9f31c1cd585755c9f3bca13a35566d05ef3e66216a86466c53e7fbdf8a2"
     },
     {
       "file": "ruleset-hash-policy.js",
-      "byteLength": 1352,
-      "sha256": "c3002e603c92fa93a5b83d8b75823ad3f29279fc63ecde508a3b4daf7fad3ad9"
+      "byteLength": 1429,
+      "sha256": "5331e6fa92505b8f58df693306bc2353f81cc2cc90fb6cea50a1a3c447a4e251"
     },
     {
       "file": "run-modifiers.js",
@@ -571,5 +571,5 @@
       "sha256": "cfce80fea7bd5d1328020055f2012bcaeaf9b61e5438e437bf948a4288fb8bf0"
     }
   ],
-  "rulesetHash": "sha256:5c3df81af373b68fce4d8fa242fb61c29b7c3d4ca78d6865d2ee51a58bbab3dd"
+  "rulesetHash": "sha256:76514cf9e5c89079571a5be117ce84f949d7a3f5ed441d973adc05c95c6dde3c"
 }

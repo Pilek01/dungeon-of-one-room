@@ -231,6 +231,7 @@ export function createInitialMetaStateV08(input = {}, context = {}) {
     relicFallbackHistory: [],
     relicOfferState: createRelicOfferState(),
     pendingInventory: null,
+    pendingPostRoomPact: null,
     metaTransactionReceipts: [],
     metaSourceConsumptions: [],
     campSession: null,
@@ -308,6 +309,49 @@ export function assertMetaStateV08(state) {
   assertLifeLedgerV08(state);
   assertGoldLedgerV08(state);
   assertPendingMetaTransactionOfferV08(state.pendingInventory);
+  if (state.pendingPostRoomPact !== null && state.pendingPostRoomPact !== undefined) {
+    if (!state.pendingPostRoomPact || typeof state.pendingPostRoomPact !== "object") {
+      throw new TypeError("META_STATE_INVALID:pendingPostRoomPact");
+    }
+    for (const field of [
+      "completedDirectiveId",
+      "completedDirectiveNonce",
+      "completedRevision",
+      "completedDepth",
+      "completedRoomIndex",
+      "postSettlementRevision",
+      "postSettlementBuildDigest"
+    ]) {
+      if (["completedRevision", "completedDepth", "completedRoomIndex", "postSettlementRevision"].includes(field)) {
+        if (!Number.isSafeInteger(state.pendingPostRoomPact[field]) || state.pendingPostRoomPact[field] < 0) {
+          throw new TypeError(`META_STATE_INVALID:pendingPostRoomPact.${field}`);
+        }
+      } else if (typeof state.pendingPostRoomPact[field] !== "string" || !state.pendingPostRoomPact[field]) {
+        throw new TypeError(`META_STATE_INVALID:pendingPostRoomPact.${field}`);
+      }
+    }
+    const pending = state.pendingPostRoomPact;
+    const directive = state.currentRoomDirective;
+    if (
+      !directive ||
+      directive.roomType !== "pact" ||
+      directive.consumed !== true ||
+      directive.directiveId !== pending.completedDirectiveId ||
+      directive.roomNonce !== pending.completedDirectiveNonce ||
+      directive.revision !== state.revision ||
+      pending.completedRevision !== state.revision - 1 ||
+      pending.completedDepth !== directive.depth ||
+      pending.completedRoomIndex !== directive.roomIndex ||
+      state.currentRewardEnvelope !== null ||
+      !state.pendingInventory ||
+      state.pendingInventory.sourceType !== "pact" ||
+      state.pendingInventory.sourceBinding?.phase !== "post_room" ||
+      pending.postSettlementRevision !== state.revision ||
+      pending.postSettlementBuildDigest !== state.build.buildDigest
+    ) {
+      throw new TypeError("META_STATE_INVALID:pendingPostRoomPact_binding");
+    }
+  }
   assertMetaTransactionReceiptsV08(state.metaTransactionReceipts);
   if (
     !Array.isArray(state.metaSourceConsumptions) ||

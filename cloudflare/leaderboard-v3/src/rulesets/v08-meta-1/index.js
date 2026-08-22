@@ -205,7 +205,8 @@ function mergeContext(options, context) {
   return {
     ...context,
     secret: context?.secret ?? options.secret,
-    randomOracle: context?.randomOracle ?? options.randomOracle
+    randomOracle: context?.randomOracle ?? options.randomOracle,
+    capabilities: context?.capabilities ?? options.capabilities
   };
 }
 
@@ -215,6 +216,7 @@ export function createV08Meta1Ruleset(options = {}) {
     rulesetId: RULESET_ID,
     rulesetHash,
     status: RULESET_STATUS,
+    capabilities: Object.freeze({ ...(options.capabilities || {}) }),
 
     createInitialMetaState(input, context) {
       return createInitialMetaStateV08({

@@ -16,6 +16,11 @@ const LOCAL_BOUNDARY_CAPABILITIES = Object.freeze({
   fatalPresentationCauseMode: "retain",
   boundarySettlementMode: "event-journal-v1"
 });
+const POST_ROOM_PACT_CAPABILITIES = Object.freeze({
+  fatalPresentationCauseMode: "retain",
+  boundarySettlementMode: "event-journal-v1",
+  postRoomPactSettlement: "post-room-pact-v1"
+});
 const LOCAL_ENVIRONMENTS = Object.freeze(["test", "local"]);
 const PRODUCTION_ENVIRONMENTS = Object.freeze(["test", "local", "production"]);
 const V08_ELIXIR_IDS = new Set(
@@ -38,7 +43,7 @@ function compatibleFatalRequest(request, capabilities) {
 }
 
 function createCapabilityBoundRuleset(rulesetHash, capabilities) {
-  const ruleset = createV08Meta1Ruleset({ rulesetHash });
+  const ruleset = createV08Meta1Ruleset({ rulesetHash, capabilities });
   return Object.freeze({
     ...ruleset,
     capabilities,
@@ -70,11 +75,14 @@ export const V08_META_1_LOCAL_RELEASE_DESCRIPTOR = createReleaseDescriptor(
   V08_META_1_DESCRIPTOR.rulesetHash,
   RULESET_RELEASE_STATES.LOCAL_RELEASE_CANDIDATE,
   LOCAL_ENVIRONMENTS,
-  LOCAL_BOUNDARY_CAPABILITIES
+  POST_ROOM_PACT_CAPABILITIES
 );
 
-export const V08_META_1_PRODUCTION_RULESET_HASH =
+export const V08_META_1_PACT_PREVIOUS_PRODUCTION_RULESET_HASH =
   "sha256:5c3df81af373b68fce4d8fa242fb61c29b7c3d4ca78d6865d2ee51a58bbab3dd";
+
+export const V08_META_1_PRODUCTION_RULESET_HASH =
+  "sha256:76514cf9e5c89079571a5be117ce84f949d7a3f5ed441d973adc05c95c6dde3c";
 
 export const V08_META_1_GOLD_SYNC_PREVIOUS_PRODUCTION_RULESET_HASH =
   "sha256:87c30b2c011b5103398f9b03f6bf018d71f2a35427c0a04ef7a31b2559a7a6d9";
@@ -176,9 +184,16 @@ export const V08_META_1_GOLD_SYNC_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR = creat
   LOCAL_BOUNDARY_CAPABILITIES
 );
 
+export const V08_META_1_PACT_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR = createReleaseDescriptor(
+  V08_META_1_PACT_PREVIOUS_PRODUCTION_RULESET_HASH,
+  RULESET_RELEASE_STATES.PRODUCTION_RELEASED,
+  PRODUCTION_ENVIRONMENTS,
+  LOCAL_BOUNDARY_CAPABILITIES
+);
+
 export const V08_META_1_PRODUCTION_RELEASE_DESCRIPTOR = createReleaseDescriptor(
   V08_META_1_PRODUCTION_RULESET_HASH,
   RULESET_RELEASE_STATES.PRODUCTION_RELEASED,
   PRODUCTION_ENVIRONMENTS,
-  LOCAL_BOUNDARY_CAPABILITIES
+  POST_ROOM_PACT_CAPABILITIES
 );

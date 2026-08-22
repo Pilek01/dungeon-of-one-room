@@ -185,14 +185,16 @@ test("historical production descriptors strip fatal cause while current producti
     V08_META_1_LOCAL_RELEASE_DESCRIPTOR.capabilities,
     {
       fatalPresentationCauseMode: "retain",
-      boundarySettlementMode: "event-journal-v1"
+      boundarySettlementMode: "event-journal-v1",
+      postRoomPactSettlement: "post-room-pact-v1"
     }
   );
   assert.deepEqual(
     V08_META_1_PRODUCTION_RELEASE_DESCRIPTOR.capabilities,
     {
       fatalPresentationCauseMode: "retain",
-      boundarySettlementMode: "event-journal-v1"
+      boundarySettlementMode: "event-journal-v1",
+      postRoomPactSettlement: "post-room-pact-v1"
     }
   );
   assert.deepEqual(

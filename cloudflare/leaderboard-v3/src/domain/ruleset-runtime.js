@@ -228,6 +228,12 @@ export function publicRulesetMetaState(state, ruleset) {
 
 export async function applyRulesetCheckpoint(state, body, ruleset, context = {}) {
   if (state.status !== "active") throw new TypeError("RUN_NOT_ACTIVE");
+  if (
+    ruleset.capabilities?.postRoomPactSettlement === "post-room-pact-v1" &&
+    (state.pendingPostRoomPact || state.pendingInventory?.sourceType === "pact")
+  ) {
+    throw new TypeError("PACT_POST_ROOM_TRANSACTION_PENDING");
+  }
   const directive = state.currentRoomDirective;
   if (!directive) throw new TypeError("ROOM_DIRECTIVE_REQUIRED");
   if (body.roomResult !== "cleared") throw new TypeError("ROOM_RESULT_INVALID");
@@ -283,13 +289,17 @@ export async function applyRulesetCheckpoint(state, body, ruleset, context = {})
       Number(integritySettlement.authoritativeGoldDelta) || 0
     );
   }
-  const nextState = await ruleset.consumeRoomDirective(
+  const postRoomPact = ruleset.capabilities?.postRoomPactSettlement === "post-room-pact-v1" && directive.roomType === "pact";
+  let nextState = await ruleset.consumeRoomDirective(
     structuredClone(state),
     operation,
-    rulesetContext
+    { ...rulesetContext, postRoomPactSettlement: postRoomPact ? "post-room-pact-v1" : undefined }
   );
   if (nextState.revision !== state.revision + 1) {
     throw new TypeError("ROOM_CHECKPOINT_REVISION_INVALID");
+  }
+  if (postRoomPact) {
+    nextState = await ruleset.issuePactOffer(nextState, rulesetContext);
   }
   const authoritativeGoldDelta = Math.max(
     0,
@@ -392,6 +402,16 @@ async function commitMetaOffer(state, payload, ruleset, context) {
 
 export async function applyRulesetEvent(state, body, ruleset, context = {}) {
   if (state.status !== "active") throw new TypeError("RUN_NOT_ACTIVE");
+  if (state.pendingPostRoomPact && body.type !== "commit_meta_transaction") {
+    throw new TypeError("PACT_POST_ROOM_TRANSACTION_PENDING");
+  }
+  if (
+    ruleset.capabilities?.postRoomPactSettlement === "post-room-pact-v1" &&
+    state.pendingInventory?.sourceType === "pact" &&
+    !state.pendingPostRoomPact
+  ) {
+    throw new TypeError("PACT_POST_ROOM_SETTLEMENT_REQUIRED");
+  }
   const rulesetContext = runtimeContext(state, context);
   let nextState;
   const storageEffects = [{

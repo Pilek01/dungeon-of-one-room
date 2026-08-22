@@ -1,11 +1,13 @@
 import pactPolicyDocument from "./data/pact-transaction-policy.generated.json" with { type: "json" };
 import {
   commitMetaTransactionV08,
+  computeMetaTransactionStateDigestV08,
   consumeCanonicalMetaSourceV08,
   isCanonicalMetaSourceConsumedV08,
   issueMetaTransactionOfferV08
 } from "./meta-transaction.js";
 import { deriveIntInclusive } from "./rng.js";
+import { issueNextRoomDirectiveV08 } from "./room-policy.js";
 
 const policy = pactPolicyDocument.canonicalData;
 
@@ -23,6 +25,34 @@ function pactRoomBinding(metaState) {
   const directive = metaState.currentRoomDirective;
   if (!directive || directive.roomType !== "pact") {
     throw new TypeError("PACT_SOURCE_UNAVAILABLE");
+  }
+  if (metaState.pendingPostRoomPact) {
+    const pending = metaState.pendingPostRoomPact;
+    if (
+      !directive.consumed ||
+      directive.runId !== metaState.runId ||
+      directive.revision !== metaState.revision ||
+      directive.directiveId !== pending.completedDirectiveId ||
+      directive.roomNonce !== pending.completedDirectiveNonce ||
+      pending.completedRevision !== metaState.revision - 1 ||
+      pending.completedDepth !== directive.depth ||
+      pending.completedRoomIndex !== directive.roomIndex ||
+      pending.postSettlementRevision !== metaState.revision ||
+      pending.postSettlementBuildDigest !== metaState.build.buildDigest
+    ) {
+      throw new TypeError("PACT_POST_ROOM_BINDING_STALE");
+    }
+    return {
+      directiveId: pending.completedDirectiveId,
+      completedDirectiveId: pending.completedDirectiveId,
+      completedRevision: pending.completedRevision,
+      postSettlementRevision: pending.postSettlementRevision,
+      postSettlementBuildDigest: pending.postSettlementBuildDigest,
+      depth: pending.completedDepth,
+      roomIndex: pending.completedRoomIndex,
+      roomNonce: pending.completedDirectiveNonce,
+      phase: "post_room"
+    };
   }
   if (directive.runId && directive.runId !== metaState.runId) {
     throw new TypeError("PACT_SOURCE_BINDING_MISMATCH");
@@ -79,6 +109,12 @@ async function choosePacts(metaState, binding, context) {
 }
 
 export async function issuePactOfferV08(metaState, context = {}) {
+  if (
+    context.capabilities?.postRoomPactSettlement === "post-room-pact-v1" &&
+    !metaState.pendingPostRoomPact
+  ) {
+    throw new TypeError("PACT_POST_ROOM_SETTLEMENT_REQUIRED");
+  }
   if (
     metaState.pendingInventory?.sourceType === "pact" &&
     metaState.pendingInventory?.sourceId === "pact-choice"
@@ -137,7 +173,7 @@ export async function issuePactOfferV08(metaState, context = {}) {
 }
 
 export async function commitPactTransactionV08(metaState, request, context = {}) {
-  return commitMetaTransactionV08(metaState, request, ({
+  const committed = await commitMetaTransactionV08(metaState, request, ({
     state,
     offer,
     choice
@@ -203,4 +239,19 @@ export async function commitPactTransactionV08(metaState, request, context = {})
     }
     throw new TypeError("PACT_TRANSACTION_ACTION_UNKNOWN");
   }, context);
+  if (!metaState.pendingPostRoomPact || committed.pendingPostRoomPact === null) {
+    return committed;
+  }
+  const next = structuredClone(committed);
+  next.pendingPostRoomPact = null;
+  const issued = await issueNextRoomDirectiveV08(next, context);
+  const latestReceipt = issued.metaTransactionReceipts?.at(-1);
+  if (!latestReceipt || latestReceipt.transactionId !== request.transactionId) {
+    throw new TypeError("PACT_TRANSACTION_RECEIPT_MISSING");
+  }
+  latestReceipt.resultingStateDigest = await computeMetaTransactionStateDigestV08(
+    issued,
+    context.cryptoProvider
+  );
+  return issued;
 }

@@ -36,6 +36,8 @@
   let pendingElixirUsage = null;
   let currentMerchantOffer = null;
   let merchantMutationPending = false;
+  let metaMutationPending = false;
+  let postRoomPactOfferPending = false;
   let currentForgeOffer = null;
   let currentForgeContext = null;
   let forgeMutationPending = false;
@@ -188,6 +190,15 @@
     return protocol.supportsBoundarySettlement?.(rulesetHash) === true;
   }
 
+  function supportsPostRoomPactSettlement(state = null) {
+    const publicState = state || createClient().getSnapshot()?.publicState;
+    const rulesetHash = publicState?.rulesetHash;
+    if (typeof protocol.supportsPostRoomPact === "function") {
+      return protocol.supportsPostRoomPact(rulesetHash) === true;
+    }
+    return false;
+  }
+
   function hasRankedBoundaryBinding(state) {
     return Boolean(state?.currentRoomDirective && state?.currentRewardEnvelope);
   }
@@ -317,6 +328,19 @@
     );
   }
 
+  function isRankedAutomationBlocked() {
+    return Boolean(
+      isRankedObserverBotActive() &&
+      (observerBotBoundaryPending ||
+        observerBotAutomationHalted ||
+        campMutationPending ||
+        merchantMutationPending ||
+        metaMutationPending ||
+        forgeMutationPending ||
+        pendingNativeRelicReplacement)
+    );
+  }
+
   async function runObserverBotBoundary(task) {
     if (!isRankedObserverBotActive()) return task();
     if (observerBotAutomationHalted) return false;
@@ -362,6 +386,8 @@
     currentForgeOffer = null;
     currentForgeContext = null;
     forgeMutationPending = false;
+    metaMutationPending = false;
+    postRoomPactOfferPending = false;
     pendingNativeRelicReplacement = null;
     observerBotBoundaryPending = false;
     observerBotAutomationHalted = false;
@@ -574,6 +600,8 @@
   function returnToPractice() {
     pendingFreshCampaign = false;
     pendingElixirUsage = null;
+    metaMutationPending = false;
+    postRoomPactOfferPending = false;
     if (session.getState() === root.DungeonRankedV3Session.STATES.abandoned) {
       root.DungeonOnlineV3GameBridge?.returnToPractice?.();
       ui.hide();
@@ -601,6 +629,8 @@
   function clearEndedRecovery() {
     pendingFreshCampaign = false;
     pendingElixirUsage = null;
+    metaMutationPending = false;
+    postRoomPactOfferPending = false;
     client?.releaseWriter?.();
     client?.clearRecovery?.();
     client?.clear();
@@ -829,6 +859,14 @@
       );
       return;
     }
+    if (
+      state.status === "active" &&
+      state.metaTransactionOffer?.sourceType === "pact"
+    ) {
+      postRoomPactOfferPending = state.currentRoomDirective?.consumed === true;
+      await presentMetaOffer(state.metaTransactionOffer, state);
+      return;
+    }
     if (state.status === "active" && state.currentRoomDirective) {
       if (pendingExtractionMode) {
         if (extractionCheckpointCommitted(state)) {
@@ -920,6 +958,8 @@
     }
     let acceptedStart = false;
     try {
+      metaMutationPending = false;
+      postRoomPactOfferPending = false;
       session.transition(root.DungeonRankedV3Session.STATES.starting);
       ui.showMessage("Entering Ranked", "Preparing your descent...");
       startedAt = Date.now();
@@ -1183,18 +1223,37 @@
     return true;
   }
   async function commitMetaChoice(offer, choiceId) {
+    if (metaMutationPending) return false;
     const choice = offer.choices.find((entry) => entry.choiceId === choiceId);
     if (!choice || choice.status !== "available") throw new TypeError("RANKED_META_CHOICE_UNAVAILABLE");
+    metaMutationPending = true;
     ui.setStatus("Confirming your choice...");
-    const response = await createClient().event("commit_meta_transaction", {
-      transactionId: choice.transactionId,
-      choiceId: choice.choiceId
-    });
-    root.DungeonOnlineV3GameBridge.syncCanonicalProjection(response.metaState);
-    await continueBoundary(response.metaState);
+    try {
+      const response = await createClient().event("commit_meta_transaction", {
+        transactionId: choice.transactionId,
+        choiceId: choice.choiceId
+      });
+      if (postRoomPactOfferPending) {
+        postRoomPactOfferPending = false;
+        pendingBoundaryExit = null;
+        pendingRoomSummary = null;
+        await acceptResponse(response);
+      } else if (pendingBoundaryExit === "portal") {
+        root.DungeonOnlineV3GameBridge.syncCanonicalProjection(response.metaState);
+        await continueResolvedCheckpoint(response.metaState);
+      } else {
+        root.DungeonOnlineV3GameBridge.syncCanonicalProjection(response.metaState);
+        await continueBoundary(response.metaState);
+      }
+    } finally {
+      metaMutationPending = false;
+    }
   }
 
   async function presentMetaOffer(offer, state) {
+    if (offer?.sourceType === "pact") {
+      postRoomPactOfferPending ||= state?.currentRoomDirective?.consumed === true;
+    }
     if (offer?.sourceType === "forge" && !isRankedObserverBotActive()) {
       return presentNativeForge(state, currentForgeContext || {});
     }
@@ -1203,6 +1262,10 @@
     if (isRankedObserverBotActive()) {
       ui.hide();
       const choice = stableObserverBotChoice(offer.choices, "choiceId", true);
+      if (!choice && offer.sourceType === "pact") {
+        observerBotAutomationHalted = true;
+        return false;
+      }
       return runObserverBotBoundary(() =>
         choice ? commitMetaChoice(offer, choice.choiceId) : resolveCheckpoint({ silent: true })
       );
@@ -1213,9 +1276,11 @@
       choices,
       (choiceId) => commitMetaChoice(offer, choiceId).catch(presentError)
     );
-    ui.overlay.querySelector(".ranked-v3-actions")?.append(
-      ui.button("Done", () => resolveCheckpoint().catch(presentError))
-    );
+    if (offer.sourceType !== "pact") {
+      ui.overlay.querySelector(".ranked-v3-actions")?.append(
+        ui.button("Done", () => resolveCheckpoint().catch(presentError))
+      );
+    }
   }
 
   async function openMetaOffer(roomType) {
@@ -1286,6 +1351,7 @@
     if (root.DUNGEON_ONLINE_V3_DEBUG === true) {
       console.debug("[Online v3] Merchant error", error);
     }
+    if (isRankedObserverBotActive()) observerBotAutomationHalted = true;
     if (session.getState() === root.DungeonRankedV3Session.STATES.resolving) {
       session.transition(root.DungeonRankedV3Session.STATES.active);
     }
@@ -1331,7 +1397,7 @@
     }
     if (!choice) {
       root.DungeonOnlineV3GameBridge?.failRankedMerchantRequest?.("That Merchant offer is not available.");
-      return true;
+      return false;
     }
     merchantMutationPending = true;
     root.DungeonOnlineV3GameBridge?.beginRankedMerchantRequest?.();
@@ -1553,6 +1619,10 @@
       const extractionMode = pendingExtractionMode;
       clearPendingExtractionIntent();
       await performExtraction(extractionMode);
+      return;
+    }
+    if (state.metaTransactionOffer) {
+      await continueBoundary(state);
       return;
     }
     if (pendingBoundaryExit === "portal") {
@@ -2008,6 +2078,7 @@
   root.DungeonOnlineV3 = Object.freeze({
     mode: "practice",
     startRanked,
+    resumeRanked,
     usesBoundarySettlement,
     onLocalRoomCleared,
     onPortalEntry,
@@ -2030,6 +2101,8 @@
     onForgeLeave,
     onRelicReplacementChoice,
     onRelicReplacementCancel,
+    supportsPostRoomPactSettlement,
+    isRankedAutomationBlocked,
     isObserverBotBoundaryPending,
     getSessionState: () => session.getState(),
     getSnapshot: () => client?.getSnapshot() || null,

@@ -127,6 +127,11 @@ test("R2 client accepts released save hashes and rejects local-only or unknown h
   assert.equal(protocol.RULESET_HASH, V08_META_1_PRODUCTION_RELEASE_DESCRIPTOR.rulesetHash);
   assert.equal(protocol.RULESET_HASH, manifest.rulesetHash);
   assert.equal(protocol.isSupportedRulesetHash(manifest.rulesetHash), true);
+  assert.equal(protocol.supportsPostRoomPact(protocol.RULESET_HASH), true);
+  assert.equal(
+    protocol.supportsPostRoomPact("sha256:5c3df81af373b68fce4d8fa242fb61c29b7c3d4ca78d6865d2ee51a58bbab3dd"),
+    false
+  );
   for (const hash of protocol.SUPPORTED_RULESET_HASHES) {
     assert.equal(protocol.isSupportedRulesetHash(hash), true);
   }

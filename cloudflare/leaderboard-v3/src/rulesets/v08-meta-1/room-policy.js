@@ -473,7 +473,26 @@ export async function consumeRoomDirectiveV08(state, operation = {}, context = {
   }
   next.updatedAt = next.startedAt + next.revision;
 
-  if (directive.roomCategory === "final") {
+  const postRoomPact = context.postRoomPactSettlement === "post-room-pact-v1" && directive.roomType === "pact";
+  if (postRoomPact) {
+    // Keep a consumed directive sentinel so the existing boundary token and
+    // recovery path remain revision-bound while the Pact offer is pending.
+    next.currentRoomDirective = {
+      ...directive,
+      revision: next.revision,
+      issuedAt: next.updatedAt,
+      consumed: true
+    };
+    next.pendingPostRoomPact = {
+      completedDirectiveId: directive.directiveId,
+      completedDirectiveNonce: directive.roomNonce,
+      completedRevision: directive.revision,
+      completedDepth: directive.depth,
+      completedRoomIndex: directive.roomIndex,
+      postSettlementRevision: next.revision,
+      postSettlementBuildDigest: next.build.buildDigest
+    };
+  } else if (directive.roomCategory === "final") {
     next.status = "victory";
     next.terminalEligibility = {
       outcome: "victory",

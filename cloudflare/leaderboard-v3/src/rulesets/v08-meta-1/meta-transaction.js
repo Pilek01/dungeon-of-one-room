@@ -21,7 +21,7 @@ function requireAmount(value, code) {
 }
 
 function bindingInput(state) {
-  return {
+  const input = {
     rulesetId: state.rulesetId,
     rulesetHash: state.rulesetHash,
     runId: state.runId,
@@ -50,6 +50,8 @@ function bindingInput(state) {
     metaSourceConsumptions: state.metaSourceConsumptions ?? [],
     campSession: state.campSession ?? null
   };
+  if (state.pendingPostRoomPact) input.pendingPostRoomPact = state.pendingPostRoomPact;
+  return input;
 }
 
 export function computeMetaTransactionStateDigestV08(state, cryptoProvider = globalThis.crypto) {
