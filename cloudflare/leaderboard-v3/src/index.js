@@ -1166,28 +1166,12 @@ async function handleRegisteredStart(request, env, options, repositories) {
     const replay = await replayOrConflict(priorStart, idempotencyKey, requestDigest);
     if (replay) return replay;
   }
+  const rankedStartBody = {
+    ...body,
+    practiceMutatorImport: null
+  };
   const now = options.now();
   const profileAccess = await loadRankedProfile(body, repositories, now);
-  if (body.practiceMutatorImport && profileAccess.existing && !body.newCampaign) {
-    const importedState = ruleset.applyPracticeMutatorImportToProfile(
-      profileAccess.existing.state,
-      body.practiceMutatorImport,
-      { now }
-    );
-    if (JSON.stringify(importedState) !== JSON.stringify(profileAccess.existing.state)) {
-      const importedProfile = {
-        ...profileAccess.existing,
-        revision: profileAccess.existing.revision + 1,
-        state: importedState,
-        updatedAt: now,
-        expiresAt: now + PROFILE_TTL_MS
-      };
-      if (!await repositories.profiles.updateConditional(importedProfile, profileAccess.existing.revision)) {
-        throw new HttpError(409, "PROFILE_REVISION_CONFLICT", "Ranked profile changed before Practice import committed.");
-      }
-      profileAccess.existing = importedProfile;
-    }
-  }
   const activeRuns = await repositories.profiles.countActiveRuns(body.profileId, now);
   recordMetric(env, options, "active_runs", activeRuns, "start");
   if (activeRuns >= MAX_ACTIVE_RUNS_PER_PROFILE) {
@@ -1202,7 +1186,7 @@ async function handleRegisteredStart(request, env, options, repositories) {
   const profileBootstrap = profileStateForRulesetBootstrap(
     profileAccess.existing?.state || null
   );
-  const transition = await createAuthenticatedRunBootstrap(body, {
+  const transition = await createAuthenticatedRunBootstrap(rankedStartBody, {
     ruleset,
     secret,
     now,

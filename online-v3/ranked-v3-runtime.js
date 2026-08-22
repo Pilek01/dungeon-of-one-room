@@ -928,7 +928,6 @@
         season: String(root.DUNGEON_ONLINE_V3_SEASON || "local-m4"),
         gameVersion: String(root.DUNGEON_GAME_VERSION || root.GAME_VERSION || "v0.8.2"),
         startDepth: Math.max(0, Math.floor(Number(startDepth) || 0)),
-        practiceMutatorImport: root.DungeonOnlineV3GameBridge?.getPracticeMutatorImport?.() || null,
         newCampaign: pendingFreshCampaign,
         clientInstallIdHash: await installationHash()
       });

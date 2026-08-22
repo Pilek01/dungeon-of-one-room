@@ -1210,22 +1210,6 @@ const rankedGoldGameReplacements = [
       if (!state.onlineV3Ranked || canonicalAmount <= 0) return false;
       pushLog("Room clear bonus: +" + canonicalAmount + " gold.", "good");
       return true;
-    },
-    getPracticeMutatorImport() {
-      return {
-        metrics: {
-          totalKills: Math.max(0, Math.floor(Number(state.totalKills) || 0)),
-          eliteKills: Math.max(0, Math.floor(Number(state.eliteKills) || 0)),
-          depthHighscore: Math.max(0, Math.floor(Number(state.highscore) || 0)),
-          totalGoldEarned: Math.max(0, Math.floor(Number(state.totalGoldEarned) || 0)),
-          totalMerchantPots: Math.max(0, Math.floor(Number(state.totalMerchantPots) || 0)),
-          shieldUsesThisGame: Math.max(0, Math.floor(Number(state.shieldUsesThisRun) || 0)),
-          potionFreeExtract: Math.max(0, Math.floor(Number(state.potionFreeExtract) || 0))
-        },
-        historicalUnlockedMutatorIds: MUTATORS
-          .filter((mutator) => Boolean(state.unlockedMutators?.[mutator.id]))
-          .map((mutator) => mutator.id)
-      };
     },`
   ],
   [

@@ -2555,63 +2555,28 @@ ${fatalTestHookAnchor}`;
     await page.locator('.camp-revamp-tab[data-camp-view="mutators"]').click();
     const berserkerRow = page.locator(".camp-revamp-mutator", { hasText: "Berserker" }).first();
     await berserkerRow.waitFor({ state: "visible" });
-    assert.equal(await berserkerRow.getAttribute("aria-disabled"), "false");
-    assert.match(await berserkerRow.innerText(), /Berserker[\s\S]*OFF/u);
-    const importedMutatorAudit = await page.evaluate(() => ({
+    assert.equal(await berserkerRow.getAttribute("aria-disabled"), "true");
+    assert.match(await berserkerRow.innerText(), /Berserker[\s\S]*LOCKED/u);
+    const separatedMutatorAudit = await page.evaluate(() => ({
       unlocked: window.DungeonOnlineV3.getSnapshot().publicState.mutatorProgress.unlockedMutatorIds,
       active: window.DungeonOnlineV3.getSnapshot().publicState.runModifiers.active
         .map((entry) => entry.modifierId)
     }));
-    assert.deepEqual(importedMutatorAudit.unlocked, ["berserker"]);
-    assert.deepEqual(importedMutatorAudit.active, []);
+    assert.deepEqual(separatedMutatorAudit.unlocked, []);
+    assert.deepEqual(separatedMutatorAudit.active, []);
 
     const mutatorRequestsBefore = diagnostics.apiRequests.length;
-    await berserkerRow.click();
-    await page.waitForFunction(() => {
-      const row = [...document.querySelectorAll(".camp-revamp-mutator")]
-        .find((candidate) => /Berserker/u.test(candidate.textContent || ""));
-      const savingVisible = [...document.querySelectorAll(".ranked-v3-overlay")]
-        .some((overlay) => (
-          overlay.getClientRects().length > 0 &&
-          /Saving progress/iu.test(overlay.textContent || "")
-        ));
-      return /ACTIVE/u.test(row?.innerText || "") && !savingVisible;
-    }, null, { timeout: 15_000 });
+    await berserkerRow.dispatchEvent("click");
     assert.equal(
       diagnostics.apiRequests.slice(mutatorRequestsBefore)
-        .filter((entry) => entry.path === "/api/v3/profiles/camp").length >= 2,
-      true,
-      "Enabling Berserker did not commit and refresh canonical Camp"
+        .filter((entry) => entry.path === "/api/v3/profiles/camp").length,
+      0,
+      "Locked Practice progress triggered a Ranked Camp mutation"
     );
-    assert.equal(await berserkerRow.getAttribute("aria-disabled"), "false");
-    assert.match(await berserkerRow.innerText(), /Berserker[\s\S]*ACTIVE/u);
+    assert.equal(await berserkerRow.getAttribute("aria-disabled"), "true");
+    assert.match(await berserkerRow.innerText(), /Berserker[\s\S]*LOCKED/u);
     await page.screenshot({
-      path: path.join(ARTIFACT_ROOT, "ranked-camp-mutator-active.png"),
-      fullPage: true
-    });
-
-    const mutatorRemoveRequestsBefore = diagnostics.apiRequests.length;
-    await berserkerRow.click();
-    await page.waitForFunction(() => {
-      const row = [...document.querySelectorAll(".camp-revamp-mutator")]
-        .find((candidate) => /Berserker/u.test(candidate.textContent || ""));
-      const savingVisible = [...document.querySelectorAll(".ranked-v3-overlay")]
-        .some((overlay) => (
-          overlay.getClientRects().length > 0 &&
-          /Saving progress/iu.test(overlay.textContent || "")
-        ));
-      return /OFF/u.test(row?.innerText || "") && !savingVisible;
-    }, null, { timeout: 15_000 });
-    assert.equal(
-      diagnostics.apiRequests.slice(mutatorRemoveRequestsBefore)
-        .filter((entry) => entry.path === "/api/v3/profiles/camp").length >= 2,
-      true,
-      "Disabling Berserker did not commit and refresh canonical Camp"
-    );
-    assert.equal(await berserkerRow.getAttribute("aria-disabled"), "false");
-    assert.match(await berserkerRow.innerText(), /Berserker[\s\S]*OFF/u);
-    await page.screenshot({
-      path: path.join(ARTIFACT_ROOT, "ranked-camp-mutator-disabled.png"),
+      path: path.join(ARTIFACT_ROOT, "ranked-camp-practice-mutator-locked.png"),
       fullPage: true
     });
 
@@ -2923,7 +2888,8 @@ ${fatalTestHookAnchor}`;
       multiTabTakeoverScenarios: RUN_LIFECYCLE ? 1 : 0,
       observerBotForgePortalScenarios: RUN_LIFECYCLE ? 1 : 0,
       campLifecycleScenarios: RUN_CAMP ? 1 : 0,
-      mutatorToggleScenarios: RUN_CAMP ? 1 : 0,
+      mutatorToggleScenarios: 0,
+      practiceSeparationScenarios: RUN_CAMP ? 1 : 0,
       nextRunProfileScenarios: RUN_CAMP ? 1 : 0,
       checkpointExtractionScenarios: RUN_CAMP ? 1 : 0,
       campErrorMainMenuScenarios: RUN_CAMP ? 1 : 0,

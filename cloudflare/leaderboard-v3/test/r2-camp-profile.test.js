@@ -72,7 +72,7 @@ function createHarness() {
   return { post, profileBody, start, repositories };
 }
 
-test("Practice import is consumed once and fresh Ranked resets progress without rotating profile", async () => {
+test("fresh Ranked ignores a valid legacy Practice import", async () => {
   const harness = createHarness();
   const first = await harness.start("r2-mutator-import-first", {
     newCampaign: true,
@@ -82,21 +82,35 @@ test("Practice import is consumed once and fresh Ranked resets progress without 
     }
   });
   assert.equal(first.response.status, 201);
-  assert.deepEqual(first.payload.profile.mutatorProgress.unlockedMutatorIds, ["berserker", "resilience"]);
-  assert.equal(first.payload.profile.mutatorProgress.importConsumed, true);
+  assert.deepEqual(first.payload.profile.mutatorProgress.unlockedMutatorIds, []);
+  assert.deepEqual(first.payload.profile.runModifiers.active, []);
+  assert.equal(first.payload.profile.mutatorProgress.totalKills, 0);
+  assert.equal(first.payload.profile.mutatorProgress.eliteKills, 0);
+  assert.equal(first.payload.profile.mutatorProgress.depthHighscore, 0);
+  assert.equal(first.payload.profile.mutatorProgress.totalGoldEarned, 0);
+  assert.equal(first.payload.profile.mutatorProgress.totalMerchantPots, 0);
+  assert.equal(first.payload.profile.mutatorProgress.shieldUsesThisGame, 0);
+  assert.equal(first.payload.profile.mutatorProgress.potionFreeExtract, 0);
+  assert.equal(first.payload.profile.mutatorProgress.importConsumed, false);
+  assert.ok(first.payload.bootstrapToken);
+});
 
-  const second = await harness.start("r2-mutator-import-second", {
-    newCampaign: true,
+test("continuing Ranked ignores a valid legacy Practice import without mutating the profile", async () => {
+  const harness = createHarness();
+  const first = await harness.start("r2-mutator-import-base");
+  assert.equal(first.response.status, 201);
+  const before = harness.repositories.snapshotProfile(PROFILE_ID);
+
+  const second = await harness.start("r2-mutator-import-continue", {
+    newCampaign: false,
     practiceMutatorImport: {
-      metrics: {},
+      metrics: { totalKills: 200, totalGoldEarned: 50_000 },
       historicalUnlockedMutatorIds: ["greed", "resilience"]
     }
   });
   assert.equal(second.response.status, 201);
-  assert.equal(second.payload.profile.profileId, first.payload.profile.profileId);
-  assert.deepEqual(second.payload.profile.mutatorProgress.unlockedMutatorIds, []);
-  assert.equal(second.payload.profile.mutatorProgress.importConsumed, true);
-  assert.ok(second.payload.bootstrapToken);
+  assert.deepEqual(harness.repositories.snapshotProfile(PROFILE_ID), before);
+  assert.deepEqual(second.payload.profile.mutatorProgress, first.payload.profile.mutatorProgress);
 });
 
 test("ordinary Ranked room cannot open Camp", async () => {

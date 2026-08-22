@@ -51,7 +51,7 @@ function meta(status, revision, directive = null) {
   };
 }
 
-test("M4 Ranked start persists exact pending action before sending", async () => {
+test("M4 Ranked start never serializes Practice progress", async () => {
   const store = memoryStore();
   let observed;
   const client = clientApi.createRankedClient({
@@ -86,7 +86,7 @@ test("M4 Ranked start persists exact pending action before sending", async () =>
   });
   assert.equal(observed.pendingOperation.operationId, "op_start");
   assert.equal(observed.pendingOperation.body.newCampaign, true);
-  assert.equal(observed.pendingOperation.body.practiceMutatorImport.metrics.totalKills, 200);
+  assert.equal(Object.hasOwn(observed.pendingOperation.body, "practiceMutatorImport"), false);
   assert.equal(client.getSnapshot().token.kind, "run_bootstrap");
   assert.equal(client.getSnapshot().pendingOperation, null);
 });

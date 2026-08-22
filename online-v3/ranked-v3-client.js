@@ -240,9 +240,6 @@
         profileCredential: profile.profileCredential,
         recoveryCredential,
         clientProtocolVersion: protocol.PROTOCOL_VERSION,
-        ...(input.practiceMutatorImport
-          ? { practiceMutatorImport: clone(input.practiceMutatorImport) }
-          : {}),
         newCampaign: input.newCampaign === true
       };
       persist({
