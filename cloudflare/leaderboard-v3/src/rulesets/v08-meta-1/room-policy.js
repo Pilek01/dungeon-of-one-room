@@ -362,7 +362,8 @@ export async function issueNextRoomDirectiveV08(state, context = {}) {
     state,
     directive,
     envelopeId,
-    cryptoProvider: context.cryptoProvider
+    cryptoProvider: context.cryptoProvider,
+    capabilities: context.capabilities
   });
   next.roomIndex = roomIndex;
   next.currentRoomDirective = directive;

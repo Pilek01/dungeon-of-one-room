@@ -79,7 +79,46 @@ function enemyMaximumForRoom(roomType) {
   return Math.max(0, Number(rewardBounds.enemyClaims.maximumEnemiesByRoom[roomType]) || 0);
 }
 
-function claimDefinitions(roomType) {
+function canonicalBuildHasRelic(build, relicId) {
+  return Array.isArray(build?.relics) && build.relics.some(
+    (entry) => entry?.relicId === relicId && Number(entry.stacks) >= 1
+  );
+}
+
+function procClaimDefinitions(roomType, canonicalBuild, capabilities) {
+  if (capabilities?.boundedProcClaims !== "v1") return [];
+  const maximumEnemies = enemyMaximumForRoom(roomType);
+  const definitions = [];
+  if (canonicalBuildHasRelic(canonicalBuild, "voidreaper")) {
+    definitions.push({
+      claimType: "proc",
+      claimId: "void-reaper-crit-kill",
+      maximumCount: maximumEnemies,
+      maximumAmount: null,
+      unitPolicyRef: "void-reaper-crit-kill",
+      requiredRoomType: roomType,
+      requiredBuildEffect: "voidreaper",
+      stackingPolicy: "bounded-by-accepted-enemy-and-elite-kills",
+      duplicatePolicy: "REJECT"
+    });
+  }
+  if (canonicalBuildHasRelic(canonicalBuild, "chaosorb")) {
+    definitions.push({
+      claimType: "proc",
+      claimId: "chaos-orb-gold-roll",
+      maximumCount: Math.ceil(rewardBounds.telemetryBounds.maximumTurnCount / 10),
+      maximumAmount: null,
+      unitPolicyRef: "chaos-orb-gold-roll",
+      requiredRoomType: roomType,
+      requiredBuildEffect: "chaosorb",
+      stackingPolicy: "bounded-by-room-local-turn-count",
+      duplicatePolicy: "REJECT"
+    });
+  }
+  return definitions;
+}
+
+function claimDefinitions(roomType, canonicalBuild, capabilities) {
   const maximumEnemies = enemyMaximumForRoom(roomType);
   const potionUse = {
     claimType: "resource",
@@ -114,7 +153,11 @@ function claimDefinitions(roomType) {
     stackingPolicy: "bounded-by-canonical-elixir-charges",
     duplicatePolicy: "REJECT"
   };
-  if (maximumEnemies <= 0) return [potionUse, elixirUse, shieldUse];
+  if (maximumEnemies <= 0) {
+    return [potionUse, elixirUse, shieldUse].concat(
+      procClaimDefinitions(roomType, canonicalBuild, capabilities)
+    );
+  }
   const definitions = [];
   for (const enemyType of Object.keys(rewardBounds.enemyClaims.baseGoldByEnemyType).sort()) {
     const bossOnly = enemyType === "warden";
@@ -155,7 +198,12 @@ function claimDefinitions(roomType) {
     stackingPolicy: "shares-room-enemy-budget",
     duplicatePolicy: "REJECT"
   });
-  definitions.push(potionUse, elixirUse, shieldUse);
+  definitions.push(
+    potionUse,
+    elixirUse,
+    shieldUse,
+    ...procClaimDefinitions(roomType, canonicalBuild, capabilities)
+  );
   return definitions;
 }
 
@@ -243,7 +291,27 @@ function maximumGoldDeltaForEnvelope(build, runModifiers, depth, roomType, claim
     baseAmount: roomClearBase(depth, roomType)
   });
   let enemyMaximum = 0;
+  let procMaximum = 0;
   for (const claim of claims) {
+    if (claim.claimType === "proc") {
+      const sourceId = claim.claimId === "void-reaper-crit-kill"
+        ? "void-reaper-crit-kill"
+        : claim.claimId === "chaos-orb-gold-roll"
+          ? "chaos-orb-gold-roll"
+          : null;
+      if (sourceId) {
+        procMaximum += calculateMultipliedGoldV08({
+          canonicalBuild: build,
+          canonicalRunModifiers: runModifiers,
+          sourceId,
+          baseAmount: sourceId === "void-reaper-crit-kill" ? 10 : 20,
+          ...(sourceId === "chaos-orb-gold-roll"
+            ? { context: { applyMultiplier: false } }
+            : {})
+        }) * claim.maximumCount;
+      }
+      continue;
+    }
     if (!claim.claimId.startsWith("enemy:") && !claim.claimId.startsWith("elite:")) continue;
     const [kind, enemyType] = claim.claimId.split(":");
     enemyMaximum = Math.max(
@@ -277,7 +345,7 @@ function maximumGoldDeltaForEnvelope(build, runModifiers, depth, roomType, claim
   }, 0);
   return Math.min(
     rewardBounds.maximumGoldDeltaHardCap,
-    fixed + enemyMaximum + chestMaximum
+    fixed + enemyMaximum + procMaximum + chestMaximum
   );
 }
 
@@ -285,7 +353,8 @@ export async function createRoomRewardEnvelopeV3({
   state,
   directive,
   envelopeId,
-  cryptoProvider
+  cryptoProvider,
+  capabilities
 }) {
   await assertCanonicalRunModifierDigestV08(state.runModifiers, cryptoProvider);
   const scalingDepth = rewardScalingDepth(directive);
@@ -296,7 +365,7 @@ export async function createRoomRewardEnvelopeV3({
     baseAmount: roomClearBase(scalingDepth, directive.roomType),
     context: { roomType: directive.roomType }
   });
-  const boundedClaims = claimDefinitions(directive.roomType);
+  const boundedClaims = claimDefinitions(directive.roomType, state.build, capabilities);
   const slots = claimSlots(directive.roomType);
   const rewardSlots = relicOfferSlots(directive, envelopeId);
   const envelope = {
@@ -528,10 +597,33 @@ function calculateClaimAmount(state, envelope, claim, slotById) {
     (entry) => entry.claimType === claim.claimType && entry.claimId === claim.claimId
   );
   if (!definition) {
+    if (claim.claimType === "proc") throw new TypeError("REWARD_CLAIM_ID_UNKNOWN");
     const typeKnown = envelope.boundedClaims.some((entry) => entry.claimType === claim.claimType);
     throw new TypeError(typeKnown ? "REWARD_CLAIM_ID_UNKNOWN" : "REWARD_CLAIM_TYPE_UNKNOWN");
   }
   if (claim.count > definition.maximumCount) throw new TypeError("REWARD_CLAIM_COUNT_LIMIT");
+  if (claim.claimType === "proc") {
+    if (claim.claimId === "void-reaper-crit-kill") {
+      const unit = calculateMultipliedGoldV08({
+        canonicalBuild: state.build,
+        canonicalRunModifiers: state.runModifiers,
+        sourceId: "void-reaper-crit-kill",
+        baseAmount: 10
+      });
+      return { amount: unit * claim.count, authority: "BOUNDED_CLIENT_ATTESTED" };
+    }
+    if (claim.claimId === "chaos-orb-gold-roll") {
+      const unit = calculateMultipliedGoldV08({
+        canonicalBuild: state.build,
+        canonicalRunModifiers: state.runModifiers,
+        sourceId: "chaos-orb-gold-roll",
+        baseAmount: 20,
+        context: { applyMultiplier: false }
+      });
+      return { amount: unit * claim.count, authority: "BOUNDED_CLIENT_ATTESTED" };
+    }
+    throw new TypeError("REWARD_CLAIM_ID_UNKNOWN");
+  }
   if (claim.claimType === "resource") {
     if (claim.claimId === "shield-use") {
       return { amount: 0, authority: "BOUNDED_CLIENT_ATTESTED" };
@@ -605,6 +697,12 @@ async function settleRewardEnvelopeV3(state, request, context = {}, options = {}
   if (envelope.consumed) throw new TypeError("REWARD_ENVELOPE_ALREADY_CONSUMED");
   validateBindings(state, envelope, request);
   if (!Array.isArray(request.claims)) throw new TypeError("REWARD_CLAIMS_REQUIRED");
+  if (
+    request.claims.some((claim) => claim?.claimType === "proc") &&
+    context.capabilities?.boundedProcClaims !== "v1"
+  ) {
+    throw new TypeError("REWARD_CLAIM_TYPE_UNKNOWN");
+  }
 
   const next = structuredClone(state);
   const mutableEnvelope = next.currentRewardEnvelope;
@@ -615,6 +713,10 @@ async function settleRewardEnvelopeV3(state, request, context = {}, options = {}
   let eliteCount = 0;
   let validatedEnemyCount = 0;
   let validatedEliteCount = 0;
+  let validatedEnemyKillCount = 0;
+  let validatedEliteKillCount = 0;
+  let voidReaperProcCount = 0;
+  let chaosOrbProcCount = 0;
   let potionUseCount = 0;
   let shieldUseCount = 0;
   let boundedDelta = 0;
@@ -639,6 +741,14 @@ async function settleRewardEnvelopeV3(state, request, context = {}, options = {}
       validatedEnemyCount += requireInteger(claim.count, "REWARD_CLAIM_COUNT_INVALID");
     }
     if (claim.claimType === "elite") validatedEliteCount += claim.count;
+    if (claim.claimType === "enemy") validatedEnemyKillCount += claim.count;
+    if (claim.claimType === "elite") validatedEliteKillCount += claim.count;
+    if (claim.claimType === "proc" && claim.claimId === "void-reaper-crit-kill") {
+      voidReaperProcCount += requireInteger(claim.count, "REWARD_CLAIM_COUNT_INVALID");
+    }
+    if (claim.claimType === "proc" && claim.claimId === "chaos-orb-gold-roll") {
+      chaosOrbProcCount += requireInteger(claim.count, "REWARD_CLAIM_COUNT_INVALID");
+    }
     const result = calculateClaimAmount(
       appliesToOutcome ? next : validationState,
       appliesToOutcome ? mutableEnvelope : validationEnvelope,
@@ -667,6 +777,15 @@ async function settleRewardEnvelopeV3(state, request, context = {}, options = {}
   }
   if (validatedEliteCount > rewardBounds.enemyClaims.maximumElitesPerRoom) {
     throw new TypeError("REWARD_CLAIM_ROOM_ELITE_BUDGET");
+  }
+  if (voidReaperProcCount > validatedEnemyKillCount + validatedEliteKillCount) {
+    throw new TypeError("REWARD_PROC_VOID_REAPER_CAP");
+  }
+  if (
+    chaosOrbProcCount > 0 &&
+    chaosOrbProcCount > Math.ceil(requireInteger(request.turnCount, "REWARD_PROC_CHAOS_ORB_TURN_COUNT_INVALID") / 10)
+  ) {
+    throw new TypeError("REWARD_PROC_CHAOS_ORB_CAP");
   }
 
   const fixedDelta = outcome === "cleared"

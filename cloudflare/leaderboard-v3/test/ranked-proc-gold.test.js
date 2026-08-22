@@ -125,15 +125,16 @@ test("Void Reaper uses the global multiplier but excludes Bounty Contract", asyn
   state.build.campUpgrades.bounty_contract = 5;
   state.build.buildDigest = await computeRelicBuildDigestV08(state.build);
   const claims = [{ claimType: "proc", claimId: "void-reaper-crit-kill", count: 1 }];
+  const acceptedKills = [{ claimType: "enemy", claimId: "enemy:slime", count: 1 }];
   const result = await settleRoomRewardEnvelopeV3(
     state,
-    requestFor(state, claims, {
-      reportedGoldDelta: 2 + 12,
-      reportedGoldTotal: 14
+    requestFor(state, [...acceptedKills, ...claims], {
+      reportedGoldDelta: 2 + 3 + 12,
+      reportedGoldTotal: 17
     }),
     { capabilities: { boundedProcClaims: "v1" } }
   );
-  assert.equal(result.authoritativeGoldDelta, 14);
+  assert.equal(result.authoritativeGoldDelta, 17);
   assert.deepEqual(result.anomalies, []);
 });
 
