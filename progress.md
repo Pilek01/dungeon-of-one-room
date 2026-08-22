@@ -9,6 +9,8 @@ Original prompt: Diagnose and repair the Ranked Observer Bot production crashes,
 - Client resume presents a pending Pact offer before its consumed directive sentinel. Mutation locks prevent double commits; teardown clears transient locks. Pact effects hydrate once on the freshly reset next room. Native local Pact open/apply/break paths reject Ranked while Practice is unchanged.
 - Every previously released ruleset hash remains registered and pinned. The prior `5c3df81...` release retains its exact boundary behavior; no historical run is silently upgraded.
 - Verification is green: guard 14/14, phase 907/907, focused client 31/31, real Worker HTTP lifecycle 12/12, generator/syntax/diff checks, and independent client/server anti-cheat reviews. Six archive screenshots were re-inspected and approved at source fingerprint `sha256:8d653f88f71d35c5ca2c44a7dc5236b5e684e81b7f837b4ca621cee0e375869b`.
+- Released implementation commit `50e91c9ba4686ba3933769333bb70183e8bd9cb4` from `main`. Worker version `c931c69e-2947-4b2d-9d78-2ab7964e4e42` passed 5% and 25% canaries, including a disposable start/abandon on the new hash, and is active at 100%. Immediate rollback target: `d04a8fd5-44e1-48e8-906d-736cd56cc0af`. No D1 migration was pending or applied.
+- Production Pages deployment `73eaf41c.dungeon-of-one-room.pages.dev` was uploaded from the repository root with its Functions bundle and `_routes.json`. The immutable deployment and stable hostname serve build `50e91c9`, active compatible ruleset `76514cf9...`, and all four Ranked POST probes return deterministic JSON validation envelopes through the proxy.
 
 ## 2026-08-22 - Approved Merchant + post-settlement Pact implementation
 
