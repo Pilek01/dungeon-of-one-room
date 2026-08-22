@@ -27,12 +27,14 @@ This deliberately permits a modified client to claim the small source-specific m
 - Claim ID: `chaos-orb-gold-roll`.
 - Client records one occurrence when Chaos Orb rolls its gold outcome.
 - Server requires canonical ownership of `chaosorb` at room entry.
-- Claimed count cannot exceed the number of completed ten-turn Chaos Orb intervals derived from the submitted room turn count.
+- Claimed count cannot exceed the number of completed ten-turn Chaos Orb intervals derived from a room-local turn count. The existing run-global `state.turn` must not be used directly.
 - Each unit is the canonical flat `20` awarded without the global multiplier, matching local `grantGold(20, { applyMultiplier: false })`.
 
 ## Data Flow
 
 The existing room reward recorder aggregates proc occurrences and includes them in the sealed boundary snapshot. Reward-envelope settlement recognizes only the two named proc definitions. It validates them against the room-entry integrity snapshot, adds their server-calculated amount to authoritative gold, and includes them in the exact reported-delta and reported-total comparison.
+
+The Pages bridge captures the run-global turn baseline when a room integrity context is installed and submits only the non-negative difference at the boundary. This makes Chaos Orb's cap specific to the current room and prevents later rooms from inheriting a wider allowance.
 
 No min/max comparison is added to rank eligibility. Once valid proc claims are settled, the existing exact equality check remains unchanged. Missing relics, excess counts, duplicate claims, unknown proc IDs, and unexplained reported gold continue to fail closed.
 
@@ -58,4 +60,3 @@ Tests must first fail for the missing behavior, then cover:
 - exact reported gold delta and total after proc settlement;
 - old-hash compatibility, unknown proc rejection, and unchanged Practice behavior;
 - combined focused, full Worker phase, generated bundle, headed Ranked, and HUD status verification before deployment.
-

@@ -145,9 +145,11 @@ Expose `supportsBoundedProcClaims(rulesetHash)` in the protocol and runtime. Onl
 
 After each successful local proc grant, record the matching claim only when the new capability is active. Practice has no Ranked recorder and remains unchanged. Boundary settlement captures after the room and naturally includes the claims; do not enable these claims for eager legacy hashes whose recorder may already be sealed.
 
+Capture `onlineV3RoomStartingTurn` together with `onlineV3RoomStartingGold` when `setRoomIntegrityContext()` installs the room capability. Submit `Math.max(0, state.turn - onlineV3RoomStartingTurn)` as `turnCount` from both local-clear and portal-boundary capture paths. Reset the turn baseline with the recorder. This converts the integrity payload from the current run-global count to a room-local count without trusting a client-supplied offset.
+
 **Step 4: Verify GREEN**
 
-Run focused recorder, protocol, runtime, builder, and parity tests. Build the test Pages bundle and verify the injected game parses.
+Run focused recorder, protocol, runtime, builder, and parity tests. Include a multi-room regression proving that a later room with a high run-global `state.turn` still permits only `Math.floor(roomLocalTurns / 10)` Chaos claims. Build the test Pages bundle and verify the injected game parses.
 
 **Step 5: Commit**
 
@@ -245,4 +247,3 @@ Upload the verified release bundle with Functions and `_routes.json`. Verify sta
 **Step 5: Production smoke and rollback record**
 
 Confirm a fresh Ranked run can emit bounded proc claims and preserve official/observer-valid status. Record Worker and Pages rollback targets in `progress.md`.
-
