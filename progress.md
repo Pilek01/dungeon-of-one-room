@@ -1,5 +1,15 @@
 Original prompt: Diagnose and repair the Ranked Observer Bot production crashes, verify the smallest robust fixes, merge them to main, and deploy a working release.
 
+## 2026-08-22 - Ranked canonical gold modifier synchronization release
+
+- Observer Bot reproduced `REPORTED_GOLD_DELTA_MISMATCH` because Ranked synchronized canonical mutator IDs but skipped rebuilding the numeric local `runMods` and persistent pact effects at `startRun()`. The server correctly calculated canonical rewards while the client could inherit default or Practice values and report a different gold delta.
+- Ranked starts now rebuild Camp upgrades, canonical mutator effects, and the canonical pact in the same order used by server reward policy. Production Ranked also clears the Observer Bot Unlimited Gold toggle and its baselines. Returning to Practice restores locally stored mutators, clears Ranked pact state, and resets run modifiers.
+- Anti-cheat remains fail-closed. No server reward validation, bounds, tolerance, capability, rank eligibility, or assistance classification was weakened. The previous `87c30...` ruleset remains registered for already-pinned runs.
+- Added client/server parity coverage for three simultaneous gold mutators plus Idol of Greed, Pact of Avarice, Bounty Contract level 3, and Treasure Sense level 4. Both sides produce 11 gold for a normal skeleton, 16 for an elite skeleton, and 30 for an 8-gold chest.
+- Fresh verification passed: focused release/parity checks 17/17; guard 14/14; phase 884/884; full release gate 908/908; Ranked lifecycle and Camp headed scenarios; six archive screenshots; production bundle verification; and post-deploy preload/menu smoke with no console or page errors.
+- Released source commit `b2cd883a9a1d84fbbdf477e510c40b7596851ded` from `main`. Production Worker version `f48a4379-88ef-4d41-ac86-51499320030f` passed 5% and 25% read-only canaries and is active at 100%; immediate rollback target is `96a46a6a-d408-4502-99a0-6eb742c86415`. No D1 migrations were pending or applied.
+- Production Pages deployment `b8084ef7.dungeon-of-one-room.pages.dev` serves build `b2cd883`. Stable and immutable availability are active/compatible on `sha256:5c3df81af373b68fce4d8fa242fb61c29b7c3d4ca78d6865d2ee51a58bbab3dd`; leaderboard reads return 200. `index.html`, `config.js`, `game.js`, and `online-v3/ranked-v3-runtime.js` match the verified local release bundle byte-for-byte on both hostnames.
+
 ## 2026-08-21 - Ranked Arena gold and elite-budget parity repair
 
 - Observer Bot exposed `REPORTED_GOLD_DELTA_MISMATCH` / `REPORTED_GOLD_TOTAL_MISMATCH`. The server correctly applies Arena's canonical `+2` reward bonus to every enemy, while the initial local Arena wave was created through `buildRegularRoom()` with reward bonus `0`; only the later wave received `+2`.
