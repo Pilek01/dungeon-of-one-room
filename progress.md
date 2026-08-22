@@ -1946,3 +1946,35 @@ Updated next good targets
   official green, Observer blue, and pending-sync ring pass, with fresh visual
   inspection. The broader headed lifecycle still stops later on its pre-existing
   leaderboard ledger-row pixel-position assertion.
+
+## 2026-08-23 - Bounded Ranked relic proc gold
+
+- Diagnosed `REPORTED_GOLD_DELTA_MISMATCH` on run
+  `run_a3f3c1cc0cc0424c9a6483a1542e1d6b`: the canonical room reward was 34,
+  while an honest Void Reaper critical kill added client-side gold that the
+  pinned server ruleset intentionally could not attest.
+- Added two explicit, amount-free claims for new Ranked runs only:
+  `proc:void-reaper-crit-kill` and `proc:chaos-orb-gold-roll`. The Worker
+  calculates every award from the canonical room-entry build and rejects
+  missing relics, unknown or duplicate claims, invalid counts, and counts above
+  room evidence before committing state.
+- Void Reaper is capped by accepted enemy plus elite kills (hazards excluded)
+  and uses the canonical global multiplier without Bounty Contract. Chaos Orb
+  remains a flat 20 and is capped by `ceil(roomLocalTurnCount / 10)` to account
+  for its carried cadence. Exact reported/canonical gold equality remains the
+  final integrity check, so unexplained extra gold still makes the run
+  provisional.
+- Corrected Ranked room telemetry from run-global turns to a room-local turn
+  delta and record proc claims only after the corresponding local award
+  succeeds. Historical rulesets omit the capability and remain byte-pinned.
+- Released ruleset hash
+  `sha256:35707f6b5ea8b1ad18251dce5e6c18b87653893aad705b6c5543fdd140b88067`;
+  previous `sha256:76514cf9e5c89079571a5be117ce84f949d7a3f5ed441d973adc05c95c6dde3c`
+  remains supported without bounded proc claims.
+- Fixed a Pages source/replacement marker regression exposed by the full suite;
+  the generated game keeps the new room-local turn payload. Generator check,
+  focused integration tests (84/84), guard (14/14), and the complete Worker
+  phase (925/925) pass.
+- The release `verify:full` gate still requires its separate human approval
+  receipt for the historical six-image record archive; no receipt was
+  fabricated. Worker/Pages deployment and production smoke remain pending.
