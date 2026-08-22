@@ -42,6 +42,24 @@ test("Pages build wires proc recording only after successful bounded grants", as
   assert.match(builder, /onlineV3BoundedProcClaims/u);
 });
 
+test("Pages builder transforms the legacy room-clear source into room-local turns", async () => {
+  const builder = await readFile(
+    new URL("../../../scripts/build-pages-v3.mjs", import.meta.url),
+    "utf8"
+  );
+  const legacySource = /turnCount: Math\.max\(0, Number\(state\.turn\) \|\| 0\),\s+rewardClaims: \[\]/u;
+  const roomLocalReplacement = /turnCount: Math\.max\(\s*0,\s*Math\.floor\(Number\(state\.turn\) \|\| 0\) - onlineV3RoomStartingTurn\s*\),\s*rewardClaims,/u;
+  const sourceMatch = builder.match(legacySource);
+  const replacementMatch = builder.match(roomLocalReplacement);
+  const sourceIndex = sourceMatch?.index ?? -1;
+  const replacementIndex = replacementMatch?.index ?? -1;
+  assert.ok(sourceIndex >= 0, "builder must match the checked-in legacy room-clear source");
+  assert.ok(
+    replacementIndex > sourceIndex,
+    "builder must replace the legacy source with room-local turn reporting"
+  );
+});
+
 test("room integrity captures a run-global turn baseline and reports room-local turns", async () => {
   const builder = await readFile(
     new URL("../../../scripts/build-pages-v3.mjs", import.meta.url),

@@ -1559,10 +1559,7 @@ const rankedGoldGameReplacements = [
 `      revealPortalFx();
       pushLog("Room cleared. Waiting for Online v3 checkpoint.", "good");
       window.DungeonOnlineV3?.onLocalRoomCleared?.({
-        turnCount: Math.max(
-          0,
-          Math.floor(Number(state.turn) || 0) - onlineV3RoomStartingTurn
-        ),
+        turnCount: Math.max(0, Number(state.turn) || 0),
         rewardClaims: []
       });`,
 `      revealPortalFx();
