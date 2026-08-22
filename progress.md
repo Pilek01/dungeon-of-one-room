@@ -1,5 +1,14 @@
 Original prompt: Diagnose and repair the Ranked Observer Bot production crashes, verify the smallest robust fixes, merge them to main, and deploy a working release.
 
+## 2026-08-22 - Pages Ranked API proxy deployment recovery
+
+- Production `RESPONSE_NOT_JSON` was reproduced at the HTTP boundary: deployment `904810b1` returned an empty `405` for every Ranked POST (`start`, `resume`, `abandon`, and `camp`) while the previous `b8084ef7` deployment returned the expected JSON error envelope.
+- Root cause was the Pages upload being invoked from `cloudflare/leaderboard-v3` instead of the repository root. Static assets and `_routes.json` were uploaded, but Wrangler could not discover the root `functions/api/v3/[[path]].js` proxy or its `RANKED_V3_BACKEND` service binding. GET availability alone was therefore an insufficient post-deploy smoke.
+- This created the exact UI loop from the screenshot: resync and abandon both received non-JSON; Main Menu intentionally preserved recovery; Start New Ranked first retried abandon and received the same non-JSON response.
+- Re-published the unchanged, fully verified `54f3490` Pages bundle from the repository root. Corrected production deployment: `d8c1ab17.dungeon-of-one-room.pages.dev`. Wrangler explicitly reported `Compiled Worker successfully`, `Uploading Functions bundle`, and `Uploading _routes.json`.
+- Post-recovery matrix passed on both the stable hostname and corrected immutable deployment: all four Ranked POST endpoints returned `application/json` with deterministic HTTP 400 validation envelopes for stateless invalid probes. The broken immutable deployment remains a useful negative control and returns empty 405 for the same requests.
+- No D1 data, run, profile, ruleset, Worker version, or anti-cheat logic was changed. The active Worker remains `d04a8fd5-44e1-48e8-906d-736cd56cc0af` at 100%. Future Pages releases must run Wrangler from the repository root and smoke at least one POST endpoint for JSON, not only GET availability.
+
 ## 2026-08-22 - Ranked canonical gold modifier synchronization release
 
 - Observer Bot reproduced `REPORTED_GOLD_DELTA_MISMATCH` because Ranked synchronized canonical mutator IDs but skipped rebuilding the numeric local `runMods` and persistent pact effects at `startRun()`. The server correctly calculated canonical rewards while the client could inherit default or Practice values and report a different gold delta.
