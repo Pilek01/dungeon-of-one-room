@@ -50,6 +50,10 @@
   const boundarySettlementRulesetHashes = new Set(BOUNDARY_SETTLEMENT_RULESET_HASHES);
   const POST_ROOM_PACT_RULESET_HASHES = Object.freeze([RULESET_HASH]);
   const postRoomPactRulesetHashes = new Set(POST_ROOM_PACT_RULESET_HASHES);
+  // Populated with the new production ruleset hash when the bounded-proc
+  // release is registered. Historical hashes intentionally remain absent.
+  const BOUNDED_PROC_CLAIMS_RULESET_HASHES = Object.freeze([]);
+  const boundedProcClaimsRulesetHashes = new Set(BOUNDED_PROC_CLAIMS_RULESET_HASHES);
   const API_PREFIX = "/api/v3";
   const TOKEN_KINDS = Object.freeze({
     bootstrap: "run_bootstrap",
@@ -113,6 +117,11 @@
   function supportsPostRoomPact(value) {
     const rulesetHash = typeof value === "string" ? value : value && value.rulesetHash;
     return postRoomPactRulesetHashes.has(rulesetHash);
+  }
+
+  function supportsBoundedProcClaims(value) {
+    const rulesetHash = typeof value === "string" ? value : value && value.rulesetHash;
+    return boundedProcClaimsRulesetHashes.has(String(rulesetHash || ""));
   }
 
   function requireOptionalRecord(value, field) {
@@ -350,6 +359,8 @@
     supportsBoundarySettlement,
     POST_ROOM_PACT_RULESET_HASHES,
     supportsPostRoomPact,
+    BOUNDED_PROC_CLAIMS_RULESET_HASHES,
+    supportsBoundedProcClaims,
     API_PREFIX,
     TOKEN_KINDS,
     ENDPOINTS,
