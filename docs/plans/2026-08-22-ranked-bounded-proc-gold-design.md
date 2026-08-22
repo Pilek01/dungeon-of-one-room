@@ -27,7 +27,7 @@ This deliberately permits a modified client to claim the small source-specific m
 - Claim ID: `chaos-orb-gold-roll`.
 - Client records one occurrence when Chaos Orb rolls its gold outcome.
 - Server requires canonical ownership of `chaosorb` at room entry.
-- Claimed count cannot exceed the number of completed ten-turn Chaos Orb intervals derived from a room-local turn count. The existing run-global `state.turn` must not be used directly.
+- Claimed count cannot exceed `Math.ceil(roomTurnCount / 10)`. The ceiling safely accounts for a Chaos cadence already partially charged in the previous room; the persistent residual counter is not canonical. The existing run-global `state.turn` must not be used directly.
 - Each unit is the canonical flat `20` awarded without the global multiplier, matching local `grantGold(20, { applyMultiplier: false })`.
 
 ## Data Flow

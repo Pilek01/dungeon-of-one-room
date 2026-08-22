@@ -33,7 +33,7 @@ Assert:
 - missing Void Reaper rejects the claim;
 - Void Reaper uses base `10` with the canonical global multiplier but not Bounty Contract;
 - zero, one, and maximum turn-derived Chaos Orb counts settle;
-- Chaos Orb count cannot exceed `Math.floor(turnCount / 10)`;
+- Chaos Orb count cannot exceed `Math.ceil(roomLocalTurnCount / 10)`, which safely permits a cadence partially charged in the previous room;
 - missing Chaos Orb rejects the claim;
 - Chaos Orb stays flat `20` with `applyMultiplier: false`;
 - unknown proc IDs and duplicate proc IDs reject;
@@ -82,7 +82,7 @@ For Chaos Orb, use the same canonical calculator with base `20` and `applyMultip
 
 **Step 3: Enforce evidence bounds**
 
-Track accepted enemy/elite counts and proc counts during settlement. Reject Void Reaper count above accepted enemy plus elite kills. Reject Chaos Orb count above `Math.floor(request.turnCount / 10)`. Relic absence, invalid integer counts, unknown IDs, duplicates, and over-cap counts must throw before state mutation is committed.
+Track accepted enemy/elite counts and proc counts during settlement. Reject Void Reaper count above accepted enemy plus elite kills. Reject Chaos Orb count above `Math.ceil(request.turnCount / 10)` using the corrected room-local turn count. The ceiling is required because `chaosRollCounter` persists across rooms and its residual is not canonical. Relic absence, invalid integer counts, unknown IDs, duplicates, and over-cap counts must throw before state mutation is committed.
 
 **Step 4: Verify GREEN**
 
@@ -149,7 +149,7 @@ Capture `onlineV3RoomStartingTurn` together with `onlineV3RoomStartingGold` when
 
 **Step 4: Verify GREEN**
 
-Run focused recorder, protocol, runtime, builder, and parity tests. Include a multi-room regression proving that a later room with a high run-global `state.turn` still permits only `Math.floor(roomLocalTurns / 10)` Chaos claims. Build the test Pages bundle and verify the injected game parses.
+Run focused recorder, protocol, runtime, builder, and parity tests. Include a multi-room regression proving that a later room with a high run-global `state.turn` still permits only `Math.ceil(roomLocalTurns / 10)` Chaos claims, including a short room entered with a partially charged cadence. Build the test Pages bundle and verify the injected game parses.
 
 **Step 5: Commit**
 
