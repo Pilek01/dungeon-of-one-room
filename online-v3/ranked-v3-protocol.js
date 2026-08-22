@@ -176,6 +176,12 @@
     if (!Number.isSafeInteger(value.revision) || value.revision < 0) {
       throw new TypeError("PROTOCOL_FIELD_INVALID:metaState.revision");
     }
+    if (
+      value.assistanceClass !== undefined &&
+      !["none", "observer_bot", "cheats", "mixed"].includes(value.assistanceClass)
+    ) {
+      throw new TypeError("PROTOCOL_PROJECTION_INVALID:metaState.assistanceClass");
+    }
     requireOptionalRecord(value.rankIntegrity, "rankIntegrity");
     if (value.rankIntegrity) {
       requireOptionalArray(value.rankIntegrity.reasonCodes, "rankIntegrity.reasonCodes");

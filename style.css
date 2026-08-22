@@ -7106,3 +7106,62 @@ body.mobile-touch .ranked-v3-overlay .ranked-v3-card {
   text-transform: uppercase;
   text-shadow: 0 1px 3px #000;
 }
+
+.ranked-run-player-status {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: .42rem;
+  min-width: 0;
+  vertical-align: middle;
+  cursor: help;
+}
+
+.ranked-run-player-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ranked-run-status-dot {
+  position: relative;
+  flex: 0 0 auto;
+  width: .58rem;
+  height: .58rem;
+  border: 1px solid #f4ead0b8;
+  border-radius: 50%;
+  background: #e75d5d;
+  box-shadow: 0 0 .42rem #e75d5db8, inset 0 0 .18rem #fff7;
+}
+
+.ranked-run-status-official {
+  background: #4fdc86;
+  box-shadow: 0 0 .42rem #4fdc86b8, inset 0 0 .18rem #fff7;
+}
+
+.ranked-run-status-observer {
+  background: #62a8ff;
+  box-shadow: 0 0 .42rem #62a8ffb8, inset 0 0 .18rem #fff7;
+}
+
+.ranked-run-player-status.is-syncing .ranked-run-status-dot::after {
+  content: "";
+  position: absolute;
+  inset: -.28rem;
+  border: 2px solid #efb95f;
+  border-radius: 50%;
+  box-shadow: 0 0 .48rem #efb95fcc;
+  animation: ranked-run-status-sync 1.15s ease-in-out infinite;
+}
+
+@keyframes ranked-run-status-sync {
+  0%, 100% { opacity: .35; transform: scale(.82); }
+  50% { opacity: 1; transform: scale(1.08); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ranked-run-player-status.is-syncing .ranked-run-status-dot::after {
+    animation: none;
+    opacity: 1;
+  }
+}

@@ -54,8 +54,12 @@ function meta(status, revision, directive = null) {
 test("M4 Ranked start never serializes Practice progress", async () => {
   const store = memoryStore();
   let observed;
+  const snapshotNotifications = [];
   const client = clientApi.createRankedClient({
     store,
+    onSnapshot(snapshot) {
+      snapshotNotifications.push(snapshot);
+    },
     transport: {
       createOperationId: () => "op_start",
       async request(endpoint, request) {
@@ -89,6 +93,10 @@ test("M4 Ranked start never serializes Practice progress", async () => {
   assert.equal(Object.hasOwn(observed.pendingOperation.body, "practiceMutatorImport"), false);
   assert.equal(client.getSnapshot().token.kind, "run_bootstrap");
   assert.equal(client.getSnapshot().pendingOperation, null);
+  assert.deepEqual(
+    snapshotNotifications.map((snapshot) => Boolean(snapshot?.pendingOperation)),
+    [true, false]
+  );
 });
 
 test("M4 exact start retry persists recovery before entering Ranked", async () => {
@@ -260,6 +268,20 @@ test("M4 failed-start cleanup refuses to erase a canonical Ranked run", () => {
 test("M4 recovery keeps the saved released ruleset hash", async () => {
   const savedHash = "sha256:956251f158e55a0a47f9e43d5680d9aae66a22045c833bd76b8798cdc00e012e";
   const store = rankedIdentityStore({
+    session: {
+      schemaVersion: 1,
+      mode: "ranked",
+      runId: "run_a1",
+      revision: 0,
+      rulesetId: protocol.RULESET_ID,
+      rulesetHash: savedHash,
+      publicState: {
+        ...meta("active", 0),
+        rulesetHash: savedHash,
+        assistanceClass: "observer_bot"
+      },
+      pendingOperation: null
+    },
     recovery: {
       runId: "run_a1",
       recoveryCredential: "rrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrr",
@@ -297,6 +319,7 @@ test("M4 recovery keeps the saved released ruleset hash", async () => {
   assert.equal(calls, 1);
   assert.equal(client.getSnapshot().rulesetHash, savedHash);
   assert.equal(client.getSnapshot().publicState.rulesetHash, savedHash);
+  assert.equal(client.getSnapshot().publicState.assistanceClass, "observer_bot");
 });
 
 test("M4 recovery rejects an unknown saved ruleset hash before transport", async () => {
@@ -483,22 +506,19 @@ test("M4 test-assistance event preserves the active Ranked boundary binding", as
     store,
     transport: {
       createOperationId: () => "op_test_assistance",
-      async request() {
+      async request(endpoint, request) {
+        const assistance = request.body.type === "mark_test_assistance";
         return {
           payload: {
             ok: true,
             protocolVersion: protocol.PROTOCOL_VERSION,
             runId: "run_a1",
-            revision: 5,
-            acceptedEvent: "mark_test_assistance",
-            checkpointToken: "room-secret-5",
+            revision: assistance ? 5 : 6,
+            acceptedEvent: assistance ? "mark_test_assistance" : "request_extraction",
+            checkpointToken: assistance ? "room-secret-5" : "room-secret-6",
             metaState: {
-              ...meta("active", 5),
-              rankEligibility: "provisional",
-              rankIntegrity: {
-                reasonCodes: ["test_assistance"],
-                firstDetectedRevision: 5
-              }
+              ...meta("active", assistance ? 5 : 6),
+              rankEligibility: "official"
             }
           }
         };
@@ -511,8 +531,20 @@ test("M4 test-assistance event preserves the active Ranked boundary binding", as
   const snapshot = client.getSnapshot();
   assert.deepEqual(snapshot.publicState.currentRoomDirective, directive);
   assert.deepEqual(snapshot.publicState.currentRewardEnvelope, rewardEnvelope);
+  assert.equal(snapshot.publicState.assistanceClass, "observer_bot");
   assert.equal(snapshot.revision, 5);
   assert.equal(snapshot.token.value, "room-secret-5");
+
+  await client.event("request_extraction", { mode: "normal" });
+  const reloadedClient = clientApi.createRankedClient({
+    store,
+    transport: {
+      createOperationId: () => "unused",
+      async request() { throw new Error("unused"); }
+    }
+  });
+  assert.equal(reloadedClient.getSnapshot().publicState.assistanceClass, "observer_bot");
+  assert.equal(reloadedClient.getSnapshot().revision, 6);
 });
 
 test("M4 checkpoint sends the versioned integrity envelope with gold telemetry", async () => {

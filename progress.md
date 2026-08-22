@@ -1929,3 +1929,20 @@ Updated next good targets
   visually inspected.
 - Pending: release commit/push, Pages build/deploy, and production byte/boot
   verification.
+
+## 2026-08-22 - Ranked run-status dot
+
+- Added a Ranked-only status dot immediately before the player name: green for
+  official eligibility, blue for a valid Observer Bot test run, and red for a
+  provisional or otherwise ineligible run. Practice renders no dot.
+- Pending requests preserve the last confirmed base color and add an amber
+  synchronization ring. Hover/focus exposes an accessible explanation, and
+  reduced-motion users receive a static ring.
+- Observer assistance classification is retained in the local Ranked snapshot
+  across resync/reload without changing the Worker, ruleset hash, scoring, or
+  anti-cheat decisions.
+- Focused status/client/runtime tests pass 38/38; `verify:guard` passes 14/14;
+  `verify:phase` passes 912/912. Browser assertions for Practice absence,
+  official green, Observer blue, and pending-sync ring pass, with fresh visual
+  inspection. The broader headed lifecycle still stops later on its pre-existing
+  leaderboard ledger-row pixel-position assertion.

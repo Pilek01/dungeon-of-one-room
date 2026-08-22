@@ -308,6 +308,50 @@ game = `${game.slice(0, menuRenderStart)}${menuRenderSource}${game.slice(menuRen
 
 const productionGameReplacements = [
   [
+`    const chaosAtkBonus = Math.max(0, Number(state.player.chaosAtkBonus) || 0);`,
+`    const rankedHudStatus = window.DungeonOnlineV3?.getRankedHudStatus?.() || null;
+    const rankedPlayerValue = (() => {
+      const playerName = escapeHtmlAttr(state.playerName || "Not set");
+      if (!rankedHudStatus) return playerName;
+      const kind = ["official", "observer", "invalid"].includes(rankedHudStatus.kind)
+        ? rankedHudStatus.kind
+        : "invalid";
+      const syncing = rankedHudStatus.syncing === true;
+      const label = escapeHtmlAttr(rankedHudStatus.label || "Ranked status");
+      const tooltip = escapeHtmlAttr(rankedHudStatus.tooltip || rankedHudStatus.label || "Ranked status");
+      return '<span class="ranked-run-player-status' + (syncing ? ' is-syncing' : '') + '"' +
+        ' data-ranked-status="' + kind + '" data-ui-tooltip-title="' + label + '" data-ui-tooltip="' + tooltip + '"' +
+        ' role="group" aria-label="Player ' + playerName + '. ' + label + '" aria-busy="' + (syncing ? 'true' : 'false') + '"' +
+        ' tabindex="0" aria-describedby="hdUiTooltip">' +
+        '<span class="ranked-run-status-dot ranked-run-status-' + kind + '" role="img" aria-label="' + label + '"></span>' +
+        '<span class="ranked-run-player-name">' + playerName + '</span></span>';
+    })();
+
+    const chaosAtkBonus = Math.max(0, Number(state.player.chaosAtkBonus) || 0);`
+  ],
+  [
+`      statRow("Player", state.playerName || "Not set", "Your current nickname used for leaderboard entries."),`,
+`      statRow("Player", rankedPlayerValue, "Your current nickname used for leaderboard entries."),`
+  ],
+  [
+`  function renderGameToText() {
+    const payload = {`,
+`  function renderGameToText() {
+    const rankedHudStatus = window.DungeonOnlineV3?.getRankedHudStatus?.() || null;
+    const payload = {`
+  ],
+  [
+`      scenario: state.testScenario ? state.testScenario.id : "",`,
+`      scenario: state.testScenario ? state.testScenario.id : "",
+      rankedHudStatus: rankedHudStatus
+        ? {
+            kind: rankedHudStatus.kind,
+            syncing: rankedHudStatus.syncing === true,
+            label: rankedHudStatus.label
+          }
+        : null,`
+  ],
+  [
 `  function openPactRoom() {
     if (!isOnPact()) return false;`,
 `  function openPactRoom() {
@@ -1197,6 +1241,9 @@ const rankedGoldGameReplacements = [
   [
 `  window.DungeonOnlineV3GameBridge = Object.freeze({`,
 `  window.DungeonOnlineV3GameBridge = Object.freeze({
+    refreshRankedHud() {
+      markUiDirty();
+    },
     setRoomIntegrityContext(context = {}) {
       const directiveId = String(state.onlineV3Directive?.directiveId || "");
       if (directiveId && directiveId !== onlineV3RoomClearDirectiveId) {

@@ -33,6 +33,9 @@
   let campMutationPending = false;
   let pendingFreshCampaign = false;
   let pendingTestAssistance = false;
+  let knownHudAssistanceClass = "none";
+  let rankedHudSyncing = false;
+  let lastRankedHudStatus = null;
   let pendingElixirUsage = null;
   let currentMerchantOffer = null;
   let merchantMutationPending = false;
@@ -305,11 +308,41 @@
       baseUrl: String(root.DUNGEON_ONLINE_V3_API || ""),
       storage: root.localStorage,
       cryptoProvider: root.crypto,
+      onSnapshot(snapshot) {
+        rankedHudSyncing = Boolean(snapshot?.pendingOperation);
+        root.DungeonOnlineV3GameBridge?.refreshRankedHud?.();
+      },
       log(kind, detail) {
         if (root.DUNGEON_ONLINE_V3_DEBUG === true) console.debug(`[Online v3] ${kind}`, detail);
       }
     });
     return client;
+  }
+
+  function setRankedHudSyncing(syncing) {
+    rankedHudSyncing = syncing === true;
+    root.DungeonOnlineV3GameBridge?.refreshRankedHud?.();
+  }
+
+  function getRankedHudStatus() {
+    if (!root.DungeonOnlineV3GameBridge?.isRanked?.()) {
+      lastRankedHudStatus = null;
+      return null;
+    }
+    const snapshot = client?.getSnapshot?.() || null;
+    const publicState = snapshot?.publicState && typeof snapshot.publicState === "object"
+      ? {
+          ...snapshot.publicState,
+          assistanceClass: snapshot.publicState.assistanceClass || knownHudAssistanceClass
+        }
+      : null;
+    const syncing = rankedHudSyncing || Boolean(snapshot?.pendingOperation);
+    lastRankedHudStatus = root.DungeonRankedV3Ui.deriveHudRunStatus(publicState, {
+      ranked: true,
+      syncing,
+      previous: lastRankedHudStatus
+    });
+    return lastRankedHudStatus;
   }
 
   function isRankedObserverBotActive() {
@@ -592,12 +625,16 @@
   }
 
   async function resyncCanonical() {
+    setRankedHudSyncing(true);
     moveToRecoveryState(root.DungeonRankedV3Session.STATES.retrying);
     ui.setStatus("Refreshing your Ranked run...");
     await acceptResponse(await createClient().resumeCanonical());
   }
 
   function returnToPractice() {
+    knownHudAssistanceClass = "none";
+    rankedHudSyncing = false;
+    lastRankedHudStatus = null;
     pendingFreshCampaign = false;
     pendingElixirUsage = null;
     metaMutationPending = false;
@@ -714,6 +751,7 @@
   }
 
   function presentError(error) {
+    setRankedHudSyncing(true);
     if (isRankedObserverBotActive()) observerBotAutomationHalted = true;
     const code = String(error?.code || "");
     const diagnostic = recordDiagnostic("client_error", {
@@ -791,6 +829,7 @@
 
   async function retryPending() {
     try {
+      setRankedHudSyncing(true);
       session.transition(root.DungeonRankedV3Session.STATES.retrying);
       ui.setStatus("Retrying the exact operation...");
       const response = await createClient().retryPending();
@@ -837,6 +876,10 @@
     if (!state || !protocol.isSupportedRulesetHash(state.rulesetHash)) {
       throw new TypeError("RANKED_RULESET_MISMATCH");
     }
+    if (["none", "observer_bot", "cheats", "mixed"].includes(String(state.assistanceClass || ""))) {
+      knownHudAssistanceClass = String(state.assistanceClass);
+    }
+    setRankedHudSyncing(false);
     if (presentRankIntegrityNotice(state, () => {
       acceptResponse(response).catch(presentError);
     })) return;
@@ -958,6 +1001,9 @@
     }
     let acceptedStart = false;
     try {
+      knownHudAssistanceClass = "none";
+      lastRankedHudStatus = null;
+      setRankedHudSyncing(true);
       metaMutationPending = false;
       postRoomPactOfferPending = false;
       session.transition(root.DungeonRankedV3Session.STATES.starting);
@@ -1642,6 +1688,7 @@
     pendingRoomSummary = null;
     let loadingTimer = null;
     try {
+      setRankedHudSyncing(true);
       if (session.getState() !== root.DungeonRankedV3Session.STATES.resolving) {
         session.transition(root.DungeonRankedV3Session.STATES.resolving);
       }
@@ -1973,6 +2020,7 @@
   async function resumeRanked() {
     pendingFreshCampaign = false;
     try {
+      setRankedHudSyncing(true);
       moveToRecoveryState(root.DungeonRankedV3Session.STATES.retrying);
       ui.showMessage("Recovering Ranked", "Loading your last saved room...");
       await acceptResponse(await createClient().resumeCanonical());
@@ -1982,9 +2030,16 @@
   }
 
   async function markTestAssistance(assistanceClass) {
-    return createClient().event("mark_test_assistance", {
-      assistanceClass: String(assistanceClass || "")
+    const requestedClass = String(assistanceClass || "");
+    const response = await createClient().event("mark_test_assistance", {
+      assistanceClass: requestedClass
     });
+    const projectedClass = String(response?.metaState?.assistanceClass || requestedClass);
+    if (["observer_bot", "cheats", "mixed"].includes(projectedClass)) {
+      knownHudAssistanceClass = projectedClass;
+    }
+    setRankedHudSyncing(false);
+    return response;
   }
   async function unlockTestBot() {
     const password = typeof root.prompt === "function" ? root.prompt("Observer Bot password") : "";
@@ -2094,6 +2149,7 @@
     unlockTestBot,
     requestTestControlsUnlock: unlockTestBot,
     markTestAssistance,
+    getRankedHudStatus,
     openLeaderboard: (opener = null) => openLeaderboard(true, opener),
     leaveToMainMenu: returnToPractice,
     onForgeMode,

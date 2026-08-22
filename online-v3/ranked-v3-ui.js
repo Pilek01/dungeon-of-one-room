@@ -25,6 +25,64 @@
     return clean ? `${clean[0].toUpperCase()}${clean.slice(1)}` : "";
   }
 
+  function deriveHudRunStatus(publicState, options = {}) {
+    if (options.ranked !== true) return null;
+
+    const syncing = options.syncing === true;
+    const previous = options.previous && typeof options.previous === "object"
+      ? options.previous
+      : null;
+    if (syncing && (!publicState || typeof publicState !== "object") && previous) {
+      return Object.freeze({
+        ...previous,
+        syncing: true,
+        tooltip: `${String(previous.tooltip || "Ranked status is unchanged.")} Synchronization pending; showing the last confirmed status.`
+      });
+    }
+
+    const state = publicState && typeof publicState === "object" ? publicState : {};
+    const eligibility = String(state.rankEligibility || "").toLowerCase();
+    const assistanceClass = String(
+      state.assistanceClass || state.testAssistance?.class || "none"
+    ).toLowerCase();
+    const reasonCodes = Array.isArray(state.rankIntegrity?.reasonCodes)
+      ? state.rankIntegrity.reasonCodes
+      : Array.isArray(state.rankIntegrity?.reasons)
+        ? state.rankIntegrity.reasons
+        : [];
+    const reasonCode = String(reasonCodes[0] || state.rankIntegrity?.reasonCode || "");
+    let kind = "invalid";
+    let label = "Ranked eligibility unconfirmed";
+    let tooltip = "Ranked eligibility has not been confirmed by the server.";
+
+    if (eligibility === "provisional") {
+      label = "Ranked integrity lost";
+      tooltip = `Ranked integrity lost. This run will not be submitted.${reasonCode ? ` Reason: ${reasonCode}.` : ""}`;
+    } else if (eligibility === "official" && assistanceClass === "observer_bot") {
+      kind = "observer";
+      label = "Observer Bot test run";
+      tooltip = "Observer Bot test run. Integrity is valid, but this run is excluded from the official leaderboard.";
+    } else if (eligibility === "official" && assistanceClass === "none") {
+      kind = "official";
+      label = "Leaderboard eligible";
+      tooltip = "Leaderboard eligible. Last confirmed by the Ranked server.";
+    } else if (eligibility === "official" && ["cheats", "mixed"].includes(assistanceClass)) {
+      label = "Assisted run";
+      tooltip = "Assisted run. This run is excluded from the official leaderboard.";
+    }
+
+    if (syncing) {
+      tooltip += " Synchronization pending; showing the last confirmed status.";
+    }
+    return Object.freeze({
+      kind,
+      syncing,
+      label,
+      tooltip,
+      reasonCode
+    });
+  }
+
   function relicId(choice) {
     return String(choice?.relicId || choice?.publicData?.relicId || choice?.publicData?.id || "");
   }
@@ -309,5 +367,5 @@
     });
   }
 
-  return Object.freeze({ createUi, relicDetails, playerText });
+  return Object.freeze({ createUi, deriveHudRunStatus, relicDetails, playerText });
 });

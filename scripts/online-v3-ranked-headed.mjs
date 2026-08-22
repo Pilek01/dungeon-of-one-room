@@ -1129,6 +1129,11 @@ ${fatalTestHookAnchor}`;
 
     if (RUN_LIFECYCLE) {
     assert.equal(
+      await page.locator(".ranked-run-player-status").count(),
+      0,
+      "Practice/Main Menu must not render a Ranked status dot"
+    );
+    assert.equal(
       await page.evaluate(() => window.DUNGEON_ONLINE_TEST_BOT_ENABLED === true),
       true,
       "Ranked lifecycle QA bundle must enable the password-gated Observer Bot"
@@ -1141,12 +1146,61 @@ ${fatalTestHookAnchor}`;
     await page.locator(".ranked-v3-choice-relic").first().waitFor({ state: "visible" });
     await chooseRelicWithoutFatalPrevention(page);
     await sessionState(page, "ROOM_ACTIVE", diagnostics);
+    await page.waitForFunction(() => (
+      JSON.parse(window.render_game_to_text()).rankedHudStatus?.kind === "official"
+    ));
+    assert.equal(
+      await page.locator('.ranked-run-player-status[data-ranked-status="official"]').count(),
+      1,
+      "Official Ranked should show one green status dot before the player name"
+    );
+    assert.equal(await page.locator(".ranked-run-player-status").getAttribute("role"), "group");
+    assert.match(
+      await page.locator(".ranked-run-player-status").getAttribute("aria-label"),
+      /Player M4Headed.*Leaderboard eligible/iu
+    );
+    assert.match(
+      await page.locator(".ranked-run-status-dot").getAttribute("aria-label"),
+      /leaderboard eligible/iu
+    );
+    await page.screenshot({
+      path: path.join(ARTIFACT_ROOT, "ranked-status-official.png"),
+      fullPage: true
+    });
     const runTutorial = page.locator(".tutorial-overlay-card");
     if (await runTutorial.isVisible()) {
       await page.keyboard.press("Enter");
       await runTutorial.waitFor({ state: "hidden" });
     }
-    await page.keyboard.press("F9");
+    let releaseAssistance;
+    let markAssistanceStarted;
+    const assistanceStarted = new Promise((resolve) => { markAssistanceStarted = resolve; });
+    const assistanceGate = new Promise((resolve) => { releaseAssistance = resolve; });
+    await page.route("**/api/v3/runs/event", async (route) => {
+      const body = route.request().postDataJSON();
+      if (body?.type === "mark_test_assistance") {
+        markAssistanceStarted();
+        await assistanceGate;
+      }
+      await route.continue();
+    });
+    const unlockKey = page.keyboard.press("F9");
+    await assistanceStarted;
+    await page.waitForFunction(() => (
+      JSON.parse(window.render_game_to_text()).rankedHudStatus?.syncing === true
+    ));
+    await page.waitForFunction(() => Boolean(
+      document.querySelector(".ranked-run-player-status.is-syncing")
+    ));
+    assert.equal(await page.locator(".ranked-run-player-status.is-syncing").count(), 1);
+    await page.screenshot({
+      path: path.join(ARTIFACT_ROOT, "ranked-status-syncing.png"),
+      fullPage: true,
+      animations: "disabled"
+    });
+    releaseAssistance();
+    await unlockKey;
+    await page.unroute("**/api/v3/runs/event");
     const testMenu = page.locator(".overlay-card-debug-cheats");
     try {
       await testMenu.waitFor({ state: "visible" });
@@ -1164,6 +1218,14 @@ ${fatalTestHookAnchor}`;
       })}`, { cause: error });
     }
     await testMenu.getByText("Toggle Observer Bot", { exact: true }).waitFor({ state: "visible" });
+    await page.waitForFunction(() => (
+      JSON.parse(window.render_game_to_text()).rankedHudStatus?.kind === "observer"
+    ));
+    assert.equal(
+      await page.locator('.ranked-run-player-status[data-ranked-status="observer"]').count(),
+      1,
+      "Observer Bot Ranked should show one blue status dot before the player name"
+    );
     await page.screenshot({
       path: path.join(ARTIFACT_ROOT, "ranked-f9-test-controls.png"),
       fullPage: true
@@ -2516,6 +2578,14 @@ ${fatalTestHookAnchor}`;
     assert.equal(await page.evaluate(() => window.DungeonOnlineV3.getSessionState()), "ROOM_ACTIVE");
     await page.keyboard.press("q");
     await checkpointStarted;
+    await page.waitForFunction(() => (
+      JSON.parse(window.render_game_to_text()).rankedHudStatus?.syncing === true
+    ));
+    assert.equal(
+      await page.locator(".ranked-run-player-status.is-syncing").count(),
+      1,
+      "A pending Ranked checkpoint should add the amber synchronization ring"
+    );
     assert.equal(
       await page.evaluate(() => window.DungeonOnlineV3.getSessionState()),
       "RESOLVING_ROOM"

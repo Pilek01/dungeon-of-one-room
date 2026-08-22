@@ -129,9 +129,20 @@
     let snapshot = store.loadSession();
     let mutationLocked = Boolean(snapshot?.pendingOperation);
 
+    function notifySnapshot() {
+      try {
+        options.onSnapshot?.(snapshot ? clone(snapshot) : null);
+      } catch (cause) {
+        options.log?.("snapshot_listener_error", {
+          message: String(cause?.message || cause || "UNKNOWN_ERROR")
+        });
+      }
+    }
+
     function persist(next) {
       snapshot = clone(next);
       store.saveSession(snapshot);
+      notifySnapshot();
       return clone(snapshot);
     }
 
@@ -150,6 +161,7 @@
       options.recoveryRecord = null;
       options.profileIdentity = null;
       if (runId) coordinator.release(runId);
+      notifySnapshot();
     }
 
     function retireCompletedCampaign(payload) {
@@ -195,6 +207,7 @@
         throw cause;
       }
       const nextPublicState = clone(validated.metaState);
+      const previousAssistanceClass = String(current.publicState?.assistanceClass || "");
       if (
         operation.body?.type === "mark_test_assistance" &&
         protocol.supportsBoundarySettlement?.(nextPublicState.rulesetHash) &&
@@ -202,6 +215,13 @@
       ) {
         nextPublicState.currentRoomDirective ??= clone(current.publicState?.currentRoomDirective);
         nextPublicState.currentRewardEnvelope ??= clone(current.publicState?.currentRewardEnvelope);
+        nextPublicState.assistanceClass ??= String(operation.body?.assistanceClass || "observer_bot");
+      }
+      if (
+        nextPublicState.assistanceClass === undefined &&
+        ["observer_bot", "cheats", "mixed"].includes(previousAssistanceClass)
+      ) {
+        nextPublicState.assistanceClass = previousAssistanceClass;
       }
       persist({
         ...snapshot,
@@ -424,6 +444,14 @@
         rulesetId: protocol.RULESET_ID,
         rulesetHash
       });
+      const resumedPublicState = clone(validated.metaState);
+      const previousAssistanceClass = String(current?.publicState?.assistanceClass || "");
+      if (
+        resumedPublicState.assistanceClass === undefined &&
+        ["observer_bot", "cheats", "mixed"].includes(previousAssistanceClass)
+      ) {
+        resumedPublicState.assistanceClass = previousAssistanceClass;
+      }
       persist({
         schemaVersion: 1,
         mode: "ranked",
@@ -432,7 +460,7 @@
         rulesetId: validated.metaState.rulesetId,
         rulesetHash: validated.metaState.rulesetHash,
         token: validated.token,
-        publicState: clone(validated.metaState),
+        publicState: resumedPublicState,
         pendingOperation: null,
         lastAcknowledgedOperationId: operationId
       });
