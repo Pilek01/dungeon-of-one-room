@@ -177,6 +177,14 @@
       return aggregate("resource", "shield-use");
     }
 
+    function recordVoidReaperCritKill() {
+      return aggregate("proc", "void-reaper-crit-kill");
+    }
+
+    function recordChaosOrbGoldRoll() {
+      return aggregate("proc", "chaos-orb-gold-roll");
+    }
+
     function snapshot() {
       if (!sealedSnapshot) {
         sealedSnapshot = Object.freeze(Array.from(claims.values(), (claim) =>
@@ -203,6 +211,8 @@
         recordChestResource(claimId, "map_fragment", count),
       recordPotionUse,
       recordShieldUse,
+      recordVoidReaperCritKill,
+      recordChaosOrbGoldRoll,
       snapshot
     });
   }

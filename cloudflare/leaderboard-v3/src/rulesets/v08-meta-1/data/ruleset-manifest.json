@@ -437,8 +437,8 @@
     },
     {
       "file": "reward-policy.js",
-      "byteLength": 31576,
-      "sha256": "4fcaca42a83741da4e5fa2f62274bf3a08027a62708b0cff2b3b5c28be22476e"
+      "byteLength": 35985,
+      "sha256": "aabc253b27d0d419ed37dfa5b08e55e5d86a71dbdafc6743267dc09a69ada653"
     },
     {
       "file": "rng.js",
@@ -452,13 +452,13 @@
     },
     {
       "file": "room-policy.js",
-      "byteLength": 17237,
-      "sha256": "3ad2e9f31c1cd585755c9f3bca13a35566d05ef3e66216a86466c53e7fbdf8a2"
+      "byteLength": 17277,
+      "sha256": "3fc7baf01970b8c20434d2648684989aa54c20e3538a7ddc8575746f8246b968"
     },
     {
       "file": "ruleset-hash-policy.js",
-      "byteLength": 1429,
-      "sha256": "5331e6fa92505b8f58df693306bc2353f81cc2cc90fb6cea50a1a3c447a4e251"
+      "byteLength": 1506,
+      "sha256": "9a53d9e3dc4eeedc4524e44b42c453c4a854cf87773a67b7fdf62510fc65c302"
     },
     {
       "file": "run-modifiers.js",
@@ -571,5 +571,5 @@
       "sha256": "cfce80fea7bd5d1328020055f2012bcaeaf9b61e5438e437bf948a4288fb8bf0"
     }
   ],
-  "rulesetHash": "sha256:76514cf9e5c89079571a5be117ce84f949d7a3f5ed441d973adc05c95c6dde3c"
+  "rulesetHash": "sha256:35707f6b5ea8b1ad18251dce5e6c18b87653893aad705b6c5543fdd140b88067"
 }

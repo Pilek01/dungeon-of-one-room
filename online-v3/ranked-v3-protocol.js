@@ -9,9 +9,10 @@
 
   const PROTOCOL_VERSION = "ranked-v3-checkpoint-1";
   const RULESET_ID = "v08-meta-1";
-  const RULESET_HASH = "sha256:76514cf9e5c89079571a5be117ce84f949d7a3f5ed441d973adc05c95c6dde3c";
+  const RULESET_HASH = "sha256:35707f6b5ea8b1ad18251dce5e6c18b87653893aad705b6c5543fdd140b88067";
   const SUPPORTED_RULESET_HASHES = Object.freeze([
     RULESET_HASH,
+    "sha256:76514cf9e5c89079571a5be117ce84f949d7a3f5ed441d973adc05c95c6dde3c",
     "sha256:5c3df81af373b68fce4d8fa242fb61c29b7c3d4ca78d6865d2ee51a58bbab3dd",
     "sha256:87c30b2c011b5103398f9b03f6bf018d71f2a35427c0a04ef7a31b2559a7a6d9",
     "sha256:0672eb9aaae11865ebae75a4c6d6dc77cc29f4a079afe562355172d26f073bca",
@@ -38,18 +39,27 @@
   const legacyFatalPresentationCauseRulesetHashes = new Set(LEGACY_FATAL_PRESENTATION_CAUSE_RULESET_HASHES);
   const FATAL_PRESENTATION_CAUSE_RULESET_HASHES = Object.freeze([
     RULESET_HASH,
+    "sha256:76514cf9e5c89079571a5be117ce84f949d7a3f5ed441d973adc05c95c6dde3c",
     "sha256:87c30b2c011b5103398f9b03f6bf018d71f2a35427c0a04ef7a31b2559a7a6d9",
     "sha256:3f6044453414e636c6a41f40ceaf00dc221624ea54af2f61489b930b27c628e3"
   ]);
   const fatalPresentationCauseRulesetHashes = new Set(FATAL_PRESENTATION_CAUSE_RULESET_HASHES);
   const BOUNDARY_SETTLEMENT_RULESET_HASHES = Object.freeze([
     RULESET_HASH,
+    "sha256:76514cf9e5c89079571a5be117ce84f949d7a3f5ed441d973adc05c95c6dde3c",
     "sha256:5c3df81af373b68fce4d8fa242fb61c29b7c3d4ca78d6865d2ee51a58bbab3dd",
     "sha256:87c30b2c011b5103398f9b03f6bf018d71f2a35427c0a04ef7a31b2559a7a6d9"
   ]);
   const boundarySettlementRulesetHashes = new Set(BOUNDARY_SETTLEMENT_RULESET_HASHES);
-  const POST_ROOM_PACT_RULESET_HASHES = Object.freeze([RULESET_HASH]);
+  const POST_ROOM_PACT_RULESET_HASHES = Object.freeze([
+    RULESET_HASH,
+    "sha256:76514cf9e5c89079571a5be117ce84f949d7a3f5ed441d973adc05c95c6dde3c"
+  ]);
   const postRoomPactRulesetHashes = new Set(POST_ROOM_PACT_RULESET_HASHES);
+  // Only the active production ruleset understands bounded proc claims;
+  // historical hashes intentionally remain absent.
+  const BOUNDED_PROC_CLAIMS_RULESET_HASHES = Object.freeze([RULESET_HASH]);
+  const boundedProcClaimsRulesetHashes = new Set(BOUNDED_PROC_CLAIMS_RULESET_HASHES);
   const API_PREFIX = "/api/v3";
   const TOKEN_KINDS = Object.freeze({
     bootstrap: "run_bootstrap",
@@ -113,6 +123,11 @@
   function supportsPostRoomPact(value) {
     const rulesetHash = typeof value === "string" ? value : value && value.rulesetHash;
     return postRoomPactRulesetHashes.has(rulesetHash);
+  }
+
+  function supportsBoundedProcClaims(value) {
+    const rulesetHash = typeof value === "string" ? value : value && value.rulesetHash;
+    return boundedProcClaimsRulesetHashes.has(String(rulesetHash || ""));
   }
 
   function requireOptionalRecord(value, field) {
@@ -356,6 +371,8 @@
     supportsBoundarySettlement,
     POST_ROOM_PACT_RULESET_HASHES,
     supportsPostRoomPact,
+    BOUNDED_PROC_CLAIMS_RULESET_HASHES,
+    supportsBoundedProcClaims,
     API_PREFIX,
     TOKEN_KINDS,
     ENDPOINTS,

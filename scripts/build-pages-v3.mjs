@@ -1251,15 +1251,20 @@ const rankedGoldGameReplacements = [
         onlineV3RoomClearReported = false;
       }
       onlineV3RoomCompletionCapability = context.completionCapability || null;
+      onlineV3BoundedProcClaims = context.boundedProcClaims === true;
       onlineV3RoomStartingGold = Math.max(
         0,
         Math.floor(Number(context.startingGold) || 0)
       );
+      onlineV3RoomStartingTurn = Math.max(0, Math.floor(Number(state.turn) || 0));
     },
     captureRankedBoundary() {
       if (!state.onlineV3Ranked) return null;
       const boundary = {
-        turnCount: Math.max(0, Number(state.turn) || 0),
+        turnCount: Math.max(
+          0,
+          Math.floor(Number(state.turn) || 0) - onlineV3RoomStartingTurn
+        ),
         rewardClaims: onlineV3RewardRecorder?.snapshot() || [],
         reportedGoldDelta: Math.max(
           0,
@@ -1275,6 +1280,7 @@ const rankedGoldGameReplacements = [
       onlineV3RewardRecorder = window.DungeonRankedV3Recorder?.createRewardClaimRecorder?.() || null;
       onlineV3ActiveChestClaimId = null;
       onlineV3RoomStartingGold = Math.max(0, Math.floor(Number(state.player.gold) || 0));
+      onlineV3RoomStartingTurn = Math.max(0, Math.floor(Number(state.turn) || 0));
       return true;
     },
     showRankedRoomClearAward(amount) {
@@ -1303,7 +1309,9 @@ const rankedGoldGameReplacements = [
 `  let onlineV3RewardRecorder = null;
   let onlineV3ActiveChestClaimId = null;
   let onlineV3RoomCompletionCapability = null;
+  let onlineV3BoundedProcClaims = false;
   let onlineV3RoomStartingGold = 0;
+  let onlineV3RoomStartingTurn = 0;
   let onlineV3RoomClearDirectiveId = "";
   let onlineV3RoomClearReported = false;
   function syncRankedStartDepthUnlocks(campaign = {}) {
@@ -1430,6 +1438,30 @@ const rankedGoldGameReplacements = [
       const hazardKill = globalThis.hazardKillApi;`
   ],
   [
+`      // Void Reaper crit kill gold bonus
+      if (hasRelic("voidreaper") && critical) {
+        const voidGold = grantGold(VOID_REAPER_CRIT_KILL_GOLD);
+        pushLog(\`Void Reaper bonus: +\${voidGold} gold.\`, "good");
+      }`,
+`      // Void Reaper crit kill gold bonus
+      if (hasRelic("voidreaper") && critical) {
+        const voidGold = grantGold(VOID_REAPER_CRIT_KILL_GOLD);
+        if (onlineV3BoundedProcClaims && voidGold > 0) {
+          onlineV3RewardRecorder?.recordVoidReaperCritKill?.();
+        }
+        pushLog(\`Void Reaper bonus: +\${voidGold} gold.\`, "good");
+      }`
+  ],
+  [
+`      const chaosGold = grantGold(CHAOS_ORB_GOLD_BONUS, { applyMultiplier: false });
+      pushLog(\`Chaos roll [3]: +\${chaosGold} gold.\`, "good");`,
+`      const chaosGold = grantGold(CHAOS_ORB_GOLD_BONUS, { applyMultiplier: false });
+      if (onlineV3BoundedProcClaims && chaosGold > 0) {
+        onlineV3RewardRecorder?.recordChaosOrbGoldRoll?.();
+      }
+      pushLog(\`Chaos roll [3]: +\${chaosGold} gold.\`, "good");`
+  ],
+  [
 `    chest.opened = true;
     clearVaultChestThreatState(chest);`,
 `    chest.opened = true;
@@ -1527,7 +1559,10 @@ const rankedGoldGameReplacements = [
 `      revealPortalFx();
       pushLog("Room cleared. Waiting for Online v3 checkpoint.", "good");
       window.DungeonOnlineV3?.onLocalRoomCleared?.({
-        turnCount: Math.max(0, Number(state.turn) || 0),
+        turnCount: Math.max(
+          0,
+          Math.floor(Number(state.turn) || 0) - onlineV3RoomStartingTurn
+        ),
         rewardClaims: []
       });`,
 `      revealPortalFx();
@@ -1543,7 +1578,10 @@ const rankedGoldGameReplacements = [
       }
       onlineV3RoomClearReported = window.DungeonOnlineV3?.usesBoundarySettlement?.() === true;
       window.DungeonOnlineV3?.onLocalRoomCleared?.({
-        turnCount: Math.max(0, Number(state.turn) || 0),
+        turnCount: Math.max(
+          0,
+          Math.floor(Number(state.turn) || 0) - onlineV3RoomStartingTurn
+        ),
         rewardClaims,
         reportedGoldDelta: Math.max(
           0,

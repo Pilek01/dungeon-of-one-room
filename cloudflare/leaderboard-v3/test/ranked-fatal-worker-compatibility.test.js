@@ -186,7 +186,8 @@ test("historical production descriptors strip fatal cause while current producti
     {
       fatalPresentationCauseMode: "retain",
       boundarySettlementMode: "event-journal-v1",
-      postRoomPactSettlement: "post-room-pact-v1"
+      postRoomPactSettlement: "post-room-pact-v1",
+      boundedProcClaims: "v1"
     }
   );
   assert.deepEqual(
@@ -194,7 +195,8 @@ test("historical production descriptors strip fatal cause while current producti
     {
       fatalPresentationCauseMode: "retain",
       boundarySettlementMode: "event-journal-v1",
-      postRoomPactSettlement: "post-room-pact-v1"
+      postRoomPactSettlement: "post-room-pact-v1",
+      boundedProcClaims: "v1"
     }
   );
   assert.deepEqual(

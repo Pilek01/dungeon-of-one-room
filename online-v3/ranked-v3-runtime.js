@@ -182,9 +182,11 @@
       0,
       Math.floor(Number(createClient().getSnapshot()?.publicState?.gold) || 0)
     );
+    const rulesetHash = createClient().getSnapshot()?.publicState?.rulesetHash;
     root.DungeonOnlineV3GameBridge?.setRoomIntegrityContext?.({
       completionCapability,
-      startingGold
+      startingGold,
+      boundedProcClaims: protocol.supportsBoundedProcClaims?.(rulesetHash) === true
     });
   }
 
