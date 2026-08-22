@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { createRequire } from "node:module";
 import { createWorker } from "../src/index.js";
 import productionWorker from "../src/production-ruleset-entry.js";
 import { createRulesetRegistry, RULESET_RELEASE_STATES } from "../src/rulesets/registry.js";
@@ -21,12 +22,16 @@ import {
   V08_META_1_PRODUCTION_RELEASE_DESCRIPTOR
 } from "../src/rulesets/releases.js";
 import * as releases from "../src/rulesets/releases.js";
+import { COMPATIBLE_RULESET_HASHES } from "../src/rulesets/v08-meta-1/ruleset-hash-policy.js";
 import manifest from "../src/rulesets/v08-meta-1/data/ruleset-manifest.json" with { type: "json" };
 import { createMemoryRepositories } from "./fixtures/memory-repositories.js";
 import { TEST_SECRET } from "./fixtures/harness.js";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../..");
-const EXPECTED_HASH = "sha256:76514cf9e5c89079571a5be117ce84f949d7a3f5ed441d973adc05c95c6dde3c";
+const require = createRequire(import.meta.url);
+const protocol = require("../../../online-v3/ranked-v3-protocol.js");
+const EXPECTED_HASH = manifest.rulesetHash;
+const PREVIOUS_BOUNDED_PROC_HASH = "sha256:76514cf9e5c89079571a5be117ce84f949d7a3f5ed441d973adc05c95c6dde3c";
 const PACT_PREVIOUS_HASH = "sha256:5c3df81af373b68fce4d8fa242fb61c29b7c3d4ca78d6865d2ee51a58bbab3dd";
 const GOLD_SYNC_PREVIOUS_HASH = "sha256:87c30b2c011b5103398f9b03f6bf018d71f2a35427c0a04ef7a31b2559a7a6d9";
 const INTEGRITY_PREVIOUS_HASH = "sha256:0672eb9aaae11865ebae75a4c6d6dc77cc29f4a079afe562355172d26f073bca";
@@ -38,6 +43,41 @@ const WARDEN_HOTFIX_HASH = "sha256:31124ece34ef1c82a28bb977467d169eade8b34c0c133
 const R2_HASH = "sha256:956251f158e55a0a47f9e43d5680d9aae66a22045c833bd76b8798cdc00e012e";
 const PREVIOUS_HASH = "sha256:08dfa4f97d91b4f21dbfae7232246125ddbbc6a0270cf81a9e1ed012e5f5d403";
 const LEGACY_HASH = "sha256:0bf00607056dbf3c30ffe57bbcfc77cea95b21c9ccc23aa985ec555856d1cbd6";
+
+test("bounded proc release activates a new hash and leaves every historical descriptor proc-free", () => {
+  const active = V08_META_1_PRODUCTION_RELEASE_DESCRIPTOR;
+  const previous = releases.V08_META_1_BOUNDED_PROC_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR;
+
+  assert.notEqual(manifest.rulesetHash, PREVIOUS_BOUNDED_PROC_HASH);
+  assert.equal(active.rulesetHash, manifest.rulesetHash);
+  assert.equal(active.capabilities.boundedProcClaims, "v1");
+  assert.ok(previous, "the previous bounded-proc descriptor must be retained");
+  assert.equal(previous.rulesetHash, PREVIOUS_BOUNDED_PROC_HASH);
+  assert.equal(previous.capabilities.boundedProcClaims, undefined);
+  assert.ok(COMPATIBLE_RULESET_HASHES.includes(manifest.rulesetHash));
+  assert.ok(COMPATIBLE_RULESET_HASHES.includes(PREVIOUS_BOUNDED_PROC_HASH));
+
+  const historicalDescriptors = Object.values(releases).filter((value) => (
+    value && typeof value === "object" &&
+    value.status === RULESET_RELEASE_STATES.PRODUCTION_RELEASED &&
+    typeof value.rulesetHash === "string" &&
+    value.rulesetHash !== manifest.rulesetHash
+  ));
+  assert.ok(historicalDescriptors.length > 0);
+  for (const descriptor of historicalDescriptors) {
+    assert.equal(
+      descriptor.capabilities?.boundedProcClaims,
+      undefined,
+      descriptor.rulesetHash
+    );
+  }
+
+  assert.equal(protocol.RULESET_HASH, manifest.rulesetHash);
+  assert.ok(protocol.SUPPORTED_RULESET_HASHES.includes(PREVIOUS_BOUNDED_PROC_HASH));
+  assert.deepEqual(protocol.BOUNDED_PROC_CLAIMS_RULESET_HASHES, [manifest.rulesetHash]);
+  assert.equal(protocol.supportsBoundedProcClaims(manifest.rulesetHash), true);
+  assert.equal(protocol.supportsBoundedProcClaims(PREVIOUS_BOUNDED_PROC_HASH), false);
+});
 
 async function rootFile(relative) {
   return readFile(path.join(ROOT, relative), "utf8");

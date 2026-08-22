@@ -160,7 +160,8 @@ test("historical production releases strip fatal causes while the activated rele
     {
       fatalPresentationCauseMode: "retain",
       boundarySettlementMode: "event-journal-v1",
-      postRoomPactSettlement: "post-room-pact-v1"
+      postRoomPactSettlement: "post-room-pact-v1",
+      boundedProcClaims: "v1"
     }
   );
   assert.deepEqual(
@@ -168,7 +169,8 @@ test("historical production releases strip fatal causes while the activated rele
     {
       fatalPresentationCauseMode: "retain",
       boundarySettlementMode: "event-journal-v1",
-      postRoomPactSettlement: "post-room-pact-v1"
+      postRoomPactSettlement: "post-room-pact-v1",
+      boundedProcClaims: "v1"
     }
   );
   assert.deepEqual(
