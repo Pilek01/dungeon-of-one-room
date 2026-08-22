@@ -642,6 +642,26 @@ describe("Online v3 real ruleset Wrangler and D1 lifecycle", {
         result.payload?.error?.code || `checkpoint-${index}`
       );
       session = result.payload;
+      const pactOffer = session.metaState.metaTransactionOffer;
+      if (pactOffer?.sourceType === "pact") {
+        const leaveChoice = pactOffer.choices.find((choice) => choice.kind === "pact_leave") ??
+          pactOffer.choices[0];
+        const committed = await event(
+          session,
+          "commit_meta_transaction",
+          {
+            transactionId: leaveChoice.transactionId,
+            choiceId: leaveChoice.choiceId
+          },
+          `victory-pact-${index}-${randomUUID()}`
+        );
+        assert.equal(
+          committed.response.status,
+          200,
+          committed.payload?.error?.code || `pact-${index}`
+        );
+        session = committed.payload;
+      }
     }
     assert.equal(session.metaState.status, "victory");
     assert.equal(session.metaState.maxDepth, 100);
