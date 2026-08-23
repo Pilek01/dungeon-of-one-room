@@ -2887,6 +2887,15 @@ ${fatalTestHookAnchor}`;
 
     await page.evaluate(() => window.DungeonOnlineV3.onExtraction("emergency"));
     await sessionState(page, "FINALIZED");
+    const restartedCampAudit = await page.evaluate(() => ({
+      game: JSON.parse(window.render_game_to_text()),
+      nativeCamp: Boolean(document.querySelector(".camp-revamp"))
+    }));
+    assert.equal(restartedCampAudit.game.phase, "camp", JSON.stringify(restartedCampAudit));
+    if (!restartedCampAudit.nativeCamp && /Camp Guide/u.test(restartedCampAudit.game.overlayText)) {
+      await page.keyboard.press("h");
+      await page.waitForFunction(() => !/Camp Guide/u.test(JSON.parse(window.render_game_to_text()).overlayText));
+    }
     await page.locator(".camp-revamp").waitFor({ state: "visible", timeout: 15_000 });
     await page.route("**/api/v3/runs/start", async (route) => {
       await route.fulfill({

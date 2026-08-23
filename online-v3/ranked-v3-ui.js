@@ -126,6 +126,7 @@
     overlay.addEventListener("pointerdown", (event) => event.stopPropagation());
     overlay.addEventListener("click", (event) => event.stopPropagation());
     overlay.addEventListener("keydown", (event) => {
+      if (overlay.hidden) return;
       event.stopPropagation();
       if (event.key === "Escape" && overlay.dataset.view === "reference-plate") {
         event.preventDefault();
@@ -165,6 +166,9 @@
     }
 
     function setOpen(open) {
+      if (!open && overlay.contains(documentRef.activeElement)) {
+        documentRef.activeElement?.blur?.();
+      }
       overlay.hidden = !open;
       const sync = open && overlay.dataset.view === "sync";
       documentRef.body.classList.toggle("ranked-v3-modal-open", open && !sync);
