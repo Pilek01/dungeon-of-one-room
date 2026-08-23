@@ -358,6 +358,58 @@ test("production bridge consumes ordered canonical chest outcomes", async () => 
   assert.match(builder, /applyRankedCanonicalChestStatOutcome/u);
 });
 
+test("canonical relic projection reconciles Golden Idol gold exactly once", async () => {
+  const builder = await readFile(
+    new URL("../../../scripts/build-pages-v3.mjs", import.meta.url),
+    "utf8"
+  );
+  assert.match(builder, /function syncRankedCanonicalRelics\(build = \{\}\)/u);
+  assert.match(builder, /syncRankedCanonicalRelics\(publicState\?\.build \|\| \{\}\)/u);
+
+  execFileSync(process.execPath, ["scripts/build-pages-v3.mjs", "--target", "test"], {
+    cwd: new URL("../../../", import.meta.url),
+    stdio: "ignore"
+  });
+  const generated = await readFile(
+    new URL("../../../output/pages-test-dist/game.js", import.meta.url),
+    "utf8"
+  );
+  const start = generated.indexOf("  function syncRankedCanonicalRelics(");
+  const end = generated.indexOf("  function syncRankedStartDepthUnlocks(", start);
+  assert.ok(start >= 0 && end > start);
+  const helper = generated.slice(start, end).replace(/^  /gmu, "");
+  const context = {
+    state: {
+      relics: ["fang"],
+      runMods: { goldMultiplier: 1 }
+    },
+    GOLDEN_IDOL_GOLD_MULTIPLIER: 0.15,
+    normalizeRelicInventory() {}
+  };
+  vm.runInNewContext(helper, context);
+  const canonicalBuild = {
+    relics: [
+      { relicId: "fang", stacks: 1 },
+      { relicId: "idol", stacks: 1 }
+    ]
+  };
+  context.syncRankedCanonicalRelics(canonicalBuild);
+  assert.deepEqual(Array.from(context.state.relics), ["fang", "idol"]);
+  assert.ok(Math.abs(context.state.runMods.goldMultiplier - 1.15) < Number.EPSILON);
+  context.syncRankedCanonicalRelics(canonicalBuild);
+  assert.deepEqual(Array.from(context.state.relics), ["fang", "idol"]);
+  assert.ok(Math.abs(context.state.runMods.goldMultiplier - 1.15) < Number.EPSILON);
+  const forgeGuardianGold = Math.round(20 * context.state.runMods.goldMultiplier);
+  const forgeFixedAward = Math.round(12 * context.state.runMods.goldMultiplier);
+  assert.equal(forgeGuardianGold, 23);
+  assert.equal(forgeFixedAward, 14);
+  assert.equal(forgeGuardianGold + forgeFixedAward, 37);
+  assert.equal(492 + forgeGuardianGold + forgeFixedAward, 529);
+  context.syncRankedCanonicalRelics({ relics: [{ relicId: "fang", stacks: 1 }] });
+  assert.deepEqual(Array.from(context.state.relics), ["fang"]);
+  assert.ok(Math.abs(context.state.runMods.goldMultiplier - 1) < Number.EPSILON);
+});
+
 test("protocol fails closed when the canonical marker strips an ordinary slot outcome", () => {
   const state = {
     runId: "run_protocol_marker",

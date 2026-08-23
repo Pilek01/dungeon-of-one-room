@@ -1185,7 +1185,13 @@ ${fatalTestHookAnchor}`;
       await route.continue();
     });
     const unlockKey = page.keyboard.press("F9");
-    await assistanceStarted;
+    await Promise.race([
+      assistanceStarted,
+      new Promise((_, reject) => setTimeout(
+        () => reject(new Error("Ranked F9 assistance request did not start within 10 seconds")),
+        10_000
+      ))
+    ]);
     await page.waitForFunction(() => (
       JSON.parse(window.render_game_to_text()).rankedHudStatus?.syncing === true
     ));
@@ -1353,7 +1359,7 @@ ${fatalTestHookAnchor}`;
     });
 
     await chooseForgeRewardWithCanonicalReplacement(page, diagnostics);
-    await crossVisiblePortal(page, forgeRoom.depth + 1);
+    await crossVisiblePortal(page, forgeRoom.depth + 1, diagnostics);
     assert(
       diagnostics.apiRequests.slice(forgeRequestsBefore)
         .filter((entry) => entry.path === "/api/v3/runs/checkpoint").length >= 1,
@@ -1768,10 +1774,13 @@ ${fatalTestHookAnchor}`;
     await page.waitForFunction(() => document.querySelector(".ranked-v3-overlay")?.hidden === true);
     const postTerminalPracticeApiBefore = diagnostics.apiRequests.length;
     await openNativeMenuOption(page, "Practice (Offline)");
-    const practiceAfterRanked = await page.evaluate(() => JSON.parse(window.render_game_to_text()).phase);
-    if (practiceAfterRanked === "menu") {
-      const newGameRow = page.locator(".overlay-menu-row", { hasText: "Start New Game" });
-      if (await newGameRow.isVisible().catch(() => false)) await newGameRow.click();
+    await page.waitForFunction(() => {
+      const phase = JSON.parse(window.render_game_to_text()).phase;
+      const overwriteContinue = document.querySelector(".overlay-card-confirm");
+      return phase !== "menu" || Boolean(overwriteContinue?.getClientRects().length);
+    });
+    if (await page.locator(".overlay-card-confirm:visible").isVisible().catch(() => false)) {
+      await page.keyboard.press("1");
     }
     await page.waitForFunction(() => ["relic", "playing"].includes(JSON.parse(window.render_game_to_text()).phase));
     await page.keyboard.press("1");
@@ -2887,6 +2896,13 @@ ${fatalTestHookAnchor}`;
 
     await page.evaluate(() => window.DungeonOnlineV3.onExtraction("emergency"));
     await sessionState(page, "FINALIZED");
+    await page.waitForFunction(() => {
+      const game = JSON.parse(window.render_game_to_text());
+      return game.phase === "camp" && (
+        Boolean(document.querySelector(".camp-revamp")) ||
+        /Camp Guide/u.test(game.overlayText)
+      );
+    }, null, { timeout: 15_000 });
     const restartedCampAudit = await page.evaluate(() => ({
       game: JSON.parse(window.render_game_to_text()),
       nativeCamp: Boolean(document.querySelector(".camp-revamp"))

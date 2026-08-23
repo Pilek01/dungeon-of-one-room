@@ -1067,10 +1067,7 @@ const productionGameReplacements = [
       state.player.potions = Math.max(0, Number(resources.potions) || 0);
       state.player.maxPotions = Math.max(1, Number(resources.maxPotions) || state.player.maxPotions);
       if (Array.isArray(publicState?.build?.relics)) {
-        state.relics = publicState.build.relics.flatMap((relic) =>
-          Array.from({ length: Math.max(1, Number(relic.stacks) || 1) }, () => String(relic.relicId || relic.id || ""))
-        ).filter(Boolean);
-        normalizeRelicInventory();
+        syncRankedCanonicalRelics(publicState?.build || {});
       }
       state.treasureMapFragments = Math.max(0, Number(campaign.treasureMapFragments) || 0);
       state.forcedNextRoomType = String(campaign.forcedNextRoomType || "");
@@ -1555,6 +1552,31 @@ const rankedGoldGameReplacements = [
       }
     }
     return next;
+  }
+  function syncRankedCanonicalRelics(build = {}) {
+    const canonicalRelics = (Array.isArray(build?.relics) ? build.relics : []).flatMap((relic) =>
+      Array.from(
+        { length: Math.max(1, Number(relic?.stacks) || 1) },
+        () => String(relic?.relicId || relic?.id || "")
+      )
+    ).filter(Boolean);
+    const previousIdolStacks = state.relics.reduce(
+      (count, relicId) => count + (relicId === "idol" ? 1 : 0),
+      0
+    );
+    const canonicalIdolStacks = canonicalRelics.reduce(
+      (count, relicId) => count + (relicId === "idol" ? 1 : 0),
+      0
+    );
+    const idolStackDelta = canonicalIdolStacks - previousIdolStacks;
+    if (idolStackDelta !== 0) {
+      state.runMods.goldMultiplier = Math.max(
+        0.1,
+        Number(state.runMods.goldMultiplier || 1) + idolStackDelta * GOLDEN_IDOL_GOLD_MULTIPLIER
+      );
+    }
+    state.relics = [...canonicalRelics];
+    normalizeRelicInventory();
   }
   function syncRankedStartDepthUnlocks(campaign = {}) {
     const unlocked = Array.isArray(campaign?.unlockedStartDepths)
