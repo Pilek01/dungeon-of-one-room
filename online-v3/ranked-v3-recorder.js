@@ -102,9 +102,9 @@
     return Math.max(1, base);
   }
 
-  function createRewardClaimRecorder() {
+  function createRewardClaimRecorder(options = {}) {
     const claims = new Map();
-    let chestCount = 0;
+    let chestCount = Math.max(0, Math.floor(Number(options.initialChestCount) || 0));
     let sealedSnapshot = null;
 
     const canonicalChestOutcomes = new Set([

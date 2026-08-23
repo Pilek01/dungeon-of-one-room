@@ -381,6 +381,41 @@ const productionGameReplacements = [
   }`
   ],
   [
+`      for (const key of keysToRemove) {
+        localStorage.removeItem(key);
+      }`,
+`      for (const key of keysToRemove) {
+        removeStorageItem(key);
+      }`
+  ],
+  [
+`  function restoreLocalStorageSnapshot(snapshot) {
+    const nextSnapshot = snapshot && typeof snapshot === "object" ? snapshot : {};`,
+`  function restoreLocalStorageSnapshot(snapshot) {
+    if (state.onlineV3Ranked) return;
+    const nextSnapshot = snapshot && typeof snapshot === "object" ? snapshot : {};`
+  ],
+  [
+`    for (const key of currentKeys) {
+      if (!Object.prototype.hasOwnProperty.call(nextSnapshot, key)) {
+        localStorage.removeItem(key);
+      }
+    }`,
+`    for (const key of currentKeys) {
+      if (!Object.prototype.hasOwnProperty.call(nextSnapshot, key)) {
+        removeStorageItem(key);
+      }
+    }`
+  ],
+  [
+`    for (const [key, value] of Object.entries(nextSnapshot)) {
+      localStorage.setItem(key, value == null ? "" : String(value));
+    }`,
+`    for (const [key, value] of Object.entries(nextSnapshot)) {
+      setStorageItem(key, value == null ? "" : String(value));
+    }`
+  ],
+  [
 `  function syncBgmWithState(force = false) {
     if (isSimulationActive() && state.simulation.suppressAudio) {`,
 `  function syncBgmWithState(force = false) {
@@ -451,6 +486,10 @@ const productionGameReplacements = [
       resetSessionChestBonuses();
       resetRankedCanonicalChestSlots();
       state.onlineV3Ranked = false;
+      state.debugCheatOpen = false;
+      state.debugCheatBotOnly = false;
+      state.debugCheatMerchantActive = false;
+      state.debugGodMode = false;
       state.highscore = Math.max(0, Number(localStorage.getItem(STORAGE_DEPTH) || 0));
       state.bestGold = Math.max(0, Number(localStorage.getItem(STORAGE_GOLD) || 0));
       state.deaths = Math.max(0, Number(localStorage.getItem(STORAGE_DEATHS) || 0));
@@ -464,6 +503,21 @@ const productionGameReplacements = [
         localStorage.getItem(STORAGE_CAMP_GOLD) || localStorage.getItem(STORAGE_ESSENCE_LEGACY) || 0
       ));
       state.lives = clamp(Number(localStorage.getItem(STORAGE_LIVES) || MAX_LIVES), 0, MAX_LIVES);
+      state.audioMuted = localStorage.getItem(STORAGE_AUDIO_MUTED) === "1";
+      state.debugAiOverlay = localStorage.getItem(STORAGE_DEBUG_AI_OVERLAY) === "1";
+      state.enemySpeedMode = sanitizeEnemySpeedMode(localStorage.getItem(STORAGE_ENEMY_SPEED) || "");
+      mobileUi.hintSeen = localStorage.getItem(STORAGE_MOBILE_SWIPE_HINT_SEEN) === "1";
+      state.playerName = sanitizePlayerName(localStorage.getItem(STORAGE_PLAYER_NAME) || "")
+        || (ACTIVE_SCENARIO_OVERRIDE ? "QA" : "");
+      state.tutorialRunSeen = localStorage.getItem(STORAGE_TUTORIAL_RUN_SEEN) === "1";
+      state.tutorialCampSeen = localStorage.getItem(STORAGE_TUTORIAL_CAMP_SEEN) === "1";
+      state.tutorialMerchantSeen = localStorage.getItem(STORAGE_TUTORIAL_MERCHANT_SEEN) === "1";
+      state.tutorialPortalSeen = localStorage.getItem(STORAGE_TUTORIAL_PORTAL_SEEN) === "1";
+      state.tutorialWardenDeathTipSeen = localStorage.getItem(STORAGE_TUTORIAL_WARDEN_DEATH_TIP_SEEN) === "1";
+      state.leaderboard = sanitizeLeaderboard(readJsonStorage(STORAGE_LEADERBOARD, []));
+      state.leaderboardPending = sanitizePendingLeaderboard(readJsonStorage(STORAGE_LEADERBOARD_PENDING, []));
+      state.observerBot.aiModel = sanitizeObserverAiModel(readJsonStorage(STORAGE_OBSERVER_AI_MODEL, null));
+      state.hasContinueRun = Boolean(readJsonStorage(STORAGE_RUN_SAVE, null));
       state.activeMutators = sanitizeMutatorMap(readJsonStorage(STORAGE_MUT_ACTIVE, {}));
       state.unlockedMutators = sanitizeMutatorMap(readJsonStorage(STORAGE_MUT_UNLOCK, {}));
       state.campUpgrades = sanitizeCampUpgrades(readJsonStorage(STORAGE_CAMP_UPGRADES, {}));
@@ -1357,12 +1411,18 @@ const rankedGoldGameReplacements = [
     },
     resetRankedBoundaryRecorder() {
       if (!state.onlineV3Ranked) return false;
-      onlineV3RewardRecorder = window.DungeonRankedV3Recorder?.createRewardClaimRecorder?.() || null;
       onlineV3ActiveChestClaimId = null;
       const firstUnconsumed = onlineV3CanonicalChestSlots.findIndex((slot) => !slot.consumed);
       onlineV3CanonicalChestSlotCursor = firstUnconsumed >= 0
         ? firstUnconsumed
         : onlineV3CanonicalChestSlots.length;
+      const consumedChestCount = onlineV3CanonicalChestSlots.reduce(
+        (count, slot) => count + (slot.consumed ? 1 : 0),
+        0
+      );
+      onlineV3RewardRecorder = window.DungeonRankedV3Recorder?.createRewardClaimRecorder?.({
+        initialChestCount: consumedChestCount
+      }) || null;
       onlineV3RoomStartingGold = Math.max(0, Math.floor(Number(state.player.gold) || 0));
       onlineV3RoomStartingTurn = Math.max(0, Math.floor(Number(state.turn) || 0));
       return true;

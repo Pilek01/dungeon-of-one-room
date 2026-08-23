@@ -19,6 +19,7 @@
       saveRunSnapshot,
       grantPotion,
       merchantPotionCost,
+      setStorageItem,
       STORAGE_TOTAL_MERCHANT_POTS,
       applyRelic,
       hasMythicRelic,
@@ -189,7 +190,9 @@
       }
       state.merchantPotionsBought = (state.merchantPotionsBought || 0) + 1;
       state.totalMerchantPots += 1;
-      localStorage.setItem(STORAGE_TOTAL_MERCHANT_POTS, String(state.totalMerchantPots));
+      if (typeof setStorageItem === "function") {
+        setStorageItem(STORAGE_TOTAL_MERCHANT_POTS, String(state.totalMerchantPots));
+      }
       grantPotion(1);
       spawnParticles(state.player.x, state.player.y, "#ffd98a", 10, 1.15);
       const nextCost = merchantPotionCost();

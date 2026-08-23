@@ -2478,6 +2478,7 @@
     saveRunSnapshot,
     grantPotion,
     merchantPotionCost,
+    setStorageItem,
     STORAGE_TOTAL_MERCHANT_POTS,
     applyRelic,
     hasMythicRelic,
