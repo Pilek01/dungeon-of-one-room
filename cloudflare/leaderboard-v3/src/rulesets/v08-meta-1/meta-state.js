@@ -33,6 +33,7 @@ import {
   requireCompatibleRulesetHashV08
 } from "./ruleset-hash-policy.js";
 import { normalizeTestAssistanceV08 } from "./test-assistance.js";
+import { normalizeChestBonusesV08 } from "./chest-bonus-policy.js";
 
 const progression = progressionDocument.canonicalData;
 
@@ -141,7 +142,8 @@ function createCampaignState(input = {}) {
     unlockedStartDepths,
     forgeSeenInCampaign: Boolean(source.forgeSeenInCampaign),
     forgePityUsedInCampaign: Boolean(source.forgePityUsedInCampaign),
-    scoreCarry
+    scoreCarry,
+    chestBonuses: normalizeChestBonusesV08(source.chestBonuses)
   };
 }
 
@@ -155,7 +157,7 @@ function assertCampaignState(campaign) {
   }
   const normalized = createCampaignState({ campaign });
   const expectedKeys = Object.keys(normalized).sort();
-  const legacyKeys = expectedKeys.filter((key) => key !== "scoreCarry");
+  const legacyKeys = expectedKeys.filter((key) => key !== "scoreCarry" && key !== "chestBonuses");
   const actualKeys = Object.keys(campaign).sort();
   const hasCarry = Object.hasOwn(campaign, "scoreCarry");
   const carryKeys = hasCarry && campaign.scoreCarry && typeof campaign.scoreCarry === "object"
@@ -173,6 +175,7 @@ function assertCampaignState(campaign) {
     JSON.stringify(campaign.unlockedStartDepths) !== JSON.stringify(normalized.unlockedStartDepths) ||
     campaign.forgeSeenInCampaign !== normalized.forgeSeenInCampaign ||
     campaign.forgePityUsedInCampaign !== normalized.forgePityUsedInCampaign ||
+    JSON.stringify(campaign.chestBonuses ?? normalizeChestBonusesV08()) !== JSON.stringify(normalized.chestBonuses) ||
     (
       hasCarry && (
         JSON.stringify(carryKeys) !== JSON.stringify(expectedCarryKeys) ||

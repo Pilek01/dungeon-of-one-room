@@ -179,7 +179,13 @@ test("fresh Ranked profile starts with the exact v0.8 campaign defaults", () => 
     unlockedStartDepths: [],
     forgeSeenInCampaign: false,
     forgePityUsedInCampaign: false,
-    scoreCarry: { highWaterDepth: 0, earnedGold: 0 }
+    scoreCarry: { highWaterDepth: 0, earnedGold: 0 },
+    chestBonuses: {
+      schemaVersion: 1,
+      attackDepthBuckets: {},
+      armorDepthBuckets: {},
+      healthDepthBuckets: {}
+    }
   });
 });
 
