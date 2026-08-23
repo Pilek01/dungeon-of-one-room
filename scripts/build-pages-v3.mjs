@@ -373,6 +373,14 @@ const productionGameReplacements = [
     const currentPactId = getCurrentPactId();`
   ],
   [
+`  function shouldPersistToStorage() {
+    return !(isSimulationActive() && state.simulation.suppressPersistence);
+  }`,
+`  function shouldPersistToStorage() {
+    return !state.onlineV3Ranked && !(isSimulationActive() && state.simulation.suppressPersistence);
+  }`
+  ],
+  [
 `  function syncBgmWithState(force = false) {
     if (isSimulationActive() && state.simulation.suppressAudio) {`,
 `  function syncBgmWithState(force = false) {
@@ -443,8 +451,28 @@ const productionGameReplacements = [
       resetSessionChestBonuses();
       resetRankedCanonicalChestSlots();
       state.onlineV3Ranked = false;
+      state.highscore = Math.max(0, Number(localStorage.getItem(STORAGE_DEPTH) || 0));
+      state.bestGold = Math.max(0, Number(localStorage.getItem(STORAGE_GOLD) || 0));
+      state.deaths = Math.max(0, Number(localStorage.getItem(STORAGE_DEATHS) || 0));
+      state.eliteKills = Math.max(0, Number(localStorage.getItem(STORAGE_ELITE_KILLS) || 0));
+      state.totalKills = Math.max(0, Number(localStorage.getItem(STORAGE_TOTAL_KILLS) || 0));
+      state.totalGoldEarned = Math.max(0, Number(localStorage.getItem(STORAGE_TOTAL_GOLD) || 0));
+      state.totalMerchantPots = Math.max(0, Number(localStorage.getItem(STORAGE_TOTAL_MERCHANT_POTS) || 0));
+      state.potionFreeExtract = Math.max(0, Number(localStorage.getItem(STORAGE_POTION_FREE_EXTRACT) || 0));
+      state.wardensKilledThisGame = Math.max(0, Number(localStorage.getItem(STORAGE_WARDENS_KILLED) || 0));
+      state.campGold = Math.max(0, Number(
+        localStorage.getItem(STORAGE_CAMP_GOLD) || localStorage.getItem(STORAGE_ESSENCE_LEGACY) || 0
+      ));
+      state.lives = clamp(Number(localStorage.getItem(STORAGE_LIVES) || MAX_LIVES), 0, MAX_LIVES);
       state.activeMutators = sanitizeMutatorMap(readJsonStorage(STORAGE_MUT_ACTIVE, {}));
       state.unlockedMutators = sanitizeMutatorMap(readJsonStorage(STORAGE_MUT_UNLOCK, {}));
+      state.campUpgrades = sanitizeCampUpgrades(readJsonStorage(STORAGE_CAMP_UPGRADES, {}));
+      state.skillTiers = sanitizeSkillTiers(readJsonStorage(STORAGE_SKILL_TIERS, {}));
+      state.startDepthUnlocks = sanitizeStartDepthUnlocks(readJsonStorage(STORAGE_START_DEPTH_UNLOCKS, {}));
+      state.elixirLoadout = sanitizeElixirLoadout(readJsonStorage(STORAGE_ELIXIR_LOADOUT, {}));
+      state.wardenFirstDropDepths = sanitizeWardenFirstDropDepths(
+        readJsonStorage(STORAGE_WARDEN_FIRST_DROP_DEPTHS, {})
+      );
       state.activePacts = [];
       state.pactBasePlayerStats = null;
       resetRunModifiers();`
@@ -1331,8 +1359,10 @@ const rankedGoldGameReplacements = [
       if (!state.onlineV3Ranked) return false;
       onlineV3RewardRecorder = window.DungeonRankedV3Recorder?.createRewardClaimRecorder?.() || null;
       onlineV3ActiveChestClaimId = null;
-      onlineV3CanonicalChestSlotCursor = 0;
-      for (const slot of onlineV3CanonicalChestSlots) slot.consumed = false;
+      const firstUnconsumed = onlineV3CanonicalChestSlots.findIndex((slot) => !slot.consumed);
+      onlineV3CanonicalChestSlotCursor = firstUnconsumed >= 0
+        ? firstUnconsumed
+        : onlineV3CanonicalChestSlots.length;
       onlineV3RoomStartingGold = Math.max(0, Math.floor(Number(state.player.gold) || 0));
       onlineV3RoomStartingTurn = Math.max(0, Math.floor(Number(state.turn) || 0));
       return true;
@@ -1395,14 +1425,26 @@ const rankedGoldGameReplacements = [
         !outcome || typeof outcome !== "object" || Array.isArray(outcome) ||
         typeof outcome.awardId !== "string" || !outcome.awardId.trim() ||
         JSON.stringify(Object.keys(outcome).sort()) !== JSON.stringify(["awardId", "outcome"]) ||
-        slot.slotId !== "chest_" + (slots.indexOf(slot) + 1) || slot.consumed === true ||
+        slot.slotId !== "chest_" + (slots.indexOf(slot) + 1) ||
+        (slot.consumed !== undefined && typeof slot.consumed !== "boolean") ||
         !["health", "healing", "attack", "armor", "potion", "map_fragment", "gold", "trap", "fallback_gold"].includes(outcome.outcome);
     })) throw new TypeError("RANKED_CANONICAL_CHEST_SLOT_INVALID");
+    let sawUnconsumed = false;
+    for (const slot of slots) {
+      if (slot.consumed === true && sawUnconsumed) {
+        throw new TypeError("RANKED_CANONICAL_CHEST_SLOT_ORDER_INVALID");
+      }
+      if (slot.consumed !== true) sawUnconsumed = true;
+    }
     onlineV3CanonicalChestSlots = slots.map((slot) => ({
       slotId: String(slot.slotId),
       canonicalOutcome: { awardId: String(slot.canonicalOutcome.awardId), outcome: slot.canonicalOutcome.outcome },
       consumed: slot.consumed === true
     }));
+    const firstUnconsumed = onlineV3CanonicalChestSlots.findIndex((slot) => !slot.consumed);
+    onlineV3CanonicalChestSlotCursor = firstUnconsumed >= 0
+      ? firstUnconsumed
+      : onlineV3CanonicalChestSlots.length;
     onlineV3CanonicalChestMode = true;
     return true;
   }
