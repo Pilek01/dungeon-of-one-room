@@ -23,7 +23,7 @@ function exactPayload(payload, fields, code) {
   return value;
 }
 
-function runtimeContext(state, context = {}) {
+function runtimeContext(state, context = {}, capabilities) {
   return {
     runId: state.runId,
     rulesetHash: state.rulesetHash,
@@ -31,7 +31,8 @@ function runtimeContext(state, context = {}) {
     cryptoProvider: context.cryptoProvider,
     randomOracle: context.randomOracle,
     elapsedMs: context.elapsedMs,
-    now: context.now
+    now: context.now,
+    capabilities: capabilities || context.capabilities
   };
 }
 
@@ -67,7 +68,7 @@ async function settleEventJournalBoundary(state, payload, outcome, ruleset, cont
       structuredClone(state),
       request,
       { outcome },
-      runtimeContext(state, { ...context, elapsedMs: request.elapsedMs })
+      runtimeContext(state, { ...context, elapsedMs: request.elapsedMs }, ruleset.capabilities)
     );
   } catch (error) {
     if (!(error instanceof TypeError) || !/^REWARD_/u.test(String(error.message || ""))) {
@@ -88,7 +89,7 @@ async function settleEventJournalBoundary(state, payload, outcome, ruleset, cont
         compactRoomProof: "invalid-boundary-settlement"
       },
       { outcome },
-      runtimeContext(state, { ...context, elapsedMs: request.elapsedMs })
+      runtimeContext(state, { ...context, elapsedMs: request.elapsedMs }, ruleset.capabilities)
     );
   }
   applyCheckpointRankEligibility(settlement.state, {
@@ -270,7 +271,7 @@ export async function applyRulesetCheckpoint(state, body, ruleset, context = {})
   const rulesetContext = runtimeContext(state, {
     ...context,
     elapsedMs: body.elapsedMs
-  });
+  }, ruleset.capabilities);
   const roomIntegrityState = body.integrityVersion === 1
     ? rankIntegrityRoomState(state)
     : null;
@@ -412,7 +413,7 @@ export async function applyRulesetEvent(state, body, ruleset, context = {}) {
   ) {
     throw new TypeError("PACT_POST_ROOM_SETTLEMENT_REQUIRED");
   }
-  const rulesetContext = runtimeContext(state, context);
+  const rulesetContext = runtimeContext(state, context, ruleset.capabilities);
   let nextState;
   const storageEffects = [{
     type: "update_run",
@@ -636,6 +637,9 @@ export async function applyRulesetEvent(state, body, ruleset, context = {}) {
     nextState.rulesetHash !== state.rulesetHash
   ) {
     throw new TypeError("RUNTIME_EVENT_BINDING_CHANGED");
+  }
+  if (typeof ruleset.refreshRewardEnvelope === "function") {
+    await ruleset.refreshRewardEnvelope(nextState, rulesetContext);
   }
   captureRankIntegrityRoomContext(nextState);
   return {

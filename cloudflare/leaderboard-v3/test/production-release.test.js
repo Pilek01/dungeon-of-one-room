@@ -19,6 +19,7 @@ import {
   V08_META_1_WARDEN_HOTFIX_RELEASE_DESCRIPTOR,
   V08_META_1_GOLD_SYNC_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR,
   V08_META_1_PACT_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR,
+  V08_META_1_CHEST_CARRY_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR,
   V08_META_1_PRODUCTION_RELEASE_DESCRIPTOR
 } from "../src/rulesets/releases.js";
 import * as releases from "../src/rulesets/releases.js";
@@ -31,6 +32,7 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../.
 const require = createRequire(import.meta.url);
 const protocol = require("../../../online-v3/ranked-v3-protocol.js");
 const EXPECTED_HASH = manifest.rulesetHash;
+const PREVIOUS_CHEST_CARRY_HASH = "sha256:35707f6b5ea8b1ad18251dce5e6c18b87653893aad705b6c5543fdd140b88067";
 const PREVIOUS_BOUNDED_PROC_HASH = "sha256:76514cf9e5c89079571a5be117ce84f949d7a3f5ed441d973adc05c95c6dde3c";
 const PACT_PREVIOUS_HASH = "sha256:5c3df81af373b68fce4d8fa242fb61c29b7c3d4ca78d6865d2ee51a58bbab3dd";
 const GOLD_SYNC_PREVIOUS_HASH = "sha256:87c30b2c011b5103398f9b03f6bf018d71f2a35427c0a04ef7a31b2559a7a6d9";
@@ -61,7 +63,8 @@ test("bounded proc release activates a new hash and leaves every historical desc
     value && typeof value === "object" &&
     value.status === RULESET_RELEASE_STATES.PRODUCTION_RELEASED &&
     typeof value.rulesetHash === "string" &&
-    value.rulesetHash !== manifest.rulesetHash
+    value.rulesetHash !== manifest.rulesetHash &&
+    value.rulesetHash !== PREVIOUS_CHEST_CARRY_HASH
   ));
   assert.ok(historicalDescriptors.length > 0);
   for (const descriptor of historicalDescriptors) {
@@ -74,9 +77,43 @@ test("bounded proc release activates a new hash and leaves every historical desc
 
   assert.equal(protocol.RULESET_HASH, manifest.rulesetHash);
   assert.ok(protocol.SUPPORTED_RULESET_HASHES.includes(PREVIOUS_BOUNDED_PROC_HASH));
-  assert.deepEqual(protocol.BOUNDED_PROC_CLAIMS_RULESET_HASHES, [manifest.rulesetHash]);
+  assert.deepEqual(protocol.BOUNDED_PROC_CLAIMS_RULESET_HASHES, [
+    manifest.rulesetHash,
+    PREVIOUS_CHEST_CARRY_HASH
+  ]);
   assert.equal(protocol.supportsBoundedProcClaims(manifest.rulesetHash), true);
+  assert.equal(protocol.supportsBoundedProcClaims(PREVIOUS_CHEST_CARRY_HASH), true);
   assert.equal(protocol.supportsBoundedProcClaims(PREVIOUS_BOUNDED_PROC_HASH), false);
+});
+
+test("canonical chest carry release is hash-gated and preserves the previous production descriptor", () => {
+  const active = V08_META_1_PRODUCTION_RELEASE_DESCRIPTOR;
+  const previous = V08_META_1_CHEST_CARRY_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR;
+
+  assert.notEqual(manifest.rulesetHash, PREVIOUS_CHEST_CARRY_HASH);
+  assert.equal(active.rulesetHash, manifest.rulesetHash);
+  assert.equal(active.capabilities.canonicalChestOutcomes, "v1");
+  assert.ok(previous, "the previous chest-carry descriptor must be retained");
+  assert.equal(previous.rulesetHash, PREVIOUS_CHEST_CARRY_HASH);
+  assert.deepEqual(previous.capabilities, {
+    fatalPresentationCauseMode: "retain",
+    boundarySettlementMode: "event-journal-v1",
+    postRoomPactSettlement: "post-room-pact-v1",
+    boundedProcClaims: "v1"
+  });
+  assert.equal(previous.capabilities.canonicalChestOutcomes, undefined);
+  assert.deepEqual(active.capabilities, {
+    fatalPresentationCauseMode: "retain",
+    boundarySettlementMode: "event-journal-v1",
+    postRoomPactSettlement: "post-room-pact-v1",
+    boundedProcClaims: "v1",
+    canonicalChestOutcomes: "v1"
+  });
+
+  assert.ok(protocol.SUPPORTED_RULESET_HASHES.includes(PREVIOUS_CHEST_CARRY_HASH));
+  assert.deepEqual(protocol.CANONICAL_CHEST_OUTCOMES_RULESET_HASHES, [manifest.rulesetHash]);
+  assert.equal(protocol.supportsCanonicalChestOutcomes(manifest.rulesetHash), true);
+  assert.equal(protocol.supportsCanonicalChestOutcomes(PREVIOUS_CHEST_CARRY_HASH), false);
 });
 
 async function rootFile(relative) {
@@ -108,6 +145,7 @@ test("production entry activates the post-room Pact ruleset", async () => {
     V08_META_1_PLAYTEST_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR,
     V08_META_1_GOLD_SYNC_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR,
     V08_META_1_PACT_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR,
+    V08_META_1_CHEST_CARRY_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR,
     V08_META_1_PRODUCTION_RELEASE_DESCRIPTOR
   ]);
   const resolved = registry.resolve({

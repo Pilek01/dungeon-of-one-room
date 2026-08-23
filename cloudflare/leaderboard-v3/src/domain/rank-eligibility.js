@@ -1,5 +1,6 @@
 import rewardBoundsDocument from "../rulesets/v08-meta-1/data/room-reward-bounds.generated.json" with { type: "json" };
 import { calculateEnemyGoldV08 } from "../rulesets/v08-meta-1/gold-policy.js";
+import { canonicalJson } from "../security/canonical-json.js";
 
 export const RANK_ELIGIBILITY = Object.freeze({
   official: "official",
@@ -85,7 +86,11 @@ export function captureRankIntegrityRoomContext(state) {
     state.rankIntegrity.roomGoldContext = null;
     return state;
   }
-  if (state.rankIntegrity.roomGoldContext?.directiveId === directiveId) {
+  if (
+    state.rankIntegrity.roomGoldContext?.directiveId === directiveId &&
+    canonicalJson(state.rankIntegrity.roomGoldContext.build) === canonicalJson(state.build) &&
+    canonicalJson(state.rankIntegrity.roomGoldContext.runModifiers) === canonicalJson(state.runModifiers)
+  ) {
     return state;
   }
   state.rankIntegrity.roomGoldContext = {

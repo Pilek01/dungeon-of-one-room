@@ -34,6 +34,7 @@ import {
 } from "./ruleset-hash-policy.js";
 import { normalizeTestAssistanceV08 } from "./test-assistance.js";
 import { normalizeChestBonusesV08 } from "./chest-bonus-policy.js";
+import { canonicalJson } from "../../security/canonical-json.js";
 
 const progression = progressionDocument.canonicalData;
 
@@ -175,7 +176,7 @@ function assertCampaignState(campaign) {
     JSON.stringify(campaign.unlockedStartDepths) !== JSON.stringify(normalized.unlockedStartDepths) ||
     campaign.forgeSeenInCampaign !== normalized.forgeSeenInCampaign ||
     campaign.forgePityUsedInCampaign !== normalized.forgePityUsedInCampaign ||
-    JSON.stringify(campaign.chestBonuses ?? normalizeChestBonusesV08()) !== JSON.stringify(normalized.chestBonuses) ||
+    canonicalJson(campaign.chestBonuses ?? normalizeChestBonusesV08()) !== canonicalJson(normalized.chestBonuses) ||
     (
       hasCarry && (
         JSON.stringify(carryKeys) !== JSON.stringify(expectedCarryKeys) ||

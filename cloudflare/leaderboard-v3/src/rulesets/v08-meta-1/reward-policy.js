@@ -776,6 +776,18 @@ async function assertIssuedStateDigest(state, envelope, capabilities, cryptoProv
   }
 }
 
+export async function refreshIssuedStateDigestV08(state, context = {}) {
+  const envelope = state?.currentRewardEnvelope;
+  if (!envelope || context.capabilities?.canonicalChestOutcomes !== CANONICAL_CHEST_OUTCOME_CAPABILITY) {
+    return state;
+  }
+  envelope.issuedStateDigest = await sha256(
+    issuedStateDigestInput(state, envelope, context.capabilities),
+    context.cryptoProvider
+  );
+  return state;
+}
+
 async function assertIssuedChestOutcomes(state, envelope, capabilities, context = {}) {
   if (!canonicalChestRoomEnabled(capabilities, envelope.roomType)) return;
   const directive = state.currentRoomDirective;

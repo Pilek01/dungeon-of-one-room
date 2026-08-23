@@ -43,7 +43,8 @@ function oracle() {
   };
 }
 
-async function activeRoom(runId) {
+async function activeRoom(runId, capabilities, prepare) {
+  const baseOracle = oracle();
   const context = {
     runId,
     season: "boundary-season",
@@ -51,10 +52,20 @@ async function activeRoom(runId) {
     now: NOW,
     secret: SECRET,
     cryptoProvider: webcrypto,
-    randomOracle: oracle()
+    randomOracle: capabilities
+      ? {
+          ...baseOracle,
+          async deriveIntInclusive(minimum, maximum, options = {}) {
+            if (options.purpose === "reward/chest-outcome") return 920_000;
+            return baseOracle.deriveIntInclusive(minimum, maximum, options);
+          }
+        }
+      : baseOracle,
+    ...(capabilities ? { capabilities } : {})
   };
   const state = createInitialMetaStateV08({}, context);
   state.status = "active";
+  prepare?.(state);
   const issued = await issueNextRoomDirectiveV08(state, context);
   assert.ok(issued.currentRewardEnvelope.claimSlots.length > 0, "fixture room needs a chest slot");
   return { state: issued, context };
@@ -77,11 +88,17 @@ function boundaryRequest(state, claims, overrides = {}) {
 }
 
 function mapFragmentClaim(state) {
+  const slot = state.currentRewardEnvelope.claimSlots[0];
+  const evidence = {
+    outcome: slot.canonicalOutcome?.outcome || "map_fragment",
+    count: 1,
+    ...(slot.canonicalOutcome?.awardId ? { awardId: slot.canonicalOutcome.awardId } : {})
+  };
   return [{
     claimType: "chest",
-    claimId: state.currentRewardEnvelope.claimSlots[0].slotId,
+    claimId: slot.slotId,
     count: 1,
-    localEvidence: { outcome: "map_fragment", count: 1 }
+    localEvidence: evidence
   }];
 }
 
@@ -218,8 +235,12 @@ test("the activated release advertises event-journal settlement while the previo
 });
 
 test("capable fatal events settle the journal before a prevented fatal and keep the room open", async () => {
-  const { state, context } = await activeRoom("run_boundary_event_fatal");
-  state.build.resources.hasSecondChance = true;
+  const { state, context } = await activeRoom(
+    "run_boundary_event_fatal",
+    V08_META_1_LOCAL_RELEASE_DESCRIPTOR.capabilities,
+    (prepared) => { prepared.build.resources.hasSecondChance = true; }
+  );
+  assert.equal(state.currentRewardEnvelope.claimSlots[0].canonicalOutcome.outcome, "map_fragment");
   initializeRankEligibility(state, { integrityVersion: 1 });
   captureRankIntegrityRoomContext(state);
   const ruleset = V08_META_1_LOCAL_RELEASE_DESCRIPTOR.createRuleset();
@@ -237,8 +258,12 @@ test("capable fatal events settle the journal before a prevented fatal and keep 
 });
 
 test("an impossible boundary claim makes the run provisional but still resolves the fatal", async () => {
-  const { state, context } = await activeRoom("run_boundary_event_invalid_claim");
-  state.build.resources.hasSecondChance = true;
+  const { state, context } = await activeRoom(
+    "run_boundary_event_invalid_claim",
+    V08_META_1_LOCAL_RELEASE_DESCRIPTOR.capabilities,
+    (prepared) => { prepared.build.resources.hasSecondChance = true; }
+  );
+  assert.equal(state.currentRewardEnvelope.claimSlots[0].canonicalOutcome.outcome, "map_fragment");
   initializeRankEligibility(state, { integrityVersion: 1 });
   captureRankIntegrityRoomContext(state);
   const ruleset = V08_META_1_LOCAL_RELEASE_DESCRIPTOR.createRuleset();
@@ -260,7 +285,10 @@ test("an impossible boundary claim makes the run provisional but still resolves 
 });
 
 test("capable emergency extraction settles without clear and edited totals become provisional", async () => {
-  const { state, context } = await activeRoom("run_boundary_event_emergency");
+  const { state, context } = await activeRoom(
+    "run_boundary_event_emergency",
+    V08_META_1_LOCAL_RELEASE_DESCRIPTOR.capabilities
+  );
   initializeRankEligibility(state, { integrityVersion: 1 });
   captureRankIntegrityRoomContext(state);
   const ruleset = V08_META_1_LOCAL_RELEASE_DESCRIPTOR.createRuleset();
@@ -284,7 +312,10 @@ test("capable emergency extraction settles without clear and edited totals becom
 });
 
 test("invalid emergency boundary fallback does not compare edited gold totals", async () => {
-  const { state, context } = await activeRoom("run_boundary_event_emergency_invalid_potion_count");
+  const { state, context } = await activeRoom(
+    "run_boundary_event_emergency_invalid_potion_count",
+    V08_META_1_LOCAL_RELEASE_DESCRIPTOR.capabilities
+  );
   initializeRankEligibility(state, { integrityVersion: 1 });
   captureRankIntegrityRoomContext(state);
   const ruleset = V08_META_1_LOCAL_RELEASE_DESCRIPTOR.createRuleset();
