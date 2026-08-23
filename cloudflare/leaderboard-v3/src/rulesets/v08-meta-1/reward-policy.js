@@ -275,6 +275,15 @@ function canonicalChestRoomEnabled(capabilities, roomType) {
   return canonicalChestOutcomesEnabled(capabilities) && CANONICAL_ORDINARY_CHEST_ROOMS.has(roomType);
 }
 
+function canonicalChestOutcomeContextFromState(state) {
+  return {
+    alchemist: mutatorHasAlchemist(state.runModifiers),
+    avarice: buildHasAvarice(state.build),
+    chestBonuses: normalizeChestBonusesV08(state.campaign?.chestBonuses),
+    shrineWard: buildHasRelic(state.build, "shrineward")
+  };
+}
+
 function buildHasRelic(build, relicId) {
   return Array.isArray(build?.relics) && build.relics.some(
     (entry) => entry?.relicId === relicId && Number(entry.stacks) > 0
@@ -308,15 +317,17 @@ async function issueCanonicalChestSlots({
   slots,
   envelopeId,
   outcomeRevision = state.revision,
+  outcomeContext,
   cryptoProvider,
   randomOracle,
   secret
 }) {
-  const normalizedBonuses = normalizeChestBonusesV08(state.campaign?.chestBonuses);
+  const context = outcomeContext || canonicalChestOutcomeContextFromState(state);
+  const normalizedBonuses = normalizeChestBonusesV08(context.chestBonuses);
   const simulatedCampaign = { chestBonuses: normalizedBonuses };
-  const hasShrineWard = buildHasRelic(state.build, "shrineward");
-  const hasAlchemist = mutatorHasAlchemist(state.runModifiers);
-  const hasAvarice = buildHasAvarice(state.build);
+  const hasShrineWard = context.shrineWard;
+  const hasAlchemist = context.alchemist;
+  const hasAvarice = context.avarice;
   const scalingDepth = rewardScalingDepth(directive);
   const oracle = randomOracle || { deriveIntInclusive };
   const issued = [];
@@ -515,6 +526,9 @@ export async function createRoomRewardEnvelopeV3({
   });
   const boundedClaims = claimDefinitions(directive.roomType, state.build, capabilities);
   const slots = claimSlots(directive.roomType);
+  const canonicalChestOutcomeContext = canonicalChestRoomEnabled(capabilities, directive.roomType)
+    ? canonicalChestOutcomeContextFromState(state)
+    : undefined;
   const issuedSlots = canonicalChestRoomEnabled(capabilities, directive.roomType)
     ? await issueCanonicalChestSlots({
         state,
@@ -522,6 +536,7 @@ export async function createRoomRewardEnvelopeV3({
         slots,
         envelopeId,
         outcomeRevision: state.revision,
+        outcomeContext: canonicalChestOutcomeContext,
         cryptoProvider,
         randomOracle,
         secret
@@ -545,6 +560,9 @@ export async function createRoomRewardEnvelopeV3({
     ...(canonicalChestOutcomesVersion ? { canonicalChestOutcomesVersion } : {}),
     ...(canonicalChestRoomEnabled(capabilities, directive.roomType)
       ? { canonicalChestOutcomeRevision: state.revision }
+      : {}),
+    ...(canonicalChestOutcomeContext
+      ? { canonicalChestOutcomeContext }
       : {}),
     fixedAwards: [{
       awardId: "room-clear",
@@ -585,6 +603,9 @@ export async function createRoomRewardEnvelopeV3({
         : null,
       ...(canonicalChestRoomEnabled(capabilities, directive.roomType)
         ? { canonicalChestOutcomeRevision: state.revision }
+        : {}),
+      ...(canonicalChestOutcomeContext
+        ? { canonicalChestOutcomeContext }
         : {})
     }, cryptoProvider)
   };
@@ -604,6 +625,25 @@ function assertCanonicalOutcome(value) {
   }
   if (!CANONICAL_CHEST_OUTCOMES.has(value.outcome)) {
     throw new TypeError("REWARD_CHEST_OUTCOME_INVALID");
+  }
+}
+
+function assertCanonicalChestOutcomeContext(value) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    throw new TypeError("REWARD_ENVELOPE_INVALID:canonicalChestOutcomeContext");
+  }
+  const expectedKeys = ["alchemist", "avarice", "chestBonuses", "shrineWard"];
+  if (JSON.stringify(Object.keys(value).sort()) !== JSON.stringify(expectedKeys)) {
+    throw new TypeError("REWARD_ENVELOPE_INVALID:canonicalChestOutcomeContext");
+  }
+  for (const field of ["alchemist", "avarice", "shrineWard"]) {
+    if (typeof value[field] !== "boolean") {
+      throw new TypeError(`REWARD_ENVELOPE_INVALID:canonicalChestOutcomeContext:${field}`);
+    }
+  }
+  const normalizedChestBonuses = normalizeChestBonusesV08(value.chestBonuses);
+  if (canonicalJson(normalizedChestBonuses) !== canonicalJson(value.chestBonuses)) {
+    throw new TypeError("REWARD_ENVELOPE_INVALID:canonicalChestOutcomeContext:chestBonuses");
   }
 }
 
@@ -685,6 +725,9 @@ export function assertRoomRewardEnvelopeV3(envelope, capabilities = {}) {
     ) {
       throw new TypeError("REWARD_ENVELOPE_INVALID:canonicalChestOutcomeRevision");
     }
+  }
+  if (envelope.canonicalChestOutcomeContext !== undefined) {
+    assertCanonicalChestOutcomeContext(envelope.canonicalChestOutcomeContext);
   }
   if (
     !Array.isArray(envelope.fixedAwards) ||
@@ -786,6 +829,12 @@ function issuedStateDigestInput(state, envelope, capabilities = {}) {
   ) {
     input.canonicalChestOutcomeRevision = envelope.canonicalChestOutcomeRevision;
   }
+  if (
+    canonicalChestRoomEnabled(capabilities, envelope.roomType) &&
+    envelope.canonicalChestOutcomeContext !== undefined
+  ) {
+    input.canonicalChestOutcomeContext = envelope.canonicalChestOutcomeContext;
+  }
   return input;
 }
 
@@ -821,6 +870,7 @@ async function assertIssuedChestOutcomes(state, envelope, capabilities, context 
     slots,
     envelopeId: envelope.envelopeId,
     outcomeRevision: envelope.canonicalChestOutcomeRevision ?? envelope.revision,
+    outcomeContext: envelope.canonicalChestOutcomeContext,
     cryptoProvider: context.cryptoProvider,
     randomOracle: context.randomOracle,
     secret: context.secret

@@ -20,6 +20,7 @@ import {
   V08_META_1_GOLD_SYNC_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR,
   V08_META_1_PACT_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR,
   V08_META_1_CHEST_CARRY_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR,
+  V08_META_1_CANONICAL_CHEST_CONTEXT_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR,
   V08_META_1_CANONICAL_CHEST_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR,
   V08_META_1_PRODUCTION_RELEASE_DESCRIPTOR
 } from "../src/rulesets/releases.js";
@@ -34,6 +35,7 @@ const require = createRequire(import.meta.url);
 const protocol = require("../../../online-v3/ranked-v3-protocol.js");
 const EXPECTED_HASH = manifest.rulesetHash;
 const PREVIOUS_CHEST_CARRY_HASH = "sha256:35707f6b5ea8b1ad18251dce5e6c18b87653893aad705b6c5543fdd140b88067";
+const PREVIOUS_CANONICAL_CHEST_CONTEXT_HASH = "sha256:51a86cf41299257475530a356b98381ac828fdb0ec22e77eff0ded99f1758617";
 const PREVIOUS_CANONICAL_CHEST_HASH = "sha256:0a922d5567e7cfba56644e915ac0e331ac74aa3fcc3a2aed478440d64e9878f7";
 const PREVIOUS_BOUNDED_PROC_HASH = "sha256:76514cf9e5c89079571a5be117ce84f949d7a3f5ed441d973adc05c95c6dde3c";
 const PACT_PREVIOUS_HASH = "sha256:5c3df81af373b68fce4d8fa242fb61c29b7c3d4ca78d6865d2ee51a58bbab3dd";
@@ -67,6 +69,7 @@ test("bounded proc release activates a new hash and leaves every historical desc
     typeof value.rulesetHash === "string" &&
     value.rulesetHash !== manifest.rulesetHash &&
     value.rulesetHash !== PREVIOUS_CHEST_CARRY_HASH &&
+    value.rulesetHash !== PREVIOUS_CANONICAL_CHEST_CONTEXT_HASH &&
     value.rulesetHash !== PREVIOUS_CANONICAL_CHEST_HASH
   ));
   assert.ok(historicalDescriptors.length > 0);
@@ -82,6 +85,7 @@ test("bounded proc release activates a new hash and leaves every historical desc
   assert.ok(protocol.SUPPORTED_RULESET_HASHES.includes(PREVIOUS_BOUNDED_PROC_HASH));
   assert.deepEqual(protocol.BOUNDED_PROC_CLAIMS_RULESET_HASHES, [
     manifest.rulesetHash,
+    PREVIOUS_CANONICAL_CHEST_CONTEXT_HASH,
     PREVIOUS_CANONICAL_CHEST_HASH,
     PREVIOUS_CHEST_CARRY_HASH
   ]);
@@ -117,10 +121,21 @@ test("canonical chest carry release is hash-gated and preserves the previous pro
   assert.ok(protocol.SUPPORTED_RULESET_HASHES.includes(PREVIOUS_CHEST_CARRY_HASH));
   assert.deepEqual(protocol.CANONICAL_CHEST_OUTCOMES_RULESET_HASHES, [
     manifest.rulesetHash,
+    PREVIOUS_CANONICAL_CHEST_CONTEXT_HASH,
     PREVIOUS_CANONICAL_CHEST_HASH
   ]);
   assert.equal(protocol.supportsCanonicalChestOutcomes(manifest.rulesetHash), true);
   assert.equal(protocol.supportsCanonicalChestOutcomes(PREVIOUS_CHEST_CARRY_HASH), false);
+});
+
+test("canonical chest context retains the previous active canonical hash", () => {
+  const active = V08_META_1_PRODUCTION_RELEASE_DESCRIPTOR;
+  const previous = V08_META_1_CANONICAL_CHEST_CONTEXT_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR;
+  assert.equal(active.rulesetHash, manifest.rulesetHash);
+  assert.equal(previous.rulesetHash, PREVIOUS_CANONICAL_CHEST_CONTEXT_HASH);
+  assert.deepEqual(previous.capabilities, active.capabilities);
+  assert.ok(protocol.SUPPORTED_RULESET_HASHES.includes(PREVIOUS_CANONICAL_CHEST_CONTEXT_HASH));
+  assert.equal(protocol.supportsCanonicalChestOutcomes(PREVIOUS_CANONICAL_CHEST_CONTEXT_HASH), true);
 });
 
 test("canonical chest repair release retains the previous canonical hash and capability contract", () => {
@@ -132,6 +147,7 @@ test("canonical chest repair release retains the previous canonical hash and cap
   assert.ok(protocol.SUPPORTED_RULESET_HASHES.includes(PREVIOUS_CANONICAL_CHEST_HASH));
   assert.deepEqual(protocol.CANONICAL_CHEST_OUTCOMES_RULESET_HASHES, [
     manifest.rulesetHash,
+    PREVIOUS_CANONICAL_CHEST_CONTEXT_HASH,
     PREVIOUS_CANONICAL_CHEST_HASH
   ]);
   assert.equal(protocol.supportsCanonicalChestOutcomes(PREVIOUS_CANONICAL_CHEST_HASH), true);
@@ -167,6 +183,7 @@ test("production entry activates the post-room Pact ruleset", async () => {
     V08_META_1_GOLD_SYNC_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR,
     V08_META_1_PACT_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR,
     V08_META_1_CHEST_CARRY_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR,
+    V08_META_1_CANONICAL_CHEST_CONTEXT_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR,
     V08_META_1_CANONICAL_CHEST_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR,
     V08_META_1_PRODUCTION_RELEASE_DESCRIPTOR
   ]);

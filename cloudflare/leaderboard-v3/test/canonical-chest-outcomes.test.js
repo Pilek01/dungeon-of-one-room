@@ -2,8 +2,13 @@ import assert from "node:assert/strict";
 import { webcrypto } from "node:crypto";
 import test from "node:test";
 import { createInitialMetaStateV08 } from "../src/rulesets/v08-meta-1/meta-state.js";
-import { createRoomRewardEnvelopeV3 } from "../src/rulesets/v08-meta-1/reward-policy.js";
-import { settleRoomRewardEnvelopeV3, settleBoundaryRewardEnvelopeV3 } from "../src/rulesets/v08-meta-1/reward-policy.js";
+import {
+  createRoomRewardEnvelopeV3,
+  refreshIssuedStateDigestV08,
+  assertRoomRewardEnvelopeV3,
+  settleBoundaryRewardEnvelopeV3,
+  settleRoomRewardEnvelopeV3
+} from "../src/rulesets/v08-meta-1/reward-policy.js";
 import { normalizeChestBonusesV08 } from "../src/rulesets/v08-meta-1/chest-bonus-policy.js";
 import {
   applyRelicAcquisition,
@@ -130,6 +135,29 @@ test("canonical envelope marker requires ordinary slots to retain every issued o
   );
 });
 
+test("canonical outcome context is exact while historical envelopes may omit it", async () => {
+  const state = await issuedState({ roll: 0 });
+  assert.doesNotThrow(() => assertRoomRewardEnvelopeV3(
+    state.currentRewardEnvelope,
+    { canonicalChestOutcomes: "v1" }
+  ));
+
+  const historical = structuredClone(state.currentRewardEnvelope);
+  delete historical.canonicalChestOutcomeContext;
+  delete historical.canonicalChestOutcomeRevision;
+  assert.doesNotThrow(() => assertRoomRewardEnvelopeV3(
+    historical,
+    { canonicalChestOutcomes: "v1" }
+  ));
+
+  const tampered = structuredClone(state.currentRewardEnvelope);
+  tampered.canonicalChestOutcomeContext.extra = true;
+  assert.throws(
+    () => assertRoomRewardEnvelopeV3(tampered, { canonicalChestOutcomes: "v1" }),
+    /REWARD_ENVELOPE_INVALID:canonicalChestOutcomeContext/u
+  );
+});
+
 test("special canonical-capability envelopes retain the marker but keep legacy slots", async () => {
   const state = await issuedState({ roomType: "arena", depth: 4, roll: 2 });
   assert.equal(state.currentRewardEnvelope.canonicalChestOutcomesVersion, "v1");
@@ -247,6 +275,43 @@ test("canonical Vault stat and trap outcomes include the mandatory gold bonus", 
     const fixed = state.currentRewardEnvelope.fixedAwards.reduce((sum, award) => sum + award.amount, 0);
     assert.equal(settled.authoritativeGoldDelta, fixed + 50, `roll=${roll}`);
   }
+});
+
+test("canonical chest outcome remains bound to issuance build after a pre-settlement relic change", async () => {
+  const state = await issuedState({ roll: 980_000 });
+  const slot = state.currentRewardEnvelope.claimSlots[0];
+  assert.equal(slot.canonicalOutcome.outcome, "trap");
+
+  state.build = await applyRelicAcquisition(state.build, {
+    relicId: "shrineward",
+    acquiredRevision: state.revision,
+    acquisitionSource: "canonical_chest_regression",
+    sourceOfferId: "offer_shrineward"
+  }, { cryptoProvider: webcrypto });
+  await refreshIssuedStateDigestV08(state, {
+    ...context,
+    capabilities: { canonicalChestOutcomes: "v1" }
+  });
+
+  const settled = await settleRoomRewardEnvelopeV3(
+    state,
+    requestFor(state, [{
+      claimType: "chest",
+      claimId: slot.slotId,
+      count: 1,
+      localEvidence: {
+        outcome: slot.canonicalOutcome.outcome,
+        awardId: slot.canonicalOutcome.awardId
+      }
+    }]),
+    {
+      ...context,
+      capabilities: { canonicalChestOutcomes: "v1" },
+      randomOracle: { async deriveIntInclusive() { return 980_000; } }
+    }
+  );
+  const fixed = state.currentRewardEnvelope.fixedAwards.reduce((sum, award) => sum + award.amount, 0);
+  assert.equal(settled.authoritativeGoldDelta, fixed);
 });
 
 test("canonical award, outcome, and invented stat evidence are rejected", async () => {
