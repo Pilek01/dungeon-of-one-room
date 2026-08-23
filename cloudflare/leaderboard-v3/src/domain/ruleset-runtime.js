@@ -94,7 +94,7 @@ async function settleEventJournalBoundary(state, payload, outcome, ruleset, cont
   applyCheckpointRankEligibility(settlement.state, {
     integrityVersion: 1,
     integritySignals: [],
-    goldIntegrityReasons: outcome === "emergency"
+    goldIntegrityReasons: outcome === "emergency" && !boundaryInvalid
       ? checkpointGoldIntegrityReasons(
         roomIntegrityState || state,
         {

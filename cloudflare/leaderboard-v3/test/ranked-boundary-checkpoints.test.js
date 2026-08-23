@@ -279,6 +279,32 @@ test("capable emergency extraction settles without clear and edited totals becom
   assert.equal(result.nextState.depth, state.depth);
   assert.equal(result.nextState.campaign.treasureMapFragments, 1);
   assert.equal(result.nextState.rankEligibility, "provisional");
+  assert.ok(result.nextState.rankIntegrity.reasonCodes.includes("REPORTED_GOLD_DELTA_MISMATCH"));
+  assert.ok(result.nextState.rankIntegrity.reasonCodes.includes("REPORTED_GOLD_TOTAL_MISMATCH"));
+});
+
+test("invalid emergency boundary fallback does not compare edited gold totals", async () => {
+  const { state, context } = await activeRoom("run_boundary_event_emergency_invalid_potion_count");
+  initializeRankEligibility(state, { integrityVersion: 1 });
+  captureRankIntegrityRoomContext(state);
+  const ruleset = V08_META_1_LOCAL_RELEASE_DESCRIPTOR.createRuleset();
+  const result = await applyRulesetEvent(state, {
+    type: "request_extraction",
+    payload: {
+      mode: "emergency",
+      boundarySettlement: boundaryRequest(state, [{
+        claimType: "resource",
+        claimId: "potion-use",
+        count: 4
+      }], {
+        reportedGoldDelta: 99_999,
+        reportedGoldTotal: 99_999
+      })
+    }
+  }, ruleset, context);
+  assert.equal(result.nextState.status, "extraction");
+  assert.equal(result.nextState.rankEligibility, "provisional");
+  assert.deepEqual(result.nextState.rankIntegrity.reasonCodes, ["BOUNDARY_SETTLEMENT_INVALID"]);
 });
 
 test("the previous production capability contract rejects the new event journal fields", async () => {
