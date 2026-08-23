@@ -200,6 +200,64 @@ test("authenticated starting selection returns one deterministic first room and 
   assert.equal(conflict.payload.error.code, "IDEMPOTENCY_KEY_REUSED");
 });
 
+test("real runtime preserves the issued canonical chest outcome across Observer Bot assistance", async () => {
+  const harness = createRealHarness();
+  const started = (await harness.start("canonical-assistance-start")).payload;
+  let session = (await harness.select(started, 0, "canonical-assistance-select")).payload;
+  const issuedSlot = session.metaState.currentRewardEnvelope.claimSlots.find(
+    (slot) => slot.canonicalOutcome
+  );
+  assert.ok(issuedSlot, "first canonical room must issue a chest outcome");
+  const issuedOutcome = structuredClone(issuedSlot.canonicalOutcome);
+
+  const marked = await harness.event(
+    session,
+    "mark_test_assistance",
+    { assistanceClass: "observer_bot" },
+    "canonical-assistance-mark"
+  );
+  assert.equal(marked.response.status, 200);
+  session = marked.payload;
+  assert.deepEqual(
+    session.metaState.currentRewardEnvelope.claimSlots.find((slot) => slot.slotId === issuedSlot.slotId)
+      .canonicalOutcome,
+    issuedOutcome
+  );
+
+  const localEvidence = {
+    outcome: issuedOutcome.outcome,
+    awardId: issuedOutcome.awardId
+  };
+  if (["potion", "map_fragment"].includes(issuedOutcome.outcome)) localEvidence.count = 1;
+  if (["gold", "fallback_gold"].includes(issuedOutcome.outcome)) localEvidence.baseAmount = 4;
+
+  const tampered = await harness.checkpoint(
+    session,
+    "canonical-assistance-tampered",
+    { rewardClaims: [{
+      claimType: "chest",
+      claimId: issuedSlot.slotId,
+      count: 1,
+      localEvidence: { ...localEvidence, awardId: "award_forged" }
+    }] }
+  );
+  assert.equal(tampered.response.status, 500);
+  assert.equal(tampered.payload.error.code, "INTERNAL_ERROR");
+  assert.match(harness.lastCause()?.message || "", /REWARD_CLAIM_CHEST_AWARD_ID_MISMATCH/u);
+
+  const checkpointed = await harness.checkpoint(
+    session,
+    "canonical-assistance-checkpoint",
+    { rewardClaims: [{
+      claimType: "chest",
+      claimId: issuedSlot.slotId,
+      count: 1,
+      localEvidence
+    }] }
+  );
+  assert.equal(checkpointed.response.status, 200);
+});
+
 test("starting selection rejects fake authority, stale bindings and token-kind substitution", async () => {
   const harness = createRealHarness();
   const started = (await harness.start()).payload;

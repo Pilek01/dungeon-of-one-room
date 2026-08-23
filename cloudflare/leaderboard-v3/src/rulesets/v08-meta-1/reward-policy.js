@@ -307,6 +307,7 @@ async function issueCanonicalChestSlots({
   directive,
   slots,
   envelopeId,
+  outcomeRevision = state.revision,
   cryptoProvider,
   randomOracle,
   secret
@@ -324,7 +325,7 @@ async function issueCanonicalChestSlots({
       secret,
       rulesetId: RULESET_ID,
       runId: state.runId,
-      revision: state.revision,
+      revision: outcomeRevision,
       purpose: "reward/chest-outcome",
       counter: index,
       cryptoProvider
@@ -349,7 +350,7 @@ async function issueCanonicalChestSlots({
       envelopeId,
       runId: state.runId,
       rulesetHash: state.rulesetHash,
-      revision: state.revision,
+      revision: outcomeRevision,
       directiveId: directive.directiveId,
       slotId: slot.slotId,
       outcome
@@ -520,6 +521,7 @@ export async function createRoomRewardEnvelopeV3({
         directive,
         slots,
         envelopeId,
+        outcomeRevision: state.revision,
         cryptoProvider,
         randomOracle,
         secret
@@ -541,6 +543,9 @@ export async function createRoomRewardEnvelopeV3({
     roomType: directive.roomType,
     claimPolicyVersion: rewardBounds.policyVersion,
     ...(canonicalChestOutcomesVersion ? { canonicalChestOutcomesVersion } : {}),
+    ...(canonicalChestRoomEnabled(capabilities, directive.roomType)
+      ? { canonicalChestOutcomeRevision: state.revision }
+      : {}),
     fixedAwards: [{
       awardId: "room-clear",
       sourceId: "room-clear",
@@ -577,7 +582,10 @@ export async function createRoomRewardEnvelopeV3({
             slotId: slot.slotId,
             canonicalOutcome: slot.canonicalOutcome
           }))
-        : null
+        : null,
+      ...(canonicalChestRoomEnabled(capabilities, directive.roomType)
+        ? { canonicalChestOutcomeRevision: state.revision }
+        : {})
     }, cryptoProvider)
   };
   assertRoomRewardEnvelopeV3(envelope, capabilities);
@@ -670,6 +678,14 @@ export function assertRoomRewardEnvelopeV3(envelope, capabilities = {}) {
   ) {
     throw new TypeError("REWARD_ENVELOPE_INVALID:canonicalChestOutcomesVersion");
   }
+  if (canonicalChestRoomEnabled(capabilities, envelope.roomType)) {
+    if (
+      envelope.canonicalChestOutcomeRevision !== undefined &&
+      (!Number.isSafeInteger(envelope.canonicalChestOutcomeRevision) || envelope.canonicalChestOutcomeRevision < 0)
+    ) {
+      throw new TypeError("REWARD_ENVELOPE_INVALID:canonicalChestOutcomeRevision");
+    }
+  }
   if (
     !Array.isArray(envelope.fixedAwards) ||
     !Array.isArray(envelope.boundedClaims) ||
@@ -742,7 +758,7 @@ function requestDigestInput(request) {
 }
 
 function issuedStateDigestInput(state, envelope, capabilities = {}) {
-  return {
+  const input = {
     runId: state.runId,
     rulesetHash: state.rulesetHash,
     revision: envelope.revision,
@@ -764,6 +780,13 @@ function issuedStateDigestInput(state, envelope, capabilities = {}) {
         }))
       : null
   };
+  if (
+    canonicalChestRoomEnabled(capabilities, envelope.roomType) &&
+    envelope.canonicalChestOutcomeRevision !== undefined
+  ) {
+    input.canonicalChestOutcomeRevision = envelope.canonicalChestOutcomeRevision;
+  }
+  return input;
 }
 
 async function assertIssuedStateDigest(state, envelope, capabilities, cryptoProvider) {
@@ -797,6 +820,7 @@ async function assertIssuedChestOutcomes(state, envelope, capabilities, context 
     directive,
     slots,
     envelopeId: envelope.envelopeId,
+    outcomeRevision: envelope.canonicalChestOutcomeRevision ?? envelope.revision,
     cryptoProvider: context.cryptoProvider,
     randomOracle: context.randomOracle,
     secret: context.secret
@@ -858,9 +882,17 @@ function calculateClaimAmount(state, envelope, claim, slotById, capabilities = {
         throw new TypeError("REWARD_CLAIM_CHEST_AWARD_ID_MISMATCH");
       }
       if (["health", "attack", "armor", "healing", "trap"].includes(outcome)) {
+        const vaultBonus = slot.slotType === "vault-chest"
+          ? calculateMultipliedGoldV08({
+              canonicalBuild: state.build,
+              canonicalRunModifiers: state.runModifiers,
+              sourceId: "vault-chest-bonus",
+              baseAmount: chestBounds.vaultBonusBase
+            })
+          : 0;
         slot.consumed = true;
         return {
-          amount: 0,
+          amount: vaultBonus,
           authority: "SERVER_ISSUED",
           chestStat: ["health", "attack", "armor"].includes(outcome) ? outcome : null
         };

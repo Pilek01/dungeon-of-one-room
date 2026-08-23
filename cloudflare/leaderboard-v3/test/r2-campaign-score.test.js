@@ -298,3 +298,14 @@ test("legacy profiles without score carry normalize safely before their next des
     earnedGold: 0
   });
 });
+
+test("historical campaigns with score carry but no chest ledger remain valid", () => {
+  const state = createState("run_campaign_score_historical");
+  state.campaign.scoreCarry = { highWaterDepth: 17, earnedGold: 321 };
+  delete state.campaign.chestBonuses;
+  assert.doesNotThrow(() => assertMetaStateV08(state));
+  assert.deepEqual(state.campaign.scoreCarry, {
+    highWaterDepth: 17,
+    earnedGold: 321
+  });
+});

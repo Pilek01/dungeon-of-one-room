@@ -159,6 +159,8 @@ function assertCampaignState(campaign) {
   const normalized = createCampaignState({ campaign });
   const expectedKeys = Object.keys(normalized).sort();
   const legacyKeys = expectedKeys.filter((key) => key !== "scoreCarry" && key !== "chestBonuses");
+  const scoreCarryOnlyKeys = expectedKeys.filter((key) => key !== "chestBonuses");
+  const chestBonusesOnlyKeys = expectedKeys.filter((key) => key !== "scoreCarry");
   const actualKeys = Object.keys(campaign).sort();
   const hasCarry = Object.hasOwn(campaign, "scoreCarry");
   const carryKeys = hasCarry && campaign.scoreCarry && typeof campaign.scoreCarry === "object"
@@ -168,7 +170,9 @@ function assertCampaignState(campaign) {
   if (
     (
       JSON.stringify(actualKeys) !== JSON.stringify(expectedKeys) &&
-      JSON.stringify(actualKeys) !== JSON.stringify(legacyKeys)
+      JSON.stringify(actualKeys) !== JSON.stringify(legacyKeys) &&
+      JSON.stringify(actualKeys) !== JSON.stringify(scoreCarryOnlyKeys) &&
+      JSON.stringify(actualKeys) !== JSON.stringify(chestBonusesOnlyKeys)
     ) ||
     campaign.treasureMapFragments !== normalized.treasureMapFragments ||
     campaign.forcedNextRoomType !== normalized.forcedNextRoomType ||

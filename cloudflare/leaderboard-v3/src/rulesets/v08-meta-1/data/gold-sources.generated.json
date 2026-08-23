@@ -10,13 +10,13 @@
     },
     {
       "file": "camp-runtime.js",
-      "byteLength": 30381,
-      "sha256": "302c3442e6e02442f21283b073603bb051e912ac365c55541d4a1b7afe76997a"
+      "byteLength": 30457,
+      "sha256": "3183ee85c612775b97475d6d06f4d67f429d58033dcd4100fd23635945546b8d"
     },
     {
       "file": "game.js",
-      "byteLength": 1340318,
-      "sha256": "a160e2022d5d1114d1bc8d7f983c69e96a91c7448c2680c2f5736c307052f246"
+      "byteLength": 1340338,
+      "sha256": "55378dcc1ce11f6d410b9ecab22fedbde39da4a6ecf0945ebe0185c7498bcfd6"
     },
     {
       "file": "loot-tables.js",

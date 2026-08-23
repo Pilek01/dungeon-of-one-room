@@ -223,6 +223,32 @@ test("canonical attack and armor claims derive their envelope-depth buckets", as
   }
 });
 
+test("canonical Vault stat and trap outcomes include the mandatory gold bonus", async () => {
+  for (const roll of [0, 200_000, 400_000, 700_000, 990_000]) {
+    const state = await issuedState({ roomType: "vault", roll });
+    const slot = state.currentRewardEnvelope.claimSlots[0];
+    const settled = await settleRoomRewardEnvelopeV3(
+      state,
+      requestFor(state, [{
+        claimType: "chest",
+        claimId: slot.slotId,
+        count: 1,
+        localEvidence: {
+          outcome: slot.canonicalOutcome.outcome,
+          awardId: slot.canonicalOutcome.awardId
+        }
+      }]),
+      {
+        ...context,
+        randomOracle: { async deriveIntInclusive() { return roll; } },
+        capabilities: { canonicalChestOutcomes: "v1" }
+      }
+    );
+    const fixed = state.currentRewardEnvelope.fixedAwards.reduce((sum, award) => sum + award.amount, 0);
+    assert.equal(settled.authoritativeGoldDelta, fixed + 50, `roll=${roll}`);
+  }
+});
+
 test("canonical award, outcome, and invented stat evidence are rejected", async () => {
   const state = await issuedState({ roll: 0 });
   const slot = state.currentRewardEnvelope.claimSlots[0];
