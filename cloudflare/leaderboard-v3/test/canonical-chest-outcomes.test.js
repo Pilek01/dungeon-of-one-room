@@ -5,6 +5,11 @@ import { createInitialMetaStateV08 } from "../src/rulesets/v08-meta-1/meta-state
 import { createRoomRewardEnvelopeV3 } from "../src/rulesets/v08-meta-1/reward-policy.js";
 import { settleRoomRewardEnvelopeV3, settleBoundaryRewardEnvelopeV3 } from "../src/rulesets/v08-meta-1/reward-policy.js";
 import { normalizeChestBonusesV08 } from "../src/rulesets/v08-meta-1/chest-bonus-policy.js";
+import {
+  applyRelicAcquisition,
+  computeRelicBuildDigestV08
+} from "../src/rulesets/v08-meta-1/relic-policy.js";
+import { applyCanonicalRunModifierSelection } from "../src/rulesets/v08-meta-1/run-modifiers.js";
 
 const context = {
   runId: "run_canonical_chest_red",
@@ -28,11 +33,30 @@ function directive() {
   };
 }
 
-async function issuedState({ roll = 0, depth = 1, campaign } = {}) {
+async function issuedState({ roll = 0, depth = 1, campaign, relicId, pact, modifierIds } = {}) {
   const state = createInitialMetaStateV08({ campaign }, context);
   state.status = "active";
   state.depth = depth;
   state.campaign.chestBonuses = campaign?.chestBonuses || state.campaign.chestBonuses;
+  if (relicId) {
+    state.build = await applyRelicAcquisition(state.build, {
+      relicId,
+      acquiredRevision: state.revision,
+      acquisitionSource: "canonical_chest_test",
+      sourceOfferId: `offer_${relicId}`
+    }, { cryptoProvider: webcrypto });
+  }
+  if (pact) {
+    state.build.pacts = [pact];
+    state.build.buildDigest = await computeRelicBuildDigestV08(state.build, webcrypto);
+  }
+  if (modifierIds) {
+    const next = await applyCanonicalRunModifierSelection(state, {
+      modifierIds,
+      activationSource: "server-issued-run-start"
+    }, { authority: "TRUSTED_RULESET_DOMAIN", cryptoProvider: webcrypto });
+    Object.assign(state, next);
+  }
   const currentDirective = { ...directive(), depth, revision: state.revision };
   const envelope = await createRoomRewardEnvelopeV3({
     state,
@@ -108,6 +132,15 @@ test("canonical issuance follows the legacy standard chest distribution categori
   }
 });
 
+test("canonical issuance resolves Shrine Ward, Alchemist, and Avarice conversions", async () => {
+  const shrineWard = await issuedState({ roll: 980_000, relicId: "shrineward" });
+  assert.equal(shrineWard.currentRewardEnvelope.claimSlots[0].canonicalOutcome.outcome, "gold");
+  const alchemist = await issuedState({ roll: 0, modifierIds: ["alchemist"] });
+  assert.equal(alchemist.currentRewardEnvelope.claimSlots[0].canonicalOutcome.outcome, "fallback_gold");
+  const avarice = await issuedState({ roll: 800_000, pact: "avarice" });
+  assert.equal(avarice.currentRewardEnvelope.claimSlots[0].canonicalOutcome.outcome, "fallback_gold");
+});
+
 test("canonical stat claim applies one derived bucket increment without accepting a client amount", async () => {
   const state = await issuedState({ roll: 0, depth: 21 });
   const slot = state.currentRewardEnvelope.claimSlots[0];
@@ -128,6 +161,28 @@ test("canonical stat claim applies one derived bucket increment without acceptin
   assert.equal(result.state.campaign.chestBonuses.healthDepthBuckets["2"], 1);
 });
 
+test("canonical attack and armor claims derive their envelope-depth buckets", async () => {
+  for (const [roll, field] of [[400_000, "attackDepthBuckets"], [700_000, "armorDepthBuckets"]]) {
+    const state = await issuedState({ roll, depth: 31 });
+    const slot = state.currentRewardEnvelope.claimSlots[0];
+    const result = await settleRoomRewardEnvelopeV3(
+      state,
+      requestFor(state, [{
+        claimType: "chest",
+        claimId: slot.slotId,
+        count: 1,
+        localEvidence: { outcome: slot.canonicalOutcome.outcome, awardId: slot.canonicalOutcome.awardId }
+      }]),
+      {
+        ...context,
+        randomOracle: { async deriveIntInclusive() { return roll; } },
+        capabilities: { canonicalChestOutcomes: "v1" }
+      }
+    );
+    assert.equal(result.state.campaign.chestBonuses[field]["3"], 1);
+  }
+});
+
 test("canonical award, outcome, and invented stat evidence are rejected", async () => {
   const state = await issuedState({ roll: 0 });
   const slot = state.currentRewardEnvelope.claimSlots[0];
@@ -142,8 +197,117 @@ test("canonical award, outcome, and invented stat evidence are rejected", async 
         requestFor(state, [{ claimType: "chest", claimId: slot.slotId, count: 1, localEvidence }]),
         { ...context, capabilities: { canonicalChestOutcomes: "v1" } }
       ),
-      /REWARD_CLAIM_CHEST_(OUTCOME_MISMATCH|AWARD_ID_MISMATCH|STAT_EVIDENCE_FORBIDDEN)/u
+      /REWARD_CLAIM_CHEST_(OUTCOME_MISMATCH|AWARD_ID_MISMATCH|STAT_EVIDENCE_FORBIDDEN|EVIDENCE_SCHEMA_INVALID)/u
     );
+  }
+});
+
+test("canonical stat replay is exact and issued-state tampering fails closed", async () => {
+  const state = await issuedState({ roll: 0 });
+  const slot = state.currentRewardEnvelope.claimSlots[0];
+  const request = requestFor(state, [{
+    claimType: "chest",
+    claimId: slot.slotId,
+    count: 1,
+    localEvidence: { outcome: slot.canonicalOutcome.outcome, awardId: slot.canonicalOutcome.awardId }
+  }]);
+  const first = await settleRoomRewardEnvelopeV3(
+    state,
+    request,
+    { ...context, capabilities: { canonicalChestOutcomes: "v1" } }
+  );
+  const replay = await settleRoomRewardEnvelopeV3(
+    first.state,
+    request,
+    { ...context, capabilities: { canonicalChestOutcomes: "v1" } }
+  );
+  assert.equal(replay.replayed, true);
+  assert.equal(replay.state.campaign.chestBonuses.healthDepthBuckets["0"], 1);
+
+  const tampered = await issuedState({ roll: 0 });
+  tampered.currentRewardEnvelope.claimSlots[0].canonicalOutcome.outcome = "gold";
+  await assert.rejects(
+    settleRoomRewardEnvelopeV3(tampered, requestFor(tampered, []), {
+      ...context,
+      capabilities: { canonicalChestOutcomes: "v1" }
+    }),
+    /REWARD_(ISSUED_STATE_DIGEST_MISMATCH|CHEST_OUTCOME_ISSUANCE_MISMATCH)/u
+  );
+});
+
+test("canonical claims reject unknown scalar and nested evidence fields", async () => {
+  const state = await issuedState({ roll: 0 });
+  const slot = state.currentRewardEnvelope.claimSlots[0];
+  for (const extra of [
+    { healthBonus: 1 },
+    { attackAmount: 2 },
+    { value: 3 },
+    { nested: { amount: 4 } }
+  ]) {
+    await assert.rejects(
+      settleRoomRewardEnvelopeV3(
+        state,
+        requestFor(state, [{
+          claimType: "chest",
+          claimId: slot.slotId,
+          count: 1,
+          localEvidence: {
+            outcome: slot.canonicalOutcome.outcome,
+            awardId: slot.canonicalOutcome.awardId,
+            ...extra
+          }
+        }]),
+        { ...context, capabilities: { canonicalChestOutcomes: "v1" } }
+      ),
+      /REWARD_CLAIM_CHEST_EVIDENCE_SCHEMA_INVALID/u
+    );
+  }
+});
+
+test("canonical claims reject wrong, reused, other-slot, and stale bindings", async () => {
+  const state = await issuedState({ roll: 0 });
+  const [first, second] = state.currentRewardEnvelope.claimSlots;
+  const evidence = { outcome: first.canonicalOutcome.outcome, awardId: first.canonicalOutcome.awardId };
+  const capable = { ...context, capabilities: { canonicalChestOutcomes: "v1" } };
+  await assert.rejects(
+    settleRoomRewardEnvelopeV3(state, requestFor(state, [{ claimType: "chest", claimId: "missing", count: 1, localEvidence: evidence }]), capable),
+    /REWARD_CLAIM_ID_UNKNOWN/u
+  );
+  await assert.rejects(
+    settleRoomRewardEnvelopeV3(state, requestFor(state, [{ claimType: "chest", claimId: second.slotId, count: 1, localEvidence: evidence }]), capable),
+    /REWARD_CLAIM_CHEST_AWARD_ID_MISMATCH/u
+  );
+  await assert.rejects(
+    settleRoomRewardEnvelopeV3(state, { ...requestFor(state, [{ claimType: "chest", claimId: first.slotId, count: 1, localEvidence: evidence }]), roomNonce: "stale" }, capable),
+    /REWARD_CLAIM_NONCE_MISMATCH/u
+  );
+  await assert.rejects(
+    settleRoomRewardEnvelopeV3(state, requestFor(state, [
+      { claimType: "chest", claimId: first.slotId, count: 1, localEvidence: evidence },
+      { claimType: "chest", claimId: first.slotId, count: 1, localEvidence: evidence }
+    ]), capable),
+    /REWARD_CLAIM_DUPLICATE/u
+  );
+});
+
+test("canonical resource and gold categories require their exact evidence fields", async () => {
+  for (const [roll, required] of [[800_000, "count"], [920_000, "count"], [950_000, "baseAmount"]]) {
+    const state = await issuedState({ roll });
+    const slot = state.currentRewardEnvelope.claimSlots[0];
+    const evidence = { outcome: slot.canonicalOutcome.outcome, awardId: slot.canonicalOutcome.awardId };
+    await assert.rejects(
+      settleRoomRewardEnvelopeV3(
+        state,
+        requestFor(state, [{ claimType: "chest", claimId: slot.slotId, count: 1, localEvidence: evidence }]),
+        {
+          ...context,
+          randomOracle: { async deriveIntInclusive() { return roll; } },
+          capabilities: { canonicalChestOutcomes: "v1" }
+        }
+      ),
+      /REWARD_CLAIM_CHEST_EVIDENCE_SCHEMA_INVALID/u
+    );
+    evidence[required] = required === "count" ? 1 : 4;
   }
 });
 

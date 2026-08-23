@@ -578,6 +578,26 @@ function assertCanonicalOutcome(value) {
   }
 }
 
+function assertCanonicalChestClaimEvidence(claim, outcome) {
+  const evidence = claim.localEvidence;
+  if (!evidence || typeof evidence !== "object" || Array.isArray(evidence)) {
+    throw new TypeError("REWARD_CLAIM_CHEST_EVIDENCE_SCHEMA_INVALID");
+  }
+  const expectedKeys = ["outcome", "awardId"];
+  if (["potion", "map_fragment"].includes(outcome)) expectedKeys.push("count");
+  if (["gold", "fallback_gold"].includes(outcome)) expectedKeys.push("baseAmount");
+  if (JSON.stringify(Object.keys(evidence).sort()) !== JSON.stringify(expectedKeys.sort())) {
+    throw new TypeError("REWARD_CLAIM_CHEST_EVIDENCE_SCHEMA_INVALID");
+  }
+  if (evidence.outcome !== outcome || typeof evidence.awardId !== "string" || !evidence.awardId.trim()) {
+    throw new TypeError("REWARD_CLAIM_CHEST_EVIDENCE_SCHEMA_INVALID");
+  }
+  const allowedClaimKeys = ["claimType", "claimId", "count", "localEvidence"];
+  if (Object.keys(claim).some((key) => !allowedClaimKeys.includes(key))) {
+    throw new TypeError("REWARD_CLAIM_CHEST_EVIDENCE_SCHEMA_INVALID");
+  }
+}
+
 function assertClaimSlots(claimSlots, capabilities) {
   const ids = new Set();
   for (const slot of claimSlots) {
@@ -781,38 +801,13 @@ function calculateClaimAmount(state, envelope, claim, slotById, capabilities = {
     const outcome = String(claim.localEvidence?.outcome || "");
     if (canonicalChestOutcomesEnabled(capabilities)) {
       assertCanonicalOutcome(slot.canonicalOutcome);
-      const awardId = String(claim.localEvidence?.awardId || "");
+      assertCanonicalChestClaimEvidence(claim, slot.canonicalOutcome.outcome);
+      const awardId = claim.localEvidence.awardId;
       if (outcome !== slot.canonicalOutcome.outcome) {
         throw new TypeError("REWARD_CLAIM_CHEST_OUTCOME_MISMATCH");
       }
       if (awardId !== slot.canonicalOutcome.awardId) {
         throw new TypeError("REWARD_CLAIM_CHEST_AWARD_ID_MISMATCH");
-      }
-      for (const field of [
-        "amount",
-        "statAmount",
-        "stat",
-        "statType",
-        "health",
-        "attack",
-        "armor",
-        "hp",
-        "atk",
-        "arm",
-        "scalingDepth",
-        "bucket",
-        "bucketCount",
-        "aggregate",
-        "total",
-        "bonus",
-        "delta"
-      ]) {
-        if (
-          Object.hasOwn(claim.localEvidence || {}, field) ||
-          Object.hasOwn(claim, field)
-        ) {
-          throw new TypeError("REWARD_CLAIM_CHEST_STAT_EVIDENCE_FORBIDDEN");
-        }
       }
       if (["health", "attack", "armor", "healing", "trap"].includes(outcome)) {
         slot.consumed = true;
