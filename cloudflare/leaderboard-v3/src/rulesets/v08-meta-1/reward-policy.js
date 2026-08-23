@@ -526,6 +526,9 @@ export async function createRoomRewardEnvelopeV3({
       })
     : slots;
   const rewardSlots = relicOfferSlots(directive, envelopeId);
+  const canonicalChestOutcomesVersion = canonicalChestOutcomesEnabled(capabilities)
+    ? CANONICAL_CHEST_OUTCOME_CAPABILITY
+    : undefined;
   const envelope = {
     envelopeId,
     runId: state.runId,
@@ -537,6 +540,7 @@ export async function createRoomRewardEnvelopeV3({
     scalingDepth,
     roomType: directive.roomType,
     claimPolicyVersion: rewardBounds.policyVersion,
+    ...(canonicalChestOutcomesVersion ? { canonicalChestOutcomesVersion } : {}),
     fixedAwards: [{
       awardId: "room-clear",
       sourceId: "room-clear",
@@ -567,6 +571,7 @@ export async function createRoomRewardEnvelopeV3({
       build: state.build,
       runModifiers: state.runModifiers,
       chestBonuses: normalizeChestBonusesV08(state.campaign?.chestBonuses),
+      canonicalChestOutcomesVersion: canonicalChestOutcomesVersion || null,
       canonicalChestOutcomes: canonicalChestRoomEnabled(capabilities, directive.roomType)
         ? issuedSlots.map((slot) => ({
             slotId: slot.slotId,
@@ -654,6 +659,18 @@ export function assertRoomRewardEnvelopeV3(envelope, capabilities = {}) {
     throw new TypeError("REWARD_ENVELOPE_INVALID:scalingDepth");
   }
   if (
+    envelope.canonicalChestOutcomesVersion !== undefined &&
+    envelope.canonicalChestOutcomesVersion !== CANONICAL_CHEST_OUTCOME_CAPABILITY
+  ) {
+    throw new TypeError("REWARD_ENVELOPE_INVALID:canonicalChestOutcomesVersion");
+  }
+  if (
+    canonicalChestOutcomesEnabled(capabilities) &&
+    envelope.canonicalChestOutcomesVersion !== CANONICAL_CHEST_OUTCOME_CAPABILITY
+  ) {
+    throw new TypeError("REWARD_ENVELOPE_INVALID:canonicalChestOutcomesVersion");
+  }
+  if (
     !Array.isArray(envelope.fixedAwards) ||
     !Array.isArray(envelope.boundedClaims) ||
     !Array.isArray(envelope.claimSlots) ||
@@ -737,6 +754,9 @@ function issuedStateDigestInput(state, envelope, capabilities = {}) {
     build: state.build,
     runModifiers: state.runModifiers,
     chestBonuses: normalizeChestBonusesV08(state.campaign?.chestBonuses),
+    canonicalChestOutcomesVersion: canonicalChestOutcomesEnabled(capabilities)
+      ? CANONICAL_CHEST_OUTCOME_CAPABILITY
+      : null,
     canonicalChestOutcomes: canonicalChestRoomEnabled(capabilities, envelope.roomType)
       ? envelope.claimSlots.map((slot) => ({
           slotId: slot.slotId,

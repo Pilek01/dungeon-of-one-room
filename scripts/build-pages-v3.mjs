@@ -1209,6 +1209,49 @@ const rankedSpecialRoomScalingReplacements = [
     const bucketIndex = getChestAttackBucketIndex(rewardDepth);`
   ],
   [
+`  function handleChestHealingDrop() {`,
+`  function applyRankedCanonicalChestStatOutcome(outcome, inTreasureRoom) {
+    if (!state.onlineV3Ranked || !["health", "attack", "armor"].includes(outcome)) return false;
+    const rewardDepth = getRankedSpecialRoomScalingDepth();
+    const bucketIndex = getChestAttackBucketIndex(rewardDepth);
+    const bucketLabel = getChestAttackBucketLabel(bucketIndex);
+    if (outcome === "attack") {
+      const current = getChestAttackBucketCount(bucketIndex);
+      const next = Math.min(CHEST_ATTACK_BUCKET_MAX, current + 1);
+      const flat = getChestUpgradeFlatByDepth(CHEST_ATTACK_UPGRADE_FLAT, rewardDepth);
+      state.sessionChestAttackDepthBuckets[String(bucketIndex)] = next;
+      state.sessionChestAttackFlat += flat;
+      state.player.attack += scaleFlatAttackByBlade(flat);
+      pushTestModeLog(\`Ranked canonical chest ATK @d\${rewardDepth}: +\${flat}, bucket \${bucketLabel} \${next}/\${CHEST_ATTACK_BUCKET_MAX}.\`);
+      pushLog(\`Chest: Attack +\${flat}. Depth \${bucketLabel} chest ATK \${next}/\${CHEST_ATTACK_BUCKET_MAX}.\`, "good");
+      return true;
+    }
+    if (outcome === "armor") {
+      const current = getChestArmorBucketCount(bucketIndex);
+      const next = Math.min(CHEST_ATTACK_BUCKET_MAX, current + 1);
+      const flat = getChestUpgradeFlatByDepth(CHEST_ARMOR_UPGRADE_FLAT, rewardDepth);
+      state.sessionChestArmorDepthBuckets[String(bucketIndex)] = next;
+      state.sessionChestArmorFlat += flat;
+      state.player.armor += flat;
+      pushTestModeLog(\`Ranked canonical chest ARM @d\${rewardDepth}: +\${flat}, bucket \${bucketLabel} \${next}/\${CHEST_ATTACK_BUCKET_MAX}.\`);
+      pushLog(\`Chest: Armor +\${flat}. Depth \${bucketLabel} chest ARM \${next}/\${CHEST_ATTACK_BUCKET_MAX}.\`, "good");
+      return true;
+    }
+    const current = getChestHealthBucketCount(bucketIndex);
+    const next = Math.min(CHEST_ATTACK_BUCKET_MAX, current + 1);
+    const flat = getChestHealthUpgradeFlatByDepth(rewardDepth);
+    state.sessionChestHealthDepthBuckets[String(bucketIndex)] = next;
+    state.sessionChestHealthFlat += flat;
+    state.player.maxHp += flat;
+    state.player.hp = Math.min(state.player.maxHp, state.player.hp + flat);
+    pushTestModeLog(\`Ranked canonical chest HP @d\${rewardDepth}: +\${flat}, bucket \${bucketLabel} \${next}/\${CHEST_ATTACK_BUCKET_MAX}.\`);
+    pushLog(\`Chest: Health +\${flat}. Depth \${bucketLabel} chest HP \${next}/\${CHEST_ATTACK_BUCKET_MAX}.\`, "good");
+    return true;
+  }
+
+  function handleChestHealingDrop() {`
+  ],
+  [
 `    const chestHealthFlat = getChestHealthUpgradeFlatByDepth(state.depth);
     state.sessionChestHealthFlat += chestHealthFlat;`,
 `    const chestHealthFlat = getChestHealthUpgradeFlatByDepth(rewardDepth);
@@ -1340,16 +1383,19 @@ const rankedGoldGameReplacements = [
     onlineV3CanonicalChestMode = false;
     const envelope = publicState?.currentRewardEnvelope;
     const slots = Array.isArray(envelope?.claimSlots) ? envelope.claimSlots : [];
-    if (!slots.some((slot) => Object.prototype.hasOwnProperty.call(slot || {}, "canonicalOutcome"))) return true;
     const roomType = String(envelope?.roomType || state.onlineV3Directive?.roomType || "");
+    const marker = envelope?.canonicalChestOutcomesVersion;
+    if (marker !== undefined && marker !== "v1") throw new TypeError("RANKED_CANONICAL_CHEST_MARKER_INVALID");
+    if (marker !== "v1") return true;
     if (!ONLINE_V3_CANONICAL_CHEST_ROOMS.has(roomType)) return true;
+    if (!Array.isArray(envelope?.claimSlots)) throw new TypeError("RANKED_CANONICAL_CHEST_SLOTS_MISSING");
     if (slots.some((slot) => {
       const outcome = slot?.canonicalOutcome;
       return !slot || typeof slot.slotId !== "string" ||
         !outcome || typeof outcome !== "object" || Array.isArray(outcome) ||
         typeof outcome.awardId !== "string" || !outcome.awardId.trim() ||
         JSON.stringify(Object.keys(outcome).sort()) !== JSON.stringify(["awardId", "outcome"]) ||
-        slot.slotId !== `chest_${slots.indexOf(slot) + 1}` || slot.consumed === true ||
+        slot.slotId !== "chest_" + (slots.indexOf(slot) + 1) || slot.consumed === true ||
         !["health", "healing", "attack", "armor", "potion", "map_fragment", "gold", "trap", "fallback_gold"].includes(outcome.outcome);
     })) throw new TypeError("RANKED_CANONICAL_CHEST_SLOT_INVALID");
     onlineV3CanonicalChestSlots = slots.map((slot) => ({
@@ -1533,7 +1579,9 @@ const rankedGoldGameReplacements = [
   ],
   [
 `    if (chestOutcome.outcome === "health") {`,
-`    if (chestOutcome.outcome === "fallback_gold") {
+`    if (onlineV3CanonicalChestOutcome && applyRankedCanonicalChestStatOutcome(chestOutcome.outcome, inTreasureRoom)) {
+      // Canonical stat outcomes bypass local cap/fallback policy.
+    } else if (chestOutcome.outcome === "fallback_gold") {
       const onlineV3FallbackBase = randInt(2, 5);
       const fallbackGold = grantGold(onlineV3FallbackBase);
       onlineV3RewardRecorder?.recordChestFallbackGold?.(onlineV3ActiveChestClaimId, onlineV3FallbackBase);

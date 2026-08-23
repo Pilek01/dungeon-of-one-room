@@ -227,11 +227,22 @@
     requireOptionalRecord(value.currentRewardEnvelope, "currentRewardEnvelope");
     if (value.currentRewardEnvelope) {
       requireText(value.currentRewardEnvelope.envelopeId, "currentRewardEnvelope.envelopeId");
+      const canonicalMarker = value.currentRewardEnvelope.canonicalChestOutcomesVersion;
+      if (canonicalMarker !== undefined && canonicalMarker !== "v1") {
+        throw new TypeError("PROTOCOL_PROJECTION_INVALID:canonicalChestOutcomesVersion");
+      }
+      const ordinaryCanonicalRooms = new Set([
+        "combat", "boss", "final", "cursed", "duel", "horde", "treasure", "vault", "ambush", "shrine"
+      ]);
+      const requiresCanonicalOrdinarySlots = canonicalMarker === "v1" &&
+        ordinaryCanonicalRooms.has(value.currentRewardEnvelope.roomType);
       requireOptionalArray(value.currentRewardEnvelope.rewardSlots, "currentRewardEnvelope.rewardSlots");
       requireOptionalArray(value.currentRewardEnvelope.claimSlots, "currentRewardEnvelope.claimSlots");
+      if (requiresCanonicalOrdinarySlots && !Array.isArray(value.currentRewardEnvelope.claimSlots)) {
+        throw new TypeError("PROTOCOL_PROJECTION_INVALID:claimSlots.canonicalOutcome");
+      }
       if (Array.isArray(value.currentRewardEnvelope.claimSlots)) {
         const slots = value.currentRewardEnvelope.claimSlots;
-        const hasCanonical = slots.some((slot) => isRecord(slot) && Object.hasOwn(slot, "canonicalOutcome"));
         const slotIds = new Set();
         for (const [index, slot] of slots.entries()) {
           if (!isRecord(slot) || typeof slot.slotId !== "string" || !slot.slotId) {
@@ -239,7 +250,7 @@
           }
           if (slotIds.has(slot.slotId)) throw new TypeError("PROTOCOL_PROJECTION_INVALID:claimSlots.duplicate");
           slotIds.add(slot.slotId);
-          if (!hasCanonical) continue;
+          if (!requiresCanonicalOrdinarySlots) continue;
           if (!Object.hasOwn(slot, "canonicalOutcome") || !isRecord(slot.canonicalOutcome)) {
             throw new TypeError("PROTOCOL_PROJECTION_INVALID:claimSlots.canonicalOutcome");
           }

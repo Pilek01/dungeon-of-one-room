@@ -97,6 +97,7 @@ test("canonical chest capability issues an outcome and award binding for every s
     capabilities: { canonicalChestOutcomes: "v1" }
   });
 
+  assert.equal(envelope.canonicalChestOutcomesVersion, "v1");
   assert.ok(envelope.claimSlots.length > 0);
   for (const slot of envelope.claimSlots) {
     assert.deepEqual(Object.keys(slot.canonicalOutcome).sort(), ["awardId", "outcome"]);
@@ -113,6 +114,26 @@ test("canonical chest capability issues an outcome and award binding for every s
       "fallback_gold"
     ].includes(slot.canonicalOutcome.outcome));
   }
+});
+
+test("canonical envelope marker requires ordinary slots to retain every issued outcome", async () => {
+  const state = await issuedState({ depth: 4, roll: 2 });
+  assert.equal(state.currentRewardEnvelope.canonicalChestOutcomesVersion, "v1");
+  const tampered = structuredClone(state);
+  delete tampered.currentRewardEnvelope.claimSlots[0].canonicalOutcome;
+  await assert.rejects(
+    () => settleRoomRewardEnvelopeV3(tampered, requestFor(tampered, []), {
+      ...context,
+      capabilities: { canonicalChestOutcomes: "v1" }
+    }),
+    /REWARD_CHEST_OUTCOME|REWARD_CLAIM_SLOT/u
+  );
+});
+
+test("special canonical-capability envelopes retain the marker but keep legacy slots", async () => {
+  const state = await issuedState({ roomType: "arena", depth: 4, roll: 2 });
+  assert.equal(state.currentRewardEnvelope.canonicalChestOutcomesVersion, "v1");
+  assert.equal(Object.hasOwn(state.currentRewardEnvelope.claimSlots[0], "canonicalOutcome"), false);
 });
 
 test("canonical issuance follows the legacy standard chest distribution categories", async () => {

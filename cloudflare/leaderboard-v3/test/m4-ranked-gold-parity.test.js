@@ -3,6 +3,7 @@ import vm from "node:vm";
 import test from "node:test";
 import { createRequire } from "node:module";
 import { readFile } from "node:fs/promises";
+import { execFileSync } from "node:child_process";
 import { V08_LOCAL_ELITE_REWARD_BONUS } from "../src/domain/rank-eligibility.js";
 import {
   calculateChestGoldV08,
@@ -12,6 +13,7 @@ import * as gamePatches from "../../../scripts/online-v3-game-patches.mjs";
 
 const require = createRequire(import.meta.url);
 const recorderApi = require("../../../online-v3/ranked-v3-recorder.js");
+const protocolApi = require("../../../online-v3/ranked-v3-protocol.js");
 
 function runModifierLedger(...modifierIds) {
   const active = [...modifierIds].sort().map((modifierId) => ({
@@ -353,4 +355,87 @@ test("production bridge consumes ordered canonical chest outcomes", async () => 
   assert.match(builder, /canonicalOutcome/u);
   assert.match(builder, /resetRankedCanonicalChestSlots/u);
   assert.match(builder, /getRankedCanonicalChestOutcome/u);
+  assert.match(builder, /applyRankedCanonicalChestStatOutcome/u);
+});
+
+test("protocol fails closed when the canonical marker strips an ordinary slot outcome", () => {
+  const state = {
+    runId: "run_protocol_marker",
+    rulesetId: protocolApi.RULESET_ID,
+    rulesetHash: protocolApi.RULESET_HASH,
+    protocolVersion: protocolApi.PROTOCOL_VERSION,
+    revision: 0,
+    status: "active",
+    currentRewardEnvelope: {
+      envelopeId: "reward_protocol_marker",
+      canonicalChestOutcomesVersion: "v1",
+      roomType: "combat",
+      claimSlots: [{ slotId: "chest_1", consumed: false }]
+    }
+  };
+  assert.throws(() => protocolApi.validateMetaState(state), /claimSlots\.canonicalOutcome/u);
+});
+
+test("markerless canonical envelopes remain legacy-compatible", () => {
+  const state = {
+    runId: "run_protocol_legacy",
+    rulesetId: protocolApi.RULESET_ID,
+    rulesetHash: protocolApi.RULESET_HASH,
+    protocolVersion: protocolApi.PROTOCOL_VERSION,
+    revision: 0,
+    status: "active",
+    currentRewardEnvelope: {
+      envelopeId: "reward_protocol_legacy",
+      roomType: "combat",
+      claimSlots: [{
+        slotId: "chest_1",
+        consumed: false,
+        canonicalOutcome: { awardId: "legacy_award", outcome: "health" }
+      }, {
+        slotId: "chest_2",
+        consumed: false
+      }]
+    }
+  };
+  assert.equal(protocolApi.validateMetaState(state), state);
+});
+
+test("canonical issued health bypasses a stale capped local bucket without fallback gold", async () => {
+  let generated;
+  try {
+    generated = await readFile(new URL("../../../output/pages-test-dist/game.js", import.meta.url), "utf8");
+  } catch {
+    execFileSync(process.execPath, ["scripts/build-pages-v3.mjs", "--target", "test"], {
+      cwd: new URL("../../../", import.meta.url),
+      stdio: "ignore"
+    });
+    generated = await readFile(new URL("../../../output/pages-test-dist/game.js", import.meta.url), "utf8");
+  }
+  const start = generated.indexOf("  function applyRankedCanonicalChestStatOutcome(");
+  const end = generated.indexOf("  function handleChestHealingDrop(", start);
+  assert.ok(start >= 0 && end > start);
+  const helper = generated.slice(start, end).replace(/^  /gmu, "");
+  const context = {
+    state: {
+      onlineV3Ranked: true,
+      sessionChestHealthDepthBuckets: { "0": 5 },
+      sessionChestHealthFlat: 0,
+      player: { maxHp: 100, hp: 80 }
+    },
+    CHEST_ATTACK_BUCKET_MAX: 5,
+    getRankedSpecialRoomScalingDepth: () => 1,
+    getChestAttackBucketIndex: () => 0,
+    getChestAttackBucketLabel: () => "0-9",
+    getChestHealthBucketCount: () => 5,
+    getChestHealthUpgradeFlatByDepth: () => 7,
+    pushTestModeLog: () => {},
+    pushLog: () => {}
+  };
+  vm.runInNewContext(helper, context);
+  assert.equal(context.applyRankedCanonicalChestStatOutcome("health", false), true);
+  assert.equal(context.state.player.maxHp, 107);
+  assert.equal(context.state.player.hp, 87);
+  assert.equal(context.state.sessionChestHealthFlat, 7);
+  assert.equal(context.state.sessionChestHealthDepthBuckets["0"], 5);
+  assert.equal(context.state.player.gold, undefined);
 });
