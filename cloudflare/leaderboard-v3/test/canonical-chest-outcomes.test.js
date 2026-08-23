@@ -20,20 +20,20 @@ const context = {
   randomOracle: { async deriveIntInclusive() { return 0; } }
 };
 
-function directive() {
+function directive(roomType = "combat") {
   return {
     directiveId: "directive_canonical_chest_red",
     runId: context.runId,
     revision: 0,
     roomIndex: 1,
     depth: 1,
-    roomType: "combat",
-    roomCategory: "normal",
+    roomType,
+    roomCategory: ["arena", "crossroads", "otter"].includes(roomType) ? "special" : "normal",
     specialRoomPayload: null
   };
 }
 
-async function issuedState({ roll = 0, depth = 1, campaign, relicId, pact, modifierIds } = {}) {
+async function issuedState({ roll = 0, depth = 1, campaign, relicId, pact, modifierIds, roomType = "combat" } = {}) {
   const state = createInitialMetaStateV08({ campaign }, context);
   state.status = "active";
   state.depth = depth;
@@ -57,7 +57,7 @@ async function issuedState({ roll = 0, depth = 1, campaign, relicId, pact, modif
     }, { authority: "TRUSTED_RULESET_DOMAIN", cryptoProvider: webcrypto });
     Object.assign(state, next);
   }
-  const currentDirective = { ...directive(), depth, revision: state.revision };
+  const currentDirective = { ...directive(roomType), depth, revision: state.revision };
   const envelope = await createRoomRewardEnvelopeV3({
     state,
     directive: currentDirective,
@@ -139,6 +139,25 @@ test("canonical issuance resolves Shrine Ward, Alchemist, and Avarice conversion
   assert.equal(alchemist.currentRewardEnvelope.claimSlots[0].canonicalOutcome.outcome, "fallback_gold");
   const avarice = await issuedState({ roll: 800_000, pact: "avarice" });
   assert.equal(avarice.currentRewardEnvelope.claimSlots[0].canonicalOutcome.outcome, "fallback_gold");
+});
+
+test("canonical capability does not issue ordinary outcomes for special chest slots", async () => {
+  for (const roomType of ["arena", "crossroads", "otter"]) {
+    const state = await issuedState({ roomType });
+    assert.equal(state.currentRewardEnvelope.claimSlots.length, 1);
+    assert.equal(Object.hasOwn(state.currentRewardEnvelope.claimSlots[0], "canonicalOutcome"), false);
+    const settled = await settleRoomRewardEnvelopeV3(
+      state,
+      requestFor(state, [{
+        claimType: "chest",
+        claimId: "chest_1",
+        count: 1,
+        localEvidence: { outcome: "opened" }
+      }]),
+      { ...context, capabilities: { canonicalChestOutcomes: "v1" } }
+    );
+    assert.equal(settled.state.currentRewardEnvelope.claimSlots[0].consumed, true);
+  }
 });
 
 test("canonical stat claim applies one derived bucket increment without accepting a client amount", async () => {

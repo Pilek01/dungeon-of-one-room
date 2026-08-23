@@ -59,6 +59,18 @@ const CHEST_THRESHOLDS = Object.freeze({
     [0.97, "gold"]
   ])
 });
+const CANONICAL_ORDINARY_CHEST_ROOMS = new Set([
+  "combat",
+  "boss",
+  "final",
+  "cursed",
+  "duel",
+  "horde",
+  "treasure",
+  "vault",
+  "ambush",
+  "shrine"
+]);
 
 export const REWARD_POLICY_SPEC = Object.freeze({
   moduleFile: "reward-policy.js",
@@ -257,6 +269,10 @@ function claimSlots(roomType) {
 
 function canonicalChestOutcomesEnabled(capabilities) {
   return capabilities?.canonicalChestOutcomes === CANONICAL_CHEST_OUTCOME_CAPABILITY;
+}
+
+function canonicalChestRoomEnabled(capabilities, roomType) {
+  return canonicalChestOutcomesEnabled(capabilities) && CANONICAL_ORDINARY_CHEST_ROOMS.has(roomType);
 }
 
 function buildHasRelic(build, relicId) {
@@ -498,7 +514,7 @@ export async function createRoomRewardEnvelopeV3({
   });
   const boundedClaims = claimDefinitions(directive.roomType, state.build, capabilities);
   const slots = claimSlots(directive.roomType);
-  const issuedSlots = canonicalChestOutcomesEnabled(capabilities)
+  const issuedSlots = canonicalChestRoomEnabled(capabilities, directive.roomType)
     ? await issueCanonicalChestSlots({
         state,
         directive,
@@ -551,7 +567,7 @@ export async function createRoomRewardEnvelopeV3({
       build: state.build,
       runModifiers: state.runModifiers,
       chestBonuses: normalizeChestBonusesV08(state.campaign?.chestBonuses),
-      canonicalChestOutcomes: canonicalChestOutcomesEnabled(capabilities)
+      canonicalChestOutcomes: canonicalChestRoomEnabled(capabilities, directive.roomType)
         ? issuedSlots.map((slot) => ({
             slotId: slot.slotId,
             canonicalOutcome: slot.canonicalOutcome
@@ -598,7 +614,7 @@ function assertCanonicalChestClaimEvidence(claim, outcome) {
   }
 }
 
-function assertClaimSlots(claimSlots, capabilities) {
+function assertClaimSlots(claimSlots, capabilities, roomType) {
   const ids = new Set();
   for (const slot of claimSlots) {
     if (!slot || typeof slot !== "object" || Array.isArray(slot)) {
@@ -618,7 +634,7 @@ function assertClaimSlots(claimSlots, capabilities) {
     if (typeof slot.consumed !== "boolean") {
       throw new TypeError("REWARD_CLAIM_SLOT_INVALID:consumed");
     }
-    if (canonicalChestOutcomesEnabled(capabilities)) assertCanonicalOutcome(slot.canonicalOutcome);
+    if (canonicalChestRoomEnabled(capabilities, roomType)) assertCanonicalOutcome(slot.canonicalOutcome);
   }
 }
 
@@ -645,7 +661,7 @@ export function assertRoomRewardEnvelopeV3(envelope, capabilities = {}) {
   ) {
     throw new TypeError("REWARD_ENVELOPE_INVALID:collections");
   }
-  assertClaimSlots(envelope.claimSlots, capabilities);
+  assertClaimSlots(envelope.claimSlots, capabilities, envelope.roomType);
   const rewardSlotIds = new Set();
   for (const slot of envelope.rewardSlots) {
     if (!slot || typeof slot !== "object") throw new TypeError("REWARD_SLOT_INVALID");
@@ -721,7 +737,7 @@ function issuedStateDigestInput(state, envelope, capabilities = {}) {
     build: state.build,
     runModifiers: state.runModifiers,
     chestBonuses: normalizeChestBonusesV08(state.campaign?.chestBonuses),
-    canonicalChestOutcomes: canonicalChestOutcomesEnabled(capabilities)
+    canonicalChestOutcomes: canonicalChestRoomEnabled(capabilities, envelope.roomType)
       ? envelope.claimSlots.map((slot) => ({
           slotId: slot.slotId,
           canonicalOutcome: slot.canonicalOutcome
@@ -741,7 +757,7 @@ async function assertIssuedStateDigest(state, envelope, capabilities, cryptoProv
 }
 
 async function assertIssuedChestOutcomes(state, envelope, capabilities, context = {}) {
-  if (!canonicalChestOutcomesEnabled(capabilities)) return;
+  if (!canonicalChestRoomEnabled(capabilities, envelope.roomType)) return;
   const directive = state.currentRoomDirective;
   const slots = envelope.claimSlots.map(({ canonicalOutcome: _ignored, ...slot }) => slot);
   const expected = await issueCanonicalChestSlots({
@@ -799,7 +815,7 @@ function calculateClaimAmount(state, envelope, claim, slotById, capabilities = {
     if (claim.count !== 1) throw new TypeError("REWARD_CLAIM_COUNT_LIMIT");
     if (slot.consumed) throw new TypeError("REWARD_CLAIM_SLOT_CONSUMED");
     const outcome = String(claim.localEvidence?.outcome || "");
-    if (canonicalChestOutcomesEnabled(capabilities)) {
+    if (canonicalChestRoomEnabled(capabilities, envelope.roomType)) {
       assertCanonicalOutcome(slot.canonicalOutcome);
       assertCanonicalChestClaimEvidence(claim, slot.canonicalOutcome.outcome);
       const awardId = claim.localEvidence.awardId;
@@ -1065,7 +1081,7 @@ async function settleRewardEnvelopeV3(state, request, context = {}, options = {}
       if (claim.claimType === "resource" && claim.claimId === "shield-use") shieldUseCount += claim.count;
       if (
         result.chestStat &&
-        canonicalChestOutcomesEnabled(context.capabilities) &&
+        canonicalChestRoomEnabled(context.capabilities, envelope.roomType) &&
         outcome === "cleared"
       ) {
         next.campaign = applyIssuedChestStatBonusV08(next.campaign, {
