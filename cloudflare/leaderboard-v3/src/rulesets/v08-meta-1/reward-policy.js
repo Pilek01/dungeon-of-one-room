@@ -13,6 +13,12 @@ import {
 import { assertCanonicalRelicBuildDigestV08, computeRelicBuildDigestV08 } from "./relic-policy.js";
 import { assertCanonicalRunModifierDigestV08 } from "./run-modifiers.js";
 import { applyMutatorProgressDeltaV08 } from "./mutator-progression.js";
+import {
+  applyIssuedChestStatBonusV08,
+  normalizeChestBonusesV08
+} from "./chest-bonus-policy.js";
+import { deriveIntInclusive } from "./rng.js";
+import { RULESET_ID } from "./constants.js";
 
 const arenaRelicOfferPolicy = arenaRelicOfferPolicyDocument.canonicalData;
 const chestBounds = chestBoundsDocument.canonicalData;
@@ -21,6 +27,38 @@ const regularRelicOfferPolicy = regularRelicOfferPolicyDocument.canonicalData;
 const progression = progressionDocument.canonicalData;
 const rewardBounds = rewardBoundsDocument.canonicalData;
 const HISTORY_LIMIT = rewardBounds.boundedHistoryLimit;
+const CANONICAL_CHEST_OUTCOME_CAPABILITY = "v1";
+const CANONICAL_CHEST_OUTCOMES = new Set([
+  "health",
+  "healing",
+  "attack",
+  "armor",
+  "potion",
+  "map_fragment",
+  "gold",
+  "trap",
+  "fallback_gold"
+]);
+const CHEST_THRESHOLDS = Object.freeze({
+  treasure: Object.freeze([
+    [0.12, "health"],
+    [0.23, "healing"],
+    [0.38, "attack"],
+    [0.48, "armor"],
+    [0.59, "potion"],
+    [0.84, "map_fragment"],
+    [0.97, "gold"]
+  ]),
+  standard: Object.freeze([
+    [0.18, "health"],
+    [0.38, "healing"],
+    [0.62, "attack"],
+    [0.78, "armor"],
+    [0.90, "potion"],
+    [0.94, "map_fragment"],
+    [0.97, "gold"]
+  ])
+});
 
 export const REWARD_POLICY_SPEC = Object.freeze({
   moduleFile: "reward-policy.js",
@@ -217,6 +255,97 @@ function claimSlots(roomType) {
   }));
 }
 
+function canonicalChestOutcomesEnabled(capabilities) {
+  return capabilities?.canonicalChestOutcomes === CANONICAL_CHEST_OUTCOME_CAPABILITY;
+}
+
+function buildHasRelic(build, relicId) {
+  return Array.isArray(build?.relics) && build.relics.some(
+    (entry) => entry?.relicId === relicId && Number(entry.stacks) > 0
+  );
+}
+
+function buildHasAvarice(build) {
+  return Array.isArray(build?.pacts) && build.pacts.includes("avarice");
+}
+
+function mutatorHasAlchemist(runModifiers) {
+  return Array.isArray(runModifiers?.active) && runModifiers.active.some(
+    (entry) => entry?.modifierId === "alchemist" && Number(entry.stacks) > 0
+  );
+}
+
+function canonicalChestOutcomeFromRoll(roomType, roll) {
+  const thresholds = roomType === "treasure"
+    ? CHEST_THRESHOLDS.treasure
+    : CHEST_THRESHOLDS.standard;
+  const normalizedRoll = Math.max(0, Math.min(999_999, Number(roll))) / 1_000_000;
+  for (const [threshold, outcome] of thresholds) {
+    if (normalizedRoll < threshold) return outcome;
+  }
+  return "trap";
+}
+
+async function issueCanonicalChestSlots({
+  state,
+  directive,
+  slots,
+  envelopeId,
+  cryptoProvider,
+  randomOracle,
+  secret
+}) {
+  const normalizedBonuses = normalizeChestBonusesV08(state.campaign?.chestBonuses);
+  const simulatedCampaign = { chestBonuses: normalizedBonuses };
+  const hasShrineWard = buildHasRelic(state.build, "shrineward");
+  const hasAlchemist = mutatorHasAlchemist(state.runModifiers);
+  const hasAvarice = buildHasAvarice(state.build);
+  const scalingDepth = rewardScalingDepth(directive);
+  const oracle = randomOracle || { deriveIntInclusive };
+  const issued = [];
+  for (const [index, slot] of slots.entries()) {
+    const roll = await oracle.deriveIntInclusive(0, 999_999, {
+      secret,
+      rulesetId: RULESET_ID,
+      runId: state.runId,
+      revision: state.revision,
+      purpose: "reward/chest-outcome",
+      counter: index,
+      cryptoProvider
+    });
+    let outcome = canonicalChestOutcomeFromRoll(directive.roomType, roll);
+    if (outcome === "trap" && hasShrineWard) outcome = "gold";
+    if (hasAlchemist && (outcome === "health" || outcome === "healing")) {
+      outcome = "fallback_gold";
+    }
+    if (hasAvarice && outcome === "potion") outcome = "fallback_gold";
+    if (["health", "attack", "armor"].includes(outcome)) {
+      const field = `${outcome}DepthBuckets`;
+      const bucket = Math.floor(scalingDepth / 10);
+      if ((simulatedCampaign.chestBonuses[field][String(bucket)] || 0) >= 5) {
+        outcome = "fallback_gold";
+      } else {
+        simulatedCampaign.chestBonuses[field][String(bucket)] =
+          (simulatedCampaign.chestBonuses[field][String(bucket)] || 0) + 1;
+      }
+    }
+    const awardId = `award_${await sha256({
+      envelopeId,
+      runId: state.runId,
+      rulesetHash: state.rulesetHash,
+      revision: state.revision,
+      directiveId: directive.directiveId,
+      slotId: slot.slotId,
+      outcome
+    }, cryptoProvider)}`;
+    issued.push({
+      ...slot,
+      canonicalOutcome: { awardId, outcome }
+    });
+  }
+  return issued;
+}
+
 function repairLegacyWardenClaimEnvelope(state, envelope) {
   if (!["boss", "final"].includes(envelope.roomType)) return;
   if (envelope.boundedClaims.some((claim) => claim.claimId === "enemy:warden")) return;
@@ -354,7 +483,9 @@ export async function createRoomRewardEnvelopeV3({
   directive,
   envelopeId,
   cryptoProvider,
-  capabilities
+  capabilities,
+  randomOracle,
+  secret
 }) {
   await assertCanonicalRunModifierDigestV08(state.runModifiers, cryptoProvider);
   const scalingDepth = rewardScalingDepth(directive);
@@ -367,6 +498,17 @@ export async function createRoomRewardEnvelopeV3({
   });
   const boundedClaims = claimDefinitions(directive.roomType, state.build, capabilities);
   const slots = claimSlots(directive.roomType);
+  const issuedSlots = canonicalChestOutcomesEnabled(capabilities)
+    ? await issueCanonicalChestSlots({
+        state,
+        directive,
+        slots,
+        envelopeId,
+        cryptoProvider,
+        randomOracle,
+        secret
+      })
+    : slots;
   const rewardSlots = relicOfferSlots(directive, envelopeId);
   const envelope = {
     envelopeId,
@@ -386,7 +528,7 @@ export async function createRoomRewardEnvelopeV3({
       amount: buildModifier.amount
     }],
     boundedClaims,
-    claimSlots: slots,
+    claimSlots: issuedSlots,
     rewardSlots,
     maximumGoldDelta: maximumGoldDeltaForEnvelope(
       state.build,
@@ -407,14 +549,60 @@ export async function createRoomRewardEnvelopeV3({
       roomType: directive.roomType,
       gold: state.gold,
       build: state.build,
-      runModifiers: state.runModifiers
+      runModifiers: state.runModifiers,
+      chestBonuses: normalizeChestBonusesV08(state.campaign?.chestBonuses),
+      canonicalChestOutcomes: canonicalChestOutcomesEnabled(capabilities)
+        ? issuedSlots.map((slot) => ({
+            slotId: slot.slotId,
+            canonicalOutcome: slot.canonicalOutcome
+          }))
+        : null
     }, cryptoProvider)
   };
-  assertRoomRewardEnvelopeV3(envelope);
+  assertRoomRewardEnvelopeV3(envelope, capabilities);
   return envelope;
 }
 
-export function assertRoomRewardEnvelopeV3(envelope) {
+function assertCanonicalOutcome(value) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    throw new TypeError("REWARD_CHEST_OUTCOME_INVALID");
+  }
+  if (JSON.stringify(Object.keys(value).sort()) !== JSON.stringify(["awardId", "outcome"])) {
+    throw new TypeError("REWARD_CHEST_OUTCOME_SCHEMA_INVALID");
+  }
+  if (typeof value.awardId !== "string" || !value.awardId.trim()) {
+    throw new TypeError("REWARD_CHEST_AWARD_ID_INVALID");
+  }
+  if (!CANONICAL_CHEST_OUTCOMES.has(value.outcome)) {
+    throw new TypeError("REWARD_CHEST_OUTCOME_INVALID");
+  }
+}
+
+function assertClaimSlots(claimSlots, capabilities) {
+  const ids = new Set();
+  for (const slot of claimSlots) {
+    if (!slot || typeof slot !== "object" || Array.isArray(slot)) {
+      throw new TypeError("REWARD_CLAIM_SLOT_INVALID");
+    }
+    if (typeof slot.slotId !== "string" || !slot.slotId.trim()) {
+      throw new TypeError("REWARD_CLAIM_SLOT_INVALID:slotId");
+    }
+    if (ids.has(slot.slotId)) throw new TypeError("REWARD_CLAIM_SLOT_DUPLICATE");
+    ids.add(slot.slotId);
+    if (!["chest", "vault-chest"].includes(slot.slotType)) {
+      throw new TypeError("REWARD_CLAIM_SLOT_INVALID:slotType");
+    }
+    if (slot.allowedClaim !== "chest-opened") {
+      throw new TypeError("REWARD_CLAIM_SLOT_INVALID:allowedClaim");
+    }
+    if (typeof slot.consumed !== "boolean") {
+      throw new TypeError("REWARD_CLAIM_SLOT_INVALID:consumed");
+    }
+    if (canonicalChestOutcomesEnabled(capabilities)) assertCanonicalOutcome(slot.canonicalOutcome);
+  }
+}
+
+export function assertRoomRewardEnvelopeV3(envelope, capabilities = {}) {
   if (!envelope || typeof envelope !== "object") throw new TypeError("REWARD_ENVELOPE_INVALID");
   for (const field of ["envelopeId", "runId", "rulesetHash", "directiveId", "roomType", "claimPolicyVersion", "issuedStateDigest"]) {
     if (typeof envelope[field] !== "string" || !envelope[field]) {
@@ -437,6 +625,7 @@ export function assertRoomRewardEnvelopeV3(envelope) {
   ) {
     throw new TypeError("REWARD_ENVELOPE_INVALID:collections");
   }
+  assertClaimSlots(envelope.claimSlots, capabilities);
   const rewardSlotIds = new Set();
   for (const slot of envelope.rewardSlots) {
     if (!slot || typeof slot !== "object") throw new TypeError("REWARD_SLOT_INVALID");
@@ -499,6 +688,61 @@ function requestDigestInput(request) {
   };
 }
 
+function issuedStateDigestInput(state, envelope, capabilities = {}) {
+  return {
+    runId: state.runId,
+    rulesetHash: state.rulesetHash,
+    revision: envelope.revision,
+    roomIndex: envelope.roomIndex,
+    depth: envelope.depth,
+    scalingDepth: envelope.scalingDepth,
+    roomType: envelope.roomType,
+    gold: state.gold,
+    build: state.build,
+    runModifiers: state.runModifiers,
+    chestBonuses: normalizeChestBonusesV08(state.campaign?.chestBonuses),
+    canonicalChestOutcomes: canonicalChestOutcomesEnabled(capabilities)
+      ? envelope.claimSlots.map((slot) => ({
+          slotId: slot.slotId,
+          canonicalOutcome: slot.canonicalOutcome
+        }))
+      : null
+  };
+}
+
+async function assertIssuedStateDigest(state, envelope, capabilities, cryptoProvider) {
+  const expected = await sha256(
+    issuedStateDigestInput(state, envelope, capabilities),
+    cryptoProvider
+  );
+  if (expected !== envelope.issuedStateDigest) {
+    throw new TypeError("REWARD_ISSUED_STATE_DIGEST_MISMATCH");
+  }
+}
+
+async function assertIssuedChestOutcomes(state, envelope, capabilities, context = {}) {
+  if (!canonicalChestOutcomesEnabled(capabilities)) return;
+  const directive = state.currentRoomDirective;
+  const slots = envelope.claimSlots.map(({ canonicalOutcome: _ignored, ...slot }) => slot);
+  const expected = await issueCanonicalChestSlots({
+    state,
+    directive,
+    slots,
+    envelopeId: envelope.envelopeId,
+    cryptoProvider: context.cryptoProvider,
+    randomOracle: context.randomOracle,
+    secret: context.secret
+  });
+  for (const [index, slot] of envelope.claimSlots.entries()) {
+    if (
+      slot.canonicalOutcome.awardId !== expected[index].canonicalOutcome.awardId ||
+      slot.canonicalOutcome.outcome !== expected[index].canonicalOutcome.outcome
+    ) {
+      throw new TypeError("REWARD_CHEST_OUTCOME_ISSUANCE_MISMATCH");
+    }
+  }
+}
+
 function pushAnomaly(anomalies, code) {
   if (!anomalies.includes(code)) anomalies.push(code);
 }
@@ -522,7 +766,7 @@ function validateBindings(state, envelope, request) {
   }
 }
 
-function calculateClaimAmount(state, envelope, claim, slotById) {
+function calculateClaimAmount(state, envelope, claim, slotById, capabilities = {}) {
   if (!claim || typeof claim !== "object") throw new TypeError("REWARD_CLAIM_INVALID");
   if (typeof claim.claimType !== "string") throw new TypeError("REWARD_CLAIM_TYPE_UNKNOWN");
   if (typeof claim.claimId !== "string") throw new TypeError("REWARD_CLAIM_ID_UNKNOWN");
@@ -535,6 +779,50 @@ function calculateClaimAmount(state, envelope, claim, slotById) {
     if (claim.count !== 1) throw new TypeError("REWARD_CLAIM_COUNT_LIMIT");
     if (slot.consumed) throw new TypeError("REWARD_CLAIM_SLOT_CONSUMED");
     const outcome = String(claim.localEvidence?.outcome || "");
+    if (canonicalChestOutcomesEnabled(capabilities)) {
+      assertCanonicalOutcome(slot.canonicalOutcome);
+      const awardId = String(claim.localEvidence?.awardId || "");
+      if (outcome !== slot.canonicalOutcome.outcome) {
+        throw new TypeError("REWARD_CLAIM_CHEST_OUTCOME_MISMATCH");
+      }
+      if (awardId !== slot.canonicalOutcome.awardId) {
+        throw new TypeError("REWARD_CLAIM_CHEST_AWARD_ID_MISMATCH");
+      }
+      for (const field of [
+        "amount",
+        "statAmount",
+        "stat",
+        "statType",
+        "health",
+        "attack",
+        "armor",
+        "hp",
+        "atk",
+        "arm",
+        "scalingDepth",
+        "bucket",
+        "bucketCount",
+        "aggregate",
+        "total",
+        "bonus",
+        "delta"
+      ]) {
+        if (
+          Object.hasOwn(claim.localEvidence || {}, field) ||
+          Object.hasOwn(claim, field)
+        ) {
+          throw new TypeError("REWARD_CLAIM_CHEST_STAT_EVIDENCE_FORBIDDEN");
+        }
+      }
+      if (["health", "attack", "armor", "healing", "trap"].includes(outcome)) {
+        slot.consumed = true;
+        return {
+          amount: 0,
+          authority: "SERVER_ISSUED",
+          chestStat: ["health", "attack", "armor"].includes(outcome) ? outcome : null
+        };
+      }
+    }
     if (!["opened", "gold", "fallback_gold", "potion", "map_fragment"].includes(outcome)) throw new TypeError("REWARD_CLAIM_CHEST_OUTCOME_INVALID");
     let amount = 0;
     if (outcome === "gold") {
@@ -564,7 +852,7 @@ function calculateClaimAmount(state, envelope, claim, slotById) {
       amount += calculateMultipliedGoldV08({
         canonicalBuild: state.build,
         canonicalRunModifiers: state.runModifiers,
-        sourceId: "chest-fallback",
+        sourceId: "chest-stat-cap-fallback",
         baseAmount
       });
     } else if (outcome === "potion") {
@@ -678,7 +966,10 @@ async function settleRewardEnvelopeV3(state, request, context = {}, options = {}
   }
   await assertCanonicalRelicBuildDigestV08(state.build, context.cryptoProvider);
   await assertCanonicalRunModifierDigestV08(state.runModifiers, context.cryptoProvider);
-  const envelope = assertRoomRewardEnvelopeV3(state.currentRewardEnvelope);
+  const envelope = assertRoomRewardEnvelopeV3(
+    state.currentRewardEnvelope,
+    context.capabilities
+  );
   const digest = await sha256(requestDigestInput(request), context.cryptoProvider);
   const previous = (state.rewardSettlementHistory || []).find((entry) =>
     entry.envelopeId === request.envelopeId &&
@@ -696,6 +987,20 @@ async function settleRewardEnvelopeV3(state, request, context = {}, options = {}
   }
   if (envelope.consumed) throw new TypeError("REWARD_ENVELOPE_ALREADY_CONSUMED");
   validateBindings(state, envelope, request);
+  if (canonicalChestOutcomesEnabled(context.capabilities)) {
+    await assertIssuedStateDigest(
+      state,
+      envelope,
+      context.capabilities,
+      context.cryptoProvider
+    );
+    await assertIssuedChestOutcomes(
+      state,
+      envelope,
+      context.capabilities,
+      context
+    );
+  }
   if (!Array.isArray(request.claims)) throw new TypeError("REWARD_CLAIMS_REQUIRED");
   if (
     request.claims.some((claim) => claim?.claimType === "proc") &&
@@ -753,7 +1058,8 @@ async function settleRewardEnvelopeV3(state, request, context = {}, options = {}
       appliesToOutcome ? next : validationState,
       appliesToOutcome ? mutableEnvelope : validationEnvelope,
       claim,
-      appliesToOutcome ? slotById : validationSlots
+      appliesToOutcome ? slotById : validationSlots,
+      context.capabilities
     );
     if (appliesToOutcome) {
       if (claim.claimType === "enemy" || claim.claimType === "elite" || claim.claimType === "hazard") {
@@ -762,6 +1068,16 @@ async function settleRewardEnvelopeV3(state, request, context = {}, options = {}
       if (claim.claimType === "elite") eliteCount += claim.count;
       if (claim.claimType === "resource" && claim.claimId === "potion-use") potionUseCount += claim.count;
       if (claim.claimType === "resource" && claim.claimId === "shield-use") shieldUseCount += claim.count;
+      if (
+        result.chestStat &&
+        canonicalChestOutcomesEnabled(context.capabilities) &&
+        outcome === "cleared"
+      ) {
+        next.campaign = applyIssuedChestStatBonusV08(next.campaign, {
+          stat: result.chestStat,
+          scalingDepth: mutableEnvelope.scalingDepth
+        });
+      }
       boundedDelta += result.amount;
     }
     const evidenceId = typeof claim.localEvidence?.evidenceId === "string"
