@@ -228,6 +228,37 @@
     if (value.currentRewardEnvelope) {
       requireText(value.currentRewardEnvelope.envelopeId, "currentRewardEnvelope.envelopeId");
       requireOptionalArray(value.currentRewardEnvelope.rewardSlots, "currentRewardEnvelope.rewardSlots");
+      requireOptionalArray(value.currentRewardEnvelope.claimSlots, "currentRewardEnvelope.claimSlots");
+      if (Array.isArray(value.currentRewardEnvelope.claimSlots)) {
+        const slots = value.currentRewardEnvelope.claimSlots;
+        const hasCanonical = slots.some((slot) => isRecord(slot) && Object.hasOwn(slot, "canonicalOutcome"));
+        const slotIds = new Set();
+        for (const [index, slot] of slots.entries()) {
+          if (!isRecord(slot) || typeof slot.slotId !== "string" || !slot.slotId) {
+            throw new TypeError("PROTOCOL_PROJECTION_INVALID:claimSlots");
+          }
+          if (slotIds.has(slot.slotId)) throw new TypeError("PROTOCOL_PROJECTION_INVALID:claimSlots.duplicate");
+          slotIds.add(slot.slotId);
+          if (!hasCanonical) continue;
+          if (!Object.hasOwn(slot, "canonicalOutcome") || !isRecord(slot.canonicalOutcome)) {
+            throw new TypeError("PROTOCOL_PROJECTION_INVALID:claimSlots.canonicalOutcome");
+          }
+          const outcome = slot.canonicalOutcome;
+          if (
+            typeof outcome.awardId !== "string" || !outcome.awardId.trim() ||
+            !["health", "healing", "attack", "armor", "potion", "map_fragment", "gold", "trap", "fallback_gold"].includes(outcome.outcome)
+          ) throw new TypeError("PROTOCOL_PROJECTION_INVALID:claimSlots.canonicalOutcome");
+          if (JSON.stringify(Object.keys(outcome).sort()) !== JSON.stringify(["awardId", "outcome"])) {
+            throw new TypeError("PROTOCOL_PROJECTION_INVALID:claimSlots.canonicalOutcome");
+          }
+          if (slot.consumed !== undefined && typeof slot.consumed !== "boolean") {
+            throw new TypeError("PROTOCOL_PROJECTION_INVALID:claimSlots.consumed");
+          }
+          if (slot.slotId !== `chest_${index + 1}`) {
+            throw new TypeError("PROTOCOL_PROJECTION_INVALID:claimSlots.order");
+          }
+        }
+      }
     }
     requireOptionalRecord(value.build, "build");
     if (value.build) {

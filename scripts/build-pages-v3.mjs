@@ -431,13 +431,17 @@ const productionGameReplacements = [
       state.pactBasePlayerStats = null;
       onlineV3RoomClearDirectiveId = String(directive?.directiveId || "");
       onlineV3RoomClearReported = false;
-      if (options.newCampaign === true) resetMetaProgressForFreshStart();`
+      if (options.newCampaign === true) resetMetaProgressForFreshStart({ persist: false });
+      hydrateRankedChestCarry(publicState, { applyDelta: false });
+      resetRankedCanonicalChestSlots(publicState);`
   ],
   [
 `    returnToPractice() {
       state.onlineV3Ranked = false;`,
 `    returnToPractice() {
       state.onlineV3TestBotUnlocked = false;
+      resetSessionChestBonuses();
+      resetRankedCanonicalChestSlots();
       state.onlineV3Ranked = false;
       state.activeMutators = sanitizeMutatorMap(readJsonStorage(STORAGE_MUT_ACTIVE, {}));
       state.unlockedMutators = sanitizeMutatorMap(readJsonStorage(STORAGE_MUT_UNLOCK, {}));
@@ -959,6 +963,8 @@ const productionGameReplacements = [
 `      startRun({ carriedRelics, resetMapFragments: true });
       state.player.gold = Math.max(0, Number(publicState?.gold) || 0);`,
 `      const campaign = publicState?.campaign || {};
+      hydrateRankedChestCarry(publicState, { applyDelta: false });
+      resetRankedCanonicalChestSlots(publicState);
       startRun({ carriedRelics, startDepth: Math.max(0, Number(publicState?.startDepth) || 0) });
       state.treasureMapFragments = Math.max(0, Number(campaign.treasureMapFragments) || 0);
       state.forcedNextRoomType = String(campaign.forcedNextRoomType || "");
@@ -988,6 +994,8 @@ const productionGameReplacements = [
       state.forcedNextRoomType = String(campaign.forcedNextRoomType || "");
       syncRankedStartDepthUnlocks(campaign);
       syncRankedRunModifiers(publicState);
+      hydrateRankedChestCarry(publicState, { applyDelta: true });
+      resetRankedCanonicalChestSlots(publicState);
       markUiDirty();`
   ],
   [
@@ -1027,6 +1035,7 @@ const productionGameReplacements = [
       const wasCamp = state.phase === "camp";
       const build = profile?.build || {};
       state.onlineV3Ranked = true;
+      hydrateRankedChestCarry({ campaign: profile?.campaign }, { applyDelta: false });
       state.onlineV3FatalPending = false;
       state.onlineV3Directive = null;
       state.onlineV3NextDirective = null;
@@ -1279,6 +1288,8 @@ const rankedGoldGameReplacements = [
       if (!state.onlineV3Ranked) return false;
       onlineV3RewardRecorder = window.DungeonRankedV3Recorder?.createRewardClaimRecorder?.() || null;
       onlineV3ActiveChestClaimId = null;
+      onlineV3CanonicalChestSlotCursor = 0;
+      for (const slot of onlineV3CanonicalChestSlots) slot.consumed = false;
       onlineV3RoomStartingGold = Math.max(0, Math.floor(Number(state.player.gold) || 0));
       onlineV3RoomStartingTurn = Math.max(0, Math.floor(Number(state.turn) || 0));
       return true;
@@ -1308,12 +1319,95 @@ const rankedGoldGameReplacements = [
 `  const state = {`,
 `  let onlineV3RewardRecorder = null;
   let onlineV3ActiveChestClaimId = null;
+  let onlineV3CanonicalChestSlots = [];
+  let onlineV3CanonicalChestSlotCursor = 0;
+  let onlineV3CanonicalChestMode = false;
   let onlineV3RoomCompletionCapability = null;
   let onlineV3BoundedProcClaims = false;
   let onlineV3RoomStartingGold = 0;
   let onlineV3RoomStartingTurn = 0;
   let onlineV3RoomClearDirectiveId = "";
   let onlineV3RoomClearReported = false;
+  const ONLINE_V3_CANONICAL_CHEST_ROOMS = new Set([
+    "combat", "boss", "final", "cursed", "duel", "horde", "treasure", "vault", "ambush", "shrine"
+  ]);
+  const ONLINE_V3_SPECIAL_CHEST_TYPES = new Set([
+    "arena_reward", "otter_red", "crossroads_power", "crossroads_mercy"
+  ]);
+  function resetRankedCanonicalChestSlots(publicState = null) {
+    onlineV3CanonicalChestSlots = [];
+    onlineV3CanonicalChestSlotCursor = 0;
+    onlineV3CanonicalChestMode = false;
+    const envelope = publicState?.currentRewardEnvelope;
+    const slots = Array.isArray(envelope?.claimSlots) ? envelope.claimSlots : [];
+    if (!slots.some((slot) => Object.prototype.hasOwnProperty.call(slot || {}, "canonicalOutcome"))) return true;
+    const roomType = String(envelope?.roomType || state.onlineV3Directive?.roomType || "");
+    if (!ONLINE_V3_CANONICAL_CHEST_ROOMS.has(roomType)) return true;
+    if (slots.some((slot) => {
+      const outcome = slot?.canonicalOutcome;
+      return !slot || typeof slot.slotId !== "string" ||
+        !outcome || typeof outcome !== "object" || Array.isArray(outcome) ||
+        typeof outcome.awardId !== "string" || !outcome.awardId.trim() ||
+        JSON.stringify(Object.keys(outcome).sort()) !== JSON.stringify(["awardId", "outcome"]) ||
+        slot.slotId !== `chest_${slots.indexOf(slot) + 1}` || slot.consumed === true ||
+        !["health", "healing", "attack", "armor", "potion", "map_fragment", "gold", "trap", "fallback_gold"].includes(outcome.outcome);
+    })) throw new TypeError("RANKED_CANONICAL_CHEST_SLOT_INVALID");
+    onlineV3CanonicalChestSlots = slots.map((slot) => ({
+      slotId: String(slot.slotId),
+      canonicalOutcome: { awardId: String(slot.canonicalOutcome.awardId), outcome: slot.canonicalOutcome.outcome },
+      consumed: slot.consumed === true
+    }));
+    onlineV3CanonicalChestMode = true;
+    return true;
+  }
+  function getRankedCanonicalChestOutcome(chest) {
+    if (!state.onlineV3Ranked || !onlineV3CanonicalChestMode) return null;
+    const roomType = String(state.onlineV3Directive?.roomType || state.roomType || "");
+    if (!ONLINE_V3_CANONICAL_CHEST_ROOMS.has(roomType) || ONLINE_V3_SPECIAL_CHEST_TYPES.has(String(chest?.type || ""))) return null;
+    const slot = onlineV3CanonicalChestSlots[onlineV3CanonicalChestSlotCursor];
+    if (!slot || slot.consumed) throw new TypeError("RANKED_CANONICAL_CHEST_SLOT_ORDER_INVALID");
+    onlineV3CanonicalChestSlotCursor += 1;
+    slot.consumed = true;
+    return slot.canonicalOutcome;
+  }
+  function hydrateRankedChestCarry(publicState = {}, options = {}) {
+    const bonuses = publicState?.campaign?.chestBonuses || {};
+    const nextAttackBuckets = sanitizeChestAttackDepthBuckets(bonuses.attackDepthBuckets);
+    const nextArmorBuckets = sanitizeChestAttackDepthBuckets(bonuses.armorDepthBuckets);
+    const nextHealthBuckets = sanitizeChestAttackDepthBuckets(bonuses.healthDepthBuckets);
+    const flatFor = (buckets, base, health = false) => Object.entries(buckets).reduce((sum, [bucket, count]) =>
+      sum + Number(count || 0) * (health
+        ? getChestHealthUpgradeFlatByBucket(Number(bucket))
+        : getChestUpgradeFlatByBucket(base, Number(bucket))), 0);
+    const next = {
+      attack: flatFor(nextAttackBuckets, CHEST_ATTACK_UPGRADE_FLAT),
+      armor: flatFor(nextArmorBuckets, CHEST_ARMOR_UPGRADE_FLAT),
+      health: flatFor(nextHealthBuckets, CHEST_HEALTH_UPGRADE_FLAT, true)
+    };
+    const previous = {
+      attack: Math.max(0, Number(state.sessionChestAttackFlat) || 0),
+      armor: Math.max(0, Number(state.sessionChestArmorFlat) || 0),
+      health: Math.max(0, Number(state.sessionChestHealthFlat) || 0)
+    };
+    state.sessionChestAttackDepthBuckets = nextAttackBuckets;
+    state.sessionChestArmorDepthBuckets = nextArmorBuckets;
+    state.sessionChestHealthDepthBuckets = nextHealthBuckets;
+    state.sessionChestAttackFlat = next.attack;
+    state.sessionChestArmorFlat = next.armor;
+    state.sessionChestHealthFlat = next.health;
+    if (options.applyDelta === true && state.phase === "playing") {
+      const attackDelta = next.attack - previous.attack;
+      const armorDelta = next.armor - previous.armor;
+      const healthDelta = next.health - previous.health;
+      if (attackDelta) state.player.attack += scaleFlatAttackByBlade(attackDelta);
+      if (armorDelta) state.player.armor = Math.max(0, state.player.armor + armorDelta);
+      if (healthDelta) {
+        state.player.maxHp = Math.max(1, state.player.maxHp + healthDelta);
+        state.player.hp = clamp(state.player.hp, 0, state.player.maxHp);
+      }
+    }
+    return next;
+  }
   function syncRankedStartDepthUnlocks(campaign = {}) {
     const unlocked = Array.isArray(campaign?.unlockedStartDepths)
       ? campaign.unlockedStartDepths
@@ -1438,6 +1532,15 @@ const rankedGoldGameReplacements = [
       const hazardKill = globalThis.hazardKillApi;`
   ],
   [
+`    if (chestOutcome.outcome === "health") {`,
+`    if (chestOutcome.outcome === "fallback_gold") {
+      const onlineV3FallbackBase = randInt(2, 5);
+      const fallbackGold = grantGold(onlineV3FallbackBase);
+      onlineV3RewardRecorder?.recordChestFallbackGold?.(onlineV3ActiveChestClaimId, onlineV3FallbackBase);
+      pushLog("Chest: fallback gold +" + fallbackGold + ".", "warn");
+    } else if (chestOutcome.outcome === "health") {`
+  ],
+  [
 `      // Void Reaper crit kill gold bonus
       if (hasRelic("voidreaper") && critical) {
         const voidGold = grantGold(VOID_REAPER_CRIT_KILL_GOLD);
@@ -1465,8 +1568,21 @@ const rankedGoldGameReplacements = [
 `    chest.opened = true;
     clearVaultChestThreatState(chest);`,
 `    chest.opened = true;
-    onlineV3ActiveChestClaimId = onlineV3RewardRecorder?.openChest?.() || null;
+    const onlineV3CanonicalChestOutcome = getRankedCanonicalChestOutcome(chest);
+    onlineV3ActiveChestClaimId = onlineV3RewardRecorder?.openChest?.(onlineV3CanonicalChestOutcome) || null;
     clearVaultChestThreatState(chest);`
+  ],
+  [
+`    const chestOutcome = lootTablesApi.rollChestOutcome({
+      inTreasureRoom,
+      hasShrineWard: hasRelic("shrineward"),
+      rng: Math.random
+    });`,
+`    const chestOutcome = onlineV3CanonicalChestOutcome || lootTablesApi.rollChestOutcome({
+      inTreasureRoom,
+      hasShrineWard: hasRelic("shrineward"),
+      rng: Math.random
+    });`
   ],
   [
 `      let raw = randInt(4, 8);

@@ -295,6 +295,35 @@ test("Ranked reward recorder aggregates elite, hazard, and bounded chest evidenc
   ]);
 });
 
+test("canonical chest recorder seals exact award evidence and rejects mismatched helpers", () => {
+  const recorder = recorderApi.createRewardClaimRecorder();
+  const canonical = recorder.openChest({ awardId: "award_health_1", outcome: "health" });
+  assert.equal(recorder.recordChestGold(canonical, 7), false);
+  assert.equal(recorder.recordChestPotion(canonical, 1), false);
+  const gold = recorder.openChest({ awardId: "award_gold_1", outcome: "gold" });
+  assert.equal(recorder.recordChestGold(gold, 7), true);
+  assert.deepEqual(recorder.snapshot(), [{
+    claimType: "chest",
+    claimId: canonical,
+    count: 1,
+    localEvidence: { outcome: "health", awardId: "award_health_1" }
+  }, {
+    claimType: "chest",
+    claimId: gold,
+    count: 1,
+    localEvidence: {
+      outcome: "gold",
+      awardId: "award_gold_1",
+      baseAmount: 7
+    }
+  }]);
+  assert.deepEqual(recorder.snapshot()[1].localEvidence, {
+    outcome: "gold",
+    awardId: "award_gold_1",
+    baseAmount: 7
+  });
+});
+
 test("production build wires collected claims and the visible v0.8 room-clear bonus", async () => {
   const builder = await readFile(
     new URL("../../../scripts/build-pages-v3.mjs", import.meta.url),
@@ -313,4 +342,15 @@ test("production build wires collected claims and the visible v0.8 room-clear bo
   assert.match(builder, /roomClearBaseV08/u);
   assert.match(builder, /Room clear bonus:/u);
   assert.match(builder, /rewardClaims: onlineV3RewardRecorder\?\.snapshot\(\) \|\| \[\]/u);
+});
+
+test("production bridge consumes ordered canonical chest outcomes", async () => {
+  const builder = await readFile(
+    new URL("../../../scripts/build-pages-v3.mjs", import.meta.url),
+    "utf8"
+  );
+  assert.match(builder, /currentRewardEnvelope[\s\S]*claimSlots/u);
+  assert.match(builder, /canonicalOutcome/u);
+  assert.match(builder, /resetRankedCanonicalChestSlots/u);
+  assert.match(builder, /getRankedCanonicalChestOutcome/u);
 });

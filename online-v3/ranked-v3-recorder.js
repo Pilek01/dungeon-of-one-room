@@ -107,6 +107,18 @@
     let chestCount = 0;
     let sealedSnapshot = null;
 
+    const canonicalChestOutcomes = new Set([
+      "health",
+      "healing",
+      "attack",
+      "armor",
+      "potion",
+      "map_fragment",
+      "gold",
+      "trap",
+      "fallback_gold"
+    ]);
+
     function aggregate(claimType, claimId) {
       if (sealedSnapshot) return false;
       const key = `${claimType}:${claimId}`;
@@ -127,46 +139,63 @@
       return aggregate("hazard", "hazard-kill");
     }
 
-    function openChest() {
+    function openChest(canonicalOutcome = null) {
       if (sealedSnapshot) return null;
+      const hasCanonicalOutcome = canonicalOutcome !== null && canonicalOutcome !== undefined;
+      if (hasCanonicalOutcome) {
+        if (
+          !canonicalOutcome ||
+          typeof canonicalOutcome !== "object" ||
+          Array.isArray(canonicalOutcome) ||
+          typeof canonicalOutcome.awardId !== "string" ||
+          !canonicalOutcome.awardId.trim() ||
+          !canonicalChestOutcomes.has(canonicalOutcome.outcome) ||
+          JSON.stringify(Object.keys(canonicalOutcome).sort()) !== JSON.stringify(["awardId", "outcome"])
+        ) return null;
+      }
       chestCount += 1;
       const claimId = `chest_${chestCount}`;
       claims.set(`chest:${claimId}`, {
         claimType: "chest",
         claimId,
         count: 1,
-        localEvidence: { outcome: "opened" }
+        localEvidence: hasCanonicalOutcome
+          ? { outcome: canonicalOutcome.outcome, awardId: canonicalOutcome.awardId }
+          : { outcome: "opened" }
       });
       return claimId;
     }
 
-    function recordChestGold(claimId, baseAmount) {
+    function updateChestEvidence(claimId, outcome, field, value, minimum, maximum) {
       if (sealedSnapshot) return false;
       const claim = claims.get(`chest:${String(claimId || "")}`);
-      const amount = Number(baseAmount);
-      if (!claim || !Number.isSafeInteger(amount) || amount < 0) return false;
-      claim.localEvidence = { outcome: "gold", baseAmount: amount };
+      const amount = Number(value);
+      if (!claim || !Number.isSafeInteger(amount) || amount < minimum || amount > maximum) return false;
+      const current = claim.localEvidence;
+      if (!current || typeof current !== "object") return false;
+      if (current.outcome !== "opened" && current.outcome !== outcome) return false;
+      claim.localEvidence = current.awardId
+        ? { outcome, awardId: current.awardId, [field]: amount }
+        : { outcome, [field]: amount };
       return true;
+    }
+
+    function recordChestGold(claimId, baseAmount) {
+      const amount = Number(baseAmount);
+      return updateChestEvidence(claimId, "gold", "baseAmount", amount, 0, Number.MAX_SAFE_INTEGER);
     }
 
     function recordChestFallbackGold(claimId, baseAmount) {
-      if (sealedSnapshot) return false;
-      const claim = claims.get(`chest:${String(claimId || "")}`);
       const amount = Number(baseAmount);
-      if (!claim || !Number.isSafeInteger(amount) || amount < 2 || amount > 5) return false;
-      claim.localEvidence = { outcome: "fallback_gold", baseAmount: amount };
-      return true;
+      return updateChestEvidence(claimId, "fallback_gold", "baseAmount", amount, 2, 5);
     }
 
     function recordChestResource(claimId, outcome, count = 1) {
-      if (sealedSnapshot) return false;
-      const claim = claims.get(`chest:${String(claimId || "")}`);
       const amount = Number(count);
-      if (!claim || !["potion", "map_fragment"].includes(outcome) || !Number.isSafeInteger(amount) || amount !== 1) {
+      if (!["potion", "map_fragment"].includes(outcome)) {
         return false;
       }
-      claim.localEvidence = { outcome, count: amount };
-      return true;
+      return updateChestEvidence(claimId, outcome, "count", amount, 1, 1);
     }
 
     function recordPotionUse() {

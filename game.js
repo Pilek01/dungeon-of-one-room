@@ -4830,7 +4830,8 @@
     return `${y}-${m}-${day} ${h}:${min}`;
   }
 
-  function resetMetaProgressForFreshStart() {
+  function resetMetaProgressForFreshStart(options = {}) {
+    const persist = options.persist !== false && !state.onlineV3Ranked;
     state.highscore = 0;
     state.bestGold = 0;
     state.deaths = 0;
@@ -4903,19 +4904,21 @@
     state.merchantBuybackPending = null;
     state.finalGameOverSelection = 0;
 
-    setStorageItem(STORAGE_DEPTH, "0");
-    setStorageItem(STORAGE_GOLD, "0");
-    setStorageItem(STORAGE_DEATHS, "0");
-    setStorageItem(STORAGE_TOTAL_KILLS, "0");
-    setStorageItem(STORAGE_ELITE_KILLS, "0");
-    setStorageItem(STORAGE_TOTAL_GOLD, "0");
-    setStorageItem(STORAGE_TOTAL_MERCHANT_POTS, "0");
-    setStorageItem(STORAGE_POTION_FREE_EXTRACT, "0");
-    setStorageItem(STORAGE_WARDENS_KILLED, "0");
-    persistMutatorState();
-    persistCampProgress();
-    persistWardenFirstDropDepths();
-    clearRunSnapshot();
+    if (persist) {
+      setStorageItem(STORAGE_DEPTH, "0");
+      setStorageItem(STORAGE_GOLD, "0");
+      setStorageItem(STORAGE_DEATHS, "0");
+      setStorageItem(STORAGE_TOTAL_KILLS, "0");
+      setStorageItem(STORAGE_ELITE_KILLS, "0");
+      setStorageItem(STORAGE_TOTAL_GOLD, "0");
+      setStorageItem(STORAGE_TOTAL_MERCHANT_POTS, "0");
+      setStorageItem(STORAGE_POTION_FREE_EXTRACT, "0");
+      setStorageItem(STORAGE_WARDENS_KILLED, "0");
+      persistMutatorState();
+      persistCampProgress();
+      persistWardenFirstDropDepths();
+      clearRunSnapshot();
+    }
     markUiDirty();
   }
 

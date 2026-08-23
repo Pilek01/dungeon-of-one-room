@@ -74,11 +74,21 @@ function rewardRequest(state, claims) {
 test("new Ranked campaign bridge resets highscore and chest effects, while next descent does not", async () => {
   const builder = await readFile(new URL("../../../scripts/build-pages-v3.mjs", import.meta.url), "utf8");
   const runtime = await readFile(new URL("../../../online-v3/ranked-v3-runtime.js", import.meta.url), "utf8");
-  assert.match(builder, /resetMetaProgressForFreshStart\(\)/u);
+  assert.match(builder, /resetMetaProgressForFreshStart\(\{\s*persist:\s*false\s*\}\)/u);
   assert.match(builder, /newCampaign/u);
   assert.match(builder, /state\.highscore\s*=\s*depth/u);
   assert.match(runtime, /newCampaign/u);
   assert.match(runtime, /onCampStartRun[\s\S]*prepareFreshRankedStart\(false\)/u);
+});
+
+test("Ranked chest carry hydrates from canonical campaign state and isolates Practice persistence", async () => {
+  const builder = await readFile(new URL("../../../scripts/build-pages-v3.mjs", import.meta.url), "utf8");
+  const game = await readFile(new URL("../../../game.js", import.meta.url), "utf8");
+  assert.match(builder, /hydrateRankedChestCarry/u);
+  assert.match(builder, /enterRankedCamp[\s\S]*hydrateRankedChestCarry/u);
+  assert.match(builder, /returnToPractice[\s\S]*resetSessionChestBonuses/u);
+  assert.match(game, /function resetMetaProgressForFreshStart\(options = \{\}/u);
+  assert.match(game, /options\.persist/u);
 });
 
 test("Online Ranked Camp exposes a server-issued mutator addition and carries it", async () => {
