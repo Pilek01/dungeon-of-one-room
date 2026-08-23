@@ -12,6 +12,7 @@ import {
   publicRulesetMetaState
 } from "../src/domain/ruleset-runtime.js";
 import {
+  captureRankIntegrityRoomContext,
   checkpointGoldIntegrityReasons,
   V08_LOCAL_ELITE_REWARD_BONUS
 } from "../src/domain/rank-eligibility.js";
@@ -196,6 +197,12 @@ test("a relic acquired after room clear does not change the room gold integrity 
     acquisitionSource: "boss_drop",
     sourceOfferId: "offer_integrity_timing"
   }, { cryptoProvider: webcrypto });
+  captureRankIntegrityRoomContext(value.state);
+  assert.deepEqual(
+    value.state.rankIntegrity.roomGoldContext.build,
+    roomStartState.build,
+    "same-room meta transactions must not rewrite the room-start gold context"
+  );
   const fixedGold = roomStartState.currentRewardEnvelope.fixedAwards.reduce(
     (sum, award) => sum + award.amount,
     0

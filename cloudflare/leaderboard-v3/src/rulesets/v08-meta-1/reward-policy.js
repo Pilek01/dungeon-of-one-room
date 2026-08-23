@@ -908,7 +908,14 @@ function validateBindings(state, envelope, request) {
   }
 }
 
-function calculateClaimAmount(state, envelope, claim, slotById, capabilities = {}) {
+function calculateClaimAmount(
+  state,
+  envelope,
+  claim,
+  slotById,
+  capabilities = {},
+  goldContext = state
+) {
   if (!claim || typeof claim !== "object") throw new TypeError("REWARD_CLAIM_INVALID");
   if (typeof claim.claimType !== "string") throw new TypeError("REWARD_CLAIM_TYPE_UNKNOWN");
   if (typeof claim.claimId !== "string") throw new TypeError("REWARD_CLAIM_ID_UNKNOWN");
@@ -934,8 +941,8 @@ function calculateClaimAmount(state, envelope, claim, slotById, capabilities = {
       if (["health", "attack", "armor", "healing", "trap"].includes(outcome)) {
         const vaultBonus = slot.slotType === "vault-chest"
           ? calculateMultipliedGoldV08({
-              canonicalBuild: state.build,
-              canonicalRunModifiers: state.runModifiers,
+              canonicalBuild: goldContext.build,
+              canonicalRunModifiers: goldContext.runModifiers,
               sourceId: "vault-chest-bonus",
               baseAmount: chestBounds.vaultBonusBase
             })
@@ -965,8 +972,8 @@ function calculateClaimAmount(state, envelope, claim, slotById, capabilities = {
         throw new TypeError("REWARD_CLAIM_CHEST_AMOUNT_LIMIT");
       }
       amount += calculateChestGoldV08({
-        canonicalBuild: state.build,
-        canonicalRunModifiers: state.runModifiers,
+        canonicalBuild: goldContext.build,
+        canonicalRunModifiers: goldContext.runModifiers,
         baseAmount,
         applyTreasureSense: true
       });
@@ -975,8 +982,8 @@ function calculateClaimAmount(state, envelope, claim, slotById, capabilities = {
       const baseAmount = requireInteger(claim.localEvidence?.baseAmount, "REWARD_CLAIM_CHEST_AMOUNT_INVALID");
       if (baseAmount < 2 || baseAmount > 5) throw new TypeError("REWARD_CLAIM_CHEST_AMOUNT_LIMIT");
       amount += calculateMultipliedGoldV08({
-        canonicalBuild: state.build,
-        canonicalRunModifiers: state.runModifiers,
+        canonicalBuild: goldContext.build,
+        canonicalRunModifiers: goldContext.runModifiers,
         sourceId: "chest-stat-cap-fallback",
         baseAmount
       });
@@ -996,8 +1003,8 @@ function calculateClaimAmount(state, envelope, claim, slotById, capabilities = {
     }
     if (slot.slotType === "vault-chest") {
       amount += calculateMultipliedGoldV08({
-        canonicalBuild: state.build,
-        canonicalRunModifiers: state.runModifiers,
+        canonicalBuild: goldContext.build,
+        canonicalRunModifiers: goldContext.runModifiers,
         sourceId: "vault-chest-bonus",
         baseAmount: chestBounds.vaultBonusBase
       });
@@ -1018,8 +1025,8 @@ function calculateClaimAmount(state, envelope, claim, slotById, capabilities = {
   if (claim.claimType === "proc") {
     if (claim.claimId === "void-reaper-crit-kill") {
       const unit = calculateMultipliedGoldV08({
-        canonicalBuild: state.build,
-        canonicalRunModifiers: state.runModifiers,
+        canonicalBuild: goldContext.build,
+        canonicalRunModifiers: goldContext.runModifiers,
         sourceId: "void-reaper-crit-kill",
         baseAmount: 10
       });
@@ -1027,8 +1034,8 @@ function calculateClaimAmount(state, envelope, claim, slotById, capabilities = {
     }
     if (claim.claimId === "chaos-orb-gold-roll") {
       const unit = calculateMultipliedGoldV08({
-        canonicalBuild: state.build,
-        canonicalRunModifiers: state.runModifiers,
+        canonicalBuild: goldContext.build,
+        canonicalRunModifiers: goldContext.runModifiers,
         sourceId: "chaos-orb-gold-roll",
         baseAmount: 20,
         context: { applyMultiplier: false }
@@ -1063,8 +1070,8 @@ function calculateClaimAmount(state, envelope, claim, slotById, capabilities = {
 
   if (claim.claimType === "hazard") {
     const unit = calculateMultipliedGoldV08({
-      canonicalBuild: state.build,
-      canonicalRunModifiers: state.runModifiers,
+      canonicalBuild: goldContext.build,
+      canonicalRunModifiers: goldContext.runModifiers,
       sourceId: "spike-kill-fallback",
       baseAmount: 1
     });
@@ -1075,8 +1082,8 @@ function calculateClaimAmount(state, envelope, claim, slotById, capabilities = {
   }
   const [kind, enemyType] = claim.claimId.split(":");
   const unit = calculateEnemyGoldV08({
-    canonicalBuild: state.build,
-    canonicalRunModifiers: state.runModifiers,
+    canonicalBuild: goldContext.build,
+    canonicalRunModifiers: goldContext.runModifiers,
     enemyType,
     elite: kind === "elite",
     rewardBonus: rewardBounds.enemyClaims.rewardBonusByRoom[envelope.roomType] || 0
@@ -1135,6 +1142,18 @@ async function settleRewardEnvelopeV3(state, request, context = {}, options = {}
   }
 
   const next = structuredClone(state);
+  const rewardGoldContext = context.rewardGoldContext &&
+    typeof context.rewardGoldContext === "object"
+    ? context.rewardGoldContext
+    : next;
+  await assertCanonicalRelicBuildDigestV08(
+    rewardGoldContext.build,
+    context.cryptoProvider
+  );
+  await assertCanonicalRunModifierDigestV08(
+    rewardGoldContext.runModifiers,
+    context.cryptoProvider
+  );
   const mutableEnvelope = next.currentRewardEnvelope;
   repairLegacyWardenClaimEnvelope(next, mutableEnvelope);
   const slotById = new Map(mutableEnvelope.claimSlots.map((slot) => [slot.slotId, slot]));
@@ -1184,7 +1203,8 @@ async function settleRewardEnvelopeV3(state, request, context = {}, options = {}
       appliesToOutcome ? mutableEnvelope : validationEnvelope,
       claim,
       appliesToOutcome ? slotById : validationSlots,
-      context.capabilities
+      context.capabilities,
+      rewardGoldContext
     );
     if (appliesToOutcome) {
       if (claim.claimType === "enemy" || claim.claimType === "elite" || claim.claimType === "hazard") {

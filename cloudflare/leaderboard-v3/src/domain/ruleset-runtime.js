@@ -275,26 +275,20 @@ export async function applyRulesetCheckpoint(state, body, ruleset, context = {})
   const roomIntegrityState = body.integrityVersion === 1
     ? rankIntegrityRoomState(state)
     : null;
-  let integrityGoldDelta = null;
-  if (
-    roomIntegrityState &&
-    typeof ruleset.settleRoomRewardEnvelope === "function"
-  ) {
-    const integritySettlement = await ruleset.settleRoomRewardEnvelope(
-      roomIntegrityState,
-      structuredClone(operation.rewardClaim),
-      rulesetContext
-    );
-    integrityGoldDelta = Math.max(
-      0,
-      Number(integritySettlement.authoritativeGoldDelta) || 0
-    );
-  }
   const postRoomPact = ruleset.capabilities?.postRoomPactSettlement === "post-room-pact-v1" && directive.roomType === "pact";
   let nextState = await ruleset.consumeRoomDirective(
     structuredClone(state),
     operation,
-    { ...rulesetContext, postRoomPactSettlement: postRoomPact ? "post-room-pact-v1" : undefined }
+    {
+      ...rulesetContext,
+      postRoomPactSettlement: postRoomPact ? "post-room-pact-v1" : undefined,
+      rewardGoldContext: roomIntegrityState
+        ? {
+            build: structuredClone(roomIntegrityState.build),
+            runModifiers: structuredClone(roomIntegrityState.runModifiers)
+          }
+        : null
+    }
   );
   if (nextState.revision !== state.revision + 1) {
     throw new TypeError("ROOM_CHECKPOINT_REVISION_INVALID");
@@ -312,7 +306,7 @@ export async function applyRulesetCheckpoint(state, body, ruleset, context = {})
     goldIntegrityReasons: checkpointGoldIntegrityReasons(
       roomIntegrityState || state,
       body,
-      integrityGoldDelta ?? authoritativeGoldDelta
+      authoritativeGoldDelta
     )
   });
   captureRankIntegrityRoomContext(nextState);
