@@ -1995,3 +1995,61 @@ Updated next good targets
   `game.js`, and `online-v3/ranked-v3-runtime.js`; active/compatible availability
   with the new ruleset hash; and deterministic JSON 400 rejection envelopes on
   start, resume, abandon, and Camp invalid-request probes.
+
+## 2026-08-23 - Production mismatch run 5876 investigation
+
+- Production D1 read-only evidence identifies the full run as
+  `run_5876bfd4c3964a249b1e5f14c59bbce4`, current ruleset hash
+  `sha256:35707f6b5ea8b1ad18251dce5e6c18b87653893aad705b6c5543fdd140b88067`,
+  Observer assistance, first provisional revision 5, and final extraction at
+  revision 6. The build had no relics or active mutators.
+- Revisions 2-5 canonically settled room gold to 93, 104, 120, and 134. The
+  failing depth-4 combat-room settlement accepted an authoritative delta of 14
+  before issuing the depth-5 boss; its envelope contained two chest slots.
+  The persisted reasons are `REPORTED_GOLD_DELTA_MISMATCH`,
+  `REPORTED_GOLD_TOTAL_MISMATCH`, and `BOUNDARY_SETTLEMENT_INVALID`.
+- The initial chest stat-cap hypothesis was disproved: both the current builder
+  and live production `game.js` call `recordChestGold` inside
+  `applyChestCapFallback`. Enemy and both spike-hazard kill paths are also wired.
+- The supplied Observer trace identifies the matching sequence exactly. The
+  depth-4 checkpoint request digest was recovered byte-for-byte as delta `14`,
+  total `134`, five slime kills, one `fury_1` use, room-local turn count `5`,
+  and elapsed time `17348`. It was honest and the checkpoint remained
+  `official`; the mismatch did not originate in that room.
+- Compact-operation replay proves the integrity failure was first attached at
+  revision 5 by `request_extraction`, not by the preceding checkpoint. The bot
+  had entered the depth-5 boss with canonical gold `134`, earned `12` local
+  gold from two skeletons, used Fury twice, Shield twice and potions five
+  times, then emergency-extracted at 21 HP. The emergency boundary fell back
+  to an empty zero settlement and added `BOUNDARY_SETTLEMENT_INVALID`; comparing
+  the original partial-room totals to that fallback then produced both
+  `REPORTED_GOLD_*` reasons.
+- The trace also exposes a client/canonical combat projection mismatch at run
+  start and through the boss: local `135 HP / 10 ARM / 30 ATK` versus the
+  canonical no-relic/no-mutator build (`110 max HP`, no canonical chest stat
+  carry). The local `sessionChestAttackFlat`, `sessionChestArmorFlat`, and
+  `sessionChestHealthFlat` are applied unconditionally by `startRun()` but are
+  absent from the Ranked canonical build. This is the leading source of the
+  invalid emergency claim/state seam and must be fixed without relaxing exact
+  server gold validation. No anti-cheat or production behavior was changed
+  during this investigation.
+- A read-only replay reconstructed the extraction against the exact revision-5
+  canonical state and deterministically throws
+  `REWARD_CLAIM_POTION_USE_LIMIT`: the recorder reported five potion uses while
+  the canonical build held four. The Worker then correctly failed closed, but
+  its fallback compared the original local `12/146` gold telemetry against the
+  fallback `0/134` settlement, which added two misleading `REPORTED_GOLD_*`
+  reasons on top of the real `BOUNDARY_SETTLEMENT_INVALID` reason.
+- The source mismatch is broader than the popup: `startRun()` unconditionally
+  reapplies local `sessionChest*` combat bonuses on every run, including
+  Camp-to-next-run and fatal restart, while Ranked has no canonical fields or
+  claims for carrying those bonuses. Existing fresh-campaign handling calls
+  `resetMetaProgressForFreshStart()`, which also writes/deletes shared Practice
+  storage and therefore violates Practice/Ranked isolation.
+- Recommended strict repair (awaiting user design approval): clear all
+  non-canonical session-chest carry before every Ranked `startRun`, replace the
+  fresh Ranked full Practice reset with an in-memory Ranked-only reset, leave
+  Practice behavior/storage unchanged, and suppress only the cascading gold
+  reason codes when a boundary has already failed closed. Valid boundary gold
+  equality and all resource caps remain exact; invalid boundaries remain
+  provisional via `BOUNDARY_SETTLEMENT_INVALID`.
