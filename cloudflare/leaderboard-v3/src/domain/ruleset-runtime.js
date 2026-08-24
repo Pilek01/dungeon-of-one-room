@@ -27,6 +27,7 @@ function runtimeContext(state, context = {}, capabilities) {
   return {
     runId: state.runId,
     rulesetHash: state.rulesetHash,
+    runModifiers: structuredClone(state.runModifiers),
     secret: context.secret,
     cryptoProvider: context.cryptoProvider,
     randomOracle: context.randomOracle,

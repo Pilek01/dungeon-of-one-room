@@ -4,8 +4,7 @@ import selectionDocument from "./data/run-modifier-selection-policy.generated.js
 import {
   applyPotionResourceTransitionV08,
   assertCanonicalPotionResourcesV08,
-  derivePotionMaximumV08,
-  initializePotionResourcesV08
+  derivePotionMaximumV08
 } from "./potion-policy.js";
 
 const catalog = catalogDocument.canonicalData;
@@ -304,13 +303,10 @@ function applyCanonicalPotionEffects(metaState, previousEffects, nextEffects, ac
   const capacityInput = potionCapacityInput(metaState.build, nextEffects);
   const nextMaximum = derivePotionMaximumV08(capacityInput);
   if (activationSource === "server-issued-run-start") {
-    metaState.build.resources = {
-      ...metaState.build.resources,
-      ...initializePotionResourcesV08({
-        ...capacityInput,
-        startingPotionsAdditive: nextEffects.potionModifiers.startingPotionsAdditive
-      })
-    };
+    metaState.build.resources = applyPotionResourceTransitionV08(
+      metaState.build.resources,
+      { nextMaximum, currentGrant: nextEffects.potionModifiers.startingPotionsAdditive }
+    );
   } else {
     const previousCapacity = potionCapacityInput(metaState.build, previousEffects);
     const previousMaximum = derivePotionMaximumV08(previousCapacity);
@@ -354,6 +350,17 @@ export async function applyCanonicalRunModifierSelection(
   const previousEffects = deriveRunModifierEffects(currentLedger);
   if (canonicalJson(currentIds) === canonicalJson(requestedIds)) {
     return structuredClone(metaState);
+  }
+  if (activationSource === "server-issued-run-start") {
+    const pristineMaximum = derivePotionMaximumV08(potionCapacityInput(metaState.build, previousEffects));
+    const resources = metaState.build?.resources;
+    if (
+      !resources ||
+      resources.potions !== pristineMaximum ||
+      resources.maxPotions !== pristineMaximum
+    ) {
+      throw new TypeError("RUN_MODIFIER_RUN_START_RESOURCES_NOT_PRISTINE");
+    }
   }
   if (activationSource === "server-issued-run-start" && currentIds.length > 0) {
     throw new TypeError("RUN_MODIFIER_RUN_START_ALREADY_SET");

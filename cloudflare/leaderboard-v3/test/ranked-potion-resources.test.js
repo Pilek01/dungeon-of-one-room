@@ -301,3 +301,79 @@ test("public modifier projection exposes an immutable potion modifier summary", 
   projection.summary.potionModifiers.maximumSlotsAdditive = 999;
   assert.equal(projectPublicRunModifiers(state).summary.potionModifiers.maximumSlotsAdditive, -1);
 });
+
+test("run-start modifier selection rejects late depleted runs and preserves Flask grants", async () => {
+  const depleted = modifierState("potion-late-start");
+  depleted.build.resources.potions = 1;
+  const before = structuredClone(depleted);
+  await assert.rejects(
+    applyCanonicalRunModifierSelection(
+      depleted,
+      { modifierIds: ["alchemist"], activationSource: "server-issued-run-start" },
+      { authority: "TRUSTED_RULESET_DOMAIN", cryptoProvider: webcrypto }
+    ),
+    /RUN_MODIFIER_RUN_START_RESOURCES_NOT_PRISTINE/u
+  );
+  assert.deepEqual(depleted, before);
+
+  const carried = modifierState("potion-start-flask");
+  carried.build = await applyRelicAcquisition(
+    carried.build,
+    relicAcquisition("flask"),
+    { cryptoProvider: webcrypto }
+  );
+  carried.build.resources.hp = 77;
+  carried.build.resources.turn = 9;
+  const selected = await applyCanonicalRunModifierSelection(
+    carried,
+    { modifierIds: ["alchemist"], activationSource: "server-issued-run-start" },
+    { authority: "TRUSTED_RULESET_DOMAIN", cryptoProvider: webcrypto }
+  );
+  assert.deepEqual(
+    { potions: selected.build.resources.potions, maxPotions: selected.build.resources.maxPotions },
+    { potions: 6, maxPotions: 6 }
+  );
+  assert.equal(selected.build.resources.hp, 77);
+  assert.equal(selected.build.resources.turn, 9);
+
+  const famineThenAlchemist = await applyCanonicalRunModifierSelection(
+    modifierState("potion-order-a"),
+    { modifierIds: ["famine", "alchemist"], activationSource: "server-issued-run-start" },
+    { authority: "TRUSTED_RULESET_DOMAIN", cryptoProvider: webcrypto }
+  );
+  const alchemistThenFamine = await applyCanonicalRunModifierSelection(
+    modifierState("potion-order-b"),
+    { modifierIds: ["alchemist", "famine"], activationSource: "server-issued-run-start" },
+    { authority: "TRUSTED_RULESET_DOMAIN", cryptoProvider: webcrypto }
+  );
+  assert.deepEqual(famineThenAlchemist.build.resources, alchemistThenFamine.build.resources);
+});
+
+test("canonical Satchel capacity covers levels zero through five", () => {
+  for (let satchelLevel = 0; satchelLevel <= 5; satchelLevel += 1) {
+    assert.equal(
+      derivePotionMaximumV08({ baseMaximum: 3, satchelLevel, modifierMaximumSlotsAdditive: 0, flaskStacks: 0 }),
+      3 + satchelLevel
+    );
+  }
+});
+
+test("Famine floor remains canonical across Flask acquisition and removal", async () => {
+  let state = modifierState("potion-famine-flask");
+  state = await applyCanonicalRunModifierSelection(
+    state,
+    { modifierIds: ["famine"], activationSource: "server-issued-run-start" },
+    { authority: "TRUSTED_RULESET_DOMAIN", cryptoProvider: webcrypto }
+  );
+  const potionContext = { cryptoProvider: webcrypto, runModifiers: state.runModifiers };
+  state.build = await applyRelicAcquisition(state.build, relicAcquisition("flask"), potionContext);
+  assert.deepEqual(
+    { potions: state.build.resources.potions, maxPotions: state.build.resources.maxPotions },
+    { potions: 1, maxPotions: 1 }
+  );
+  state.build = await applyRelicRemovalV08(state.build, { relicId: "flask", stacks: 1 }, potionContext);
+  assert.deepEqual(
+    { potions: state.build.resources.potions, maxPotions: state.build.resources.maxPotions },
+    { potions: 1, maxPotions: 1 }
+  );
+});

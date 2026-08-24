@@ -1,6 +1,10 @@
 import campPolicyDocument from "./data/camp-transaction-policy.generated.json" with { type: "json" };
 import { assertCanonicalPotionStateV08 } from "./meta-state.js";
 import {
+  applyPotionResourceTransitionV08,
+  derivePotionMaximumV08
+} from "./potion-policy.js";
+import {
   awardCanonicalGoldV08,
   commitMetaTransactionV08,
   issueMetaTransactionOfferV08,
@@ -368,7 +372,7 @@ export async function issueCampTransactionsV08(metaState, context = {}) {
   }, context);
 }
 
-function applyInstantUpgradePreview(build, upgradeId) {
+function applyInstantUpgradePreview(build, upgradeId, modifierMaximumSlotsAdditive = 0) {
   if (upgradeId === "vitality") {
     const level = build.campUpgrades[upgradeId];
     const oldMultiplier = 1 + (level - 1) * 0.1;
@@ -387,10 +391,16 @@ function applyInstantUpgradePreview(build, upgradeId) {
       )
     );
   } else if (upgradeId === "satchel") {
-    build.resources.maxPotions += 1;
-    build.resources.potions = Math.min(
-      build.resources.maxPotions,
-      build.resources.potions + 1
+    const flaskStacks = build.relics?.find((entry) => entry.relicId === "flask")?.stacks || 0;
+    const nextMaximum = derivePotionMaximumV08({
+      baseMaximum: 3,
+      satchelLevel: Number(build.campUpgrades?.satchel) || 0,
+      modifierMaximumSlotsAdditive,
+      flaskStacks
+    });
+    build.resources = applyPotionResourceTransitionV08(
+      build.resources,
+      { nextMaximum, currentGrant: 1 }
     );
   }
 }
@@ -428,7 +438,9 @@ export async function commitCampTransactionV08(metaState, request, context = {})
         "camp_gold"
       );
       state.build.campUpgrades[upgrade.id] = current + 1;
-      applyInstantUpgradePreview(state.build, upgrade.id);
+      const modifierMaximumSlotsAdditive = deriveRunModifierEffects(state.runModifiers)
+        .potionModifiers.maximumSlotsAdditive;
+      applyInstantUpgradePreview(state.build, upgrade.id, modifierMaximumSlotsAdditive);
       assertCanonicalPotionStateV08(state);
       return {
         nextState: state,

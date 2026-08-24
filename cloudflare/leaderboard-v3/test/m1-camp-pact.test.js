@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { createHash } from "node:crypto";
+import { createHash, webcrypto } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -22,6 +22,7 @@ import {
   assertMetaStateV08,
   createInitialMetaStateV08
 } from "../src/rulesets/v08-meta-1/meta-state.js";
+import { applyCanonicalRunModifierSelection } from "../src/rulesets/v08-meta-1/run-modifiers.js";
 import campPolicyDocument from "../src/rulesets/v08-meta-1/data/camp-transaction-policy.generated.json" with { type: "json" };
 import pactPolicyDocument from "../src/rulesets/v08-meta-1/data/pact-transaction-policy.generated.json" with { type: "json" };
 import manifest from "../src/rulesets/v08-meta-1/data/ruleset-manifest.json" with { type: "json" };
@@ -599,4 +600,22 @@ test("Camp Satchel grants exactly one canonical potion and capacity slot", async
     await commitCampTransactionV08(committed, request(choice), result.context),
     committed
   );
+});
+
+test("Famine-floor Camp Satchel uses absolute capacity and clamps its grant", async () => {
+  const result = await campSetup("camp_famine_satchel");
+  result.meta = await applyCanonicalRunModifierSelection(
+    result.meta,
+    { modifierIds: ["famine"], activationSource: "server-issued-mid-run" },
+    { authority: "TRUSTED_RULESET_DOMAIN", cryptoProvider: webcrypto }
+  );
+  result.context.runModifiers = result.meta.runModifiers;
+  result.meta = await issueCampTransactionsV08(result.meta, result.context);
+  const choice = findChoice(
+    result.meta,
+    (entry) => entry.privateData.action === "upgrade" && entry.privateData.upgradeId === "satchel"
+  );
+  const committed = await commitCampTransactionV08(result.meta, request(choice), result.context);
+  assert.equal(committed.build.resources.maxPotions, 1);
+  assert.equal(committed.build.resources.potions, 1);
 });
