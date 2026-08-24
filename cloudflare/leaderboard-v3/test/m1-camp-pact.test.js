@@ -23,6 +23,8 @@ import {
   createInitialMetaStateV08
 } from "../src/rulesets/v08-meta-1/meta-state.js";
 import { applyCanonicalRunModifierSelection } from "../src/rulesets/v08-meta-1/run-modifiers.js";
+import { createV08Meta1Ruleset } from "../src/rulesets/v08-meta-1/index.js";
+import { hydrateRunFromProfileV08, profileStateFromRunV08 } from "../src/rulesets/v08-meta-1/profile-policy.js";
 import campPolicyDocument from "../src/rulesets/v08-meta-1/data/camp-transaction-policy.generated.json" with { type: "json" };
 import pactPolicyDocument from "../src/rulesets/v08-meta-1/data/pact-transaction-policy.generated.json" with { type: "json" };
 import manifest from "../src/rulesets/v08-meta-1/data/ruleset-manifest.json" with { type: "json" };
@@ -618,4 +620,77 @@ test("Famine-floor Camp Satchel uses absolute capacity and clamps its grant", as
   const committed = await commitCampTransactionV08(result.meta, request(choice), result.context);
   assert.equal(committed.build.resources.maxPotions, 1);
   assert.equal(committed.build.resources.potions, 1);
+});
+
+test("v1 profile Camp uses persisted Famine ledger for Flask sale and Satchel", async () => {
+  const capabilities = { canonicalPotionResources: "v1" };
+  const ruleset = createV08Meta1Ruleset({ secret: SECRET, capabilities });
+  const sourceContext = {
+    ...baseSetup("profile-camp-source").context,
+    capabilities,
+    cryptoProvider: webcrypto
+  };
+  let source = createInitialMetaStateV08({}, sourceContext);
+  source = await applyCanonicalRunModifierSelection(
+    source,
+    { modifierIds: ["famine"], activationSource: "server-issued-run-start" },
+    { authority: "TRUSTED_RULESET_DOMAIN", cryptoProvider: webcrypto, potionPolicyVersion: "v1" }
+  );
+  source.build = await applyRelicAcquisition(
+    source.build,
+    {
+      relicId: "flask",
+      acquiredRevision: source.revision,
+      acquisitionSource: "profile-fixture",
+      sourceOfferId: "profile-fixture-flask"
+    },
+    {
+      authority: "TRUSTED_RULESET_DOMAIN",
+      cryptoProvider: webcrypto,
+      runModifiers: source.runModifiers,
+      potionPolicyVersion: "v1"
+    }
+  );
+  source.status = "extraction";
+  const profile = profileStateFromRunV08(source, "profile-camp-famine", 1);
+  const nextContext = {
+    ...sourceContext,
+    runId: "profile-camp-next"
+  };
+  let next = createInitialMetaStateV08({}, nextContext);
+  next = await hydrateRunFromProfileV08(next, profile, {
+    cryptoProvider: webcrypto,
+    potionPolicyVersion: "v1"
+  });
+  next.status = "active";
+  next.campGold = 5000;
+  next.goldLedger.campEarnedServerDerived = 5000;
+  next.build.resources.highestUnlockedDepth = 50;
+  next = await beginCampSessionV08(next, nextContext);
+  next = await issueCampTransactionsV08(next, nextContext);
+  const sale = findChoice(
+    next,
+    (entry) => entry.privateData.action === "relic_sale" && entry.privateData.relicId === "flask"
+  );
+  next = await ruleset.commitCampTransaction(
+    next,
+    request(sale),
+    { cryptoProvider: webcrypto, secret: SECRET }
+  );
+  assert.deepEqual(
+    { potions: next.build.resources.potions, maxPotions: next.build.resources.maxPotions },
+    { potions: 1, maxPotions: 1 }
+  );
+  next = await issueCampTransactionsV08(next, nextContext);
+  const satchel = findChoice(
+    next,
+    (entry) => entry.privateData.action === "upgrade" && entry.privateData.upgradeId === "satchel"
+  );
+  next = await ruleset.commitCampTransaction(
+    next,
+    request(satchel),
+    { cryptoProvider: webcrypto, secret: SECRET }
+  );
+  assert.equal(next.build.resources.maxPotions, 1);
+  assert.equal(next.build.resources.potions, 1);
 });

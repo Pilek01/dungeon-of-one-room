@@ -222,6 +222,15 @@ function stateCreationContext(options, context) {
   return { ...mergeContext(options, context), capabilities: options.capabilities };
 }
 
+function stateDerivedPotionContext(options, context, state) {
+  return {
+    ...mergeContext(options, context),
+    authority: "TRUSTED_RULESET_DOMAIN",
+    potionPolicyVersion: state?.potionPolicyVersion === "v1" ? "v1" : "legacy",
+    runModifiers: state?.runModifiers ? structuredClone(state.runModifiers) : undefined
+  };
+}
+
 export function createV08Meta1Ruleset(options = {}) {
   const rulesetHash = options.rulesetHash || manifest.rulesetHash;
   return Object.freeze({
@@ -256,7 +265,7 @@ export function createV08Meta1Ruleset(options = {}) {
         initial = await hydrateRunFromProfileV08(
           initial,
           input.profileState,
-          mergeContext(options, context)
+          stateDerivedPotionContext(options, context, initial)
         );
       }
       if (input.practiceMutatorImport && !initial.mutatorProgress.importConsumed) {
@@ -432,14 +441,14 @@ export function createV08Meta1Ruleset(options = {}) {
     async beginCampSession(state, context = {}) {
       return beginCampSessionV08(
         state,
-        mergeContext(options, context)
+        stateDerivedPotionContext(options, context, state)
       );
     },
 
     async issueCampTransactions(state, context = {}) {
       return issueCampTransactionsV08(
         state,
-        mergeContext(options, context)
+        stateDerivedPotionContext(options, context, state)
       );
     },
 
@@ -447,7 +456,7 @@ export function createV08Meta1Ruleset(options = {}) {
       return commitCampTransactionV08(
         state,
         request,
-        mergeContext(options, context)
+        stateDerivedPotionContext(options, context, state)
       );
     },
 

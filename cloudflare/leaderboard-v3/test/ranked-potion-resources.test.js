@@ -4,6 +4,7 @@ import { webcrypto } from "node:crypto";
 import {
   applyPotionResourceTransitionV08,
   assertCanonicalPotionResourcesV08,
+  createV08Meta1Ruleset,
   derivePotionMaximumV08,
   initializePotionResourcesV08
 } from "../src/rulesets/v08-meta-1/index.js";
@@ -270,7 +271,7 @@ test("profile hydration applies modifier effects and carried Flask once", async 
   const hydrated = await hydrateRunFromProfileV08(
     modifierState("potion-profile-next"),
     profile,
-    { cryptoProvider: webcrypto }
+    { cryptoProvider: webcrypto, potionPolicyVersion: "v1" }
   );
   assert.deepEqual(
     { potions: hydrated.build.resources.potions, maxPotions: hydrated.build.resources.maxPotions },
@@ -279,7 +280,7 @@ test("profile hydration applies modifier effects and carried Flask once", async 
   const repeated = await hydrateRunFromProfileV08(
     modifierState("potion-profile-repeat"),
     profile,
-    { cryptoProvider: webcrypto }
+    { cryptoProvider: webcrypto, potionPolicyVersion: "v1" }
   );
   assert.deepEqual(repeated.build.resources, hydrated.build.resources);
 });
@@ -417,4 +418,147 @@ test("Flask modifier context rejects forged authority or digest without mutation
     runModifiers: state.runModifiers
   });
   assert.equal(accepted.resources.maxPotions, 1);
+});
+
+test("legacy createRun hydration keeps absent-marker Alchemist profiles on legacy potions", async () => {
+  const legacyRuleset = createV08Meta1Ruleset({ secret: "01234567890123456789012345678901" });
+  let source = modifierState("round3-legacy-source");
+  source = await applyCanonicalRunModifierSelection(
+    source,
+    { modifierIds: ["alchemist"], activationSource: "server-issued-run-start" },
+    {
+      authority: "TRUSTED_RULESET_DOMAIN",
+      cryptoProvider: webcrypto,
+      potionPolicyVersion: "legacy"
+    }
+  );
+  source.status = "extraction";
+  const profile = profileStateFromRunV08(source, "round3-legacy-profile", 1);
+  assert.equal(profile.potionPolicyVersion, undefined);
+  const hydrated = await legacyRuleset.createRun(
+    {
+      runId: "round3-legacy-next",
+      season: "round3",
+      startedAt: 1_900_000_000_010,
+      startDepth: 0,
+      profileState: profile,
+      newCampaign: false
+    },
+    {
+      runId: "round3-legacy-next",
+      season: "round3",
+      startedAt: 1_900_000_000_010,
+      secret: "01234567890123456789012345678901",
+      cryptoProvider: webcrypto
+    }
+  );
+  assert.equal(hydrated.potionPolicyVersion, undefined);
+  assert.deepEqual(
+    { potions: hydrated.build.resources.potions, maxPotions: hydrated.build.resources.maxPotions },
+    { potions: 3, maxPotions: 3 }
+  );
+});
+
+test("explicit v1 createRun hydration preserves its marker and Alchemist resources", async () => {
+  const v1Ruleset = createV08Meta1Ruleset({
+    secret: "12345678901234567890123456789012",
+    capabilities: { canonicalPotionResources: "v1" }
+  });
+  let source = createInitialMetaStateV08({}, {
+    runId: "round3-v1-source",
+    season: "round3",
+    startedAt: 1_900_000_000_020,
+    capabilities: { canonicalPotionResources: "v1" },
+    cryptoProvider: webcrypto
+  });
+  source = await applyCanonicalRunModifierSelection(
+    source,
+    { modifierIds: ["alchemist"], activationSource: "server-issued-run-start" },
+    {
+      authority: "TRUSTED_RULESET_DOMAIN",
+      cryptoProvider: webcrypto,
+      potionPolicyVersion: "v1"
+    }
+  );
+  source.status = "extraction";
+  const profile = profileStateFromRunV08(source, "round3-v1-profile", 1);
+  assert.equal(profile.potionPolicyVersion, "v1");
+  const hydrated = await v1Ruleset.createRun(
+    {
+      runId: "round3-v1-next",
+      season: "round3",
+      startedAt: 1_900_000_000_030,
+      startDepth: 0,
+      profileState: profile,
+      newCampaign: false
+    },
+    {
+      runId: "round3-v1-next",
+      season: "round3",
+      startedAt: 1_900_000_000_030,
+      secret: "12345678901234567890123456789012",
+      cryptoProvider: webcrypto
+    }
+  );
+  assert.equal(hydrated.potionPolicyVersion, "v1");
+  assert.deepEqual(
+    { potions: hydrated.build.resources.potions, maxPotions: hydrated.build.resources.maxPotions },
+    { potions: 5, maxPotions: 5 }
+  );
+});
+
+test("profile serialization preserves v1 marker and canonical modifiers while legacy remains absent", async () => {
+  const legacy = modifierState("round3-profile-legacy");
+  legacy.status = "extraction";
+  const legacyProfile = profileStateFromRunV08(legacy, "round3-profile-legacy", 1);
+  const v1Target = createInitialMetaStateV08({}, {
+    runId: "round3-profile-legacy-target",
+    season: "round3",
+    startedAt: 1_900_000_000_045,
+    capabilities: { canonicalPotionResources: "v1" },
+    cryptoProvider: webcrypto
+  });
+  const historicalHydrated = await hydrateRunFromProfileV08(v1Target, legacyProfile, { cryptoProvider: webcrypto });
+  assert.equal(historicalHydrated.potionPolicyVersion, undefined);
+  assert.deepEqual({ potions: historicalHydrated.build.resources.potions, maxPotions: historicalHydrated.build.resources.maxPotions }, { potions: 3, maxPotions: 3 });
+  assert.equal(legacyProfile.potionPolicyVersion, undefined);
+
+  let v1 = createInitialMetaStateV08({}, {
+    runId: "round3-profile-v1",
+    season: "round3",
+    startedAt: 1_900_000_000_040,
+    capabilities: { canonicalPotionResources: "v1" },
+    cryptoProvider: webcrypto
+  });
+  v1 = await applyCanonicalRunModifierSelection(
+    v1,
+    { modifierIds: ["famine"], activationSource: "server-issued-run-start" },
+    { authority: "TRUSTED_RULESET_DOMAIN", cryptoProvider: webcrypto, potionPolicyVersion: "v1" }
+  );
+  v1.status = "extraction";
+  const profile = profileStateFromRunV08(v1, "round3-profile-v1", 1);
+  assert.equal(profile.potionPolicyVersion, "v1");
+  assert.deepEqual(profile.runModifiers.active.map((entry) => entry.modifierId), ["famine"]);
+  assert.equal(profile.runModifiers.modifierDigest, v1.runModifiers.modifierDigest);
+});
+
+test("Flask relic preflight rejects before cloning a non-cloneable build", async () => {
+  const state = modifierState("round3-relic-preflight");
+  await applyCanonicalRunModifierSelection(
+    state,
+    { modifierIds: ["famine"], activationSource: "server-issued-run-start" },
+    { authority: "TRUSTED_RULESET_DOMAIN", cryptoProvider: webcrypto }
+  );
+  const build = createEmptyRelicBuildV08();
+  build.nonCloneable = () => {};
+  const before = build.nonCloneable;
+  await assert.rejects(
+    applyRelicAcquisition(build, relicAcquisition("flask"), {
+      authority: "CLIENT",
+      cryptoProvider: webcrypto,
+      runModifiers: state.runModifiers
+    }),
+    /RUN_MODIFIER_TRUSTED_AUTHORITY_REQUIRED/u
+  );
+  assert.equal(build.nonCloneable, before);
 });

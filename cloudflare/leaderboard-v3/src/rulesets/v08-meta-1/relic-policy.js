@@ -81,9 +81,12 @@ function flaskStackCount(relics) {
   return relics.find((entry) => entry.relicId === "flask")?.stacks || 0;
 }
 
-async function applyFlaskStackDelta(build, beforeStacks, afterStacks, context = {}) {
-  const delta = afterStacks - beforeStacks;
-  if (delta === 0 || !build.resources) return build;
+async function prepareFlaskMutationContext(context = {}) {
+  const next = {
+    ...context,
+    potionPolicyVersion: context.potionPolicyVersion || "v1",
+    modifierMaximumSlotsAdditive: 0
+  };
   if (context.runModifiers !== undefined) {
     if (context.authority !== "TRUSTED_RULESET_DOMAIN") {
       throw new TypeError("RUN_MODIFIER_TRUSTED_AUTHORITY_REQUIRED");
@@ -92,11 +95,17 @@ async function applyFlaskStackDelta(build, beforeStacks, afterStacks, context = 
       context.runModifiers,
       context.cryptoProvider
     );
+    next.modifierMaximumSlotsAdditive =
+      deriveRunModifierEffects(context.runModifiers).potionModifiers.maximumSlotsAdditive;
   }
+  return next;
+}
+
+async function applyFlaskStackDelta(build, beforeStacks, afterStacks, context = {}) {
+  const delta = afterStacks - beforeStacks;
+  if (delta === 0 || !build.resources) return build;
   if (context.potionPolicyVersion === "legacy") return build;
-  const modifierMaximumSlotsAdditive = context.runModifiers === undefined
-    ? 0
-    : deriveRunModifierEffects(context.runModifiers).potionModifiers.maximumSlotsAdditive;
+  const modifierMaximumSlotsAdditive = context.modifierMaximumSlotsAdditive ?? 0;
   const nextMaximum = derivePotionMaximumV08({
     baseMaximum: 3,
     satchelLevel: Number(build.campUpgrades?.satchel) || 0,
@@ -254,6 +263,7 @@ export async function assertCanonicalRelicBuildDigestV08(
 }
 
 export async function applyRelicAcquisition(build, acquisition, context = {}) {
+  const potionContext = await prepareFlaskMutationContext(context);
   const relicId = String(acquisition?.relicId || "");
   const policy = requireRelic(relicId);
   const verdict = canAcquireRelic(build, relicId);
@@ -285,7 +295,7 @@ export async function applyRelicAcquisition(build, acquisition, context = {}) {
     relicSlotBase: slotPolicy.baseRelicSlots,
     ...summary
   });
-  await applyFlaskStackDelta(next, beforeFlaskStacks, flaskStackCount(next.relics), context);
+  await applyFlaskStackDelta(next, beforeFlaskStacks, flaskStackCount(next.relics), potionContext);
   next.buildDigest = await sha256(buildDigestInput(next), context.cryptoProvider);
   return next;
 }
@@ -296,6 +306,7 @@ export async function applyRelicReplacementBuildV08(
   acquisition,
   context = {}
 ) {
+  const potionContext = await prepareFlaskMutationContext(context);
   if (!Array.isArray(removals) || removals.length < 1) {
     throw new TypeError("RELIC_REPLACEMENT_REMOVALS_REQUIRED");
   }
@@ -344,13 +355,14 @@ export async function applyRelicReplacementBuildV08(
     relicSlotBase: slotPolicy.baseRelicSlots,
     ...summary
   });
-  await applyFlaskStackDelta(next, beforeFlaskStacks, flaskStackCount(next.relics), context);
+  await applyFlaskStackDelta(next, beforeFlaskStacks, flaskStackCount(next.relics), potionContext);
   next.buildDigest = await sha256(buildDigestInput(next), context.cryptoProvider);
   assertCanonicalRelicBuildV08(next);
   return next;
 }
 
 export async function applyRelicRemovalV08(build, removal, context = {}) {
+  const potionContext = await prepareFlaskMutationContext(context);
   const relicId = String(removal?.relicId || "");
   const stacks = Number(removal?.stacks ?? 1);
   if (!Number.isSafeInteger(stacks) || stacks < 1) {
@@ -369,7 +381,7 @@ export async function applyRelicRemovalV08(build, removal, context = {}) {
     relicSlotBase: slotPolicy.baseRelicSlots,
     ...summary
   });
-  await applyFlaskStackDelta(next, beforeFlaskStacks, flaskStackCount(next.relics), context);
+  await applyFlaskStackDelta(next, beforeFlaskStacks, flaskStackCount(next.relics), potionContext);
   next.buildDigest = await sha256(buildDigestInput(next), context.cryptoProvider);
   assertCanonicalRelicBuildV08(next);
   return next;

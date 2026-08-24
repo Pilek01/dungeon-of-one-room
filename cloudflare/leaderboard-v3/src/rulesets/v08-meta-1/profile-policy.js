@@ -12,7 +12,7 @@ import {
   derivePotionMaximumV08,
   initializePotionResourcesV08
 } from "./potion-policy.js";
-import { normalizeCampaignStateV08 } from "./meta-state.js";
+import { CANONICAL_POTION_RESOURCES_VERSION_V08, normalizeCampaignStateV08 } from "./meta-state.js";
 import {
   applyPracticeMutatorImportV08,
   createEmptyMutatorProgressV08,
@@ -34,7 +34,7 @@ function safeLevel(value) {
   return level;
 }
 
-async function resetBuildForNextRun(build, cryptoProvider, potionModifiers, potionPolicyVersion = null) {
+async function resetBuildForNextRun(build, cryptoProvider, potionModifiers, potionPolicyVersion = "legacy") {
   const empty = createEmptyRelicBuildV08();
   const next = structuredClone(build || empty);
   const vitality = safeLevel(next.campUpgrades?.vitality);
@@ -82,6 +82,17 @@ async function resetBuildForNextRun(build, cryptoProvider, potionModifiers, poti
   return next;
 }
 
+function resolveProfilePotionPolicyVersion(profile, context) {
+  const profileVersion = profile.potionPolicyVersion;
+  if (profileVersion !== undefined && profileVersion !== CANONICAL_POTION_RESOURCES_VERSION_V08) {
+    throw new TypeError("PROFILE_POTION_POLICY_VERSION_INVALID");
+  }
+  const contextVersion = context.potionPolicyVersion;
+  if (contextVersion !== undefined && contextVersion !== "legacy" && contextVersion !== CANONICAL_POTION_RESOURCES_VERSION_V08) {
+    throw new TypeError("PROFILE_POTION_POLICY_VERSION_INVALID");
+  }
+  return contextVersion || (profileVersion === CANONICAL_POTION_RESOURCES_VERSION_V08 ? CANONICAL_POTION_RESOURCES_VERSION_V08 : "legacy");
+}
 export async function hydrateRunFromProfileV08(state, profile, context = {}) {
   if (!profile) return structuredClone(state);
   if (
@@ -90,7 +101,11 @@ export async function hydrateRunFromProfileV08(state, profile, context = {}) {
   ) {
     throw new TypeError("PROFILE_RULESET_MISMATCH");
   }
+  const potionPolicyVersion = resolveProfilePotionPolicyVersion(profile, context);
   const next = structuredClone(state);
+  if (potionPolicyVersion === "legacy" && profile.potionPolicyVersion === undefined) {
+    delete next.potionPolicyVersion;
+  }
   next.profileId = profile.profileId;
   next.campGold = Math.max(0, Number(profile.campGold) || 0);
   next.lives = Math.max(0, Number(profile.lives) || next.lives);
@@ -102,7 +117,7 @@ export async function hydrateRunFromProfileV08(state, profile, context = {}) {
     profile.build,
     context.cryptoProvider,
     potionModifiers,
-    context.potionPolicyVersion
+    potionPolicyVersion
   );
   next.mutatorProgress = normalizeMutatorProgressV08(profile.mutatorProgress, {
     activeModifierIds: next.runModifiers.active.map((entry) => entry.modifierId)
@@ -125,8 +140,17 @@ export async function hydrateRunFromProfileV08(state, profile, context = {}) {
 }
 
 function profileStateFromCanonicalRun(state, profileId, profileRevision = 0) {
+  if (
+    state.potionPolicyVersion !== undefined &&
+    state.potionPolicyVersion !== CANONICAL_POTION_RESOURCES_VERSION_V08
+  ) {
+    throw new TypeError("PROFILE_POTION_POLICY_VERSION_INVALID");
+  }
   return {
     profilePolicyVersion: PROFILE_POLICY_VERSION,
+    ...(state.potionPolicyVersion === CANONICAL_POTION_RESOURCES_VERSION_V08
+      ? { potionPolicyVersion: CANONICAL_POTION_RESOURCES_VERSION_V08 }
+      : {}),
     profileId,
     runId: profileId,
     rulesetId: state.rulesetId,
