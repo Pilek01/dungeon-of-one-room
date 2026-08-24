@@ -1,7 +1,7 @@
 # Ranked potion and Merchant integrity repair — design
 
 Date: 2026-08-24
-Status: PROPOSED AFTER CURRENT-TIP AUDIT
+Status: APPROVED
 Baseline: `dd751d3a5487902225e3d67cd42178ef2ce1418a`
 
 ## Authority and release boundary
