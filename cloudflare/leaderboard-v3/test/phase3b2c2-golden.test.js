@@ -628,6 +628,24 @@ test("public replacement payload reports the complete 8-slot and 10-slot candida
   console.info(`Phase 3B2C2 maximum public replacement projection: ${maximum} bytes`);
 });
 
+test("replacement reconciles Flask capacity after final relic list", async () => {
+  const build = await buildWith(["flask"]);
+  const replaced = await applyRelicReplacementBuildV08(
+    build,
+    [{ relicId: "flask", stacks: 1 }],
+    {
+      relicId: "fang",
+      stacks: 1,
+      acquiredRevision: 1,
+      acquisitionSource: "boss_drop",
+      sourceOfferId: "phase_flask_replacement"
+    },
+    context
+  );
+  assert.equal(replaced.resources.maxPotions, 3);
+  assert.equal(replaced.resources.potions, 3);
+});
+
 for (const fixture of fixtures) {
   test(`golden 3B2C2 executable inventory: ${fixture.fixtureId}`, () => {
     assert.ok(catalog.some((entry) => entry.relicId === "fang"));

@@ -1,6 +1,7 @@
 import catalogDocument from "./data/relic-catalog.generated.json" with { type: "json" };
 import buildMetadataDocument from "./data/relic-build-metadata.generated.json" with { type: "json" };
 import slotPolicyDocument from "./data/relic-slot-policy.generated.json" with { type: "json" };
+import { applyPotionResourceTransitionV08 } from "./potion-policy.js";
 
 const catalog = catalogDocument.canonicalData;
 const buildMetadata = buildMetadataDocument.canonicalData;
@@ -67,6 +68,20 @@ function summarizeRelics(relics) {
   };
 }
 
+
+function flaskStackCount(relics) {
+  return relics.find((entry) => entry.relicId === "flask")?.stacks || 0;
+}
+
+function applyFlaskStackDelta(build, beforeStacks, afterStacks) {
+  const delta = afterStacks - beforeStacks;
+  if (delta === 0 || !build.resources) return build;
+  build.resources = applyPotionResourceTransitionV08(build.resources, {
+    nextMaximum: Math.max(1, build.resources.maxPotions + delta),
+    currentGrant: Math.max(0, delta)
+  });
+  return build;
+}
 export function createEmptyRelicBuildV08() {
   return {
     relics: [],
@@ -223,6 +238,7 @@ export async function applyRelicAcquisition(build, acquisition, context = {}) {
   if (!acquisitionSource) throw new TypeError("RELIC_ACQUISITION_SOURCE_REQUIRED");
   if (!sourceOfferId) throw new TypeError("RELIC_SOURCE_OFFER_REQUIRED");
 
+  const beforeFlaskStacks = flaskStackCount(build.relics);
   const next = structuredClone(build);
   const existing = next.relics.find((entry) => entry.relicId === relicId);
   if (existing) {
@@ -241,6 +257,7 @@ export async function applyRelicAcquisition(build, acquisition, context = {}) {
     relicSlotBase: slotPolicy.baseRelicSlots,
     ...summary
   });
+  applyFlaskStackDelta(next, beforeFlaskStacks, flaskStackCount(next.relics));
   next.buildDigest = await sha256(buildDigestInput(next), context.cryptoProvider);
   return next;
 }
@@ -254,6 +271,7 @@ export async function applyRelicReplacementBuildV08(
   if (!Array.isArray(removals) || removals.length < 1) {
     throw new TypeError("RELIC_REPLACEMENT_REMOVALS_REQUIRED");
   }
+  const beforeFlaskStacks = flaskStackCount(build.relics);
   const next = structuredClone(build);
   for (const removal of removals) {
     const relicId = String(removal?.relicId || "");
@@ -298,6 +316,7 @@ export async function applyRelicReplacementBuildV08(
     relicSlotBase: slotPolicy.baseRelicSlots,
     ...summary
   });
+  applyFlaskStackDelta(next, beforeFlaskStacks, flaskStackCount(next.relics));
   next.buildDigest = await sha256(buildDigestInput(next), context.cryptoProvider);
   assertCanonicalRelicBuildV08(next);
   return next;
@@ -309,6 +328,7 @@ export async function applyRelicRemovalV08(build, removal, context = {}) {
   if (!Number.isSafeInteger(stacks) || stacks < 1) {
     throw new TypeError("RELIC_REMOVAL_STACKS_INVALID");
   }
+  const beforeFlaskStacks = flaskStackCount(build.relics);
   const next = structuredClone(build);
   const index = next.relics.findIndex((entry) => entry.relicId === relicId);
   if (index < 0 || next.relics[index].stacks < stacks) {
@@ -321,6 +341,7 @@ export async function applyRelicRemovalV08(build, removal, context = {}) {
     relicSlotBase: slotPolicy.baseRelicSlots,
     ...summary
   });
+  applyFlaskStackDelta(next, beforeFlaskStacks, flaskStackCount(next.relics));
   next.buildDigest = await sha256(buildDigestInput(next), context.cryptoProvider);
   assertCanonicalRelicBuildV08(next);
   return next;

@@ -332,6 +332,24 @@ test("buyback and services mutate canonical ledgers at most once", async () => {
     );
   }
   {
+    const prepared = setup("merchant_flask_buyback");
+    await buildWith(prepared.meta, ["flask"]);
+    prepared.meta = await issueMerchantInventoryV08(prepared.meta, prepared.context);
+    const buyback = choiceBy(
+      prepared.meta,
+      "merchant_buyback",
+      (entry) => entry.privateData.relicId === "flask"
+    );
+    const committed = await commitMerchantTransactionV08(
+      prepared.meta,
+      request(buyback),
+      prepared.context
+    );
+    assert.equal(committed.build.resources.maxPotions, 3);
+    assert.equal(committed.build.resources.potions, 1);
+    assert.equal(committed.build.relics.some((entry) => entry.relicId === "flask"), false);
+  }
+  {
     const result = await issued("merchant_fullheal", {
       "merchant/service-life": 99,
       "merchant/service-choice": 0
