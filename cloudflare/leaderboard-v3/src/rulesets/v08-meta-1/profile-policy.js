@@ -4,8 +4,14 @@ import {
 } from "./relic-policy.js";
 import {
   createEmptyRunModifierLedgerV08,
+  deriveRunModifierEffects,
   projectPublicRunModifiers
 } from "./run-modifiers.js";
+import {
+  assertCanonicalPotionResourcesV08,
+  derivePotionMaximumV08,
+  initializePotionResourcesV08
+} from "./potion-policy.js";
 import { normalizeCampaignStateV08 } from "./meta-state.js";
 import {
   applyPracticeMutatorImportV08,
@@ -13,6 +19,10 @@ import {
   normalizeMutatorProgressV08,
   projectPublicMutatorProgressV08
 } from "./mutator-progression.js";
+
+function flaskStackCount(build) {
+  return build?.relics?.find((entry) => entry.relicId === "flask")?.stacks || 0;
+}
 
 export const PROFILE_POLICY_VERSION = "v08-ranked-profile-1";
 
@@ -24,7 +34,7 @@ function safeLevel(value) {
   return level;
 }
 
-async function resetBuildForNextRun(build, cryptoProvider) {
+async function resetBuildForNextRun(build, cryptoProvider, potionModifiers) {
   const empty = createEmptyRelicBuildV08();
   const next = structuredClone(build || empty);
   const vitality = safeLevel(next.campUpgrades?.vitality);
@@ -33,17 +43,27 @@ async function resetBuildForNextRun(build, cryptoProvider) {
     1,
     Math.round(empty.resources.maxHp * (1 + vitality * 0.1))
   );
+  const potionInput = {
+    baseMaximum: empty.resources.maxPotions,
+    satchelLevel: satchel,
+    modifierMaximumSlotsAdditive: potionModifiers.maximumSlotsAdditive,
+    flaskStacks: flaskStackCount(next)
+  };
+  const potionResources = initializePotionResourcesV08({
+    ...potionInput,
+    startingPotionsAdditive: potionModifiers.startingPotionsAdditive
+  });
   next.resources = {
     ...empty.resources,
     maxHp,
     hp: maxHp,
-    maxPotions: empty.resources.maxPotions + satchel,
-    potions: empty.resources.potions + satchel,
+    ...potionResources,
     highestUnlockedDepth: Math.max(
       0,
       Number(next.resources?.highestUnlockedDepth) || 0
     )
   };
+  assertCanonicalPotionResourcesV08(next.resources, derivePotionMaximumV08(potionInput));
   next.merchant = structuredClone(empty.merchant);
   next.buildDigest = await computeRelicBuildDigestV08(next, cryptoProvider);
   return next;
@@ -61,9 +81,14 @@ export async function hydrateRunFromProfileV08(state, profile, context = {}) {
   next.profileId = profile.profileId;
   next.campGold = Math.max(0, Number(profile.campGold) || 0);
   next.lives = Math.max(0, Number(profile.lives) || next.lives);
-  next.build = await resetBuildForNextRun(profile.build, context.cryptoProvider);
   next.runModifiers = structuredClone(
     profile.runModifiers || createEmptyRunModifierLedgerV08()
+  );
+  const potionModifiers = deriveRunModifierEffects(next.runModifiers).potionModifiers;
+  next.build = await resetBuildForNextRun(
+    profile.build,
+    context.cryptoProvider,
+    potionModifiers
   );
   next.mutatorProgress = normalizeMutatorProgressV08(profile.mutatorProgress, {
     activeModifierIds: next.runModifiers.active.map((entry) => entry.modifierId)

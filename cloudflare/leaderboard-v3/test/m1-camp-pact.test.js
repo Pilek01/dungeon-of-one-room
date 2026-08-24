@@ -580,3 +580,23 @@ test("128 seeded Camp and 128 seeded Pact cases are deterministic and atomic", a
   console.info(`M1 Camp property cases: ${caseCount}`);
   console.info(`M1 Pact property cases: ${caseCount}`);
 });
+
+test("Camp Satchel grants exactly one canonical potion and capacity slot", async () => {
+  const result = await campSetup("camp_satchel_potion");
+  result.meta = await issueCampTransactionsV08(result.meta, result.context);
+  const choice = findChoice(
+    result.meta,
+    (entry) => entry.privateData.action === "upgrade" && entry.privateData.upgradeId === "satchel"
+  );
+  const committed = await commitCampTransactionV08(
+    result.meta,
+    request(choice),
+    result.context
+  );
+  assert.equal(committed.build.resources.maxPotions, 4);
+  assert.equal(committed.build.resources.potions, 4);
+  assert.deepEqual(
+    await commitCampTransactionV08(committed, request(choice), result.context),
+    committed
+  );
+});

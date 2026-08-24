@@ -66,6 +66,10 @@ test("Ranked profile preserves map progress, first-Warden history, and unlocked 
   const hydrated = await hydrateRunFromProfileV08(next, persistedProfile, { cryptoProvider: webcrypto });
   assert.doesNotThrow(() => assertMetaStateV08(hydrated));
   assert.deepEqual(hydrated.campaign, state.campaign);
+  assert.equal(hydrated.build.resources.maxPotions, 3);
+  assert.equal(hydrated.build.resources.potions, 3);
+  const repeated = await hydrateRunFromProfileV08(next, persistedProfile, { cryptoProvider: webcrypto });
+  assert.deepEqual(repeated.build.resources, hydrated.build.resources);
 });
 
 test("natural Otter state survives extract and Camp, preventing the depth 41 pity", async () => {

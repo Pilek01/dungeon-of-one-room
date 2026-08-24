@@ -1,4 +1,5 @@
 import campPolicyDocument from "./data/camp-transaction-policy.generated.json" with { type: "json" };
+import { assertCanonicalPotionStateV08 } from "./meta-state.js";
 import {
   awardCanonicalGoldV08,
   commitMetaTransactionV08,
@@ -428,6 +429,7 @@ export async function commitCampTransactionV08(metaState, request, context = {})
       );
       state.build.campUpgrades[upgrade.id] = current + 1;
       applyInstantUpgradePreview(state.build, upgrade.id);
+      assertCanonicalPotionStateV08(state);
       return {
         nextState: state,
         publicResult: {

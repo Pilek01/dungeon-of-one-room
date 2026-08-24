@@ -11,8 +11,13 @@ import {
 } from "./relic-policy.js";
 import {
   assertCanonicalRunModifierLedgerV08,
-  createEmptyRunModifierLedgerV08
+  createEmptyRunModifierLedgerV08,
+  deriveRunModifierEffects
 } from "./run-modifiers.js";
+import {
+  assertCanonicalPotionResourcesV08,
+  derivePotionMaximumV08
+} from "./potion-policy.js";
 import {
   createEmptyMutatorProgressV08,
   normalizeMutatorProgressV08
@@ -277,6 +282,19 @@ export function cloneMetaStateV08(state) {
   return structuredClone(state);
 }
 
+export function assertCanonicalPotionStateV08(state) {
+  const build = state?.build;
+  const modifiers = deriveRunModifierEffects(state?.runModifiers);
+  const flaskStacks = build?.relics?.find((entry) => entry.relicId === "flask")?.stacks || 0;
+  const expectedMaximum = derivePotionMaximumV08({
+    baseMaximum: 3,
+    satchelLevel: Number(build?.campUpgrades?.satchel) || 0,
+    modifierMaximumSlotsAdditive: modifiers.potionModifiers.maximumSlotsAdditive,
+    flaskStacks
+  });
+  assertCanonicalPotionResourcesV08(build.resources, expectedMaximum);
+  return state;
+}
 export function assertMetaStateV08(state) {
   if (!state || typeof state !== "object") throw new TypeError("META_STATE_INVALID");
   if (state.rulesetId !== RULESET_ID) throw new TypeError("RULESET_ID_MISMATCH");
@@ -311,6 +329,7 @@ export function assertMetaStateV08(state) {
   if (!state.build || typeof state.build !== "object") throw new TypeError("META_STATE_INVALID:build");
   assertCanonicalRelicBuildV08(state.build);
   assertCanonicalRunModifierLedgerV08(state.runModifiers);
+  assertCanonicalPotionStateV08(state);
   normalizeMutatorProgressV08(state.mutatorProgress, {
     activeModifierIds: state.runModifiers.active.map((entry) => entry.modifierId)
   });

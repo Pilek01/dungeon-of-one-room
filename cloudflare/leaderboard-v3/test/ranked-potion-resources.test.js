@@ -1,11 +1,21 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { webcrypto } from "node:crypto";
 import {
   applyPotionResourceTransitionV08,
   assertCanonicalPotionResourcesV08,
   derivePotionMaximumV08,
   initializePotionResourcesV08
 } from "../src/rulesets/v08-meta-1/index.js";
+import {
+  applyCanonicalRunModifierSelection,
+  projectPublicRunModifiers
+} from "../src/rulesets/v08-meta-1/run-modifiers.js";
+import { createInitialMetaStateV08 } from "../src/rulesets/v08-meta-1/meta-state.js";
+import {
+  hydrateRunFromProfileV08,
+  profileStateFromRunV08
+} from "../src/rulesets/v08-meta-1/profile-policy.js";
 import {
   applyRelicAcquisition,
   applyRelicRemovalV08,
@@ -190,4 +200,104 @@ test("Flask stack six is rejected before canonical mutation", async () => {
     /RELIC_STACK_LIMIT_REACHED:flask/u
   );
   assert.deepEqual(build, before);
+});
+
+function modifierState(runId = "potion-transition") {
+  return createInitialMetaStateV08({}, {
+    runId,
+    season: "potion-tests",
+    startedAt: 1_900_000_000_000,
+    cryptoProvider: webcrypto
+  });
+}
+
+test("run-start Alchemist and Famine effects initialize canonical potions", async () => {
+  const alchemist = await applyCanonicalRunModifierSelection(
+    modifierState("potion-alchemist"),
+    { modifierIds: ["alchemist"], activationSource: "server-issued-run-start" },
+    { authority: "TRUSTED_RULESET_DOMAIN", cryptoProvider: webcrypto }
+  );
+  assert.deepEqual(
+    { potions: alchemist.build.resources.potions, maxPotions: alchemist.build.resources.maxPotions },
+    { potions: 5, maxPotions: 5 }
+  );
+
+  const both = await applyCanonicalRunModifierSelection(
+    modifierState("potion-both"),
+    { modifierIds: ["famine", "alchemist"], activationSource: "server-issued-run-start" },
+    { authority: "TRUSTED_RULESET_DOMAIN", cryptoProvider: webcrypto }
+  );
+  assert.deepEqual(
+    { potions: both.build.resources.potions, maxPotions: both.build.resources.maxPotions },
+    { potions: 2, maxPotions: 2 }
+  );
+});
+
+test("mid-run modifier transitions change capacity without reconstructing current potions", async () => {
+  let state = modifierState("potion-mid-run");
+  state = await applyCanonicalRunModifierSelection(
+    state,
+    { modifierIds: ["alchemist"], activationSource: "server-issued-mid-run" },
+    { authority: "TRUSTED_RULESET_DOMAIN", cryptoProvider: webcrypto }
+  );
+  assert.deepEqual(
+    { potions: state.build.resources.potions, maxPotions: state.build.resources.maxPotions },
+    { potions: 3, maxPotions: 5 }
+  );
+  state = await applyCanonicalRunModifierSelection(
+    state,
+    { modifierIds: ["alchemist", "famine"], activationSource: "server-issued-mid-run" },
+    { authority: "TRUSTED_RULESET_DOMAIN", cryptoProvider: webcrypto }
+  );
+  assert.deepEqual(
+    { potions: state.build.resources.potions, maxPotions: state.build.resources.maxPotions },
+    { potions: 2, maxPotions: 2 }
+  );
+});
+
+test("profile hydration applies modifier effects and carried Flask once", async () => {
+  let source = modifierState("potion-profile-source");
+  source = await applyCanonicalRunModifierSelection(
+    source,
+    { modifierIds: ["alchemist"], activationSource: "server-issued-run-start" },
+    { authority: "TRUSTED_RULESET_DOMAIN", cryptoProvider: webcrypto }
+  );
+  source.status = "extraction";
+  source.build = await applyRelicAcquisition(source.build, relicAcquisition("flask", 0));
+  source.build = await applyRelicAcquisition(source.build, relicAcquisition("flask", 1));
+  source.build.campUpgrades = { satchel: 1 };
+  const profile = profileStateFromRunV08(source, "potion-profile", 1);
+  const hydrated = await hydrateRunFromProfileV08(
+    modifierState("potion-profile-next"),
+    profile,
+    { cryptoProvider: webcrypto }
+  );
+  assert.deepEqual(
+    { potions: hydrated.build.resources.potions, maxPotions: hydrated.build.resources.maxPotions },
+    { potions: 6, maxPotions: 8 }
+  );
+  const repeated = await hydrateRunFromProfileV08(
+    modifierState("potion-profile-repeat"),
+    profile,
+    { cryptoProvider: webcrypto }
+  );
+  assert.deepEqual(repeated.build.resources, hydrated.build.resources);
+});
+
+test("public modifier projection exposes an immutable potion modifier summary", async () => {
+  let state = modifierState("potion-public");
+  state = await applyCanonicalRunModifierSelection(
+    state,
+    { modifierIds: ["alchemist", "famine"], activationSource: "server-issued-run-start" },
+    { authority: "TRUSTED_RULESET_DOMAIN", cryptoProvider: webcrypto }
+  );
+  const projection = projectPublicRunModifiers(state);
+  assert.deepEqual(projection.summary.potionModifiers, {
+    maximumSlotsAdditive: -1,
+    minimumMaximumSlots: 1,
+    startingPotionsAdditive: 2,
+    healMultiplier: 0.65
+  });
+  projection.summary.potionModifiers.maximumSlotsAdditive = 999;
+  assert.equal(projectPublicRunModifiers(state).summary.potionModifiers.maximumSlotsAdditive, -1);
 });

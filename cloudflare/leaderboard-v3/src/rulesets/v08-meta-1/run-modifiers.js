@@ -1,6 +1,12 @@
 import catalogDocument from "./data/run-modifier-catalog.generated.json" with { type: "json" };
 import effectsDocument from "./data/run-modifier-effects.generated.json" with { type: "json" };
 import selectionDocument from "./data/run-modifier-selection-policy.generated.json" with { type: "json" };
+import {
+  applyPotionResourceTransitionV08,
+  assertCanonicalPotionResourcesV08,
+  derivePotionMaximumV08,
+  initializePotionResourcesV08
+} from "./potion-policy.js";
 
 const catalog = catalogDocument.canonicalData;
 const effects = effectsDocument.canonicalData;
@@ -258,6 +264,10 @@ export function deriveRunModifierEffects(canonicalRunModifiers, _context = {}) {
       Number(value.potion?.maximumSlotsAdditive) || 0;
     result.potionModifiers.startingPotionsAdditive +=
       Number(value.potion?.startingPotionsAdditive) || 0;
+    result.potionModifiers.minimumMaximumSlots = Math.max(
+      result.potionModifiers.minimumMaximumSlots,
+      Number(value.potion?.minimumMaximumSlots) || 1
+    );
     result.potionModifiers.healMultiplier = multiply(
       result.potionModifiers.healMultiplier,
       value.potion?.healMultiplier || 1
@@ -276,6 +286,43 @@ export function deriveRunModifierEffects(canonicalRunModifiers, _context = {}) {
   return result;
 }
 
+function flaskStackCount(build) {
+  return build?.relics?.find((entry) => entry.relicId === "flask")?.stacks || 0;
+}
+
+function potionCapacityInput(build, effects) {
+  return {
+    baseMaximum: 3,
+    satchelLevel: Number(build?.campUpgrades?.satchel) || 0,
+    modifierMaximumSlotsAdditive: effects.potionModifiers.maximumSlotsAdditive,
+    flaskStacks: flaskStackCount(build)
+  };
+}
+
+function applyCanonicalPotionEffects(metaState, previousEffects, nextEffects, activationSource) {
+  if (!metaState?.build?.resources) return;
+  const capacityInput = potionCapacityInput(metaState.build, nextEffects);
+  const nextMaximum = derivePotionMaximumV08(capacityInput);
+  if (activationSource === "server-issued-run-start") {
+    metaState.build.resources = {
+      ...metaState.build.resources,
+      ...initializePotionResourcesV08({
+        ...capacityInput,
+        startingPotionsAdditive: nextEffects.potionModifiers.startingPotionsAdditive
+      })
+    };
+  } else {
+    const previousCapacity = potionCapacityInput(metaState.build, previousEffects);
+    const previousMaximum = derivePotionMaximumV08(previousCapacity);
+    if (previousMaximum !== nextMaximum) {
+      metaState.build.resources = applyPotionResourceTransitionV08(
+        metaState.build.resources,
+        { nextMaximum, currentGrant: 0 }
+      );
+    }
+  }
+  assertCanonicalPotionResourcesV08(metaState.build.resources, nextMaximum);
+}
 export async function applyCanonicalRunModifierSelection(
   metaState,
   request,
@@ -304,6 +351,7 @@ export async function applyCanonicalRunModifierSelection(
   assertCanonicalRunModifierLedgerV08(currentLedger);
   await assertCanonicalRunModifierDigestV08(currentLedger, context.cryptoProvider);
   const currentIds = currentLedger.active.map((entry) => entry.modifierId);
+  const previousEffects = deriveRunModifierEffects(currentLedger);
   if (canonicalJson(currentIds) === canonicalJson(requestedIds)) {
     return structuredClone(metaState);
   }
@@ -333,7 +381,8 @@ export async function applyCanonicalRunModifierSelection(
     digestInput(next.runModifiers),
     context.cryptoProvider
   );
-  deriveRunModifierEffects(next.runModifiers);
+  const nextEffects = deriveRunModifierEffects(next.runModifiers);
+  applyCanonicalPotionEffects(next, previousEffects, nextEffects, activationSource);
   return next;
 }
 
@@ -350,7 +399,8 @@ export function projectPublicRunModifiers(metaState) {
     modifierDigest: ledger.modifierDigest,
     summary: {
       extraRelicChoices: derived.extraRelicChoices,
-      goldMultiplierAdditive: derived.goldMultiplierAdditive
+      goldMultiplierAdditive: derived.goldMultiplierAdditive,
+      potionModifiers: structuredClone(derived.potionModifiers)
     }
   };
 }

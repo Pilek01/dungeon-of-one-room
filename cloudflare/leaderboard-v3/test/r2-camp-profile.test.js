@@ -190,6 +190,9 @@ test("canonical extraction creates an authenticated profile Camp and next run", 
     storedExtractionProfile.goldLedger.campEarnedServerDerived,
     storedExtractionProfile.campGold
   );
+  assert.equal(storedExtractionProfile.build.resources.maxPotions, 3);
+  assert.equal(storedExtractionProfile.build.resources.potions, 3);
+  assert.deepEqual(extracted.profile.runModifiers.summary.potionModifiers, { maximumSlotsAdditive: 0, minimumMaximumSlots: 1, startingPotionsAdditive: 0, healMultiplier: 1 });
   assert.equal(extracted.profile.profileId, PROFILE_ID);
 
   const beforeFinalize = await harness.post(
