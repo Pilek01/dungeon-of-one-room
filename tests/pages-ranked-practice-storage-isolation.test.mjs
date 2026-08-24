@@ -96,3 +96,10 @@ test("Ranked reward recorder resumes chest claim IDs after consumed prefix", () 
   );
   assert.equal(recorder.snapshot().find((claim) => claim.claimType === "chest")?.claimId, "chest_2");
 });
+
+test("generated Practice load accepts an explicit zero potion count", async () => {
+  const game = await buildGeneratedGame();
+  assert.match(game, /const savedPotions = Number\(snapshot\.player\.potions\)/u);
+  assert.match(game, /potions: Number\.isFinite\(savedPotions\) \? Math\.max\(0, savedPotions\) : 1/u);
+  assert.match(game, /maxPotions: Number\.isFinite\(savedMaxPotions\) \? Math\.max\(1, savedMaxPotions\) : 5/u);
+});

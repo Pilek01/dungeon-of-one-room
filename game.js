@@ -2389,6 +2389,7 @@
     poisonAppliedTurn: -1,
     autoPotionCooldown: 0,
       oathPotionLockTurns: 0,
+      oathPotionLockAppliedTurn: -1,
       dashImmunityTurns: 0,
       furyBlessingTurns: 0,
       combatBoostTurns: 0,
@@ -5365,6 +5366,8 @@
           ? Number(snapshot.runMods?.shopCostMult) || 1
           : 1;
 
+    const savedPotions = Number(snapshot.player.potions);
+    const savedMaxPotions = Number(snapshot.player.maxPotions);
     state.player = {
       x: Number(snapshot.player.x) || 4,
       y: Number(snapshot.player.y) || 4,
@@ -5373,8 +5376,8 @@
       attack: Number(snapshot.player.attack) || scaledCombat(BASE_PLAYER_ATTACK),
       vampfangHealRun: Math.max(0, Number(snapshot.player.vampfangHealRun) || 0),
       armor: Number(snapshot.player.armor) || scaledCombat(BASE_PLAYER_ARMOR),
-      potions: Number(snapshot.player.potions) || 1,
-      maxPotions: Math.max(5, Number(snapshot.player.maxPotions) || 5),
+      potions: Number.isFinite(savedPotions) ? Math.max(0, savedPotions) : 1,
+      maxPotions: Number.isFinite(savedMaxPotions) ? Math.max(1, savedMaxPotions) : 5,
       crossroadsPowerMaxHpPenalty: Math.max(0, Math.round(Number(snapshot.player.crossroadsPowerMaxHpPenalty) || 0)),
       crossroadsPowerExpireTurn: Number.isFinite(Number(snapshot.player.crossroadsPowerExpireTurn))
         ? Math.floor(Number(snapshot.player.crossroadsPowerExpireTurn))
@@ -5529,6 +5532,7 @@
     }
     if (!hasRelic("oathofruin")) {
       state.player.oathPotionLockTurns = 0;
+      state.player.oathPotionLockAppliedTurn = -1;
     }
     if (!getElixirById(state.player.elixirType) || state.player.elixirTurns <= 0) {
       clearElixirCombatState();
@@ -9382,6 +9386,7 @@
     }
     if (relicId === "oathofruin") {
       state.player.oathPotionLockTurns = 0;
+      state.player.oathPotionLockAppliedTurn = -1;
       return;
     }
     if (relicId === "lastresort") {
@@ -9559,6 +9564,7 @@
     }
     if (relicId === "oathofruin") {
       state.player.oathPotionLockTurns = 0;
+      state.player.oathPotionLockAppliedTurn = -1;
       return;
     }
     if (relicId === "lastresort") {
@@ -11531,6 +11537,13 @@
   function tickOathPotionLock() {
     const current = Math.max(0, Number(state.player.oathPotionLockTurns) || 0);
     if (current <= 0) return;
+    if (state.player.oathPotionLockAppliedTurn === state.turn) {
+      state.player.oathPotionLockAppliedTurn = -1;
+      return;
+    }
+    if (state.player.oathPotionLockAppliedTurn >= 0 && state.player.oathPotionLockAppliedTurn < state.turn) {
+      state.player.oathPotionLockAppliedTurn = -1;
+    }
     state.player.oathPotionLockTurns = Math.max(0, current - 1);
   }
 
@@ -11579,6 +11592,7 @@
       spawnFloatingText(state.player.x, state.player.y, `BR -${barrierDrain.absorbed}`, "#cbe8ff");
     }
     state.player.oathPotionLockTurns = OATH_OF_RUIN_POTION_LOCK_TURNS;
+    state.player.oathPotionLockAppliedTurn = Math.max(0, Number(state.turn) || 0) + 1;
     pushLog(
       `Oath of Ruin drains ${rawCost} on ${skillName}. Potions sealed for ${OATH_OF_RUIN_POTION_LOCK_TURNS} turns.`,
       "warn"
@@ -14612,6 +14626,7 @@
     state.player.poisonAppliedTurn = -1;
     state.player.autoPotionCooldown = 0;
     state.player.oathPotionLockTurns = 0;
+    state.player.oathPotionLockAppliedTurn = -1;
     state.player.dashImmunityTurns = 0;
     state.player.furyBlessingTurns = 0;
     state.player.combatBoostTurns = 0;
@@ -16374,8 +16389,8 @@
     }
     const scaled = grantGold(goldBonus);
     if (!shouldSuppressPactPotionDrops() && chance(potionChance)) {
-      grantPotion(1);
-      pushLog(`Room clear bonus: +${scaled} gold and +1 potion.`, "good");
+      const gained = grantPotion(1);
+      pushLog("Room clear bonus: +" + scaled + " gold" + (gained > 0 ? " and +" + gained + " potion" + (gained === 1 ? "" : "s") : "") + ".", "good");
     } else {
       pushLog(`Room clear bonus: +${scaled} gold.`, "good");
     }
@@ -17375,8 +17390,8 @@
         const fallbackGold = grantGold(randInt(2, 5));
         pushLog(`Chest: potion sealed by Pact of Avarice, +${fallbackGold} gold.`, "warn");
       } else {
-        grantPotion(1);
-        pushLog("Chest: +1 potion.", "good");
+        const gained = grantPotion(1);
+        pushLog(gained > 0 ? "Chest: +" + gained + " potion" + (gained === 1 ? "" : "s") + "." : "Chest: potion bag already full.", "good");
       }
     } else if (chestOutcome.outcome === "map_fragment") {
       const completions = grantTreasureMapFragment(1);

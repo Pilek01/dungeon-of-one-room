@@ -219,6 +219,7 @@ export function publicProfileStateV08(profile) {
     profileId: profile.profileId,
     rulesetId: profile.rulesetId,
     rulesetHash: profile.rulesetHash,
+    ...(profile.potionPolicyVersion === "v1" ? { potionPolicyVersion: "v1" } : {}),
     revision: profile.revision,
     campGold: profile.campGold,
     lives: profile.lives,

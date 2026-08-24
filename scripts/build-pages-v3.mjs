@@ -1059,8 +1059,7 @@ const productionGameReplacements = [
       state.treasureMapFragments = Math.max(0, Number(campaign.treasureMapFragments) || 0);
       state.forcedNextRoomType = String(campaign.forcedNextRoomType || "");
       syncRankedStartDepthUnlocks(campaign);
-      state.player.potions = Math.max(0, Number(publicState?.build?.resources?.potions) || 0);
-      state.player.maxPotions = Math.max(1, Number(publicState?.build?.resources?.maxPotions) || state.player.maxPotions);
+      syncRankedCanonicalPotionState(publicState);
       state.player.gold = Math.max(0, Number(publicState?.gold) || 0);
       syncRankedScoreProjection(publicState);`
   ],
@@ -1072,8 +1071,7 @@ const productionGameReplacements = [
       }
       const resources = publicState?.build?.resources || {};
       const campaign = publicState?.campaign || {};
-      state.player.potions = Math.max(0, Number(resources.potions) || 0);
-      state.player.maxPotions = Math.max(1, Number(resources.maxPotions) || state.player.maxPotions);
+      syncRankedCanonicalPotionState(publicState);
       if (Array.isArray(publicState?.build?.relics)) {
         syncRankedCanonicalRelics(publicState?.build || {});
       }
@@ -1156,6 +1154,7 @@ const productionGameReplacements = [
         runModifiers: profile?.runModifiers,
         mutatorProgress: profile?.mutatorProgress
       });
+      syncRankedCanonicalPotionState(profile);
       const pricedUpgrade = choices.find((choice) => choice?.action === "upgrade");
       const pricedDef = CAMP_UPGRADES.find((entry) => entry.id === pricedUpgrade?.upgradeId);
       const pricedLevel = Math.max(0, Number(pricedUpgrade?.currentLevel) || 0);
@@ -1561,6 +1560,23 @@ const rankedGoldGameReplacements = [
     }
     return next;
   }
+  function syncRankedCanonicalPotionState(publicState) {
+    if (!publicState || publicState.potionPolicyVersion === undefined) return false;
+    if (publicState.potionPolicyVersion !== "v1") throw new TypeError("RANKED_POTION_POLICY_MARKER_INVALID");
+    const resources = publicState?.build?.resources;
+    const canonicalPotions = resources?.potions;
+    const canonicalMaxPotions = resources?.maxPotions;
+    const canonicalHealMultiplier = publicState?.runModifiers?.summary?.potionModifiers?.healMultiplier;
+    if (
+      !Number.isSafeInteger(canonicalPotions) || canonicalPotions < 0 ||
+      !Number.isSafeInteger(canonicalMaxPotions) || canonicalMaxPotions < 1 ||
+      !Number.isFinite(canonicalHealMultiplier) || canonicalHealMultiplier <= 0
+    ) throw new TypeError("RANKED_CANONICAL_POTION_STATE_INVALID");
+    state.player.maxPotions = canonicalMaxPotions;
+    state.player.potions = Math.min(canonicalMaxPotions, canonicalPotions);
+    state.runMods.potionHealMult = canonicalHealMultiplier;
+    return true;
+  }
   function syncRankedCanonicalRelics(build = {}) {
     const canonicalRelics = (Array.isArray(build?.relics) ? build.relics : []).flatMap((relic) =>
       Array.from(
@@ -1819,11 +1835,11 @@ const rankedGoldGameReplacements = [
         pushLog(` + "`Chest: potion sealed by Pact of Avarice, +${fallbackGold} gold.`" + `, "warn");`
   ],
   [
-`        grantPotion(1);
-        pushLog("Chest: +1 potion.", "good");`,
-`        grantPotion(1);
+`        const gained = grantPotion(1);
+        pushLog(gained > 0 ? "Chest: +" + gained + " potion" + (gained === 1 ? "" : "s") + "." : "Chest: potion bag already full.", "good");`,
+`        const gained = grantPotion(1);
         onlineV3RewardRecorder?.recordChestPotion?.(onlineV3ActiveChestClaimId, 1);
-        pushLog("Chest: +1 potion.", "good");`
+        pushLog(gained > 0 ? "Chest: +" + gained + " potion" + (gained === 1 ? "" : "s") + "." : "Chest: potion bag already full.", "good");`
   ],
   [
 `      const completions = grantTreasureMapFragment(1);`,
@@ -2186,8 +2202,7 @@ const rankedMerchantBridge = `    beginRankedMerchantRequest() {
       state.merchantSecondChancePurchases = Math.max(0, Number(merchant.secondChancePurchases) || 0);
       state.merchantReservedRelic = sanitizeMerchantReservedRelic(merchant.reservedRelic);
       state.merchantSlotsInitialized = true;
-      state.player.potions = Math.max(0, Number(resources.potions) || 0);
-      state.player.maxPotions = Math.max(1, Number(resources.maxPotions) || state.player.maxPotions);
+      syncRankedCanonicalPotionState(publicState);
       if (action === "service" && request.serviceId === "fullheal") {
         state.player.maxHp = Math.max(1, Number(resources.maxHp) || state.player.maxHp);
         state.player.hp = Math.max(1, Math.min(state.player.maxHp, Number(resources.hp) || state.player.maxHp));

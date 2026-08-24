@@ -718,3 +718,25 @@ test("real HTTP lifecycle reaches canonical relic and meta transaction systems",
   }
   assert(session.metaState.revision >= 2);
 });
+
+test("HTTP potion claims accept canonical current and reject one above it", async () => {
+  const acceptedHarness = createRealHarness();
+  const acceptedStart = (await acceptedHarness.start("potion-claim-exact-start")).payload;
+  const acceptedSession = (await acceptedHarness.select(acceptedStart, 0, "potion-claim-exact-select")).payload;
+  const canonicalPotions = acceptedSession.metaState.build.resources.potions;
+  const accepted = await acceptedHarness.checkpoint(acceptedSession, "potion-claim-exact-checkpoint", {
+    rewardClaims: [{ claimType: "resource", claimId: "potion-use", count: canonicalPotions }]
+  });
+  assert.equal(accepted.response.status, 200);
+  assert.equal(accepted.payload.metaState.build.resources.potions, 0);
+
+  const rejectedHarness = createRealHarness();
+  const rejectedStart = (await rejectedHarness.start("potion-claim-over-start")).payload;
+  const rejectedSession = (await rejectedHarness.select(rejectedStart, 0, "potion-claim-over-select")).payload;
+  const rejectedCanonical = rejectedSession.metaState.build.resources.potions;
+  const rejected = await rejectedHarness.checkpoint(rejectedSession, "potion-claim-over-checkpoint", {
+    rewardClaims: [{ claimType: "resource", claimId: "potion-use", count: rejectedCanonical + 1 }]
+  });
+  assert.equal(rejected.response.status, 422);
+  assert.equal(rejected.payload.error.code, "REWARD_CLAIM_POTION_USE_LIMIT");
+});

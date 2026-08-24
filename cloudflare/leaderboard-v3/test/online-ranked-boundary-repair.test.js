@@ -331,3 +331,19 @@ test("capable Ranked rooms keep the journal open until portal, extract, or fatal
   assert.match(runtime, /onFatalEvent[\s\S]*captureRankedBoundary/u);
   assert.match(runtime, /resetRankedBoundaryRecorder[\s\S]*resumePreventedFatal/u);
 });
+
+test("legacy public Ranked state omits the canonical potion capability marker", async () => {
+  const runtime = await readFile(new URL("../../../cloudflare/leaderboard-v3/src/domain/ruleset-runtime.js", import.meta.url), "utf8");
+  assert.match(runtime, /\.\.\.\(state\.potionPolicyVersion === "v1" \? \{ potionPolicyVersion: "v1" \} : \{\}\)/u);
+});
+test("public profile carries the canonical potion capability marker only for v1", () => {
+  const { state } = initialState("profile-potion-marker");
+  const profile = {
+    ...state,
+    profileId: "profile-potion-marker",
+    potionPolicyVersion: "v1"
+  };
+  assert.equal(publicProfileStateV08(profile).potionPolicyVersion, "v1");
+  profile.potionPolicyVersion = "legacy";
+  assert.equal(publicProfileStateV08(profile).potionPolicyVersion, undefined);
+});

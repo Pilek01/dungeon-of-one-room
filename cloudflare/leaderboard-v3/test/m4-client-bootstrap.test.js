@@ -726,3 +726,9 @@ test("M4 game integration remains a narrow directive/checkpoint bridge", () => {
   assert.match(builder, /onMerchantAction\?\.\(\{ action: "skill_upgrade", skillId \}\)/u);
   assert.match(builder, /onMerchantLeave\?\.\(\{ enterPortal: true \}\)/u);
 });
+
+test("public Ranked state carries the canonical potion capability marker only for v1", () => {
+  const runtime = fs.readFileSync(new URL("../src/domain/ruleset-runtime.js", import.meta.url), "utf8");
+  assert.match(runtime, /\.\.\.\(state\.potionPolicyVersion === "v1"/u);
+  assert.match(runtime, /potionPolicyVersion: "v1"/u);
+});

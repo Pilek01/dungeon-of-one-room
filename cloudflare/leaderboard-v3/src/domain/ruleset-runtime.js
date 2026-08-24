@@ -165,6 +165,7 @@ export function publicRulesetMetaState(state, ruleset) {
     gameVersion: state.gameVersion,
     rulesetId: state.rulesetId,
     rulesetHash: state.rulesetHash,
+    ...(state.potionPolicyVersion === "v1" ? { potionPolicyVersion: "v1" } : {}),
     status: state.status,
     revision: state.revision,
     startDepth: state.startDepth,
