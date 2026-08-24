@@ -101,11 +101,26 @@ function clearTransientBoundary(state) {
   state.campSession = null;
 }
 
-function ownedDeathLossCopies(state) {
+function earlyBalanceOtterEnabled(context) {
+  return context.capabilities == null ||
+    context.capabilities.earlyBalanceOtterRepair === "v1";
+}
+
+function ownedDeathLossCopies(state, context) {
   const copies = [];
+  const protectsStarter = earlyBalanceOtterEnabled(context) &&
+    !state.campaign?.unlockedStartDepths?.includes(11);
+  const protectedStarterRelicId = protectsStarter
+    ? String(state.campaign?.protectedStarterRelicId || "")
+    : "";
+  let protectedCopySkipped = false;
   for (const entry of state.build.relics) {
     if (getRelicCatalogEntryV08(entry.relicId).mythic) continue;
     for (let stack = 0; stack < entry.stacks; stack += 1) {
+      if (!protectedCopySkipped && entry.relicId === protectedStarterRelicId) {
+        protectedCopySkipped = true;
+        continue;
+      }
       copies.push(entry.relicId);
     }
   }
@@ -113,7 +128,22 @@ function ownedDeathLossCopies(state) {
 }
 
 async function applyDeathRelicLoss(state, context) {
-  const copies = ownedDeathLossCopies(state);
+  const wardLevel = earlyBalanceOtterEnabled(context)
+    ? Math.max(0, Math.min(3, Number(state.build.campUpgrades.relic_ward) || 0))
+    : 0;
+  if (wardLevel >= 3) return null;
+  if (wardLevel > 0) {
+    const wardRoll = await chooseIndex(100, {
+      secret: context.secret,
+      runId: state.runId,
+      revision: state.revision,
+      purpose: "life/relic-ward",
+      counter: state.lifeLedger.lifeLosses,
+      cryptoProvider: context.cryptoProvider
+    });
+    if (wardRoll < wardLevel * 33) return null;
+  }
+  const copies = ownedDeathLossCopies(state, context);
   if (copies.length === 0) return null;
   const selectedIndex = await chooseIndex(copies.length, {
     secret: context.secret,

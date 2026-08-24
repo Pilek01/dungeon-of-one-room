@@ -106,6 +106,7 @@ test("Chrono Loop then Second Chance prevent fatal events in baseline order", as
 
 test("actual nonterminal death loses one life and one non-Mythic copy then restarts", async () => {
   const value = await activeState(3);
+  await addRelic(value.state, "shrineward", 8);
   const beforeLives = value.state.lives;
   const beforeStacks = value.state.build.totalRelicStacks;
   const result = await fatal(value);
@@ -116,6 +117,29 @@ test("actual nonterminal death loses one life and one non-Mythic copy then resta
   assert.equal(result.nextState.currentRoomDirective.depth, 1);
   assert.equal(result.nextState.lifeLedger.currentLife, 2);
   assert.equal(result.publicResult.resolution, "life_lost");
+});
+
+test("the exact selected starter copy is protected until the first depth 10 clear", async () => {
+  const protectedRun = await activeState(31);
+  const starterId = protectedRun.state.build.relics[0].relicId;
+  assert.equal(protectedRun.state.campaign.protectedStarterRelicId, starterId);
+  const protectedDeath = await fatal(protectedRun);
+  assert.equal(protectedDeath.publicResult.lostRelicId, null);
+  assert.equal(protectedDeath.nextState.build.relics[0].relicId, starterId);
+
+  const unlockedRun = await activeState(31);
+  unlockedRun.state.campaign.unlockedStartDepths = [11];
+  const unprotectedDeath = await fatal(unlockedRun);
+  assert.equal(unprotectedDeath.publicResult.lostRelicId, starterId);
+});
+
+test("server-authoritative Relic Ward level 3 prevents death relic loss", async () => {
+  const value = await activeState(32);
+  value.state.build.campUpgrades.relic_ward = 3;
+  const before = value.state.build.totalRelicStacks;
+  const result = await fatal(value);
+  assert.equal(result.publicResult.lostRelicId, null);
+  assert.equal(result.nextState.build.totalRelicStacks, before);
 });
 
 test("nonterminal death clears run gold while preserving earned campaign score", async () => {

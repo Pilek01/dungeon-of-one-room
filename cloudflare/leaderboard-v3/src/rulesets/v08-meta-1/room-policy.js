@@ -38,6 +38,19 @@ const roomEligibility = new Map(
 const ONE_MILLION = 1_000_000;
 const MAX_DEPTH_SCALED_SPECIAL_ROOMS = new Set(["vault", "forge", "otter"]);
 
+function earlyBalanceOtterEnabled(context) {
+  return context.capabilities == null ||
+    context.capabilities.earlyBalanceOtterRepair === "v1";
+}
+
+function roomMinimumDepth(roomType, context) {
+  if (!earlyBalanceOtterEnabled(context)) {
+    if (roomType === "cursed") return 2;
+    if (roomType === "forge" || roomType === "vault") return 6;
+  }
+  return roomEligibility.get(roomType)?.minDepth;
+}
+
 export function specialRoomScalingDepthV08(state, roomType, roomDepth) {
   const depth = Math.max(1, Math.floor(Number(roomDepth) || 1));
   if (!MAX_DEPTH_SCALED_SPECIAL_ROOMS.has(String(roomType || ""))) return depth;
@@ -168,7 +181,7 @@ async function chooseWeightedRoom(state, context, depth, counter) {
     if (roll <= 0) {
       let roomType = entry.roomType;
       const policy = roomEligibility.get(roomType);
-      if (policy && depth < policy.minDepth) {
+      if (policy && depth < roomMinimumDepth(roomType, context)) {
         roomType = roomType === "cursed" || roomType === "forge" ? "treasure" : "combat";
       }
       return { roomType, source: "weighted-room" };
@@ -230,6 +243,8 @@ async function selectRoomType(state, context, depth, roomIndex) {
     depth === specialPolicy.otterPityDepth &&
     !schedule.otterSeenInGame &&
     !schedule.otterPityUsedInGame &&
+    (!earlyBalanceOtterEnabled(context) || !state.campaign.otterSeenInCampaign) &&
+    (!earlyBalanceOtterEnabled(context) || !state.campaign.otterPityUsedInCampaign) &&
     schedule.otterRoomsSeenThisRun < specialPolicy.otter.maxPerRun
   ) {
     return { roomType: "otter", source: "otter-pity" };
@@ -247,7 +262,7 @@ async function selectRoomType(state, context, depth, roomIndex) {
 
   const region = regionForDepth(depth);
   const vaultChance = Math.max(0, Number(eligibility.regionConfigs[region.id].vaultChance) || 0);
-  if (depth >= roomEligibility.get("vault").minDepth && vaultChance > 0) {
+  if (depth >= roomMinimumDepth("vault", context) && vaultChance > 0) {
     const roll = await randomInt(
       state,
       context,
@@ -381,8 +396,14 @@ export async function issueNextRoomDirectiveV08(state, context = {}) {
   if (directive.roomType === "forge") {
     next.campaign.forgeSeenInCampaign = true;
   }
+  if (earlyBalanceOtterEnabled(context) && directive.roomType === "otter") {
+    next.campaign.otterSeenInCampaign = true;
+  }
   if (selection.source === "forge-pity") {
     next.campaign.forgePityUsedInCampaign = true;
+  }
+  if (earlyBalanceOtterEnabled(context) && selection.source === "otter-pity") {
+    next.campaign.otterPityUsedInCampaign = true;
   }
   next.statistics.roomsIssued += 1;
   if (directive.roomCategory === "boss") next.statistics.bossRoomsIssued += 1;

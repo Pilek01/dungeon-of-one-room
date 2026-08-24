@@ -9,9 +9,10 @@
 
   const PROTOCOL_VERSION = "ranked-v3-checkpoint-1";
   const RULESET_ID = "v08-meta-1";
-  const RULESET_HASH = "sha256:91065f3c515fbc2f996ba74a9fbbcab3d2ce013077af306afd51929e64e1af59";
+  const RULESET_HASH = "sha256:bf17a65dc721066bf11a1c34063cc18254fe97766852827719eb6aabf36042fa";
   const SUPPORTED_RULESET_HASHES = Object.freeze([
     RULESET_HASH,
+    "sha256:91065f3c515fbc2f996ba74a9fbbcab3d2ce013077af306afd51929e64e1af59",
     "sha256:5bf4a0fbf2583b9b59ae050eebdd324bc09038b3aed6d2090cb3a4e5481f79eb",
     "sha256:51a86cf41299257475530a356b98381ac828fdb0ec22e77eff0ded99f1758617",
     "sha256:0a922d5567e7cfba56644e915ac0e331ac74aa3fcc3a2aed478440d64e9878f7",
@@ -43,6 +44,7 @@
   const legacyFatalPresentationCauseRulesetHashes = new Set(LEGACY_FATAL_PRESENTATION_CAUSE_RULESET_HASHES);
   const FATAL_PRESENTATION_CAUSE_RULESET_HASHES = Object.freeze([
     RULESET_HASH,
+    "sha256:91065f3c515fbc2f996ba74a9fbbcab3d2ce013077af306afd51929e64e1af59",
     "sha256:5bf4a0fbf2583b9b59ae050eebdd324bc09038b3aed6d2090cb3a4e5481f79eb",
     "sha256:51a86cf41299257475530a356b98381ac828fdb0ec22e77eff0ded99f1758617",
     "sha256:0a922d5567e7cfba56644e915ac0e331ac74aa3fcc3a2aed478440d64e9878f7",
@@ -54,6 +56,7 @@
   const fatalPresentationCauseRulesetHashes = new Set(FATAL_PRESENTATION_CAUSE_RULESET_HASHES);
   const BOUNDARY_SETTLEMENT_RULESET_HASHES = Object.freeze([
     RULESET_HASH,
+    "sha256:91065f3c515fbc2f996ba74a9fbbcab3d2ce013077af306afd51929e64e1af59",
     "sha256:5bf4a0fbf2583b9b59ae050eebdd324bc09038b3aed6d2090cb3a4e5481f79eb",
     "sha256:51a86cf41299257475530a356b98381ac828fdb0ec22e77eff0ded99f1758617",
     "sha256:0a922d5567e7cfba56644e915ac0e331ac74aa3fcc3a2aed478440d64e9878f7",
@@ -65,6 +68,7 @@
   const boundarySettlementRulesetHashes = new Set(BOUNDARY_SETTLEMENT_RULESET_HASHES);
   const POST_ROOM_PACT_RULESET_HASHES = Object.freeze([
     RULESET_HASH,
+    "sha256:91065f3c515fbc2f996ba74a9fbbcab3d2ce013077af306afd51929e64e1af59",
     "sha256:5bf4a0fbf2583b9b59ae050eebdd324bc09038b3aed6d2090cb3a4e5481f79eb",
     "sha256:51a86cf41299257475530a356b98381ac828fdb0ec22e77eff0ded99f1758617",
     "sha256:0a922d5567e7cfba56644e915ac0e331ac74aa3fcc3a2aed478440d64e9878f7",
@@ -74,6 +78,7 @@
   const postRoomPactRulesetHashes = new Set(POST_ROOM_PACT_RULESET_HASHES);
   const BOUNDED_PROC_CLAIMS_RULESET_HASHES = Object.freeze([
     RULESET_HASH,
+    "sha256:91065f3c515fbc2f996ba74a9fbbcab3d2ce013077af306afd51929e64e1af59",
     "sha256:5bf4a0fbf2583b9b59ae050eebdd324bc09038b3aed6d2090cb3a4e5481f79eb",
     "sha256:51a86cf41299257475530a356b98381ac828fdb0ec22e77eff0ded99f1758617",
     "sha256:0a922d5567e7cfba56644e915ac0e331ac74aa3fcc3a2aed478440d64e9878f7",
@@ -82,6 +87,7 @@
   const boundedProcClaimsRulesetHashes = new Set(BOUNDED_PROC_CLAIMS_RULESET_HASHES);
   const CANONICAL_CHEST_OUTCOMES_RULESET_HASHES = Object.freeze([
     RULESET_HASH,
+    "sha256:91065f3c515fbc2f996ba74a9fbbcab3d2ce013077af306afd51929e64e1af59",
     "sha256:5bf4a0fbf2583b9b59ae050eebdd324bc09038b3aed6d2090cb3a4e5481f79eb",
     "sha256:51a86cf41299257475530a356b98381ac828fdb0ec22e77eff0ded99f1758617",
     "sha256:0a922d5567e7cfba56644e915ac0e331ac74aa3fcc3a2aed478440d64e9878f7"

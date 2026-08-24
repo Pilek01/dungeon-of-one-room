@@ -5,8 +5,8 @@
   "sources": [
     {
       "file": "camp-data.js",
-      "byteLength": 2248,
-      "sha256": "30a481222fc6b1e20ca033a8a72b3da8eb2198b18f83030a5b42548825c78d2b"
+      "byteLength": 2726,
+      "sha256": "a3151c50e3d04e46b7b0032508ec68d35a4f27e0df308aa863d8f2c4330ea565"
     },
     {
       "file": "camp-runtime.js",
@@ -20,8 +20,8 @@
     },
     {
       "file": "game.js",
-      "byteLength": 1340338,
-      "sha256": "55378dcc1ce11f6d410b9ecab22fedbde39da4a6ecf0945ebe0185c7498bcfd6"
+      "byteLength": 1347234,
+      "sha256": "58a612f67a0a3fc97682d3f2faeb307c6d4b00faa2f80ba58d54acb2a8d28218"
     },
     {
       "file": "pact-room.js",

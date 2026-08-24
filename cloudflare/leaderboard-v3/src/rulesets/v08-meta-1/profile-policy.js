@@ -73,6 +73,15 @@ export async function hydrateRunFromProfileV08(state, profile, context = {}) {
     next.campaign.forgeSeenInCampaign;
   next.specialRoomScheduleState.forgePityUsedInGame =
     next.campaign.forgePityUsedInCampaign;
+  if (
+    context.capabilities == null ||
+    context.capabilities.earlyBalanceOtterRepair === "v1"
+  ) {
+    next.specialRoomScheduleState.otterSeenInGame =
+      next.campaign.otterSeenInCampaign;
+    next.specialRoomScheduleState.otterPityUsedInGame =
+      next.campaign.otterPityUsedInCampaign;
+  }
   return next;
 }
 

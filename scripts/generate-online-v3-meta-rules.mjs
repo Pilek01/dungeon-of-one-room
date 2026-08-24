@@ -74,6 +74,10 @@ const SOURCE_INPUTS = Object.freeze([
     symbols: ["treasure_sense", "bounty_contract", "CAMP_UPGRADES"]
   },
   {
+    file: "balance-progression.js",
+    symbols: ["isRoomTypeUnlocked", "relic_ward", "relic_appraisal"]
+  },
+  {
     file: "elixir-data.js",
     symbols: [
       "ELIXIR_STACK_MAX",
@@ -2011,6 +2015,7 @@ function buildCanonicalData(records, textByFile) {
   const expansionSource = textByFile.get("expansion-content.js");
   const pactSource = textByFile.get("pact-room.js");
   const campDataSource = textByFile.get("camp-data.js");
+  const balanceSource = textByFile.get("balance-progression.js");
   const mutatorSource = textByFile.get("mutator-data.js");
   const relicDataSource = textByFile.get("relic-data.js");
   const maxDepth = extractNumber(gameSource, "MAX_DEPTH");
@@ -2176,8 +2181,8 @@ function buildCanonicalData(records, textByFile) {
         ...defaults,
         id: room.id,
         minDepth: Number(requireMatch(
-          chooseRoomType,
-          /state\.depth\s*>=\s*(\d+)\s*&&\s*chance\(vaultChance\)/u,
+          balanceSource,
+          /roomType === "vault"\) return Boolean\(forcedByMapFragments\) \|\| safeDepth >= (\d+)/u,
           "vault:minDepth"
         )[1]),
         scheduleRule: "independent region vaultChance before weighted selection"
@@ -2188,8 +2193,8 @@ function buildCanonicalData(records, textByFile) {
         ...defaults,
         id: room.id,
         minDepth: Number(requireMatch(
-          chooseRoomType,
-          /state\.depth\s*<\s*(\d+)\s*&&\s*type\s*===\s*"forge"/u,
+          balanceSource,
+          /roomType === "forge"\) return safeDepth >= (\d+)/u,
           "forge:minDepth"
         )[1]),
         pityDepth: forgePityDepth,
@@ -2219,8 +2224,8 @@ function buildCanonicalData(records, textByFile) {
         ...defaults,
         id: room.id,
         minDepth: Number(requireMatch(
-          chooseRoomType,
-          /state\.depth\s*<\s*(\d+)\s*&&\s*type\s*===\s*"cursed"/u,
+          balanceSource,
+          /roomType === "cursed"\) return safeDepth >= (\d+)/u,
           "cursed:minDepth"
         )[1]),
         scheduleRule: "weighted; replaced by treasure below minDepth"
@@ -3174,7 +3179,7 @@ function buildCanonicalData(records, textByFile) {
       throw new Error(`SOURCE_SYMBOL_MISSING:game.js:${marker}`);
     }
   }
-  for (const marker of ["baseCost: 30", "costGrowth: 1.4", "max: 20"]) {
+  for (const marker of ["baseCost: 30", "costGrowth: 1.4", "max: 25", "relic_ward", "relic_appraisal"]) {
     if (!campSource.includes(marker)) {
       throw new Error(`SOURCE_SYMBOL_MISSING:camp-data.js:${marker}`);
     }
@@ -3205,16 +3210,18 @@ function buildCanonicalData(records, textByFile) {
       currency: "camp_gold",
       visitMultiplier: "freeze canonical run shopCostMult on Camp entry",
       upgrades: [
-        { id: "vitality", baseCost: 30, costGrowth: 1.4, max: 20 },
-        { id: "blade", baseCost: 30, costGrowth: 1.4, max: 15 },
+        { id: "vitality", baseCost: 30, costGrowth: 1.4, max: 25, costFreezeAfterLevel: 15 },
+        { id: "blade", baseCost: 30, costGrowth: 1.4, max: 25, costFreezeAfterLevel: 15 },
         { id: "satchel", baseCost: 15, costGrowth: 1.4, max: 6 },
         { id: "guard", baseCost: 30, costGrowth: 1.4, max: 15 },
         { id: "auto_potion", baseCost: 600, costGrowth: 1.4, max: 1 },
+        { id: "relic_ward", baseCost: 250, costGrowth: 2.2, max: 3, unlockBossDepths: [10, 30, 50] },
         { id: "potion_strength", baseCost: 80, costGrowth: 1.4, max: 5 },
         { id: "crit_chance", baseCost: 100, costGrowth: 1.4, max: 4 },
         { id: "treasure_sense", baseCost: 80, costGrowth: 1.4, max: 5 },
         { id: "emergency_stash", baseCost: 120, costGrowth: 1.4, max: 3 },
-        { id: "bounty_contract", baseCost: 70, costGrowth: 1.4, max: 5 }
+        { id: "bounty_contract", baseCost: 70, costGrowth: 1.4, max: 5 },
+        { id: "relic_appraisal", baseCost: 150, costGrowth: 2, max: 3, unlockBossDepths: [10, 20, 30] }
       ],
       elixirs: [
         { id: "iron_1", tier: 1, unlockDepth: 0, cost: 75, armorBonus: 3 },

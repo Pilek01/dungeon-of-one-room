@@ -855,7 +855,11 @@ const productionGameReplacements = [
     state.elixirLoadout = { type: "", charges: 0 };`
   ],
   [
-`    state.relics.splice(safeIndex, 1);
+`    const matchingCopies = state.relics.filter((ownedId) => ownedId === relicId).length;
+    state.relics.splice(safeIndex, 1);
+    if (relicId === state.protectedStarterRelicId && matchingCopies <= 1) {
+      state.protectedStarterRelicId = "";
+    }
     normalizeRelicInventory();`,
 `    if (state.onlineV3Ranked) {
       const accepted = window.DungeonOnlineV3?.onCampAction?.({ action: "relic_sale", relicId });
@@ -864,7 +868,11 @@ const productionGameReplacements = [
       markUiDirty();
       return accepted;
     }
+    const matchingCopies = state.relics.filter((ownedId) => ownedId === relicId).length;
     state.relics.splice(safeIndex, 1);
+    if (relicId === state.protectedStarterRelicId && matchingCopies <= 1) {
+      state.protectedStarterRelicId = "";
+    }
     normalizeRelicInventory();`
   ],
   [

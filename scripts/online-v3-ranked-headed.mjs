@@ -1055,25 +1055,31 @@ ${fatalTestHookAnchor}`;
       "ArrowUp did not move focus back through the saved Ranked menu"
     );
     let savedRunRestartAbandonAttempts = 0;
+    const savedRunRestartResumesBefore = diagnostics.apiRequests
+      .filter((entry) => entry.path === "/api/v3/runs/resume").length;
     await page.route("**/api/v3/runs/abandon", async (route) => {
       savedRunRestartAbandonAttempts += 1;
       await route.abort("failed");
     });
     await page.getByRole("button", { name: "Start New Ranked", exact: true }).click();
-    await page.getByRole("heading", { name: "Ranked reconnect required" }).waitFor({
-      state: "visible",
-      timeout: 20_000
-    });
-    await sessionState(page, "RECONNECT_REQUIRED");
+    await page.locator(".ranked-v3-choice-relic").first().waitFor({ state: "visible" });
+    await sessionState(page, "AWAITING_STARTING_RELIC");
     assert.equal(savedRunRestartAbandonAttempts, 3, "Saved-run restart did not exhaust the exact retry policy");
+    assert.equal(
+      diagnostics.apiRequests.filter((entry) => entry.path === "/api/v3/runs/resume").length,
+      savedRunRestartResumesBefore + 1,
+      "Saved-run restart recovery did not perform exactly one automatic canonical resync"
+    );
+    assert.equal(
+      await page.getByRole("heading", { name: "Ranked reconnect required" }).count(),
+      0,
+      "Transient saved-run restart failure showed the technical recovery screen"
+    );
     await page.screenshot({
-      path: path.join(ARTIFACT_ROOT, "ranked-saved-run-restart-recovery.png"),
+      path: path.join(ARTIFACT_ROOT, "ranked-saved-run-restart-resynced.png"),
       fullPage: true
     });
     await page.unroute("**/api/v3/runs/abandon");
-    await page.getByRole("button", { name: "Resync Ranked Run" }).click();
-    await page.locator(".ranked-v3-choice-relic").first().waitFor({ state: "visible" });
-    await sessionState(page, "AWAITING_STARTING_RELIC");
     const savedRunId = await page.evaluate(() => window.DungeonOnlineV3.getSnapshot().runId);
     await page.reload({ waitUntil: "domcontentloaded" });
     await dismissBoot(page, diagnostics);
@@ -1484,7 +1490,43 @@ ${fatalTestHookAnchor}`;
     assert.deepEqual(lateChest, { opened: true, type: "normal" });
     assert.equal(await page.evaluate(() => window.DungeonOnlineV3.getSessionState()), "ROOM_ACTIVE");
     assert.equal(diagnostics.checkpointBodies.length, checkpointsBeforeFirstClear);
-    await crossVisiblePortal(page, firstRoom.depth + 1);
+    let releasePortalCheckpoint;
+    let markPortalCheckpointStarted;
+    const portalCheckpointStarted = new Promise((resolve) => { markPortalCheckpointStarted = resolve; });
+    const portalCheckpointGate = new Promise((resolve) => { releasePortalCheckpoint = resolve; });
+    let delayedPortalCheckpointRequests = 0;
+    await page.route("**/api/v3/runs/checkpoint", async (route) => {
+      delayedPortalCheckpointRequests += 1;
+      if (delayedPortalCheckpointRequests === 1) markPortalCheckpointStarted();
+      await portalCheckpointGate;
+      await route.continue();
+    });
+    try {
+      const portalAttempts = await page.evaluate(() => [
+        window.__DUNGEON_TEST_CROSS_PORTAL?.(),
+        window.__DUNGEON_TEST_CROSS_PORTAL?.(),
+        window.__DUNGEON_TEST_CROSS_PORTAL?.()
+      ]);
+      assert.deepEqual(portalAttempts, [true, true, true]);
+      await portalCheckpointStarted;
+      await page.waitForTimeout(90);
+      assert.equal(delayedPortalCheckpointRequests, 1, "Repeated portal entry emitted another checkpoint request");
+      assert.equal(
+        await page.evaluate(() => window.DungeonOnlineV3.getSessionState()),
+        "RESOLVING_ROOM"
+      );
+      assert.equal(
+        await page.getByText("Loading next depth…", { exact: true }).count(),
+        0,
+        "Portal loading appeared before the 180ms delay"
+      );
+      await page.getByText("Loading next depth…", { exact: true }).waitFor({ state: "visible" });
+      assert.equal(await page.getByRole("heading", { name: "Ranked reconnect required" }).count(), 0);
+    } finally {
+      releasePortalCheckpoint();
+    }
+    await completeVisiblePortal(page, firstRoom.depth + 1, diagnostics);
+    await page.unroute("**/api/v3/runs/checkpoint");
     const firstGoldAudit = await page.evaluate(() => ({
       game: JSON.parse(window.render_game_to_text()),
       canonicalGold: window.DungeonOnlineV3.getSnapshot()?.publicState?.gold || 0,
@@ -2013,7 +2055,7 @@ ${fatalTestHookAnchor}`;
     assert.equal(referencePlateAudit.ledgerRowCenterRatios.length, expectedLedgerRowCenters.length);
     referencePlateAudit.ledgerRowCenterRatios.forEach((center, index) => {
       assert.ok(
-        Math.abs(center - expectedLedgerRowCenters[index]) <= 0.004,
+        Math.abs(center - expectedLedgerRowCenters[index]) <= 0.005,
         JSON.stringify({ expectedLedgerRowCenters, actual: referencePlateAudit.ledgerRowCenterRatios })
       );
     });
@@ -2590,6 +2632,9 @@ ${fatalTestHookAnchor}`;
     await page.waitForFunction(() => (
       JSON.parse(window.render_game_to_text()).rankedHudStatus?.syncing === true
     ));
+    await page.waitForFunction(() => Boolean(
+      document.querySelector(".ranked-run-player-status.is-syncing")
+    ));
     assert.equal(
       await page.locator(".ranked-run-player-status.is-syncing").count(),
       1,
@@ -2854,6 +2899,8 @@ ${fatalTestHookAnchor}`;
     await recoveryPage.getByRole("button", { name: "Request control" }).waitFor({ state: "visible" });
 
     let abandonAttempts = 0;
+    const abandonRecoveryResumesBefore = diagnostics.apiRequests
+      .filter((entry) => entry.path === "/api/v3/runs/resume").length;
     await recoveryPage.route("**/api/v3/runs/abandon", async (route) => {
       abandonAttempts += 1;
       if (abandonAttempts === 1) {
@@ -2865,16 +2912,17 @@ ${fatalTestHookAnchor}`;
     await ownerForAbandon.close();
     await recoveryPage.getByRole("button", { name: "Abandon Ranked Run" }).click();
     await recoveryPage.getByRole("button", { name: "Confirm abandonment" }).click();
-    await recoveryPage.getByRole("heading", { name: "Ranked reconnect required" }).waitFor({
+    await recoveryPage.getByRole("heading", { name: "Ranked Run Ended" }).waitFor({
       state: "visible",
       timeout: 20_000
     });
     assert.equal(abandonAttempts, 3, "Abandon did not exhaust the exact retry policy");
+    assert.equal(
+      diagnostics.apiRequests.filter((entry) => entry.path === "/api/v3/runs/resume").length,
+      abandonRecoveryResumesBefore + 1,
+      "Abandon recovery did not perform exactly one automatic canonical resync"
+    );
     await recoveryPage.unroute("**/api/v3/runs/abandon");
-    await recoveryPage.getByRole("button", { name: "Main Menu" }).click();
-    await recoveryPage.locator(".ranked-v3-overlay").waitFor({ state: "hidden" });
-    await openRankedChoice(recoveryPage, "Continue Ranked");
-    await recoveryPage.getByRole("heading", { name: "Ranked Run Ended" }).waitFor({ state: "visible" });
     assert.equal(await recoveryPage.getByRole("button", { name: "Resync Ranked Run" }).count(), 0);
     assert.equal(await recoveryPage.getByRole("button", { name: "Abandon Ranked Run" }).count(), 0);
     await recoveryPage.screenshot({

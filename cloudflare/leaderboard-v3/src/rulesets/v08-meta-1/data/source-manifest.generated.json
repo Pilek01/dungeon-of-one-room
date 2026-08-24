@@ -5,17 +5,27 @@
   "purpose": "Online v3 test-only canonical room, gold, relic, replacement, fallback, run modifier, Arena, and Milestone M1 meta-transaction policies",
   "sources": [
     {
+      "file": "balance-progression.js",
+      "byteLength": 4872,
+      "sha256": "39377acd08ae734b4163dbdc127eddd287cdbb99239f70c7f4fee818a87ad295",
+      "evidenceSymbols": [
+        "isRoomTypeUnlocked",
+        "relic_ward",
+        "relic_appraisal"
+      ]
+    },
+    {
       "file": "boss-campaign.js",
-      "byteLength": 8314,
-      "sha256": "d476994df5b378d432dd80fb0488599fd187b020ab92a0cf0491f44e9dd86626",
+      "byteLength": 8894,
+      "sha256": "a36601b877d1ef191364c86d43eb45ff9b59cf43fd2a3ac124adc891f4e6c1ba",
       "evidenceSymbols": [
         "BOSS_PROFILES"
       ]
     },
     {
       "file": "camp-data.js",
-      "byteLength": 2248,
-      "sha256": "30a481222fc6b1e20ca033a8a72b3da8eb2198b18f83030a5b42548825c78d2b",
+      "byteLength": 2726,
+      "sha256": "a3151c50e3d04e46b7b0032508ec68d35a4f27e0df308aa863d8f2c4330ea565",
       "evidenceSymbols": [
         "treasure_sense",
         "bounty_contract",
@@ -67,8 +77,8 @@
     },
     {
       "file": "game.js",
-      "byteLength": 1340338,
-      "sha256": "55378dcc1ce11f6d410b9ecab22fedbde39da4a6ecf0945ebe0185c7498bcfd6",
+      "byteLength": 1347234,
+      "sha256": "58a612f67a0a3fc97682d3f2faeb307c6d4b00faa2f80ba58d54acb2a8d28218",
       "evidenceSymbols": [
         "MAX_DEPTH",
         "MAX_RELICS",

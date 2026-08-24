@@ -270,12 +270,23 @@
     return profile;
   }
 
+  function getBossAddProfile(depth = 0, configuredCount = 2) {
+    const safeDepth = Math.max(0, Math.floor(Number(depth) || 0));
+    const safeConfiguredCount = Math.max(0, Math.floor(Number(configuredCount) || 0));
+    if (safeDepth <= 5) return Object.freeze({ count: 0, eliteCount: 0 });
+    if (safeDepth <= 10) return Object.freeze({ count: 2, eliteCount: 0 });
+    if (safeDepth <= 15) return Object.freeze({ count: 2, eliteCount: 1 });
+    const count = Math.max(2, safeConfiguredCount);
+    return Object.freeze({ count, eliteCount: count });
+  }
+
   const api = {
     BOSS_PROFILES,
     FINAL_BOSS_PHASE_PROFILES,
     getBossProfile,
     getFinalBossPhaseProfile,
-    getBossEncounterProfile
+    getBossEncounterProfile,
+    getBossAddProfile
   };
 
   if (typeof module !== "undefined" && module.exports) {

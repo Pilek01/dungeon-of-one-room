@@ -229,6 +229,7 @@ export async function selectStartingRelic(metaState, request = {}, context = {})
     acquisitionSource: "starting_relic",
     sourceOfferId: offer.offerId
   }, context);
+  next.campaign.protectedStarterRelicId = choice.privateRelicId;
   next.revision += 1;
   next.status = "active";
   next.pendingOffer = null;

@@ -1729,7 +1729,7 @@
     min-height: 0;
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    grid-template-rows: repeat(5, minmax(0, 1fr));
+    grid-template-rows: repeat(6, minmax(0, 1fr));
     grid-auto-flow: column;
     gap: 7px 12px;
     overflow: hidden;
@@ -3440,7 +3440,7 @@ body.graphics-hd-ui.main-menu-only .screen-overlay {
 
   body.graphics-hd-ui:has(#game.graphics-hd) .camp-revamp-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    grid-template-rows: repeat(5, minmax(0, 1fr));
+    grid-template-rows: repeat(6, minmax(0, 1fr));
     gap: clamp(6px, 0.7vh, 9px) clamp(8px, 0.75vw, 13px);
     overflow: hidden;
   }

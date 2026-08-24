@@ -44,6 +44,8 @@ function createHarness(options = {}) {
   const uiMenus = [];
   const uiSyncCalls = [];
   const integrityContexts = [];
+  const otterChestPresentations = [];
+  const scheduledTimers = [];
   let snapshot = {
     publicState: metaState({
       currentRoomDirective: {
@@ -152,8 +154,16 @@ function createHarness(options = {}) {
     Math,
     TypeError,
     Error,
-    setTimeout,
-    clearTimeout,
+    setTimeout: options.manualTimers
+      ? (callback, delay = 0) => {
+          const timer = { callback, delay, cleared: false };
+          scheduledTimers.push(timer);
+          return timer;
+        }
+      : setTimeout,
+    clearTimeout: options.manualTimers
+      ? (timer) => { if (timer) timer.cleared = true; }
+      : clearTimeout,
     location: { href: "https://example.test/" },
     document: {
       body: { append() {} },
@@ -240,6 +250,12 @@ function createHarness(options = {}) {
       startRanked(directive) { directives.push(directive); },
       setRoomIntegrityContext(context) { integrityContexts.push(context); },
       setNextDirective(directive) { directives.push(directive); },
+      showRankedOtterRewardChest(slot) {
+        if (!otterChestPresentations.some((entry) => entry.slotId === slot.slotId)) {
+          otterChestPresentations.push(slot);
+        }
+        return true;
+      },
       enterRankedForge(publicState, offer, context) {
         forgePresentations.push({ publicState, offer, context });
       },
@@ -265,7 +281,9 @@ function createHarness(options = {}) {
     uiMessages,
     uiMenus,
     uiSyncCalls,
-    integrityContexts
+    integrityContexts,
+    otterChestPresentations,
+    scheduledTimers
   };
 }
 
@@ -293,6 +311,24 @@ async function waitFor(predicate, message) {
     await new Promise((resolve) => setImmediate(resolve));
   }
   assert.fail(message);
+}
+
+async function waitForTimer(predicate, message) {
+  for (let attempt = 0; attempt < 50; attempt += 1) {
+    if (predicate()) return;
+    await new Promise((resolve) => setTimeout(resolve, 1));
+  }
+  assert.fail(message);
+}
+
+function deferred() {
+  let resolve;
+  let reject;
+  const promise = new Promise((resolvePromise, rejectPromise) => {
+    resolve = resolvePromise;
+    reject = rejectPromise;
+  });
+  return { promise, resolve, reject };
 }
 
 test("a post-Camp Observer Bot run is marked assisted before gameplay starts", async () => {
@@ -632,6 +668,319 @@ test("portal entry restores a missing persisted Ranked boundary before Observer 
   assert.deepEqual(harness.calls.map((entry) => entry.action), ["resume", "checkpoint"]);
 });
 
+test("rapid repeated portal entry shares one checkpoint flight for player and Observer Bot", async () => {
+  for (const observerBotActive of [false, true]) {
+    const checkpoint = deferred();
+    const room = {
+      directiveId: `directive_single_flight_${observerBotActive ? "bot" : "player"}`,
+      roomNonce: "nonce_single_flight",
+      depth: 7,
+      roomType: "combat"
+    };
+    const harness = createHarness({
+      observerBotActive,
+      boundarySettlement: true,
+      async onCheckpoint() { return checkpoint.promise; }
+    });
+    const client = harness.root.DungeonRankedV3Client.createRankedClient();
+    client.getSnapshot().publicState = metaState({
+      revision: 7,
+      rulesetHash: "sha256:boundary",
+      currentRoomDirective: room,
+      currentRewardEnvelope: { envelopeId: "reward_single_flight", fixedAwards: [] }
+    });
+    const runtime = await installRuntime(harness);
+    await runtime.onRoomEntered(room);
+    await runtime.onLocalRoomCleared({
+      turnCount: 4,
+      rewardClaims: [],
+      reportedGoldDelta: 0,
+      completionCapability: harness.integrityContexts[0].completionCapability
+    });
+
+    assert.equal(runtime.onPortalEntry(), true);
+    assert.equal(runtime.onPortalEntry(), true);
+    assert.equal(runtime.onPortalEntry(), true);
+    await waitFor(
+      () => harness.calls.some((entry) => entry.action === "checkpoint"),
+      "portal checkpoint request did not start"
+    );
+    await new Promise((resolve) => setImmediate(resolve));
+    await new Promise((resolve) => setImmediate(resolve));
+    assert.equal(
+      harness.calls.filter((entry) => entry.action === "checkpoint").length,
+      1,
+      `duplicate ${observerBotActive ? "Observer Bot/player" : "player"} portal entry started another checkpoint`
+    );
+    assert.equal(runtime.getSessionState(), "RESOLVING_ROOM");
+    assert.equal(runtime.getDiagnostics().length, 0, "duplicate portal entry forced the active flight into recovery");
+    assert.equal(runtime.isRankedAutomationBlocked(), observerBotActive);
+
+    checkpoint.resolve({
+      metaState: metaState({
+        revision: 8,
+        rulesetHash: "sha256:boundary",
+        currentRoomDirective: {
+          directiveId: "directive_after_single_flight",
+          roomNonce: "nonce_after_single_flight",
+          depth: 8,
+          roomType: "combat"
+        },
+        currentRewardEnvelope: { envelopeId: "reward_after_single_flight" }
+      })
+    });
+    await waitFor(
+      () => harness.directives.some((entry) => entry.directiveId === "directive_after_single_flight"),
+      "single portal checkpoint did not continue to the next directive"
+    );
+  }
+});
+
+test("portal loading stays hidden until the boundary flight exceeds 180ms", async () => {
+  const checkpoint = deferred();
+  const room = {
+    directiveId: "directive_delayed_loading",
+    roomNonce: "nonce_delayed_loading",
+    depth: 8,
+    roomType: "combat"
+  };
+  const harness = createHarness({
+    observerBotActive: false,
+    boundarySettlement: true,
+    manualTimers: true,
+    async onCheckpoint() { return checkpoint.promise; }
+  });
+  const client = harness.root.DungeonRankedV3Client.createRankedClient();
+  client.getSnapshot().publicState = metaState({
+    revision: 8,
+    rulesetHash: "sha256:boundary",
+    currentRoomDirective: room,
+    currentRewardEnvelope: { envelopeId: "reward_delayed_loading", fixedAwards: [] }
+  });
+  const runtime = await installRuntime(harness);
+  await runtime.onRoomEntered(room);
+  await runtime.onLocalRoomCleared({
+    turnCount: 2,
+    rewardClaims: [],
+    reportedGoldDelta: 0,
+    completionCapability: harness.integrityContexts[0].completionCapability
+  });
+
+  runtime.onPortalEntry();
+  await waitFor(
+    () => harness.calls.some((entry) => entry.action === "checkpoint"),
+    "delayed checkpoint did not begin"
+  );
+  assert.equal(harness.uiSyncCalls.length, 0);
+  const loadingTimer = harness.scheduledTimers.find((timer) => timer.delay === 180 && !timer.cleared);
+  assert.ok(loadingTimer, "portal flight did not schedule the delayed loading indicator");
+  loadingTimer.callback();
+  assert.deepEqual(harness.uiSyncCalls, ["Loading next depth…"]);
+
+  checkpoint.resolve({
+    metaState: metaState({
+      revision: 9,
+      rulesetHash: "sha256:boundary",
+      currentRoomDirective: {
+        directiveId: "directive_after_delayed_loading",
+        depth: 9,
+        roomType: "combat"
+      }
+    })
+  });
+  await waitFor(
+    () => harness.directives.some((entry) => entry.directiveId === "directive_after_delayed_loading"),
+    "delayed portal operation did not finish"
+  );
+});
+
+test("a late checkpoint callback is ignored after recovery invalidates its generation", async () => {
+  const checkpoint = deferred();
+  const room = {
+    directiveId: "directive_stale_callback",
+    roomNonce: "nonce_stale_callback",
+    depth: 9,
+    roomType: "combat"
+  };
+  const recoveryError = Object.assign(new TypeError("Protocol version mismatch."), {
+    code: "PROTOCOL_VERSION_MISMATCH",
+    status: 409,
+    traceId: "trace-root-protocol"
+  });
+  const harness = createHarness({
+    observerBotActive: false,
+    boundarySettlement: true,
+    async onCheckpoint() { return checkpoint.promise; },
+    async onResume() { throw recoveryError; }
+  });
+  const client = harness.root.DungeonRankedV3Client.createRankedClient();
+  client.getSnapshot().publicState = metaState({
+    revision: 9,
+    rulesetHash: "sha256:boundary",
+    currentRoomDirective: room,
+    currentRewardEnvelope: { envelopeId: "reward_stale_callback", fixedAwards: [] }
+  });
+  const runtime = await installRuntime(harness);
+  await runtime.onRoomEntered(room);
+  await runtime.onLocalRoomCleared({
+    turnCount: 3,
+    rewardClaims: [],
+    reportedGoldDelta: 0,
+    completionCapability: harness.integrityContexts[0].completionCapability
+  });
+  runtime.onPortalEntry();
+  await waitFor(
+    () => harness.calls.some((entry) => entry.action === "checkpoint"),
+    "checkpoint did not reach the delayed response boundary"
+  );
+
+  await runtime.resumeRanked();
+  assert.equal(runtime.getSessionState(), "UNRECOVERABLE_PROTOCOL_ERROR");
+  checkpoint.resolve({
+    metaState: metaState({
+      revision: 10,
+      rulesetHash: "sha256:boundary",
+      currentRoomDirective: {
+        directiveId: "directive_must_stay_ignored",
+        depth: 10,
+        roomType: "boss"
+      }
+    })
+  });
+  await new Promise((resolve) => setImmediate(resolve));
+  await new Promise((resolve) => setImmediate(resolve));
+
+  assert.equal(runtime.getSessionState(), "UNRECOVERABLE_PROTOCOL_ERROR");
+  assert.equal(
+    harness.directives.some((entry) => entry.directiveId === "directive_must_stay_ignored"),
+    false
+  );
+  assert.equal(runtime.getDiagnostics().at(-1)?.code, "PROTOCOL_VERSION_MISMATCH");
+});
+
+test("a transient checkpoint failure auto-resyncs calmly and continues exactly once", async () => {
+  const room = {
+    directiveId: "directive_auto_resync_before",
+    roomNonce: "nonce_auto_resync_before",
+    depth: 11,
+    roomType: "combat"
+  };
+  const nextRoom = metaState({
+    revision: 12,
+    rulesetHash: "sha256:boundary",
+    currentRoomDirective: {
+      directiveId: "directive_auto_resync_after",
+      roomNonce: "nonce_auto_resync_after",
+      depth: 12,
+      roomType: "combat"
+    },
+    currentRewardEnvelope: { envelopeId: "reward_auto_resync_after" }
+  });
+  const networkError = Object.assign(new Error("Temporary network loss."), {
+    code: "NETWORK_ERROR",
+    status: 0,
+    retryable: true,
+    traceId: "trace-root-network"
+  });
+  const harness = createHarness({
+    observerBotActive: false,
+    boundarySettlement: true,
+    async onCheckpoint() { throw networkError; },
+    async onResume() { return { metaState: nextRoom }; }
+  });
+  const client = harness.root.DungeonRankedV3Client.createRankedClient();
+  client.getSnapshot().publicState = metaState({
+    revision: 11,
+    rulesetHash: "sha256:boundary",
+    currentRoomDirective: room,
+    currentRewardEnvelope: { envelopeId: "reward_auto_resync_before", fixedAwards: [] }
+  });
+  const runtime = await installRuntime(harness);
+  await runtime.onRoomEntered(room);
+  await runtime.onLocalRoomCleared({
+    turnCount: 3,
+    rewardClaims: [],
+    reportedGoldDelta: 0,
+    completionCapability: harness.integrityContexts[0].completionCapability
+  });
+
+  runtime.onPortalEntry();
+  await waitForTimer(
+    () => harness.calls.some((entry) => entry.action === "resume"),
+    "transient failure did not schedule one automatic canonical resync"
+  );
+  await waitFor(
+    () => harness.directives.filter((entry) => entry.directiveId === "directive_auto_resync_after").length === 1,
+    `automatic resync did not restore the canonical next room (state ${runtime.getSessionState()})`
+  );
+
+  assert.deepEqual(harness.calls.map((entry) => entry.action), ["checkpoint", "resume"]);
+  assert.equal(harness.uiMessages.length, 0, "transient recovery showed a technical blocking popup");
+  assert.ok(harness.uiSyncCalls.includes("Synchronizing Ranked…"));
+  assert.equal(runtime.onPortalEntry(), false, "completed portal intent survived successful resync");
+  assert.equal(harness.calls.filter((entry) => entry.action === "resume").length, 1);
+});
+
+test("failed automatic resync keeps the first diagnostic as the recovery root error", async () => {
+  const room = {
+    directiveId: "directive_root_diagnostic",
+    roomNonce: "nonce_root_diagnostic",
+    depth: 13,
+    roomType: "combat"
+  };
+  const rootError = Object.assign(new Error("Temporary network loss."), {
+    code: "NETWORK_ERROR",
+    retryable: true,
+    traceId: "trace-first-root"
+  });
+  const secondaryError = Object.assign(new TypeError("Response was not JSON."), {
+    code: "RESPONSE_NOT_JSON",
+    status: 502,
+    traceId: "trace-secondary-resync"
+  });
+  const harness = createHarness({
+    observerBotActive: false,
+    boundarySettlement: true,
+    async onCheckpoint() { throw rootError; },
+    async onResume() { throw secondaryError; }
+  });
+  const client = harness.root.DungeonRankedV3Client.createRankedClient();
+  client.getSnapshot().publicState = metaState({
+    revision: 13,
+    rulesetHash: "sha256:boundary",
+    currentRoomDirective: room,
+    currentRewardEnvelope: { envelopeId: "reward_root_diagnostic", fixedAwards: [] }
+  });
+  const runtime = await installRuntime(harness);
+  await runtime.onRoomEntered(room);
+  await runtime.onLocalRoomCleared({
+    turnCount: 3,
+    rewardClaims: [],
+    reportedGoldDelta: 0,
+    completionCapability: harness.integrityContexts[0].completionCapability
+  });
+
+  runtime.onPortalEntry();
+  await waitForTimer(() => harness.uiMessages.length === 1, "failed automatic resync did not surface recovery controls");
+
+  assert.equal(harness.calls.filter((entry) => entry.action === "resume").length, 1);
+  assert.match(harness.uiMessages[0][1], /NETWORK_ERROR/u);
+  assert.doesNotMatch(harness.uiMessages[0][1], /RANKED_STATE_TRANSITION_INVALID/u);
+  assert.equal(runtime.getDiagnostics()[0]?.code, "NETWORK_ERROR");
+});
+
+test("legacy non-boundary portal handling remains unchanged", async () => {
+  const harness = createHarness({
+    observerBotActive: false,
+    boundarySettlement: false,
+    async onCheckpoint() { return { metaState: metaState() }; }
+  });
+  const runtime = await installRuntime(harness);
+
+  assert.equal(runtime.onPortalEntry(), false);
+  assert.equal(harness.calls.length, 0);
+});
+
 test("a local room clear without its active capability emits an integrity downgrade signal", async () => {
   const harness = createHarness({
     observerBotActive: false,
@@ -650,6 +999,50 @@ test("a local room clear without its active capability emits an integrity downgr
     "local_room_completion_capability_invalid"
   );
   assert.equal(payload.reportedGoldDelta, 2);
+});
+
+test("Ranked Otter clear presents one canonical Crimson chest and opens one server offer", async () => {
+  const otterSlot = { slotId: "slot_otter", sourceId: "otter-crimson-chest", consumed: false };
+  const otterState = metaState({
+    currentRoomDirective: { directiveId: "directive_otter", depth: 41, roomType: "otter" },
+    rewardSlots: [otterSlot]
+  });
+  const harness = createHarness({
+    observerBotActive: false,
+    roomType: "otter",
+    rewardSlots: [otterSlot],
+    async onEvent(action, payload) {
+      assert.equal(action, "issue_relic_offer");
+      assert.equal(payload.rewardSlotId, "slot_otter");
+      return {
+        metaState: {
+          ...otterState,
+          rewardSlots: [{ ...otterSlot, consumed: true }],
+          relicOffer: {
+            offerId: "offer_otter",
+            sourceType: "otter",
+            sourceId: "otter-crimson-chest",
+            publicChoices: [{ choiceId: "canonical_choice", relicId: "fang" }]
+          }
+        }
+      };
+    }
+  });
+  const runtime = await installRuntime(harness);
+  await runtime.onRoomEntered(otterState.currentRoomDirective);
+  await runtime.onLocalRoomCleared({
+    turnCount: 4,
+    rewardClaims: [],
+    completionCapability: harness.integrityContexts[0].completionCapability
+  });
+
+  assert.equal(harness.otterChestPresentations.length, 1);
+  assert.equal(harness.calls.filter((entry) => entry.action === "issue_relic_offer").length, 0);
+  assert.equal(runtime.onOtterChestOpen(), true);
+  assert.equal(runtime.onOtterChestOpen(), true);
+  await waitFor(() => harness.uiChoiceCalls.length === 1, "canonical Otter offer was not presented");
+  assert.equal(harness.calls.filter((entry) => entry.action === "issue_relic_offer").length, 1);
+  assert.equal(harness.uiChoiceCalls[0][2][0].choiceId, "canonical_choice");
 });
 
 test("a valid room capability stays private to the bridge and sends no downgrade signal", async () => {
@@ -704,6 +1097,7 @@ test("a provisional response shows the continuation notice only once per run", a
   assert.deepEqual(Array.from(runtime.getDiagnostics().at(-1)?.reasonCodes || []), [
     "REPORTED_GOLD_TOTAL_MISMATCH"
   ]);
+  assert.equal(runtime.getSnapshot()?.publicState?.rankEligibility, "provisional");
   await harness.uiMessages[0][2][0].onClick();
   await waitFor(() => harness.directives.length === 1, "notice did not continue the boundary");
   await runtime.onRoomEntered(metaState().currentRoomDirective);
@@ -714,6 +1108,7 @@ test("a provisional response shows the continuation notice only once per run", a
     completionCapability: harness.integrityContexts[1].completionCapability
   });
   assert.equal(harness.uiMessages.length, 1);
+  assert.equal(runtime.getSnapshot()?.publicState?.rankEligibility, "provisional");
 });
 
 test("normal extraction intent survives a reconnect Main Menu round trip after the room checkpoint committed", async () => {
@@ -785,7 +1180,7 @@ test("normal extraction intent survives a reconnect Main Menu round trip after t
   );
 });
 
-test("normal extraction intent is cancelled when resync returns the same uncommitted room", async () => {
+test("automatic resync cancels normal extraction when the same uncommitted room returns", async () => {
   const firstRoom = {
     directiveId: "directive_1",
     roomNonce: "nonce_1",
@@ -842,10 +1237,10 @@ test("normal extraction intent is cancelled when resync returns the same uncommi
   });
 
   await runtime.onExtraction("normal");
-  assert.equal(harness.uiMessages.at(-1)?.[0], "Ranked reconnect required");
-  const resync = harness.uiMessages.at(-1)?.[2].find((button) => button.label === "Resync Ranked Run");
-  assert.ok(resync, "reconnect did not offer canonical resync");
-  await resync.onClick();
+  await waitForTimer(
+    () => harness.directives.at(-1)?.directiveId === firstRoom.directiveId,
+    "automatic resync did not restore the same canonical room"
+  );
 
   assert.equal(
     harness.calls.some((entry) => entry.action === "request_extraction"),
@@ -853,6 +1248,8 @@ test("normal extraction intent is cancelled when resync returns the same uncommi
     "same-room resync incorrectly continued normal extraction"
   );
   assert.equal(harness.directives.at(-1)?.directiveId, firstRoom.directiveId);
+  assert.equal(harness.uiMessages.length, 0);
+  assert.ok(harness.uiSyncCalls.includes("Synchronizing Ranked…"));
   const diagnostics = runtime.getDiagnostics();
   assert.equal(diagnostics.at(-1)?.kind, "client_error");
   assert.equal(diagnostics.at(-1)?.code, "TOKEN_EXPIRED");
@@ -863,8 +1260,6 @@ test("normal extraction intent is cancelled when resync returns the same uncommi
   assert.equal(diagnostics.at(-1)?.traceId, "trace-expired-checkpoint");
   assert.equal(diagnostics.at(-1)?.traceId, "trace-expired-checkpoint");
   assert.doesNotMatch(JSON.stringify(diagnostics), /checkpointToken|recoveryCredential|secret-/u);
-  assert.match(harness.uiMessages[0][1], /TOKEN_EXPIRED/u);
-  assert.match(harness.uiMessages[0][1], /run_integrity/u);
 });
 
 test("Main Menu is idempotent after the local Ranked session is already abandoned", async () => {

@@ -332,6 +332,7 @@
   const enemyDebugOverlay = typeof window !== "undefined" ? window.DungeonEnemyDebugOverlay : null;
   const relicData = typeof window !== "undefined" ? window.DungeonRelicData : null;
   const relicRuntimeApi = typeof window !== "undefined" ? window.DungeonRelicRuntime : null;
+  const balanceProgressionApi = window.DungeonBalanceProgression;
   const merchantCurationApi = typeof window !== "undefined" ? window.DungeonMerchantCuration : null;
   const bossCampaignApi = typeof window !== "undefined" ? window.DungeonBossCampaign : null;
   const expansionContentApi = typeof window !== "undefined" ? window.DungeonExpansionContent : null;
@@ -360,6 +361,7 @@
   if (
     !relicData ||
     !relicRuntimeApi ||
+    !balanceProgressionApi ||
     !merchantCurationApi ||
     !bossCampaignApi ||
     !expansionContentApi ||
@@ -939,6 +941,19 @@
   });
 
   const { CAMP_UPGRADES } = campData;
+  const {
+    getArmorDamageReduction,
+    getDamageAfterArmor,
+    getBladeCampAttackBonus,
+    getBladeAttackMultiplier: getProgressionBladeAttackMultiplier,
+    getCampUpgradeBaseCost,
+    getRelicAppraisalValue,
+    shouldPreventDeathRelicLoss,
+    getEligibleDeathRelicIndices,
+    getCampUpgradeUnlockDepth,
+    isCampUpgradeTierUnlocked,
+    isRoomTypeUnlocked
+  } = balanceProgressionApi;
   const {
     RARITY,
     RELIC_RETURN_VALUE,
@@ -1594,8 +1609,7 @@
   }
 
   function getBladeAttackMultiplier(level = getCampUpgradeLevel("blade")) {
-    const safeLevel = Math.max(0, Number(level) || 0);
-    return 1 + safeLevel * BLADE_ATTACK_PERCENT_PER_LEVEL;
+    return getProgressionBladeAttackMultiplier(level);
   }
 
   function scaleFlatAttackByBlade(flatAmount, level = getCampUpgradeLevel("blade")) {
@@ -2159,6 +2173,7 @@
     extractConfirm: null,
     extractRelicPrompt: null,
     campRelicSellPendingIndex: -1,
+    protectedStarterRelicId: "",
     lastDeathRelicLossText: "",
     wardenRelicMissStreak: 0,
     wardenFirstDropDepths: initialWardenFirstDropDepths,
@@ -4980,6 +4995,7 @@
       extractRelicPrompt: state.extractRelicPrompt,
       relicDraft: state.relicDraft,
       startingRelicDraft: Boolean(state.startingRelicDraft),
+      protectedStarterRelicId: state.protectedStarterRelicId,
       legendarySwapPending: state.legendarySwapPending,
       relicSwapPending: state.relicSwapPending,
       relicSwapAdditionalDiscards: state.relicSwapAdditionalDiscards || 0,
@@ -5201,6 +5217,9 @@
       state.relicSwapAdditionalDiscards = 0;
     }
     state.relics = Array.isArray(snapshot.relics) ? snapshot.relics : [];
+    state.protectedStarterRelicId = STARTING_RELIC_IDS.includes(snapshot.protectedStarterRelicId)
+      ? snapshot.protectedStarterRelicId
+      : "";
     if (nextPhase === "camp" && state.extractRelicPrompt) {
       const carriedRelics = getExtractPromptCarriedRelics(state.extractRelicPrompt);
       if (carriedRelics.length > 0) {
@@ -7275,7 +7294,7 @@
           {
             label: "Damage Rules",
             rows: [
-              { keys: ["Armor"], tone: "ability", text: `Reduces incoming HP damage, but no more than ${Math.round(ARMOR_DAMAGE_REDUCTION_CAP * 100)}% per hit.` },
+              { keys: ["Armor"], tone: "ability", text: `Armor applies after shields and reduces remaining damage by ARM / (ARM + 100), capped at ${Math.round(ARMOR_DAMAGE_REDUCTION_CAP * 100)}%.` },
               { keys: ["Crit"], tone: "ability", text: `Crit chance cap is ${Math.round(CRIT_CHANCE_CAP * 100)}%. Critical hits deal x2 damage (x3 with Deadeye Prism).` },
               { keys: ["Shield"], tone: "utility", text: "Skill Shield decays by 20% of current value each combat turn." },
               { keys: ["Barrier"], tone: "utility", text: "Barrier does not decay per turn. It is consumed only when taking damage." }
@@ -7418,11 +7437,20 @@
                   { keys: ["Start Next Run"], tone: "ability", text: "Select this action, press Enter, then choose the starting depth." }
                 ]
               : [
-                  { keys: ["1-0"], tone: "ability", text: "Buy upgrades in Camp Shop or toggle mutators." },
+                  { keys: ["1-0", "-", "="], tone: "ability", text: "Buy all 12 upgrades in Camp Shop. Mutators still use 1-0." },
                   { keys: ["1-9", "0"], tone: "ability", text: "In Elixirs tab: buy/refill selected elixir or discard current loadout." },
                   { keys: ["T"], tone: "core", text: "Switch panel between Shop, Mutators, Elixirs, and Relics." },
                   { keys: ["R"], tone: "movement", text: "Choose start depth and begin the next run." }
                 ]
+          },
+          {
+            label: "Permanent Upgrade Rules",
+            rows: [
+              { keys: ["Vitality / Blade"], tone: "good", text: "Both reach level 25. Their price stops rising after level 15; Blade gains a linear +25 ATK per level after level 15." },
+              { keys: ["Relic Ward"], tone: "ability", text: "Purchased tiers provide 33% / 66% / 100% server-authoritative protection from death relic loss after clearing D10 / D30 / D50." },
+              { keys: ["Relic Appraisal"], tone: "utility", text: "Purchased tiers add 15% / 30% / 45% Camp Gold to voluntary Camp relic sales after clearing D10 / D20 / D30." },
+              { keys: ["Starter Relic"], tone: "core", text: "Exactly one selected starter copy is protected from death loss until the first D10 clear. Voluntary sale remains allowed." }
+            ]
           },
           {
             label: "Elixirs",
@@ -7531,6 +7559,15 @@
             { keys: ["Z"], tone: "ability", text: "Dash." },
             { keys: ["X"], tone: "ability", text: "Shockwave." },
             { keys: ["C"], tone: "ability", text: "Shield." }
+          ]
+        },
+        {
+          label: "Early Depth Progression",
+          rows: [
+            { keys: ["D5"], tone: "core", text: "The first Warden fights alone with no additional enemies." },
+            { keys: ["D6+"], tone: "bad", text: "Cursed rooms can begin appearing." },
+            { keys: ["D10 / D15 / D20+"], tone: "ability", text: "Warden adds scale from two normal enemies, to one elite, then all elites." },
+            { keys: ["D11+"], tone: "utility", text: "Forge and Vault can begin appearing. A completed Treasure Map may force a Vault earlier." }
           ]
         },
         {
@@ -7963,12 +8000,19 @@
 
   function getCampUpgradeCost(def) {
     const level = getCampUpgradeLevel(def.id);
-    const growth = Math.max(1, Number(def.costGrowth) || 2);
-    const base = Math.round(def.baseCost * growth ** level);
+    const base = getCampUpgradeBaseCost(def, level);
     const visitMult = state.phase === "camp"
       ? (state.campVisitShopCostMult || 1)
       : (state.runMods?.shopCostMult || 1);
     return Math.round(base * visitMult);
+  }
+
+  function getHighestBossClearDepth() {
+    let highest = Math.max(0, Number(state.lastBossClearDepthThisRun) || 0);
+    for (const checkpoint of START_DEPTH_CHECKPOINTS) {
+      if (state.startDepthUnlocks[String(checkpoint)]) highest = Math.max(highest, checkpoint - 1);
+    }
+    return highest;
   }
 
   function getCampVisitShopTaxPercent() {
@@ -8043,6 +8087,11 @@
       pushLog(`${def.name} is maxed.`, "bad");
       return;
     }
+    if (!isCampUpgradeTierUnlocked(def.id, level, getHighestBossClearDepth())) {
+      const requiredDepth = getCampUpgradeUnlockDepth(def.id, level + 1);
+      pushLog(`${def.name} level ${level + 1} unlocks after clearing depth ${requiredDepth}.`, "bad");
+      return;
+    }
     const cost = getCampUpgradeCost(def);
     const currency = getCampUpgradeCurrency(def);
     if (getCampUpgradeWallet(def) < cost) {
@@ -8112,7 +8161,7 @@
       return forcedType;
     }
     const regionConfig = getCampaignRegionConfig();
-    if (state.forcedNextRoomType === "vault" && !isBossDepth()) {
+    if (state.forcedNextRoomType === "vault" && !isBossDepth() && isRoomTypeUnlocked("vault", state.depth, true)) {
       state.forcedNextRoomType = "";
       pushLog("Treasure Map complete: forced Vault room this depth.", "good");
       return "vault";
@@ -8178,7 +8227,7 @@
     }
 
     const vaultChance = Number(regionConfig.vaultChance) || 0;
-    if (state.depth >= 6 && chance(vaultChance)) {
+    if (isRoomTypeUnlocked("vault", state.depth, false) && chance(vaultChance)) {
       return "vault";
     }
 
@@ -8202,9 +8251,8 @@
     }
 
     let type = pickWeightedValue(roomWeights, "combat");
-    if (state.depth < 2 && type === "cursed") type = "treasure";
+    if (!isRoomTypeUnlocked(type, state.depth, false)) type = type === "cursed" || type === "forge" || type === "vault" ? "treasure" : "combat";
     if (state.depth < 3 && type === "merchant") type = "combat";
-    if (state.depth < 6 && type === "forge") type = "treasure";
     if (type === "pact" && (!pactRoomApi || typeof pactRoomApi.canOfferPactRoom !== "function" || !pactRoomApi.canOfferPactRoom(state.depth))) type = "combat";
     // (noMerchants was removed; Famine no longer blocks merchants)
     return type;
@@ -9550,7 +9598,15 @@
     const silent = Boolean(options.silent);
     const idx = state.relics.indexOf(relicId);
     if (idx < 0) return false;
+    const matchingCopies = state.relics.filter((ownedId) => ownedId === relicId).length;
     state.relics.splice(idx, 1);
+    if (
+      !options.preserveStarterProtection &&
+      relicId === state.protectedStarterRelicId &&
+      matchingCopies <= 1
+    ) {
+      state.protectedStarterRelicId = "";
+    }
     removeRelicEffects(relicId);
     if (!silent) {
       const relic = getRelicById(relicId);
@@ -9565,16 +9621,25 @@
 
   function loseRandomRelicOnDeath() {
     if (!Array.isArray(state.relics) || state.relics.length <= 0) return null;
-    const lossPool = state.relics.filter((relicId) => {
-      const relic = getRelicById(relicId);
-      return relic?.rarity !== "mythic";
+    if (shouldPreventDeathRelicLoss(getCampUpgradeLevel("relic_ward"), Math.random())) {
+      pushLog("Relic Ward prevented the death relic penalty.", "good");
+      return null;
+    }
+    const starterProtectionActive = Boolean(
+      state.protectedStarterRelicId && !state.startDepthUnlocks["11"]
+    );
+    const eligibleIndices = getEligibleDeathRelicIndices(state.relics, {
+      protectedStarterRelicId: state.protectedStarterRelicId,
+      starterProtectionActive,
+      isMythic: (relicId) => getRelicById(relicId)?.rarity === "mythic"
     });
-    if (lossPool.length <= 0) return null;
-    const randomIndex = randInt(0, lossPool.length - 1);
-    const relicId = lossPool[randomIndex];
+    if (eligibleIndices.length <= 0) return null;
+    const lossIndex = eligibleIndices[randInt(0, eligibleIndices.length - 1)];
+    const relicId = state.relics[lossIndex];
     const relic = getRelicById(relicId);
-    const removed = removeRelic(relicId, { silent: true });
-    if (!removed) return null;
+    state.relics.splice(lossIndex, 1);
+    removeRelicEffects(relicId);
+    markUiDirty();
     return relic || { id: relicId, name: relicId };
   }
 
@@ -9627,6 +9692,14 @@
 
   function getRelicReturnSummary(relicIds) {
     return relicRuntime.getRelicReturnSummary(relicIds);
+  }
+
+  function getAppraisedRelicReturnSummary(relicIds) {
+    const baseSale = getRelicReturnSummary(relicIds);
+    return {
+      ...baseSale,
+      total: getRelicAppraisalValue(baseSale.total, getCampUpgradeLevel("relic_appraisal"))
+    };
   }
 
   function getExtractPromptCarriedRelics(prompt = state.extractRelicPrompt) {
@@ -9817,6 +9890,7 @@
       pushLog("Starting relic draft is unavailable.", "bad");
       return false;
     }
+    state.protectedStarterRelicId = "";
     return openRelicDraftFromChoices(choices, {
       startingRelicDraft: true,
       logText: "Choose 1 starting relic: Fang Charm, Bone Plating, or Lucky Coin."
@@ -10313,6 +10387,7 @@
       return;
     }
     const wasStartingRelicDraft = state.startingRelicDraft;
+    if (wasStartingRelicDraft) state.protectedStarterRelicId = relic.id;
     if (state.forgeRewardMode === "temper") {
       pushLog(`Forge Temper: ${relic.name} forged and claimed.`, "good");
     } else if (wasStartingRelicDraft) {
@@ -10367,7 +10442,7 @@
     if (safeIndex < 0 || safeIndex >= state.relics.length) return false;
     const relicId = state.relics[safeIndex];
     const relic = getRelicById(relicId);
-    const sale = getRelicReturnSummary([relicId]);
+    const sale = getAppraisedRelicReturnSummary([relicId]);
     if (!relic || sale.total <= 0) return false;
 
     if (state.campRelicSellPendingIndex !== safeIndex) {
@@ -10376,7 +10451,11 @@
       return true;
     }
 
+    const matchingCopies = state.relics.filter((ownedId) => ownedId === relicId).length;
     state.relics.splice(safeIndex, 1);
+    if (relicId === state.protectedStarterRelicId && matchingCopies <= 1) {
+      state.protectedStarterRelicId = "";
+    }
     normalizeRelicInventory();
     state.campGold += sale.total;
     state.campRelicSellPendingIndex = -1;
@@ -10434,7 +10513,7 @@
       pushLog(
         isHdGraphics()
           ? "Camp: use arrows to choose a tab or action, then press Enter."
-          : "Camp shop: keys 1-0 buy upgrades. Press R to start next run."
+          : "Camp shop: keys 1-0, -, = buy upgrades. Press R to start next run."
       );
       tryOpenPendingTutorialModal();
       saveRunSnapshot();
@@ -10485,12 +10564,12 @@
         state.extractRelicPrompt = null;
         if (soldSummary.count > 0) {
           pushLog(
-            `Relics sold: ${soldSummary.count} for +${soldSummary.total} camp gold. Kept ${state.relics.length}. Camp shop: keys 1-0 buy upgrades. Press R to start next run (depth choice unlocks later).`,
+            `Relics sold: ${soldSummary.count} for +${soldSummary.total} camp gold. Kept ${state.relics.length}. Camp shop: keys 1-0, -, = buy upgrades. Press R to start next run (depth choice unlocks later).`,
             "good"
           );
         } else {
           pushLog(
-            `No relics selected. Relics kept (${state.relics.length}). Camp shop: keys 1-0 buy upgrades. Press R to start next run (depth choice unlocks later).`,
+            `No relics selected. Relics kept (${state.relics.length}). Camp shop: keys 1-0, -, = buy upgrades. Press R to start next run (depth choice unlocks later).`,
             "good"
           );
         }
@@ -10670,9 +10749,9 @@
       const hpMult = 1 + vitalityLevel * 0.1;
       state.player.maxHp = Math.round(state.player.maxHp * hpMult);
     }
-    const bladeFlat = getCampUpgradeLevel("blade") * BLADE_ATTACK_FLAT_PER_LEVEL;
-    if (bladeFlat > 0) {
-      addScaledFlatAttack(bladeFlat);
+    const bladeBonus = getBladeCampAttackBonus(getCampUpgradeLevel("blade"));
+    if (bladeBonus > 0) {
+      state.player.attack += bladeBonus;
     }
     const satchelLevel = getCampUpgradeLevel("satchel");
     state.player.potions += satchelLevel;
@@ -11907,7 +11986,7 @@
     // Clamp player stats to sane bounds
     state.player.maxHp = clamp(state.player.maxHp, scaledCombat(4), scaledCombat(40));
     state.player.attack = clamp(state.player.attack, scaledCombat(1), scaledCombat(500));
-    state.player.armor = clamp(state.player.armor, 0, scaledCombat(10));
+    state.player.armor = clamp(state.player.armor, 0, scaledCombat(100));
     state.player.crit = clamp(state.player.crit, 0.01, CRIT_CHANCE_CAP);
     state.player.hp = Math.min(state.player.hp, state.player.maxHp);
   }
@@ -13374,7 +13453,8 @@
     const bossSpot = randomFreeTile(occupied);
     state.enemies.push(createEnemy("warden", bossSpot.x, bossSpot.y));
 
-    const addCount = Math.max(2, Number(regionConfig.bossAddCount) || (state.depth >= 10 ? 3 : 2));
+    const bossAdds = bossCampaignApi.getBossAddProfile(state.depth, regionConfig.bossAddCount);
+    const addCount = bossAdds.count;
     const chestCount = rollChestCountWithChance(2, NON_TREASURE_CHEST_CHANCE);
     // +500% spikes (x6) with hard cap (60% of room) and reserved space for player/portal.
     const reservedTiles = 2 + (1 + addCount) + chestCount;
@@ -13386,7 +13466,7 @@
     for (let i = 0; i < addCount; i += 1) {
       const spot = randomFreeTile(occupied);
       const type = rollBossAddEnemyTypeWithCaps();
-      state.enemies.push(createEnemy(type, spot.x, spot.y, { forceElite: true }));
+      state.enemies.push(createEnemy(type, spot.x, spot.y, { forceElite: i < bossAdds.eliteCount }));
     }
     for (let i = 0; i < chestCount; i += 1) {
       const spot = randomFreeTile(occupied, { avoidBonfire: true, minY: 2 });
@@ -16100,6 +16180,47 @@
     return true;
   }
 
+  function showRankedOtterRewardChest(slot) {
+    if (!state.onlineV3Ranked || state.roomType !== "otter") return false;
+    const slotId = String(slot?.slotId || "");
+    if (!slotId || String(slot?.sourceId || "") !== "otter-crimson-chest") return false;
+    const existing = state.chests.find((chest) =>
+      chest?.type === "otter_red" && chest.canonicalRewardSlotId === slotId
+    );
+    if (existing) {
+      existing.opened = false;
+      existing.opening = false;
+      markUiDirty();
+      return true;
+    }
+
+    const occupied = new Set([tileKey(state.player.x, state.player.y)]);
+    if (state.portal) occupied.add(tileKey(state.portal.x, state.portal.y));
+    for (const enemy of state.enemies) occupied.add(tileKey(enemy.x, enemy.y));
+    for (const chest of state.chests) {
+      if (chest && !chest.opened) occupied.add(tileKey(chest.x, chest.y));
+    }
+    for (const spike of state.spikes) occupied.add(tileKey(spike.x, spike.y));
+    for (const mine of state.mines) occupied.add(tileKey(mine.x, mine.y));
+    const spot = randomFreeTile(occupied, { avoidBonfire: true, minY: 2 }) ||
+      randomFreeTile(occupied, { minY: 2 });
+    if (!spot) return false;
+    state.chests.push({
+      x: spot.x,
+      y: spot.y,
+      opened: false,
+      opening: false,
+      type: "otter_red",
+      canonicalRewardSlotId: slotId
+    });
+    sanitizeRoomVisualConflicts();
+    spawnParticles(spot.x, spot.y, "#ff5f63", 18, 1.35);
+    setShake(1.9);
+    pushLog("Otter room clear: canonical Crimson chest revealed.", "good");
+    markUiDirty();
+    return true;
+  }
+
   function checkRoomClearBonus() {
     if (state.roomCleared || state.enemies.length > 0) return;
     if (state.roomType === "arena" && state.arena) {
@@ -16437,12 +16558,7 @@
       markUiDirty();
       return;
     }
-    const minDamageFromCap = Math.max(
-      MIN_EFFECTIVE_DAMAGE,
-      Math.ceil(remainingDamage * (1 - ARMOR_DAMAGE_REDUCTION_CAP))
-    );
-    const reducedByArmor = Math.max(MIN_EFFECTIVE_DAMAGE, remainingDamage - state.player.armor);
-    let reduced = Math.max(minDamageFromCap, reducedByArmor);
+    let reduced = getDamageAfterArmor(remainingDamage, state.player.armor, MIN_EFFECTIVE_DAMAGE);
     if (hasRelic("mirrorcarapace")) {
       reduced = Math.max(1, Math.round(reduced * 0.85));
     }
@@ -17155,6 +17271,19 @@
 
   function openChest(chest, options = {}) {
     if (!chest || chest.opened || chest.destroyed) return false;
+    if (state.onlineV3Ranked && chest.type === "otter_red") {
+      if (chest.opening) return true;
+      const accepted = window.DungeonOnlineV3?.onOtterChestOpen?.() === true;
+      if (!accepted) return false;
+      chest.opening = true;
+      chest.opened = true;
+      playSfx("chest");
+      spawnParticles(chest.x, chest.y, "#ff6268", 14, 1.25);
+      setShake(1.5);
+      pushLog("Crimson chest opened. Waiting for the canonical Ranked offer.", "good");
+      markUiDirty();
+      return true;
+    }
     if (isVaultChestLockedForInteraction(chest)) {
       if (!options.silent) {
         spawnParticles(chest.x, chest.y, "#d9c06c", 7, 0.75);
@@ -21434,7 +21563,7 @@
       statRow(
         "ARM",
         state.player.armor,
-        `Flat damage reduction on incoming hits. Armor cannot reduce more than ${armorCapPct}% of one hit.`
+        `Armor applies after shields. Current reduction: ${Math.round(getArmorDamageReduction(state.player.armor) * 1000) / 10}% of remaining hit damage (ARM / (ARM + 100), cap ${armorCapPct}%).`
       ),
       statRow(
         "Crit",
@@ -22506,11 +22635,13 @@
       satchel: "assets/hd/ui/status/potion.png",
       guard: "assets/hd/ui/status/armor-up.png",
       auto_potion: "assets/hd/ui/status/potion.png",
+      relic_ward: "assets/hd/ui/status/second-chance.png",
       potion_strength: "assets/hd/ui/status/potion.png",
       crit_chance: "assets/hd/ui/status/quickloader.png",
       treasure_sense: "assets/hd/ui/status/chest-upgrade.png",
       emergency_stash: "assets/hd/ui/status/second-chance.png",
-      bounty_contract: "assets/hd/ui/status/soul-harvest.png"
+      bounty_contract: "assets/hd/ui/status/soul-harvest.png",
+      relic_appraisal: "assets/hd/ui/status/chest-upgrade.png"
     });
     const mutatorIconById = Object.freeze({
       berserker: "assets/hd/ui/status/attack-up.png",
@@ -22628,7 +22759,7 @@
       rows = state.relics.map((relicId, index) => {
         const relic = getRelicById(relicId);
         const key = relicHotkeyForIndex(index);
-        const sale = getRelicReturnSummary([relicId]);
+        const sale = getAppraisedRelicReturnSummary([relicId]);
         const rarityInfo = RARITY[relic?.rarity] || RARITY.normal;
         const pending = state.campRelicSellPendingIndex === index;
         const titleText = relic ? getRelicUiName(relic) : relicId;
@@ -22654,17 +22785,20 @@
         const cost = getCampUpgradeCost(upgrade);
         const currency = getCampUpgradeCurrency(upgrade);
         const affordable = maxed || wallet >= cost;
+        const unlocked = isCampUpgradeTierUnlocked(upgrade.id, level, getHighestBossClearDepth());
+        const requiredDepth = getCampUpgradeUnlockDepth(upgrade.id, level + 1);
         const missing = Math.max(0, cost - wallet);
-        const status = maxed ? "MAX" : affordable ? `${cost}g` : `NEED ${missing}g`;
-        const description = `${upgrade.desc}. Level ${level}/${upgrade.max}.${maxed ? " Fully upgraded." : ` Cost: ${cost} ${currency}.${affordable ? "" : ` Need ${missing} more.`}`}`;
+        const status = maxed ? "MAX" : !unlocked ? `CLEAR D${requiredDepth}` : affordable ? `${cost}g` : `NEED ${missing}g`;
+        const description = `${upgrade.desc}. Level ${level}/${upgrade.max}.${maxed ? " Fully upgraded." : !unlocked ? ` Next level unlocks after clearing Depth ${requiredDepth}.` : ` Cost: ${cost} ${currency}.${affordable ? "" : ` Need ${missing} more.`}`}`;
         const classes = [
           "camp-revamp-row",
           "camp-revamp-upgrade",
           maxed ? "maxed" : "",
+          !unlocked ? "locked" : "",
           !affordable ? "unaffordable" : ""
         ].join(" ").trim();
         return [
-          `<div class="${classes}" data-camp-key="${upgrade.key}" data-camp-grid-row="${index % 5}" data-camp-grid-column="${Math.floor(index / 5)}" data-ui-tooltip-title="${escapeHtmlAttr(upgrade.name)}" data-ui-tooltip="${escapeHtmlAttr(description)}" role="button" aria-disabled="${maxed || !affordable ? "true" : "false"}" tabindex="0" aria-describedby="hdUiTooltip">`,
+          `<div class="${classes}" data-camp-key="${upgrade.key}" data-camp-grid-row="${index % 6}" data-camp-grid-column="${Math.floor(index / 6)}" data-ui-tooltip-title="${escapeHtmlAttr(upgrade.name)}" data-ui-tooltip="${escapeHtmlAttr(description)}" role="button" aria-disabled="${maxed || !unlocked || !affordable ? "true" : "false"}" tabindex="0" aria-describedby="hdUiTooltip">`,
           itemMarker(upgrade.key, upgradeIconById[upgrade.id]),
           `<div class="camp-revamp-copy"><strong>${upgrade.name} <em>Lv ${level}/${upgrade.max}</em></strong><small>${upgrade.desc}</small></div>`,
           `<em class="camp-revamp-status">${status}</em>`,
@@ -22777,7 +22911,7 @@
       const rows = state.relics.map((relicId, index) => {
         const relic = getRelicById(relicId);
         const key = relicHotkeyForIndex(index);
-        const sale = getRelicReturnSummary([relicId]);
+        const sale = getAppraisedRelicReturnSummary([relicId]);
         const rarityInfo = RARITY[relic?.rarity] || RARITY.normal;
         const pending = state.campRelicSellPendingIndex === index;
         return [
@@ -22801,12 +22935,14 @@
       const cost = getCampUpgradeCost(upgrade);
       const currency = getCampUpgradeCurrency(upgrade);
       const missing = Math.max(0, cost - wallet);
+      const unlocked = isCampUpgradeTierUnlocked(upgrade.id, level, getHighestBossClearDepth());
+      const requiredDepth = getCampUpgradeUnlockDepth(upgrade.id, level + 1);
       return [
-        `<div class="mut-row camp-upgrade-row${maxed ? " mut-on" : ""}${!maxed && missing ? " mut-unaffordable" : ""}">`,
+        `<div class="mut-row camp-upgrade-row${maxed ? " mut-on" : ""}${!unlocked || !maxed && missing ? " mut-unaffordable" : ""}">`,
         `<span class="mut-key">${upgrade.key}</span><div class="mut-body">`,
         `<strong>${upgrade.name} <em>Lv ${level}/${upgrade.max}</em></strong>`,
         `<small class="mut-desc-line">${upgrade.desc}</small>`,
-        `<small class="mut-cost-line">${maxed ? "MAX" : `Cost: ${cost} ${currency}${missing ? ` | Need ${missing}` : ""}`}</small>`,
+        `<small class="mut-cost-line">${maxed ? "MAX" : !unlocked ? `Unlock: clear Depth ${requiredDepth}` : `Cost: ${cost} ${currency}${missing ? ` | Need ${missing}` : ""}`}</small>`,
         `</div></div>`
       ].join("");
     }).join("");
@@ -32022,9 +32158,7 @@
   }
 
   function getCampUpgradeIndexFromKey(key) {
-    if (key === "0") return 9;
-    if (key >= "1" && key <= "9") return Number(key) - 1;
-    return -1;
+    return CAMP_UPGRADES.findIndex((upgrade) => upgrade.key === key);
   }
 
   window.addEventListener("keydown", (event) => {
@@ -33678,6 +33812,9 @@
       state.lives = Math.max(0, Number(publicState?.lives) || 0);
       state.runMaxDepth = Math.max(0, Number(publicState?.maxDepth) || state.runMaxDepth);
       markUiDirty();
+    },
+    showRankedOtterRewardChest(slot) {
+      return showRankedOtterRewardChest(slot);
     },
     resumeAfterFatal(directive, publicState) {
       state.onlineV3FatalPending = false;

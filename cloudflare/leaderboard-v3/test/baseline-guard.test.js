@@ -49,7 +49,8 @@ const ALLOWED_PROTECTED_ONLINE_V3_PATHS = new Set([
   "assets/hd/ui/mobile/gothic/interact-hand.png",
   "assets/hd/ui/ranked-reference-plates/ranked-build-inspect-desktop-plate.png",
   "assets/hd/ui/ranked-reference-plates/ranked-leaderboard-desktop-plate.png",
-  "style-hd-boot.css"
+  "style-hd-boot.css",
+  "style-hd-composition.css"
 ]);
 
 test("non-M4 Practice protected paths match f98820c outside explicitly allowed Online v3 assets", () => {

@@ -15,7 +15,8 @@ import {
 } from "../src/rulesets/v08-meta-1/pact-policy.js";
 import {
   applyRelicAcquisition,
-  assertCanonicalRelicBuildV08
+  assertCanonicalRelicBuildV08,
+  computeRelicBuildDigestV08
 } from "../src/rulesets/v08-meta-1/relic-policy.js";
 import {
   assertMetaStateV08,
@@ -146,20 +147,22 @@ test("M1 Camp/Pact golden corpus has 32 source-bound cases", () => {
 });
 
 test("Camp and Pact policies preserve exact active baseline tables", () => {
-  assert.equal(campPolicy.upgrades.length, 10);
+  assert.equal(campPolicy.upgrades.length, 12);
   assert.deepEqual(
     campPolicy.upgrades.map(({ id, baseCost, max }) => ({ id, baseCost, max })),
     [
-      { id: "vitality", baseCost: 30, max: 20 },
-      { id: "blade", baseCost: 30, max: 15 },
+      { id: "vitality", baseCost: 30, max: 25 },
+      { id: "blade", baseCost: 30, max: 25 },
       { id: "satchel", baseCost: 15, max: 6 },
       { id: "guard", baseCost: 30, max: 15 },
       { id: "auto_potion", baseCost: 600, max: 1 },
+      { id: "relic_ward", baseCost: 250, max: 3 },
       { id: "potion_strength", baseCost: 80, max: 5 },
       { id: "crit_chance", baseCost: 100, max: 4 },
       { id: "treasure_sense", baseCost: 80, max: 5 },
       { id: "emergency_stash", baseCost: 120, max: 3 },
-      { id: "bounty_contract", baseCost: 70, max: 5 }
+      { id: "bounty_contract", baseCost: 70, max: 5 },
+      { id: "relic_appraisal", baseCost: 150, max: 3 }
     ]
   );
   assert.equal(campPolicy.elixirStackMaximum, 5);
@@ -330,6 +333,43 @@ test("Camp relic sale consumes one canonical stack and awards camp gold once", a
     committed
   );
   assertCanonicalRelicBuildV08(committed.build);
+});
+
+test("Relic Appraisal sale bonus is calculated and awarded only by the server", async () => {
+  const result = await campSetup("camp_relic_appraisal");
+  result.meta.build.campUpgrades.relic_appraisal = 1;
+  result.meta.build.buildDigest = await computeRelicBuildDigestV08(result.meta.build);
+  result.meta = await addRelic(result.meta, "fang");
+  result.meta = await issueCampTransactionsV08(result.meta, result.context);
+  const sale = findChoice(result.meta, (entry) =>
+    entry.privateData.action === "relic_sale" && entry.privateData.relicId === "fang"
+  );
+  assert.equal(sale.publicData.reward, 58);
+  const committed = await commitCampTransactionV08(result.meta, request(sale), result.context);
+  assert.equal(committed.campGold, 5058);
+  assert.equal(committed.metaTransactionReceipts.at(-1).authoritativeReward.campGold, 58);
+});
+
+test("selling duplicate starter copies preserves exactly one protected copy until the last sale", async () => {
+  const result = await campSetup("camp_starter_duplicate_sale");
+  result.meta = await addRelic(result.meta, "fang");
+  result.meta = await addRelic(result.meta, "fang");
+  result.meta.campaign.protectedStarterRelicId = "fang";
+  result.meta = await issueCampTransactionsV08(result.meta, result.context);
+  const firstSale = findChoice(result.meta, (entry) =>
+    entry.privateData.action === "relic_sale" && entry.privateData.relicId === "fang"
+  );
+  let committed = await commitCampTransactionV08(result.meta, request(firstSale), result.context);
+  assert.equal(committed.build.relics.find((entry) => entry.relicId === "fang").stacks, 1);
+  assert.equal(committed.campaign.protectedStarterRelicId, "fang");
+
+  committed = await issueCampTransactionsV08(committed, result.context);
+  const finalSale = findChoice(committed, (entry) =>
+    entry.privateData.action === "relic_sale" && entry.privateData.relicId === "fang"
+  );
+  committed = await commitCampTransactionV08(committed, request(finalSale), result.context);
+  assert.equal(committed.build.relics.some((entry) => entry.relicId === "fang"), false);
+  assert.equal(committed.campaign.protectedStarterRelicId, "");
 });
 
 test("Camp serialization, stale session and corrupted authority roll back completely", async () => {
@@ -505,6 +545,7 @@ test("128 seeded Camp and 128 seeded Pact cases are deterministic and atomic", a
   const caseCount = 128;
   for (let seed = 0; seed < caseCount; seed += 1) {
     const camp = await campSetup(`camp_property_${seed}`, 10000);
+    camp.meta.campaign.unlockedStartDepths = [11, 21, 31, 41, 51];
     camp.meta = await issueCampTransactionsV08(camp.meta, camp.context);
     const selected = findChoice(
       camp.meta,

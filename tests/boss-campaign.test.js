@@ -5,10 +5,19 @@ const path = require("node:path");
 const {
   getBossProfile,
   getFinalBossPhaseProfile,
-  getBossEncounterProfile
+  getBossEncounterProfile,
+  getBossAddProfile
 } = require("../boss-campaign.js");
 
 function run() {
+  {
+    assert.deepEqual(getBossAddProfile(5), { count: 0, eliteCount: 0 });
+    assert.deepEqual(getBossAddProfile(10), { count: 2, eliteCount: 0 });
+    assert.deepEqual(getBossAddProfile(15), { count: 2, eliteCount: 1 });
+    assert.deepEqual(getBossAddProfile(20), { count: 2, eliteCount: 2 });
+    assert.deepEqual(getBossAddProfile(40, 3), { count: 3, eliteCount: 3 });
+  }
+
   {
     const first = getBossEncounterProfile(5);
     const laterGate = getBossEncounterProfile(10);

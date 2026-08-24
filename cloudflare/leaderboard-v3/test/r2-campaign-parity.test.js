@@ -24,6 +24,15 @@ const context = Object.freeze({
   cryptoProvider: webcrypto
 });
 
+const highOracle = Object.freeze({
+  async deriveIntInclusive(_min, max) {
+    return max;
+  },
+  async deriveRandomBytes({ length }) {
+    return new Uint8Array(length).fill(255);
+  }
+});
+
 function initial(input = {}) {
   return createInitialMetaStateV08(input, context);
 }
@@ -57,6 +66,51 @@ test("Ranked profile preserves map progress, first-Warden history, and unlocked 
   const hydrated = await hydrateRunFromProfileV08(next, persistedProfile, { cryptoProvider: webcrypto });
   assert.doesNotThrow(() => assertMetaStateV08(hydrated));
   assert.deepEqual(hydrated.campaign, state.campaign);
+});
+
+test("natural Otter state survives extract and Camp, preventing the depth 41 pity", async () => {
+  const firstDescent = initial();
+  firstDescent.status = "extraction";
+  firstDescent.campaign.otterSeenInCampaign = true;
+  const profile = profileStateFromRunV08(firstDescent, "profile_otter_seen", 2);
+  const nextDescent = initial({ startDepth: 41, unlockedStartDepths: [41] });
+  const hydrated = await hydrateRunFromProfileV08(nextDescent, profile, { cryptoProvider: webcrypto });
+  hydrated.status = "active";
+  assert.equal(hydrated.specialRoomScheduleState.otterSeenInGame, true);
+  const issued = await issueNextRoomDirectiveV08(hydrated, { ...context, randomOracle: highOracle });
+  assert.notEqual(issued.currentRoomDirective.specialRoomPayload?.policySource, "otter-pity");
+});
+
+test("used Otter pity survives Camp and cannot repeat in the next descent", async () => {
+  const firstDescent = initial();
+  firstDescent.status = "extraction";
+  firstDescent.campaign.otterSeenInCampaign = true;
+  firstDescent.campaign.otterPityUsedInCampaign = true;
+  const profile = profileStateFromRunV08(firstDescent, "profile_otter_pity", 4);
+  const nextDescent = initial({ startDepth: 41, unlockedStartDepths: [41] });
+  const hydrated = await hydrateRunFromProfileV08(nextDescent, profile, { cryptoProvider: webcrypto });
+  hydrated.status = "active";
+  assert.equal(hydrated.specialRoomScheduleState.otterPityUsedInGame, true);
+  const issued = await issueNextRoomDirectiveV08(hydrated, { ...context, randomOracle: highOracle });
+  assert.notEqual(issued.currentRoomDirective.specialRoomPayload?.policySource, "otter-pity");
+});
+
+test("depth 41 grants one Otter pity when the campaign has not seen Otter", async () => {
+  const state = initial({ startDepth: 41, unlockedStartDepths: [41] });
+  state.status = "active";
+  const issued = await issueNextRoomDirectiveV08(state, { ...context, randomOracle: highOracle });
+  assert.equal(issued.currentRoomDirective.specialRoomPayload.policySource, "otter-pity");
+  assert.equal(issued.campaign.otterSeenInCampaign, true);
+  assert.equal(issued.campaign.otterPityUsedInCampaign, true);
+});
+
+test("a completely new campaign permits the depth 41 Otter pity again", async () => {
+  const fresh = initial({ startDepth: 41, unlockedStartDepths: [41] });
+  fresh.status = "active";
+  assert.equal(fresh.campaign.otterSeenInCampaign, false);
+  assert.equal(fresh.campaign.otterPityUsedInCampaign, false);
+  const issued = await issueNextRoomDirectiveV08(fresh, { ...context, randomOracle: highOracle });
+  assert.equal(issued.currentRoomDirective.specialRoomPayload.policySource, "otter-pity");
 });
 
 test("a completed treasure map forces the next non-boss room to Vault and is consumed once", async () => {
@@ -179,6 +233,9 @@ test("fresh Ranked profile starts with the exact v0.8 campaign defaults", () => 
     unlockedStartDepths: [],
     forgeSeenInCampaign: false,
     forgePityUsedInCampaign: false,
+    otterSeenInCampaign: false,
+    otterPityUsedInCampaign: false,
+    protectedStarterRelicId: "",
     scoreCarry: { highWaterDepth: 0, earnedGold: 0 },
     chestBonuses: {
       schemaVersion: 1,

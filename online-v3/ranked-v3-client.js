@@ -128,6 +128,7 @@
         }));
     let snapshot = store.loadSession();
     let mutationLocked = Boolean(snapshot?.pendingOperation);
+    let operationGeneration = 0;
 
     function notifySnapshot() {
       try {
@@ -172,6 +173,7 @@
 
     async function execute(endpoint, operation) {
       const current = requireSnapshot();
+      const generation = operationGeneration;
       if (!coordinator.isOwner(current.runId) && !coordinator.acquire(current.runId, current.revision)) {
         throw new TypeError("RANKED_WRITER_LEASE_HELD");
       }
@@ -184,6 +186,7 @@
         operationId: operation.operationId,
         body: operation.body
       });
+      if (generation !== operationGeneration) return clone(result.payload);
       let validated;
       try {
         validated = protocol.validateMutationResponse(result.payload, {
@@ -421,6 +424,8 @@
     }
 
     async function resumeCanonical(input = {}, operationId = transport.createOperationId()) {
+      const generation = operationGeneration + 1;
+      operationGeneration = generation;
       const recovery = store.loadRecovery?.() || options.recoveryRecord;
       if (!recovery?.runId || !recovery?.recoveryCredential) {
         throw new TypeError("RANKED_RECOVERY_CREDENTIAL_MISSING");
@@ -439,6 +444,7 @@
         lastKnownRevision: Math.max(0, Number(input.lastKnownRevision ?? current?.revision) || 0)
       };
       const result = await transport.request(protocol.ENDPOINTS.resume, { operationId, body });
+      if (generation !== operationGeneration) return clone(result.payload);
       const validated = protocol.validateMutationResponse(result.payload, {
         runId: body.runId,
         rulesetId: protocol.RULESET_ID,
@@ -472,6 +478,7 @@
     }
 
     async function abandonCanonical(operationId = transport.createOperationId()) {
+      operationGeneration += 1;
       const recovery = store.loadRecovery?.() || options.recoveryRecord;
       if (!recovery?.runId || !recovery?.recoveryCredential) {
         throw new TypeError("RANKED_RECOVERY_CREDENTIAL_MISSING");
@@ -552,6 +559,7 @@
     }
 
     function discardFailedStart() {
+      operationGeneration += 1;
       if (!snapshot) {
         mutationLocked = false;
         store.clearSession();
@@ -602,6 +610,7 @@
         options.recoveryRecord = null;
       },
       clear: () => {
+        operationGeneration += 1;
         snapshot = null;
         store.clearSession();
       }

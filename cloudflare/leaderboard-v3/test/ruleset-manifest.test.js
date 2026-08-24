@@ -126,6 +126,7 @@ test("source manifest contains only active baseline and M1 evidence sources", as
   assert.deepEqual(
     manifest.sources.map((source) => source.file),
     [
+      "balance-progression.js",
       "boss-campaign.js",
       "camp-data.js",
       "camp-runtime.js",

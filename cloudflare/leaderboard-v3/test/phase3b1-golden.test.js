@@ -252,7 +252,7 @@ const runners = {
 
   async "normal-to-special"(fixture) {
     const { ruleset, state, context } = await createRun(fixture);
-    const atVault = await advanceToDirective(ruleset, state, 6, context);
+    const atVault = await advanceToDirective(ruleset, state, 11, context);
     assert.equal(atVault.currentRoomDirective.roomType, "vault");
     assert.equal(atVault.currentRoomDirective.roomCategory, "special");
   },

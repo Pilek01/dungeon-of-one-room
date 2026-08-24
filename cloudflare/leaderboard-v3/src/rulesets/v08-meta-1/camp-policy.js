@@ -102,24 +102,51 @@ export function closeCampSessionV08(metaState) {
   return next;
 }
 
-function upgradeCost(build, upgrade, multiplier) {
+function earlyBalanceOtterEnabled(context) {
+  return context.capabilities == null ||
+    context.capabilities.earlyBalanceOtterRepair === "v1";
+}
+
+function effectiveUpgradeMaximum(upgrade, context) {
+  if (!earlyBalanceOtterEnabled(context)) {
+    if (upgrade.id === "vitality") return 20;
+    if (upgrade.id === "blade") return 15;
+  }
+  return upgrade.max;
+}
+
+function upgradeCost(build, upgrade, multiplier, context) {
   const level = Number(build.campUpgrades[upgrade.id] ?? 0);
-  if (!Number.isSafeInteger(level) || level < 0 || level > upgrade.max) {
+  const maximum = effectiveUpgradeMaximum(upgrade, context);
+  if (!Number.isSafeInteger(level) || level < 0 || level > maximum) {
     throw new TypeError(`CAMP_UPGRADE_LEVEL_INVALID:${upgrade.id}`);
   }
-  const base = Math.round(upgrade.baseCost * upgrade.costGrowth ** level);
+  const exponent = earlyBalanceOtterEnabled(context) && Number.isSafeInteger(upgrade.costFreezeAfterLevel)
+    ? Math.min(level, Math.max(0, upgrade.costFreezeAfterLevel - 1))
+    : level;
+  const base = Math.round(upgrade.baseCost * upgrade.costGrowth ** exponent);
   return Math.max(0, Math.round(base * multiplier));
 }
 
-function upgradeChoices(metaState, session) {
+function upgradeChoices(metaState, session, context) {
   const choices = [];
   for (const upgrade of policy.upgrades) {
+    if (!earlyBalanceOtterEnabled(context) && ["relic_ward", "relic_appraisal"].includes(upgrade.id)) continue;
+    const maximum = effectiveUpgradeMaximum(upgrade, context);
     const level = Number(metaState.build.campUpgrades[upgrade.id] ?? 0);
-    if (!Number.isSafeInteger(level) || level < 0 || level > upgrade.max) {
+    if (!Number.isSafeInteger(level) || level < 0 || level > maximum) {
       throw new TypeError(`CAMP_UPGRADE_LEVEL_INVALID:${upgrade.id}`);
     }
-    if (level >= upgrade.max) continue;
-    const cost = upgradeCost(metaState.build, upgrade, session.shopCostMultiplier);
+    if (level >= maximum) continue;
+    const unlockBossDepth = Array.isArray(upgrade.unlockBossDepths)
+      ? Number(upgrade.unlockBossDepths[level]) || 0
+      : 0;
+    const highestBossClear = Math.max(
+      0,
+      ...(metaState.campaign?.unlockedStartDepths || []).map((depth) => Number(depth) - 1)
+    );
+    if (highestBossClear < unlockBossDepth) continue;
+    const cost = upgradeCost(metaState.build, upgrade, session.shopCostMultiplier, context);
     choices.push({
       kind: "camp_upgrade",
       label: `Upgrade ${upgrade.id} to ${level + 1}`,
@@ -128,7 +155,7 @@ function upgradeChoices(metaState, session) {
         upgradeId: upgrade.id,
         currentLevel: level,
         resultingLevel: level + 1,
-        maximumLevel: upgrade.max,
+        maximumLevel: maximum,
         price: cost,
         currency: "camp_gold"
       },
@@ -272,10 +299,10 @@ function mutatorChoices(metaState) {
   return [...additions, ...removals];
 }
 
-function relicSaleChoices(metaState) {
+function relicSaleChoices(metaState, context) {
   return metaState.build.relics.map((entry) => {
     const relic = getRelicCatalogEntryV08(entry.relicId);
-    const value = policy.relicReturnValues[relic.rarity];
+    const value = relicSaleValue(metaState, relic, context);
     if (!Number.isSafeInteger(value) || value < 1) {
       throw new TypeError(`CAMP_RELIC_RETURN_VALUE_INVALID:${relic.rarity}`);
     }
@@ -302,6 +329,15 @@ function relicSaleChoices(metaState) {
   });
 }
 
+function relicSaleValue(metaState, relic, context) {
+  const baseValue = policy.relicReturnValues[relic.rarity];
+  const appraisalLevel = earlyBalanceOtterEnabled(context) ? Math.max(
+    0,
+    Math.min(3, Math.floor(Number(metaState.build.campUpgrades.relic_appraisal) || 0))
+  ) : 0;
+  return Math.round(baseValue * (100 + appraisalLevel * 15) / 100);
+}
+
 export async function issueCampTransactionsV08(metaState, context = {}) {
   const session = requireCampSession(metaState);
   const sourceId = `camp-transactions-${metaState.metaTransactionReceipts.length}`;
@@ -312,9 +348,9 @@ export async function issueCampTransactionsV08(metaState, context = {}) {
     return structuredClone(metaState);
   }
   const choices = [
-    ...upgradeChoices(metaState, session),
+    ...upgradeChoices(metaState, session, context),
     ...elixirChoices(metaState),
-    ...relicSaleChoices(metaState),
+    ...relicSaleChoices(metaState, context),
     ...mutatorChoices(metaState)
   ];
   if (!choices.length) return structuredClone(metaState);
@@ -376,10 +412,11 @@ export async function commitCampTransactionV08(metaState, request, context = {})
       const upgrade = upgradeById.get(choice.privateData.upgradeId);
       if (!upgrade) throw new TypeError("CAMP_UPGRADE_UNKNOWN");
       const current = Number(state.build.campUpgrades[upgrade.id] ?? 0);
+      const maximum = effectiveUpgradeMaximum(upgrade, context);
       if (
         current !== choice.privateData.expectedLevel ||
-        current >= upgrade.max ||
-        upgradeCost(state.build, upgrade, session.shopCostMultiplier) !==
+        current >= maximum ||
+        upgradeCost(state.build, upgrade, session.shopCostMultiplier, context) !==
           choice.privateData.cost
       ) {
         throw new TypeError("CAMP_UPGRADE_TARGET_STALE");
@@ -514,7 +551,7 @@ export async function commitCampTransactionV08(metaState, request, context = {})
         throw new TypeError("CAMP_RELIC_SALE_TARGET_STALE");
       }
       const relic = getRelicCatalogEntryV08(entry.relicId);
-      const reward = policy.relicReturnValues[relic.rarity];
+      const reward = relicSaleValue(state, relic, context);
       if (reward !== choice.privateData.reward) {
         throw new TypeError("CAMP_RELIC_SALE_REWARD_STALE");
       }
@@ -523,6 +560,12 @@ export async function commitCampTransactionV08(metaState, request, context = {})
         { relicId: relic.relicId, stacks: 1 },
         context
       );
+      if (
+        state.campaign?.protectedStarterRelicId === relic.relicId &&
+        entry.stacks === 1
+      ) {
+        state.campaign.protectedStarterRelicId = "";
+      }
       awardCanonicalGoldV08(state, reward, "camp_gold");
       return {
         nextState: state,

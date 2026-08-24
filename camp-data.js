@@ -8,7 +8,7 @@
       baseCost: 30,
       costGrowth: 1.4,
       scale: 8,
-      max: 20
+      max: 25
     },
     {
       id: "blade",
@@ -18,7 +18,7 @@
       baseCost: 30,
       costGrowth: 1.4,
       scale: 10,
-      max: 15
+      max: 25
     },
     {
       id: "satchel",
@@ -49,6 +49,17 @@
       costGrowth: 1.4,
       scale: 0,
       max: 1,
+      currency: "camp_gold"
+    },
+    {
+      id: "relic_ward",
+      key: "-",
+      name: "Relic Ward",
+      desc: "33% relic-loss protection per level",
+      baseCost: 250,
+      costGrowth: 2.2,
+      scale: 0,
+      max: 3,
       currency: "camp_gold"
     },
     {
@@ -104,6 +115,17 @@
       costGrowth: 1.4,
       scale: 55,
       max: 5,
+      currency: "camp_gold"
+    },
+    {
+      id: "relic_appraisal",
+      key: "=",
+      name: "Relic Appraisal",
+      desc: "+15% Camp Gold from voluntary relic sales",
+      baseCost: 150,
+      costGrowth: 2,
+      scale: 0,
+      max: 3,
       currency: "camp_gold"
     }
   ];

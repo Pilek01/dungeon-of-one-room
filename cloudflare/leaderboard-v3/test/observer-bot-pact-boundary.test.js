@@ -266,9 +266,9 @@ async function installRuntime(harness) {
   return harness.root.DungeonOnlineV3;
 }
 
-async function settleBoundary(runtime) {
+async function settleBoundary(runtime, predicate) {
   for (let attempt = 0; attempt < 50; attempt += 1) {
-    if (!runtime.isObserverBotBoundaryPending()) return;
+    if (predicate()) return;
     await new Promise((resolve) => setImmediate(resolve));
   }
   assert.fail("Ranked boundary did not settle");
@@ -285,7 +285,7 @@ test("active Ranked Pact receives its canonical post-checkpoint offer before por
     completionCapability: harness.root.integrityContext.completionCapability
   });
   assert.equal(runtime.onPortalEntry(), true);
-  await settleBoundary(runtime);
+  await settleBoundary(runtime, () => harness.calls.some((entry) => entry.action === "checkpoint"));
 
   assert.equal(
     harness.calls[0]?.action,
@@ -310,8 +310,7 @@ test("old Pact capability checkpoints then starts the next directive without ope
     completionCapability: harness.root.integrityContext.completionCapability
   });
   assert.equal(runtime.onPortalEntry(), true);
-  await settleBoundary(runtime);
-  await new Promise((resolve) => setTimeout(resolve, 20));
+  await settleBoundary(runtime, () => harness.calls.some((entry) => entry.action === "checkpoint"));
 
   assert.equal(harness.calls[0]?.action, "checkpoint");
   assert.equal(harness.calls.some((entry) => entry.action === "open_meta_offer"), false);

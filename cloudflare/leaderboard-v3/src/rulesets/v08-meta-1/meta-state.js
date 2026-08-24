@@ -143,6 +143,11 @@ function createCampaignState(input = {}) {
     unlockedStartDepths,
     forgeSeenInCampaign: Boolean(source.forgeSeenInCampaign),
     forgePityUsedInCampaign: Boolean(source.forgePityUsedInCampaign),
+    otterSeenInCampaign: Boolean(source.otterSeenInCampaign),
+    otterPityUsedInCampaign: Boolean(source.otterPityUsedInCampaign),
+    protectedStarterRelicId: typeof source.protectedStarterRelicId === "string"
+      ? source.protectedStarterRelicId
+      : "",
     scoreCarry,
     chestBonuses: normalizeChestBonusesV08(source.chestBonuses)
   };
@@ -158,10 +163,14 @@ function assertCampaignState(campaign) {
   }
   const normalized = createCampaignState({ campaign });
   const expectedKeys = Object.keys(normalized).sort();
-  const legacyKeys = expectedKeys.filter((key) => key !== "scoreCarry" && key !== "chestBonuses");
-  const scoreCarryOnlyKeys = expectedKeys.filter((key) => key !== "chestBonuses");
-  const chestBonusesOnlyKeys = expectedKeys.filter((key) => key !== "scoreCarry");
   const actualKeys = Object.keys(campaign).sort();
+  const optionalLegacyKeys = ["scoreCarry", "chestBonuses", "otterSeenInCampaign", "otterPityUsedInCampaign", "protectedStarterRelicId"];
+  const validKeySets = Array.from({ length: 1 << optionalLegacyKeys.length }, (_, mask) =>
+    expectedKeys.filter((key) => {
+      const optionalIndex = optionalLegacyKeys.indexOf(key);
+      return optionalIndex < 0 || (mask & (1 << optionalIndex)) !== 0;
+    })
+  );
   const hasCarry = Object.hasOwn(campaign, "scoreCarry");
   const carryKeys = hasCarry && campaign.scoreCarry && typeof campaign.scoreCarry === "object"
     ? Object.keys(campaign.scoreCarry).sort()
@@ -169,10 +178,7 @@ function assertCampaignState(campaign) {
   const expectedCarryKeys = ["earnedGold", "highWaterDepth"];
   if (
     (
-      JSON.stringify(actualKeys) !== JSON.stringify(expectedKeys) &&
-      JSON.stringify(actualKeys) !== JSON.stringify(legacyKeys) &&
-      JSON.stringify(actualKeys) !== JSON.stringify(scoreCarryOnlyKeys) &&
-      JSON.stringify(actualKeys) !== JSON.stringify(chestBonusesOnlyKeys)
+      !validKeySets.some((keys) => JSON.stringify(actualKeys) === JSON.stringify(keys))
     ) ||
     campaign.treasureMapFragments !== normalized.treasureMapFragments ||
     campaign.forcedNextRoomType !== normalized.forcedNextRoomType ||
@@ -180,6 +186,9 @@ function assertCampaignState(campaign) {
     JSON.stringify(campaign.unlockedStartDepths) !== JSON.stringify(normalized.unlockedStartDepths) ||
     campaign.forgeSeenInCampaign !== normalized.forgeSeenInCampaign ||
     campaign.forgePityUsedInCampaign !== normalized.forgePityUsedInCampaign ||
+    Boolean(campaign.otterSeenInCampaign) !== normalized.otterSeenInCampaign ||
+    Boolean(campaign.otterPityUsedInCampaign) !== normalized.otterPityUsedInCampaign ||
+    String(campaign.protectedStarterRelicId || "") !== normalized.protectedStarterRelicId ||
     canonicalJson(campaign.chestBonuses ?? normalizeChestBonusesV08()) !== canonicalJson(normalized.chestBonuses) ||
     (
       hasCarry && (

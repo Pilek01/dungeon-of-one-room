@@ -1,5 +1,24 @@
 Original prompt: Diagnose and repair the Ranked Observer Bot production crashes, verify the smallest robust fixes, merge them to main, and deploy a working release.
 
+## 2026-08-24 - Ranked boundary single-flight repair verified
+
+- Added scope: prevent duplicate/out-of-order portal checkpoint operations while preserving the first recovery diagnostic and all fail-closed server validation.
+- Root cause confirmed in the existing client runtime: two same-tick `onPortalEntry()` calls can both pass before either reaches `RESOLVING_ROOM`; the Observer Bot's nested boundary helper also permits the second task. If the first task enters recovery, the late task can call `resolveCheckpoint()` from `RECONNECT_REQUIRED`, producing the secondary `RANKED_STATE_TRANSITION_INVALID` error.
+- Planned narrow repair: one shared boundary-operation flight for player and Observer Bot, generation-based stale-callback invalidation, delayed synchronization UI, guarded recovery states, and bounded automatic canonical resync. Practice and Worker authority stay unchanged.
+- RED coverage reproduced duplicate portal recovery, stale post-recovery callbacks, missing automatic resync, and root-diagnostic replacement before the runtime change.
+- Implemented one player/bot boundary flight, 180ms delayed loading, recovery-state guards, generation invalidation, one automatic canonical resync for transient failures, and stale portal-intent cleanup. Focused runtime coverage is green at 25/25, including unchanged legacy non-boundary handling and the existing fail-closed integrity downgrade.
+- The current-tree headed Ranked lifecycle passes with a deliberately delayed checkpoint and three same-frame portal attempts: exactly one request, no pre-180ms overlay, one calm loading presentation, no reconnect popup, and one next-room transition.
+- The shared web-game Playwright client also reached the current build's Main Menu and produced a visually healthy HD canvas. Its static-only harness reported only the known absent music files; the authoritative Ranked headed test ran through the real local Worker proxy without browser/page errors.
+- A second RED client test proved the runtime token alone was insufficient because an older `checkpoint()` could still overwrite the client's persisted snapshot after a newer `resumeCanonical()`. The Ranked client now invalidates older response generations at resync/abandon/clear, and the late checkpoint response leaves the newer canonical revision untouched.
+- Final current-tree evidence: focused client/runtime/Worker regressions 90/90, delayed multi-entry Ranked lifecycle PASS, six archive screenshots visually re-approved at `sha256:24a2d81c3da05464e6d16beec74af286e655a8de730acc560d6dde36be25a485`, and full release verification 1005/1005 (`output/verification/full-20260824T105032829Z.log`). No Worker authority, reward validation, ruleset bytes/hash, D1 schema, or Practice flow was relaxed.
+- Release execution follows this amended commit and is reported from the deployment receipts; no post-deployment source commit is added.
+
+## 2026-08-24 - Early balance package and Ranked Otter repairs in progress
+
+- Confirmed the working repository is based on production commit `0a6ddcd` and preserved all in-progress changes for one combined commit and deploy.
+- Implemented the approved early-game/Camp balance package, campaign-scoped Ranked Otter pity persistence, and canonical Ranked Otter Crimson Chest flow without trusting client relic IDs.
+- Focused client, campaign parity, Observer Bot, and most Worker regressions are green. The remaining Camp regressions are being resolved before ruleset regeneration, full verification, browser QA, final diff review, and release.
+
 ## 2026-08-22 - Merchant + post-room Pact implementation verified
 
 - Observer Bot now opens the authoritative Ranked Merchant offer before evaluating skill upgrades, waits on open/commit locks, and cannot count a missing canonical choice as a purchase.

@@ -44,9 +44,14 @@
   let currentForgeOffer = null;
   let currentForgeContext = null;
   let forgeMutationPending = false;
+  let otterChestMutationPending = false;
   let pendingNativeRelicReplacement = null;
   let observerBotBoundaryPending = false;
   let observerBotAutomationHalted = false;
+  let boundaryOperation = null;
+  let boundaryOperationGeneration = 0;
+  let recoveryRootDiagnostic = null;
+  let automaticResyncPending = false;
   let activeRoomIntegrity = null;
   let activeRoomDirectiveId = "";
   const shownRankIntegrityNotices = new Set();
@@ -116,6 +121,12 @@
   function clearPendingExtractionIntent() {
     pendingExtractionMode = null;
     pendingExtractionSource = null;
+  }
+
+  function clearRecoveredPortalIntent() {
+    if (pendingBoundaryExit !== "portal") return;
+    pendingBoundaryExit = null;
+    pendingRoomSummary = null;
   }
 
   function rememberPendingExtraction(mode) {
@@ -211,7 +222,6 @@
   async function ensureRankedBoundaryBinding() {
     const current = createClient().getSnapshot()?.publicState;
     if (hasRankedBoundaryBinding(current)) return current;
-    ui.showSync("Restoring Ranked room…");
     const response = await createClient().resumeCanonical();
     const restored = response?.metaState || createClient().getSnapshot()?.publicState;
     if (!hasRankedBoundaryBinding(restored)) {
@@ -326,6 +336,85 @@
     root.DungeonOnlineV3GameBridge?.refreshRankedHud?.();
   }
 
+  function isBoundaryOperationBlockedState(state = session.getState()) {
+    return [
+      root.DungeonRankedV3Session.STATES.reconnect,
+      root.DungeonRankedV3Session.STATES.protocolError,
+      root.DungeonRankedV3Session.STATES.abandoned,
+      root.DungeonRankedV3Session.STATES.finalized
+    ].includes(state);
+  }
+
+  function isCurrentBoundaryOperation(operation) {
+    return Boolean(
+      operation &&
+      boundaryOperation === operation &&
+      operation.generation === boundaryOperationGeneration
+    );
+  }
+
+  function isCurrentOperationGeneration(operation) {
+    return Boolean(
+      operation &&
+      operation.generation === boundaryOperationGeneration &&
+      !isBoundaryOperationBlockedState()
+    );
+  }
+
+  function clearBoundaryLoading(operation) {
+    if (operation?.loadingTimer !== null && operation?.loadingTimer !== undefined) {
+      root.clearTimeout(operation.loadingTimer);
+      operation.loadingTimer = null;
+    }
+  }
+
+  function invalidateBoundaryOperations() {
+    boundaryOperationGeneration += 1;
+    clearBoundaryLoading(boundaryOperation);
+    boundaryOperation = null;
+    observerBotBoundaryPending = false;
+  }
+
+  function startBoundaryOperation(task, options = {}) {
+    if (boundaryOperation) return boundaryOperation.promise;
+    if (isBoundaryOperationBlockedState()) return Promise.resolve(false);
+    const operation = {
+      generation: boundaryOperationGeneration + 1,
+      loadingTimer: null,
+      promise: null
+    };
+    boundaryOperationGeneration = operation.generation;
+    boundaryOperation = operation;
+    if (isRankedObserverBotActive()) observerBotBoundaryPending = true;
+    const loadingMessage = String(options.loadingMessage || "");
+    if (loadingMessage && options.silent !== true) {
+      operation.loadingTimer = root.setTimeout(() => {
+        if (isCurrentBoundaryOperation(operation)) ui.showSync(loadingMessage);
+      }, 180);
+    }
+    let taskResult;
+    try {
+      taskResult = task(operation);
+    } catch (error) {
+      taskResult = Promise.reject(error);
+    }
+    operation.promise = Promise.resolve(taskResult)
+      .catch((error) => {
+        if (isCurrentBoundaryOperation(operation)) {
+          (typeof options.onError === "function" ? options.onError : presentError)(error);
+        }
+        return false;
+      })
+      .finally(() => {
+        clearBoundaryLoading(operation);
+        if (isCurrentBoundaryOperation(operation)) {
+          boundaryOperation = null;
+          observerBotBoundaryPending = false;
+        }
+      });
+    return operation.promise;
+  }
+
   function getRankedHudStatus() {
     if (!root.DungeonOnlineV3GameBridge?.isRanked?.()) {
       lastRankedHudStatus = null;
@@ -368,6 +457,7 @@
       isRankedObserverBotActive() &&
       (observerBotBoundaryPending ||
         observerBotAutomationHalted ||
+        boundaryOperation ||
         campMutationPending ||
         merchantMutationPending ||
         metaMutationPending ||
@@ -412,6 +502,9 @@
   }
 
   function resetLocalRankedSession() {
+    invalidateBoundaryOperations();
+    recoveryRootDiagnostic = null;
+    automaticResyncPending = false;
     clearPendingExtractionIntent();
     pendingBoundaryExit = null;
     extractedProfileReady = false;
@@ -424,7 +517,6 @@
     metaMutationPending = false;
     postRoomPactOfferPending = false;
     pendingNativeRelicReplacement = null;
-    observerBotBoundaryPending = false;
     observerBotAutomationHalted = false;
     client?.releaseWriter?.();
     client?.clear?.();
@@ -626,14 +718,37 @@
     }
   }
 
-  async function resyncCanonical() {
+  async function resyncCanonical(options = {}) {
+    invalidateBoundaryOperations();
     setRankedHudSyncing(true);
     moveToRecoveryState(root.DungeonRankedV3Session.STATES.retrying);
-    ui.setStatus("Refreshing your Ranked run...");
-    await acceptResponse(await createClient().resumeCanonical());
+    if (options.automatic !== true) ui.setStatus("Synchronizing Ranked…");
+    return startBoundaryOperation(async (operation) => {
+      const response = await createClient().resumeCanonical();
+      if (!isCurrentBoundaryOperation(operation)) return true;
+      clearRecoveredPortalIntent();
+      await acceptResponse(response, operation);
+      if (!isCurrentBoundaryOperation(operation)) return true;
+      recoveryRootDiagnostic = null;
+      automaticResyncPending = false;
+      observerBotAutomationHalted = false;
+      return true;
+    }, {
+      loadingMessage: "Synchronizing Ranked…",
+      onError(error) {
+        automaticResyncPending = false;
+        presentError(error, {
+          automaticResyncFailed: options.automatic === true,
+          rootDiagnostic: options.rootDiagnostic || recoveryRootDiagnostic
+        });
+      }
+    });
   }
 
   function returnToPractice() {
+    invalidateBoundaryOperations();
+    recoveryRootDiagnostic = null;
+    automaticResyncPending = false;
     knownHudAssistanceClass = "none";
     rankedHudSyncing = false;
     lastRankedHudStatus = null;
@@ -666,6 +781,9 @@
   }
 
   function clearEndedRecovery() {
+    invalidateBoundaryOperations();
+    recoveryRootDiagnostic = null;
+    automaticResyncPending = false;
     pendingFreshCampaign = false;
     pendingElixirUsage = null;
     metaMutationPending = false;
@@ -712,6 +830,8 @@
   }
 
   async function abandonCanonical() {
+    invalidateBoundaryOperations();
+    automaticResyncPending = false;
     pendingFreshCampaign = false;
     pendingElixirUsage = null;
     ui.setStatus("Abandoning your Ranked run...");
@@ -752,7 +872,25 @@
     );
   }
 
-  function presentError(error) {
+  function isTransientRecoveryError(error) {
+    const code = String(error?.code || "");
+    return Boolean(
+      error?.retryable ||
+      error?.conflict ||
+      error?.status === 409 ||
+      [
+        "NETWORK_ERROR",
+        "TIMEOUT",
+        "TOKEN_EXPIRED",
+        "REVISION_CONFLICT",
+        "STATE_DIGEST_CONFLICT",
+        "ROOM_TOKEN_CONFLICT"
+      ].includes(code)
+    );
+  }
+
+  function presentError(error, options = {}) {
+    invalidateBoundaryOperations();
     setRankedHudSyncing(true);
     if (isRankedObserverBotActive()) observerBotAutomationHalted = true;
     const code = String(error?.code || "");
@@ -761,6 +899,9 @@
       status: error?.status,
       traceId: error?.traceId
     });
+    if (!recoveryRootDiagnostic) recoveryRootDiagnostic = options.rootDiagnostic || diagnostic;
+    const rootDiagnostic = options.rootDiagnostic || recoveryRootDiagnostic || diagnostic;
+    const rootCode = String(rootDiagnostic?.code || code);
     const conflict = error?.conflict || error?.status === 409;
     const writerHeld = ["RANKED_WRITER_LEASE_HELD", "RANKED_MUTATION_LOCKED"].includes(String(error?.message || ""));
     const protocolFailure = error instanceof TypeError && !writerHeld || [
@@ -778,6 +919,24 @@
         message: String(error?.message || "")
       });
     }
+    if (
+      options.automaticResyncFailed !== true &&
+      !protocolFailure &&
+      isTransientRecoveryError(error)
+    ) {
+      ui.showSync("Synchronizing Ranked…");
+      if (!automaticResyncPending) {
+        automaticResyncPending = true;
+        root.setTimeout(() => {
+          resyncCanonical({ automatic: true, rootDiagnostic }).catch((resyncError) => {
+            automaticResyncPending = false;
+            presentError(resyncError, { automaticResyncFailed: true, rootDiagnostic });
+          });
+        }, 0);
+      }
+      return;
+    }
+    automaticResyncPending = false;
     if (isEndedRecoveryError(error)) {
       ui.showMessage(
         "Ranked Run Ended",
@@ -801,7 +960,7 @@
       return;
     }
     const controls = [];
-    if (error?.retryable || ["NETWORK_ERROR", "TIMEOUT"].includes(code)) {
+    if (error?.retryable || ["NETWORK_ERROR", "TIMEOUT"].includes(rootCode)) {
       controls.push(ui.button("Retry exact action", retryPending));
     }
     if (writerHeld) {
@@ -820,13 +979,10 @@
     ui.showMessage(
       conflict ? "Ranked state conflict" : "Ranked reconnect required",
       conflict
-        ? `Your Ranked run changed. Refresh it before continuing. Diagnostic: ${diagnosticLabel(diagnostic)}.`
-        : `Recovery is preserved. Main Menu does not abandon the Ranked run. Diagnostic: ${diagnosticLabel(diagnostic)}.`,
+        ? `Your Ranked run changed. Refresh it before continuing. Diagnostic: ${diagnosticLabel(rootDiagnostic)}.`
+        : `Recovery is preserved. Main Menu does not abandon the Ranked run. Diagnostic: ${diagnosticLabel(rootDiagnostic)}.`,
       controls
     );
-    if ((conflict || ["TOKEN_EXPIRED", "REVISION_CONFLICT", "STATE_DIGEST_CONFLICT", "ROOM_TOKEN_CONFLICT"].includes(code)) && !protocolFailure) {
-      root.setTimeout(() => resyncCanonical().catch(presentError), 0);
-    }
   }
 
   async function retryPending() {
@@ -836,7 +992,10 @@
       ui.setStatus("Retrying the exact operation...");
       const response = await createClient().retryPending();
       pendingElixirUsage = null;
+      clearRecoveredPortalIntent();
       await acceptResponse(response);
+      recoveryRootDiagnostic = null;
+      observerBotAutomationHalted = false;
     } catch (error) {
       presentError(error);
     }
@@ -853,13 +1012,15 @@
     await acceptFinal(await createClient().finalize());
   }
 
-  async function acceptResponse(response) {
+  async function acceptResponse(response, operation = null) {
+    if (operation && !isCurrentBoundaryOperation(operation)) return;
     let state = response.metaState;
     if (pendingTestAssistance && state?.status === "active") {
       if (String(state.assistanceClass || "none") === "none") {
         response = await createClient().event("mark_test_assistance", {
           assistanceClass: "observer_bot"
         });
+        if (operation && !isCurrentBoundaryOperation(operation)) return;
         state = response.metaState;
       }
       const assistanceClassProjected = Object.prototype.hasOwnProperty.call(
@@ -917,7 +1078,7 @@
         if (extractionCheckpointCommitted(state)) {
           const extractionMode = pendingExtractionMode;
           clearPendingExtractionIntent();
-          await performExtraction(extractionMode);
+          await performExtraction(extractionMode, null, operation);
           return;
         }
         clearPendingExtractionIntent();
@@ -1185,6 +1346,36 @@
       rewardSlotId: slot.slotId
     });
     await continueBoundary(response.metaState);
+  }
+
+  function isOtterCrimsonSlot(slot) {
+    return String(slot?.sourceId || "") === "otter-crimson-chest";
+  }
+
+  function presentOtterCrimsonChest(slot) {
+    if (!isOtterCrimsonSlot(slot)) return false;
+    return root.DungeonOnlineV3GameBridge?.showRankedOtterRewardChest?.({
+      slotId: String(slot.slotId || ""),
+      sourceId: "otter-crimson-chest"
+    }) === true;
+  }
+
+  function onOtterChestOpen() {
+    if (!pendingRoomSummary || otterChestMutationPending) return Boolean(otterChestMutationPending);
+    otterChestMutationPending = true;
+    Promise.resolve()
+      .then(async () => {
+        const state = usesBoundarySettlement()
+          ? await ensureRankedBoundaryBinding()
+          : createClient().getSnapshot()?.publicState;
+        const slot = offers.pendingRewardSlots(state, { roomClearPending: true })
+          .find(isOtterCrimsonSlot);
+        if (!slot) throw new TypeError("RANKED_OTTER_REWARD_SLOT_UNAVAILABLE");
+        await issueRelicSlot(slot);
+      })
+      .catch(presentError)
+      .finally(() => { otterChestMutationPending = false; });
+    return true;
   }
 
   function normalizedForgeContext(offer, context = {}) {
@@ -1547,6 +1738,9 @@
   }
 
   function leaveFinalizedCampPending() {
+    invalidateBoundaryOperations();
+    recoveryRootDiagnostic = null;
+    automaticResyncPending = false;
     pendingFreshCampaign = false;
     pendingElixirUsage = null;
     client?.releaseWriter?.();
@@ -1622,7 +1816,8 @@
     return true;
   }
 
-  async function continueBoundary(state) {
+  async function continueBoundary(state, operation = null) {
+    if (operation && !isCurrentBoundaryOperation(operation)) return true;
     root.DungeonOnlineV3GameBridge.syncCanonicalProjection(state);
     if (state.relicReplacement) return presentReplacement(state.relicReplacement);
     if (state.relicOffer) return presentRelicOffer(state.relicOffer);
@@ -1630,11 +1825,19 @@
     const slot = offers.pendingRewardSlots(state, {
       roomClearPending: Boolean(pendingRoomSummary)
     })[0];
-    if (slot) return issueRelicSlot(slot);
+    if (slot) {
+      if (isOtterCrimsonSlot(slot)) {
+        if (!presentOtterCrimsonChest(slot)) {
+          throw new TypeError("RANKED_OTTER_CHEST_PRESENTATION_UNAVAILABLE");
+        }
+        return;
+      }
+      return issueRelicSlot(slot);
+    }
     if (pendingRoomSummary && pendingBoundaryExit) {
       return resolveCheckpoint({
         loadingMessage: pendingBoundaryExit === "portal" ? "Loading next depth…" : "Extracting…"
-      });
+      }, operation);
     }
     if (pendingRoomSummary) {
       if (usesBoundarySettlement()) {
@@ -1647,7 +1850,7 @@
         ui.hide();
         return;
       }
-      return resolveCheckpoint();
+      return resolveCheckpoint({}, operation);
     }
     if (state.currentRoomDirective) {
       const directive = directives.applyOnlineV3RoomDirective(state.currentRoomDirective);
@@ -1657,7 +1860,8 @@
     ui.hide();
   }
 
-  async function continueResolvedCheckpoint(state) {
+  async function continueResolvedCheckpoint(state, operation = null) {
+    if (operation && !isCurrentBoundaryOperation(operation)) return true;
     if (["victory", "defeat", "extraction"].includes(state.status)) {
       session.transition(root.DungeonRankedV3Session.STATES.terminal);
       showTerminal(state);
@@ -1666,11 +1870,11 @@
     if (pendingExtractionMode) {
       const extractionMode = pendingExtractionMode;
       clearPendingExtractionIntent();
-      await performExtraction(extractionMode);
+      await performExtraction(extractionMode, null, operation);
       return;
     }
     if (state.metaTransactionOffer) {
-      await continueBoundary(state);
+      await continueBoundary(state, operation);
       return;
     }
     if (pendingBoundaryExit === "portal") {
@@ -1682,22 +1886,31 @@
       root.DungeonOnlineV3GameBridge?.enterNextDirective?.();
       return;
     }
-    await continueBoundary(state);
+    await continueBoundary(state, operation);
   }
 
-  async function resolveCheckpoint(options = {}) {
+  async function resolveCheckpoint(options = {}, operation = null) {
+    if (!operation) {
+      return startBoundaryOperation(
+        (activeOperation) => resolveCheckpoint(options, activeOperation),
+        {
+          loadingMessage: options.loadingMessage || (options.silent === true ? "" : "Saving progress..."),
+          silent: options.silent === true,
+          onError: options.onError
+        }
+      );
+    }
+    if (!isCurrentBoundaryOperation(operation) || isBoundaryOperationBlockedState()) return false;
     const summary = pendingRoomSummary || {};
     pendingRoomSummary = null;
-    let loadingTimer = null;
     try {
       setRankedHudSyncing(true);
+      if (!isCurrentBoundaryOperation(operation) || isBoundaryOperationBlockedState()) {
+        pendingRoomSummary = summary;
+        return false;
+      }
       if (session.getState() !== root.DungeonRankedV3Session.STATES.resolving) {
         session.transition(root.DungeonRankedV3Session.STATES.resolving);
-      }
-      if (options.loadingMessage) {
-        loadingTimer = root.setTimeout(() => ui.showSync(options.loadingMessage), 180);
-      } else if (options.silent !== true) {
-        ui.showSync("Saving progress...");
       }
       const checkpointState = createClient().getSnapshot()?.publicState;
       const fixedAwardGold = usesBoundarySettlement()
@@ -1725,17 +1938,18 @@
         reportedGoldTotal: canonicalGoldBeforeSettlement + reportedGoldDelta,
         commands: []
       });
-      if (loadingTimer !== null) root.clearTimeout(loadingTimer);
+      if (!isCurrentBoundaryOperation(operation)) return true;
       root.DungeonOnlineV3GameBridge?.showRankedRoomClearAward?.(fixedAwardGold);
       pendingElixirUsage = null;
       const state = response.metaState;
       root.DungeonOnlineV3GameBridge.syncCanonicalProjection(state);
       if (presentRankIntegrityNotice(state, () => {
+        if (!isCurrentOperationGeneration(operation)) return;
         continueResolvedCheckpoint(state).catch(presentError);
       })) return true;
-      await continueResolvedCheckpoint(state);
+      await continueResolvedCheckpoint(state, operation);
     } catch (error) {
-      if (loadingTimer !== null) root.clearTimeout(loadingTimer);
+      if (!isCurrentBoundaryOperation(operation)) return true;
       pendingRoomSummary = summary;
       (typeof options.onError === "function" ? options.onError : presentError)(error);
       return false;
@@ -1775,11 +1989,12 @@
   }
 
   function onForgeLeave(options = {}) {
-    if (isObserverBotBoundaryPending()) return true;
+    if (isObserverBotBoundaryPending() || boundaryOperation || isBoundaryOperationBlockedState()) return true;
     if (!pendingRoomSummary) return false;
-    Promise.resolve().then(async () => {
+    void startBoundaryOperation(async (operation) => {
       if (usesBoundarySettlement()) {
         await ensureRankedBoundaryBinding();
+        if (!isCurrentBoundaryOperation(operation)) return true;
         const captured = mergeCapturedBoundary(captureRankedBoundary());
         pendingRoomSummary = captured.summary;
         if (options.enterPortal === true) pendingBoundaryExit = "portal";
@@ -1787,28 +2002,40 @@
       const resolved = await resolveCheckpoint({
         silent: true,
         loadingMessage: options.enterPortal === true ? "Loading next depth…" : ""
-      });
+      }, operation);
       if (resolved && options.enterPortal === true && !usesBoundarySettlement()) {
         root.DungeonOnlineV3GameBridge?.enterNextDirective?.();
       }
-    }).catch(presentError);
+      return resolved;
+    }, {
+      loadingMessage: options.enterPortal === true ? "Loading next depth…" : "",
+      silent: options.enterPortal !== true
+    });
     return true;
   }
 
   function onPortalEntry() {
     if (!usesBoundarySettlement() || !pendingRoomSummary) return false;
-    if (session.getState() === root.DungeonRankedV3Session.STATES.resolving) return true;
-    const task = async () => {
+    if (
+      boundaryOperation ||
+      observerBotBoundaryPending ||
+      isBoundaryOperationBlockedState() ||
+      session.getState() === root.DungeonRankedV3Session.STATES.resolving
+    ) return true;
+    void startBoundaryOperation(async (operation) => {
       const state = await ensureRankedBoundaryBinding();
+      if (!isCurrentBoundaryOperation(operation)) return true;
       const captured = mergeCapturedBoundary(captureRankedBoundary());
+      const integritySignals = Array.isArray(pendingRoomSummary?.integritySignals)
+        ? pendingRoomSummary.integritySignals
+        : [];
       pendingRoomSummary = {
         ...captured.summary,
-        integritySignals: pendingRoomSummary.integritySignals || []
+        integritySignals
       };
       pendingBoundaryExit = "portal";
-      return continueBoundary(state);
-    };
-    void (isRankedObserverBotActive() ? runObserverBotBoundary(task) : task()).catch(presentError);
+      return continueBoundary(state, operation);
+    }, { loadingMessage: "Loading next depth…" });
     return true;
   }
   async function onLocalRoomCleared(summary) {
@@ -1833,6 +2060,9 @@
         roomCleared: true,
         integritySignals
       };
+      const slot = offers.pendingRewardSlots(state, { roomClearPending: true })
+        .find(isOtterCrimsonSlot);
+      if (slot) presentOtterCrimsonChest(slot);
       ui.hide();
       return;
     }
@@ -1971,15 +2201,19 @@
     }
   }
 
-  async function performExtraction(mode, boundarySettlement = null) {
+  async function performExtraction(mode, boundarySettlement = null, operation = null) {
+    if (operation && !isCurrentBoundaryOperation(operation)) return true;
+    if (isBoundaryOperationBlockedState()) return false;
     const resolving = root.DungeonRankedV3Session.STATES.resolving;
     if (session.getState() !== resolving) session.transition(resolving);
     root.DungeonOnlineV3GameBridge?.beginRankedExtraction?.();
     pendingBoundaryExit = null;
     const payload = boundarySettlement ? { mode, boundarySettlement } : { mode };
     const response = await createClient().event("request_extraction", payload);
+    if (operation && !isCurrentBoundaryOperation(operation)) return true;
     root.DungeonOnlineV3GameBridge.syncCanonicalProjection(response.metaState);
     const finishExtraction = async () => {
+      if (operation && !isCurrentOperationGeneration(operation)) return;
       extractedProfileReady = response.metaState?.status === "extraction" && Boolean(response.profile);
       session.transition(root.DungeonRankedV3Session.STATES.terminal);
       await finalize();
@@ -1992,6 +2226,7 @@
 
   async function onExtraction(mode) {
     const extractionMode = mode === "normal" ? "normal" : "emergency";
+    if (boundaryOperation) return;
     if (session.getState() === root.DungeonRankedV3Session.STATES.resolving) {
       rememberPendingExtraction(extractionMode);
       root.DungeonOnlineV3GameBridge?.beginRankedExtraction?.();
@@ -2002,18 +2237,19 @@
         await performExtraction(extractionMode);
         return;
       }
-      ui.showSync("Extracting…");
-      await ensureRankedBoundaryBinding();
-      const captured = mergeCapturedBoundary(captureRankedBoundary());
-      if (extractionMode === "emergency") {
-        pendingRoomSummary = null;
-        await performExtraction(extractionMode, captured.eventPayload);
-        return;
-      }
-      pendingRoomSummary = captured.summary;
-      rememberPendingExtraction(extractionMode);
-      pendingBoundaryExit = "normal_extract";
-      await continueBoundary(createClient().getSnapshot()?.publicState);
+      await startBoundaryOperation(async (operation) => {
+        await ensureRankedBoundaryBinding();
+        if (!isCurrentBoundaryOperation(operation)) return true;
+        const captured = mergeCapturedBoundary(captureRankedBoundary());
+        if (extractionMode === "emergency") {
+          pendingRoomSummary = null;
+          return performExtraction(extractionMode, captured.eventPayload, operation);
+        }
+        pendingRoomSummary = captured.summary;
+        rememberPendingExtraction(extractionMode);
+        pendingBoundaryExit = "normal_extract";
+        return continueBoundary(createClient().getSnapshot()?.publicState, operation);
+      }, { loadingMessage: "Extracting…" });
     } catch (error) {
       presentError(error);
     }
@@ -2026,6 +2262,9 @@
       moveToRecoveryState(root.DungeonRankedV3Session.STATES.retrying);
       ui.showMessage("Recovering Ranked", "Loading your last saved room...");
       await acceptResponse(await createClient().resumeCanonical());
+      recoveryRootDiagnostic = null;
+      automaticResyncPending = false;
+      observerBotAutomationHalted = false;
     } catch (error) {
       presentError(error);
     }
@@ -2138,6 +2377,7 @@
     resumeRanked,
     usesBoundarySettlement,
     onLocalRoomCleared,
+    onOtterChestOpen,
     onPortalEntry,
     onRoomEntered,
     onMerchantOpen,

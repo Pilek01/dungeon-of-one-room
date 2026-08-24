@@ -21,6 +21,7 @@ import {
   V08_META_1_PACT_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR,
   V08_META_1_CHEST_CARRY_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR,
   V08_META_1_GOLD_CONTEXT_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR,
+  V08_META_1_OTTER_REPAIR_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR,
   V08_META_1_CANONICAL_CHEST_CONTEXT_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR,
   V08_META_1_CANONICAL_CHEST_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR,
   V08_META_1_PRODUCTION_RELEASE_DESCRIPTOR
@@ -36,6 +37,7 @@ const require = createRequire(import.meta.url);
 const protocol = require("../../../online-v3/ranked-v3-protocol.js");
 const EXPECTED_HASH = manifest.rulesetHash;
 const PREVIOUS_GOLD_CONTEXT_HASH = "sha256:5bf4a0fbf2583b9b59ae050eebdd324bc09038b3aed6d2090cb3a4e5481f79eb";
+const PREVIOUS_OTTER_REPAIR_HASH = "sha256:91065f3c515fbc2f996ba74a9fbbcab3d2ce013077af306afd51929e64e1af59";
 const PREVIOUS_CHEST_CARRY_HASH = "sha256:35707f6b5ea8b1ad18251dce5e6c18b87653893aad705b6c5543fdd140b88067";
 const PREVIOUS_CANONICAL_CHEST_CONTEXT_HASH = "sha256:51a86cf41299257475530a356b98381ac828fdb0ec22e77eff0ded99f1758617";
 const PREVIOUS_CANONICAL_CHEST_HASH = "sha256:0a922d5567e7cfba56644e915ac0e331ac74aa3fcc3a2aed478440d64e9878f7";
@@ -70,6 +72,7 @@ test("bounded proc release activates a new hash and leaves every historical desc
     value.status === RULESET_RELEASE_STATES.PRODUCTION_RELEASED &&
     typeof value.rulesetHash === "string" &&
     value.rulesetHash !== manifest.rulesetHash &&
+    value.rulesetHash !== PREVIOUS_OTTER_REPAIR_HASH &&
     value.rulesetHash !== PREVIOUS_GOLD_CONTEXT_HASH &&
     value.rulesetHash !== PREVIOUS_CHEST_CARRY_HASH &&
     value.rulesetHash !== PREVIOUS_CANONICAL_CHEST_CONTEXT_HASH &&
@@ -88,6 +91,7 @@ test("bounded proc release activates a new hash and leaves every historical desc
   assert.ok(protocol.SUPPORTED_RULESET_HASHES.includes(PREVIOUS_BOUNDED_PROC_HASH));
   assert.deepEqual(protocol.BOUNDED_PROC_CLAIMS_RULESET_HASHES, [
     manifest.rulesetHash,
+    PREVIOUS_OTTER_REPAIR_HASH,
     PREVIOUS_GOLD_CONTEXT_HASH,
     PREVIOUS_CANONICAL_CHEST_CONTEXT_HASH,
     PREVIOUS_CANONICAL_CHEST_HASH,
@@ -119,12 +123,14 @@ test("canonical chest carry release is hash-gated and preserves the previous pro
     boundarySettlementMode: "event-journal-v1",
     postRoomPactSettlement: "post-room-pact-v1",
     boundedProcClaims: "v1",
-    canonicalChestOutcomes: "v1"
+    canonicalChestOutcomes: "v1",
+    earlyBalanceOtterRepair: "v1"
   });
 
   assert.ok(protocol.SUPPORTED_RULESET_HASHES.includes(PREVIOUS_CHEST_CARRY_HASH));
   assert.deepEqual(protocol.CANONICAL_CHEST_OUTCOMES_RULESET_HASHES, [
     manifest.rulesetHash,
+    PREVIOUS_OTTER_REPAIR_HASH,
     PREVIOUS_GOLD_CONTEXT_HASH,
     PREVIOUS_CANONICAL_CHEST_CONTEXT_HASH,
     PREVIOUS_CANONICAL_CHEST_HASH
@@ -138,7 +144,8 @@ test("canonical chest context retains the previous active canonical hash", () =>
   const previous = V08_META_1_CANONICAL_CHEST_CONTEXT_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR;
   assert.equal(active.rulesetHash, manifest.rulesetHash);
   assert.equal(previous.rulesetHash, PREVIOUS_CANONICAL_CHEST_CONTEXT_HASH);
-  assert.deepEqual(previous.capabilities, active.capabilities);
+  assert.equal(previous.capabilities.canonicalChestOutcomes, "v1");
+  assert.equal(previous.capabilities.earlyBalanceOtterRepair, undefined);
   assert.ok(protocol.SUPPORTED_RULESET_HASHES.includes(PREVIOUS_CANONICAL_CHEST_CONTEXT_HASH));
   assert.equal(protocol.supportsCanonicalChestOutcomes(PREVIOUS_CANONICAL_CHEST_CONTEXT_HASH), true);
 });
@@ -148,7 +155,8 @@ test("gold-context repair retains the immediately previous canonical release", (
   const previous = V08_META_1_GOLD_CONTEXT_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR;
   assert.equal(active.rulesetHash, manifest.rulesetHash);
   assert.equal(previous.rulesetHash, PREVIOUS_GOLD_CONTEXT_HASH);
-  assert.deepEqual(previous.capabilities, active.capabilities);
+  assert.equal(previous.capabilities.canonicalChestOutcomes, "v1");
+  assert.equal(previous.capabilities.earlyBalanceOtterRepair, undefined);
   assert.ok(COMPATIBLE_RULESET_HASHES.includes(PREVIOUS_GOLD_CONTEXT_HASH));
   assert.ok(protocol.SUPPORTED_RULESET_HASHES.includes(PREVIOUS_GOLD_CONTEXT_HASH));
   assert.equal(protocol.supportsCanonicalChestOutcomes(PREVIOUS_GOLD_CONTEXT_HASH), true);
@@ -159,15 +167,29 @@ test("canonical chest repair release retains the previous canonical hash and cap
   const previous = V08_META_1_CANONICAL_CHEST_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR;
   assert.equal(active.rulesetHash, manifest.rulesetHash);
   assert.equal(previous.rulesetHash, PREVIOUS_CANONICAL_CHEST_HASH);
-  assert.deepEqual(previous.capabilities, active.capabilities);
+  assert.equal(previous.capabilities.canonicalChestOutcomes, "v1");
+  assert.equal(previous.capabilities.earlyBalanceOtterRepair, undefined);
   assert.ok(protocol.SUPPORTED_RULESET_HASHES.includes(PREVIOUS_CANONICAL_CHEST_HASH));
   assert.deepEqual(protocol.CANONICAL_CHEST_OUTCOMES_RULESET_HASHES, [
     manifest.rulesetHash,
+    PREVIOUS_OTTER_REPAIR_HASH,
     PREVIOUS_GOLD_CONTEXT_HASH,
     PREVIOUS_CANONICAL_CHEST_CONTEXT_HASH,
     PREVIOUS_CANONICAL_CHEST_HASH
   ]);
   assert.equal(protocol.supportsCanonicalChestOutcomes(PREVIOUS_CANONICAL_CHEST_HASH), true);
+});
+
+test("early balance and Otter repair retain the immediately previous production ruleset", () => {
+  const active = V08_META_1_PRODUCTION_RELEASE_DESCRIPTOR;
+  const previous = V08_META_1_OTTER_REPAIR_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR;
+  assert.equal(active.capabilities.earlyBalanceOtterRepair, "v1");
+  assert.equal(previous.rulesetHash, PREVIOUS_OTTER_REPAIR_HASH);
+  assert.equal(previous.capabilities.earlyBalanceOtterRepair, undefined);
+  assert.equal(previous.capabilities.canonicalChestOutcomes, "v1");
+  assert.ok(COMPATIBLE_RULESET_HASHES.includes(PREVIOUS_OTTER_REPAIR_HASH));
+  assert.ok(protocol.SUPPORTED_RULESET_HASHES.includes(PREVIOUS_OTTER_REPAIR_HASH));
+  assert.equal(protocol.supportsCanonicalChestOutcomes(PREVIOUS_OTTER_REPAIR_HASH), true);
 });
 
 async function rootFile(relative) {
@@ -202,6 +224,7 @@ test("production entry activates the post-room Pact ruleset", async () => {
     V08_META_1_CHEST_CARRY_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR,
     V08_META_1_CANONICAL_CHEST_CONTEXT_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR,
     V08_META_1_CANONICAL_CHEST_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR,
+    V08_META_1_OTTER_REPAIR_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR,
     V08_META_1_PRODUCTION_RELEASE_DESCRIPTOR
   ]);
   const resolved = registry.resolve({

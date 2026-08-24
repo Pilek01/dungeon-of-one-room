@@ -607,6 +607,104 @@ test("M4 checkpoint sends the versioned integrity envelope with gold telemetry",
   ]);
 });
 
+test("M4 canonical resync prevents a late checkpoint response from replacing newer state", async () => {
+  const firstDirective = {
+    directiveId: "directive_generation_1",
+    roomNonce: "nonce_generation_1",
+    depth: 1,
+    roomType: "combat"
+  };
+  const resyncedDirective = {
+    directiveId: "directive_generation_3",
+    roomNonce: "nonce_generation_3",
+    depth: 3,
+    roomType: "combat"
+  };
+  const lateDirective = {
+    directiveId: "directive_generation_2_late",
+    roomNonce: "nonce_generation_2_late",
+    depth: 2,
+    roomType: "combat"
+  };
+  const store = rankedIdentityStore({
+    session: {
+      schemaVersion: 1,
+      mode: "ranked",
+      runId: "run_a1",
+      revision: 1,
+      rulesetId: protocol.RULESET_ID,
+      rulesetHash: protocol.RULESET_HASH,
+      token: { kind: protocol.TOKEN_KINDS.room, value: "checkpoint-generation-1" },
+      publicState: meta("active", 1, firstDirective),
+      pendingOperation: null
+    },
+    recovery: {
+      runId: "run_a1",
+      recoveryCredential: "rrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrr",
+      rulesetId: protocol.RULESET_ID,
+      rulesetHash: protocol.RULESET_HASH
+    }
+  });
+  let releaseCheckpoint;
+  let markCheckpointStarted;
+  const checkpointStarted = new Promise((resolve) => { markCheckpointStarted = resolve; });
+  const client = clientApi.createRankedClient({
+    store,
+    transport: {
+      createOperationId: (() => {
+        let sequence = 0;
+        return () => `op_generation_${sequence += 1}`;
+      })(),
+      async request(endpoint) {
+        if (endpoint.path === protocol.ENDPOINTS.checkpoint.path) {
+          markCheckpointStarted();
+          return new Promise((resolve) => { releaseCheckpoint = resolve; });
+        }
+        assert.equal(endpoint.path, protocol.ENDPOINTS.resume.path);
+        return {
+          payload: {
+            ok: true,
+            protocolVersion: protocol.PROTOCOL_VERSION,
+            runId: "run_a1",
+            revision: 3,
+            checkpointToken: "checkpoint-generation-3",
+            metaState: meta("active", 3, resyncedDirective)
+          }
+        };
+      }
+    }
+  });
+
+  const lateCheckpoint = client.checkpoint({
+    turnCount: 4,
+    elapsedMs: 1_000,
+    rewardClaims: [],
+    reportedGoldDelta: 0,
+    reportedGoldTotal: 0,
+    commands: []
+  });
+  await checkpointStarted;
+  await client.resumeCanonical();
+  assert.equal(client.getSnapshot().revision, 3);
+  assert.equal(client.getSnapshot().publicState.currentRoomDirective.directiveId, resyncedDirective.directiveId);
+
+  releaseCheckpoint({
+    payload: {
+      ok: true,
+      protocolVersion: protocol.PROTOCOL_VERSION,
+      runId: "run_a1",
+      revision: 2,
+      checkpointToken: "checkpoint-generation-2",
+      acceptedBoundary: "room_cleared",
+      metaState: meta("active", 2, lateDirective)
+    }
+  });
+  await lateCheckpoint;
+
+  assert.equal(client.getSnapshot().revision, 3);
+  assert.equal(client.getSnapshot().publicState.currentRoomDirective.directiveId, resyncedDirective.directiveId);
+});
+
 test("M4 game integration remains a narrow directive/checkpoint bridge", () => {
   const game = fs.readFileSync(new URL("../../../game.js", import.meta.url), "utf8");
   const runtime = fs.readFileSync(new URL("../../../online-v3/ranked-v3-runtime.js", import.meta.url), "utf8");
