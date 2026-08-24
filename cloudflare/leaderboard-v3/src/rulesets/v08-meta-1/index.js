@@ -65,6 +65,12 @@ import { createLeaderboardSnapshot } from "../../domain/leaderboard-snapshot.js"
 import { applyTestAssistanceV08 } from "./test-assistance.js";
 import { projectPublicRunModifiers } from "./run-modifiers.js";
 import {
+  applyPotionResourceTransitionV08,
+  assertCanonicalPotionResourcesV08,
+  derivePotionMaximumV08,
+  initializePotionResourcesV08
+} from "./potion-policy.js";
+import {
   applyPracticeMutatorImportV08,
   projectPublicMutatorProgressV08,
   resetMutatorCampaignProgressV08
@@ -75,7 +81,14 @@ import {
   hydrateRunFromProfileV08,
   profileStateFromRunV08,
   publicProfileStateV08
-} from "./profile-policy.js";export {
+} from "./profile-policy.js";
+export {
+  applyPotionResourceTransitionV08,
+  assertCanonicalPotionResourcesV08,
+  derivePotionMaximumV08,
+  initializePotionResourcesV08
+} from "./potion-policy.js";
+export {
   applyRelicAcquisition,
   applyRelicRemovalV08,
   assertCanonicalRelicBuildDigestV08,
