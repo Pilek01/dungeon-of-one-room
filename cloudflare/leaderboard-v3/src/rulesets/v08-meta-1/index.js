@@ -65,12 +65,6 @@ import { createLeaderboardSnapshot } from "../../domain/leaderboard-snapshot.js"
 import { applyTestAssistanceV08 } from "./test-assistance.js";
 import { projectPublicRunModifiers } from "./run-modifiers.js";
 import {
-  applyPotionResourceTransitionV08,
-  assertCanonicalPotionResourcesV08,
-  derivePotionMaximumV08,
-  initializePotionResourcesV08
-} from "./potion-policy.js";
-import {
   applyPracticeMutatorImportV08,
   projectPublicMutatorProgressV08,
   resetMutatorCampaignProgressV08
