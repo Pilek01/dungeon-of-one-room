@@ -212,6 +212,16 @@ function modifierState(runId = "potion-transition") {
   });
 }
 
+function v1ModifierState(runId) {
+  return createInitialMetaStateV08({}, {
+    runId,
+    season: "potion-tests",
+    startedAt: 1_900_000_000_000,
+    capabilities: { canonicalPotionResources: "v1" },
+    cryptoProvider: webcrypto
+  });
+}
+
 test("run-start Alchemist and Famine effects initialize canonical potions", async () => {
   const alchemist = await applyCanonicalRunModifierSelection(
     modifierState("potion-alchemist"),
@@ -257,7 +267,7 @@ test("mid-run modifier transitions change capacity without reconstructing curren
 });
 
 test("profile hydration applies modifier effects and carried Flask once", async () => {
-  let source = modifierState("potion-profile-source");
+  let source = v1ModifierState("potion-profile-source");
   source = await applyCanonicalRunModifierSelection(
     source,
     { modifierIds: ["alchemist"], activationSource: "server-issued-run-start" },
@@ -269,7 +279,7 @@ test("profile hydration applies modifier effects and carried Flask once", async 
   source.build.campUpgrades = { satchel: 1 };
   const profile = profileStateFromRunV08(source, "potion-profile", 1);
   const hydrated = await hydrateRunFromProfileV08(
-    modifierState("potion-profile-next"),
+    v1ModifierState("potion-profile-next"),
     profile,
     { cryptoProvider: webcrypto, potionPolicyVersion: "v1" }
   );
@@ -278,7 +288,7 @@ test("profile hydration applies modifier effects and carried Flask once", async 
     { potions: 6, maxPotions: 8 }
   );
   const repeated = await hydrateRunFromProfileV08(
-    modifierState("potion-profile-repeat"),
+    v1ModifierState("potion-profile-repeat"),
     profile,
     { cryptoProvider: webcrypto, potionPolicyVersion: "v1" }
   );
@@ -507,6 +517,133 @@ test("explicit v1 createRun hydration preserves its marker and Alchemist resourc
   );
 });
 
+test("v1 createRun rejects an absent-marker same-campaign profile without mutation", async () => {
+  const v1Ruleset = createV08Meta1Ruleset({
+    secret: "23456789012345678901234567890123",
+    capabilities: { canonicalPotionResources: "v1" }
+  });
+  let source = modifierState("round4-v1-legacy-source");
+  source = await applyCanonicalRunModifierSelection(
+    source,
+    { modifierIds: ["alchemist"], activationSource: "server-issued-run-start" },
+    {
+      authority: "TRUSTED_RULESET_DOMAIN",
+      cryptoProvider: webcrypto,
+      potionPolicyVersion: "legacy"
+    }
+  );
+  source.status = "extraction";
+  const profile = profileStateFromRunV08(source, "round4-v1-legacy-profile", 1);
+  const before = structuredClone(profile);
+
+  await assert.rejects(
+    v1Ruleset.createRun(
+      {
+        runId: "round4-v1-legacy-next",
+        season: "round4",
+        startedAt: 1_900_000_000_050,
+        startDepth: 0,
+        profileState: profile,
+        newCampaign: false
+      },
+      {
+        runId: "round4-v1-legacy-next",
+        season: "round4",
+        startedAt: 1_900_000_000_050,
+        secret: "23456789012345678901234567890123",
+        cryptoProvider: webcrypto
+      }
+    ),
+    (error) => error instanceof TypeError && error.message === "PROFILE_POTION_POLICY_MISMATCH"
+  );
+  assert.deepEqual(profile, before);
+});
+
+test("legacy createRun rejects a v1 same-campaign profile without mutation", async () => {
+  const legacyRuleset = createV08Meta1Ruleset({
+    secret: "34567890123456789012345678901234"
+  });
+  let source = createInitialMetaStateV08({}, {
+    runId: "round4-legacy-v1-source",
+    season: "round4",
+    startedAt: 1_900_000_000_060,
+    capabilities: { canonicalPotionResources: "v1" },
+    cryptoProvider: webcrypto
+  });
+  source = await applyCanonicalRunModifierSelection(
+    source,
+    { modifierIds: ["alchemist"], activationSource: "server-issued-run-start" },
+    {
+      authority: "TRUSTED_RULESET_DOMAIN",
+      cryptoProvider: webcrypto,
+      potionPolicyVersion: "v1"
+    }
+  );
+  source.status = "extraction";
+  const profile = profileStateFromRunV08(source, "round4-legacy-v1-profile", 1);
+  const before = structuredClone(profile);
+
+  await assert.rejects(
+    legacyRuleset.createRun(
+      {
+        runId: "round4-legacy-v1-next",
+        season: "round4",
+        startedAt: 1_900_000_000_070,
+        startDepth: 0,
+        profileState: profile,
+        newCampaign: false
+      },
+      {
+        runId: "round4-legacy-v1-next",
+        season: "round4",
+        startedAt: 1_900_000_000_070,
+        secret: "34567890123456789012345678901234",
+        cryptoProvider: webcrypto
+      }
+    ),
+    (error) => error instanceof TypeError && error.message === "PROFILE_POTION_POLICY_MISMATCH"
+  );
+  assert.deepEqual(profile, before);
+});
+
+test("newCampaign reset uses the v1 descriptor policy with a legacy profile", async () => {
+  const v1Ruleset = createV08Meta1Ruleset({
+    secret: "45678901234567890123456789012345",
+    capabilities: { canonicalPotionResources: "v1" }
+  });
+  const source = modifierState("round4-reset-legacy-source");
+  source.status = "extraction";
+  const profile = profileStateFromRunV08(source, "round4-reset-profile", 1);
+  const before = structuredClone(profile);
+
+  const reset = await v1Ruleset.createRun(
+    {
+      runId: "round4-reset-v1-run",
+      season: "round4",
+      startedAt: 1_900_000_000_080,
+      startDepth: 0,
+      profileState: profile,
+      newCampaign: true
+    },
+    {
+      runId: "round4-reset-v1-run",
+      season: "round4",
+      startedAt: 1_900_000_000_080,
+      secret: "45678901234567890123456789012345",
+      cryptoProvider: webcrypto
+    }
+  );
+
+  assert.equal(reset.profileId, profile.profileId);
+  assert.equal(reset.potionPolicyVersion, "v1");
+  assert.deepEqual(reset.runModifiers.active, []);
+  assert.deepEqual(
+    { potions: reset.build.resources.potions, maxPotions: reset.build.resources.maxPotions },
+    { potions: 3, maxPotions: 3 }
+  );
+  assert.deepEqual(profile, before);
+});
+
 test("profile serialization preserves v1 marker and canonical modifiers while legacy remains absent", async () => {
   const legacy = modifierState("round3-profile-legacy");
   legacy.status = "extraction";
@@ -518,9 +655,12 @@ test("profile serialization preserves v1 marker and canonical modifiers while le
     capabilities: { canonicalPotionResources: "v1" },
     cryptoProvider: webcrypto
   });
-  const historicalHydrated = await hydrateRunFromProfileV08(v1Target, legacyProfile, { cryptoProvider: webcrypto });
-  assert.equal(historicalHydrated.potionPolicyVersion, undefined);
-  assert.deepEqual({ potions: historicalHydrated.build.resources.potions, maxPotions: historicalHydrated.build.resources.maxPotions }, { potions: 3, maxPotions: 3 });
+  const legacyBefore = structuredClone(legacyProfile);
+  await assert.rejects(
+    hydrateRunFromProfileV08(v1Target, legacyProfile, { cryptoProvider: webcrypto }),
+    (error) => error instanceof TypeError && error.message === "PROFILE_POTION_POLICY_MISMATCH"
+  );
+  assert.deepEqual(legacyProfile, legacyBefore);
   assert.equal(legacyProfile.potionPolicyVersion, undefined);
 
   let v1 = createInitialMetaStateV08({}, {

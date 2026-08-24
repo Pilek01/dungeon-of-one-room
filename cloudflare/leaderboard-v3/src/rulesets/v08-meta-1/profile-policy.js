@@ -82,16 +82,26 @@ async function resetBuildForNextRun(build, cryptoProvider, potionModifiers, poti
   return next;
 }
 
-function resolveProfilePotionPolicyVersion(profile, context) {
-  const profileVersion = profile.potionPolicyVersion;
-  if (profileVersion !== undefined && profileVersion !== CANONICAL_POTION_RESOURCES_VERSION_V08) {
-    throw new TypeError("PROFILE_POTION_POLICY_VERSION_INVALID");
+function normalizePotionPolicyVersion(value, { allowLegacy = false } = {}) {
+  if (value === undefined || (allowLegacy && value === "legacy")) {
+    return "legacy";
   }
-  const contextVersion = context.potionPolicyVersion;
-  if (contextVersion !== undefined && contextVersion !== "legacy" && contextVersion !== CANONICAL_POTION_RESOURCES_VERSION_V08) {
-    throw new TypeError("PROFILE_POTION_POLICY_VERSION_INVALID");
+  if (value === CANONICAL_POTION_RESOURCES_VERSION_V08) {
+    return CANONICAL_POTION_RESOURCES_VERSION_V08;
   }
-  return contextVersion || (profileVersion === CANONICAL_POTION_RESOURCES_VERSION_V08 ? CANONICAL_POTION_RESOURCES_VERSION_V08 : "legacy");
+  throw new TypeError("PROFILE_POTION_POLICY_VERSION_INVALID");
+}
+
+function resolveProfilePotionPolicyVersion(state, profile, context) {
+  const stateVersion = normalizePotionPolicyVersion(state.potionPolicyVersion);
+  const profileVersion = normalizePotionPolicyVersion(profile.potionPolicyVersion);
+  const contextVersion = context.potionPolicyVersion === undefined
+    ? stateVersion
+    : normalizePotionPolicyVersion(context.potionPolicyVersion, { allowLegacy: true });
+  if (profileVersion !== stateVersion || contextVersion !== stateVersion) {
+    throw new TypeError("PROFILE_POTION_POLICY_MISMATCH");
+  }
+  return stateVersion;
 }
 export async function hydrateRunFromProfileV08(state, profile, context = {}) {
   if (!profile) return structuredClone(state);
@@ -101,7 +111,7 @@ export async function hydrateRunFromProfileV08(state, profile, context = {}) {
   ) {
     throw new TypeError("PROFILE_RULESET_MISMATCH");
   }
-  const potionPolicyVersion = resolveProfilePotionPolicyVersion(profile, context);
+  const potionPolicyVersion = resolveProfilePotionPolicyVersion(state, profile, context);
   const next = structuredClone(state);
   if (potionPolicyVersion === "legacy" && profile.potionPolicyVersion === undefined) {
     delete next.potionPolicyVersion;
