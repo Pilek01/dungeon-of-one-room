@@ -21,6 +21,7 @@ import {
   deriveShuffleOrder,
   deriveUint32
 } from "../src/rulesets/v08-meta-1/rng.js";
+import { assertMetaStateV08 } from "../src/rulesets/v08-meta-1/meta-state.js";
 
 const WORKER_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const VECTOR_SECRET = "0123456789abcdef0123456789abcdef";
@@ -249,4 +250,39 @@ test("ruleset RNG separates purpose, run, revision, counter, and secret", async 
   assert.match(source, /HMAC/u);
   assert.match(source, /SHA-256/u);
   assert.doesNotMatch(source, /console\./u);
+});
+
+test("canonical potion policy marker is explicit and historical states remain legacy", () => {
+  const legacyRuleset = V08_META_1_LOCAL_RELEASE_DESCRIPTOR.createRuleset();
+  const legacy = legacyRuleset.createInitialMetaState({}, {
+    runId: "legacy-potion-state",
+    season: "season-test",
+    startedAt: 1787529600000
+  });
+  assert.equal(legacy.potionPolicyVersion, undefined);
+  legacy.build.resources.maxPotions = 99;
+  legacy.build.resources.potions = 99;
+  assert.doesNotThrow(() => assertMetaStateV08(legacy));
+  assert.equal(legacy.build.resources.maxPotions, 99);
+
+  const v1Ruleset = createV08Meta1Ruleset({
+    capabilities: { canonicalPotionResources: "v1" }
+  });
+  const forgedRequestRuleset = createV08Meta1Ruleset();
+  const forgedRequestState = forgedRequestRuleset.createInitialMetaState({}, {
+    runId: "forged-request-potion-state",
+    season: "season-test",
+    startedAt: 1787529600000,
+    capabilities: { canonicalPotionResources: "v1" }
+  });
+  assert.equal(forgedRequestState.potionPolicyVersion, undefined);
+  const v1 = v1Ruleset.createInitialMetaState({}, {
+    runId: "v1-potion-state",
+    season: "season-test",
+    startedAt: 1787529600000
+  });
+  assert.equal(v1.potionPolicyVersion, "v1");
+  assert.doesNotThrow(() => assertMetaStateV08(v1));
+  v1.build.resources.maxPotions = 99;
+  assert.throws(() => assertMetaStateV08(v1), /POTION_MAXIMUM_MISMATCH/u);
 });

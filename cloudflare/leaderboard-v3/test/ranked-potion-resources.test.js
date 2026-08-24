@@ -365,7 +365,11 @@ test("Famine floor remains canonical across Flask acquisition and removal", asyn
     { modifierIds: ["famine"], activationSource: "server-issued-run-start" },
     { authority: "TRUSTED_RULESET_DOMAIN", cryptoProvider: webcrypto }
   );
-  const potionContext = { cryptoProvider: webcrypto, runModifiers: state.runModifiers };
+  const potionContext = {
+    authority: "TRUSTED_RULESET_DOMAIN",
+    cryptoProvider: webcrypto,
+    runModifiers: state.runModifiers
+  };
   state.build = await applyRelicAcquisition(state.build, relicAcquisition("flask"), potionContext);
   assert.deepEqual(
     { potions: state.build.resources.potions, maxPotions: state.build.resources.maxPotions },
@@ -376,4 +380,41 @@ test("Famine floor remains canonical across Flask acquisition and removal", asyn
     { potions: state.build.resources.potions, maxPotions: state.build.resources.maxPotions },
     { potions: 1, maxPotions: 1 }
   );
+});
+
+test("Flask modifier context rejects forged authority or digest without mutation", async () => {
+  let state = modifierState("potion-forged-context");
+  state = await applyCanonicalRunModifierSelection(
+    state,
+    { modifierIds: ["famine"], activationSource: "server-issued-run-start" },
+    { authority: "TRUSTED_RULESET_DOMAIN", cryptoProvider: webcrypto }
+  );
+  const acquisition = relicAcquisition("flask");
+  const before = structuredClone(state.build);
+  await assert.rejects(
+    applyRelicAcquisition(state.build, acquisition, {
+      authority: "CLIENT",
+      cryptoProvider: webcrypto,
+      runModifiers: state.runModifiers
+    }),
+    /RUN_MODIFIER_TRUSTED_AUTHORITY_REQUIRED/u
+  );
+  assert.deepEqual(state.build, before);
+  const forgedLedger = structuredClone(state.runModifiers);
+  forgedLedger.active[0].modifierId = "alchemist";
+  await assert.rejects(
+    applyRelicAcquisition(state.build, acquisition, {
+      authority: "TRUSTED_RULESET_DOMAIN",
+      cryptoProvider: webcrypto,
+      runModifiers: forgedLedger
+    }),
+    /RUN_MODIFIER_DIGEST_MISMATCH/u
+  );
+  assert.deepEqual(state.build, before);
+  const accepted = await applyRelicAcquisition(state.build, acquisition, {
+    authority: "TRUSTED_RULESET_DOMAIN",
+    cryptoProvider: webcrypto,
+    runModifiers: state.runModifiers
+  });
+  assert.equal(accepted.resources.maxPotions, 1);
 });

@@ -41,6 +41,8 @@ import { normalizeTestAssistanceV08 } from "./test-assistance.js";
 import { normalizeChestBonusesV08 } from "./chest-bonus-policy.js";
 import { canonicalJson } from "../../security/canonical-json.js";
 
+export const CANONICAL_POTION_RESOURCES_VERSION_V08 = "v1";
+
 const progression = progressionDocument.canonicalData;
 
 function requireText(value, code) {
@@ -220,6 +222,8 @@ export function createInitialMetaStateV08(input = {}, context = {}) {
     : startDepth;
 
   return {
+    ...(context.capabilities?.canonicalPotionResources === CANONICAL_POTION_RESOURCES_VERSION_V08
+      ? { potionPolicyVersion: CANONICAL_POTION_RESOURCES_VERSION_V08 } : {}),
     rulesetId: RULESET_ID,
     rulesetHash,
     runId,
@@ -283,6 +287,10 @@ export function cloneMetaStateV08(state) {
 }
 
 export function assertCanonicalPotionStateV08(state) {
+  if (state?.potionPolicyVersion === undefined) return state;
+  if (state.potionPolicyVersion !== CANONICAL_POTION_RESOURCES_VERSION_V08) {
+    throw new TypeError("META_STATE_INVALID:potionPolicyVersion");
+  }
   const build = state?.build;
   const modifiers = deriveRunModifierEffects(state?.runModifiers);
   const flaskStacks = build?.relics?.find((entry) => entry.relicId === "flask")?.stacks || 0;

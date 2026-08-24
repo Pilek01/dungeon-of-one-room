@@ -372,7 +372,7 @@ export async function issueCampTransactionsV08(metaState, context = {}) {
   }, context);
 }
 
-function applyInstantUpgradePreview(build, upgradeId, modifierMaximumSlotsAdditive = 0) {
+function applyInstantUpgradePreview(build, upgradeId, modifierMaximumSlotsAdditive = 0, potionPolicyVersion = null) {
   if (upgradeId === "vitality") {
     const level = build.campUpgrades[upgradeId];
     const oldMultiplier = 1 + (level - 1) * 0.1;
@@ -391,6 +391,7 @@ function applyInstantUpgradePreview(build, upgradeId, modifierMaximumSlotsAdditi
       )
     );
   } else if (upgradeId === "satchel") {
+    if (potionPolicyVersion === "legacy") return;
     const flaskStacks = build.relics?.find((entry) => entry.relicId === "flask")?.stacks || 0;
     const nextMaximum = derivePotionMaximumV08({
       baseMaximum: 3,
@@ -440,7 +441,7 @@ export async function commitCampTransactionV08(metaState, request, context = {})
       state.build.campUpgrades[upgrade.id] = current + 1;
       const modifierMaximumSlotsAdditive = deriveRunModifierEffects(state.runModifiers)
         .potionModifiers.maximumSlotsAdditive;
-      applyInstantUpgradePreview(state.build, upgrade.id, modifierMaximumSlotsAdditive);
+      applyInstantUpgradePreview(state.build, upgrade.id, modifierMaximumSlotsAdditive, context.potionPolicyVersion);
       assertCanonicalPotionStateV08(state);
       return {
         nextState: state,

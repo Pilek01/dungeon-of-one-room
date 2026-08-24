@@ -298,7 +298,14 @@ function potionCapacityInput(build, effects) {
   };
 }
 
-function applyCanonicalPotionEffects(metaState, previousEffects, nextEffects, activationSource) {
+function applyCanonicalPotionEffects(
+  metaState,
+  previousEffects,
+  nextEffects,
+  activationSource,
+  context = {}
+) {
+  if (context.potionPolicyVersion === "legacy") return;
   if (!metaState?.build?.resources) return;
   const capacityInput = potionCapacityInput(metaState.build, nextEffects);
   const nextMaximum = derivePotionMaximumV08(capacityInput);
@@ -389,7 +396,7 @@ export async function applyCanonicalRunModifierSelection(
     context.cryptoProvider
   );
   const nextEffects = deriveRunModifierEffects(next.runModifiers);
-  applyCanonicalPotionEffects(next, previousEffects, nextEffects, activationSource);
+  applyCanonicalPotionEffects(next, previousEffects, nextEffects, activationSource, context);
   return next;
 }
 

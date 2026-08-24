@@ -6,7 +6,10 @@ import {
   assertCanonicalPotionResourcesV08,
   derivePotionMaximumV08
 } from "./potion-policy.js";
-import { deriveRunModifierEffects } from "./run-modifiers.js";
+import {
+  assertCanonicalRunModifierDigestV08,
+  deriveRunModifierEffects
+} from "./run-modifiers.js";
 
 const catalog = catalogDocument.canonicalData;
 const buildMetadata = buildMetadataDocument.canonicalData;
@@ -78,9 +81,19 @@ function flaskStackCount(relics) {
   return relics.find((entry) => entry.relicId === "flask")?.stacks || 0;
 }
 
-function applyFlaskStackDelta(build, beforeStacks, afterStacks, context = {}) {
+async function applyFlaskStackDelta(build, beforeStacks, afterStacks, context = {}) {
   const delta = afterStacks - beforeStacks;
   if (delta === 0 || !build.resources) return build;
+  if (context.runModifiers !== undefined) {
+    if (context.authority !== "TRUSTED_RULESET_DOMAIN") {
+      throw new TypeError("RUN_MODIFIER_TRUSTED_AUTHORITY_REQUIRED");
+    }
+    await assertCanonicalRunModifierDigestV08(
+      context.runModifiers,
+      context.cryptoProvider
+    );
+  }
+  if (context.potionPolicyVersion === "legacy") return build;
   const modifierMaximumSlotsAdditive = context.runModifiers === undefined
     ? 0
     : deriveRunModifierEffects(context.runModifiers).potionModifiers.maximumSlotsAdditive;
@@ -272,7 +285,7 @@ export async function applyRelicAcquisition(build, acquisition, context = {}) {
     relicSlotBase: slotPolicy.baseRelicSlots,
     ...summary
   });
-  applyFlaskStackDelta(next, beforeFlaskStacks, flaskStackCount(next.relics), context);
+  await applyFlaskStackDelta(next, beforeFlaskStacks, flaskStackCount(next.relics), context);
   next.buildDigest = await sha256(buildDigestInput(next), context.cryptoProvider);
   return next;
 }
@@ -331,7 +344,7 @@ export async function applyRelicReplacementBuildV08(
     relicSlotBase: slotPolicy.baseRelicSlots,
     ...summary
   });
-  applyFlaskStackDelta(next, beforeFlaskStacks, flaskStackCount(next.relics), context);
+  await applyFlaskStackDelta(next, beforeFlaskStacks, flaskStackCount(next.relics), context);
   next.buildDigest = await sha256(buildDigestInput(next), context.cryptoProvider);
   assertCanonicalRelicBuildV08(next);
   return next;
@@ -356,7 +369,7 @@ export async function applyRelicRemovalV08(build, removal, context = {}) {
     relicSlotBase: slotPolicy.baseRelicSlots,
     ...summary
   });
-  applyFlaskStackDelta(next, beforeFlaskStacks, flaskStackCount(next.relics), context);
+  await applyFlaskStackDelta(next, beforeFlaskStacks, flaskStackCount(next.relics), context);
   next.buildDigest = await sha256(buildDigestInput(next), context.cryptoProvider);
   assertCanonicalRelicBuildV08(next);
   return next;

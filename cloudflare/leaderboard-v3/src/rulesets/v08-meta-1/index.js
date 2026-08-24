@@ -218,6 +218,10 @@ function mergeContext(options, context) {
   };
 }
 
+function stateCreationContext(options, context) {
+  return { ...mergeContext(options, context), capabilities: options.capabilities };
+}
+
 export function createV08Meta1Ruleset(options = {}) {
   const rulesetHash = options.rulesetHash || manifest.rulesetHash;
   return Object.freeze({
@@ -230,7 +234,7 @@ export function createV08Meta1Ruleset(options = {}) {
       return createInitialMetaStateV08({
         ...input,
         rulesetHash
-      }, context);
+      }, stateCreationContext(options, context));
     },
 
     async createRun(input, context) {
@@ -242,7 +246,7 @@ export function createV08Meta1Ruleset(options = {}) {
         rulesetHash,
         unlockedStartDepths: Array.isArray(profileUnlocks) ? profileUnlocks : input.unlockedStartDepths
       };
-      let initial = createInitialMetaStateV08(initialInput, context);
+      let initial = createInitialMetaStateV08(initialInput, stateCreationContext(options, context));
       if (input.newCampaign && input.profileState) {
         initial.profileId = input.profileState.profileId;
         initial.mutatorProgress = resetMutatorCampaignProgressV08(

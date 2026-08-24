@@ -28,6 +28,8 @@ function runtimeContext(state, context = {}, capabilities) {
     runId: state.runId,
     rulesetHash: state.rulesetHash,
     runModifiers: structuredClone(state.runModifiers),
+    authority: "TRUSTED_RULESET_DOMAIN",
+    potionPolicyVersion: state.potionPolicyVersion === "v1" ? "v1" : "legacy",
     secret: context.secret,
     cryptoProvider: context.cryptoProvider,
     randomOracle: context.randomOracle,
