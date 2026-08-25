@@ -88,3 +88,25 @@ test("Ranked Merchant bot actions wait while the canonical open or commit is pen
     "the Ranked bot must stop issuing Merchant actions while the canonical request is unresolved"
   );
 });
+
+test("Ranked Merchant exposes confirmed-only lifecycle callbacks and public mutation state", async () => {
+  const runtime = await source("online-v3/ranked-v3-runtime.js");
+  assert.match(runtime, /function completeRankedMerchantAction\(result\s*=\s*\{\}\)/u);
+  assert.match(runtime, /function failRankedMerchantAction\(result\s*=\s*\{\}\)/u);
+  assert.match(runtime, /function getRankedMerchantMutationState\(\)/u);
+  assert.match(runtime, /getRankedMerchantMutationState,/u);
+  assert.match(runtime, /merchantOperation\.status\s*=\s*"pending"/u);
+  assert.doesNotMatch(
+    runtime,
+    /merchantPurchasesThisRoom\s*\+=\s*1/u,
+    "runtime submission must never mutate the confirmed purchase counter"
+  );
+});
+
+test("Merchant action submission uses a stable operation identity and resyncs uncertain transport", async () => {
+  const runtime = await source("online-v3/ranked-v3-runtime.js");
+  assert.match(runtime, /operationId:\s*merchantOperation\.operationId/u);
+  assert.match(runtime, /resumeCanonical\(/u);
+  assert.match(runtime, /failure_backoff/u);
+  assert.match(runtime, /attempts\s*<\s*2/u);
+});

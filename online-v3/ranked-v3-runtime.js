@@ -39,6 +39,15 @@
   let pendingElixirUsage = null;
   let currentMerchantOffer = null;
   let merchantMutationPending = false;
+  const MERCHANT_FAILURE_LIMIT = 3;
+  const MERCHANT_REASONS = new Set([
+    "offer_pending", "no_canonical_choice", "bag_full", "stock_sufficient",
+    "insufficient_wallet", "camp_reserve", "run_reserve", "no_useful_upgrade",
+    "purchase_limit", "commit_rejected", "resync_required", "failure_backoff"
+  ]);
+  let merchantOperation = null;
+  let merchantFailureCount = 0;
+  const merchantConfirmedReceipts = new Set();
   let metaMutationPending = false;
   let postRoomPactOfferPending = false;
   let currentForgeOffer = null;
@@ -457,6 +466,7 @@
       isRankedObserverBotActive() &&
       (observerBotBoundaryPending ||
         observerBotAutomationHalted ||
+        ["pending", "uncertain", "resyncing", "backoff"].includes(merchantOperation?.status) ||
         boundaryOperation ||
         campMutationPending ||
         merchantMutationPending ||
@@ -1528,6 +1538,173 @@
     await continueBoundary(response.metaState);
   }
 
+  function merchantPublicState() {
+    return createClient().getSnapshot()?.publicState || {};
+  }
+
+  function merchantRevision(state = merchantPublicState()) {
+    return Math.max(0, Math.floor(Number(state?.revision) || 0));
+  }
+
+  function merchantReason(reason, fallback = "commit_rejected") {
+    const value = String(reason || fallback);
+    return MERCHANT_REASONS.has(value) ? value : fallback;
+  }
+
+  function getRankedMerchantMutationState() {
+    const operation = merchantOperation;
+    return {
+      status: String(operation?.status || "idle"),
+      receiptKey: String(operation?.receiptKey || ""),
+      action: String(operation?.action || ""),
+      reason: String(operation?.reason || "")
+    };
+  }
+
+  function merchantReceiptKey(response, operation) {
+    const state = response?.metaState || response?.publicState || {};
+    const direct = response?.receipt || response?.metaTransactionReceipt;
+    const receipts = Array.isArray(state?.metaTransactionReceipts)
+      ? state.metaTransactionReceipts
+      : [];
+    const receipt = direct && typeof direct === "object"
+      ? direct
+      : receipts.find((entry) =>
+        String(entry?.transactionId || "") === String(operation?.transactionId || "") &&
+        String(entry?.choiceId || "") === String(operation?.choiceId || "")
+      );
+    if (receipt) {
+      return String(
+        receipt.receiptKey ||
+        receipt.idempotencyKey ||
+        String(receipt.transactionId) + ":" + String(receipt.choiceId) + ":" + String(receipt.completedRevision ?? merchantRevision(state))
+      );
+    }
+    return String(operation?.operationId || "");
+  }
+
+  function merchantCanonicalCommitted(state, operation) {
+    if (!state || !operation) return false;
+    const acknowledgedOperationId = String(createClient().getSnapshot()?.lastAcknowledgedOperationId || "");
+    if (acknowledgedOperationId !== String(operation.operationId || "")) return false;
+    const receipts = Array.isArray(state.metaTransactionReceipts)
+      ? state.metaTransactionReceipts
+      : [];
+    if (receipts.some((entry) =>
+      String(entry?.transactionId || "") === String(operation.transactionId || "") &&
+      String(entry?.choiceId || "") === String(operation.choiceId || "")
+    )) return true;
+    const offer = state.metaTransactionOffer;
+    if (offer && offer.sourceType === "merchant") {
+      const choice = Array.isArray(offer.choices)
+        ? offer.choices.find((entry) => String(entry?.choiceId || "") === String(operation.choiceId || ""))
+        : null;
+      return choice?.status === "sold";
+    }
+    return merchantRevision(state) > Number(operation.startingRevision || 0) &&
+      !offer;
+  }
+
+  function merchantResetForOffer(offer) {
+    const offerKey = String(offer?.offerId || "") + ":" + String(offer?.sourceInstanceId || "");
+    if (merchantOperation?.offerKey === offerKey) return;
+    merchantOperation = null;
+    merchantFailureCount = 0;
+  }
+
+  function failRankedMerchantAction(result = {}) {
+    const reason = merchantReason(result.reason, "commit_rejected");
+    const operation = merchantOperation;
+    merchantFailureCount = Math.min(MERCHANT_FAILURE_LIMIT, merchantFailureCount + 1);
+    if (operation) {
+      operation.status = merchantFailureCount >= MERCHANT_FAILURE_LIMIT ? "backoff" : "rejected";
+      operation.reason = merchantFailureCount >= MERCHANT_FAILURE_LIMIT
+        ? "failure_backoff"
+        : reason;
+    } else {
+      merchantOperation = {
+        status: "rejected",
+        receiptKey: "",
+        action: String(result.action || ""),
+        reason
+      };
+    }
+    merchantMutationPending = false;
+    root.DungeonOnlineV3GameBridge?.failRankedMerchantAction?.({
+      ...result,
+      reason: operation?.reason || reason
+    });
+    root.DungeonOnlineV3GameBridge?.failRankedMerchantRequest?.(
+      result.message || "That Merchant choice was not confirmed."
+    );
+    return false;
+  }
+
+  function completeRankedMerchantAction(result = {}) {
+    const operation = merchantOperation;
+    if (!operation || operation.status === "confirmed") return false;
+    const receiptKey = String(result.receiptKey || merchantReceiptKey(result, operation));
+    if (!receiptKey || merchantConfirmedReceipts.has(receiptKey)) return false;
+    merchantConfirmedReceipts.add(receiptKey);
+    operation.status = "confirmed";
+    operation.receiptKey = receiptKey;
+    operation.reason = "";
+    merchantFailureCount = 0;
+    merchantMutationPending = false;
+    root.DungeonOnlineV3GameBridge?.completeRankedMerchantAction?.({
+      ...result,
+      receiptKey,
+      action: operation.action
+    });
+    return true;
+  }
+
+  async function resyncRankedMerchantOperation(operation, error) {
+    operation.status = "resyncing";
+    operation.reason = "resync_required";
+    try {
+      const response = await createClient().resumeCanonical({
+        lastKnownRevision: operation.startingRevision
+      }, operation.operationId);
+      const state = response?.metaState || merchantPublicState();
+      if (merchantCanonicalCommitted(state, operation)) {
+        root.DungeonOnlineV3GameBridge?.syncCanonicalProjection?.(state);
+        presentNativeMerchant(state, { action: operation.action });
+        completeRankedMerchantAction({
+          metaState: state,
+          receiptKey: merchantReceiptKey(response, operation),
+          adopted: true
+        });
+        return true;
+      }
+      // attempts < 2 permits exactly one post-resync retry.
+      if (operation.attempts >= 2) {
+        failRankedMerchantAction({ reason: "resync_required", error });
+        return false;
+      }
+      operation.attempts += 1;
+      operation.status = "pending";
+      merchantMutationPending = true;
+      const requestIdentity = { operationId: merchantOperation.operationId || operation.operationId };
+      const retry = await createClient().event("commit_meta_transaction", {
+        transactionId: operation.transactionId,
+        choiceId: operation.choiceId
+      }, requestIdentity.operationId);
+      const retryState = retry?.metaState || merchantPublicState();
+      root.DungeonOnlineV3GameBridge?.syncCanonicalProjection?.(retryState);
+      presentNativeMerchant(retryState, { action: operation.action });
+      completeRankedMerchantAction({
+        ...retry,
+        metaState: retryState,
+        receiptKey: merchantReceiptKey(retry, operation)
+      });
+      return true;
+    } catch (resyncError) {
+      failRankedMerchantAction({ reason: "resync_required", error: resyncError });
+      return false;
+    }
+  }
+
   function availableMerchantChoices() {
     const choices = currentMerchantOffer?.choices;
     return Array.isArray(choices)
@@ -1582,6 +1759,7 @@
       throw new TypeError("RANKED_MERCHANT_OFFER_INVALID");
     }
     currentMerchantOffer = offer;
+    merchantResetForOffer(offer);
     root.DungeonOnlineV3GameBridge.enterRankedMerchant(state, offer, request);
     ui.hide();
   }
@@ -1617,8 +1795,44 @@
     return true;
   }
 
+  function merchantErrorIsDeterministic(error) {
+    const status = Number(error?.status) || 0;
+    const code = String(error?.code || "").toUpperCase();
+    return status === 400 || status === 409 || status === 422 ||
+      /STALE|CHOICE|CONFLICT|UNAVAILABLE|REJECT/u.test(code);
+  }
+
+  async function submitRankedMerchantOperation(operation, request) {
+    try {
+      const response = await createClient().event("commit_meta_transaction", {
+        transactionId: operation.transactionId,
+        choiceId: operation.choiceId
+      }, operation.operationId);
+      const state = response?.metaState || merchantPublicState();
+      root.DungeonOnlineV3GameBridge?.syncCanonicalProjection?.(state);
+      presentNativeMerchant(state, request);
+      completeRankedMerchantAction({
+        ...response,
+        metaState: state,
+        receiptKey: merchantReceiptKey(response, operation)
+      });
+    } catch (error) {
+      if (merchantErrorIsDeterministic(error)) {
+        failRankedMerchantAction({ reason: "commit_rejected", error });
+      } else {
+        await resyncRankedMerchantOperation(operation, error);
+      }
+    } finally {
+      if (merchantOperation === operation && operation.status !== "resyncing") {
+        merchantMutationPending = false;
+      }
+    }
+  }
+
   function onMerchantAction(request = {}) {
-    if (merchantMutationPending) return true;
+    if (merchantMutationPending || ["pending", "uncertain", "resyncing", "backoff"].includes(merchantOperation?.status)) {
+      return true;
+    }
     const choice = merchantChoiceFor(request);
     if (!choice && ["relic_purchase", "claim_reserved"].includes(String(request.action || ""))) {
       const replacements = merchantReplacementChoices(request);
@@ -1636,20 +1850,34 @@
     }
     if (!choice) {
       root.DungeonOnlineV3GameBridge?.failRankedMerchantRequest?.("That Merchant offer is not available.");
+      failRankedMerchantAction({
+        action: request.action,
+        reason: "no_canonical_choice",
+        message: "That Merchant offer is not available."
+      });
+      root.DungeonOnlineV3GameBridge?.failRankedMerchantRequest?.("That Merchant offer is not available.");
       return false;
     }
+    const state = merchantPublicState();
+    const operation = {
+      status: "pending",
+      operationId: root.crypto.randomUUID(),
+      transactionId: String(choice.transactionId || ""),
+      choiceId: String(choice.choiceId || ""),
+      startingRevision: merchantRevision(state),
+      action: String(request.action || ""),
+      receiptKey: "",
+      reason: "offer_pending",
+      attempts: 1,
+      offerKey: String(currentMerchantOffer?.offerId || "") + ":" + String(currentMerchantOffer?.sourceInstanceId || "")
+    };
+    merchantOperation = operation;
+    merchantOperation.status = "pending";
     merchantMutationPending = true;
     root.DungeonOnlineV3GameBridge?.beginRankedMerchantRequest?.();
-    createClient().event("commit_meta_transaction", {
-      transactionId: choice.transactionId,
-      choiceId: choice.choiceId
-    })
-      .then((response) => {
-        root.DungeonOnlineV3GameBridge.syncCanonicalProjection(response.metaState);
-        presentNativeMerchant(response.metaState, request);
-      })
-      .catch(presentMerchantError)
-      .finally(() => { merchantMutationPending = false; });
+    submitRankedMerchantOperation(operation, request).catch((error) => {
+      failRankedMerchantAction({ reason: "commit_rejected", error });
+    });
     return true;
   }
 
@@ -2106,6 +2334,8 @@
     }
     if (directive.roomType === "merchant") {
       currentMerchantOffer = null;
+      merchantOperation = null;
+      merchantFailureCount = 0;
       merchantMutationPending = false;
       pendingRoomSummary = {
         turnCount: 0,
@@ -2380,6 +2610,9 @@
     onOtterChestOpen,
     onPortalEntry,
     onRoomEntered,
+    completeRankedMerchantAction,
+    failRankedMerchantAction,
+    getRankedMerchantMutationState,
     onMerchantOpen,
     onMerchantAction,
     onMerchantLeave,

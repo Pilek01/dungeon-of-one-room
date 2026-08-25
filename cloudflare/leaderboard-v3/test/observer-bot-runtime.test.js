@@ -59,6 +59,9 @@ function createHarness(options = {}) {
   const integrityContexts = [];
   const otterChestPresentations = [];
   const scheduledTimers = [];
+  const merchantRequests = [];
+  const merchantCompletions = [];
+  const merchantFailures = [];
   let snapshot = {
     publicState: metaState({
       currentRoomDirective: {
@@ -66,7 +69,8 @@ function createHarness(options = {}) {
         depth: 1,
         roomType: options.roomType || "combat"
       },
-      rewardSlots: options.rewardSlots || []
+      rewardSlots: options.rewardSlots || [],
+      ...(options.publicState || {})
     })
   };
   const client = {
@@ -83,9 +87,9 @@ function createHarness(options = {}) {
       snapshot = { publicState: response.metaState };
       return response;
     },
-    async event(action, payload) {
-      calls.push({ action, payload });
-      const response = await options.onEvent(action, payload);
+    async event(action, payload, operationId) {
+      calls.push({ action, payload, operationId });
+      const response = await options.onEvent(action, payload, operationId);
       snapshot = { publicState: response.metaState };
       return response;
     },
@@ -97,10 +101,10 @@ function createHarness(options = {}) {
       snapshot = { publicState: response.metaState };
       return response;
     },
-    async resumeCanonical() {
-      calls.push({ action: "resume" });
-      const response = await options.onResume();
-      snapshot = { publicState: response.metaState };
+    async resumeCanonical(input = {}, operationId) {
+      calls.push({ action: "resume", payload: input, operationId });
+      const response = await options.onResume(input, operationId);
+      snapshot = { publicState: response.metaState, lastAcknowledgedOperationId: operationId };
       return response;
     },
     async finalize() {
@@ -258,6 +262,10 @@ function createHarness(options = {}) {
         };
       },
       beginRankedExtraction() {},
+      beginRankedMerchantRequest() { merchantRequests.push('begin'); },
+      enterRankedMerchant() {},
+      completeRankedMerchantAction(result) { merchantCompletions.push(result); },
+      failRankedMerchantAction(result) { merchantFailures.push(result); },
       enterRankedCamp() {},
       returnToPractice() {},
       startRanked(directive) { directives.push(directive); },
@@ -296,7 +304,10 @@ function createHarness(options = {}) {
     uiSyncCalls,
     integrityContexts,
     otterChestPresentations,
-    scheduledTimers
+    scheduledTimers,
+    merchantRequests,
+    merchantCompletions,
+    merchantFailures
   };
 }
 
@@ -1522,4 +1533,189 @@ test("player Forge offer stays on the native Practice surface through canonical 
   assert.deepEqual(harness.forgeCompletions[0].build, {
     relics: [{ relicId: "vampfang", stacks: 1 }]
   });
+});
+
+function merchantOfferState(overrides = {}) {
+  return metaState({
+    revision: 1,
+    currentRoomDirective: { directiveId: "directive_merchant", depth: 2, roomType: "merchant" },
+    metaTransactionOffer: {
+      sourceType: "merchant",
+      offerId: "merchant_offer_1",
+      choices: [
+        { transactionId: "merchant_tx_1", choiceId: "potion_1", kind: "merchant_potion", status: "available", price: 20 }
+      ]
+    },
+    ...overrides
+  });
+}
+
+function merchantCommittedState(overrides = {}) {
+  return merchantOfferState({
+    revision: 2,
+    metaTransactionOffer: {
+      sourceType: "merchant",
+      offerId: "merchant_offer_1",
+      choices: [
+        { transactionId: "merchant_tx_1", choiceId: "potion_1", kind: "merchant_potion", status: "sold", price: 20 }
+      ]
+    },
+    metaTransactionReceipts: [
+      { transactionId: "merchant_tx_1", choiceId: "potion_1", receiptKey: "merchant-receipt-1", completedRevision: 2 }
+    ],
+    ...overrides
+  });
+}
+
+test("pending Merchant submission dispatches once and duplicate receipts are idempotent", async () => {
+  const commit = deferred();
+  let commitCalls = 0;
+  const harness = createHarness({
+    observerBotActive: false,
+    async onEvent(action) {
+      if (action === "open_meta_offer") return { metaState: merchantOfferState() };
+      if (action === "commit_meta_transaction") {
+        commitCalls += 1;
+        return commit.promise;
+      }
+      throw new Error(`unexpected Merchant event: ${action}`);
+    }
+  });
+  const runtime = await installRuntime(harness);
+  await runtime.onMerchantOpen();
+  assert.equal(runtime.onMerchantAction({ action: "potion" }), true);
+  assert.equal(runtime.onMerchantAction({ action: "potion" }), true);
+  assert.equal(commitCalls, 1);
+  assert.equal(runtime.getRankedMerchantMutationState().status, "pending");
+  assert.equal(harness.merchantCompletions.length, 0);
+
+  commit.resolve({ metaState: merchantCommittedState() });
+  await new Promise((resolve) => setImmediate(resolve));
+  await waitFor(
+    () => runtime.getRankedMerchantMutationState().status === "confirmed",
+    "Merchant commit did not settle canonically"
+  );
+  assert.equal(harness.merchantCompletions.length, 1);
+  assert.equal(runtime.completeRankedMerchantAction({ receiptKey: "merchant-receipt-1" }), false);
+  assert.equal(harness.merchantCompletions.length, 1);
+});
+
+test("deterministic Merchant rejection and missing choice fail without a confirmed purchase", async () => {
+  const deterministicError = Object.assign(new Error("choice unavailable"), { status: 422, code: "CHOICE_UNAVAILABLE" });
+  const harness = createHarness({
+    observerBotActive: false,
+    async onEvent(action) {
+      if (action === "open_meta_offer") return { metaState: merchantOfferState() };
+      if (action === "commit_meta_transaction") throw deterministicError;
+      throw new Error(`unexpected Merchant event: ${action}`);
+    }
+  });
+  const runtime = await installRuntime(harness);
+  await runtime.onMerchantOpen();
+  assert.equal(runtime.onMerchantAction({ action: "skill_upgrade", skillId: "shield" }), false);
+  assert.equal(harness.merchantCompletions.length, 0);
+  assert.equal(runtime.getRankedMerchantMutationState().reason, "no_canonical_choice");
+
+  assert.equal(runtime.onMerchantAction({ action: "potion" }), true);
+  await waitFor(
+    () => runtime.getRankedMerchantMutationState().status === "rejected",
+    "deterministic Merchant rejection did not settle"
+  );
+  assert.equal(harness.merchantCompletions.length, 0);
+  assert.equal(harness.merchantFailures.at(-1)?.reason, "commit_rejected");
+});
+
+test("uncertain Merchant transport resumes before one retry with the same operation identity", async () => {
+  const calls = [];
+  let commitCalls = 0;
+  const harness = createHarness({
+    observerBotActive: false,
+    async onEvent(action, payload, operationId) {
+      calls.push({ action, payload, operationId });
+      if (action === "open_meta_offer") return { metaState: merchantOfferState() };
+      if (action === "commit_meta_transaction") {
+        commitCalls += 1;
+        if (commitCalls === 1) throw new Error("network timeout");
+        return { metaState: merchantCommittedState() };
+      }
+      throw new Error(`unexpected Merchant event: ${action}`);
+    },
+    async onResume() {
+      calls.push({ action: "resume" });
+      return { metaState: merchantOfferState() };
+    }
+  });
+  const runtime = await installRuntime(harness);
+  await runtime.onMerchantOpen();
+  assert.equal(runtime.onMerchantAction({ action: "potion" }), true);
+  await waitFor(
+    () => runtime.getRankedMerchantMutationState().status === "confirmed",
+    "uncertain Merchant operation did not retry and confirm"
+  );
+  const commits = calls.filter((entry) => entry.action === "commit_meta_transaction");
+  assert.equal(commits.length, 2);
+  assert.equal(calls.findIndex((entry) => entry.action === "resume") > 0, true);
+  assert.equal(commits[0].operationId, commits[1].operationId);
+  assert.equal(commits[0].operationId.length > 0, true);
+  assert.equal(harness.merchantCompletions.length, 1);
+});
+
+test("Merchant resync adopts a committed canonical receipt without a second commit", async () => {
+  let commitCalls = 0;
+  const harness = createHarness({
+    observerBotActive: false,
+    async onEvent(action) {
+      if (action === "open_meta_offer") return { metaState: merchantOfferState() };
+      if (action === "commit_meta_transaction") {
+        commitCalls += 1;
+        throw new Error("response lost after commit");
+      }
+      throw new Error(`unexpected Merchant event: ${action}`);
+    },
+    async onResume() {
+      return { metaState: merchantCommittedState({ metaTransactionReceipts: undefined }) };
+    }
+  });
+  const runtime = await installRuntime(harness);
+  await runtime.onMerchantOpen();
+  runtime.onMerchantAction({ action: "potion" });
+  await waitFor(
+    () => runtime.getRankedMerchantMutationState().status === "confirmed",
+    "resync did not adopt the committed Merchant receipt"
+  );
+  assert.equal(commitCalls, 1);
+  assert.equal(harness.merchantCompletions.length, 1);
+  assert.equal(harness.merchantCompletions[0].adopted, true);
+  assert.equal(harness.merchantCompletions[0].receiptKey, "00000000-0000-4000-8000-000000000000");
+});
+
+test("three deterministic Merchant failures enter bounded backoff and block further attempts", async () => {
+  const deterministicError = Object.assign(new Error("stale choice"), { status: 422, code: "STALE_CHOICE" });
+  let commitCalls = 0;
+  const harness = createHarness({
+    observerBotActive: false,
+    async onEvent(action) {
+      if (action === "open_meta_offer") return { metaState: merchantOfferState() };
+      if (action === "commit_meta_transaction") {
+        commitCalls += 1;
+        throw deterministicError;
+      }
+      throw new Error(`unexpected Merchant event: ${action}`);
+    }
+  });
+  const runtime = await installRuntime(harness);
+  await runtime.onMerchantOpen();
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    assert.equal(runtime.onMerchantAction({ action: "potion" }), true);
+    await waitFor(
+      () => ["rejected", "backoff"].includes(runtime.getRankedMerchantMutationState().status),
+      `Merchant failure ${attempt + 1} did not settle`
+    );
+  }
+  assert.equal(commitCalls, 3);
+  assert.equal(runtime.getRankedMerchantMutationState().status, "backoff");
+  assert.equal(runtime.getRankedMerchantMutationState().reason, "failure_backoff");
+  assert.equal(runtime.onMerchantAction({ action: "potion" }), true);
+  assert.equal(commitCalls, 3);
+  assert.equal(harness.merchantCompletions.length, 0);
 });

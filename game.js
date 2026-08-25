@@ -31104,6 +31104,99 @@
     return bestIndex;
   }
 
+  function buildObserverMerchantDecision(context = {}) {
+    const source = context.state || state;
+    const mutation = context.mutationState || {};
+    const choices = (Array.isArray(context.choices)
+      ? context.choices
+      : Array.isArray(source.onlineV3MerchantChoices) ? source.onlineV3MerchantChoices : [])
+      .filter((choice) => choice && (!choice.status || choice.status === "available"));
+    const available = (kind, predicate = () => true) => choices.find((choice) => choice.kind === kind && predicate(choice));
+    const closed = (reason) => ({ action: "leave", request: { action: "leave" }, reason });
+    if (mutation.status === "pending" || mutation.status === "uncertain" || mutation.status === "resyncing") return closed("offer_pending");
+    if (mutation.status === "backoff" || mutation.reason === "failure_backoff") return closed("failure_backoff");
+    const purchaseCount = Math.max(0, Number(source.observerBot?.merchantPurchasesThisRoom) || 0);
+    if (purchaseCount >= 6) return closed("purchase_limit");
+    if (!choices.length) return closed("no_canonical_choice");
+
+    const maxPotions = Math.max(1, Math.floor(Number(context.maxPotions ?? source.player?.maxPotions) || 1));
+    const potions = Math.max(0, Math.floor(Number(context.potions ?? source.player?.potions) || 0));
+    if (potions >= maxPotions) return closed("bag_full");
+    const turn = Math.max(0, Math.floor(Number(context.turn ?? source.turn) || 0));
+    const uses = Array.isArray(context.potionUseTurns)
+      ? context.potionUseTurns
+      : Array.isArray(source.observerBot?.potionUseTurns) ? source.observerBot.potionUseTurns : [];
+    const recentUses = uses.filter((entry) => {
+      const usedTurn = Math.floor(Number(entry));
+      return Number.isFinite(usedTurn) && usedTurn >= Math.max(0, turn - 24);
+    }).length;
+    const hp = Math.max(0, Number(context.hp ?? source.player?.hp) || 0);
+    const maxHp = Math.max(1, Number(context.maxHp ?? source.player?.maxHp) || 1);
+    const lives = Math.max(0, Number(context.lives ?? source.lives) || 0);
+    const nextIsBoss = context.nextIsBoss === true || context.nextBoss === true || source.bossRoom === true;
+    const baseTarget = Math.max(1, Math.ceil(maxPotions / 4));
+    const normalCeiling = Math.max(1, Math.ceil(maxPotions * 0.75));
+    const target = Math.min(maxPotions, normalCeiling, baseTarget + Math.ceil(recentUses / 3) +
+      (nextIsBoss ? 1 : 0) + (lives <= 2 ? 1 : 0) + (hp <= maxHp * 0.5 ? 1 : 0));
+    const wallet = {
+      run: Math.max(0, Number(context.runGold ?? source.player?.gold) || 0),
+      camp: Math.max(0, Number(context.campGold ?? source.campGold) || 0)
+    };
+    const economy = context.economyPlan || source.observerBot?.economyPlan || {};
+    const urgent = hp <= maxHp * 0.35 || lives <= 1;
+    const campReserve = Math.max(urgent ? 100 : 220, Number(context.campReserve ?? economy.campGoldReserve) || 0);
+    const runReserve = Math.max(0, Number(context.runReserve ?? economy.runGoldReserve) || 0);
+    const canPay = (cost) => {
+      const price = Math.max(0, Number(cost) || 0);
+      const runSpendable = Math.max(0, wallet.run - runReserve);
+      const campSpendable = Math.max(0, wallet.camp - campReserve);
+      if (runSpendable >= price) return { ok: true, source: "run" };
+      if (runSpendable + campSpendable >= price) return { ok: true, source: "camp" };
+      if (wallet.run + wallet.camp < price) return { ok: false, reason: "insufficient_wallet" };
+      return { ok: false, reason: wallet.camp <= campReserve ? "camp_reserve" : "run_reserve" };
+    };
+    const potion = available("merchant_potion");
+    if (potions < target) {
+      if (!potion) return closed("no_canonical_choice");
+      const payment = canPay(potion.totalPrice ?? potion.price);
+      if (!payment.ok) return closed(payment.reason);
+      return { action: "potion", request: { action: "potion" }, reason: "" };
+    }
+    if (potions >= target) {
+      const skillIds = ["shield", "dash", "aoe"];
+      for (const skillId of skillIds) {
+        const choice = available("merchant_skill_upgrade", (entry) => String(entry.skillId || "") === skillId);
+        if (!choice) continue;
+        const payment = canPay(choice.totalPrice ?? choice.price);
+        if (payment.ok) return { action: "skill_upgrade", request: { action: "skill_upgrade", skillId }, reason: "" };
+      }
+    }
+    const relic = choices.find((choice) => ["merchant_relic_purchase", "merchant_relic_reserve", "merchant_reserved_claim"].includes(choice.kind));
+    if (relic) {
+      const payment = canPay(relic.totalPrice ?? relic.price);
+      if (payment.ok) return { action: "relic_purchase", request: { action: "relic_purchase", relicId: relic.relicId }, reason: "" };
+    }
+    const service = available("merchant_service");
+    if (service) {
+      const serviceId = String(service.serviceId || "");
+      const legal = serviceId !== "fullheal" || hp < maxHp;
+      const activeBoost = context.combatBoostActive === true || Number(source.player?.combatBoostTurns) > 0;
+      const hasSecondChance = context.hasSecondChance === true || source.player?.hasSecondChance === true;
+      const legalService = legal && (serviceId !== "combatboost" || !activeBoost) && (serviceId !== "secondchance" || !hasSecondChance);
+      if (legalService) {
+        const payment = canPay(service.totalPrice ?? service.price);
+        if (payment.ok) return { action: "service", request: { action: "service", serviceId }, reason: "" };
+      }
+    }
+    const blackMarket = available("merchant_black_market", (choice) => Boolean(choice.targetRelicId));
+    if (blackMarket) {
+      const payment = canPay(blackMarket.totalPrice ?? blackMarket.price);
+      if (payment.ok) return { action: "black_market", request: { action: "black_market", relicId: blackMarket.targetRelicId }, reason: "" };
+    }
+    if (potion && potions >= target) return closed("stock_sufficient");
+    return closed("no_useful_upgrade");
+  }
+
   function canBotSpendMerchantGold(cost, options = {}) {
     const ignoreFarmReserve = Boolean(options.ignoreFarmReserve);
     const ignoreEconomyPlan = Boolean(options.ignoreEconomyPlan);
@@ -31206,7 +31299,6 @@
       (state.player.potions <= 0 || state.player.potions < potionTarget || hpRatio < 0.8 || potionCost <= 20)
     ) {
       if (tryBuyPotionFromMerchant()) {
-        state.observerBot.merchantPurchasesThisRoom += 1;
         state.observerBot.lastDecision = "merchant_potion";
         return true;
       }
@@ -31245,7 +31337,6 @@
       canBotSpendMerchantGold(aoeCandidate.cost, { ignoreEconomyPlan: true })
     ) {
       if (tryBuySkillUpgradeFromMerchant("aoe")) {
-        state.observerBot.merchantPurchasesThisRoom += 1;
         state.observerBot.lastDecision = "merchant_upgrade_aoe_finisher";
         return true;
       }
@@ -31260,7 +31351,6 @@
       walletTotal - best.cost >= Math.round(campReserveTarget * bankingReserveRatio);
     if (best && (canBuyBestWithReserves || canBuyBestWhileBanking)) {
       if (tryBuySkillUpgradeFromMerchant(best.skillId)) {
-        state.observerBot.merchantPurchasesThisRoom += 1;
         state.observerBot.lastDecision = `merchant_upgrade_${best.skillId}`;
         return true;
       }
@@ -31275,7 +31365,6 @@
       canBotSpendMerchantGold(potionCost) && (potionCost <= 26 || hpRatio < 0.72)
     ) {
       if (tryBuyPotionFromMerchant()) {
-        state.observerBot.merchantPurchasesThisRoom += 1;
         state.observerBot.lastDecision = "merchant_potion";
         return true;
       }

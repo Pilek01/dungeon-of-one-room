@@ -2110,6 +2110,34 @@ for (const [sourceText, replacement] of rankedMerchantGameReplacements) {
   game = game.replace(sourceText, replacement);
 }
 
+const rankedMerchantPolicyMarker = "    if (state.onlineV3Ranked && (\n      state.turnInProgress ||\n      window.DungeonOnlineV3?.isRankedAutomationBlocked?.() ||\n      window.DungeonOnlineV3?.isObserverBotBoundaryPending?.()\n    )) return false;";
+const rankedMerchantPolicyBranch = [
+  "",
+  "    if (state.onlineV3Ranked) {",
+  "      const decision = buildObserverMerchantDecision({",
+  "        state,",
+  "        choices: state.onlineV3MerchantChoices,",
+  "        mutationState: window.DungeonOnlineV3?.getRankedMerchantMutationState?.(),",
+  "        nextIsBoss: state.bossRoom === true",
+  "      });",
+  "      if (decision.action === \"potion\") return tryBuyPotionFromMerchant();",
+  "      if (decision.action === \"skill_upgrade\") return tryBuySkillUpgradeFromMerchant(decision.request.skillId);",
+  "      if (decision.action === \"relic_purchase\") return tryBuyRelicFromMerchant();",
+  "      if (decision.action === \"service\") {",
+  "        if (decision.request.serviceId === \"fullheal\") return tryBuyFullHeal();",
+  "        if (decision.request.serviceId === \"combatboost\") return tryBuyCombatBoost();",
+  "        if (decision.request.serviceId === \"secondchance\") return tryBuySecondChance();",
+  "        if (decision.request.serviceId === \"onelife\") return tryBuyOneLife();",
+  "      }",
+  "      if (decision.action === \"black_market\") return tryUseBlackMarket(decision.request.relicId);",
+  "      state.observerBot.lastDecision = \"merchant_\" + decision.reason;",
+  "      return false;",
+  "    }"
+].join("\n");
+if (!game.includes(rankedMerchantPolicyMarker)) throw new Error("Missing Ranked Merchant policy marker.");
+game = game.replace(rankedMerchantPolicyMarker, rankedMerchantPolicyMarker + rankedMerchantPolicyBranch);
+game = game.replace(/state\.observerBot\.merchantPurchasesThisRoom\s*\+=\s*1;\s*/gu, "");
+
 const rankedObserverPactStart = game.indexOf("  function runObserverBotPlayingAction() {");
 const rankedObserverPactEnd = game.indexOf("  function chooseObserverBotCampStartDepth()", rankedObserverPactStart);
 if (rankedObserverPactStart < 0 || rankedObserverPactEnd <= rankedObserverPactStart) {
@@ -2157,6 +2185,29 @@ const rankedMerchantBridge = `    beginRankedMerchantRequest() {
       state.turnInProgress = false;
       pushLog(String(message || "Merchant connection failed. Press E to try again."), "bad");
       markUiDirty();
+    },
+    completeRankedMerchantAction(result = {}) {
+      if (!state.onlineV3Ranked) return false;
+      const receiptKey = String(result.receiptKey || "");
+      if (!receiptKey) return false;
+      if (!Array.isArray(state.merchantConfirmedReceiptKeys)) state.merchantConfirmedReceiptKeys = [];
+      if (state.merchantConfirmedReceiptKeys.includes(receiptKey)) return false;
+      state.merchantConfirmedReceiptKeys = [...state.merchantConfirmedReceiptKeys, receiptKey].slice(-16);
+      state.observerBot.merchantPurchasesThisRoom = Math.min(6, Math.max(0, Number(state.observerBot.merchantPurchasesThisRoom) || 0) + 1);
+      state.turnInProgress = false;
+      state.observerBot.lastDecision = "merchant_confirmed_" + String(result.action || "purchase");
+      markUiDirty();
+      return true;
+    },
+    failRankedMerchantAction(result = {}) {
+      if (!state.onlineV3Ranked) return false;
+      state.turnInProgress = false;
+      state.observerBot.lastDecision = "merchant_failed_" + String(result.reason || "commit_rejected");
+      markUiDirty();
+      return false;
+    },
+    buildObserverMerchantDecision(context = {}) {
+      return buildObserverMerchantDecision({ ...context, state });
     },
     beginRankedMerchantReplacement(pending = {}) {
       if (!state.onlineV3Ranked) return;
@@ -2223,6 +2274,8 @@ const rankedMerchantBridge = `    beginRankedMerchantRequest() {
       }
       const choices = Array.isArray(offer?.choices) ? offer.choices : [];
       const available = choices.filter((choice) => choice?.status === "available");
+      state.onlineV3MerchantChoices = available.map((choice) => ({ ...choice }));
+      state.merchantConfirmedReceiptKeys = Array.isArray(state.merchantConfirmedReceiptKeys) ? state.merchantConfirmedReceiptKeys : [];
       const liveRelic = state.merchantReservedRelic ? null : available.find((choice) =>
         ["merchant_relic_purchase", "merchant_relic_replacement", "merchant_relic_reserve"].includes(choice.kind) && choice.relicId
       );
