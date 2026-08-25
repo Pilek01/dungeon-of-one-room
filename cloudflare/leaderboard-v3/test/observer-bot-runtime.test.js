@@ -16,6 +16,39 @@ test("Observer potion policy preserves deterministic hazard action identities", 
   assert.deepEqual(repeat, first);
   assert.notEqual(changed.actionKey, first.actionKey);
 });
+test("Observer Bot potion use shares ordinary locks without anti-cheat exceptions", () => {
+  const base = {
+    hp: 40,
+    maxHp: 100,
+    incomingDamage: 45,
+    effectiveHeal: 25,
+    potions: 1,
+    turn: 3,
+    enemyTurn: 0,
+    hazardIdentity: "ordinary"
+  };
+  for (const [field, value, reason] of [
+    ["hasRisk", true, "blocked_risk"],
+    ["oathPotionLockTurns", 1, "blocked_oath"],
+    ["potions", 0, "blocked_empty"],
+    ["hp", 0, "blocked_dead"],
+    ["boundaryPending", true, "blocked_boundary"],
+    ["turnInProgress", true, "blocked_turn"],
+    ["cooldownTurns", 1, "blocked_cooldown"]
+  ]) {
+    const decision = decideBotPotionUse({ ...base, [field]: value });
+    assert.equal(decision.use, false, field);
+    assert.equal(decision.reason, reason, field);
+    assert.match(decision.actionKey, /^potion:/u);
+  }
+  const ordinary = decideBotPotionUse(base);
+  assert.equal(ordinary.use, true);
+  assert.equal(ordinary.reason, "prevent_lethal");
+  assert.equal(
+    decideBotPotionUse({ ...base, lastPotionActionKey: ordinary.actionKey }).reason,
+    "blocked_duplicate_action"
+  );
+});
 function element() {
   return {
     hidden: false,

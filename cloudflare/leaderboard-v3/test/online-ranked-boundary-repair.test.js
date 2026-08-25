@@ -10,6 +10,8 @@ import { applyFatalEventV08 } from "../src/rulesets/v08-meta-1/life-policy.js";
 import { requestExtractionV08 } from "../src/rulesets/v08-meta-1/outcome-policy.js";
 import { hydrateRunFromProfileV08, publicProfileStateV08, profileStateFromRunV08 } from "../src/rulesets/v08-meta-1/profile-policy.js";
 import { applyMutatorProgressDeltaV08 } from "../src/rulesets/v08-meta-1/mutator-progression.js";
+import { applyCanonicalRunModifierSelection } from "../src/rulesets/v08-meta-1/run-modifiers.js";
+import { applyRelicAcquisition } from "../src/rulesets/v08-meta-1/relic-policy.js";
 import manifest from "../src/rulesets/v08-meta-1/data/ruleset-manifest.json" with { type: "json" };
 import { observerBotReleaseConfig } from "../../../scripts/pages-release-preflight.mjs";
 
@@ -71,6 +73,71 @@ function rewardRequest(state, claims) {
   };
 }
 
+test("Ranked lifecycle reconnect carries canonical resources and Start New Ranked clears them", async () => {
+  const { state: initial, context: baseContext } = initialState("run_cross_system_lifecycle");
+  const context = { ...baseContext, capabilities: { canonicalPotionResources: "v1" } };
+  initial.potionPolicyVersion = "v1";
+  let state = await applyCanonicalRunModifierSelection(
+    initial,
+    { modifierIds: ["alchemist"], activationSource: "server-issued-run-start" },
+    { authority: "TRUSTED_RULESET_DOMAIN", cryptoProvider: webcrypto }
+  );
+  state.build = await applyRelicAcquisition(
+    state.build,
+    {
+      relicId: "flask",
+      acquiredRevision: state.revision,
+      acquisitionSource: "cross-system-test",
+      sourceOfferId: "cross-system-flask"
+    },
+    { authority: "TRUSTED_RULESET_DOMAIN", cryptoProvider: webcrypto, potionPolicyVersion: "v1", runModifiers: state.runModifiers }
+  );
+  assert.equal(state.build.resources.maxPotions, 6);
+  assert.equal(state.build.resources.potions, 6);
+  state.status = "active";
+  state = await issueNextRoomDirectiveV08(state, context);
+  const slotId = state.currentRewardEnvelope.claimSlots[0].slotId;
+  const settled = await settleRoomRewardEnvelopeV3(
+    state,
+    rewardRequest(state, [
+      { claimType: "resource", claimId: "potion-use", count: 1 },
+      { claimType: "chest", claimId: slotId, count: 1, localEvidence: { outcome: "potion", count: 1 } }
+    ]),
+    context
+  );
+  assert.equal(settled.state.build.resources.potions, 6);
+  assert.equal(settled.state.build.resources.maxPotions, 6);
+  settled.state.build.resources.hp = 37;
+  settled.state.build.resources.combatBoostTurns = 2;
+  settled.state.build.resources.combatBoostAttack = 10;
+  settled.state.build.resources.combatBoostArmor = 8;
+  settled.state.build.resources.highestUnlockedDepth = 12;
+  settled.state.status = "extraction";
+
+  const profile = profileStateFromRunV08(settled.state, "profile_cross_system", 4);
+  const reconnected = await hydrateRunFromProfileV08(
+    createInitialMetaStateV08({}, { ...context, runId: "run_cross_system_reconnect" }),
+    profile,
+    context
+  );
+  assert.equal(reconnected.build.resources.potions, 5);
+  assert.equal(reconnected.build.resources.maxPotions, 6);
+  assert.equal(reconnected.build.resources.hp, 100);
+  assert.equal(reconnected.build.resources.combatBoostTurns, 0);
+  assert.equal(reconnected.build.resources.highestUnlockedDepth, 12);
+  assert.equal(reconnected.build.relics[0].relicId, "flask");
+  assert.equal(reconnected.runModifiers.active[0].modifierId, "alchemist");
+
+  const fresh = createInitialMetaStateV08({}, { ...context, runId: "run_cross_system_new" });
+  assert.equal(fresh.build.resources.potions, 3);
+  assert.equal(fresh.build.resources.maxPotions, 3);
+  assert.equal(fresh.build.resources.highestUnlockedDepth, 0);
+  assert.equal(fresh.build.resources.combatBoostTurns, 0);
+  assert.deepEqual(fresh.build.relics, []);
+  assert.deepEqual(fresh.runModifiers.active, []);
+  assert.equal(fresh.pendingInventory, null);
+  assert.equal(fresh.pendingRelicTransaction, null);
+});
 test("new Ranked campaign bridge resets highscore and chest effects, while next descent does not", async () => {
   const builder = await readFile(new URL("../../../scripts/build-pages-v3.mjs", import.meta.url), "utf8");
   const runtime = await readFile(new URL("../../../online-v3/ranked-v3-runtime.js", import.meta.url), "utf8");

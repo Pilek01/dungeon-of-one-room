@@ -317,6 +317,33 @@ test("extract snapshots are visible in public list and detail", async () => {
   assert.equal(detail.response.status, 200);
 });
 
+test("Observer Bot never displaces an ordinary official podium result", async () => {
+  const repositories = createMemoryRepositories();
+  const profileId = "profile_shared_assistance_class";
+  const ordinary = {
+    ...entry("run_0000000000000130", 100, 100, { profileId }),
+    snapshotKind: "extract",
+    assistanceClass: "none"
+  };
+  const assisted = {
+    ...entry("run_0000000000000131", 99999, 200, { profileId }),
+    snapshotKind: "extract",
+    assistanceClass: "observer_bot"
+  };
+  assert.equal(await publish(repositories, ordinary), true);
+  assert.equal(await publish(repositories, assisted), true);
+
+  const worker = createWorker({ repositories });
+  const list = await get(worker, "/api/v3/leaderboard?season=" + SEASON + "&limit=20");
+  assert.equal(list.response.status, 200);
+  assert.equal(list.payload.entries.length, 2);
+  const ordinaryRow = list.payload.entries.find((row) => row.runId === ordinary.runId);
+  const assistedRow = list.payload.entries.find((row) => row.runId === assisted.runId);
+  assert.equal(ordinaryRow.assistanceClass, "none");
+  assert.equal(assistedRow.assistanceClass, "observer_bot");
+  assert.equal(ordinaryRow.score, ordinary.score);
+  assert.equal(assistedRow.score, assisted.score);
+});
 test("assisted snapshots remain public with an explicit non-ranked class", async () => {
   const repositories = createMemoryRepositories();
   const assisted = {

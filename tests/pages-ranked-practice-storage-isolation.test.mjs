@@ -97,6 +97,15 @@ test("Ranked reward recorder resumes chest claim IDs after consumed prefix", () 
   assert.equal(recorder.snapshot().find((claim) => claim.claimType === "chest")?.claimId, "chest_2");
 });
 
+test("canonical Ranked potion projection cannot mutate Fury or elixir fields", async () => {
+  const game = await buildGeneratedGame();
+  const projection = game.match(/  function syncRankedCanonicalPotionState\(publicState\) \{[\s\S]*?\n  \}/u)?.[0] || "";
+  assert.match(projection, /state\.player\.maxPotions/u);
+  assert.match(projection, /state\.player\.potions/u);
+  assert.match(projection, /state\.runMods\.potionHealMult/u);
+  assert.doesNotMatch(projection, /furyBlessingTurns|elixirLoadout|elixirTurns/u);
+  assert.match(game, /if \(state\.onlineV3Ranked\) return;/u);
+});
 test("generated Practice load accepts an explicit zero potion count", async () => {
   const game = await buildGeneratedGame();
   assert.match(game, /const savedPotions = Number\(snapshot\.player\.potions\)/u);

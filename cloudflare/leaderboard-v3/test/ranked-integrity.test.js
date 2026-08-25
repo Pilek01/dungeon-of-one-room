@@ -105,6 +105,29 @@ test("new Ranked runs start eligible for the official leaderboard", async () => 
   assert.equal(publicRulesetMetaState(state, ruleset).rankEligibility, "official");
 });
 
+test("potion-only checkpoint is bounded and leaves Fury/elixir state byte-equivalent", async () => {
+  const value = await activeState(4);
+  value.state.build.resources.potions = 2;
+  value.state.build.elixirs = [{ elixirId: "fury_1", charges: 3 }];
+  const before = structuredClone(value.state);
+  const result = await checkpoint(value, {
+    rewardClaims: [{ claimType: "resource", claimId: "potion-use", count: 1 }]
+  });
+
+  assert.equal(result.nextState.build.resources.potions, 1);
+  assert.deepEqual(result.nextState.build.elixirs, before.build.elixirs);
+  assert.deepEqual(result.nextState.runModifiers, before.runModifiers);
+  assert.equal(result.nextState.build.resources.maxPotions, before.build.resources.maxPotions);
+  assert.equal(value.state.build.resources.potions, before.build.resources.potions);
+
+  await assert.rejects(
+    checkpoint(value, {
+      rewardClaims: [{ claimType: "resource", claimId: "potion-use", count: 3 }]
+    }),
+    /REWARD_CLAIM_POTION_USE_LIMIT/u
+  );
+});
+
 test("an invalid local room-completion capability makes the run provisional", async () => {
   const value = await activeState(2);
   const result = await checkpoint(value, {
