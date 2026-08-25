@@ -15,7 +15,89 @@
     if (Math.max(0, Number(options.potions) || 0) <= 0) return false;
     const hp = Math.max(0, Number(options.hp) || 0);
     const maxHp = Math.max(1, Number(options.maxHp) || 1);
-    return hp > 0 && hp < maxHp;
+    if (hp <= 0) return false;
+    if (hp < maxHp) return true;
+    return hasMeaningfulPotionStatus(options);
+  }
+  const CRITICAL_HP_RATIO = 0.35;
+  const POTION_MEANINGFUL_STATUS_RATIO = 0.1;
+
+  function normalizePotionStatus(options = {}, turnsKey, damageKey, maxHp) {
+    const turns = Math.max(0, Math.floor(Number(options[turnsKey]) || 0));
+    const damage = Math.max(0, Number(options[damageKey]) || 0);
+    const remainingDamage = turns * damage;
+    const threshold = Math.max(1, Math.ceil(maxHp * POTION_MEANINGFUL_STATUS_RATIO));
+    return { turns, damage, remainingDamage, meaningful: remainingDamage >= threshold || turns >= 3 };
+  }
+
+  function hasMeaningfulPotionStatus(options = {}) {
+    const maxHp = Math.max(1, Number(options.maxHp) || 1);
+    return normalizePotionStatus(options, "bleedTurns", "bleedDamage", maxHp).meaningful ||
+      normalizePotionStatus(options, "poisonTurns", "poisonDamage", maxHp).meaningful;
+  }
+
+  function buildPotionActionKey(options = {}) {
+    const turn = Number.isFinite(Number(options.turn)) ? Math.floor(Number(options.turn)) : 0;
+    const enemyTurn = Number.isFinite(Number(options.enemyTurn)) ? Math.floor(Number(options.enemyTurn)) : 0;
+    const hazard = options.hazardIdentity == null || options.hazardIdentity === ""
+      ? "ordinary"
+      : encodeURIComponent(String(options.hazardIdentity));
+    return `potion:${turn}:${enemyTurn}:${hazard}`;
+  }
+
+  function blockedPotionDecision(reason, actionKey) {
+    return { use: false, reason, actionKey };
+  }
+
+  function decideBotPotionUse(options = {}) {
+    const actionKey = buildPotionActionKey(options);
+    if (options.hasRisk) return blockedPotionDecision("blocked_risk", actionKey);
+    if (Math.max(0, Number(options.oathPotionLockTurns) || 0) > 0) return blockedPotionDecision("blocked_oath", actionKey);
+    if (Math.max(0, Number(options.potions) || 0) <= 0) return blockedPotionDecision("blocked_empty", actionKey);
+    const hp = Math.max(0, Number(options.hp) || 0);
+    const maxHp = Math.max(1, Number(options.maxHp) || 1);
+    if (hp <= 0) return blockedPotionDecision("blocked_dead", actionKey);
+    if (options.boundaryPending || options.observerBotBoundaryPending || options.rankedBoundaryPending) {
+      return blockedPotionDecision("blocked_boundary", actionKey);
+    }
+    if (options.turnInProgress || options.enemyTurnInProgress || options.enemyTurnPending) {
+      return blockedPotionDecision("blocked_turn", actionKey);
+    }
+    const cooldown = Math.max(0, Number(options.cooldownTurns) || 0, Number(options.potionCooldown) || 0, Number(options.autoPotionCooldown) || 0);
+    if (Math.max(0, Number(cooldown) || 0) > 0) return blockedPotionDecision("blocked_cooldown", actionKey);
+    if (String(options.lastPotionActionKey || "") === actionKey) {
+      return blockedPotionDecision("blocked_duplicate_action", actionKey);
+    }
+
+    const incomingDamage = Math.max(0, Number(options.incomingDamage) || 0);
+    const barrier = Math.max(0, Number(options.barrier ?? options.totalBarrier) || 0);
+    const barrierAdjustedDamage = Math.max(0, incomingDamage - barrier);
+    const bleed = normalizePotionStatus(options, "bleedTurns", "bleedDamage", maxHp);
+    const poison = normalizePotionStatus(options, "poisonTurns", "poisonDamage", maxHp);
+    const remainingStatusDamage = bleed.remainingDamage + poison.remainingDamage;
+    const projectedDamage = barrierAdjustedDamage + remainingStatusDamage;
+    const effectiveHeal = Math.max(0, Number(options.effectiveHeal ?? options.healAmount) || 0);
+    const utilizedHeal = Math.min(Math.max(0, maxHp - hp), effectiveHeal);
+    const hpAfterThreat = hp - projectedDamage;
+    const hpAfterPotionThreat = hp + utilizedHeal - projectedDamage;
+    const meaningfulHeal = utilizedHeal >= Math.max(1, Math.ceil(maxHp * POTION_MEANINGFUL_STATUS_RATIO));
+    if (hpAfterThreat <= 0 && hpAfterPotionThreat > 0) return { use: true, reason: "prevent_lethal", actionKey };
+    if (bleed.meaningful || poison.meaningful) {
+      const cleanseBleed = bleed.meaningful && (!poison.meaningful || bleed.remainingDamage >= poison.remainingDamage);
+      return { use: true, reason: cleanseBleed ? "cleanse_bleed" : "cleanse_poison", actionKey };
+    }
+    if (hpAfterThreat / maxHp <= CRITICAL_HP_RATIO && meaningfulHeal && hpAfterPotionThreat > hpAfterThreat) {
+      return { use: true, reason: "prevent_critical", actionKey };
+    }
+    const hpRatio = hp / maxHp;
+    if (hpRatio <= CRITICAL_HP_RATIO && meaningfulHeal) return { use: true, reason: "low_hp_useful_heal", actionKey };
+    if (hpRatio >= 0.8 && barrierAdjustedDamage < Math.max(1, Math.ceil(maxHp * POTION_MEANINGFUL_STATUS_RATIO))) {
+      return { use: false, reason: "high_hp_low_threat", actionKey };
+    }
+    if (utilizedHeal < Math.max(1, Math.ceil(maxHp * POTION_MEANINGFUL_STATUS_RATIO))) {
+      return { use: false, reason: "heal_waste", actionKey };
+    }
+    return { use: false, reason: "high_hp_low_threat", actionKey };
   }
 
   function tileKey(x, y) {
@@ -83,6 +165,7 @@
 
   const api = {
     canBotDrinkPotion,
+    decideBotPotionUse,
     getForgeTargetForBot,
     getPendingBlastZones
   };

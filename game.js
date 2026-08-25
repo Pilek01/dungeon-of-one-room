@@ -132,6 +132,7 @@
   const MINE_DAMAGE_MULTIPLIER = 5.0;
   const {
     canBotDrinkPotion: canBotDrinkPotionSafe = () => false,
+    decideBotPotionUse: decideBotPotionUseSafe = () => ({ use: false, reason: "blocked_empty", actionKey: "" }),
     getForgeTargetForBot: getForgeTargetForBotSafe = () => null,
     getPendingBlastZones: getPendingBlastZonesSafe = () => ({})
   } = (typeof window !== "undefined" && window.botSafetyApi) || {};
@@ -2276,6 +2277,8 @@
       actionIntervalMs: 270,
       actionTimerMs: 0,
       lastDecision: "idle",
+      lastPotionActionKey: "",
+      potionUseTurns: [],
       currentRoomIndex: -1,
       merchantPurchasesThisRoom: 0,
       merchantDoneRoomIndex: -1,
@@ -28634,11 +28637,18 @@
       return true;
     }
 
-    const hpRatio = getBotHpRatio();
-    if (canObserverBotDrinkPotion() && hpRatio < 0.9) {
+    const potionDecision = getObserverBotPotionDecision({
+      pendingBlastMap,
+      incomingDamage
+    });
+    if (potionDecision.use) {
+      const potionsBefore = state.player.potions;
       drinkPotion();
-      state.observerBot.lastDecision = "blast_prep_potion";
-      return true;
+      if (state.player.potions < potionsBefore) {
+        recordObserverBotPotionUse(potionDecision.actionKey);
+        state.observerBot.lastDecision = "blast_prep_potion";
+        return true;
+      }
     }
 
     return false;
@@ -28864,16 +28874,72 @@
       oathPotionLockTurns: state.player.oathPotionLockTurns,
       potions: state.player.potions,
       hp: state.player.hp,
-      maxHp: state.player.maxHp
+      maxHp: state.player.maxHp,
+      bleedTurns: state.player.bleedTurns,
+      bleedDamage: state.player.bleedDamage,
+      poisonTurns: state.player.poisonTurns,
+      poisonDamage: state.player.poisonDamage
     });
   }
 
-  function shouldBotDrinkPotion() {
-    if (!canObserverBotDrinkPotion()) return false;
-    const hpRatio = state.player.hp / Math.max(1, state.player.maxHp);
-    return hpRatio <= 0.35;
+  function getObserverBotPotionHazardIdentity(pendingBlastMap = null) {
+    const map = pendingBlastMap || getObserverBotPendingBlastMap() || {};
+    const pending = map[tileKey(state.player.x, state.player.y)] || null;
+    const pendingIdentity = pending
+      ? `${String(pending.source || "hazard")}:${Math.max(0, Number(pending.damage) || 0)}:${Math.max(0, Number(pending.turnsUntilBlast) || 0)}`
+      : "ordinary";
+    return `${pendingIdentity}|bleed:${Math.max(0, Number(state.player.bleedTurns) || 0)}:${Math.max(0, Number(state.player.bleedDamage) || 0)}|poison:${Math.max(0, Number(state.player.poisonTurns) || 0)}:${Math.max(0, Number(state.player.poisonDamage) || 0)}`;
   }
 
+  function getObserverBotPotionDecision(options = {}) {
+    const bot = state.observerBot;
+    const pendingBlastMap = options.pendingBlastMap || getObserverBotPendingBlastMap() || {};
+    const threatMap = options.threatMap || buildObserverBotThreatMap();
+    const incomingDamage = Number.isFinite(Number(options.incomingDamage))
+      ? Number(options.incomingDamage)
+      : Math.max(0, Number(threatMap?.damageAt?.(state.player.x, state.player.y)) || 0);
+    const actionInputs = {
+      hasRisk: hasRelic("risk"),
+      oathPotionLockTurns: state.player.oathPotionLockTurns,
+      potions: state.player.potions,
+      hp: state.player.hp,
+      maxHp: state.player.maxHp,
+      incomingDamage,
+      barrier: getTotalPlayerShield(),
+      effectiveHeal: getPotionHealAmount(),
+      bleedTurns: state.player.bleedTurns,
+      bleedDamage: state.player.bleedDamage,
+      poisonTurns: state.player.poisonTurns,
+      poisonDamage: state.player.poisonDamage,
+      boundaryPending: options.boundaryPending === true || Boolean(window.DungeonOnlineV3?.isObserverBotBoundaryPending?.()),
+      turnInProgress: state.turnInProgress === true,
+      enemyTurnInProgress: state.enemyTurnInProgress === true,
+      turn: state.turn,
+      enemyTurn: state.enemyTurnInProgress ? state.enemyTurnStepIndex : 0,
+      hazardIdentity: options.hazardIdentity || getObserverBotPotionHazardIdentity(pendingBlastMap),
+      lastPotionActionKey: ""
+    };
+    const preview = decideBotPotionUseSafe(actionInputs);
+    if (bot && bot.lastPotionActionKey && bot.lastPotionActionKey !== preview.actionKey) {
+      bot.lastPotionActionKey = "";
+    }
+    actionInputs.lastPotionActionKey = bot?.lastPotionActionKey || "";
+    return decideBotPotionUseSafe(actionInputs);
+  }
+
+  function recordObserverBotPotionUse(actionKey) {
+    const bot = state.observerBot;
+    if (!bot || !actionKey) return false;
+    bot.lastPotionActionKey = String(actionKey);
+    const turns = Array.isArray(bot.potionUseTurns) ? bot.potionUseTurns : [];
+    turns.push(Math.max(0, Math.floor(Number(state.turn) || 0)));
+    bot.potionUseTurns = turns.slice(-32);
+    return true;
+  }
+
+  function shouldBotDrinkPotion() {
+    return getObserverBotPotionDecision().use;
+  }
   function hasLineOfSightBetweenTilesForBot(fromX, fromY, toX, toY, chestsOverride = null) {
     const unopenedChests = Array.isArray(chestsOverride)
       ? chestsOverride
@@ -29306,8 +29372,9 @@
       out.push(candidate);
     };
 
-    if (canObserverBotDrinkPotion()) {
-      addCandidate({ kind: "potion" });
+    const potionDecision = getObserverBotPotionDecision();
+    if (potionDecision.use) {
+      addCandidate({ kind: "potion", potionActionKey: potionDecision.actionKey });
     }
 
     if (typeof canObserverBotUseShieldNow === "function" && canObserverBotUseShieldNow()) {
@@ -29805,11 +29872,15 @@
   function executeObserverBotCombatAction(candidate) {
     if (!candidate) return false;
     if (candidate.kind === "potion") {
-      if (!canObserverBotDrinkPotion()) return false;
-      const hpBefore = state.player.hp;
+      const potionDecision = getObserverBotPotionDecision();
+      if (!potionDecision.use) return false;
       const potionsBefore = state.player.potions;
       drinkPotion();
-      return state.player.hp !== hpBefore || state.player.potions !== potionsBefore;
+      if (state.player.potions < potionsBefore) {
+        recordObserverBotPotionUse(potionDecision.actionKey);
+        return true;
+      }
+      return false;
     }
     if (candidate.kind === "shield") {
       return tryUseShieldSkill();

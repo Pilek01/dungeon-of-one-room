@@ -1,8 +1,21 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
+import { createRequire } from "node:module";
 import test from "node:test";
 import vm from "node:vm";
 
+const require = createRequire(import.meta.url);
+const { decideBotPotionUse } = require("../../../bot-safety.js");
+
+test("Observer potion policy preserves deterministic hazard action identities", () => {
+  const base = { hp: 40, maxHp: 100, incomingDamage: 45, effectiveHeal: 25, potions: 1, turn: 3, enemyTurn: 0, hazardIdentity: "mine:2,2:0" };
+  const first = decideBotPotionUse(base);
+  const repeat = decideBotPotionUse({ ...base });
+  const changed = decideBotPotionUse({ ...base, hazardIdentity: "mine:2,2:1" });
+  assert.equal(first.reason, "prevent_lethal");
+  assert.deepEqual(repeat, first);
+  assert.notEqual(changed.actionKey, first.actionKey);
+});
 function element() {
   return {
     hidden: false,
