@@ -62,6 +62,7 @@ function createHarness(options = {}) {
   const merchantRequests = [];
   const merchantCompletions = [];
   const merchantFailures = [];
+  const merchantPresentations = [];
   let snapshot = {
     publicState: metaState({
       currentRoomDirective: {
@@ -199,6 +200,9 @@ function createHarness(options = {}) {
     },
     addEventListener() {},
     setInterval() { return 0; },
+    DungeonRankedV3Transport: {
+      randomOperationId(crypto) { return `op_${crypto.randomUUID().replaceAll("-", "")}`; }
+    },
     DungeonRankedV3Protocol: {
       isSupportedRulesetHash() { return true; },
       supportsBoundarySettlement() { return options.boundarySettlement === true; }
@@ -263,7 +267,7 @@ function createHarness(options = {}) {
       },
       beginRankedExtraction() {},
       beginRankedMerchantRequest() { merchantRequests.push('begin'); },
-      enterRankedMerchant() {},
+      enterRankedMerchant(publicState, offer, context) { merchantPresentations.push({ publicState, offer, context }); },
       completeRankedMerchantAction(result) { merchantCompletions.push(result); },
       failRankedMerchantAction(result) { merchantFailures.push(result); },
       enterRankedCamp() {},
@@ -307,7 +311,8 @@ function createHarness(options = {}) {
     scheduledTimers,
     merchantRequests,
     merchantCompletions,
-    merchantFailures
+    merchantFailures,
+    merchantPresentations
   };
 }
 
@@ -1584,6 +1589,11 @@ test("pending Merchant submission dispatches once and duplicate receipts are ide
   const runtime = await installRuntime(harness);
   await runtime.onMerchantOpen();
   assert.equal(runtime.onMerchantAction({ action: "potion" }), true);
+  assert.equal(runtime.completeRankedMerchantAction({
+    canonicalConfirmed: true,
+    operationId: "op_attacker",
+    receiptKey: "attacker-receipt"
+  }), false);
   assert.equal(runtime.onMerchantAction({ action: "potion" }), true);
   assert.equal(commitCalls, 1);
   assert.equal(runtime.getRankedMerchantMutationState().status, "pending");
@@ -1655,8 +1665,10 @@ test("uncertain Merchant transport resumes before one retry with the same operat
   const commits = calls.filter((entry) => entry.action === "commit_meta_transaction");
   assert.equal(commits.length, 2);
   assert.equal(calls.findIndex((entry) => entry.action === "resume") > 0, true);
+  assert.match(commits[0].operationId, /^op_[0-9a-f]{32}$/u);
   assert.equal(commits[0].operationId, commits[1].operationId);
-  assert.equal(commits[0].operationId.length > 0, true);
+  const resumeCall = calls.find((entry) => entry.action === "resume");
+  assert.notEqual(resumeCall.operationId, commits[0].operationId);
   assert.equal(harness.merchantCompletions.length, 1);
 });
 
@@ -1686,7 +1698,7 @@ test("Merchant resync adopts a committed canonical receipt without a second comm
   assert.equal(commitCalls, 1);
   assert.equal(harness.merchantCompletions.length, 1);
   assert.equal(harness.merchantCompletions[0].adopted, true);
-  assert.equal(harness.merchantCompletions[0].receiptKey, "00000000-0000-4000-8000-000000000000");
+  assert.equal(harness.merchantCompletions[0].receiptKey, "op_00000000000040008000000000000000");
 });
 
 test("three deterministic Merchant failures enter bounded backoff and block further attempts", async () => {
@@ -1718,4 +1730,107 @@ test("three deterministic Merchant failures enter bounded backoff and block furt
   assert.equal(runtime.onMerchantAction({ action: "potion" }), true);
   assert.equal(commitCalls, 3);
   assert.equal(harness.merchantCompletions.length, 0);
+});
+
+test("Merchant operation IDs use transport format, fresh resume identity, and original retry identity", async () => {
+  const calls = [];
+  let commits = 0;
+  const harness = createHarness({
+    observerBotActive: false,
+    async onEvent(action, payload, operationId) {
+      calls.push({ action, payload, operationId });
+      if (action === "open_meta_offer") return { metaState: merchantOfferState() };
+      if (action === "commit_meta_transaction") {
+        commits += 1;
+        if (commits === 1) throw new Error("transport timeout");
+        return { metaState: merchantCommittedState() };
+      }
+      throw new Error(`unexpected Merchant event: ${action}`);
+    },
+    async onResume(input, operationId) {
+      calls.push({ action: "resume", payload: input, operationId: operationId || "resume-fresh" });
+      return { metaState: merchantOfferState() };
+    }
+  });
+  const runtime = await installRuntime(harness);
+  await runtime.onMerchantOpen();
+  runtime.onMerchantAction({ action: "potion" });
+  await waitFor(() => runtime.getRankedMerchantMutationState().status === "confirmed", "identity test did not confirm");
+  const commitCalls = calls.filter((entry) => entry.action === "commit_meta_transaction");
+  const resumeCall = calls.find((entry) => entry.action === "resume");
+  assert.match(commitCalls[0].operationId, /^op_[0-9a-f]{32}$/u);
+  assert.equal(commitCalls[0].operationId, commitCalls[1].operationId);
+  assert.notEqual(resumeCall.operationId, commitCalls[0].operationId);
+});
+
+test("a 409 Merchant conflict resyncs and retries instead of deterministic failure", async () => {
+  let commits = 0;
+  const conflict = Object.assign(new Error("revision conflict"), { status: 409, code: "REVISION_CONFLICT" });
+  const harness = createHarness({
+    observerBotActive: false,
+    async onEvent(action) {
+      if (action === "open_meta_offer") return { metaState: merchantOfferState() };
+      if (action === "commit_meta_transaction") {
+        commits += 1;
+        if (commits === 1) throw conflict;
+        return { metaState: merchantCommittedState() };
+      }
+      throw new Error(`unexpected Merchant event: ${action}`);
+    },
+    async onResume() { return { metaState: merchantOfferState() }; }
+  });
+  const runtime = await installRuntime(harness);
+  await runtime.onMerchantOpen();
+  runtime.onMerchantAction({ action: "potion" });
+  await waitFor(() => runtime.getRankedMerchantMutationState().status === "confirmed", "409 conflict did not retry");
+  assert.equal(commits, 2);
+});
+
+test("advanced changed Merchant state without exact proof never retries a stale choice", async () => {
+  let commits = 0;
+  const harness = createHarness({
+    observerBotActive: false,
+    async onEvent(action) {
+      if (action === "open_meta_offer") return { metaState: merchantOfferState() };
+      if (action === "commit_meta_transaction") {
+        commits += 1;
+        throw new Error("response lost");
+      }
+      throw new Error(`unexpected Merchant event: ${action}`);
+    },
+    async onResume() {
+      return { metaState: merchantOfferState({
+        revision: 2,
+        metaTransactionOffer: {
+          sourceType: "merchant",
+          offerId: "merchant_offer_changed",
+          choices: [{ transactionId: "merchant_tx_1", choiceId: "potion_1", kind: "merchant_potion", status: "available", price: 20 }]
+        }
+      }) };
+    }
+  });
+  const runtime = await installRuntime(harness);
+  await runtime.onMerchantOpen();
+  runtime.onMerchantAction({ action: "potion" });
+  await waitFor(() => runtime.getRankedMerchantMutationState().status === "rejected", "false-positive resync did not close");
+  assert.equal(runtime.getRankedMerchantMutationState().reason, "resync_required");
+  assert.equal(commits, 1);
+});
+
+test("direct Merchant success completes before consuming a null offer", async () => {
+  const harness = createHarness({
+    observerBotActive: false,
+    async onEvent(action) {
+      if (action === "open_meta_offer") return { metaState: merchantOfferState() };
+      if (action === "commit_meta_transaction") return { metaState: merchantOfferState({ revision: 2, metaTransactionOffer: undefined }) };
+      throw new Error(`unexpected Merchant event: ${action}`);
+    }
+  });
+  const runtime = await installRuntime(harness);
+  await runtime.onMerchantOpen();
+  runtime.onMerchantAction({ action: "potion" });
+  await waitFor(() => runtime.getRankedMerchantMutationState().status === "confirmed", "null-offer success did not confirm");
+  assert.equal(harness.merchantCompletions.length, 1);
+  assert.equal(harness.merchantCompletions[0].offerConsumed, true);
+  assert.equal(harness.merchantPresentations.length, 1);
 });

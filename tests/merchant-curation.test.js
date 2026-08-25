@@ -210,5 +210,95 @@ for (const [name, context, reason] of [
     state: policyState({ player: { hp: 80, maxHp: 100, potions: 0, maxPotions: 8, gold: 300 } }),
     choices: [{ kind: "merchant_skill_upgrade", skillId: "shield", price: 20, status: "available" }]
   });
-  assert.equal(noPotionSynthesis.reason, "no_canonical_choice");
+  assert.deepEqual(noPotionSynthesis.request, { action: "skill_upgrade", skillId: "shield" });
+}
+
+{
+  const fullBagSkill = merchantDecision({
+    state: policyState({ player: { hp: 100, maxHp: 100, potions: 8, maxPotions: 8, gold: 100 } }),
+    choices: [
+      { kind: "merchant_potion", price: 20, status: "available" },
+      { kind: "merchant_skill_upgrade", skillId: "shield", price: 20, status: "available" }
+    ]
+  });
+  assert.deepEqual(fullBagSkill.request, { action: "skill_upgrade", skillId: "shield" });
+
+  const missingPotionSkill = merchantDecision({
+    state: policyState({ player: { hp: 80, maxHp: 100, potions: 0, maxPotions: 8, gold: 100 } }),
+    choices: [{ kind: "merchant_skill_upgrade", skillId: "shield", price: 20, status: "available" }]
+  });
+  assert.deepEqual(missingPotionSkill.request, { action: "skill_upgrade", skillId: "shield" });
+}
+
+{
+  const unavailable = merchantDecision({
+    state: policyState({ player: { hp: 100, maxHp: 100, potions: 2, maxPotions: 8, gold: 100 } }),
+    choices: [{ kind: "merchant_skill_upgrade", skillId: "shield", price: 20 }, { kind: "merchant_unknown", status: "available" }]
+  });
+  assert.equal(unavailable.reason, "no_useful_upgrade");
+}
+
+{
+  const replacement = merchantDecision({
+    state: policyState({ player: { hp: 100, maxHp: 100, potions: 2, maxPotions: 8, gold: 100 } }),
+    choices: [{ kind: "merchant_relic_replacement", relicId: "vampfang", removals: [{ relicId: "fang" }, { relicId: "idol" }], price: 20, status: "available" }]
+  });
+  assert.deepEqual(replacement.request, { action: "relic_purchase", relicId: "vampfang", removalRelicId: "fang" });
+
+  const reserve = merchantDecision({
+    state: policyState({ player: { hp: 100, maxHp: 100, potions: 2, maxPotions: 8, gold: 100 } }),
+    choices: [{ kind: "merchant_relic_reserve", relicId: "idol", price: 20, status: "available" }]
+  });
+  assert.deepEqual(reserve.request, { action: "reserve_relic", relicId: "idol" });
+
+  const claim = merchantDecision({
+    state: policyState({ player: { hp: 100, maxHp: 100, potions: 2, maxPotions: 8, gold: 100 } }),
+    choices: [{ kind: "merchant_relic_replacement", reserved: true, relicId: "idol", removals: [{ relicId: "fang" }], price: 20, status: "available" }]
+  });
+  assert.deepEqual(claim.request, { action: "claim_reserved", relicId: "idol", removalRelicId: "fang" });
+}
+
+{
+  const nextBoss = merchantDecision({
+    state: policyState({ depth: 4, bossRoom: false, player: { hp: 80, maxHp: 100, potions: 2, maxPotions: 8, gold: 100 } }),
+    choices: [{ kind: "merchant_potion", price: 20, status: "available" }]
+  });
+  assert.equal(nextBoss.action, "potion", "depth 4 must see the depth 5 boss ahead");
+}
+
+{
+  const urgent = merchantDecision({
+    state: policyState({ lives: 1, player: { hp: 20, maxHp: 100, potions: 0, maxPotions: 8, gold: 0 }, campGold: 100 }),
+    choices: [
+      { kind: "merchant_potion", price: 30, status: "available" },
+      { kind: "merchant_skill_upgrade", skillId: "shield", price: 30, status: "available" }
+    ]
+  });
+  assert.equal(urgent.reason, "camp_reserve", "urgent Camp reserve floor is 100");
+
+  const ordinary = merchantDecision({
+    state: policyState({ lives: 3, player: { hp: 80, maxHp: 100, potions: 0, maxPotions: 8, gold: 0 }, campGold: 120 }),
+    choices: [
+      { kind: "merchant_potion", price: 30, status: "available" },
+      { kind: "merchant_skill_upgrade", skillId: "shield", price: 30, status: "available" }
+    ]
+  });
+  assert.equal(ordinary.reason, "camp_reserve", "ordinary Camp reserve remains 220");
+}
+
+{
+  const service = merchantDecision({
+    state: policyState({ lives: 2, player: { hp: 100, maxHp: 100, potions: 2, maxPotions: 8, gold: 100 } }),
+    choices: [
+      { kind: "merchant_service", serviceId: "fullheal", price: 20, status: "available" },
+      { kind: "merchant_service", serviceId: "onelife", price: 20, status: "available" }
+    ]
+  });
+  assert.deepEqual(service.request, { action: "service", serviceId: "onelife" });
+
+  const cappedLife = merchantDecision({
+    state: policyState({ lives: 2, maxLives: 2, player: { hp: 100, maxHp: 100, potions: 3, maxPotions: 8, gold: 100 } }),
+    choices: [{ kind: "merchant_service", serviceId: "onelife", price: 20, status: "available" }]
+  });
+  assert.equal(cappedLife.reason, "no_useful_upgrade");
 }

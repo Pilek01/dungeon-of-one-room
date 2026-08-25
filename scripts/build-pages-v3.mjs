@@ -2118,11 +2118,13 @@ const rankedMerchantPolicyBranch = [
   "        state,",
   "        choices: state.onlineV3MerchantChoices,",
   "        mutationState: window.DungeonOnlineV3?.getRankedMerchantMutationState?.(),",
-  "        nextIsBoss: state.bossRoom === true",
+  "        nextDepth: state.onlineV3NextDirective?.depth ?? ((Number(state.depth) || 0) + 1)",
   "      });",
   "      if (decision.action === \"potion\") return tryBuyPotionFromMerchant();",
   "      if (decision.action === \"skill_upgrade\") return tryBuySkillUpgradeFromMerchant(decision.request.skillId);",
   "      if (decision.action === \"relic_purchase\") return tryBuyRelicFromMerchant();",
+  "      if (decision.action === \"reserve_relic\") return tryReserveRelicFromMerchant();",
+  "      if (decision.action === \"claim_reserved\") return tryBuyReservedRelicFromMerchant();",
   "      if (decision.action === \"service\") {",
   "        if (decision.request.serviceId === \"fullheal\") return tryBuyFullHeal();",
   "        if (decision.request.serviceId === \"combatboost\") return tryBuyCombatBoost();",
@@ -2136,7 +2138,6 @@ const rankedMerchantPolicyBranch = [
 ].join("\n");
 if (!game.includes(rankedMerchantPolicyMarker)) throw new Error("Missing Ranked Merchant policy marker.");
 game = game.replace(rankedMerchantPolicyMarker, rankedMerchantPolicyMarker + rankedMerchantPolicyBranch);
-game = game.replace(/state\.observerBot\.merchantPurchasesThisRoom\s*\+=\s*1;\s*/gu, "");
 
 const rankedObserverPactStart = game.indexOf("  function runObserverBotPlayingAction() {");
 const rankedObserverPactEnd = game.indexOf("  function chooseObserverBotCampStartDepth()", rankedObserverPactStart);

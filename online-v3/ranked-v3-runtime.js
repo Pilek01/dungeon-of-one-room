@@ -1561,6 +1561,10 @@
     };
   }
 
+  function merchantOfferIdentity(offer) {
+    return String(offer?.offerId || "") + ":" + String(offer?.sourceInstanceId || "");
+  }
+
   function merchantReceiptKey(response, operation) {
     const state = response?.metaState || response?.publicState || {};
     const direct = response?.receipt || response?.metaTransactionReceipt;
@@ -1583,30 +1587,58 @@
     return String(operation?.operationId || "");
   }
 
-  function merchantCanonicalCommitted(state, operation) {
-    if (!state || !operation) return false;
-    const acknowledgedOperationId = String(createClient().getSnapshot()?.lastAcknowledgedOperationId || "");
-    if (acknowledgedOperationId !== String(operation.operationId || "")) return false;
-    const receipts = Array.isArray(state.metaTransactionReceipts)
-      ? state.metaTransactionReceipts
-      : [];
-    if (receipts.some((entry) =>
-      String(entry?.transactionId || "") === String(operation.transactionId || "") &&
-      String(entry?.choiceId || "") === String(operation.choiceId || "")
-    )) return true;
+  function merchantReservationId(state) {
+    return String(
+      state?.merchantReservedRelic?.relicId ||
+      state?.merchantReservedRelicId ||
+      state?.reservedRelic?.relicId ||
+      ""
+    );
+  }
+
+  function merchantRelicStacks(state, relicId) {
+    const relics = Array.isArray(state?.build?.relics) ? state.build.relics :
+      Array.isArray(state?.relics) ? state.relics : [];
+    const entry = relics.find((relic) => String(relic?.relicId || relic?.id || "") === String(relicId || ""));
+    return Math.max(0, Number(entry?.stacks ?? entry?.count ?? (entry ? 1 : 0)) || 0);
+  }
+
+  function merchantFacts(state, choice, request) {
+    const price = Math.max(0, Number(choice?.totalPrice ?? choice?.price) || 0);
+    return {
+      runGold: Math.max(0, Number(state?.player?.gold) || 0),
+      campGold: Math.max(0, Number(state?.campGold) || 0),
+      reservationId: merchantReservationId(state),
+      relicId: String(request?.relicId || choice?.relicId || ""),
+      relicStacks: merchantRelicStacks(state, request?.relicId || choice?.relicId),
+      price
+    };
+  }
+
+  function merchantCanonicalProof(state, operation) {
+    if (!state || !operation) return "";
+    const revision = merchantRevision(state);
     const offer = state.metaTransactionOffer;
-    if (offer && offer.sourceType === "merchant") {
-      const choice = Array.isArray(offer.choices)
-        ? offer.choices.find((entry) => String(entry?.choiceId || "") === String(operation.choiceId || ""))
-        : null;
-      return choice?.status === "sold";
-    }
-    return merchantRevision(state) > Number(operation.startingRevision || 0) &&
-      !offer;
+    const sameOffer = offer?.sourceType === "merchant" && merchantOfferIdentity(offer) === operation.startingOfferKey;
+    const choice = sameOffer && Array.isArray(offer.choices)
+      ? offer.choices.find((entry) => String(entry?.choiceId || "") === operation.choiceId)
+      : null;
+    if (revision === operation.startingRevision && sameOffer && choice?.status === "available") return "retry";
+    if (revision <= operation.startingRevision) return "";
+    if (sameOffer && choice?.status === "sold") return "adopt";
+    const facts = operation.startingFacts || {};
+    const reservationCleared = facts.reservationId && merchantReservationId(state) !== facts.reservationId;
+    const currentStacks = merchantRelicStacks(state, facts.relicId);
+    const walletBefore = Number(facts.runGold || 0) + Number(facts.campGold || 0);
+    const walletAfter = Math.max(0, Number(state?.player?.gold) || 0) + Math.max(0, Number(state?.campGold) || 0);
+    if (operation.action === "claim_reserved" && reservationCleared && currentStacks > Number(facts.relicStacks || 0) &&
+      walletAfter === Math.max(0, walletBefore - Number(facts.price || 0))) return "adopt";
+    if (operation.action === "discard_reserved" && reservationCleared && walletAfter === walletBefore) return "adopt";
+    return "";
   }
 
   function merchantResetForOffer(offer) {
-    const offerKey = String(offer?.offerId || "") + ":" + String(offer?.sourceInstanceId || "");
+    const offerKey = merchantOfferIdentity(offer);
     if (merchantOperation?.offerKey === offerKey) return;
     merchantOperation = null;
     merchantFailureCount = 0;
@@ -1634,18 +1666,22 @@
       ...result,
       reason: operation?.reason || reason
     });
-    root.DungeonOnlineV3GameBridge?.failRankedMerchantRequest?.(
-      result.message || "That Merchant choice was not confirmed."
-    );
+    if (result.requestNotified !== true) {
+      root.DungeonOnlineV3GameBridge?.failRankedMerchantRequest?.(
+        result.message || "That Merchant choice was not confirmed."
+      );
+    }
     return false;
   }
 
   function completeRankedMerchantAction(result = {}) {
     const operation = merchantOperation;
     if (!operation || operation.status === "confirmed") return false;
+    if (result.canonicalConfirmed !== true || String(result.operationId || "") !== String(operation.operationId || "")) return false;
     const receiptKey = String(result.receiptKey || merchantReceiptKey(result, operation));
     if (!receiptKey || merchantConfirmedReceipts.has(receiptKey)) return false;
     merchantConfirmedReceipts.add(receiptKey);
+    while (merchantConfirmedReceipts.size > 64) merchantConfirmedReceipts.delete(merchantConfirmedReceipts.values().next().value);
     operation.status = "confirmed";
     operation.receiptKey = receiptKey;
     operation.reason = "";
@@ -1659,52 +1695,61 @@
     return true;
   }
 
+  function settleMerchantSuccess(response, operation, request, options = {}) {
+    const state = response?.metaState || response?.publicState || merchantPublicState();
+    root.DungeonOnlineV3GameBridge?.syncCanonicalProjection?.(state);
+    const offer = state?.metaTransactionOffer;
+    const completed = completeRankedMerchantAction({
+      ...response,
+      metaState: state,
+      canonicalConfirmed: true,
+      operationId: operation.operationId,
+      receiptKey: merchantReceiptKey(response, operation),
+      adopted: options.adopted === true,
+      offerConsumed: !(offer && offer.sourceType === "merchant")
+    });
+    if (!completed) return false;
+    if (offer && offer.sourceType === "merchant") {
+      presentNativeMerchant(state, request);
+    } else {
+      currentMerchantOffer = null;
+    }
+    return true;
+  }
+
   async function resyncRankedMerchantOperation(operation, error) {
     operation.status = "resyncing";
     operation.reason = "resync_required";
     try {
       const response = await createClient().resumeCanonical({
         lastKnownRevision: operation.startingRevision
-      }, operation.operationId);
+      });
       const state = response?.metaState || merchantPublicState();
-      if (merchantCanonicalCommitted(state, operation)) {
-        root.DungeonOnlineV3GameBridge?.syncCanonicalProjection?.(state);
-        presentNativeMerchant(state, { action: operation.action });
-        completeRankedMerchantAction({
-          metaState: state,
-          receiptKey: merchantReceiptKey(response, operation),
-          adopted: true
-        });
+      const proof = merchantCanonicalProof(state, operation);
+      if (proof === "adopt") {
+        settleMerchantSuccess(response, operation, operation.request, { adopted: true });
         return true;
       }
-      // attempts < 2 permits exactly one post-resync retry.
-      if (operation.attempts >= 2) {
+      const retryAllowed = operation.attempts < 2;
+      if (proof !== "retry" || !retryAllowed) {
         failRankedMerchantAction({ reason: "resync_required", error });
         return false;
       }
       operation.attempts += 1;
       operation.status = "pending";
       merchantMutationPending = true;
-      const requestIdentity = { operationId: merchantOperation.operationId || operation.operationId };
+      const retryIdentity = { operationId: merchantOperation.operationId };
       const retry = await createClient().event("commit_meta_transaction", {
         transactionId: operation.transactionId,
         choiceId: operation.choiceId
-      }, requestIdentity.operationId);
-      const retryState = retry?.metaState || merchantPublicState();
-      root.DungeonOnlineV3GameBridge?.syncCanonicalProjection?.(retryState);
-      presentNativeMerchant(retryState, { action: operation.action });
-      completeRankedMerchantAction({
-        ...retry,
-        metaState: retryState,
-        receiptKey: merchantReceiptKey(retry, operation)
-      });
+      }, retryIdentity.operationId);
+      settleMerchantSuccess(retry, operation, operation.request);
       return true;
     } catch (resyncError) {
       failRankedMerchantAction({ reason: "resync_required", error: resyncError });
       return false;
     }
   }
-
   function availableMerchantChoices() {
     const choices = currentMerchantOffer?.choices;
     return Array.isArray(choices)
@@ -1798,8 +1843,8 @@
   function merchantErrorIsDeterministic(error) {
     const status = Number(error?.status) || 0;
     const code = String(error?.code || "").toUpperCase();
-    return status === 400 || status === 409 || status === 422 ||
-      /STALE|CHOICE|CONFLICT|UNAVAILABLE|REJECT/u.test(code);
+    return status === 400 || status === 422 ||
+      /STALE|CHOICE|UNAVAILABLE|REJECT/u.test(code);
   }
 
   async function submitRankedMerchantOperation(operation, request) {
@@ -1808,14 +1853,7 @@
         transactionId: operation.transactionId,
         choiceId: operation.choiceId
       }, operation.operationId);
-      const state = response?.metaState || merchantPublicState();
-      root.DungeonOnlineV3GameBridge?.syncCanonicalProjection?.(state);
-      presentNativeMerchant(state, request);
-      completeRankedMerchantAction({
-        ...response,
-        metaState: state,
-        receiptKey: merchantReceiptKey(response, operation)
-      });
+      settleMerchantSuccess(response, operation, request);
     } catch (error) {
       if (merchantErrorIsDeterministic(error)) {
         failRankedMerchantAction({ reason: "commit_rejected", error });
@@ -1853,23 +1891,27 @@
       failRankedMerchantAction({
         action: request.action,
         reason: "no_canonical_choice",
-        message: "That Merchant offer is not available."
+        message: "That Merchant offer is not available.",
+        requestNotified: true
       });
-      root.DungeonOnlineV3GameBridge?.failRankedMerchantRequest?.("That Merchant offer is not available.");
       return false;
     }
     const state = merchantPublicState();
+    const operationId = root.DungeonRankedV3Transport.randomOperationId(root.crypto);
     const operation = {
       status: "pending",
-      operationId: root.crypto.randomUUID(),
+      operationId,
       transactionId: String(choice.transactionId || ""),
       choiceId: String(choice.choiceId || ""),
       startingRevision: merchantRevision(state),
+      startingOfferKey: merchantOfferIdentity(currentMerchantOffer),
       action: String(request.action || ""),
+      request: { ...request },
+      startingFacts: merchantFacts(state, choice, request),
       receiptKey: "",
       reason: "offer_pending",
       attempts: 1,
-      offerKey: String(currentMerchantOffer?.offerId || "") + ":" + String(currentMerchantOffer?.sourceInstanceId || "")
+      offerKey: merchantOfferIdentity(currentMerchantOffer)
     };
     merchantOperation = operation;
     merchantOperation.status = "pending";
@@ -1880,7 +1922,6 @@
     });
     return true;
   }
-
   async function onMerchantLeave(options = {}) {
     if (merchantMutationPending) return true;
     merchantMutationPending = true;
@@ -2337,6 +2378,7 @@
       merchantOperation = null;
       merchantFailureCount = 0;
       merchantMutationPending = false;
+      merchantConfirmedReceipts.clear();
       pendingRoomSummary = {
         turnCount: 0,
         rewardClaims: [],
