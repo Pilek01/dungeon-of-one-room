@@ -79,17 +79,18 @@
     const effectiveHeal = Math.max(0, Number(options.effectiveHeal ?? options.healAmount) || 0);
     const utilizedHeal = Math.min(Math.max(0, maxHp - hp), effectiveHeal);
     const hpAfterThreat = hp - projectedDamage;
-    const hpAfterPotionThreat = hp + utilizedHeal - projectedDamage;
+    const potionClearsStatuses = bleed.turns > 0 || poison.turns > 0;
+    const hpAfterPotionThreat = hp + utilizedHeal - (potionClearsStatuses ? barrierAdjustedDamage : projectedDamage);
     const meaningfulHeal = utilizedHeal >= Math.max(1, Math.ceil(maxHp * POTION_MEANINGFUL_STATUS_RATIO));
+    const hpRatio = hp / maxHp;
     if (hpAfterThreat <= 0 && hpAfterPotionThreat > 0) return { use: true, reason: "prevent_lethal", actionKey };
     if (bleed.meaningful || poison.meaningful) {
       const cleanseBleed = bleed.meaningful && (!poison.meaningful || bleed.remainingDamage >= poison.remainingDamage);
       return { use: true, reason: cleanseBleed ? "cleanse_bleed" : "cleanse_poison", actionKey };
     }
-    if (hpAfterThreat / maxHp <= CRITICAL_HP_RATIO && meaningfulHeal && hpAfterPotionThreat > hpAfterThreat) {
+    if (hpRatio > CRITICAL_HP_RATIO && hpAfterThreat / maxHp <= CRITICAL_HP_RATIO && meaningfulHeal && hpAfterPotionThreat > hpAfterThreat) {
       return { use: true, reason: "prevent_critical", actionKey };
     }
-    const hpRatio = hp / maxHp;
     if (hpRatio <= CRITICAL_HP_RATIO && meaningfulHeal) return { use: true, reason: "low_hp_useful_heal", actionKey };
     if (hpRatio >= 0.8 && barrierAdjustedDamage < Math.max(1, Math.ceil(maxHp * POTION_MEANINGFUL_STATUS_RATIO))) {
       return { use: false, reason: "high_hp_low_threat", actionKey };

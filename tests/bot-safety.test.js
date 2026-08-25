@@ -19,6 +19,12 @@ function run() {
   assert.equal(canBotDrinkPotion({ potions: 2, hp: 30, maxHp: 100, hasRisk: true }), false);
   assert.equal(decideBotPotionUse({ hp: 90, maxHp: 100, incomingDamage: 5, effectiveHeal: 20, potions: 2 }).use, false);
   assert.equal(decideBotPotionUse({ hp: 40, maxHp: 100, incomingDamage: 45, effectiveHeal: 25, potions: 2 }).reason, "prevent_lethal");
+  assert.equal(decideBotPotionUse({ hp: 50, maxHp: 100, incomingDamage: 20, effectiveHeal: 20, potions: 1 }).reason, "prevent_critical");
+  assert.equal(decideBotPotionUse({ hp: 30, maxHp: 100, incomingDamage: 10, effectiveHeal: 20, potions: 1 }).reason, "low_hp_useful_heal");
+  assert.equal(decideBotPotionUse({ hp: 40, maxHp: 100, incomingDamage: 35, poisonTurns: 1, poisonDamage: 5, effectiveHeal: 0, potions: 1 }).reason, "prevent_lethal");
+  assert.equal(decideBotPotionUse({ hp: 80, maxHp: 100, incomingDamage: 1, effectiveHeal: 20, potions: 1 }).reason, "high_hp_low_threat");
+  assert.equal(decideBotPotionUse({ hp: 80, maxHp: 100, incomingDamage: 1, poisonTurns: 2, poisonDamage: 5, effectiveHeal: 20, potions: 1 }).reason, "cleanse_poison");
+  assert.equal(decideBotPotionUse({ hp: 80, maxHp: 100, incomingDamage: 1, poisonTurns: 1, poisonDamage: 1, effectiveHeal: 20, potions: 1 }).reason, "high_hp_low_threat");
   assert.equal(decideBotPotionUse({ hp: 100, maxHp: 100, poisonTurns: 3, poisonDamage: 8, potions: 1 }).reason, "cleanse_poison");
   assert.equal(decideBotPotionUse({ hp: 100, maxHp: 100, bleedTurns: 2, bleedDamage: 12, potions: 1 }).reason, "cleanse_bleed");
   for (const [options, reason] of [
@@ -39,6 +45,10 @@ function run() {
   });
   assert.equal(duplicate.reason, "blocked_duplicate_action");
   assert.equal(decideBotPotionUse({ hp: 30, maxHp: 100, incomingDamage: 50, barrier: 20, effectiveHeal: 20, potions: 1 }).use, true);
+  assert.match(game, /bot\.potionUseTurns = turns\.slice\(-32\)/);
+  const startRunIndex = game.indexOf("function startRun(options = {}) {");
+  assert.ok(startRunIndex >= 0);
+  assert.ok(game.indexOf('state.observerBot.lastPotionActionKey = "";', startRunIndex) > startRunIndex);
   assert.equal(decideBotPotionUse({ hp: 30, maxHp: 100, incomingDamage: 1, effectiveHeal: 5, potions: 1 }).reason, "heal_waste");
   assert.match(game, /const potionDecision = getObserverBotPotionDecision\(\);\s*if \(potionDecision\.use\)/);
   assert.match(game, /recordObserverBotPotionUse\(potionDecision\.actionKey\)/);

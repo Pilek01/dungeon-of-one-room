@@ -14478,6 +14478,8 @@
     if (!(state.campaignStartedAt > 0)) state.campaignStartedAt = Date.now();
     state.turn = 0;
     state.runStartDepth = selectedStartDepth;
+    state.observerBot.lastPotionActionKey = "";
+    state.observerBot.potionUseTurns = [];
     state.roomIndex = 0;
     state.bossRoom = false;
     state.roomType = "combat";
