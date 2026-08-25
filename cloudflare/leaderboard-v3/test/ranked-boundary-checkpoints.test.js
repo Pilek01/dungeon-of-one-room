@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { createHash, webcrypto } from "node:crypto";
+import { readFileSync } from "node:fs";
 import test from "node:test";
 import { applyRulesetCheckpoint, applyRulesetEvent } from "../src/domain/ruleset-runtime.js";
 import {
@@ -20,6 +21,14 @@ import {
 
 const SECRET = "ranked-boundary-checkpoints:0123456789abcdef0123456789abcdef";
 const NOW = 1_900_100_000_000;
+
+test("checkpoint forwards bounded combat resources only when supplied by input", () => {
+  const client = readFileSync(new URL("../../../online-v3/ranked-v3-client.js", import.meta.url), "utf8");
+  assert.match(
+    client,
+    /Object\.hasOwn\(input, "combatResources"\)[\s\S]*combatResources: clone\(input\.combatResources\)/u
+  );
+});
 
 function oracle() {
   return {
@@ -256,6 +265,49 @@ test("capable fatal events settle the journal before a prevented fatal and keep 
   assert.equal(result.nextState.statistics.roomsCompleted, 0);
   assert.equal(result.nextState.currentRoomDirective.directiveId, state.currentRoomDirective.directiveId);
   assert.equal(result.nextState.lifeLedger.secondChancePreventions, 1);
+});
+
+test("same fatal journal with a changed bounded payload rejects before a second settlement", async () => {
+  const { state, context } = await activeRoom(
+    "run_boundary_event_fatal_idempotency_mismatch",
+    { ...V08_META_1_LOCAL_RELEASE_DESCRIPTOR.capabilities, boundedCombatResources: "v1" },
+    (prepared) => {
+      prepared.build.resources.hp = 80;
+      prepared.build.resources.maxHp = 100;
+      prepared.build.resources.hasSecondChance = true;
+    }
+  );
+  initializeRankEligibility(state, { integrityVersion: 1 });
+  captureRankIntegrityRoomContext(state);
+  const ruleset = createV08Meta1Ruleset({
+    rulesetHash: state.rulesetHash,
+    capabilities: context.capabilities
+  });
+  const firstRequest = boundaryRequest(state, mapFragmentClaim(state), {
+    combatResources: { hp: 80, maxHp: 100 }
+  });
+  const first = await applyRulesetEvent(state, {
+    type: "report_fatal_event",
+    payload: {
+      classification: "local_fatal_event",
+      boundarySettlement: firstRequest
+    }
+  }, ruleset, context);
+  await assert.rejects(
+    applyRulesetEvent(first.nextState, {
+      type: "report_fatal_event",
+      payload: {
+        classification: "local_fatal_event",
+        boundarySettlement: {
+          ...boundaryRequest(first.nextState, mapFragmentClaim(first.nextState), {
+            combatResources: { hp: 79, maxHp: 100 }
+          }),
+          commandJournalDigest: firstRequest.commandJournalDigest
+        }
+      }
+    }, ruleset, context),
+    /REWARD_IDEMPOTENCY_PAYLOAD_MISMATCH/u
+  );
 });
 
 test("an impossible boundary claim makes the run provisional but still resolves the fatal", async () => {

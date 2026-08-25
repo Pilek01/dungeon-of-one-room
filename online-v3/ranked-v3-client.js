@@ -369,6 +369,9 @@
         reportedGoldTotal: Math.max(0, Math.floor(Number(input.reportedGoldTotal) || 0)),
         turnCount: Math.max(0, Math.floor(Number(input.turnCount) || 0)),
         elapsedMs: Math.max(0, Math.floor(Number(input.elapsedMs) || 0)),
+        ...(Object.hasOwn(input, "combatResources")
+          ? { combatResources: clone(input.combatResources) }
+          : {}),
         commandJournalDigest,
         compactRoomProof: {
           version: 1,

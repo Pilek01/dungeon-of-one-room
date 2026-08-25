@@ -82,6 +82,9 @@ async function settleEventJournalBoundary(state, payload, outcome, ruleset, cont
       runtimeContext(state, { ...context, elapsedMs: request.elapsedMs }, ruleset.capabilities)
     );
   } catch (error) {
+    if (error instanceof TypeError && error.message === "REWARD_IDEMPOTENCY_PAYLOAD_MISMATCH") {
+      throw error;
+    }
     if (!(error instanceof TypeError) || !/^REWARD_/u.test(String(error.message || ""))) {
       throw error;
     }
