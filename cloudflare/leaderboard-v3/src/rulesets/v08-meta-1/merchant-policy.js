@@ -408,6 +408,7 @@ export async function issueMerchantInventoryV08(metaState, context = {}) {
   }
 
   for (const owned of metaState.build.relics) {
+    if (owned.relicId === metaState.build.merchant.reservedRelic?.relicId) continue;
     const relic = getRelicCatalogEntryV08(owned.relicId);
     const payout = Math.max(
       1,
@@ -595,6 +596,9 @@ export async function commitMerchantTransactionV08(metaState, request, context =
       next.build.merchant.reservedRelic = null;
       markGroupSold(next, data.group, choice.transactionId);
     } else if (data.action === "buyback") {
+      if (next.build.merchant.reservedRelic?.relicId === data.relicId) {
+        throw new TypeError("MERCHANT_RESERVED_RELIC_BUYBACK_FORBIDDEN");
+      }
       next.build = await applyRelicRemovalV08(
         next.build,
         { relicId: data.relicId, stacks: 1 },
@@ -652,7 +656,7 @@ export async function commitMerchantTransactionV08(metaState, request, context =
     }
     return {
       nextState: next,
-      consumeOffer: false,
+      consumeOffer: data.action === "discard_reserved" || data.group === "merchant-reserved",
       authoritativeCost,
       authoritativeReward,
       publicResult: {

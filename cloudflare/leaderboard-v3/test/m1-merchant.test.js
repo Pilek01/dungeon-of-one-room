@@ -312,6 +312,97 @@ test("reservation charges 25% once, unlocks claim, and never refunds deposit", a
   assert.equal(committed.build.merchant.reservedRelic, null);
 });
 
+test("reserved relic IDs suppress aggregated buybacks and reject crafted commits before payout", async () => {
+  const prepared = setup("merchant_reserved_buyback_guard");
+  await buildWith(prepared.meta, ["fang", "fang", "plating"]);
+  prepared.meta.build.merchant.reservedRelic = {
+    relicId: "fang",
+    totalPrice: 300,
+    depositPaid: 75,
+    remainingPrice: 225
+  };
+  prepared.meta = await issueMerchantInventoryV08(prepared.meta, prepared.context);
+
+  assert.equal(
+    prepared.meta.pendingInventory.choices.some(
+      (entry) => entry.kind === "merchant_buyback" && entry.publicData.relicId === "fang"
+    ),
+    false
+  );
+  const platingBuyback = choiceBy(
+    prepared.meta,
+    "merchant_buyback",
+    (entry) => entry.privateData.relicId === "plating"
+  );
+  assert.equal(platingBuyback.publicData.stacksAvailable, 1);
+
+  const forged = prepared.meta.pendingInventory.choices.find(
+    (entry) => entry.transactionId === platingBuyback.transactionId
+  );
+  forged.privateData.relicId = "fang";
+  const before = structuredClone(prepared.meta);
+  await assert.rejects(
+    commitMerchantTransactionV08(
+      prepared.meta,
+      request(forged),
+      prepared.context
+    ),
+    /MERCHANT_RESERVED_RELIC_BUYBACK_FORBIDDEN/u
+  );
+  assert.deepEqual(prepared.meta.build, before.build);
+  assert.equal(prepared.meta.gold, before.gold);
+  assert.equal(prepared.meta.campGold, before.campGold);
+});
+
+test("discarding or claiming a reservation restores its relic buyback eligibility", async () => {
+  for (const mode of ["discard", "claim"]) {
+    const prepared = setup("merchant_reserved_release_" + mode);
+    await buildWith(prepared.meta, ["fang", "fang"]);
+    let releaseChoice;
+    if (mode === "discard") {
+      prepared.meta.build.merchant.reservedRelic = {
+        relicId: "fang",
+        totalPrice: 300,
+        depositPaid: 75,
+        remainingPrice: 225
+      };
+      prepared.meta = await issueMerchantInventoryV08(prepared.meta, prepared.context);
+      releaseChoice = choiceBy(prepared.meta, "merchant_reserved_discard");
+    } else {
+      prepared.meta = await issueMerchantInventoryV08(prepared.meta, {
+        ...prepared.context,
+        randomOracle: oracle(prepared.meta.runId, {
+          "merchant/relic-rarity": 0,
+          "merchant/relic-candidate": 0,
+          "merchant/service-life": 99,
+          "merchant/service-choice": 0
+        })
+      });
+      const reserve = choiceBy(prepared.meta, "merchant_relic_reserve");
+      const reserved = await commitMerchantTransactionV08(
+        prepared.meta,
+        request(reserve),
+        prepared.context
+      );
+      releaseChoice = choiceBy(reserved, "merchant_reserved_claim");
+      prepared.meta = reserved;
+    }
+    const released = await commitMerchantTransactionV08(
+      prepared.meta,
+      request(releaseChoice),
+      prepared.context
+    );
+    assert.equal(released.build.merchant.reservedRelic, null);
+
+    const refreshed = await issueMerchantInventoryV08(released, prepared.context);
+    assert.ok(
+      refreshed.pendingInventory.choices.some(
+        (entry) => entry.kind === "merchant_buyback" && entry.publicData.relicId === "fang"
+      ),
+      mode + " must restore the reserved relic buyback"
+    );
+  }
+});
 test("buyback and services mutate canonical ledgers at most once", async () => {
   {
     const prepared = setup("merchant_buyback");

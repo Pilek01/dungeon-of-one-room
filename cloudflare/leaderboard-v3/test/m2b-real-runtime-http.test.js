@@ -5,6 +5,11 @@ import { createRulesetRegistry } from "../src/rulesets/registry.js";
 import { V08_META_1_LOCAL_RELEASE_DESCRIPTOR } from "../src/rulesets/releases.js";
 import { createMemoryRepositories } from "./fixtures/memory-repositories.js";
 import { canonicalDigest } from "../src/security/digests.js";
+import { stateForDigest } from "../src/domain/run-state.js";
+import {
+  applyRelicAcquisition,
+  computeRelicBuildDigestV08
+} from "../src/rulesets/v08-meta-1/relic-policy.js";
 import {
   decodeBoundaryToken,
   signBoundaryToken
@@ -719,6 +724,65 @@ test("real HTTP lifecycle reaches canonical relic and meta transaction systems",
   assert(session.metaState.revision >= 2);
 });
 
+test("real HTTP merchant reconnect filters a reserved relic ID across aggregated stacks", async () => {
+  const harness = createRealHarness();
+  const started = (await harness.start("reserved-reconnect-start")).payload;
+  let session = (await harness.select(started, 0, "reserved-reconnect-select")).payload;
+  for (let room = 0; room < 100 && session.metaState.currentRoomDirective.roomType !== "merchant"; room += 1) {
+    const advanced = await harness.checkpoint(session, "reserved-reconnect-room-" + room);
+    assert.equal(advanced.response.status, 200);
+    session = advanced.payload;
+  }
+  assert.equal(session.metaState.currentRoomDirective.roomType, "merchant");
+
+  const stored = harness.repositories.snapshotRun(session.runId);
+  const reservedRelicId = stored.build.relics[0].relicId;
+  stored.build = await applyRelicAcquisition(stored.build, {
+    relicId: reservedRelicId,
+    acquiredRevision: stored.revision,
+    acquisitionSource: "fixture",
+    sourceOfferId: "reserved-reconnect-fixture"
+  });
+  stored.build = await applyRelicAcquisition(stored.build, {
+    relicId: "plating",
+    acquiredRevision: stored.revision,
+    acquisitionSource: "fixture",
+    sourceOfferId: "reserved-reconnect-other"
+  });
+  stored.build.merchant.reservedRelic = {
+    relicId: reservedRelicId,
+    totalPrice: 300,
+    depositPaid: 75,
+    remainingPrice: 225
+  };
+  stored.build.buildDigest = await computeRelicBuildDigestV08(stored.build);
+  const previousDigest = stored.stateDigest;
+  stored.stateDigest = await canonicalDigest(stateForDigest(stored));
+  assert.equal(
+    await harness.repositories.runs.updateConditional(stored, session.revision, {
+      stateDigest: stored.stateDigest,
+      recentOps: stored.recentOps,
+      expectedStateDigest: previousDigest,
+      expectedStatus: stored.status
+    }),
+    true
+  );
+
+  const resumed = await harness.call("/api/v3/runs/resume", {
+    operationId: "op_deadbeefdeadbeefdeadbeefdeadbeef",
+    runId: session.runId,
+    recoveryCredential: "rrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrr",
+    clientProtocolVersion: "ranked-v3-checkpoint-1",
+    lastKnownRevision: session.revision
+  }, "op_deadbeefdeadbeefdeadbeefdeadbeef");
+  assert.equal(resumed.response.status, 200);
+  const reopened = await harness.event(resumed.payload, "open_meta_offer", {}, "reserved-reconnect-open");
+  assert.equal(reopened.response.status, 200);
+  const buybacks = reopened.payload.metaState.metaTransactionOffer.choices
+    .filter((choice) => choice.kind === "merchant_buyback");
+  assert.equal(buybacks.some((choice) => choice.relicId === reservedRelicId), false);
+  assert.ok(buybacks.some((choice) => choice.relicId === "plating"));
+});
 test("HTTP potion claims accept canonical current and reject one above it", async () => {
   const acceptedHarness = createRealHarness();
   const acceptedStart = (await acceptedHarness.start("potion-claim-exact-start")).payload;
