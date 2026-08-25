@@ -1612,12 +1612,22 @@ ${fatalTestHookAnchor}`;
     assert.equal(await page.evaluate(() => window.__DUNGEON_TEST_USE_POTION?.()), true);
     await clearVisibleRoom(page);
     assert.equal(await page.evaluate(() => window.DungeonOnlineV3.getSessionState()), "ROOM_ACTIVE");
+    assert.equal(
+      await page.evaluate(() => window.__DUNGEON_TEST_TOGGLE_OBSERVER_BOT?.()),
+      true,
+      "QA hook could not enable Observer Bot for the Warden reward boundary"
+    );
+    await page.waitForFunction(() => (
+      window.DungeonOnlineV3GameBridge?.isRankedTestBotActive?.() === true
+    ));
+    const checkpointsBeforeWardenReward = diagnostics.checkpointBodies.length;
     await enterVisiblePortal(page);
     await page.waitForFunction(() => [
       "AWAITING_REWARD_OR_TRANSACTION",
       "ENTERING_NEXT_ROOM",
       "ROOM_ACTIVE"
     ].includes(window.DungeonOnlineV3?.getSessionState?.()), null, { timeout: 15_000 });
+    assert.equal(await page.locator(".ranked-v3-choice-relic:visible").count(), 0);
     if (await page.locator(".ranked-v3-choice-relic:visible").count() > 0) {
       await page.screenshot({
         path: path.join(ARTIFACT_ROOT, "ranked-warden-relic-after-clear.png"),
@@ -1626,6 +1636,24 @@ ${fatalTestHookAnchor}`;
       await chooseRelicWithoutFatalPrevention(page);
     }
     await completeVisiblePortal(page, firstRoom.depth + 5);
+    assert.equal(
+      diagnostics.checkpointBodies.length,
+      checkpointsBeforeWardenReward + 1,
+      "Observer Bot Warden reward boundary did not settle exactly one checkpoint"
+    );
+    assert.equal(
+      await page.evaluate(() => window.DungeonOnlineV3.isObserverBotBoundaryPending()),
+      false,
+      "Observer Bot Warden reward boundary stayed pending after checkpoint"
+    );
+    assert.equal(
+      await page.evaluate(() => window.__DUNGEON_TEST_TOGGLE_OBSERVER_BOT?.()),
+      true,
+      "QA hook could not disable Observer Bot after the Warden reward boundary"
+    );
+    await page.waitForFunction(() => (
+      window.DungeonOnlineV3GameBridge?.isRankedTestBotActive?.() === false
+    ));
     const wardenCheckpoint = diagnostics.checkpointBodies.at(-1);
     assert(wardenCheckpoint, "Warden clear did not send a checkpoint body");
     assert.deepEqual(

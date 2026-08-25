@@ -1461,6 +1461,106 @@ test("Observer Bot resolves relic and replacement choices before checkpoint", as
   assert.equal(harness.directives.length, 1);
 });
 
+test("Observer Bot Warden reward extraction stays in one boundary operation", async () => {
+  const harness = createHarness({
+    observerBotActive: true,
+    boundarySettlement: true,
+    rewardSlots: [{ slotId: "warden_slot_1" }],
+    publicState: {
+      currentRoomDirective: {
+        directiveId: "directive_warden_5",
+        depth: 5,
+        roomType: "boss"
+      },
+      currentRewardEnvelope: {
+        envelopeId: "reward_warden_5",
+        fixedAwards: []
+      }
+    },
+    async onEvent(action) {
+      if (action === "issue_relic_offer") {
+        return { metaState: metaState({
+          currentRoomDirective: {
+            directiveId: "directive_warden_5",
+            depth: 5,
+            roomType: "boss"
+          },
+          relicOffer: {
+            offerId: "warden_offer_1",
+            publicChoices: [{ choiceId: "warden_choice_1" }]
+          }
+        }) };
+      }
+      if (action === "select_relic") {
+        return { metaState: metaState({
+          currentRoomDirective: {
+            directiveId: "directive_warden_5",
+            depth: 5,
+            roomType: "boss"
+          },
+          relicReplacement: {
+            transactionId: "warden_replace_1",
+            cancelAllowed: false,
+            publicChoices: [{ replacementChoiceId: "warden_replace_choice_1" }]
+          }
+        }) };
+      }
+      if (action === "commit_relic_replacement") return { metaState: metaState() };
+      if (action === "request_extraction") {
+        return {
+          metaState: metaState({
+            status: "extraction",
+            currentRoomDirective: null
+          }),
+          profile: { profileId: "profile_warden" }
+        };
+      }
+      throw new Error(`Unexpected event: ${action}`);
+    },
+    async onCheckpoint() {
+      return { metaState: metaState({
+        currentRoomDirective: {
+          directiveId: "directive_after_warden",
+          depth: 6,
+          roomType: "combat"
+        }
+      }) };
+    },
+    async onFinalize() {
+      return { metaState: metaState({ status: "finalized", currentRoomDirective: null }) };
+    },
+    async onCamp(action) {
+      assert.equal(action, "open");
+      return {
+        profile: { profileId: "profile_warden" },
+        metaTransactionOffer: { choices: [] }
+      };
+    }
+  });
+  const runtime = await installRuntime(harness);
+  await runtime.onLocalRoomCleared({ turnCount: 11, rewardClaims: [] });
+
+  const extraction = runtime.onExtraction("normal");
+  const repeatedExtraction = runtime.onExtraction("normal");
+  await waitFor(
+    () => harness.calls.some((entry) => entry.action === "camp:open"),
+    "Warden reward extraction did not reach Camp"
+  );
+  await Promise.all([extraction, repeatedExtraction]);
+
+  assert.deepEqual(harness.calls.map((entry) => entry.action), [
+    "issue_relic_offer",
+    "select_relic",
+    "commit_relic_replacement",
+    "checkpoint",
+    "request_extraction",
+    "finalize",
+    "camp:open"
+  ]);
+  assert.equal(runtime.getSessionState(), "FINALIZED");
+  assert.equal(runtime.isObserverBotBoundaryPending(), false);
+});
+
 test("player relic replacement uses the native game surface instead of generic choices", async () => {
   const harness = createHarness({
     observerBotActive: false,

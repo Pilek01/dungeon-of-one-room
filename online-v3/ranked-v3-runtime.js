@@ -1236,7 +1236,7 @@
   function displayRelicName(relicId) {
     return root.DungeonRankedV3Ui.relicDetails({ relicId })?.name || "new relic";
   }
-  async function commitReplacement(replacement, replacementChoiceId) {
+  async function commitReplacement(replacement, replacementChoiceId, operation = null) {
     ui.setStatus("Replacing your relic...");
     const response = await createClient().event("commit_relic_replacement", {
       transactionId: replacement.transactionId,
@@ -1245,7 +1245,7 @@
     pendingNativeRelicReplacement = null;
     root.DungeonOnlineV3GameBridge.syncCanonicalProjection(response.metaState);
     root.DungeonOnlineV3GameBridge?.completeRankedRelicReplacement?.(response.metaState);
-    await continueBoundary(response.metaState);
+    await continueBoundary(response.metaState, operation);
   }
 
   function onRelicReplacementChoice(replacementChoiceId) {
@@ -1287,19 +1287,19 @@
     return true;
   }
 
-  async function presentReplacement(replacement) {
+  async function presentReplacement(replacement, operation = null) {
     session.transition(root.DungeonRankedV3Session.STATES.offer);
     const choices = offers.replacementChoices(replacement);
     if (isRankedObserverBotActive()) {
       ui.hide();
       const choice = stableObserverBotChoice(choices, "replacementChoiceId");
       return runObserverBotBoundary(async () => {
-        if (choice) return commitReplacement(replacement, choice.replacementChoiceId);
+        if (choice) return commitReplacement(replacement, choice.replacementChoiceId, operation);
         if (!replacement.cancelAllowed) throw new TypeError("RANKED_BOT_REPLACEMENT_UNAVAILABLE");
         const response = await createClient().event("cancel_relic_replacement", {
           transactionId: replacement.transactionId
         });
-        return continueBoundary(response.metaState);
+        return continueBoundary(response.metaState, operation);
       });
     }
     pendingNativeRelicReplacement = replacement;
@@ -1334,23 +1334,23 @@
     }
   }
 
-  async function selectRelicOffer(offer, choiceId) {
+  async function selectRelicOffer(offer, choiceId, operation = null) {
     const response = await createClient().event("select_relic", {
       offerId: offer.offerId,
       choiceId
     });
     root.DungeonOnlineV3GameBridge.syncCanonicalProjection(response.metaState);
-    await continueBoundary(response.metaState);
+    await continueBoundary(response.metaState, operation);
   }
 
-  async function presentRelicOffer(offer) {
+  async function presentRelicOffer(offer, operation = null) {
     session.transition(root.DungeonRankedV3Session.STATES.offer);
     const choices = offers.relicChoices(offer);
     if (isRankedObserverBotActive()) {
       ui.hide();
       const choice = stableObserverBotChoice(choices, "choiceId");
       if (!choice) throw new TypeError("RANKED_BOT_RELIC_CHOICE_UNAVAILABLE");
-      return runObserverBotBoundary(() => selectRelicOffer(offer, choice.choiceId));
+      return runObserverBotBoundary(() => selectRelicOffer(offer, choice.choiceId, operation));
     }
     ui.showChoices(
       "Choose a Relic",
@@ -1360,11 +1360,11 @@
     );
   }
 
-  async function issueRelicSlot(slot) {
+  async function issueRelicSlot(slot, operation = null) {
     const response = await createClient().event("issue_relic_offer", {
       rewardSlotId: slot.slotId
     });
-    await continueBoundary(response.metaState);
+    await continueBoundary(response.metaState, operation);
   }
 
   function isOtterCrimsonSlot(slot) {
@@ -2099,8 +2099,8 @@
   async function continueBoundary(state, operation = null) {
     if (operation && !isCurrentBoundaryOperation(operation)) return true;
     root.DungeonOnlineV3GameBridge.syncCanonicalProjection(state);
-    if (state.relicReplacement) return presentReplacement(state.relicReplacement);
-    if (state.relicOffer) return presentRelicOffer(state.relicOffer);
+    if (state.relicReplacement) return presentReplacement(state.relicReplacement, operation);
+    if (state.relicOffer) return presentRelicOffer(state.relicOffer, operation);
     if (state.metaTransactionOffer) return presentMetaOffer(state.metaTransactionOffer, state);
     const slot = offers.pendingRewardSlots(state, {
       roomClearPending: Boolean(pendingRoomSummary)
@@ -2112,7 +2112,7 @@
         }
         return;
       }
-      return issueRelicSlot(slot);
+      return issueRelicSlot(slot, operation);
     }
     if (pendingRoomSummary && pendingBoundaryExit) {
       return resolveCheckpoint({
