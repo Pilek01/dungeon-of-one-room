@@ -96,6 +96,7 @@ function createHarness(options = {}) {
   const merchantCompletions = [];
   const merchantFailures = [];
   const merchantPresentations = [];
+  const runtimeSnapshots = [];
   let snapshot = {
     publicState: metaState({
       currentRoomDirective: {
@@ -144,6 +145,14 @@ function createHarness(options = {}) {
     async finalize() {
       calls.push({ action: "finalize" });
       const response = await options.onFinalize();
+      snapshot = { publicState: response.metaState };
+      return response;
+    },
+    async abandonCanonical() {
+      calls.push({ action: "abandon" });
+      const response = typeof options.onAbandonCanonical === "function"
+        ? await options.onAbandonCanonical()
+        : { metaState: metaState({ status: "abandoned" }) };
       snapshot = { publicState: response.metaState };
       return response;
     },
@@ -305,7 +314,7 @@ function createHarness(options = {}) {
       failRankedMerchantAction(result) { merchantFailures.push(result); },
       enterRankedCamp() {},
       returnToPractice() {},
-      startRanked(directive) { directives.push(directive); },
+      startRanked(directive, state, options) { directives.push(directive); runtimeSnapshots.push({ directive, state, options }); },
       setRoomIntegrityContext(context) { integrityContexts.push(context); },
       setNextDirective(directive) { directives.push(directive); },
       showRankedOtterRewardChest(slot) {
@@ -345,7 +354,8 @@ function createHarness(options = {}) {
     merchantRequests,
     merchantCompletions,
     merchantFailures,
-    merchantPresentations
+    merchantPresentations,
+    runtimeSnapshots
   };
 }
 
@@ -500,6 +510,67 @@ test("an ordinary post-Camp Ranked run starts without test assistance", async ()
   assert.deepEqual(harness.calls.map((entry) => entry.action), ["start"]);
 });
 
+test("Start New Ranked abandons recovery before starting a clean campaign", async () => {
+  const staleState = metaState({
+    runId: "run_stale_recovery",
+    build: {
+      resources: { potions: 7, maxPotions: 8, highestUnlockedDepth: 42 },
+      relics: [{ relicId: "flask", stacks: 2 }],
+      merchant: { reservedRelic: { relicId: "fang" } }
+    },
+    runModifiers: { active: [{ modifierId: "alchemist" }] },
+    pendingInventory: { offerId: "merchant-stale", choices: [] },
+    metaTransactionOffer: { offerId: "merchant-stale", sourceType: "merchant" }
+  });
+  const freshState = metaState({
+    runId: "run_fresh_campaign",
+    build: {
+      resources: { potions: 3, maxPotions: 3, highestUnlockedDepth: 0 },
+      relics: [],
+      merchant: { reservedRelic: null }
+    },
+    runModifiers: { active: [] },
+    pendingInventory: null,
+    metaTransactionOffer: null,
+    currentRoomDirective: {
+      directiveId: "directive_fresh_campaign",
+      depth: 1,
+      roomType: "combat"
+    }
+  });
+  let startedPayload = null;
+  const harness = createHarness({
+    observerBotActive: false,
+    hasRecovery: true,
+    publicState: staleState,
+    async onAbandonCanonical() {
+      return { metaState: metaState({ runId: "run_abandoned", status: "abandoned", currentRoomDirective: null }) };
+    },
+    async onStart(input) {
+      startedPayload = input;
+      return { metaState: freshState };
+    }
+  });
+  await installRuntime(harness);
+
+  harness.root.DungeonOnlineV3Menu.openRanked();
+  const startNew = harness.uiMenus.at(-1)[2].find((button) => button.label === "Start New Ranked");
+  assert.ok(startNew, "recovery menu should expose Start New Ranked");
+  await startNew.onClick();
+  await waitFor(() => harness.runtimeSnapshots.length === 1, "fresh Ranked state did not enter gameplay");
+
+  assert.deepEqual(harness.calls.map((entry) => entry.action), ["abandon", "start"]);
+  assert.equal(startedPayload.newCampaign, true);
+  assert.equal(harness.runtimeSnapshots[0].options.newCampaign, true);
+  const runtimeState = harness.runtimeSnapshots[0].state;
+  assert.equal(runtimeState.runId, "run_fresh_campaign");
+  assert.deepEqual(runtimeState.build.resources, { potions: 3, maxPotions: 3, highestUnlockedDepth: 0 });
+  assert.deepEqual(runtimeState.build.relics, []);
+  assert.deepEqual(runtimeState.runModifiers.active, []);
+  assert.equal(runtimeState.pendingInventory, null);
+  assert.equal(runtimeState.metaTransactionOffer, null);
+  assert.equal(harness.directives[0].directiveId, "directive_fresh_campaign");
+});
 test("test assistance waits for starting relic activation but still precedes gameplay", async () => {
   const activeRoom = metaState({
     runId: "run_fresh_campaign_bot",

@@ -78,23 +78,43 @@ test("Ranked lifecycle reconnect carries canonical resources and a fresh campaig
   const { state: initial, context: baseContext } = initialState("run_cross_system_lifecycle");
   const context = { ...baseContext, capabilities: { canonicalPotionResources: "v1", boundedCombatResources: "v1" } };
   initial.potionPolicyVersion = "v1";
-  let state = await applyCanonicalRunModifierSelection(
-    initial,
+  initial.campGold = 500;
+  initial.goldLedger.campEarnedServerDerived = 500;
+  initial.build.resources.highestUnlockedDepth = 50;
+  let state = await beginCampSessionV08(initial, context);
+  state = await issueCampTransactionsV08(state, context);
+  const satchel = state.pendingInventory.choices.find(
+    (choice) => choice.privateData?.action === "upgrade" && choice.privateData?.upgradeId === "satchel"
+  );
+  assert.ok(satchel, "expected canonical Camp Satchel choice");
+  state = await commitCampTransactionV08(
+    state,
+    { transactionId: satchel.transactionId, choiceId: satchel.choiceId },
+    context
+  );
+  assert.equal(state.build.resources.maxPotions, 4);
+  assert.equal(state.build.resources.potions, 4);
+
+  state = await applyCanonicalRunModifierSelection(
+    state,
     { modifierIds: ["alchemist"], activationSource: "server-issued-run-start" },
     { authority: "TRUSTED_RULESET_DOMAIN", cryptoProvider: webcrypto }
   );
-  state.build = await applyRelicAcquisition(
-    state.build,
-    {
-      relicId: "flask",
-      acquiredRevision: state.revision,
-      acquisitionSource: "cross-system-test",
-      sourceOfferId: "cross-system-flask"
-    },
-    { authority: "TRUSTED_RULESET_DOMAIN", cryptoProvider: webcrypto, potionPolicyVersion: "v1", runModifiers: state.runModifiers }
-  );
-  assert.equal(state.build.resources.maxPotions, 6);
-  assert.equal(state.build.resources.potions, 6);
+  for (const sourceOfferId of ["cross-system-flask-1", "cross-system-flask-2"]) {
+    state.build = await applyRelicAcquisition(
+      state.build,
+      {
+        relicId: "flask",
+        acquiredRevision: state.revision,
+        acquisitionSource: "cross-system-test",
+        sourceOfferId
+      },
+      { authority: "TRUSTED_RULESET_DOMAIN", cryptoProvider: webcrypto, potionPolicyVersion: "v1", runModifiers: state.runModifiers }
+    );
+  }
+  assert.equal(state.build.relics.find((entry) => entry.relicId === "flask")?.stacks, 2);
+  assert.equal(state.build.resources.maxPotions, 8);
+  assert.equal(state.build.resources.potions, 8);
   state.status = "active";
   state.gold = 500;
   state.goldLedger.earnedServerDerived = 500;
@@ -129,9 +149,20 @@ test("Ranked lifecycle reconnect carries canonical resources and a fresh campaig
   );
   assert.equal(state.build.resources.combatBoostTurns, 100);
 
+  const shrineContext = {
+    ...context,
+    randomOracle: {
+      ...context.randomOracle,
+      async deriveIntInclusive(minimum, maximum, options) {
+        if (options.purpose === "room-type/weighted") return Math.min(maximum, Math.max(minimum, 820001));
+        return context.randomOracle.deriveIntInclusive(minimum, maximum, options);
+      }
+    }
+  };
   state.currentRoomDirective = null;
   state.currentRewardEnvelope = null;
-  state = await issueNextRoomDirectiveV08(state, context);
+  state = await issueNextRoomDirectiveV08(state, shrineContext);
+  assert.equal(state.currentRoomDirective.roomType, "shrine");
   const slotId = state.currentRewardEnvelope.claimSlots[0].slotId;
   const roomDirective = state.currentRoomDirective;
   const roomClaim = {
@@ -159,8 +190,8 @@ test("Ranked lifecycle reconnect carries canonical resources and a fresh campaig
       context
     )
   };
-  assert.equal(settled.state.build.resources.potions, 6);
-  assert.equal(settled.state.build.resources.maxPotions, 6);
+  assert.equal(settled.state.build.resources.potions, 8);
+  assert.equal(settled.state.build.resources.maxPotions, 8);
 
   const boundaryStart = await issueNextRoomDirectiveV08(settled.state, context);
   const boundary = await settleBoundaryRewardEnvelopeV3(
@@ -177,7 +208,7 @@ test("Ranked lifecycle reconnect carries canonical resources and a fresh campaig
   );
   assert.equal(boundary.state.build.resources.hp, 37);
   assert.equal(boundary.state.build.resources.combatBoostTurns, 96);
-  assert.equal(boundary.state.build.resources.highestUnlockedDepth, boundaryStart.depth);
+  assert.equal(boundary.state.build.resources.highestUnlockedDepth, 50);
   const extracted = requestExtractionV08(boundary.state, { mode: "normal" }).nextState;
   assert.equal(extracted.status, "extraction");
 
@@ -187,11 +218,11 @@ test("Ranked lifecycle reconnect carries canonical resources and a fresh campaig
     profile,
     context
   );
-  assert.equal(reconnected.build.resources.potions, 5);
-  assert.equal(reconnected.build.resources.maxPotions, 6);
+  assert.equal(reconnected.build.resources.potions, 6);
+  assert.equal(reconnected.build.resources.maxPotions, 8);
   assert.equal(reconnected.build.resources.hp, 100);
   assert.equal(reconnected.build.resources.combatBoostTurns, 0);
-  assert.equal(reconnected.build.resources.highestUnlockedDepth, boundaryStart.depth);
+  assert.equal(reconnected.build.resources.highestUnlockedDepth, 50);
   assert.equal(reconnected.build.relics[0].relicId, "flask");
   assert.equal(reconnected.runModifiers.active[0].modifierId, "alchemist");
 
