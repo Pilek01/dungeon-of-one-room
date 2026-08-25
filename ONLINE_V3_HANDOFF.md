@@ -1,6 +1,6 @@
 # Online v3 - Current handoff
 
-Updated: 2026-08-19
+Updated: 2026-08-25
 
 ## Task authority
 
@@ -25,54 +25,59 @@ Do not describe the system as server-authoritative combat or cheat-proof.
 ## Current production snapshot
 
 - Production Pages and Worker source commit:
-  `b89678f0de4b77098ad4086c4b5221949a42463f` from
-  `codex/ranked-boundary-checkpoints-release`.
+  `388c1792c794044982925d9875ec8ea4a1ae45aa` from `main`.
 - Production provenance is the annotated tag
-  `online-v3-production-2026-08-19-b89678f`, which points exactly to the
+  `online-v3-production-2026-08-25-388c179`, which points exactly to the
   deployed source commit.
 - Production Worker version:
-  `1811ba2d-986d-4271-a577-d6b7796ad8ba` at 100% (deployment
-  `cc4ca52e-d1ab-4366-90eb-e5992d5bc52a`).
+  `6fa1a64a-3b28-4e69-8657-4c42f4e04987` at 100% (deployment
+  `de37514e-715f-416d-8e7d-4aa76e42ebd2`).
 - Recorded Worker rollback version:
-  `2e19d227-7c2e-4da4-b375-3c1995673de3`.
+  `e4ad5782-b126-4156-930a-fab0856e6d89`.
 - Production Pages deployment:
-  `fdfdb0fa-c787-4e6c-a1d6-ef64f776f267`, source `b89678f`.
+  `dbf167e8-f51b-40bd-8b88-69684f1ac097`, source `388c179`, immutable URL
+  `https://dbf167e8.dungeon-of-one-room.pages.dev`.
+- Recorded Pages rollback deployment:
+  `19553635-db78-4cb7-afb8-72673aa56d88`, source `5b61a57`.
 - Active production ruleset:
-  `sha256:87c30b2c011b5103398f9b03f6bf018d71f2a35427c0a04ef7a31b2559a7a6d9`.
+  `sha256:9d6069993fd07784ecfdc146825a8a7b82cde1fd7412f351aeba1ab86c539dbe`.
 - Retained previous ruleset:
-  `sha256:0672eb9aaae11865ebae75a4c6d6dc77cc29f4a079afe562355172d26f073bca`.
-- D1 migration `0006_leaderboard_snapshots.sql` is applied. The pre-migration
-  Time Travel bookmark is
-  `00000712-00000000-000050c7-dcc35a66a3fd387efd989c1bce79b263`, and D1 now
-  reports `No migrations to apply`.
+  `sha256:48b5bd86604a5f8dae58a4dcf2b1ed9a72252b3e4942fc20693b3e0a8e91438e`.
+- No D1 migration was required for this release; production reports
+  `No migrations to apply`.
 
-This release repairs normal-extraction recovery after a rejected or expired
-checkpoint. A resync now continues extraction only when canonical state proves
-that the room checkpoint committed; a same-room resync cancels the stale local
-intent and safely restarts the uncommitted room. It also adds bounded,
-token-free browser diagnostics and structured Worker diagnostics for the first
-provisional transition and sanitized request errors.
+This release repairs the Ranked same-depth replay loop after a health chest.
+Canonical chest HP/max-HP benefits are now applied before bounded combat
+resources are validated, the chest bonus is carried across the checkpoint,
+and Vitality is handled as an additive transition. A valid health-chest room
+therefore commits the next depth instead of returning the client to the room
+that was just cleared.
 
-The release also restores the crimson pre-Warden portal warning on every depth
-before the canonical five-depth Warden schedule (4, 9, 14, and so on) without
-moving checkpoint timing. No `game.js`, D1 schema, canonical ruleset source,
-ruleset manifest, or ruleset hash changed. Existing runs pinned to older hashes
-remain supported, and the active production ruleset remains `87c3...`.
+The previous production descriptor remains executable for recovery of runs
+pinned to `48b5...`. No D1 schema or protected local combat/UI code changed.
 
 ## Latest release evidence
 
-- Exact committed source `b89678f0de4b77098ad4086c4b5221949a42463f`
-  passed fresh `npm run verify:full -- --force`: 879/879. The release log is
-  `output/verification/full-20260819T162110879Z.log`.
-- Codex visually inspected and approved all six current archive screenshots.
+- Exact committed source `388c1792c794044982925d9875ec8ea4a1ae45aa`
+  passed `npm run verify:full`: 1084/1084. The release log is
+  `output/verification/full-20260825T183603412Z.log`.
+- Kamil explicitly reviewed and approved all six current archive screenshots.
   The recorded visual source fingerprint is
-  `sha256:466f3515e0d44adc8d45f5f29da0e5df89cb1a79d489893668e24464d983938c`.
+  `sha256:29ff5286b404360a4838d789c9bc7d7870005f3bba7ca1af9ed0c7292b797fe9`.
+- Focused pre-release checks passed: final phase 1060/1060,
+  `verify:ranked-headed -- --scenario camp`, fresh
+  `verify:ui-current -- --scenario save`, fresh
+  `verify:ranked-headed -- --scenario lifecycle`, and `git diff --check`.
 - The Pages upload came from the repository root and included the Functions
   bundle, routes, and service binding.
-- Post-deploy byte checks confirm the stable Pages URL returns the exact local
-  `b89678f` `index.html`, `config.js`, `game.js`, and Ranked runtime assets.
-  Availability reports production active with ruleset `87c3...`, and Worker
-  deployment `cc4ca52e...` serves version `1811ba2d...` at 100%.
+- Worker rollout used explicit version IDs at 5%, 25%, and 100%. Availability
+  smoke returned 20/20 valid responses at 5%, 24/24 at 25%, and 12/12 from the
+  new hash after the 100% switch.
+- Post-deploy byte checks confirm both stable and immutable Pages URLs return
+  the exact local `config.js`, Ranked protocol, and sanitized visual receipt.
+  Both roots return HTTP 200. Availability reports production active with
+  ruleset `9d606999...`, and Worker deployment `de37514e...` serves version
+  `6fa1a64a...` at 100%.
 - No release smoke mutated D1. The production database still reports no
   pending migrations.
 
@@ -102,13 +107,14 @@ runtime source fingerprint required a fresh visual receipt.
 ## Protected working trees and release refs
 
 - The deployed Pages and Worker source is fixed by
-  `online-v3-production-2026-08-19-b89678f`. Subsequent documentation commits
+  `online-v3-production-2026-08-25-388c179`. Subsequent documentation commits
   are not part of either deployed artifact.
 - `npm run status:compact` reported zero protected Vault Guardian WIP entries
   and zero local Wrangler-state entries before the release record was written.
-- The untracked user file
-  `docs/plans/2026-08-13-ranked-playtest-fixes.md` remains intentionally
-  untouched and is not part of the release.
+- The untracked files `.tmp-apply-probe.txt`,
+  `docs/plans/2026-08-13-ranked-playtest-fixes.md`, and
+  `docs/plans/2026-08-18-ranked-boundary-checkpoints-design.local-untracked.md`
+  remain intentionally untouched and are not part of the release.
 
 Always confirm with `npm run status:compact`. Before staging or committing,
 inspect the full `git status --short` and stage only explicit paths.
