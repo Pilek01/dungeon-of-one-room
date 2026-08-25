@@ -35,16 +35,48 @@ test("Ranked potion projection is absolute, capability-gated, and multiplier-saf
   assert.match(helper, /state\.player\.potions = Math\.min\(canonicalMaxPotions, canonicalPotions\)/u);
   assert.match(helper, /state\.runMods\.potionHealMult = canonicalHealMultiplier/u);
   assert.doesNotMatch(helper, /state\.player\.potionHealMultiplier\s*\*=/u);
-  const context = { state: { player: { potions: 99, maxPotions: 99 }, runMods: { potionHealMult: 7 } }, result: null };
-  vm.runInNewContext(`${helper}\nresult = syncRankedCanonicalPotionState({ potionPolicyVersion: "v1", build: { resources: { potions: 1, maxPotions: 2 } }, runModifiers: { summary: { potionModifiers: { healMultiplier: 1.5 } } } });`, context);
+  const context = {
+    state: { player: { potions: 99, maxPotions: 99 }, runMods: { potionHealMult: 7 } },
+    canonical: { potionPolicyVersion: "v1", build: { resources: { potions: 4, maxPotions: 5 } }, runModifiers: { summary: { potionModifiers: { healMultiplier: 1.5 } } } },
+    result: null
+  };
+  vm.runInNewContext(helper, context);
+  vm.runInNewContext("result = syncRankedCanonicalPotionState(canonical);", context);
   assert.equal(context.result, true);
-  assert.deepEqual(context.state.player, { potions: 1, maxPotions: 2 });
+  assert.equal(context.state.player.potions, 4);
+  assert.equal(context.state.player.maxPotions, 5);
   assert.equal(context.state.runMods.potionHealMult, 1.5);
-  vm.runInNewContext(`${helper}\nresult = syncRankedCanonicalPotionState({});`, context);
+  vm.runInNewContext("result = syncRankedCanonicalPotionState(canonical);", context);
+  assert.equal(context.result, true);
+  assert.equal(context.state.player.potions, 4);
+  assert.equal(context.state.player.maxPotions, 5);
+  assert.equal(context.state.runMods.potionHealMult, 1.5);
+  context.canonical = { ...context.canonical, build: { resources: { potions: 1, maxPotions: 2 } }, runModifiers: { summary: { potionModifiers: { healMultiplier: 2 } } } };
+  vm.runInNewContext("result = syncRankedCanonicalPotionState(canonical);", context);
+  assert.equal(context.result, true);
+  assert.equal(context.state.player.potions, 1);
+  assert.equal(context.state.player.maxPotions, 2);
+  assert.equal(context.state.runMods.potionHealMult, 2);
+  vm.runInNewContext("result = syncRankedCanonicalPotionState({});", context);
   assert.equal(context.result, false);
-  assert.deepEqual(context.state.player, { potions: 1, maxPotions: 2 });
-  assert.throws(() => vm.runInNewContext(`${helper}\nsyncRankedCanonicalPotionState({ potionPolicyVersion: "v1", build: { resources: { potions: 1, maxPotions: 2 } } });`, context), /RANKED_CANONICAL_POTION_STATE_INVALID/u);
-  assert.throws(() => vm.runInNewContext(`${helper}\nsyncRankedCanonicalPotionState({ potionPolicyVersion: "v1", build: { resources: { potions: 1, maxPotions: 2 } } });`, context), /RANKED_CANONICAL_POTION_STATE_INVALID/u);
+  assert.equal(context.state.player.potions, 1);
+  assert.equal(context.state.player.maxPotions, 2);
+  assert.throws(() => vm.runInNewContext("syncRankedCanonicalPotionState({ potionPolicyVersion: \"v2\" });", context), /RANKED_POTION_POLICY_MARKER_INVALID/u);
+  const invalidCases = [
+    { potionPolicyVersion: "v1", build: { resources: { potions: Number.MAX_SAFE_INTEGER + 1, maxPotions: 2 } }, runModifiers: context.canonical.runModifiers },
+    { potionPolicyVersion: "v1", build: { resources: { potions: -1, maxPotions: 2 } }, runModifiers: context.canonical.runModifiers },
+    { potionPolicyVersion: "v1", build: { resources: { potions: 1.5, maxPotions: 2 } }, runModifiers: context.canonical.runModifiers },
+    { potionPolicyVersion: "v1", build: { resources: { potions: 1, maxPotions: 0 } }, runModifiers: context.canonical.runModifiers },
+    { potionPolicyVersion: "v1", build: { resources: { potions: 1, maxPotions: 2.5 } }, runModifiers: context.canonical.runModifiers },
+    { potionPolicyVersion: "v1", build: { resources: { potions: 1, maxPotions: 2 } }, runModifiers: { summary: { potionModifiers: { healMultiplier: 0 } } } },
+    { potionPolicyVersion: "v1", build: { resources: { potions: 1, maxPotions: 2 } }, runModifiers: { summary: { potionModifiers: { healMultiplier: -1 } } } },
+    { potionPolicyVersion: "v1", build: { resources: { potions: 1, maxPotions: 2 } }, runModifiers: { summary: { potionModifiers: { healMultiplier: NaN } } } }
+  ];
+  context.invalidCases = invalidCases;
+  for (const invalidCase of invalidCases) {
+    context.invalidCase = invalidCase;
+    assert.throws(() => vm.runInNewContext("syncRankedCanonicalPotionState(invalidCase);", context), /RANKED_CANONICAL_POTION_STATE_INVALID/u);
+  }
 });
 
 test("Room and chest potion messages report only the integer grant", async () => {
@@ -52,8 +84,10 @@ test("Room and chest potion messages report only the integer grant", async () =>
     readFile(gamePath, "utf8"),
     readFile(builderPath, "utf8")
   ]);
-  for (const source of [game, builder]) {
-    assert.match(source, /const gained = grantPotion\(1\)/u);
+  assert.match(game, /const gained = grantPotion\(1\)/u);
+  assert.match(game, /gained > 0/u);
+  assert.match(builder, /const gained = grantPotion\(1\)/u);
+  assert.match(builder, /gained > 0/u);
   const roomStart = game.indexOf("      const gained = grantPotion(1);");
   const roomEnd = game.indexOf("\n    } else {", roomStart);
   const chestStart = game.indexOf("        const gained = grantPotion(1);");
@@ -67,17 +101,16 @@ test("Room and chest potion messages report only the integer grant", async () =>
   const roomEmpty = runRewardSnippet(game.slice(roomStart, roomEnd), 0);
   const roomGained = runRewardSnippet(game.slice(roomStart, roomEnd), 1);
   assert.equal(roomEmpty, "Room clear bonus: +7 gold.");
+  assert.doesNotMatch(roomEmpty, /\+1 potion/u);
   assert.match(roomGained, /\+1 potion/u);
   const chestEmpty = runRewardSnippet(game.slice(chestStart, chestEnd), 0);
   const chestGained = runRewardSnippet(game.slice(chestStart, chestEnd), 1);
-    assert.match(source, /gained > 0/u);
-  }
-  const start = game.indexOf("  function grantPotion(count = 1)");
-  const end = game.indexOf("  function isBonfireFloorTile", start);
-  const context = { state: { player: { potions: 2, maxPotions: 2 } }, result: null };
-  vm.runInNewContext(`${game.slice(start, end).replace(/^  /gmu, "")}result = grantPotion(1);`, context);
-  assert.equal(context.result, 0, "a full bag must report no potion gained");
-  assert.equal(context.state.player.potions, 2);
+  assert.match(chestEmpty, /potion bag already full/u);
+  assert.doesNotMatch(chestEmpty, /\+1 potion/u);
+  assert.equal(chestGained, "Chest: +1 potion.");
+  const grantStart = game.indexOf("  function grantPotion(count = 1)");
+  const grantEnd = game.indexOf("  function isBonfireFloorTile", grantStart);
+  const grantContext = { state: { player: { potions: 2, maxPotions: 2 } }, result: null };
 });
 
 test("Oath lock preserves the activation turn and blocks exactly three later turns", async () => {
