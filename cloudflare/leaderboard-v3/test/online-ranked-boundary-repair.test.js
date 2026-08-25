@@ -4,14 +4,15 @@ import { readFile } from "node:fs/promises";
 import test from "node:test";
 import { createInitialMetaStateV08 } from "../src/rulesets/v08-meta-1/meta-state.js";
 import { beginCampSessionV08, commitCampTransactionV08, issueCampTransactionsV08 } from "../src/rulesets/v08-meta-1/camp-policy.js";
-import { issueNextRoomDirectiveV08 } from "../src/rulesets/v08-meta-1/room-policy.js";
-import { settleRoomRewardEnvelopeV3 } from "../src/rulesets/v08-meta-1/reward-policy.js";
+import { consumeRoomDirectiveV08, issueNextRoomDirectiveV08 } from "../src/rulesets/v08-meta-1/room-policy.js";
+import { settleBoundaryRewardEnvelopeV3, settleRoomRewardEnvelopeV3 } from "../src/rulesets/v08-meta-1/reward-policy.js";
 import { applyFatalEventV08 } from "../src/rulesets/v08-meta-1/life-policy.js";
 import { requestExtractionV08 } from "../src/rulesets/v08-meta-1/outcome-policy.js";
 import { hydrateRunFromProfileV08, publicProfileStateV08, profileStateFromRunV08 } from "../src/rulesets/v08-meta-1/profile-policy.js";
 import { applyMutatorProgressDeltaV08 } from "../src/rulesets/v08-meta-1/mutator-progression.js";
 import { applyCanonicalRunModifierSelection } from "../src/rulesets/v08-meta-1/run-modifiers.js";
 import { applyRelicAcquisition } from "../src/rulesets/v08-meta-1/relic-policy.js";
+import { commitMerchantTransactionV08, issueMerchantInventoryV08 } from "../src/rulesets/v08-meta-1/merchant-policy.js";
 import manifest from "../src/rulesets/v08-meta-1/data/ruleset-manifest.json" with { type: "json" };
 import { observerBotReleaseConfig } from "../../../scripts/pages-release-preflight.mjs";
 
@@ -73,9 +74,9 @@ function rewardRequest(state, claims) {
   };
 }
 
-test("Ranked lifecycle reconnect carries canonical resources and Start New Ranked clears them", async () => {
+test("Ranked lifecycle reconnect carries canonical resources and a fresh campaign clears them", async () => {
   const { state: initial, context: baseContext } = initialState("run_cross_system_lifecycle");
-  const context = { ...baseContext, capabilities: { canonicalPotionResources: "v1" } };
+  const context = { ...baseContext, capabilities: { canonicalPotionResources: "v1", boundedCombatResources: "v1" } };
   initial.potionPolicyVersion = "v1";
   let state = await applyCanonicalRunModifierSelection(
     initial,
@@ -95,26 +96,92 @@ test("Ranked lifecycle reconnect carries canonical resources and Start New Ranke
   assert.equal(state.build.resources.maxPotions, 6);
   assert.equal(state.build.resources.potions, 6);
   state.status = "active";
+  state.gold = 500;
+  state.goldLedger.earnedServerDerived = 500;
+  const merchantContext = {
+    ...context,
+    randomOracle: {
+      ...context.randomOracle,
+      async deriveIntInclusive(minimum, maximum, options) {
+        if (options.purpose === "service-life") return maximum;
+        if (options.purpose === "service-choice") return Math.min(maximum, minimum + 1);
+        return context.randomOracle.deriveIntInclusive(minimum, maximum, options);
+      }
+    }
+  };
+  state.currentRoomDirective = {
+    directiveId: "lifecycle-merchant",
+    runId: state.runId,
+    revision: state.revision,
+    depth: 1,
+    roomIndex: 1,
+    roomType: "merchant"
+  };
+  state = await issueMerchantInventoryV08(state, merchantContext);
+  const boost = state.pendingInventory.choices.find(
+    (choice) => choice.kind === "merchant_service" && choice.publicData?.serviceId === "combatboost"
+  );
+  assert.ok(boost, "expected canonical Combat Boost Merchant choice");
+  state = await commitMerchantTransactionV08(
+    state,
+    { transactionId: boost.transactionId, choiceId: boost.choiceId },
+    merchantContext
+  );
+  assert.equal(state.build.resources.combatBoostTurns, 100);
+
+  state.currentRoomDirective = null;
+  state.currentRewardEnvelope = null;
   state = await issueNextRoomDirectiveV08(state, context);
   const slotId = state.currentRewardEnvelope.claimSlots[0].slotId;
-  const settled = await settleRoomRewardEnvelopeV3(
-    state,
-    rewardRequest(state, [
+  const roomDirective = state.currentRoomDirective;
+  const roomClaim = {
+    ...rewardRequest(state, [
       { claimType: "resource", claimId: "potion-use", count: 1 },
       { claimType: "chest", claimId: slotId, count: 1, localEvidence: { outcome: "potion", count: 1 } }
     ]),
-    context
-  );
+    combatResources: { hp: 100, maxHp: 100 }
+  };
+  const settled = {
+    state: await consumeRoomDirectiveV08(
+      state,
+      {
+        runId: state.runId,
+        rulesetHash: state.rulesetHash,
+        revision: state.revision,
+        directiveId: roomDirective.directiveId,
+        roomNonce: roomDirective.roomNonce,
+        roomIndex: roomDirective.roomIndex,
+        depth: roomDirective.depth,
+        roomType: roomDirective.roomType,
+        completionAttestation: "local-room-completed",
+        rewardClaim: roomClaim
+      },
+      context
+    )
+  };
   assert.equal(settled.state.build.resources.potions, 6);
   assert.equal(settled.state.build.resources.maxPotions, 6);
-  settled.state.build.resources.hp = 37;
-  settled.state.build.resources.combatBoostTurns = 2;
-  settled.state.build.resources.combatBoostAttack = 10;
-  settled.state.build.resources.combatBoostArmor = 8;
-  settled.state.build.resources.highestUnlockedDepth = 12;
-  settled.state.status = "extraction";
 
-  const profile = profileStateFromRunV08(settled.state, "profile_cross_system", 4);
+  const boundaryStart = await issueNextRoomDirectiveV08(settled.state, context);
+  const boundary = await settleBoundaryRewardEnvelopeV3(
+    boundaryStart,
+    {
+      ...rewardRequest(boundaryStart, []),
+      commandJournalDigest: "lifecycle-boundary",
+      turnCount: 3,
+      reportedGoldTotal: boundaryStart.gold,
+      combatResources: { hp: 37, maxHp: 100 }
+    },
+    { outcome: "fatal" },
+    context
+  );
+  assert.equal(boundary.state.build.resources.hp, 37);
+  assert.equal(boundary.state.build.resources.combatBoostTurns, 96);
+  assert.equal(boundary.state.build.resources.highestUnlockedDepth, boundaryStart.depth);
+  const extracted = requestExtractionV08(boundary.state, { mode: "normal" }).nextState;
+  assert.equal(extracted.status, "extraction");
+
+  const profile = profileStateFromRunV08(extracted, "profile_cross_system", 4);
   const reconnected = await hydrateRunFromProfileV08(
     createInitialMetaStateV08({}, { ...context, runId: "run_cross_system_reconnect" }),
     profile,
@@ -124,7 +191,7 @@ test("Ranked lifecycle reconnect carries canonical resources and Start New Ranke
   assert.equal(reconnected.build.resources.maxPotions, 6);
   assert.equal(reconnected.build.resources.hp, 100);
   assert.equal(reconnected.build.resources.combatBoostTurns, 0);
-  assert.equal(reconnected.build.resources.highestUnlockedDepth, 12);
+  assert.equal(reconnected.build.resources.highestUnlockedDepth, boundaryStart.depth);
   assert.equal(reconnected.build.relics[0].relicId, "flask");
   assert.equal(reconnected.runModifiers.active[0].modifierId, "alchemist");
 

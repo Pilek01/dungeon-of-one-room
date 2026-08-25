@@ -128,6 +128,29 @@ test("potion-only checkpoint is bounded and leaves Fury/elixir state byte-equiva
   );
 });
 
+test("the same potion validator serves ordinary and Observer runs without a limit exception", async () => {
+  for (const [seed, assistanceClass] of [[40, "none"], [41, "observer_bot"]]) {
+    const value = await activeState(seed);
+    value.state.assistanceClass = assistanceClass;
+    value.state.build.resources.potions = 1;
+    const accepted = await checkpoint(value, {
+      rewardClaims: [{ claimType: "resource", claimId: "potion-use", count: 1 }]
+    });
+    assert.equal(accepted.nextState.build.resources.potions, 0);
+    assert.equal(accepted.nextState.assistanceClass, assistanceClass);
+    if (assistanceClass === "none") {
+      assert.equal(accepted.nextState.rankEligibility, "official");
+    }
+
+    await assert.rejects(
+      checkpoint(value, {
+        rewardClaims: [{ claimType: "resource", claimId: "potion-use", count: 2 }]
+      }),
+      /REWARD_CLAIM_POTION_USE_LIMIT/u
+    );
+    assert.equal(value.state.build.resources.potions, 1);
+  }
+});
 test("an invalid local room-completion capability makes the run provisional", async () => {
   const value = await activeState(2);
   const result = await checkpoint(value, {

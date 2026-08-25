@@ -6,6 +6,7 @@ import {
   compareLeaderboardSnapshots,
   isLeaderboardSnapshotBetter
 } from "../src/domain/leaderboard-snapshot.js";
+import leaderboardUi from "../../../online-v3/ranked-v3-leaderboard-ui.js";
 
 const SEASON = "m3-public-season";
 
@@ -343,6 +344,41 @@ test("Observer Bot never displaces an ordinary official podium result", async ()
   assert.equal(assistedRow.assistanceClass, "observer_bot");
   assert.equal(ordinaryRow.score, ordinary.score);
   assert.equal(assistedRow.score, assisted.score);
+
+  const model = leaderboardUi.createLeaderboardViewModel(list.payload);
+  const observer = model.rows.find((row) => row.runId === assisted.runId);
+  const lowPayload = {
+    ...ordinary,
+    runId: "run_0000000000000132",
+    score: 10,
+    createdAt: 300
+  };
+  const rankedModel = leaderboardUi.createLeaderboardViewModel({
+    ...list.payload,
+    entries: [
+      { ...assisted, score: 99999 },
+      { ...ordinary, score: 100 },
+      lowPayload
+    ]
+  });
+  const rankedHigh = rankedModel.rows.find((row) => row.runId === ordinary.runId);
+  const rankedObserver = rankedModel.rows.find((row) => row.runId === assisted.runId);
+  const rankedLow = rankedModel.rows.find((row) => row.runId === lowPayload.runId);
+  const presentation = leaderboardUi.createLeaderboardPresentation(rankedModel.rows);
+
+  assert.equal(observer.ranked, false);
+  assert.equal(observer.rank, 0);
+  assert.equal(rankedObserver.ranked, false);
+  assert.equal(rankedObserver.rank, 0);
+  assert.equal(rankedHigh.ranked, true);
+  assert.equal(rankedHigh.rank, 1);
+  assert.equal(rankedLow.ranked, true);
+  assert.equal(rankedLow.rank, 2);
+  assert.deepEqual(
+    presentation.podium.map((row) => row.runId),
+    [ordinary.runId, lowPayload.runId]
+  );
+  assert.equal(presentation.podium.some((row) => row.runId === assisted.runId), false);
 });
 test("assisted snapshots remain public with an explicit non-ranked class", async () => {
   const repositories = createMemoryRepositories();
