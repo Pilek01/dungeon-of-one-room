@@ -5,8 +5,8 @@
   "sources": [
     {
       "file": "game.js",
-      "byteLength": 1347234,
-      "sha256": "58a612f67a0a3fc97682d3f2faeb307c6d4b00faa2f80ba58d54acb2a8d28218"
+      "byteLength": 1359046,
+      "sha256": "2add67208c3f318c3ebdbf95dc1f2ca3fbe10351c67b60c290507fa957a76a01"
     },
     {
       "file": "pact-room.js",

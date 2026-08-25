@@ -494,6 +494,9 @@ test("capable Ranked rooms keep the journal open until portal, extract, or fatal
   assert.match(runtime, /Extracting…/u);
   assert.match(runtime, /fixedAwardGold[\s\S]*reportedGoldDelta/u);
   assert.match(runtime, /onFatalEvent[\s\S]*captureRankedBoundary/u);
+  assert.match(runtime, /const boundaryRevision = [^\n]*snapshot\.revision/u);
+  assert.match(runtime, /const boundaryFatalEvents = [^\n]*lifeState\?\.fatalEvents/u);
+  assert.match(runtime, /commandJournalDigest:[^\n]*boundaryRevision[^\n]*boundaryFatalEvents/u);
   assert.match(runtime, /resetRankedBoundaryRecorder[\s\S]*resumePreventedFatal/u);
 });
 

@@ -254,12 +254,15 @@
     const envelope = snapshot?.currentRewardEnvelope;
     if (!directive || !envelope) throw new TypeError("RANKED_BOUNDARY_BINDING_UNAVAILABLE");
     const reportedGoldDelta = Math.max(0, Math.floor(Number(captured.reportedGoldDelta) || 0));
+    const turnCount = Math.max(0, Math.floor(Number(captured.turnCount) || 0));
+    const boundaryRevision = Math.max(0, Math.floor(Number(snapshot.revision) || 0));
+    const boundaryFatalEvents = Math.max(0, Math.floor(Number(snapshot.lifeState?.fatalEvents) || 0));
     const boundedCombatResources = protocol.supportsBoundedCombatResources?.(snapshot?.rulesetHash) === true
       ? { hp: Math.max(0, Math.floor(Number(captured.hp) || 0)), maxHp: Math.max(0, Math.floor(Number(captured.maxHp) || 0)) }
       : null;
     return {
       summary: {
-        turnCount: Math.max(0, Math.floor(Number(captured.turnCount) || 0)),
+        turnCount,
         rewardClaims: Array.isArray(captured.rewardClaims) ? captured.rewardClaims : [],
         reportedGoldDelta,
         ...(boundedCombatResources ? { combatResources: boundedCombatResources } : {}),
@@ -274,9 +277,9 @@
         claims: Array.isArray(captured.rewardClaims) ? captured.rewardClaims : [],
         reportedGoldDelta,
         reportedGoldTotal: Math.max(0, Math.floor(Number(snapshot.gold) || 0)) + reportedGoldDelta,
-        turnCount: Math.max(0, Math.floor(Number(captured.turnCount) || 0)),
+        turnCount,
         elapsedMs: Math.max(0, Date.now() - startedAt),
-        commandJournalDigest: `boundary:${directive.directiveId}:${Math.max(0, Math.floor(Number(captured.turnCount) || 0))}`,
+        commandJournalDigest: `boundary:${directive.directiveId}:${boundaryRevision}:${boundaryFatalEvents}:${turnCount}`,
         ...(boundedCombatResources ? { combatResources: boundedCombatResources } : {}),
         compactRoomProof: JSON.stringify({
           version: 1,

@@ -107,6 +107,10 @@ function createRealHarness(options = {}) {
         roomNonce: directive.roomNonce,
         commands
       },
+      combatResources: {
+        hp: session.metaState.build.resources.hp,
+        maxHp: session.metaState.build.resources.maxHp
+      },
       ...overrides
     }, key);
   }

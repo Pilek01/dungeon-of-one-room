@@ -212,6 +212,10 @@ test("Extract retry persists one score carry snapshot and never folds the descen
     roomDirectiveId: firstDirective.directiveId,
     roomNonce: firstDirective.roomNonce,
     roomResult: "cleared",
+    combatResources: {
+      hp: selected.metaState.build.resources.hp,
+      maxHp: selected.metaState.build.resources.maxHp
+    },
     rewardClaims: [],
     integrityVersion: 1,
     integritySignals: [],

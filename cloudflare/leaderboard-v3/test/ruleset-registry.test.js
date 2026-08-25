@@ -8,7 +8,8 @@ import {
   createRulesetRegistry
 } from "../src/rulesets/registry.js";
 import {
-  V08_META_1_LOCAL_RELEASE_DESCRIPTOR
+  V08_META_1_LOCAL_RELEASE_DESCRIPTOR,
+  V08_META_1_POTION_MERCHANT_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR
 } from "../src/rulesets/releases.js";
 import {
   V08_META_1_DESCRIPTOR,
@@ -253,8 +254,8 @@ test("ruleset RNG separates purpose, run, revision, counter, and secret", async 
 });
 
 test("canonical potion policy marker is explicit and historical states remain legacy", () => {
-  const legacyRuleset = V08_META_1_LOCAL_RELEASE_DESCRIPTOR.createRuleset();
-  const legacy = legacyRuleset.createInitialMetaState({}, {
+  const historicalRuleset = V08_META_1_POTION_MERCHANT_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR.createRuleset();
+  const legacy = historicalRuleset.createInitialMetaState({}, {
     runId: "legacy-potion-state",
     season: "season-test",
     startedAt: 1787529600000

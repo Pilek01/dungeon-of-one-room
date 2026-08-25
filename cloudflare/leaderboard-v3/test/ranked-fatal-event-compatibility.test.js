@@ -11,6 +11,7 @@ import {
   V08_META_1_LOCAL_RELEASE_DESCRIPTOR,
   V08_META_1_PLAYTEST_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR,
   V08_META_1_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR,
+  V08_META_1_POTION_MERCHANT_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR,
   V08_META_1_PRODUCTION_RELEASE_DESCRIPTOR,
   V08_META_1_R2_PRODUCTION_RELEASE_DESCRIPTOR,
   V08_META_1_SCORE_CARRY_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR,
@@ -163,7 +164,9 @@ test("historical production releases strip fatal causes while the activated rele
       postRoomPactSettlement: "post-room-pact-v1",
       boundedProcClaims: "v1",
       canonicalChestOutcomes: "v1",
-      earlyBalanceOtterRepair: "v1"
+      earlyBalanceOtterRepair: "v1",
+      canonicalPotionResources: "v1",
+      boundedCombatResources: "v1"
     }
   );
   assert.deepEqual(
@@ -174,7 +177,9 @@ test("historical production releases strip fatal causes while the activated rele
       postRoomPactSettlement: "post-room-pact-v1",
       boundedProcClaims: "v1",
       canonicalChestOutcomes: "v1",
-      earlyBalanceOtterRepair: "v1"
+      earlyBalanceOtterRepair: "v1",
+      canonicalPotionResources: "v1",
+      boundedCombatResources: "v1"
     }
   );
   assert.deepEqual(
@@ -187,6 +192,7 @@ test("every retained production hash can create its own initial state", () => {
   for (const descriptor of [
     ...LEGACY_RELEASES,
     V08_META_1_INTEGRITY_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR,
+    V08_META_1_POTION_MERCHANT_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR,
     V08_META_1_PRODUCTION_RELEASE_DESCRIPTOR
   ]) {
     const state = descriptor.createRuleset().createInitialMetaState({

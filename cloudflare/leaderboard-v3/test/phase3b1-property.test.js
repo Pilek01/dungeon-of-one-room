@@ -65,7 +65,7 @@ async function runToVictory(seed) {
   const directiveIds = new Set();
   let previousDepth = 0;
   let previousRoomIndex = 0;
-  const initialBuild = JSON.stringify(state.build);
+  const initialBuild = structuredClone(state.build);
 
   while (state.status === "active") {
     const directive = state.currentRoomDirective;
@@ -97,7 +97,10 @@ async function runToVictory(seed) {
         next.goldLedger.spentServerDerived
     );
     assert.equal(next.lives, 5);
-    assert.equal(JSON.stringify(next.build), initialBuild);
+    const expectedBuild = structuredClone(initialBuild);
+    expectedBuild.resources.highestUnlockedDepth =
+      Math.max(initialBuild.resources.highestUnlockedDepth, next.depth);
+    assert.deepEqual(next.build, expectedBuild);
     previousDepth = next.depth;
     state = next;
   }

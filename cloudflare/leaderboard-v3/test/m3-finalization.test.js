@@ -290,6 +290,10 @@ test("a later provisional checkpoint removes this run's earlier death snapshot",
     roomDirectiveId: directive.directiveId,
     roomNonce: directive.roomNonce,
     roomResult: "cleared",
+    combatResources: {
+      hp: lifeLost.metaState.build.resources.hp,
+      maxHp: lifeLost.metaState.build.resources.maxHp
+    },
     rewardClaims: [],
     integrityVersion: 1,
     integritySignals: ["local_room_completion_capability_invalid"],

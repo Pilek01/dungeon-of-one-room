@@ -97,6 +97,13 @@ function boundaryRequest(state, claims, overrides = {}) {
   };
 }
 
+function canonicalCombatResources(state) {
+  return {
+    hp: state.build.resources.hp,
+    maxHp: state.build.resources.maxHp
+  };
+}
+
 function mapFragmentClaim(state) {
   const slot = state.currentRewardEnvelope.claimSlots[0];
   const evidence = {
@@ -258,7 +265,9 @@ test("capable fatal events settle the journal before a prevented fatal and keep 
     type: "report_fatal_event",
     payload: {
       classification: "local_fatal_event",
-      boundarySettlement: boundaryRequest(state, mapFragmentClaim(state))
+      boundarySettlement: boundaryRequest(state, mapFragmentClaim(state), {
+        combatResources: canonicalCombatResources(state)
+      })
     }
   }, ruleset, context);
   assert.equal(result.nextState.campaign.treasureMapFragments, 1);
@@ -328,7 +337,9 @@ test("an impossible boundary claim makes the run provisional but still resolves 
         claimType: "enemy",
         claimId: "enemy:invented_devtools_reward",
         count: 1
-      }])
+      }], {
+        combatResources: canonicalCombatResources(state)
+      })
     }
   }, ruleset, context);
   assert.equal(result.nextState.rankEligibility, "provisional");
@@ -350,6 +361,7 @@ test("capable emergency extraction settles without clear and edited totals becom
     payload: {
       mode: "emergency",
       boundarySettlement: boundaryRequest(state, mapFragmentClaim(state), {
+        combatResources: canonicalCombatResources(state),
         reportedGoldDelta: 99_999,
         reportedGoldTotal: 99_999
       })
@@ -381,6 +393,7 @@ test("invalid emergency boundary fallback does not compare edited gold totals", 
         claimId: "potion-use",
         count: 4
       }], {
+        combatResources: canonicalCombatResources(state),
         reportedGoldDelta: 99_999,
         reportedGoldTotal: 99_999
       })

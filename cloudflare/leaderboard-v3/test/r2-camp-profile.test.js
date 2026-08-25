@@ -158,6 +158,10 @@ test("canonical extraction creates an authenticated profile Camp and next run", 
     roomDirectiveId: directive.directiveId,
     roomNonce: directive.roomNonce,
     roomResult: "cleared",
+    combatResources: {
+      hp: selected.metaState.build.resources.hp,
+      maxHp: selected.metaState.build.resources.maxHp
+    },
     rewardClaims: [],
     integrityVersion: 1,
     integritySignals: [],

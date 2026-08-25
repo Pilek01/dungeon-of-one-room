@@ -255,6 +255,10 @@ async function checkpoint(active, key) {
     reportedGoldDelta,
     reportedGoldTotal: active.metaState.gold + reportedGoldDelta,
     turnCount: 5,
+    combatResources: {
+      hp: active.metaState.build.resources.hp,
+      maxHp: active.metaState.build.resources.maxHp
+    },
     elapsedMs: 1_500,
     commandJournalDigest: await canonicalDigest(commands),
     compactRoomProof: {
