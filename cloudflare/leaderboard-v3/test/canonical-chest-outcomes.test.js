@@ -229,6 +229,66 @@ test("canonical stat claim applies one derived bucket increment without acceptin
   assert.equal(result.state.campaign.chestBonuses.healthDepthBuckets["2"], 1);
 });
 
+test("canonical health chest advances effective max HP before bounded resource validation", async () => {
+  const capabilities = {
+    canonicalChestOutcomes: "v1",
+    boundedCombatResources: "v1"
+  };
+  const state = await issuedState({ roll: 0 });
+  const slot = state.currentRewardEnvelope.claimSlots[0];
+  const payload = {
+    ...requestFor(state, [{
+      claimType: "chest",
+      claimId: slot.slotId,
+      count: 1,
+      localEvidence: {
+        outcome: slot.canonicalOutcome.outcome,
+        awardId: slot.canonicalOutcome.awardId
+      }
+    }]),
+    combatResources: { hp: 105, maxHp: 105 }
+  };
+  const settled = await settleRoomRewardEnvelopeV3(
+    state,
+    payload,
+    { ...context, capabilities }
+  );
+  assert.equal(settled.state.campaign.chestBonuses.healthDepthBuckets["0"], 1);
+  assert.equal(settled.state.build.resources.maxHp, 105);
+  assert.equal(settled.state.build.resources.hp, 105);
+
+  const replay = await settleRoomRewardEnvelopeV3(
+    settled.state,
+    payload,
+    { ...context, capabilities }
+  );
+  assert.equal(replay.replayed, true);
+  assert.equal(replay.state.campaign.chestBonuses.healthDepthBuckets["0"], 1);
+  assert.equal(replay.state.build.resources.maxHp, 105);
+
+  const forged = await issuedState({ roll: 0 });
+  const forgedSlot = forged.currentRewardEnvelope.claimSlots[0];
+  await assert.rejects(
+    settleRoomRewardEnvelopeV3(
+      forged,
+      {
+        ...requestFor(forged, [{
+          claimType: "chest",
+          claimId: forgedSlot.slotId,
+          count: 1,
+          localEvidence: {
+            outcome: forgedSlot.canonicalOutcome.outcome,
+            awardId: forgedSlot.canonicalOutcome.awardId
+          }
+        }]),
+        combatResources: { hp: 106, maxHp: 106 }
+      },
+      { ...context, capabilities }
+    ),
+    /BOUNDARY_COMBAT_RESOURCES_MAX_MISMATCH/u
+  );
+});
+
 test("canonical attack and armor claims derive their envelope-depth buckets", async () => {
   for (const [roll, field] of [[400_000, "attackDepthBuckets"], [700_000, "armorDepthBuckets"]]) {
     const state = await issuedState({ roll, depth: 31 });
@@ -518,5 +578,7 @@ test("fatal and emergency canonical stat claims never persist chest bonuses", as
       { ...context, capabilities: { canonicalChestOutcomes: "v1" } }
     );
     assert.deepEqual(settled.state.campaign.chestBonuses.healthDepthBuckets, {});
+    assert.equal(settled.state.build.resources.maxHp, 100);
+    assert.equal(settled.state.build.resources.hp, 100);
   }
 });

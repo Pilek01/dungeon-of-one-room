@@ -152,8 +152,8 @@
   "files": [
     {
       "file": "camp-policy.js",
-      "byteLength": 19678,
-      "sha256": "242ba9dbfe3b39cd37ea817bf93e818f23c1282ac301926ab732df96bc64c0f5"
+      "byteLength": 20140,
+      "sha256": "f6962f949018c50b0cb893249558d60202d8d3028b961fb55591d469dfe5c8fc"
     },
     {
       "file": "chest-bonus-policy.js",
@@ -417,8 +417,8 @@
     },
     {
       "file": "profile-policy.js",
-      "byteLength": 8781,
-      "sha256": "004ee763734c38757a0db199fba9b177aedf7bc635e7d5eabd54a14adb4f3a60"
+      "byteLength": 9047,
+      "sha256": "dec8436060025cb07cd339b1177ee06cd0b268b4ce3ab0726d6ffe308be0064c"
     },
     {
       "file": "regular-relic-offer.js",
@@ -447,8 +447,8 @@
     },
     {
       "file": "reward-policy.js",
-      "byteLength": 54725,
-      "sha256": "35a951bada9facede7b84332c8a0a93751825e8d5df3eca2935a8a79580e2733"
+      "byteLength": 55305,
+      "sha256": "8903b3a3dd6f3f52fbbe44620b0a58ecd49382ed082e9a732d2d021228b25e28"
     },
     {
       "file": "rng.js",
@@ -467,8 +467,8 @@
     },
     {
       "file": "ruleset-hash-policy.js",
-      "byteLength": 1968,
-      "sha256": "26e359e06a603a16063b498712fd5aaf179ea0327033456661e0d99e3df6491b"
+      "byteLength": 2045,
+      "sha256": "bd8728268abe764106b96cd8735fc88ad017e8a5c6d784bdfdf53a1cb5d8fad5"
     },
     {
       "file": "run-modifiers.js",
@@ -581,5 +581,5 @@
       "sha256": "cfce80fea7bd5d1328020055f2012bcaeaf9b61e5438e437bf948a4288fb8bf0"
     }
   ],
-  "rulesetHash": "sha256:48b5bd86604a5f8dae58a4dcf2b1ed9a72252b3e4942fc20693b3e0a8e91438e"
+  "rulesetHash": "sha256:9d6069993fd07784ecfdc146825a8a7b82cde1fd7412f351aeba1ab86c539dbe"
 }

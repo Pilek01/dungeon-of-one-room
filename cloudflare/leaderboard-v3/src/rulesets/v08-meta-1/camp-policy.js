@@ -20,6 +20,7 @@ import {
   deriveRunModifierEffects,
   V08_RUN_MODIFIER_DATA
 } from "./run-modifiers.js";
+import { projectChestBonusesV08 } from "./chest-bonus-policy.js";
 
 const policy = campPolicyDocument.canonicalData;
 const upgradeById = new Map(policy.upgrades.map((entry) => [entry.id, entry]));
@@ -372,22 +373,35 @@ export async function issueCampTransactionsV08(metaState, context = {}) {
   }, context);
 }
 
-function applyInstantUpgradePreview(build, upgradeId, modifierMaximumSlotsAdditive = 0, potionPolicyVersion = null) {
+function applyInstantUpgradePreview(
+  build,
+  upgradeId,
+  modifierMaximumSlotsAdditive = 0,
+  potionPolicyVersion = null,
+  campaign = null
+) {
   if (upgradeId === "vitality") {
     const level = build.campUpgrades[upgradeId];
     const oldMultiplier = 1 + (level - 1) * 0.1;
     const newMultiplier = 1 + level * 0.1;
     const previousMax = build.resources.maxHp;
     const previousHp = build.resources.hp;
+    const chestHealthFlat = projectChestBonusesV08(
+      campaign?.chestBonuses
+    ).healthFlat;
+    const previousBaseMax = Math.max(1, previousMax - chestHealthFlat);
+    const previousBaseHp = Math.max(0, previousHp - chestHealthFlat);
     build.resources.maxHp = Math.max(
       1,
-      Math.round(previousMax * newMultiplier / oldMultiplier)
+      Math.round(previousBaseMax * newMultiplier / oldMultiplier) +
+        chestHealthFlat
     );
     build.resources.hp = Math.max(
       1,
       Math.min(
         build.resources.maxHp,
-        Math.round(previousHp * newMultiplier / oldMultiplier)
+        Math.round(previousBaseHp * newMultiplier / oldMultiplier) +
+          chestHealthFlat
       )
     );
   } else if (upgradeId === "satchel") {
@@ -441,7 +455,13 @@ export async function commitCampTransactionV08(metaState, request, context = {})
       state.build.campUpgrades[upgrade.id] = current + 1;
       const modifierMaximumSlotsAdditive = deriveRunModifierEffects(state.runModifiers)
         .potionModifiers.maximumSlotsAdditive;
-      applyInstantUpgradePreview(state.build, upgrade.id, modifierMaximumSlotsAdditive, context.potionPolicyVersion);
+      applyInstantUpgradePreview(
+        state.build,
+        upgrade.id,
+        modifierMaximumSlotsAdditive,
+        context.potionPolicyVersion,
+        state.campaign
+      );
       assertCanonicalPotionStateV08(state);
       return {
         nextState: state,

@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { createRequire } from "node:module";
 import {
+  V08_META_1_CHEST_HP_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR,
   V08_META_1_LOCAL_RELEASE_DESCRIPTOR,
   V08_META_1_POTION_MERCHANT_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR,
   V08_META_1_PRODUCTION_RELEASE_DESCRIPTOR
@@ -13,6 +14,8 @@ const require = createRequire(import.meta.url);
 const protocol = require("../../../online-v3/ranked-v3-protocol.js");
 const PREVIOUS_PRODUCTION_HASH =
   "sha256:bf17a65dc721066bf11a1c34063cc18254fe97766852827719eb6aabf36042fa";
+const PREVIOUS_CHEST_HP_HASH =
+  "sha256:48b5bd86604a5f8dae58a4dcf2b1ed9a72252b3e4942fc20693b3e0a8e91438e";
 
 test("bounded combat resources activate only on the new ruleset hash", () => {
   assert.equal(V08_META_1_PRODUCTION_RELEASE_DESCRIPTOR.rulesetHash, manifest.rulesetHash);
@@ -40,11 +43,24 @@ test("bounded combat resources activate only on the new ruleset hash", () => {
   assert.equal(previous.capabilities.canonicalPotionResources, undefined);
   assert.equal(previous.capabilities.boundedCombatResources, undefined);
 
+  const chestHpPrevious = V08_META_1_CHEST_HP_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR;
+  assert.equal(chestHpPrevious.rulesetHash, PREVIOUS_CHEST_HP_HASH);
+  assert.deepEqual(
+    chestHpPrevious.capabilities,
+    V08_META_1_PRODUCTION_RELEASE_DESCRIPTOR.capabilities
+  );
+
   assert.ok(COMPATIBLE_RULESET_HASHES.includes(manifest.rulesetHash));
+  assert.ok(COMPATIBLE_RULESET_HASHES.includes(PREVIOUS_CHEST_HP_HASH));
   assert.ok(COMPATIBLE_RULESET_HASHES.includes(PREVIOUS_PRODUCTION_HASH));
   assert.equal(protocol.RULESET_HASH, manifest.rulesetHash);
+  assert.ok(protocol.SUPPORTED_RULESET_HASHES.includes(PREVIOUS_CHEST_HP_HASH));
   assert.ok(protocol.SUPPORTED_RULESET_HASHES.includes(PREVIOUS_PRODUCTION_HASH));
-  assert.deepEqual(protocol.BOUNDED_COMBAT_RESOURCES_RULESET_HASHES, [manifest.rulesetHash]);
+  assert.deepEqual(protocol.BOUNDED_COMBAT_RESOURCES_RULESET_HASHES, [
+    manifest.rulesetHash,
+    PREVIOUS_CHEST_HP_HASH
+  ]);
   assert.equal(protocol.supportsBoundedCombatResources(manifest.rulesetHash), true);
+  assert.equal(protocol.supportsBoundedCombatResources(PREVIOUS_CHEST_HP_HASH), true);
   assert.equal(protocol.supportsBoundedCombatResources(PREVIOUS_PRODUCTION_HASH), false);
 });

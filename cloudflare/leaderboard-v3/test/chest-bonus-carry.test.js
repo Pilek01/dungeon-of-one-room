@@ -108,6 +108,8 @@ test("profile extraction and hydration carry chest bonuses for the campaign", as
   const hydrated = await hydrateRunFromProfileV08(next, profile, { cryptoProvider: webcrypto });
   assert.deepEqual(hydrated.campaign.chestBonuses, state.campaign.chestBonuses);
   assert.equal(projectChestBonusesV08(hydrated.campaign.chestBonuses).healthFlat, 7);
+  assert.equal(hydrated.build.resources.maxHp, 107);
+  assert.equal(hydrated.build.resources.hp, 107);
   assert.doesNotThrow(() => assertMetaStateV08(hydrated));
 });
 

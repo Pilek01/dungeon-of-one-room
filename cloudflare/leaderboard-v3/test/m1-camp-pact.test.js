@@ -25,6 +25,7 @@ import {
 import { applyCanonicalRunModifierSelection } from "../src/rulesets/v08-meta-1/run-modifiers.js";
 import { createV08Meta1Ruleset } from "../src/rulesets/v08-meta-1/index.js";
 import { hydrateRunFromProfileV08, profileStateFromRunV08 } from "../src/rulesets/v08-meta-1/profile-policy.js";
+import { applyIssuedChestStatBonusV08 } from "../src/rulesets/v08-meta-1/chest-bonus-policy.js";
 import campPolicyDocument from "../src/rulesets/v08-meta-1/data/camp-transaction-policy.generated.json" with { type: "json" };
 import pactPolicyDocument from "../src/rulesets/v08-meta-1/data/pact-transaction-policy.generated.json" with { type: "json" };
 import manifest from "../src/rulesets/v08-meta-1/data/ruleset-manifest.json" with { type: "json" };
@@ -227,6 +228,38 @@ test("Camp upgrade cost, level, resources and exact retry are canonical", async 
       entry.privateData.upgradeId === "vitality"
   );
   assert.equal(vitality2.publicData.price, 42);
+});
+
+test("Camp Vitality scales base HP without multiplying additive chest health", async () => {
+  const result = baseSetup("camp_vitality_chest_health");
+  result.meta.campGold = 5000;
+  result.meta.goldLedger.campEarnedServerDerived = 5000;
+  result.meta.build.resources.highestUnlockedDepth = 50;
+  result.meta.campaign = applyIssuedChestStatBonusV08(result.meta.campaign, {
+    stat: "health",
+    scalingDepth: 1
+  });
+  result.meta.build.resources.maxHp = 105;
+  result.meta.build.resources.hp = 105;
+  result.meta.build.buildDigest = await computeRelicBuildDigestV08(
+    result.meta.build,
+    webcrypto
+  );
+  result.meta = await beginCampSessionV08(result.meta, result.context);
+  result.meta = await issueCampTransactionsV08(result.meta, result.context);
+  const vitality = findChoice(
+    result.meta,
+    (entry) =>
+      entry.privateData.action === "upgrade" &&
+      entry.privateData.upgradeId === "vitality"
+  );
+  const committed = await commitCampTransactionV08(
+    result.meta,
+    request(vitality),
+    result.context
+  );
+  assert.equal(committed.build.resources.maxHp, 115);
+  assert.equal(committed.build.resources.hp, 115);
 });
 
 test("Camp rejects insufficient gold and forged price, level, amount or final state", async () => {

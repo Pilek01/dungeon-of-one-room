@@ -19,6 +19,7 @@ import {
   normalizeMutatorProgressV08,
   projectPublicMutatorProgressV08
 } from "./mutator-progression.js";
+import { projectChestBonusesV08 } from "./chest-bonus-policy.js";
 
 function flaskStackCount(build) {
   return build?.relics?.find((entry) => entry.relicId === "flask")?.stacks || 0;
@@ -34,15 +35,22 @@ function safeLevel(value) {
   return level;
 }
 
-async function resetBuildForNextRun(build, cryptoProvider, potionModifiers, potionPolicyVersion = "legacy") {
+async function resetBuildForNextRun(
+  build,
+  cryptoProvider,
+  potionModifiers,
+  potionPolicyVersion = "legacy",
+  chestHealthFlat = 0
+) {
   const empty = createEmptyRelicBuildV08();
   const next = structuredClone(build || empty);
   const vitality = safeLevel(next.campUpgrades?.vitality);
   const satchel = safeLevel(next.campUpgrades?.satchel);
-  const maxHp = Math.max(
+  const baseMaxHp = Math.max(
     1,
     Math.round(empty.resources.maxHp * (1 + vitality * 0.1))
   );
+  const maxHp = baseMaxHp + chestHealthFlat;
   const potionInput = {
     baseMaximum: empty.resources.maxPotions,
     satchelLevel: satchel,
@@ -122,17 +130,21 @@ export async function hydrateRunFromProfileV08(state, profile, context = {}) {
   next.runModifiers = structuredClone(
     profile.runModifiers || createEmptyRunModifierLedgerV08()
   );
+  next.campaign = normalizeCampaignStateV08({ campaign: profile.campaign || next.campaign });
   const potionModifiers = deriveRunModifierEffects(next.runModifiers).potionModifiers;
+  const chestHealthFlat = projectChestBonusesV08(
+    next.campaign.chestBonuses
+  ).healthFlat;
   next.build = await resetBuildForNextRun(
     profile.build,
     context.cryptoProvider,
     potionModifiers,
-    potionPolicyVersion
+    potionPolicyVersion,
+    chestHealthFlat
   );
   next.mutatorProgress = normalizeMutatorProgressV08(profile.mutatorProgress, {
     activeModifierIds: next.runModifiers.active.map((entry) => entry.modifierId)
   });
-  next.campaign = normalizeCampaignStateV08({ campaign: profile.campaign || next.campaign });
   next.specialRoomScheduleState.forgeSeenInGame =
     next.campaign.forgeSeenInCampaign;
   next.specialRoomScheduleState.forgePityUsedInGame =

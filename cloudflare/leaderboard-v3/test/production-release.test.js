@@ -24,6 +24,7 @@ import {
   V08_META_1_OTTER_REPAIR_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR,
   V08_META_1_CANONICAL_CHEST_CONTEXT_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR,
   V08_META_1_CANONICAL_CHEST_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR,
+  V08_META_1_CHEST_HP_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR,
   V08_META_1_PRODUCTION_RELEASE_DESCRIPTOR
 } from "../src/rulesets/releases.js";
 import * as releases from "../src/rulesets/releases.js";
@@ -37,6 +38,7 @@ const require = createRequire(import.meta.url);
 const protocol = require("../../../online-v3/ranked-v3-protocol.js");
 const EXPECTED_HASH = manifest.rulesetHash;
 const PREVIOUS_POTION_MERCHANT_HASH = "sha256:bf17a65dc721066bf11a1c34063cc18254fe97766852827719eb6aabf36042fa";
+const PREVIOUS_CHEST_HP_HASH = "sha256:48b5bd86604a5f8dae58a4dcf2b1ed9a72252b3e4942fc20693b3e0a8e91438e";
 const PREVIOUS_GOLD_CONTEXT_HASH = "sha256:5bf4a0fbf2583b9b59ae050eebdd324bc09038b3aed6d2090cb3a4e5481f79eb";
 const PREVIOUS_OTTER_REPAIR_HASH = "sha256:91065f3c515fbc2f996ba74a9fbbcab3d2ce013077af306afd51929e64e1af59";
 const PREVIOUS_CHEST_CARRY_HASH = "sha256:35707f6b5ea8b1ad18251dce5e6c18b87653893aad705b6c5543fdd140b88067";
@@ -73,6 +75,7 @@ test("bounded proc release activates a new hash and leaves every historical desc
     value.status === RULESET_RELEASE_STATES.PRODUCTION_RELEASED &&
     typeof value.rulesetHash === "string" &&
     value.rulesetHash !== manifest.rulesetHash &&
+    value.rulesetHash !== PREVIOUS_CHEST_HP_HASH &&
     value.rulesetHash !== PREVIOUS_POTION_MERCHANT_HASH &&
     value.rulesetHash !== PREVIOUS_OTTER_REPAIR_HASH &&
     value.rulesetHash !== PREVIOUS_GOLD_CONTEXT_HASH &&
@@ -93,6 +96,7 @@ test("bounded proc release activates a new hash and leaves every historical desc
   assert.ok(protocol.SUPPORTED_RULESET_HASHES.includes(PREVIOUS_BOUNDED_PROC_HASH));
   assert.deepEqual(protocol.BOUNDED_PROC_CLAIMS_RULESET_HASHES, [
     manifest.rulesetHash,
+    PREVIOUS_CHEST_HP_HASH,
     PREVIOUS_POTION_MERCHANT_HASH,
     PREVIOUS_OTTER_REPAIR_HASH,
     PREVIOUS_GOLD_CONTEXT_HASH,
@@ -135,6 +139,7 @@ test("canonical chest carry release is hash-gated and preserves the previous pro
   assert.ok(protocol.SUPPORTED_RULESET_HASHES.includes(PREVIOUS_CHEST_CARRY_HASH));
   assert.deepEqual(protocol.CANONICAL_CHEST_OUTCOMES_RULESET_HASHES, [
     manifest.rulesetHash,
+    PREVIOUS_CHEST_HP_HASH,
     PREVIOUS_POTION_MERCHANT_HASH,
     PREVIOUS_OTTER_REPAIR_HASH,
     PREVIOUS_GOLD_CONTEXT_HASH,
@@ -178,6 +183,7 @@ test("canonical chest repair release retains the previous canonical hash and cap
   assert.ok(protocol.SUPPORTED_RULESET_HASHES.includes(PREVIOUS_CANONICAL_CHEST_HASH));
   assert.deepEqual(protocol.CANONICAL_CHEST_OUTCOMES_RULESET_HASHES, [
     manifest.rulesetHash,
+    PREVIOUS_CHEST_HP_HASH,
     PREVIOUS_POTION_MERCHANT_HASH,
     PREVIOUS_OTTER_REPAIR_HASH,
     PREVIOUS_GOLD_CONTEXT_HASH,
@@ -232,6 +238,7 @@ test("production entry activates the post-room Pact ruleset", async () => {
     V08_META_1_CANONICAL_CHEST_CONTEXT_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR,
     V08_META_1_CANONICAL_CHEST_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR,
     V08_META_1_OTTER_REPAIR_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR,
+    V08_META_1_CHEST_HP_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR,
     V08_META_1_PRODUCTION_RELEASE_DESCRIPTOR
   ]);
   const resolved = registry.resolve({
@@ -241,6 +248,14 @@ test("production entry activates the post-room Pact ruleset", async () => {
     lifecycle: "ranked"
   });
   assert.equal(resolved.rulesetHash, EXPECTED_HASH);
+  const chestHpPrevious = registry.resolve({
+    rulesetId: "v08-meta-1",
+    rulesetHash: PREVIOUS_CHEST_HP_HASH,
+    environment: "production",
+    lifecycle: "ranked"
+  });
+  assert.equal(chestHpPrevious.rulesetHash, PREVIOUS_CHEST_HP_HASH);
+  assert.equal(chestHpPrevious.capabilities.boundedCombatResources, "v1");
   const goldSyncPrevious = registry.resolve({
     rulesetId: "v08-meta-1",
     rulesetHash: GOLD_SYNC_PREVIOUS_HASH,

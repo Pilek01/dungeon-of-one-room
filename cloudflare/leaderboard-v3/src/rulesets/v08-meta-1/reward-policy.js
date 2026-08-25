@@ -15,7 +15,8 @@ import { assertCanonicalRunModifierDigestV08 } from "./run-modifiers.js";
 import { applyMutatorProgressDeltaV08 } from "./mutator-progression.js";
 import {
   applyIssuedChestStatBonusV08,
-  normalizeChestBonusesV08
+  normalizeChestBonusesV08,
+  projectChestBonusesV08
 } from "./chest-bonus-policy.js";
 import { deriveIntInclusive } from "./rng.js";
 import { RULESET_ID } from "./constants.js";
@@ -1251,10 +1252,24 @@ async function settleRewardEnvelopeV3(state, request, context = {}, options = {}
         canonicalChestRoomEnabled(context.capabilities, envelope.roomType) &&
         outcome === "cleared"
       ) {
+        const previousHealthFlat = projectChestBonusesV08(
+          next.campaign.chestBonuses
+        ).healthFlat;
         next.campaign = applyIssuedChestStatBonusV08(next.campaign, {
           stat: result.chestStat,
           scalingDepth: mutableEnvelope.scalingDepth
         });
+        if (result.chestStat === "health") {
+          const healthFlat = projectChestBonusesV08(
+            next.campaign.chestBonuses
+          ).healthFlat;
+          const healthDelta = healthFlat - previousHealthFlat;
+          next.build.resources.maxHp += healthDelta;
+          next.build.resources.hp = Math.min(
+            next.build.resources.maxHp,
+            next.build.resources.hp + healthDelta
+          );
+        }
       }
       boundedDelta += result.amount;
     }
