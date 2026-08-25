@@ -457,7 +457,86 @@ test("buyback and services mutate canonical ledgers at most once", async () => {
     );
     assert.equal(committed.build.resources.hp, committed.build.resources.maxHp);
     assert.equal(result.meta.gold + result.meta.campGold - committed.gold - committed.campGold, 150);
+    assert.deepEqual(
+      await commitMerchantTransactionV08(committed, request(service), result.context),
+      committed
+    );
   }
+});
+
+
+
+test("Combat Boost purchase is canonical, idempotent and unavailable while active", async () => {
+  const result = await issued("merchant_combatboost", {
+    "merchant/service-life": 99,
+    "merchant/service-choice": 1
+  });
+  const service = choiceBy(
+    result.meta,
+    "merchant_service",
+    (entry) => entry.publicData.serviceId === "combatboost"
+  );
+  const committed = await commitMerchantTransactionV08(
+    result.meta,
+    request(service),
+    result.context
+  );
+  assert.equal(committed.build.resources.combatBoostTurns, 100);
+  assert.equal(committed.build.resources.combatBoostAttack, 20);
+  assert.equal(committed.build.resources.combatBoostArmor, 20);
+  assert.equal(result.meta.gold + result.meta.campGold - committed.gold - committed.campGold, 200);
+  assert.deepEqual(
+    await commitMerchantTransactionV08(committed, request(service), result.context),
+    committed
+  );
+
+  const active = setup("merchant_combatboost_active", {
+    "merchant/service-life": 99,
+    "merchant/service-choice": 1
+  });
+  active.meta.build.resources.combatBoostTurns = 1;
+  active.meta = await issueMerchantInventoryV08(active.meta, active.context);
+  const activeService = choiceBy(
+    active.meta,
+    "merchant_service",
+    (entry) => entry.publicData.serviceId === "combatboost"
+  );
+  await assert.rejects(
+    commitMerchantTransactionV08(active.meta, request(activeService), active.context),
+    /MERCHANT_COMBAT_BOOST_ALREADY_ACTIVE/u
+  );
+});
+
+test("Full Heal is absent from a canonical full-HP offer", async () => {
+  const result = setup("merchant_fullheal_full", {
+    "merchant/service-life": 99,
+    "merchant/service-choice": 0
+  });
+  result.context.capabilities = { boundedCombatResources: "v1" };
+  result.meta.build.resources.hp = result.meta.build.resources.maxHp;
+  result.meta = await issueMerchantInventoryV08(result.meta, result.context);
+  assert.equal(
+    result.meta.pendingInventory.choices.some(
+      (entry) => entry.kind === "merchant_service" && entry.publicData.serviceId === "fullheal"
+    ),
+    false
+  );
+});
+test("legacy Merchant keeps the historical Full Heal service pool", async () => {
+  const result = setup("merchant_fullheal_legacy", {
+    "merchant/service-life": 99,
+    "merchant/service-choice": 0
+  });
+  result.meta.build.resources.hp = result.meta.build.resources.maxHp;
+  result.meta = await issueMerchantInventoryV08(result.meta, result.context);
+  assert.equal(
+    result.meta.pendingInventory.choices.some(
+      (entry) =>
+        entry.kind === "merchant_service" &&
+        entry.publicData.serviceId === "fullheal"
+    ),
+    true
+  );
 });
 
 test("conflicting retry, fake fields, stale source and insufficient gold fail with full rollback", async () => {

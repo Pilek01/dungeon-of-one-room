@@ -1392,6 +1392,7 @@ const rankedGoldGameReplacements = [
       }
       onlineV3RoomCompletionCapability = context.completionCapability || null;
       onlineV3BoundedProcClaims = context.boundedProcClaims === true;
+      onlineV3BoundedCombatResources = context.boundedCombatResources === true;
       onlineV3RoomStartingGold = Math.max(
         0,
         Math.floor(Number(context.startingGold) || 0)
@@ -1410,6 +1411,12 @@ const rankedGoldGameReplacements = [
           0,
           Math.floor(Number(state.player.gold) || 0) - onlineV3RoomStartingGold
         ),
+        ...(onlineV3BoundedCombatResources
+          ? {
+              hp: Math.max(0, Math.floor(Number(state.player.hp) || 0)),
+              maxHp: Math.max(0, Math.floor(Number(state.player.maxHp) || 0))
+            }
+          : {}),
         completionCapability: onlineV3RoomCompletionCapability
       };
       onlineV3RoomCompletionCapability = null;
@@ -1463,6 +1470,7 @@ const rankedGoldGameReplacements = [
   let onlineV3CanonicalChestMode = false;
   let onlineV3RoomCompletionCapability = null;
   let onlineV3BoundedProcClaims = false;
+  let onlineV3BoundedCombatResources = false;
   let onlineV3RoomStartingGold = 0;
   let onlineV3RoomStartingTurn = 0;
   let onlineV3RoomClearDirectiveId = "";

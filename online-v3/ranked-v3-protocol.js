@@ -85,6 +85,8 @@
     "sha256:35707f6b5ea8b1ad18251dce5e6c18b87653893aad705b6c5543fdd140b88067"
   ]);
   const boundedProcClaimsRulesetHashes = new Set(BOUNDED_PROC_CLAIMS_RULESET_HASHES);
+  const BOUNDED_COMBAT_RESOURCES_RULESET_HASHES = Object.freeze([RULESET_HASH]);
+  const boundedCombatResourcesRulesetHashes = new Set(BOUNDED_COMBAT_RESOURCES_RULESET_HASHES);
   const CANONICAL_CHEST_OUTCOMES_RULESET_HASHES = Object.freeze([
     RULESET_HASH,
     "sha256:91065f3c515fbc2f996ba74a9fbbcab3d2ce013077af306afd51929e64e1af59",
@@ -161,6 +163,11 @@
   function supportsBoundedProcClaims(value) {
     const rulesetHash = typeof value === "string" ? value : value && value.rulesetHash;
     return boundedProcClaimsRulesetHashes.has(String(rulesetHash || ""));
+  }
+
+  function supportsBoundedCombatResources(value) {
+    const rulesetHash = typeof value === "string" ? value : value && value.rulesetHash;
+    return boundedCombatResourcesRulesetHashes.has(String(rulesetHash || ""));
   }
 
   function supportsCanonicalChestOutcomes(value) {
@@ -453,6 +460,8 @@
     supportsPostRoomPact,
     BOUNDED_PROC_CLAIMS_RULESET_HASHES,
     supportsBoundedProcClaims,
+    BOUNDED_COMBAT_RESOURCES_RULESET_HASHES,
+    supportsBoundedCombatResources,
     CANONICAL_CHEST_OUTCOMES_RULESET_HASHES,
     supportsCanonicalChestOutcomes,
     API_PREFIX,

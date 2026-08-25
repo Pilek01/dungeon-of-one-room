@@ -499,7 +499,9 @@ function validateBootstrapSelectionBody(body) {
 }
 
 function validateRegisteredRoomEnvelope(body, policyName) {
-  rejectUnknownRequestFields(body, policyName);
+  const schemaBody = { ...body };
+  if (policyName === "checkpoint") delete schemaBody.combatResources;
+  rejectUnknownRequestFields(schemaBody, policyName);
   const value = {
     ...body,
     runId: validateRegisteredRunId(body.runId),
@@ -512,7 +514,10 @@ function validateRegisteredRoomEnvelope(body, policyName) {
     roomNonce: requireString(body.roomNonce, "roomNonce", { maximum: 160 }),
     clientProtocolVersion: body.clientProtocolVersion === undefined
       ? PROTOCOL_VERSION
-      : requireString(body.clientProtocolVersion, "clientProtocolVersion", { maximum: 64 })
+      : requireString(body.clientProtocolVersion, "clientProtocolVersion", { maximum: 64 }),
+    ...(policyName === "checkpoint" && body.combatResources !== undefined
+      ? { combatResources: body.combatResources }
+      : {})
   };
   if (policyName !== "checkpoint") return value;
   const fields = [

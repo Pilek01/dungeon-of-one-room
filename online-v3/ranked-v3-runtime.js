@@ -206,7 +206,8 @@
     root.DungeonOnlineV3GameBridge?.setRoomIntegrityContext?.({
       completionCapability,
       startingGold,
-      boundedProcClaims: protocol.supportsBoundedProcClaims?.(rulesetHash) === true
+      boundedProcClaims: protocol.supportsBoundedProcClaims?.(rulesetHash) === true,
+      boundedCombatResources: protocol.supportsBoundedCombatResources?.(rulesetHash) === true
     });
   }
 
@@ -253,11 +254,15 @@
     const envelope = snapshot?.currentRewardEnvelope;
     if (!directive || !envelope) throw new TypeError("RANKED_BOUNDARY_BINDING_UNAVAILABLE");
     const reportedGoldDelta = Math.max(0, Math.floor(Number(captured.reportedGoldDelta) || 0));
+    const boundedCombatResources = protocol.supportsBoundedCombatResources?.(snapshot?.rulesetHash) === true
+      ? { hp: Math.max(0, Math.floor(Number(captured.hp) || 0)), maxHp: Math.max(0, Math.floor(Number(captured.maxHp) || 0)) }
+      : null;
     return {
       summary: {
         turnCount: Math.max(0, Math.floor(Number(captured.turnCount) || 0)),
         rewardClaims: Array.isArray(captured.rewardClaims) ? captured.rewardClaims : [],
         reportedGoldDelta,
+        ...(boundedCombatResources ? { combatResources: boundedCombatResources } : {}),
         integritySignals: Array.isArray(pendingRoomSummary?.integritySignals)
           ? pendingRoomSummary.integritySignals
           : []
@@ -272,6 +277,7 @@
         turnCount: Math.max(0, Math.floor(Number(captured.turnCount) || 0)),
         elapsedMs: Math.max(0, Date.now() - startedAt),
         commandJournalDigest: `boundary:${directive.directiveId}:${Math.max(0, Math.floor(Number(captured.turnCount) || 0))}`,
+        ...(boundedCombatResources ? { combatResources: boundedCombatResources } : {}),
         compactRoomProof: JSON.stringify({
           version: 1,
           roomDirectiveId: directive.directiveId,
@@ -2207,6 +2213,7 @@
           : [],
         reportedGoldDelta,
         reportedGoldTotal: canonicalGoldBeforeSettlement + reportedGoldDelta,
+        ...(summary?.combatResources ? { combatResources: summary.combatResources } : {}),
         commands: []
       });
       if (!isCurrentBoundaryOperation(operation)) return true;

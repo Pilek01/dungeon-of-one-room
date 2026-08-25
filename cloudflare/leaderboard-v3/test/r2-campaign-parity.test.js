@@ -7,6 +7,7 @@ import { computeRelicBuildDigestV08 } from "../src/rulesets/v08-meta-1/relic-pol
 import { assertMetaStateV08, createInitialMetaStateV08 } from "../src/rulesets/v08-meta-1/meta-state.js";
 import { canonicalJson } from "../src/security/canonical-json.js";
 import {
+  applyPracticeMutatorImportToProfileV08,
   createInitialProfileStateV08,
   hydrateRunFromProfileV08,
   profileStateFromRunV08,
@@ -250,6 +251,41 @@ test("fresh Ranked profile starts with the exact v0.8 campaign defaults", () => 
   });
 });
 
+test("highestUnlockedDepth carries only within one Ranked campaign", async () => {
+  const source = initial();
+  source.status = "extraction";
+  source.build.resources.highestUnlockedDepth = 20;
+  const profile = profileStateFromRunV08(source, "profile_depth_parity", 7);
+
+  const next = await hydrateRunFromProfileV08(
+    initial(),
+    profile,
+    { cryptoProvider: webcrypto }
+  );
+  const repeated = await hydrateRunFromProfileV08(
+    initial(),
+    JSON.parse(canonicalJson(profile)),
+    { cryptoProvider: webcrypto }
+  );
+  assert.equal(next.build.resources.highestUnlockedDepth, 20);
+  assert.equal(repeated.build.resources.highestUnlockedDepth, 20);
+
+  const fresh = createInitialProfileStateV08(initial(), "profile_fresh_campaign");
+  assert.equal(fresh.build.resources.highestUnlockedDepth, 0);
+
+  const campaignBefore = structuredClone(profile.campaign);
+  const imported = applyPracticeMutatorImportToProfileV08(
+    profile,
+    {
+      metrics: { depthHighscore: 99 },
+      historicalUnlockedMutatorIds: ["resilience"]
+    },
+    { now: context.now }
+  );
+  assert.equal(imported.build.resources.highestUnlockedDepth, 20);
+  assert.deepEqual(imported.campaign, campaignBefore);
+});
+
 test("production bridge uses native Forge and native Camp checkpoint selection", async () => {
   const builder = await readFile(new URL("../../../scripts/build-pages-v3.mjs", import.meta.url), "utf8");
   const runtime = await readFile(new URL("../../../online-v3/ranked-v3-runtime.js", import.meta.url), "utf8");
@@ -262,4 +298,11 @@ test("production bridge uses native Forge and native Camp checkpoint selection",
   assert.doesNotMatch(runtime, /ui\.showMessage\("Forge", "Choose the Forge operation\."/u);
   assert.match(runtime, /function onForgeMode\(mode, context = \{\}\)/u);
   assert.match(runtime, /function onCampStartRun\(startDepth = 0\)[\s\S]*prepareFreshRankedStart\(false\)/u);
+  assert.match(runtime, /boundedCombatResources/u);
+  assert.match(runtime, /summary:[\s\S]*combatResources/u);
+  assert.match(runtime, /eventPayload:[\s\S]*combatResources/u);
+  assert.match(runtime, /fatalPayload\.boundarySettlement = mergeCapturedBoundary\(captureRankedBoundary\(\)\)\.eventPayload/u);
+  assert.match(builder, /onlineV3BoundedCombatResources/u);
+  assert.match(builder, /hp: Math\.max\(0, Math\.floor\(Number\(state\.player\.hp\)/u);
+  assert.match(builder, /maxHp: Math\.max\(0, Math\.floor\(Number\(state\.player\.maxHp\)/u);
 });

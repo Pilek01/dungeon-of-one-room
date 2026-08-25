@@ -43,8 +43,8 @@ function supportsEventJournalBoundary(ruleset) {
   return ruleset?.capabilities?.boundarySettlementMode === "event-journal-v1";
 }
 
-function exactBoundarySettlement(payload) {
-  return exactPayload(payload, [
+function exactBoundarySettlement(payload, capabilities = {}) {
+  const fields = [
     "envelopeId",
     "roomDirectiveId",
     "roomNonce",
@@ -55,14 +55,22 @@ function exactBoundarySettlement(payload) {
     "elapsedMs",
     "commandJournalDigest",
     "compactRoomProof"
-  ], "BOUNDARY_SETTLEMENT_PAYLOAD_INVALID");
+  ];
+  const bounded = capabilities?.boundedCombatResources === "v1";
+  if (bounded) {
+    if (!Object.hasOwn(payload || {}, "combatResources")) {
+      throw new TypeError("BOUNDARY_SETTLEMENT_PAYLOAD_INVALID_FIELDS");
+    }
+    fields.push("combatResources");
+  }
+  return exactPayload(payload, fields, "BOUNDARY_SETTLEMENT_PAYLOAD_INVALID");
 }
 
 async function settleEventJournalBoundary(state, payload, outcome, ruleset, context) {
   if (!supportsEventJournalBoundary(ruleset) || typeof ruleset.settleBoundaryRewardEnvelope !== "function") {
     throw new TypeError("BOUNDARY_SETTLEMENT_UNSUPPORTED");
   }
-  const request = exactBoundarySettlement(payload);
+  const request = exactBoundarySettlement(payload, ruleset.capabilities);
   const roomIntegrityState = rankIntegrityRoomState(state);
   let settlement;
   let boundaryInvalid = false;
@@ -241,6 +249,10 @@ export async function applyRulesetCheckpoint(state, body, ruleset, context = {})
   }
   const directive = state.currentRoomDirective;
   if (!directive) throw new TypeError("ROOM_DIRECTIVE_REQUIRED");
+  const boundedCombatResources = ruleset.capabilities?.boundedCombatResources === "v1";
+  if (boundedCombatResources !== Object.hasOwn(body, "combatResources")) {
+    throw new TypeError("BOUNDARY_COMBAT_RESOURCES_CAPABILITY_MISMATCH");
+  }
   if (body.roomResult !== "cleared") throw new TypeError("ROOM_RESULT_INVALID");
   const wasOfficialRankEligible = isOfficialRankEligible(state);
   const operation = {
@@ -269,7 +281,10 @@ export async function applyRulesetCheckpoint(state, body, ruleset, context = {})
       turnCount: body.turnCount,
       elapsedMs: body.elapsedMs,
       commandJournalDigest: body.commandJournalDigest,
-      compactRoomProof: JSON.stringify(body.compactRoomProof)
+      compactRoomProof: JSON.stringify(body.compactRoomProof),
+      ...(body.combatResources !== undefined
+        ? { combatResources: structuredClone(body.combatResources) }
+        : {})
     }
   };
   const rulesetContext = runtimeContext(state, {

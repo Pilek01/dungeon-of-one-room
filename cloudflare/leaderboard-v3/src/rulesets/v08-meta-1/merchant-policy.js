@@ -435,9 +435,16 @@ export async function issueMerchantInventoryV08(metaState, context = {}) {
   const lifeRoll = await randomInt(metaState, context, "service-life", 0, 99);
   const services = policy.services.filter(
     (entry) =>
-      entry.id !== "secondchance" ||
-      metaState.build.merchant.secondChancePurchases <
-        policy.maximumSecondChancePurchases
+      (
+        entry.id !== "secondchance" ||
+        metaState.build.merchant.secondChancePurchases <
+          policy.maximumSecondChancePurchases
+      ) &&
+      (
+        context.capabilities?.boundedCombatResources !== "v1" ||
+        entry.id !== "fullheal" ||
+        metaState.build.resources.hp < metaState.build.resources.maxHp
+      )
   );
   const service = metaState.lives < policy.maximumLives && lifeRoll < 10
     ? policy.extraLifeService

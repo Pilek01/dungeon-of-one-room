@@ -1,12 +1,13 @@
 import assert from "node:assert/strict";
 import { createHash, webcrypto } from "node:crypto";
 import test from "node:test";
-import { applyRulesetEvent } from "../src/domain/ruleset-runtime.js";
+import { applyRulesetCheckpoint, applyRulesetEvent } from "../src/domain/ruleset-runtime.js";
 import {
   captureRankIntegrityRoomContext,
   initializeRankEligibility
 } from "../src/domain/rank-eligibility.js";
 import * as rewardPolicy from "../src/rulesets/v08-meta-1/reward-policy.js";
+import { createV08Meta1Ruleset } from "../src/rulesets/v08-meta-1/index.js";
 import { applyFatalEventV08 } from "../src/rulesets/v08-meta-1/life-policy.js";
 import { createInitialMetaStateV08 } from "../src/rulesets/v08-meta-1/meta-state.js";
 import { requestExtractionV08 } from "../src/rulesets/v08-meta-1/outcome-policy.js";
@@ -363,5 +364,54 @@ test("the previous production capability contract rejects the new event journal 
       }
     }, ruleset, context),
     /EXTRACTION_PAYLOAD_INVALID_FIELDS/u
+  );
+});
+
+test("checkpoint capability requires combatResources in both directions", async () => {
+  const capabilities = {
+    boundarySettlementMode: "event-journal-v1",
+    boundedCombatResources: "v1"
+  };
+  const { state, context } = await activeRoom(
+    "run_checkpoint_capable_missing",
+    capabilities
+  );
+  const ruleset = createV08Meta1Ruleset({
+    rulesetHash: state.rulesetHash,
+    capabilities
+  });
+  const body = {
+    roomResult: "cleared",
+    rewardClaims: [],
+    turnCount: 1,
+    elapsedMs: 100,
+    commandJournalDigest: "checkpoint-journal",
+    compactRoomProof: { version: 1 }
+  };
+  await assert.rejects(
+    applyRulesetCheckpoint(state, body, ruleset, { ...context, capabilities }),
+    /BOUNDARY_COMBAT_RESOURCES_CAPABILITY_MISMATCH/u
+  );
+
+  const legacyCapabilities = { boundarySettlementMode: "event-journal-v1" };
+  const { state: legacyState, context: legacyContext } = await activeRoom(
+    "run_checkpoint_legacy_present",
+    legacyCapabilities
+  );
+  const legacyRuleset = createV08Meta1Ruleset({
+    rulesetHash: legacyState.rulesetHash,
+    capabilities: legacyCapabilities
+  });
+  await assert.rejects(
+    applyRulesetCheckpoint(
+      legacyState,
+      {
+        ...body,
+        combatResources: { hp: 100, maxHp: 100 }
+      },
+      legacyRuleset,
+      { ...legacyContext, capabilities: legacyCapabilities }
+    ),
+    /BOUNDARY_COMBAT_RESOURCES_CAPABILITY_MISMATCH/u
   );
 });

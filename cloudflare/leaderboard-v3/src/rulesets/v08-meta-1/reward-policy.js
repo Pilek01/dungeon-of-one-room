@@ -796,7 +796,10 @@ function requestDigestInput(request) {
     turnCount: request.turnCount,
     elapsedMs: request.elapsedMs,
     commandJournalDigest: request.commandJournalDigest,
-    compactRoomProof: request.compactRoomProof
+    compactRoomProof: request.compactRoomProof,
+    ...(Object.hasOwn(request, "combatResources")
+      ? { combatResources: request.combatResources }
+      : {})
   };
 }
 
@@ -1091,6 +1094,27 @@ function calculateClaimAmount(
   return { amount: unit * claim.count, authority: "BOUNDED_CLIENT_ATTESTED" };
 }
 
+function validateBoundaryCombatResourcesV08(state, request, capabilities) {
+  if (capabilities?.boundedCombatResources !== "v1") return null;
+  const value = request.combatResources;
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    throw new TypeError("BOUNDARY_COMBAT_RESOURCES_REQUIRED");
+  }
+  if (Object.keys(value).sort().join(",") !== "hp,maxHp") {
+    throw new TypeError("BOUNDARY_COMBAT_RESOURCES_FIELDS");
+  }
+  if (!Number.isSafeInteger(value.hp) || !Number.isSafeInteger(value.maxHp)) {
+    throw new TypeError("BOUNDARY_COMBAT_RESOURCES_INTEGER");
+  }
+  const canonicalMaxHp = state.build.resources.maxHp;
+  if (value.maxHp !== canonicalMaxHp) {
+    throw new TypeError("BOUNDARY_COMBAT_RESOURCES_MAX_MISMATCH");
+  }
+  if (value.hp < 0 || value.hp > value.maxHp) {
+    throw new TypeError("BOUNDARY_COMBAT_RESOURCES_BOUNDS");
+  }
+  return { hp: value.hp, maxHp: value.maxHp };
+}
 async function settleRewardEnvelopeV3(state, request, context = {}, options = {}) {
   const outcome = options.outcome || "cleared";
   if (!["cleared", "emergency", "fatal"].includes(outcome)) {
@@ -1103,13 +1127,12 @@ async function settleRewardEnvelopeV3(state, request, context = {}, options = {}
     context.capabilities
   );
   const digest = await sha256(requestDigestInput(request), context.cryptoProvider);
-  const previous = (state.rewardSettlementHistory || []).find((entry) =>
+  const history = (state.rewardSettlementHistory || []).filter((entry) =>
     entry.envelopeId === request.envelopeId &&
-    (entry.outcome || "cleared") === outcome &&
-    (outcome !== "fatal" || entry.requestDigest === digest)
+    (entry.outcome || "cleared") === outcome
   );
+  const previous = history.find((entry) => entry.requestDigest === digest);
   if (previous) {
-    if (previous.requestDigest !== digest) throw new TypeError("REWARD_IDEMPOTENCY_PAYLOAD_MISMATCH");
     return {
       state: structuredClone(state),
       authoritativeGoldDelta: previous.authoritativeGoldDelta,
@@ -1117,6 +1140,16 @@ async function settleRewardEnvelopeV3(state, request, context = {}, options = {}
       replayed: true
     };
   }
+  const boundedCombatResourcesEnabled =
+    context.capabilities?.boundedCombatResources === "v1";
+  const conflicting = outcome === "fatal"
+    ? (
+        boundedCombatResourcesEnabled
+          ? history.find((entry) => entry.commandJournalDigest === request.commandJournalDigest)
+          : null
+      )
+    : history[0];
+  if (conflicting) throw new TypeError("REWARD_IDEMPOTENCY_PAYLOAD_MISMATCH");
   if (envelope.consumed) throw new TypeError("REWARD_ENVELOPE_ALREADY_CONSUMED");
   validateBindings(state, envelope, request);
   if (canonicalChestOutcomesEnabled(context.capabilities)) {
@@ -1278,6 +1311,34 @@ async function settleRewardEnvelopeV3(state, request, context = {}, options = {}
   ) {
     pushAnomaly(anomalies, "TURN_COUNT_OUT_OF_BOUNDS");
   }
+  const boundedCombatResources = validateBoundaryCombatResourcesV08(
+    next,
+    request,
+    context.capabilities
+  );
+  if (boundedCombatResources) {
+    next.build.resources.hp = boundedCombatResources.hp;
+  }
+  const validTurnCount = Number.isSafeInteger(turnCount) &&
+    turnCount >= rewardBounds.telemetryBounds.minimumTurnCount &&
+    turnCount <= rewardBounds.telemetryBounds.maximumTurnCount;
+  if (validTurnCount) {
+    next.build.resources.turn += turnCount;
+    next.build.resources.combatBoostTurns = Math.max(
+      0,
+      next.build.resources.combatBoostTurns - turnCount
+    );
+    if (next.build.resources.combatBoostTurns === 0) {
+      next.build.resources.combatBoostAttack = 0;
+      next.build.resources.combatBoostArmor = 0;
+    }
+  }
+  if (outcome === "cleared") {
+    next.build.resources.highestUnlockedDepth = Math.max(
+      next.build.resources.highestUnlockedDepth,
+      mutableEnvelope.depth
+    );
+  }
   const elapsedMs = Number(request.elapsedMs);
   if (!Number.isSafeInteger(elapsedMs) || elapsedMs < rewardBounds.telemetryBounds.minimumElapsedMs) {
     pushAnomaly(anomalies, "ELAPSED_MS_BELOW_MINIMUM");
@@ -1294,7 +1355,6 @@ async function settleRewardEnvelopeV3(state, request, context = {}, options = {}
   }
 
   next.gold = Math.max(0, expectedGold);
-  next.build.buildDigest = await computeRelicBuildDigestV08(next.build, context.cryptoProvider);
   const unlockIndex = outcome === "cleared"
     ? progression.startDepthUnlockBossDepths.indexOf(mutableEnvelope.depth)
     : -1;
@@ -1315,6 +1375,7 @@ async function settleRewardEnvelopeV3(state, request, context = {}, options = {}
     totalGoldEarned: next.mutatorProgress.totalGoldEarned + authoritativeGoldDelta,
     shieldUsesThisGame: next.mutatorProgress.shieldUsesThisGame + shieldUseCount
   });
+  next.build.buildDigest = await computeRelicBuildDigestV08(next.build, context.cryptoProvider);
   next.goldLedger.earnedServerDerived += fixedDelta;
   next.goldLedger.earnedBoundedAttested += boundedDelta;
   next.goldLedger.lastDelta = authoritativeGoldDelta;
@@ -1338,6 +1399,7 @@ async function settleRewardEnvelopeV3(state, request, context = {}, options = {}
     envelopeId: mutableEnvelope.envelopeId,
     ...(outcome === "cleared" ? {} : { outcome }),
     requestDigest: digest,
+    ...(boundedCombatResourcesEnabled ? { commandJournalDigest: request.commandJournalDigest } : {}),
     authoritativeGoldDelta,
     anomalies
   };
