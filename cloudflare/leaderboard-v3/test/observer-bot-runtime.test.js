@@ -1834,3 +1834,92 @@ test("direct Merchant success completes before consuming a null offer", async ()
   assert.equal(harness.merchantCompletions[0].offerConsumed, true);
   assert.equal(harness.merchantPresentations.length, 1);
 });
+
+
+test("claim resync adopts canonical build merchant reservation and top-level wallet debit", async () => {
+  let commitCalls = 0;
+  const initial = merchantOfferState({
+    gold: 80,
+    campGold: 10,
+    build: {
+      merchant: { reservedRelic: { relicId: "vampfang" } },
+      relics: []
+    },
+    metaTransactionOffer: {
+      sourceType: "merchant",
+      offerId: "merchant_offer_claim",
+      choices: [
+        { transactionId: "merchant_tx_claim", choiceId: "claim_vampfang", kind: "merchant_reserved_claim", relicId: "vampfang", status: "available", price: 30 }
+      ]
+    }
+  });
+  const adopted = merchantOfferState({
+    revision: 2,
+    gold: 50,
+    campGold: 10,
+    build: {
+      merchant: { reservedRelic: null },
+      relics: [{ relicId: "vampfang", stacks: 1 }]
+    },
+    metaTransactionOffer: undefined
+  });
+  const harness = createHarness({
+    observerBotActive: false,
+    async onEvent(action) {
+      if (action === "open_meta_offer") return { metaState: initial };
+      if (action === "commit_meta_transaction") {
+        commitCalls += 1;
+        throw new Error("response lost after claim commit");
+      }
+      throw new Error(`unexpected Merchant event: ${action}`);
+    },
+    async onResume() { return { metaState: adopted }; }
+  });
+  const runtime = await installRuntime(harness);
+  await runtime.onMerchantOpen();
+  assert.equal(runtime.onMerchantAction({ action: "claim_reserved", relicId: "vampfang" }), true);
+  await waitFor(() => runtime.getRankedMerchantMutationState().status === "confirmed", "claim adoption did not confirm");
+  assert.equal(commitCalls, 1);
+  assert.equal(harness.merchantCompletions[0].adopted, true);
+});
+
+test("discard resync adopts canonical build reservation clear without charging top-level wallet", async () => {
+  let commitCalls = 0;
+  const initial = merchantOfferState({
+    gold: 80,
+    campGold: 10,
+    build: { merchant: { reservedRelic: { relicId: "vampfang" } }, relics: [] },
+    metaTransactionOffer: {
+      sourceType: "merchant",
+      offerId: "merchant_offer_discard",
+      choices: [
+        { transactionId: "merchant_tx_discard", choiceId: "discard_vampfang", kind: "merchant_reserved_discard", relicId: "vampfang", status: "available", price: 0 }
+      ]
+    }
+  });
+  const adopted = merchantOfferState({
+    revision: 2,
+    gold: 80,
+    campGold: 10,
+    build: { merchant: { reservedRelic: null }, relics: [] },
+    metaTransactionOffer: undefined
+  });
+  const harness = createHarness({
+    observerBotActive: false,
+    async onEvent(action) {
+      if (action === "open_meta_offer") return { metaState: initial };
+      if (action === "commit_meta_transaction") {
+        commitCalls += 1;
+        throw new Error("response lost after discard commit");
+      }
+      throw new Error(`unexpected Merchant event: ${action}`);
+    },
+    async onResume() { return { metaState: adopted }; }
+  });
+  const runtime = await installRuntime(harness);
+  await runtime.onMerchantOpen();
+  assert.equal(runtime.onMerchantAction({ action: "discard_reserved", relicId: "vampfang" }), true);
+  await waitFor(() => runtime.getRankedMerchantMutationState().status === "confirmed", "discard adoption did not confirm");
+  assert.equal(commitCalls, 1);
+  assert.equal(harness.merchantCompletions[0].adopted, true);
+});

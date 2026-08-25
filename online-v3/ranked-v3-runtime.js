@@ -1589,6 +1589,8 @@
 
   function merchantReservationId(state) {
     return String(
+      state?.build?.merchant?.reservedRelic?.relicId ||
+      state?.build?.merchant?.reservedRelicId ||
       state?.merchantReservedRelic?.relicId ||
       state?.merchantReservedRelicId ||
       state?.reservedRelic?.relicId ||
@@ -1606,7 +1608,7 @@
   function merchantFacts(state, choice, request) {
     const price = Math.max(0, Number(choice?.totalPrice ?? choice?.price) || 0);
     return {
-      runGold: Math.max(0, Number(state?.player?.gold) || 0),
+      runGold: Math.max(0, Number(state?.gold) || 0),
       campGold: Math.max(0, Number(state?.campGold) || 0),
       reservationId: merchantReservationId(state),
       relicId: String(request?.relicId || choice?.relicId || ""),
@@ -1630,7 +1632,7 @@
     const reservationCleared = facts.reservationId && merchantReservationId(state) !== facts.reservationId;
     const currentStacks = merchantRelicStacks(state, facts.relicId);
     const walletBefore = Number(facts.runGold || 0) + Number(facts.campGold || 0);
-    const walletAfter = Math.max(0, Number(state?.player?.gold) || 0) + Math.max(0, Number(state?.campGold) || 0);
+    const walletAfter = Math.max(0, Number(state?.gold) || 0) + Math.max(0, Number(state?.campGold) || 0);
     if (operation.action === "claim_reserved" && reservationCleared && currentStacks > Number(facts.relicStacks || 0) &&
       walletAfter === Math.max(0, walletBefore - Number(facts.price || 0))) return "adopt";
     if (operation.action === "discard_reserved" && reservationCleared && walletAfter === walletBefore) return "adopt";

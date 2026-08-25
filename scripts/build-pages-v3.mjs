@@ -2120,18 +2120,8 @@ const rankedMerchantPolicyBranch = [
   "        mutationState: window.DungeonOnlineV3?.getRankedMerchantMutationState?.(),",
   "        nextDepth: state.onlineV3NextDirective?.depth ?? ((Number(state.depth) || 0) + 1)",
   "      });",
-  "      if (decision.action === \"potion\") return tryBuyPotionFromMerchant();",
-  "      if (decision.action === \"skill_upgrade\") return tryBuySkillUpgradeFromMerchant(decision.request.skillId);",
-  "      if (decision.action === \"relic_purchase\") return tryBuyRelicFromMerchant();",
-  "      if (decision.action === \"reserve_relic\") return tryReserveRelicFromMerchant();",
-  "      if (decision.action === \"claim_reserved\") return tryBuyReservedRelicFromMerchant();",
-  "      if (decision.action === \"service\") {",
-  "        if (decision.request.serviceId === \"fullheal\") return tryBuyFullHeal();",
-  "        if (decision.request.serviceId === \"combatboost\") return tryBuyCombatBoost();",
-  "        if (decision.request.serviceId === \"secondchance\") return tryBuySecondChance();",
-  "        if (decision.request.serviceId === \"onelife\") return tryBuyOneLife();",
-  "      }",
-  "      if (decision.action === \"black_market\") return tryUseBlackMarket(decision.request.relicId);",
+  "      if (decision.action === \"leave\") return Boolean(window.DungeonOnlineV3?.onMerchantLeave?.());",
+  "      if (decision.action !== \"leave\" && decision.request) return Boolean(window.DungeonOnlineV3?.onMerchantAction?.(decision.request));",
   "      state.observerBot.lastDecision = \"merchant_\" + decision.reason;",
   "      return false;",
   "    }"
@@ -2195,6 +2185,16 @@ const rankedMerchantBridge = `    beginRankedMerchantRequest() {
       if (state.merchantConfirmedReceiptKeys.includes(receiptKey)) return false;
       state.merchantConfirmedReceiptKeys = [...state.merchantConfirmedReceiptKeys, receiptKey].slice(-16);
       state.observerBot.merchantPurchasesThisRoom = Math.min(6, Math.max(0, Number(state.observerBot.merchantPurchasesThisRoom) || 0) + 1);
+      if (result.offerConsumed === true) {
+        state.merchantMenuOpen = false;
+        state.onlineV3MerchantChoices = [];
+        state.merchantRelicSlot = null;
+        state.merchantServiceSlot = null;
+        state.merchantRelicSwapPending = null;
+        state.merchantLegendarySwapPending = null;
+        state.merchantBuybackPending = null;
+        state.blackMarketPending = null;
+      }
       state.turnInProgress = false;
       state.observerBot.lastDecision = "merchant_confirmed_" + String(result.action || "purchase");
       markUiDirty();

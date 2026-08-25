@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import { readFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
+import vm from "node:vm";
 import path from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
@@ -109,4 +110,120 @@ test("Merchant action submission uses a stable operation identity and resyncs un
   assert.match(runtime, /resumeCanonical\(/u);
   assert.match(runtime, /failure_backoff/u);
   assert.match(runtime, /attempts\s*<\s*2/u);
+});
+
+
+function generatedMerchantActionRunner(game, decision) {
+  const start = game.indexOf("function runObserverMerchantAction()");
+  const end = game.indexOf("function shouldObserverBotEmergencyExtractNow", start);
+  assert.ok(start >= 0 && end > start, "missing generated Observer Merchant action");
+  const merchantAction = game.slice(start, end);
+  const calls = [];
+  const state = {
+    phase: "playing",
+    roomType: "merchant",
+    onlineV3Ranked: true,
+    merchantMenuOpen: true,
+    turnInProgress: false,
+    observerBot: {}
+  };
+  const context = {
+    state,
+    isOnMerchant: () => true,
+    buildObserverMerchantDecision: () => decision,
+    openMerchantMenu() { calls.push({ kind: "open" }); return true; },
+    tryBuyPotionFromMerchant() { calls.push({ kind: "potion" }); return true; },
+    tryBuySkillUpgradeFromMerchant() { calls.push({ kind: "skill" }); return true; },
+    tryBuyRelicFromMerchant() { calls.push({ kind: "relic_wrapper" }); return true; },
+    tryReserveRelicFromMerchant() { calls.push({ kind: "reserve_wrapper" }); return true; },
+    tryBuyReservedRelicFromMerchant() { calls.push({ kind: "claim_wrapper" }); return true; },
+    tryBuyFullHeal() { calls.push({ kind: "fullheal" }); return true; },
+    tryBuyCombatBoost() { calls.push({ kind: "combatboost" }); return true; },
+    tryBuySecondChance() { calls.push({ kind: "secondchance" }); return true; },
+    tryBuyOneLife() { calls.push({ kind: "onelife" }); return true; },
+    tryUseBlackMarket() { calls.push({ kind: "blackmarket" }); return true; },
+    window: {
+      DungeonOnlineV3: {
+        isRankedAutomationBlocked: () => false,
+        isObserverBotBoundaryPending: () => false,
+        onMerchantAction(request) { calls.push({ kind: "action", request }); return true; },
+        onMerchantLeave() { calls.push({ kind: "leave" }); return true; }
+      }
+    }
+  };
+  const run = vm.runInNewContext(`(${merchantAction})`, context);
+  return { result: run(), calls, state };
+}
+
+test("generated Ranked policy forwards exact replacement and reserved-claim requests without UI detours", async () => {
+  const game = await source("game.js");
+  const replacement = generatedMerchantActionRunner(game, {
+    action: "relic_purchase",
+    request: { action: "relic_purchase", relicId: "vampfang", removalRelicId: "fang" },
+    reason: "useful_upgrade"
+  });
+  assert.equal(replacement.result, true);
+  assert.deepEqual(replacement.calls, [{
+    kind: "action",
+    request: { action: "relic_purchase", relicId: "vampfang", removalRelicId: "fang" }
+  }]);
+  const claim = generatedMerchantActionRunner(game, {
+    action: "claim_reserved",
+    request: { action: "claim_reserved", relicId: "idol", removalRelicId: "fang" },
+    reason: "useful_upgrade"
+  });
+  assert.equal(claim.result, true);
+  assert.deepEqual(claim.calls, [{
+    kind: "action",
+    request: { action: "claim_reserved", relicId: "idol", removalRelicId: "fang" }
+  }]);
+});
+
+test("generated Ranked policy leaves on closed Merchant decisions instead of stalling the menu", async () => {
+  const game = await source("game.js");
+  const result = generatedMerchantActionRunner(game, {
+    action: "leave",
+    request: { action: "leave" },
+    reason: "purchase_limit"
+  });
+  assert.equal(result.result, true);
+  assert.deepEqual(result.calls, [{ kind: "leave" }]);
+});
+
+test("generated Merchant completion consumes the offer and clears stale UI state", async () => {
+  const game = await source("game.js");
+  const start = game.indexOf("    completeRankedMerchantAction(result = {}) {");
+  const end = game.indexOf("    failRankedMerchantAction(result = {}) {", start);
+  assert.ok(start >= 0 && end > start, "missing generated Merchant completion bridge");
+  const method = game.slice(start, end).trim().replace(/,\s*$/u, "");
+  const state = {
+    onlineV3Ranked: true,
+    merchantMenuOpen: true,
+    onlineV3MerchantChoices: [{ choiceId: "stale" }],
+    merchantRelicSlot: { relicId: "vampfang" },
+    merchantServiceSlot: { serviceId: "fullheal" },
+    merchantRelicSwapPending: { relicId: "vampfang" },
+    merchantLegendarySwapPending: { relicId: "vampfang" },
+    merchantBuybackPending: { relicId: "fang" },
+    blackMarketPending: { relicId: "idol" },
+    merchantConfirmedReceiptKeys: [],
+    observerBot: { merchantPurchasesThisRoom: 0 }
+  };
+  const complete = vm.runInNewContext(`({${method}}).completeRankedMerchantAction`, {
+    state,
+    markUiDirty() {}
+  });
+  assert.equal(complete({ receiptKey: "merchant-receipt-1", action: "relic_purchase", offerConsumed: true }), true);
+  assert.equal(state.merchantMenuOpen, false);
+  assert.equal(state.onlineV3MerchantChoices.length, 0);
+  assert.equal(state.merchantRelicSlot, null);
+  assert.equal(state.merchantServiceSlot, null);
+  assert.equal(state.merchantRelicSwapPending, null);
+  assert.equal(state.merchantLegendarySwapPending, null);
+  assert.equal(state.merchantBuybackPending, null);
+  assert.equal(state.blackMarketPending, null);
+  assert.equal(state.merchantConfirmedReceiptKeys.length, 1);
+  assert.equal(state.merchantConfirmedReceiptKeys[0], "merchant-receipt-1");
+  assert.equal(complete({ receiptKey: "merchant-receipt-1", action: "relic_purchase", offerConsumed: true }), false);
+  assert.equal(state.merchantConfirmedReceiptKeys.length, 1);
 });
