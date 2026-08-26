@@ -179,15 +179,48 @@ test("generated Ranked policy forwards exact replacement and reserved-claim requ
   }]);
 });
 
-test("generated Ranked policy leaves on closed Merchant decisions instead of stalling the menu", async () => {
+test("generated Ranked policy marks the Merchant visit done after requesting leave", async () => {
   const game = await source("game.js");
   const result = generatedMerchantActionRunner(game, {
     action: "leave",
     request: { action: "leave" },
     reason: "purchase_limit"
   });
-  assert.equal(result.result, true);
+  assert.equal(result.result, false);
   assert.deepEqual(result.calls, [{ kind: "leave" }]);
+});
+
+test("Ranked Merchant leave checkpoints a local directive at most once", async () => {
+  const runtime = await source("online-v3/ranked-v3-runtime.js");
+  const merchantLeave = functionBody(runtime, "onMerchantLeave", "availableCampChoices");
+  let checkpoints = 0;
+  const context = {
+    activeRoomDirectiveId: "merchant-directive-3",
+    merchantLeaveCompletedDirectiveId: "",
+    merchantMutationPending: false,
+    currentMerchantOffer: null,
+    pendingRoomSummary: null,
+    pendingBoundaryExit: null,
+    root: {
+      DungeonOnlineV3GameBridge: {
+        beginRankedMerchantRequest() {},
+        syncCanonicalProjection() {},
+        enterNextDirective() {}
+      }
+    },
+    merchantChoiceFor: () => null,
+    createClient: () => ({ event: async () => ({ metaState: {} }) }),
+    usesBoundarySettlement: () => true,
+    captureRankedBoundary: () => ({ summary: { turnCount: 0 } }),
+    mergeCapturedBoundary: (captured) => captured,
+    resolveCheckpoint: async () => { checkpoints += 1; return true; },
+    presentMerchantError() {}
+  };
+  const leave = vm.runInNewContext(`(async ${merchantLeave})`, context);
+
+  assert.equal(await leave(), true);
+  assert.equal(await leave(), true);
+  assert.equal(checkpoints, 1);
 });
 
 test("generated Merchant completion consumes the offer and clears stale UI state", async () => {

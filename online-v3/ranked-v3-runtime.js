@@ -39,6 +39,7 @@
   let pendingElixirUsage = null;
   let currentMerchantOffer = null;
   let merchantMutationPending = false;
+  let merchantLeaveCompletedDirectiveId = "";
   const MERCHANT_FAILURE_LIMIT = 3;
   const MERCHANT_REASONS = new Set([
     "offer_pending", "no_canonical_choice", "bag_full", "stock_sufficient",
@@ -1935,6 +1936,10 @@
   }
   async function onMerchantLeave(options = {}) {
     if (merchantMutationPending) return true;
+    if (
+      activeRoomDirectiveId &&
+      merchantLeaveCompletedDirectiveId === activeRoomDirectiveId
+    ) return true;
     merchantMutationPending = true;
     root.DungeonOnlineV3GameBridge?.beginRankedMerchantRequest?.();
     try {
@@ -1957,6 +1962,7 @@
         silent: true,
         loadingMessage: options.enterPortal === true ? "Loading next depth…" : ""
       });
+      if (resolved) merchantLeaveCompletedDirectiveId = activeRoomDirectiveId;
       if (resolved && options.enterPortal === true && !usesBoundarySettlement()) {
         root.DungeonOnlineV3GameBridge?.enterNextDirective?.();
       }
