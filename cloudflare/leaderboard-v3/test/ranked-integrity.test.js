@@ -214,6 +214,15 @@ test("the local v0.8 elite bonus is accepted with canonical build and mutator mu
   assert.deepEqual(
     checkpointGoldIntegrityReasons(value.state, {
       ...body,
+      reportedGoldDelta: canonicalDelta,
+      reportedGoldTotal: value.state.gold + canonicalDelta
+    }, canonicalDelta),
+    [],
+    "the exact canonical settlement must remain valid when the local elite presentation omits its legacy +3 bonus"
+  );
+  assert.deepEqual(
+    checkpointGoldIntegrityReasons(value.state, {
+      ...body,
       reportedGoldDelta: expectedLocalDelta + 1,
       reportedGoldTotal: value.state.gold + expectedLocalDelta + 1
     }, canonicalDelta),

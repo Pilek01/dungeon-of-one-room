@@ -161,7 +161,18 @@ export function checkpointGoldIntegrityReasons(state, body, authoritativeGoldDel
     state,
     body.rewardClaims
   );
+  const canonicalTotal = Math.max(0, Number(state?.gold) || 0) + canonicalDelta;
   const expectedLocalTotal = Math.max(0, Number(state?.gold) || 0) + expectedLocalDelta;
+  if (
+    (
+      body.reportedGoldDelta === canonicalDelta &&
+      body.reportedGoldTotal === canonicalTotal
+    ) ||
+    (
+      body.reportedGoldDelta === expectedLocalDelta &&
+      body.reportedGoldTotal === expectedLocalTotal
+    )
+  ) return [];
   const reasons = [];
   if (body.reportedGoldDelta !== expectedLocalDelta) {
     reasons.push(RANK_INTEGRITY_REASON.reportedGoldDeltaMismatch);
