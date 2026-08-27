@@ -286,12 +286,22 @@ export function createD1RunRepository(db, leaderboardRepository, profileReposito
       return changes(results[0]) === 1 && changes(results[1]) === 1;
     },
     async deleteExpired(now) {
-      const result = await db.prepare(`
+      const deleteLeaderboardChildren = db.prepare(`
+        DELETE FROM leaderboard_entries
+        WHERE run_id IN (
+          SELECT run_id
+          FROM ranked_runs
+          WHERE expires_at <= ?
+            AND status <> 'finalized'
+        )
+      `).bind(now);
+      const deleteRuns = db.prepare(`
         DELETE FROM ranked_runs
         WHERE expires_at <= ?
           AND status <> 'finalized'
-      `).bind(now).run();
-      return changes(result);
+      `).bind(now);
+      const results = await db.batch([deleteLeaderboardChildren, deleteRuns]);
+      return changes(results[1]);
     },
 
     async finalizeAtomic(state, expectedRevision, metadata, leaderboardEntry) {

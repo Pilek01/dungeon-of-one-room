@@ -1054,6 +1054,54 @@ test("a transient checkpoint failure auto-resyncs calmly and continues exactly o
   assert.equal(harness.calls.filter((entry) => entry.action === "resume").length, 1);
 });
 
+test("a retryable internal checkpoint error stops safely instead of rebuilding the room", async () => {
+  const room = {
+    directiveId: "directive_internal_error",
+    roomNonce: "nonce_internal_error",
+    depth: 12,
+    roomType: "combat"
+  };
+  const internalError = Object.assign(new Error("Internal checkpoint failure."), {
+    code: "INTERNAL_ERROR",
+    status: 500,
+    retryable: true,
+    traceId: "trace-internal-checkpoint"
+  });
+  const harness = createHarness({
+    observerBotActive: false,
+    boundarySettlement: true,
+    async onCheckpoint() { throw internalError; },
+    async onResume() {
+      throw new Error("generic server errors must not trigger automatic resync");
+    }
+  });
+  const client = harness.root.DungeonRankedV3Client.createRankedClient();
+  client.getSnapshot().publicState = metaState({
+    revision: 12,
+    rulesetHash: "sha256:boundary",
+    currentRoomDirective: room,
+    currentRewardEnvelope: { envelopeId: "reward_internal_error", fixedAwards: [] }
+  });
+  const runtime = await installRuntime(harness);
+  await runtime.onRoomEntered(room);
+  await runtime.onLocalRoomCleared({
+    turnCount: 3,
+    rewardClaims: [],
+    reportedGoldDelta: 0,
+    completionCapability: harness.integrityContexts[0].completionCapability
+  });
+
+  runtime.onPortalEntry();
+  await waitFor(
+    () => harness.uiMessages.at(-1)?.[0] === "Ranked reconnect required",
+    "internal checkpoint failure did not stop in recoverable UI"
+  );
+
+  assert.deepEqual(harness.calls.map((entry) => entry.action), ["checkpoint"]);
+  assert.equal(harness.directives.some((entry) => entry.directiveId === room.directiveId), false);
+  assert.equal(runtime.getDiagnostics().at(-1)?.code, "INTERNAL_ERROR");
+});
+
 test("failed automatic resync keeps the first diagnostic as the recovery root error", async () => {
   const room = {
     directiveId: "directive_root_diagnostic",
@@ -1313,7 +1361,7 @@ test("normal extraction intent survives a reconnect Main Menu round trip after t
   );
 });
 
-test("automatic resync cancels normal extraction when the same uncommitted room returns", async () => {
+test("automatic resync retries the preserved checkpoint when the same uncommitted room returns", async () => {
   const firstRoom = {
     directiveId: "directive_1",
     roomNonce: "nonce_1",
@@ -1371,8 +1419,12 @@ test("automatic resync cancels normal extraction when the same uncommitted room 
 
   await runtime.onExtraction("normal");
   await waitForTimer(
-    () => harness.directives.at(-1)?.directiveId === firstRoom.directiveId,
-    "automatic resync did not restore the same canonical room"
+    () => harness.calls.filter((entry) => entry.action === "checkpoint").length === 2,
+    "automatic resync did not retry the preserved checkpoint"
+  );
+  await waitFor(
+    () => harness.uiMessages.at(-1)?.[0] === "Ranked reconnect required",
+    "the failed preserved checkpoint retry did not stop safely"
   );
 
   assert.equal(
@@ -1380,14 +1432,18 @@ test("automatic resync cancels normal extraction when the same uncommitted room 
     false,
     "same-room resync incorrectly continued normal extraction"
   );
-  assert.equal(harness.directives.at(-1)?.directiveId, firstRoom.directiveId);
-  assert.equal(harness.uiMessages.length, 0);
+  assert.deepEqual(harness.calls.map((entry) => entry.action), ["checkpoint", "resume", "checkpoint"]);
+  assert.equal(
+    harness.directives.some((entry) => entry.directiveId === firstRoom.directiveId),
+    false,
+    "same-room resync rebuilt a locally completed room"
+  );
   assert.ok(harness.uiSyncCalls.includes("Synchronizing Ranked…"));
   const diagnostics = runtime.getDiagnostics();
   assert.equal(diagnostics.at(-1)?.kind, "client_error");
   assert.equal(diagnostics.at(-1)?.code, "TOKEN_EXPIRED");
   assert.equal(diagnostics.at(-1)?.status, 401);
-  assert.equal(diagnostics.at(-1)?.endpoint, "checkpoint");
+  assert.equal(diagnostics[0]?.endpoint, "checkpoint");
   assert.equal(diagnostics.at(-1)?.runId, "run_integrity");
   assert.equal(diagnostics.at(-1)?.revision, 1);
   assert.equal(diagnostics.at(-1)?.traceId, "trace-expired-checkpoint");

@@ -1815,15 +1815,20 @@ export function createWorker(workerOptions = {}) {
           recordMetric(env, options, "d1_write_failures", 1, "worker_error");
         }
         const error = errorFromCause(cause);
-        options.onDiagnostic?.({
+        const causeCode = String(cause?.code || cause?.message || "INTERNAL_ERROR")
+          .split(":")[0]
+          .slice(0, 96);
+        const errorContext = {
           event: "ranked_request_error",
           traceId,
           path: requestPath,
           method: String(request.method || "").slice(0, 16),
           status: error.status,
-          code: error.code
-        });
-        options.onError?.(cause);
+          code: error.code,
+          causeCode
+        };
+        options.onDiagnostic?.(errorContext);
+        options.onError?.(cause, errorContext);
         return errorResponse(error, traceId);
       }
     },

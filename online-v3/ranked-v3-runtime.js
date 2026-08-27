@@ -139,6 +139,15 @@
     pendingRoomSummary = null;
   }
 
+  function sameCanonicalDirective(left, right) {
+    const leftId = String(left?.directiveId || "");
+    const rightId = String(right?.directiveId || "");
+    if (!leftId || leftId !== rightId) return false;
+    const leftNonce = String(left?.roomNonce || "");
+    const rightNonce = String(right?.roomNonce || "");
+    return leftNonce === rightNonce;
+  }
+
   function rememberPendingExtraction(mode) {
     if (pendingExtractionMode) return;
     const state = createClient().getSnapshot()?.publicState;
@@ -744,8 +753,30 @@
     moveToRecoveryState(root.DungeonRankedV3Session.STATES.retrying);
     if (options.automatic !== true) ui.setStatus("Synchronizing Ranked…");
     return startBoundaryOperation(async (operation) => {
+      const previousDirective = createClient().getSnapshot()?.publicState?.currentRoomDirective;
+      const shouldPreserveBoundary = Boolean(pendingRoomSummary);
       const response = await createClient().resumeCanonical();
       if (!isCurrentBoundaryOperation(operation)) return true;
+      if (
+        shouldPreserveBoundary &&
+        sameCanonicalDirective(previousDirective, response.metaState?.currentRoomDirective)
+      ) {
+        const resolved = await resolveCheckpoint({
+          loadingMessage: pendingBoundaryExit === "portal" ? "Loading next depth…" : "Saving progress...",
+          onError(error) {
+            automaticResyncPending = false;
+            presentError(error, {
+              automaticResyncFailed: true,
+              rootDiagnostic: options.rootDiagnostic || recoveryRootDiagnostic
+            });
+          }
+        }, operation);
+        if (!resolved || !isCurrentBoundaryOperation(operation)) return resolved;
+        recoveryRootDiagnostic = null;
+        automaticResyncPending = false;
+        observerBotAutomationHalted = false;
+        return true;
+      }
       clearRecoveredPortalIntent();
       await acceptResponse(response, operation);
       if (!isCurrentBoundaryOperation(operation)) return true;
@@ -895,7 +926,6 @@
   function isTransientRecoveryError(error) {
     const code = String(error?.code || "");
     return Boolean(
-      error?.retryable ||
       error?.conflict ||
       error?.status === 409 ||
       [

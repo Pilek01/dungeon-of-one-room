@@ -26,6 +26,7 @@ function createRealHarness(options = {}) {
     V08_META_1_LOCAL_RELEASE_DESCRIPTOR
   ]);
   const causes = [];
+  const errorContexts = [];
   const diagnostics = [];
   let now = 1_800_000_000_000;
   let sequence = 1;
@@ -33,8 +34,9 @@ function createRealHarness(options = {}) {
     rulesetRegistry: registry,
     rulesetEnvironment: options.environment || "local",
     repositories,
-    onError(cause) {
+    onError(cause, context) {
       causes.push(cause);
+      errorContexts.push(context);
     },
     onDiagnostic(entry) {
       diagnostics.push(entry);
@@ -141,6 +143,9 @@ function createRealHarness(options = {}) {
     diagnostics,
     lastCause() {
       return causes.at(-1) || null;
+    },
+    lastErrorContext() {
+      return errorContexts.at(-1) || null;
     },
     advance(ms) {
       now += ms;
@@ -250,9 +255,23 @@ test("real runtime preserves the issued canonical chest outcome across Observer 
       localEvidence: { ...localEvidence, awardId: "award_forged" }
     }] }
   );
-  assert.equal(tampered.response.status, 500);
-  assert.equal(tampered.payload.error.code, "INTERNAL_ERROR");
+  assert.equal(tampered.response.status, 422);
+  assert.equal(tampered.payload.error.code, "REWARD_CLAIM_CHEST_AWARD_ID_MISMATCH");
   assert.match(harness.lastCause()?.message || "", /REWARD_CLAIM_CHEST_AWARD_ID_MISMATCH/u);
+  assert.deepEqual(
+    {
+      path: harness.lastErrorContext()?.path,
+      status: harness.lastErrorContext()?.status,
+      code: harness.lastErrorContext()?.code,
+      causeCode: harness.lastErrorContext()?.causeCode
+    },
+    {
+      path: "/api/v3/runs/checkpoint",
+      status: 422,
+      code: "REWARD_CLAIM_CHEST_AWARD_ID_MISMATCH",
+      causeCode: "REWARD_CLAIM_CHEST_AWARD_ID_MISMATCH"
+    }
+  );
 
   const checkpointed = await harness.checkpoint(
     session,

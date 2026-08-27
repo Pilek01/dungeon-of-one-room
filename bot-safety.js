@@ -164,9 +164,242 @@
     return map;
   }
 
+  function getBotEarlyPotionUpgradePlan(options = {}) {
+    const depthValue = Number(options.depth);
+    const depth = Number.isFinite(depthValue) ? Math.max(0, Math.floor(depthValue)) : 0;
+    const campGoldValue = Number(options.campGold);
+    const campGold = Number.isFinite(campGoldValue) ? Math.max(0, campGoldValue) : 0;
+    const satchelLevelValue = Number(options.satchelLevel);
+    const satchelLevel = Number.isFinite(satchelLevelValue)
+      ? Math.max(0, Math.min(6, Math.floor(satchelLevelValue)))
+      : 0;
+    const potionStrengthLevelValue = Number(options.potionStrengthLevel);
+    const potionStrengthLevel = Number.isFinite(potionStrengthLevelValue)
+      ? Math.max(0, Math.min(5, Math.floor(potionStrengthLevelValue)))
+      : 0;
+    const hpRatioValue = Number(options.hpRatio);
+    const hpRatio = Number.isFinite(hpRatioValue) ? Math.max(0, Math.min(1, hpRatioValue)) : 1;
+    const livesValue = Number(options.lives);
+    const lives = Number.isFinite(livesValue) ? Math.max(0, Math.floor(livesValue)) : 3;
+    const survivabilityValue = Number(options.survivabilityLevel);
+    const survivabilityLevel = Number.isFinite(survivabilityValue)
+      ? Math.max(0, Math.floor(survivabilityValue))
+      : 0;
+
+    if (depth > 18) {
+      return {
+        active: false,
+        satchelTarget: satchelLevel,
+        potionStrengthTarget: potionStrengthLevel,
+        recommendedUpgrade: null,
+        reason: "outside_early_game"
+      };
+    }
+
+    const fundedCapacity = campGold >= 320;
+    const survivalPressure = hpRatio < 0.6 || lives <= 2 || survivabilityLevel < 5;
+    const fundedHealingBySurvival = campGold >= 520 && survivalPressure;
+    const fundedHealingByWealth = campGold >= 760;
+    const fundedHealing = fundedHealingBySurvival || fundedHealingByWealth;
+    const satchelTarget = fundedCapacity ? 3 : 2;
+    const potionStrengthTarget = fundedHealing ? 2 : 1;
+
+    if (satchelLevel < Math.min(2, satchelTarget)) {
+      return {
+        active: true,
+        satchelTarget,
+        potionStrengthTarget,
+        recommendedUpgrade: "satchel",
+        reason: "early_capacity"
+      };
+    }
+    if (potionStrengthLevel < 1) {
+      return {
+        active: true,
+        satchelTarget,
+        potionStrengthTarget,
+        recommendedUpgrade: "potion_strength",
+        reason: "early_healing"
+      };
+    }
+    if (satchelLevel < satchelTarget) {
+      return {
+        active: true,
+        satchelTarget,
+        potionStrengthTarget,
+        recommendedUpgrade: "satchel",
+        reason: "funded_capacity"
+      };
+    }
+    if (potionStrengthLevel < potionStrengthTarget) {
+      return {
+        active: true,
+        satchelTarget,
+        potionStrengthTarget,
+        recommendedUpgrade: "potion_strength",
+        reason: fundedHealingBySurvival ? "survival_healing" : "funded_healing"
+      };
+    }
+    return {
+      active: true,
+      satchelTarget,
+      potionStrengthTarget,
+      recommendedUpgrade: null,
+      reason: "goals_met"
+    };
+  }
+
+  function getBotGoldBankingPressure(options = {}) {
+    const depthValue = Number(options.depth);
+    const depth = Number.isFinite(depthValue) ? Math.max(0, Math.floor(depthValue)) : 0;
+    const goldValue = Number(options.gold);
+    const gold = Number.isFinite(goldValue) ? Math.max(0, goldValue) : 0;
+    const threshold = Math.round(700 + Math.max(0, depth - 5) * 18);
+    const ratio = threshold > 0 ? gold / threshold : 0;
+    let score = 0;
+    if (ratio >= 1) {
+      score = Math.round(40 + Math.min(20, (ratio - 1) * 30));
+    } else if (ratio >= 0.55) {
+      score = Math.round(10 + ((ratio - 0.55) / 0.45) * 30);
+    }
+    const profile = String(options.profile || "balanced").toLowerCase();
+    const strongThreshold = profile === "safe" ? 38 : profile === "aggressive" ? 46 : 40;
+    return {
+      threshold,
+      score: Math.max(0, Math.min(60, score)),
+      ratio,
+      strong: score >= strongThreshold
+    };
+  }
+
+  function decideBotOffensiveMine(options = {}) {
+    const blocked = (reason) => ({
+      use: false,
+      reason,
+      escape: null,
+      enemyHits: 0,
+      predictedKills: 0,
+      expectedEnemyDamage: 0
+    });
+    if (!options.dashAvailable) return blocked("dash_unavailable");
+    if (options.mineArmed || !options.adjacent) return blocked("mine_not_available");
+
+    const playerHp = Math.max(0, Number(options.playerHp) || 0);
+    const playerMaxHp = Math.max(1, Number(options.playerMaxHp) || 1);
+    const playerBarrier = Math.max(0, Number(options.playerBarrier) || 0);
+    const entryDamage = Math.max(0, Number(options.entryDamage) || 0);
+    const hpAfterEntry = playerHp + playerBarrier - entryDamage;
+    if (hpAfterEntry <= Math.max(1, playerMaxHp * 0.2)) return blocked("unsafe_entry");
+
+    const mineDamage = Math.max(1, Number(options.mineDamage) || 1);
+    const blastEnemies = (Array.isArray(options.enemies) ? options.enemies : [])
+      .filter((enemy) => enemy && enemy.inBlast === true);
+    let expectedEnemyDamage = 0;
+    let predictedKills = 0;
+    for (const enemy of blastEnemies) {
+      const hp = Math.max(0, Number(enemy.hp) || 0);
+      expectedEnemyDamage += Math.min(hp, mineDamage);
+      if (hp > 0 && hp <= mineDamage) predictedKills += 1;
+    }
+    const enemyHits = blastEnemies.length;
+    const usefulCrowd = enemyHits >= 3 || (enemyHits >= 2 && predictedKills >= 1);
+    const expectedMeleeDamage = Math.max(1, Number(options.expectedMeleeDamage) || 1);
+    const profitableDamage = expectedEnemyDamage >= Math.max(
+      mineDamage * 1.5,
+      expectedMeleeDamage * 1.6,
+      entryDamage * 2.2
+    );
+    if (!usefulCrowd || !profitableDamage) {
+      return {
+        ...blocked("poor_trade"),
+        enemyHits,
+        predictedKills,
+        expectedEnemyDamage
+      };
+    }
+
+    const safeEscapes = (Array.isArray(options.escapes) ? options.escapes : [])
+      .filter((escape) => {
+        if (!escape || escape.passable !== true) return false;
+        if (Math.max(0, Number(escape.distanceFromMine) || 0) <= 1) return false;
+        if (escape.hazard === true) return false;
+        if (Math.max(0, Number(escape.pendingBlastDamage) || 0) > 0) return false;
+        if (Math.max(0, Number(escape.expectedDamage) || 0) >= hpAfterEntry) return false;
+        return Math.max(0, Number(escape.risk) || 0) <= 120;
+      })
+      .sort((a, b) => {
+        const dangerA = Math.max(0, Number(a.expectedDamage) || 0) * 3 + Math.max(0, Number(a.risk) || 0);
+        const dangerB = Math.max(0, Number(b.expectedDamage) || 0) * 3 + Math.max(0, Number(b.risk) || 0);
+        return dangerA - dangerB || Math.max(0, Number(b.distanceFromMine) || 0) - Math.max(0, Number(a.distanceFromMine) || 0);
+      });
+    if (safeEscapes.length <= 0) {
+      return {
+        ...blocked("no_safe_escape"),
+        enemyHits,
+        predictedKills,
+        expectedEnemyDamage
+      };
+    }
+    const best = safeEscapes[0];
+    return {
+      use: true,
+      reason: "profitable_safe_setup",
+      escape: { dx: Number(best.dx) || 0, dy: Number(best.dy) || 0 },
+      enemyHits,
+      predictedKills,
+      expectedEnemyDamage
+    };
+  }
+
+  function decideBotEmergencyExtract(options = {}) {
+    const hp = Math.max(0, Number(options.hp) || 0);
+    const maxHp = Math.max(1, Number(options.maxHp) || 1);
+    const incomingDamage = Math.max(0, Number(options.incomingDamage) || 0);
+    const barrier = Math.max(0, Number(options.barrier) || 0);
+    const bleedDamage = Math.max(0, Math.floor(Number(options.bleedTurns) || 0)) > 0
+      ? Math.max(0, Number(options.bleedDamage) || 0)
+      : 0;
+    const poisonDamage = Math.max(0, Math.floor(Number(options.poisonTurns) || 0)) > 0
+      ? Math.max(0, Number(options.poisonDamage) || 0)
+      : 0;
+    const statusDamage = bleedDamage + poisonDamage;
+    const immediateAfterBarrier = Math.max(0, incomingDamage - barrier);
+    const projectedDamage = immediateAfterBarrier + statusDamage;
+    const result = (extract, reason) => ({ extract, reason, projectedDamage });
+    if (hp - projectedDamage > 0) return result(false, "not_lethal");
+
+    const potion = options.potion || {};
+    if (potion.available === true && potion.reliable === true) {
+      const heal = Math.min(Math.max(0, maxHp - hp), Math.max(0, Number(potion.heal) || 0));
+      const damageAfterPotion = immediateAfterBarrier + (potion.clearsStatuses === true ? 0 : statusDamage);
+      if (hp + heal - damageAfterPotion > 0) return result(false, "survives_with_potion");
+    }
+
+    const shield = options.shield || {};
+    if (shield.available === true && shield.reliable === true) {
+      const shieldAmount = Math.max(0, Number(shield.amount) || 0);
+      const damageAfterShield = Math.max(0, immediateAfterBarrier - shieldAmount) + statusDamage;
+      if (hp - damageAfterShield > 0) return result(false, "survives_with_shield");
+    }
+
+    if (options.safeStepDamage != null && Number.isFinite(Number(options.safeStepDamage))) {
+      const safeStepDamage = Math.max(0, Number(options.safeStepDamage)) + statusDamage;
+      if (hp - safeStepDamage > 0) return result(false, "survives_with_safe_step");
+    }
+    if (options.safeDashDamage != null && Number.isFinite(Number(options.safeDashDamage))) {
+      const safeDashDamage = Math.max(0, Number(options.safeDashDamage)) + statusDamage;
+      if (hp - safeDashDamage > 0) return result(false, "survives_with_safe_dash");
+    }
+    return result(true, "certain_lethal_no_survival");
+  }
+
   const api = {
     canBotDrinkPotion,
+    decideBotEmergencyExtract,
+    decideBotOffensiveMine,
     decideBotPotionUse,
+    getBotEarlyPotionUpgradePlan,
+    getBotGoldBankingPressure,
     getForgeTargetForBot,
     getPendingBlastZones
   };

@@ -132,7 +132,11 @@
   const MINE_DAMAGE_MULTIPLIER = 5.0;
   const {
     canBotDrinkPotion: canBotDrinkPotionSafe = () => false,
+    decideBotEmergencyExtract: decideBotEmergencyExtractSafe = () => ({ extract: false, reason: "not_lethal", projectedDamage: 0 }),
+    decideBotOffensiveMine: decideBotOffensiveMineSafe = () => ({ use: false, reason: "mine_not_available", escape: null }),
     decideBotPotionUse: decideBotPotionUseSafe = () => ({ use: false, reason: "blocked_empty", actionKey: "" }),
+    getBotEarlyPotionUpgradePlan: getBotEarlyPotionUpgradePlanSafe = () => ({ active: false, recommendedUpgrade: null }),
+    getBotGoldBankingPressure: getBotGoldBankingPressureSafe = () => ({ threshold: Infinity, score: 0, ratio: 0, strong: false }),
     getForgeTargetForBot: getForgeTargetForBotSafe = () => null,
     getPendingBlastZones: getPendingBlastZonesSafe = () => ({})
   } = (typeof window !== "undefined" && window.botSafetyApi) || {};
@@ -2279,6 +2283,7 @@
       lastDecision: "idle",
       lastPotionActionKey: "",
       potionUseTurns: [],
+      offensiveMinePlan: null,
       currentRoomIndex: -1,
       merchantPurchasesThisRoom: 0,
       merchantDoneRoomIndex: -1,
@@ -3017,6 +3022,7 @@
     state.observerBot.currentRoomIndex = -1;
     state.observerBot.merchantPurchasesThisRoom = 0;
     state.observerBot.merchantDoneRoomIndex = -1;
+    state.observerBot.offensiveMinePlan = null;
     state.observerBot.lastDecision = next ? "online" : "offline";
     state.observerBot.traceLastVampfangHeal = Math.max(0, Number(state.player?.vampfangHealRun) || 0);
     resetObserverBotStallTracker();
@@ -14480,6 +14486,7 @@
     state.runStartDepth = selectedStartDepth;
     state.observerBot.lastPotionActionKey = "";
     state.observerBot.potionUseTurns = [];
+    state.observerBot.offensiveMinePlan = null;
     state.roomIndex = 0;
     state.bossRoom = false;
     state.roomType = "combat";
@@ -28558,6 +28565,203 @@
     return true;
   }
 
+  function getObserverBotDashEscapeOptionsFrom(originX, originY, options = {}) {
+    const threatMap = options.threatMap || buildObserverBotThreatMap();
+    const pendingBlastMap = options.pendingBlastMap || getObserverBotPendingBlastMap() || {};
+    const mine = options.mine || null;
+    const maxDashTiles = getSkillTier("dash") >= 2 ? 4 : 3;
+    const out = [];
+    for (const dir of BOT_CARDINAL_DIRECTIONS) {
+      const path = [];
+      let cx = originX;
+      let cy = originY;
+      let crossesPit = false;
+      for (let i = 0; i < maxDashTiles; i += 1) {
+        const nx = cx + dir.dx;
+        const ny = cy + dir.dy;
+        if (!inBounds(nx, ny) || getChestAt(nx, ny) || isForgeBlockedTile(nx, ny)) break;
+        cx = nx;
+        cy = ny;
+        path.push({ x: nx, y: ny });
+        if (isPitAt(nx, ny)) crossesPit = true;
+      }
+      if (path.length <= 0) continue;
+      const landing = path[path.length - 1];
+      const pending = pendingBlastMap[tileKey(landing.x, landing.y)] || null;
+      const landingHazard = isHazardAt(landing.x, landing.y);
+      const landingEnemy = Boolean(getEnemyAt(landing.x, landing.y));
+      const distanceFromMine = mine
+        ? Math.max(Math.abs(landing.x - mine.x), Math.abs(landing.y - mine.y))
+        : GRID_SIZE;
+      out.push({
+        dx: dir.dx,
+        dy: dir.dy,
+        landing,
+        path,
+        passable: !crossesPit && !landingHazard && !landingEnemy,
+        distanceFromMine,
+        hazard: crossesPit || landingHazard,
+        pendingBlastDamage: pending && (Number(pending.turnsUntilBlast) || 0) <= 1
+          ? Math.max(0, Number(pending.damage) || 0)
+          : 0,
+        expectedDamage: Math.max(0, Number(threatMap.damageAt(landing.x, landing.y)) || 0),
+        risk: Math.max(0, Number(threatMap.riskAt(landing.x, landing.y)) || 0)
+      });
+    }
+    return out;
+  }
+
+  function getObserverBotBestSafeStep(threatMap, pendingBlastMap) {
+    if ((Number(state.player.frozenMoveTurns) || 0) > 0) return null;
+    let best = null;
+    for (const dir of BOT_CARDINAL_DIRECTIONS) {
+      const nx = state.player.x + dir.dx;
+      const ny = state.player.y + dir.dy;
+      if (!isObserverBotPassableTile(nx, ny) || isHazardAt(nx, ny)) continue;
+      const pending = pendingBlastMap?.[tileKey(nx, ny)];
+      if (pending && (Number(pending.turnsUntilBlast) || 0) <= 1) continue;
+      const damage = Math.max(0, Number(threatMap.damageAt(nx, ny)) || 0);
+      const risk = Math.max(0, Number(threatMap.riskAt(nx, ny)) || 0);
+      if (!best || damage < best.damage || (damage === best.damage && risk < best.risk)) {
+        best = { dx: dir.dx, dy: dir.dy, damage, risk };
+      }
+    }
+    return best;
+  }
+
+  function getObserverBotBestSafeDash(threatMap, pendingBlastMap) {
+    if (getSkillCooldownRemaining("dash") > 0) return null;
+    const options = getObserverBotDashEscapeOptionsFrom(state.player.x, state.player.y, {
+      threatMap,
+      pendingBlastMap
+    });
+    const safe = options
+      .filter((entry) => entry.passable && entry.pendingBlastDamage <= 0 && entry.risk <= 120)
+      .sort((a, b) => a.expectedDamage - b.expectedDamage || a.risk - b.risk);
+    return safe.length > 0 ? safe[0] : null;
+  }
+
+  function getObserverBotOffensiveMineCandidate(mine, threatMap, pendingBlastMap) {
+    if (!mine || mine.armed) return null;
+    const distance = manhattan(state.player.x, state.player.y, mine.x, mine.y);
+    if (distance !== 1) return null;
+    const enemies = state.enemies.map((enemy) => ({
+      hp: Math.max(0, Number(enemy?.hp) || 0),
+      inBlast: Boolean(enemy) && Math.abs(enemy.x - mine.x) <= 1 && Math.abs(enemy.y - mine.y) <= 1
+    }));
+    const escapes = getObserverBotDashEscapeOptionsFrom(mine.x, mine.y, {
+      threatMap,
+      pendingBlastMap,
+      mine
+    });
+    const decision = decideBotOffensiveMineSafe({
+      dashAvailable: getSkillCooldownRemaining("dash") <= 0,
+      mineArmed: mine.armed,
+      adjacent: true,
+      playerHp: state.player.hp,
+      playerMaxHp: state.player.maxHp,
+      playerBarrier: getTotalPlayerShield(),
+      entryDamage: threatMap.damageAt(mine.x, mine.y),
+      mineDamage: getMineDamageByDepth(),
+      expectedMeleeDamage: getObserverBotExpectedMeleeDamage(),
+      enemies,
+      escapes
+    });
+    if (!decision.use || !decision.escape) return null;
+    return {
+      mine,
+      decision,
+      score:
+        Math.max(0, Number(decision.expectedEnemyDamage) || 0) +
+        Math.max(0, Number(decision.predictedKills) || 0) * 55 -
+        Math.max(0, Number(threatMap.damageAt(mine.x, mine.y)) || 0) * 2
+    };
+  }
+
+  function maybeObserverBotSetUpOffensiveMine() {
+    if (state.phase !== "playing" || state.roomCleared) return false;
+    if (state.observerBot?.offensiveMinePlan) return false;
+    if (getSkillCooldownRemaining("dash") > 0) return false;
+    if ((Number(state.player.frozenMoveTurns) || 0) > 0) return false;
+    if (!Array.isArray(state.mines) || state.mines.length <= 0 || state.enemies.length < 2) return false;
+    const pendingBlastMap = getObserverBotPendingBlastMap() || {};
+    if (pendingBlastMap[tileKey(state.player.x, state.player.y)]) return false;
+    const threatMap = buildObserverBotThreatMap({ pendingBlastMap });
+    const candidates = state.mines
+      .map((mine) => getObserverBotOffensiveMineCandidate(mine, threatMap, pendingBlastMap))
+      .filter(Boolean)
+      .sort((a, b) => b.score - a.score);
+    if (candidates.length <= 0) return false;
+
+    const best = candidates[0];
+    const dx = best.mine.x - state.player.x;
+    const dy = best.mine.y - state.player.y;
+    state.observerBot.offensiveMinePlan = {
+      roomIndex: state.roomIndex,
+      mineX: best.mine.x,
+      mineY: best.mine.y,
+      escapeDx: best.decision.escape.dx,
+      escapeDy: best.decision.escape.dy
+    };
+    tryMove(dx, dy);
+    if (
+      state.phase !== "playing" ||
+      state.player.x !== best.mine.x ||
+      state.player.y !== best.mine.y ||
+      !best.mine.armed
+    ) {
+      state.observerBot.offensiveMinePlan = null;
+      return false;
+    }
+    state.observerBot.lastDecision = "mine_setup";
+    return true;
+  }
+
+  function maybeObserverBotExecuteOffensiveMineEscape() {
+    const plan = state.observerBot?.offensiveMinePlan;
+    if (!plan) return false;
+    const mine = getMineAt(plan.mineX, plan.mineY);
+    if (
+      plan.roomIndex !== state.roomIndex ||
+      state.player.x !== plan.mineX ||
+      state.player.y !== plan.mineY ||
+      !mine ||
+      !mine.armed ||
+      (Number(mine.fuseTurns) || 0) > 1 ||
+      getSkillCooldownRemaining("dash") > 0
+    ) {
+      state.observerBot.offensiveMinePlan = null;
+      return false;
+    }
+
+    const pendingBlastMap = getObserverBotPendingBlastMap() || {};
+    const threatMap = buildObserverBotThreatMap({ pendingBlastMap });
+    const hpBudget = Math.max(1, Number(state.player.hp) || 1) + getTotalPlayerShield();
+    const escapes = getObserverBotDashEscapeOptionsFrom(state.player.x, state.player.y, {
+      threatMap,
+      pendingBlastMap,
+      mine
+    })
+      .filter((entry) => (
+        entry.passable &&
+        entry.distanceFromMine > 1 &&
+        entry.pendingBlastDamage <= 0 &&
+        entry.expectedDamage < hpBudget &&
+        entry.risk <= 120
+      ))
+      .sort((a, b) => {
+        const plannedA = a.dx === plan.escapeDx && a.dy === plan.escapeDy ? 1 : 0;
+        const plannedB = b.dx === plan.escapeDx && b.dy === plan.escapeDy ? 1 : 0;
+        return plannedB - plannedA || a.expectedDamage - b.expectedDamage || a.risk - b.risk;
+      });
+    state.observerBot.offensiveMinePlan = null;
+    if (escapes.length <= 0) return false;
+    const best = escapes[0];
+    if (!tryUseDashSkill(best.dx, best.dy)) return false;
+    state.observerBot.lastDecision = "mine_escape_dash";
+    return true;
+  }
+
   function getObserverBotBestBlastEscapeStep(pendingBlastMap) {
     pendingBlastMap = pendingBlastMap || {};
     const threatMap = buildObserverBotThreatMap({ pendingBlastMap });
@@ -31018,6 +31222,22 @@
     if (!upgrade || cost <= 0) return -Infinity;
     const level = getCampUpgradeLevel(upgrade.id);
     const survivabilityLevel = getCampUpgradeLevel("vitality") + getCampUpgradeLevel("guard");
+    const progressDepth = Math.max(
+      0,
+      Number(state.depth) || 0,
+      Number(state.highscore) || 0,
+      Number(state.runMaxDepth) || 0,
+      Number(state.lastExtract?.depth) || 0
+    );
+    const potionUpgradePlan = getBotEarlyPotionUpgradePlanSafe({
+      depth: progressDepth,
+      campGold: state.campGold,
+      satchelLevel: getCampUpgradeLevel("satchel"),
+      potionStrengthLevel: getCampUpgradeLevel("potion_strength"),
+      hpRatio: getBotHpRatio(),
+      lives: state.lives,
+      survivabilityLevel
+    });
     const lastExtractDepth = Math.max(0, Number(state.lastExtract?.depth) || 0);
     const justExtractedBeforeBoss = lastExtractDepth > 0 && lastExtractDepth % 5 === 4;
     let value = 0;
@@ -31057,6 +31277,13 @@
     } else if (upgrade.id === "bounty_contract") {
       value = 84 - level * 13;
       if (survivabilityLevel >= 8) value += 20;
+    }
+    if (potionUpgradePlan?.active && ["satchel", "potion_strength"].includes(upgrade.id)) {
+      const target = upgrade.id === "satchel"
+        ? Math.max(0, Number(potionUpgradePlan.satchelTarget) || 0)
+        : Math.max(0, Number(potionUpgradePlan.potionStrengthTarget) || 0);
+      if (level < target) value += 44;
+      if (potionUpgradePlan.recommendedUpgrade === upgrade.id) value += 118;
     }
     const farmStatus = getObserverBotDepthPressureStatus({ includeRunGold: false });
     if (farmStatus.active && !farmStatus.ready && farmStatus.upgradeMissing > 0) {
@@ -31403,6 +31630,152 @@
     return false;
   }
 
+  function getObserverBotReliablePotionHeal() {
+    const potionStrengthBonus = scaledCombat(getCampUpgradeLevel("potion_strength") * 2);
+    let heal = Math.max(
+      MIN_EFFECTIVE_DAMAGE,
+      Math.round((scaledCombat(4) + potionStrengthBonus) * state.runMods.potionHealMult)
+    );
+    if (hasRelic("titanheart")) {
+      heal = Math.max(MIN_EFFECTIVE_DAMAGE, Math.round(heal * 1.3));
+    }
+    return Math.max(MIN_EFFECTIVE_DAMAGE, Math.round(heal * getPactPotionHealMultiplier()));
+  }
+
+  function getObserverBotCertainLethalDecision() {
+    const pendingBlastMap = getObserverBotPendingBlastMap() || {};
+    const threatMap = buildObserverBotThreatMap({ pendingBlastMap });
+    const incomingDamage = Math.max(
+      0,
+      Number(threatMap.damageAt(state.player.x, state.player.y)) || 0
+    );
+    if (incomingDamage <= 0) return null;
+
+    const pending = pendingBlastMap[tileKey(state.player.x, state.player.y)] || null;
+    const certainMelee = state.enemies.some((enemy) => (
+      enemy &&
+      enemy.type !== "totem" &&
+      enemy.type !== "acolyte" &&
+      manhattan(state.player.x, state.player.y, enemy.x, enemy.y) === 1 &&
+      Math.max(0, Number(enemy.stunTurns) || 0, Number(enemy.frozenTurns) || 0) <= 0
+    ));
+    const certainTelegraph = state.enemies.some((enemy) => (
+      enemy &&
+      (enemy.aiming || enemy.volleyAiming || enemy.burstAiming || enemy.slamAiming) &&
+      hasLineOfSightBetweenTilesForBot(enemy.x, enemy.y, state.player.x, state.player.y)
+    ));
+    const highConfidence = Boolean(
+      pending && (Number(pending.turnsUntilBlast) || 0) <= 1
+    ) || certainMelee || certainTelegraph;
+    if (!highConfidence) return null;
+
+    const reliablePotionHeal = getObserverBotReliablePotionHeal();
+    const potionPreview = decideBotPotionUseSafe({
+      hasRisk: hasRelic("risk"),
+      oathPotionLockTurns: state.player.oathPotionLockTurns,
+      potions: state.player.potions,
+      hp: state.player.hp,
+      maxHp: state.player.maxHp,
+      incomingDamage,
+      barrier: getTotalPlayerShield(),
+      effectiveHeal: reliablePotionHeal,
+      bleedTurns: state.player.bleedTurns,
+      bleedDamage: state.player.bleedDamage,
+      poisonTurns: state.player.poisonTurns,
+      poisonDamage: state.player.poisonDamage,
+      boundaryPending: Boolean(window.DungeonOnlineV3?.isObserverBotBoundaryPending?.()),
+      turnInProgress: state.turnInProgress === true,
+      enemyTurnInProgress: state.enemyTurnInProgress === true,
+      turn: state.turn,
+      enemyTurn: state.enemyTurnInProgress ? state.enemyTurnStepIndex : 0,
+      hazardIdentity: getObserverBotPotionHazardIdentity(pendingBlastMap),
+      lastPotionActionKey: state.observerBot?.lastPotionActionKey || ""
+    });
+    const shieldTier = getSkillTier("shield");
+    const rawShield = Math.max(
+      MIN_EFFECTIVE_DAMAGE,
+      Math.round(
+        Math.max(1, Number(state.player.maxHp) || 1) *
+        (shieldTier >= 1 ? SHIELD_RARE_HP_MULTIPLIER : SHIELD_BASE_HP_MULTIPLIER)
+      )
+    );
+    const shieldCap = getSkillShieldCapForTier(shieldTier);
+    const cappedShield = Math.min(rawShield, Number.isFinite(shieldCap) ? shieldCap : rawShield);
+    const reliableShield = hasRelic("fracturedsigil")
+      ? Math.max(MIN_EFFECTIVE_DAMAGE, Math.round(cappedShield * FRACTURED_SIGIL_BARRIER_MULTIPLIER))
+      : cappedShield;
+    const safeStep = getObserverBotBestSafeStep(threatMap, pendingBlastMap);
+    const safeDash = getObserverBotBestSafeDash(threatMap, pendingBlastMap);
+    const shieldAvailable = canObserverBotUseShieldNow();
+    const decision = decideBotEmergencyExtractSafe({
+      hp: state.player.hp,
+      maxHp: state.player.maxHp,
+      incomingDamage,
+      barrier: getTotalPlayerShield(),
+      bleedTurns: state.player.bleedTurns,
+      bleedDamage: state.player.bleedDamage,
+      poisonTurns: state.player.poisonTurns,
+      poisonDamage: state.player.poisonDamage,
+      potion: {
+        available: potionPreview.use === true,
+        reliable: potionPreview.use === true,
+        heal: reliablePotionHeal,
+        clearsStatuses: true
+      },
+      shield: {
+        available: shieldAvailable,
+        reliable: shieldAvailable,
+        amount: reliableShield
+      },
+      safeStepDamage: safeStep?.damage,
+      safeDashDamage: safeDash?.expectedDamage
+    });
+    return {
+      ...decision,
+      potionActionKey: potionPreview.actionKey,
+      safeStep,
+      safeDash
+    };
+  }
+
+  function maybeObserverBotHandleCertainLethal() {
+    const decision = getObserverBotCertainLethalDecision();
+    if (!decision || decision.reason === "not_lethal") return false;
+
+    if (decision.reason === "survives_with_potion") {
+      const potionsBefore = state.player.potions;
+      drinkPotion();
+      if (state.player.potions < potionsBefore) {
+        recordObserverBotPotionUse(decision.potionActionKey);
+        state.observerBot.lastDecision = "lethal_potion";
+        return true;
+      }
+    } else if (decision.reason === "survives_with_shield") {
+      if (tryUseShieldSkill()) {
+        state.observerBot.lastDecision = "lethal_shield";
+        return true;
+      }
+    } else if (decision.reason === "survives_with_safe_step" && decision.safeStep) {
+      const beforeX = state.player.x;
+      const beforeY = state.player.y;
+      tryMove(decision.safeStep.dx, decision.safeStep.dy);
+      if (state.player.x !== beforeX || state.player.y !== beforeY) {
+        state.observerBot.lastDecision = "lethal_escape_move";
+        return true;
+      }
+    } else if (decision.reason === "survives_with_safe_dash" && decision.safeDash) {
+      if (tryUseDashSkill(decision.safeDash.dx, decision.safeDash.dy)) {
+        state.observerBot.lastDecision = "lethal_escape_dash";
+        return true;
+      }
+    }
+
+    openEmergencyExtractConfirm();
+    confirmEmergencyExtract();
+    state.observerBot.lastDecision = "emergency_extract_lethal";
+    return true;
+  }
+
   function shouldObserverBotEmergencyExtractNow() {
     if (state.phase !== "playing" || state.roomCleared) return false;
     if (state.depth < 3) return false;
@@ -31440,6 +31813,7 @@
     const capabilityDepth = getObserverBotCapabilityDepth();
     const mutators = getObserverBotMutatorContext();
     const profile = OBSERVER_BOT_PROFILE;
+    const goldBankingPressure = getBotGoldBankingPressureSafe({ depth, gold, profile });
 
     if (farmStatus.active && farmStatus.ready) {
       clearObserverBotDepthPressure();
@@ -31491,7 +31865,7 @@
     if (mutators.bulwark) resilienceScore += 6;
 
     const dangerScore = riskScore - resilienceScore;
-    let economyUrgency = 0;
+    let economyUrgency = Math.max(0, Number(goldBankingPressure?.score) || 0);
     if (economyPlan) {
       const reserveTarget = Math.max(0, Number(economyPlan.campGoldReserve) || 0);
       const runBankThreshold = Math.max(0, Number(economyPlan.runGoldBankThreshold) || 0);
@@ -31548,6 +31922,7 @@
     if (gold >= 20 && potions <= 0 && hpRatio <= noPotionExtractHp) return true;
     if (gold >= 20 && hpRatio <= lowPotionExtractHp && potions <= 1) return true;
     if (gold >= 20 && state.lives <= 2 && hpRatio <= lowLivesExtractHp) return true;
+    if (gold >= 700 && goldBankingPressure?.strong) return true;
 
     if (nextIsBoss) {
       const bossDangerThreshold = profile === "aggressive" ? 24 : profile === "balanced" ? 22 : 20;
@@ -31798,6 +32173,7 @@
       bot.merchantDoneRoomIndex = bot.merchantDoneRoomIndex === state.roomIndex
         ? bot.merchantDoneRoomIndex
         : -1;
+      bot.offensiveMinePlan = null;
       bot.lastDecision = `room_${state.roomIndex}`;
       bot.lastPolicy = getObserverBotPolicyProfile().mode;
       resetObserverBotStallTracker();
@@ -31809,10 +32185,17 @@
       bot.lastDecision = "emergency_extract_confirm";
       return true;
     }
+    if (maybeObserverBotHandleCertainLethal()) {
+      return true;
+    }
     if (shouldObserverBotEmergencyExtractNow()) {
       openEmergencyExtractConfirm();
       confirmEmergencyExtract();
       bot.lastDecision = "emergency_extract";
+      return true;
+    }
+
+    if (maybeObserverBotExecuteOffensiveMineEscape()) {
       return true;
     }
 
@@ -31926,6 +32309,10 @@
     }
 
     if (maybeObserverBotUseElixir()) {
+      return true;
+    }
+
+    if (maybeObserverBotSetUpOffensiveMine()) {
       return true;
     }
 

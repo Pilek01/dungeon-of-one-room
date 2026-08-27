@@ -15,6 +15,7 @@ import {
   hydrateRunFromProfileV08,
   profileStateFromRunV08
 } from "../src/rulesets/v08-meta-1/profile-policy.js";
+import { applyCanonicalRunModifierSelection } from "../src/rulesets/v08-meta-1/run-modifiers.js";
 
 const context = Object.freeze({
   runId: "run_chest_carry",
@@ -110,6 +111,37 @@ test("profile extraction and hydration carry chest bonuses for the campaign", as
   assert.equal(projectChestBonusesV08(hydrated.campaign.chestBonuses).healthFlat, 7);
   assert.equal(hydrated.build.resources.maxHp, 107);
   assert.equal(hydrated.build.resources.hp, 107);
+  assert.doesNotThrow(() => assertMetaStateV08(hydrated));
+});
+
+test("versioned profile hydration applies Practice maximum-HP order without changing historical runs", async () => {
+  let state = createInitialMetaStateV08({}, context);
+  state.build.campUpgrades.vitality = 3;
+  state = await applyCanonicalRunModifierSelection(
+    state,
+    { modifierIds: ["berserker"], activationSource: "server-issued-run-start" },
+    { authority: "TRUSTED_RULESET_DOMAIN", cryptoProvider: webcrypto }
+  );
+  for (let index = 0; index < 5; index += 1) {
+    state.campaign = applyIssuedChestStatBonusV08(state.campaign, {
+      stat: "health",
+      scalingDepth: 1
+    });
+  }
+  state.status = "extraction";
+
+  const profile = profileStateFromRunV08(state, "profile_berserker_health", 1);
+  const next = createInitialMetaStateV08({}, { ...context, runId: "run_berserker_health" });
+  const legacy = await hydrateRunFromProfileV08(next, profile, { cryptoProvider: webcrypto });
+  const hydrated = await hydrateRunFromProfileV08(next, profile, {
+    cryptoProvider: webcrypto,
+    capabilities: { rankedStartResourceParity: "v1" }
+  });
+
+  assert.equal(legacy.build.resources.maxHp, 155);
+  // Practice order: round(100 * 1.3) -> round(130 * 0.75) -> +25 chest HP.
+  assert.equal(hydrated.build.resources.maxHp, 123);
+  assert.equal(hydrated.build.resources.hp, 123);
   assert.doesNotThrow(() => assertMetaStateV08(hydrated));
 });
 

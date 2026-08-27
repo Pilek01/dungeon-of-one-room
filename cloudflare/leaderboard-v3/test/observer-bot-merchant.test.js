@@ -115,7 +115,7 @@ test("Merchant action submission uses a stable operation identity and resyncs un
 
 function generatedMerchantActionRunner(game, decision) {
   const start = game.indexOf("function runObserverMerchantAction()");
-  const end = game.indexOf("function shouldObserverBotEmergencyExtractNow", start);
+  const end = game.indexOf("\n  function ", start + 1);
   assert.ok(start >= 0 && end > start, "missing generated Observer Merchant action");
   const merchantAction = game.slice(start, end);
   const calls = [];

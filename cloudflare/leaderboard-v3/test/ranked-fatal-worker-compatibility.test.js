@@ -193,7 +193,8 @@ test("historical production descriptors strip fatal cause while current producti
       canonicalChestOutcomes: "v1",
       earlyBalanceOtterRepair: "v1",
       canonicalPotionResources: "v1",
-      boundedCombatResources: "v1"
+      boundedCombatResources: "v1",
+      rankedStartResourceParity: "v1"
     }
   );
   assert.deepEqual(
@@ -206,7 +207,8 @@ test("historical production descriptors strip fatal cause while current producti
       canonicalChestOutcomes: "v1",
       earlyBalanceOtterRepair: "v1",
       canonicalPotionResources: "v1",
-      boundedCombatResources: "v1"
+      boundedCombatResources: "v1",
+      rankedStartResourceParity: "v1"
     }
   );
   assert.deepEqual(

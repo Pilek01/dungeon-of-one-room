@@ -39,6 +39,7 @@ async function resetBuildForNextRun(
   build,
   cryptoProvider,
   potionModifiers,
+  maximumHpMultiplier = 1,
   potionPolicyVersion = "legacy",
   chestHealthFlat = 0
 ) {
@@ -50,7 +51,11 @@ async function resetBuildForNextRun(
     1,
     Math.round(empty.resources.maxHp * (1 + vitality * 0.1))
   );
-  const maxHp = baseMaxHp + chestHealthFlat;
+  const modifiedBaseMaxHp = Math.max(
+    1,
+    Math.round(baseMaxHp * maximumHpMultiplier)
+  );
+  const maxHp = modifiedBaseMaxHp + chestHealthFlat;
   const potionInput = {
     baseMaximum: empty.resources.maxPotions,
     satchelLevel: satchel,
@@ -131,7 +136,12 @@ export async function hydrateRunFromProfileV08(state, profile, context = {}) {
     profile.runModifiers || createEmptyRunModifierLedgerV08()
   );
   next.campaign = normalizeCampaignStateV08({ campaign: profile.campaign || next.campaign });
-  const potionModifiers = deriveRunModifierEffects(next.runModifiers).potionModifiers;
+  const modifierEffects = deriveRunModifierEffects(next.runModifiers);
+  const potionModifiers = modifierEffects.potionModifiers;
+  const maximumHpMultiplier =
+    context.capabilities?.rankedStartResourceParity === "v1"
+      ? modifierEffects.playerStartModifiers.maximumHpMultiplier
+      : 1;
   const chestHealthFlat = projectChestBonusesV08(
     next.campaign.chestBonuses
   ).healthFlat;
@@ -139,6 +149,7 @@ export async function hydrateRunFromProfileV08(state, profile, context = {}) {
     profile.build,
     context.cryptoProvider,
     potionModifiers,
+    maximumHpMultiplier,
     potionPolicyVersion,
     chestHealthFlat
   );

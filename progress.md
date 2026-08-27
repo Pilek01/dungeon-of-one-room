@@ -2072,3 +2072,22 @@ Updated next good targets
   reason codes when a boundary has already failed closed. Valid boundary gold
   equality and all resource caps remain exact; invalid boundaries remain
   provisional via `BOUNDARY_SETTLEMENT_INVALID`.
+
+## 2026-08-27 - Ranked whole-game hang audit and checkpoint-loop repair
+
+- The supplied depth-9/Vault trace and read-only D1 state exposed a deterministic
+  client/Worker start-resource mismatch: Practice-compatible Ranked produced
+  123 HP for Vitality 3 + Berserker + 25 carried chest HP, while the Worker
+  omitted Berserker's 0.75 maximum-HP multiplier and expected 155 HP.
+- Profile hydration now applies the Practice order exactly: Camp Vitality,
+  run-modifier maximum-HP multiplier, then additive chest carry. The regression
+  fixture reproduces the traced 123 HP result.
+- Recovery now preserves and retries the completed room checkpoint once when
+  resume returns the exact same directive ID and nonce. Generic 500 responses
+  stop in recoverable UI instead of rebuilding the completed room indefinitely.
+- Reward-claim validation errors map to explicit 422 codes, and diagnostics add
+  only a bounded source code alongside trace/path/status without request bodies
+  or credentials.
+- D1 retention now removes dependent non-finalized leaderboard snapshots before
+  expired non-finalized runs in one batch, avoiding the observed foreign-key
+  cleanup failure while preserving finalized entries.
