@@ -1,6 +1,6 @@
 # Online v3 - Current handoff
 
-Updated: 2026-08-26
+Updated: 2026-08-27
 
 ## Task authority
 
@@ -24,61 +24,64 @@ Do not describe the system as server-authoritative combat or cheat-proof.
 
 ## Current production snapshot
 
-- Production Pages source commit:
-  `188649567ca4668b55126e1f615eaeac1b9bce6e` from `main`.
-- Production Pages provenance is the annotated tag
-  `online-v3-production-2026-08-26-1886495`, which points exactly to the
-  deployed source commit. The unchanged Worker source remains
-  `10d90d1665d8228983cdb87622964f720c00c45d`.
+- Production source commit:
+  `78c7bc19f910ae8b87bea446444b1b58b9e357da` from `main`.
+- Production provenance is the annotated tag
+  `online-v3-production-2026-08-27-78c7bc1`, which points exactly to the
+  deployed source commit.
 - Production Worker version:
-  `93f13ca6-ba16-4833-b1ee-c5ee997a11d3` at 100% (deployment
-  `fedbcd08-d778-4e97-903f-318437d46ec1`).
+  `3e869b66-2d86-4fdf-add3-af7efcce49c2` at 100% (deployment
+  `5c84cfa5-749f-4d97-8994-0fcf88ebd5b1`).
 - Recorded Worker rollback version:
-  `6fa1a64a-3b28-4e69-8657-4c42f4e04987`.
+  `93f13ca6-ba16-4833-b1ee-c5ee997a11d3`.
 - Production Pages deployment:
-  `0e3091d4-dd78-4fe2-b597-d82601539dfe`, source `1886495`, immutable URL
-  `https://0e3091d4.dungeon-of-one-room.pages.dev`.
+  `b67e0708-b301-44e5-99d6-eff408586355`, source `78c7bc1`, immutable URL
+  `https://b67e0708.dungeon-of-one-room.pages.dev`.
 - Recorded Pages rollback deployment:
-  `5ac8a9f8-5e6f-42fc-8608-92390c18e1e9`, source `10d90d1`.
+  `0e3091d4-dd78-4fe2-b597-d82601539dfe`, source `1886495`.
 - Active production ruleset:
-  `sha256:9d6069993fd07784ecfdc146825a8a7b82cde1fd7412f351aeba1ab86c539dbe`.
+  `sha256:25dbdb962a478b3a46375ad5b25a3603041edd95ff45b51e2846b13ce7ea2989`.
 - Retained previous ruleset:
-  `sha256:48b5bd86604a5f8dae58a4dcf2b1ed9a72252b3e4942fc20693b3e0a8e91438e`.
+  `sha256:9d6069993fd07784ecfdc146825a8a7b82cde1fd7412f351aeba1ab86c539dbe`.
 - No D1 migration was required for this release; production reports
   `No migrations to apply`.
 
-This release prevents repeated Ranked Merchant leave decisions from advancing
-multiple canonical depths while the Observer Bot remains in one local room.
-The generated bot policy now marks the Merchant visit complete after issuing
-leave, and the Ranked runtime latches a successful leave to the active local
-directive so the same room cannot checkpoint twice.
+This release restores Practice-compatible maximum-HP ordering at Ranked run
+start, preserves and retries a completed checkpoint only when canonical resume
+returns the exact same directive ID and nonce, and stops generic internal
+errors in recoverable UI instead of rebuilding a completed room indefinitely.
+It also makes D1 retention delete dependent non-finalized leaderboard rows
+before their expired runs and exposes bounded reward-validation diagnostics.
 
-The Worker, protocol, ruleset, D1 schema, and protected local combat/UI code
-did not change. The previous Pages deployment remains the direct rollback.
+The release includes the previously prepared Observer Bot safety work for
+early potion upgrades, depth-scaled gold banking, offensive mine escapes, and
+certain-lethal survival/extraction decisions. The previous Worker and Pages
+deployments remain the direct rollback pair.
 
 ## Latest release evidence
 
-- Exact committed source `188649567ca4668b55126e1f615eaeac1b9bce6e`
-  passed a forced fresh `npm run verify:full`: 1085/1085. The release log is
-  `output/verification/full-20260826T065032090Z.log`.
+- Exact committed source `78c7bc19f910ae8b87bea446444b1b58b9e357da`
+  passed a fresh `verify:full`: 1089/1089. The release log is
+  `output/verification/full-20260827T145723372Z.log`.
 - Kamil explicitly reviewed and approved all six current archive screenshots.
   The recorded visual source fingerprint is
-  `sha256:efb4cc22e813d378cb65666111db7303ec910c2dc6eaf0bb6f31b85b190d17a9`.
-- Focused pre-release checks passed: the Merchant RED/GREEN regression suite
-  at 9/9, JavaScript syntax checks, fresh
-  `verify:ranked-headed -- --scenario lifecycle`, and `git diff --check`.
-- The Pages upload came from the repository root and included the Functions
-  bundle, routes, and service binding.
-- No Worker upload or rollout was performed because the Worker source,
-  production config, migrations, and protocol are byte-unchanged from the
-  active Worker release.
+  `sha256:fd1fd34d820d4ad0385eee7127b6a6cb84953aacdc75e0a3df70d82e5d85b969`.
+- Focused current-tree browser checks passed for Ranked lifecycle, Camp,
+  recovery, and Practice save/Continue. The complete Worker suite passed
+  1065/1065 and the real local Wrangler/D1 suite passed 21/21.
+- Pages was deployed first so the new client could accept both the retained
+  `9d606...` ruleset and the new `25dbdb...` ruleset during Worker rollout.
+  An initial identical-byte Pages upload was immediately superseded to correct
+  its full-SHA provenance metadata; `b67e0708...` is the recorded deployment.
 - Post-deploy byte checks confirm both stable and immutable Pages URLs return
   the exact local `config.js`, `game.js`, Ranked runtime, Ranked protocol, and
-  sanitized visual receipt. Both roots return HTTP 200. Availability reports
-  production active with ruleset `9d606999...`, and Worker deployment
-  `fedbcd08...` continues to serve version `93f13ca6...` at 100%.
+  sanitized visual receipt. Both roots return HTTP 200.
+- Worker rollout progressed through 5%, 25%, and 100%. Read-only availability
+  sampling observed 6/80 new responses at 5%, 19/80 at 25%, and 50/50 new
+  responses after activation. Root and leaderboard smoke checks return 200.
 - No release smoke mutated D1. The production database still reports no
-  pending migrations.
+  pending migrations; the pre-release Time Travel bookmark was recorded in
+  the Wrangler output.
 
 These totals are point-in-time release evidence. They do not require rerunning
 the same suites for unrelated small changes.
@@ -106,10 +109,11 @@ source fingerprint.
 
 ## Protected working trees and release refs
 
-- The deployed Pages source is fixed by
-  `online-v3-production-2026-08-26-1886495`; the unchanged Worker remains fixed
-  by `online-v3-production-2026-08-26-10d90d1`. Subsequent documentation
-  commits are not part of either deployed artifact.
+- The deployed Worker and Pages source is fixed by
+  `online-v3-production-2026-08-27-78c7bc1`. Subsequent documentation commits
+  are not part of either deployed artifact. The prior Pages rollback source is
+  fixed by `online-v3-production-2026-08-26-1886495`; the prior Worker rollback
+  source remains fixed by `online-v3-production-2026-08-26-10d90d1`.
 - `npm run status:compact` reported zero protected Vault Guardian WIP entries
   and zero local Wrangler-state entries before the release record was written.
 - The untracked files `.tmp-apply-probe.txt`,
