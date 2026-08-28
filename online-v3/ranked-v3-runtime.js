@@ -73,13 +73,39 @@
   const RANKED_DIAGNOSTICS_LIMIT = 20;
   let diagnosticEntries = loadDiagnostics();
 
+  function sanitizeDiagnosticEntry(value = {}) {
+    const reasonCodes = Array.isArray(value.reasonCodes)
+      ? value.reasonCodes.map((entry) => String(entry || "").slice(0, 96)).filter(Boolean).slice(0, 16)
+      : [];
+    return {
+      at: String(value.at || "").slice(0, 64),
+      kind: String(value.kind || "unknown").slice(0, 48),
+      code: String(value.code || "UNKNOWN").slice(0, 96),
+      status: Math.max(0, Math.floor(Number(value.status) || 0)),
+      traceId: String(value.traceId || "").slice(0, 128),
+      runId: String(value.runId || "unknown").slice(0, 80),
+      revision: Math.max(0, Math.floor(Number(value.revision) || 0)),
+      sessionState: String(value.sessionState || "unknown").slice(0, 64),
+      endpoint: String(value.endpoint || "unknown").slice(0, 48),
+      operationId: String(value.operationId || "").slice(0, 128),
+      action: String(value.action || "unknown").slice(0, 64),
+      roomDirectiveId: String(value.roomDirectiveId || "").slice(0, 128),
+      depth: Math.max(0, Math.floor(Number(value.depth) || 0)),
+      roomType: String(value.roomType || "unknown").slice(0, 48),
+      rulesetHash: String(value.rulesetHash || "unknown").slice(0, 96),
+      gameVersion: String(value.gameVersion || "unknown").slice(0, 64),
+      rankEligibility: String(value.rankEligibility || "unknown").slice(0, 32),
+      reasonCodes
+    };
+  }
+
   function loadDiagnostics() {
     try {
       const parsed = JSON.parse(root.localStorage.getItem(RANKED_DIAGNOSTICS_KEY) || "[]");
       if (!Array.isArray(parsed)) return [];
       return parsed.slice(-RANKED_DIAGNOSTICS_LIMIT).filter((entry) => (
         entry && typeof entry === "object" && !Array.isArray(entry)
-      ));
+      )).map(sanitizeDiagnosticEntry);
     } catch {
       return [];
     }
@@ -101,6 +127,14 @@
 
   function recordDiagnostic(kind, input = {}) {
     const { snapshot, state } = diagnosticSnapshot();
+    const pendingOperation = snapshot?.pendingOperation && typeof snapshot.pendingOperation === "object"
+      ? snapshot.pendingOperation
+      : null;
+    const endpoint = String(input.endpoint || pendingOperation?.endpoint || "unknown").slice(0, 48);
+    const action = String(pendingOperation?.body?.type || endpoint || "unknown").slice(0, 64);
+    const directive = state?.currentRoomDirective && typeof state.currentRoomDirective === "object"
+      ? state.currentRoomDirective
+      : null;
     const reasonCodes = Array.isArray(input.reasonCodes)
       ? input.reasonCodes.map((entry) => String(entry || "")).filter(Boolean).slice(0, 16)
       : [];
@@ -113,19 +147,50 @@
       runId: String(state?.runId || snapshot?.runId || "unknown").slice(0, 80),
       revision: Math.max(0, Math.floor(Number(state?.revision ?? snapshot?.revision) || 0)),
       sessionState: String(session?.getState?.() || "unknown").slice(0, 64),
-      endpoint: String(input.endpoint || snapshot?.pendingOperation?.endpoint || "unknown").slice(0, 48),
+      endpoint,
+      operationId: String(pendingOperation?.operationId || "").slice(0, 128),
+      action,
+      roomDirectiveId: String(directive?.directiveId || "").slice(0, 128),
+      depth: Math.max(0, Math.floor(Number(directive?.depth ?? state?.depth) || 0)),
+      roomType: String(directive?.roomType || state?.roomType || "unknown").slice(0, 48),
+      rulesetHash: String(state?.rulesetHash || snapshot?.rulesetHash || "unknown").slice(0, 96),
+      gameVersion: String(root.GAME_VERSION || state?.gameVersion || "unknown").slice(0, 64),
       rankEligibility: String(state?.rankEligibility || "unknown").slice(0, 32),
       reasonCodes
     };
     diagnosticEntries = [...diagnosticEntries, entry].slice(-RANKED_DIAGNOSTICS_LIMIT);
     persistDiagnostics();
+    if (isRankedObserverBotActive()) {
+      try {
+        root.DungeonOnlineV3GameBridge?.recordRankedDiagnostic?.({
+          ...entry,
+          reasonCodes: [...reasonCodes]
+        });
+      } catch {}
+    }
     return entry;
   }
 
   function diagnosticLabel(entry) {
     const runId = String(entry?.runId || "unknown");
     const shortRunId = runId.length > 16 ? `${runId.slice(0, 16)}…` : runId;
-    return `${entry?.code || "UNKNOWN"} · ${shortRunId} · rev ${entry?.revision ?? 0} · ${entry?.endpoint || "unknown"}`;
+    const traceId = String(entry?.traceId || "none");
+    return `${entry?.code || "UNKNOWN"} · ${shortRunId} · rev ${entry?.revision ?? 0} · ${entry?.endpoint || "unknown"} · trace ${traceId}`;
+  }
+
+  function exportDiagnostics(rootDiagnostic) {
+    const payload = {
+      format: "dungeon-ranked-diagnostics-v1",
+      generatedAt: new root.Date().toISOString(),
+      rootDiagnostic: rootDiagnostic ? sanitizeDiagnosticEntry(rootDiagnostic) : null,
+      diagnostics: diagnosticEntries.map(sanitizeDiagnosticEntry)
+    };
+    const stamp = payload.generatedAt.replace(/[:.]/gu, "-");
+    const filename = `ranked-diagnostics-${stamp}.json`;
+    return root.DungeonOnlineV3GameBridge?.exportRankedDiagnostics?.(
+      filename,
+      JSON.stringify(payload, null, 2)
+    ) === true;
   }
 
   function clearPendingExtractionIntent() {
@@ -1022,6 +1087,7 @@
         await resyncCanonical();
       }));
     }
+    controls.push(ui.button("Export diagnostics", () => exportDiagnostics(rootDiagnostic)));
     controls.push(
       ui.button("Resync Ranked Run", () => resyncCanonical().catch(presentError)),
       ui.button("Main Menu", returnToPractice),
@@ -2728,10 +2794,7 @@
     isObserverBotBoundaryPending,
     getSessionState: () => session.getState(),
     getSnapshot: () => client?.getSnapshot() || null,
-    getDiagnostics: () => diagnosticEntries.map((entry) => ({
-      ...entry,
-      reasonCodes: Array.isArray(entry.reasonCodes) ? [...entry.reasonCodes] : []
-    })),
+    getDiagnostics: () => diagnosticEntries.map(sanitizeDiagnosticEntry),
     clearDiagnostics: () => {
       diagnosticEntries = [];
       try { root.localStorage.removeItem(RANKED_DIAGNOSTICS_KEY); } catch {}

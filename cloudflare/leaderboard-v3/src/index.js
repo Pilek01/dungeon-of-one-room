@@ -1731,6 +1731,34 @@ function handleAvailability(url, options) {
   }, compatible ? 200 : 409, { "cache-control": "no-store" });
 }
 
+async function safeRequestDiagnosticContext(request) {
+  const context = {};
+  const operationId = String(request?.headers?.get?.("Idempotency-Key") || "");
+  if (/^[A-Za-z0-9._:-]{8,128}$/u.test(operationId)) {
+    context.operationId = operationId;
+  }
+  if (!request) return context;
+  let body;
+  try {
+    body = await readJsonRequest(request);
+  } catch {
+    return context;
+  }
+  const runId = String(body.runId || "");
+  if (/^run_[a-f0-9]{16,64}$/u.test(runId)) context.runId = runId;
+  const action = String(body.type || "");
+  if (/^[a-z0-9_:-]{1,64}$/u.test(action)) context.action = action;
+  const roomDirectiveId = String(body.roomDirectiveId || "");
+  if (/^[A-Za-z0-9._:-]{1,128}$/u.test(roomDirectiveId)) {
+    context.roomDirectiveId = roomDirectiveId;
+  }
+  const clientProtocolVersion = String(body.clientProtocolVersion || "");
+  if (/^[A-Za-z0-9._:-]{1,64}$/u.test(clientProtocolVersion)) {
+    context.clientProtocolVersion = clientProtocolVersion;
+  }
+  return context;
+}
+
 export function createWorker(workerOptions = {}) {
   const options = {
     ruleset: workerOptions.ruleset,
@@ -1750,6 +1778,10 @@ export function createWorker(workerOptions = {}) {
     async fetch(request, env) {
       const traceId = crypto.randomUUID();
       let requestPath = "unknown";
+      let diagnosticRequest = null;
+      try {
+        diagnosticRequest = request.clone();
+      } catch {}
       try {
         const url = new URL(request.url);
         requestPath = url.pathname;
@@ -1818,6 +1850,7 @@ export function createWorker(workerOptions = {}) {
         const causeCode = String(cause?.code || cause?.message || "INTERNAL_ERROR")
           .split(":")[0]
           .slice(0, 96);
+        const requestContext = await safeRequestDiagnosticContext(diagnosticRequest);
         const errorContext = {
           event: "ranked_request_error",
           traceId,
@@ -1825,7 +1858,8 @@ export function createWorker(workerOptions = {}) {
           method: String(request.method || "").slice(0, 16),
           status: error.status,
           code: error.code,
-          causeCode
+          causeCode,
+          ...requestContext
         };
         options.onDiagnostic?.(errorContext);
         options.onError?.(cause, errorContext);

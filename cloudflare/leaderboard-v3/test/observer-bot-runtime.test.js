@@ -97,6 +97,8 @@ function createHarness(options = {}) {
   const merchantFailures = [];
   const merchantPresentations = [];
   const runtimeSnapshots = [];
+  const diagnosticExports = [];
+  const rankedDiagnostics = [];
   let snapshot = {
     publicState: metaState({
       currentRoomDirective: {
@@ -333,6 +335,13 @@ function createHarness(options = {}) {
       },
       completeRankedRelicReplacement(publicState) {
         replacementCompletions.push(publicState);
+      },
+      exportRankedDiagnostics(filename, text) {
+        diagnosticExports.push({ filename, text });
+        return true;
+      },
+      recordRankedDiagnostic(diagnostic) {
+        rankedDiagnostics.push(diagnostic);
       }
     }
   };
@@ -355,7 +364,9 @@ function createHarness(options = {}) {
     merchantCompletions,
     merchantFailures,
     merchantPresentations,
-    runtimeSnapshots
+    runtimeSnapshots,
+    diagnosticExports,
+    rankedDiagnostics
   };
 }
 
@@ -1082,6 +1093,16 @@ test("a retryable internal checkpoint error stops safely instead of rebuilding t
     currentRoomDirective: room,
     currentRewardEnvelope: { envelopeId: "reward_internal_error", fixedAwards: [] }
   });
+  client.getSnapshot().pendingOperation = {
+    endpoint: "checkpoint",
+    operationId: "op_internal_checkpoint",
+    body: {
+      checkpointToken: "secret-checkpoint-token",
+      recoveryCredential: "secret-recovery-credential",
+      commandJournalDigest: "secret-command-digest",
+      unexpectedPayload: { privateValue: "secret-private-value" }
+    }
+  };
   const runtime = await installRuntime(harness);
   await runtime.onRoomEntered(room);
   await runtime.onLocalRoomCleared({
@@ -1099,7 +1120,131 @@ test("a retryable internal checkpoint error stops safely instead of rebuilding t
 
   assert.deepEqual(harness.calls.map((entry) => entry.action), ["checkpoint"]);
   assert.equal(harness.directives.some((entry) => entry.directiveId === room.directiveId), false);
-  assert.equal(runtime.getDiagnostics().at(-1)?.code, "INTERNAL_ERROR");
+  const diagnostic = runtime.getDiagnostics().at(-1);
+  assert.deepEqual({
+    code: diagnostic.code,
+    traceId: diagnostic.traceId,
+    endpoint: diagnostic.endpoint,
+    operationId: diagnostic.operationId,
+    action: diagnostic.action,
+    roomDirectiveId: diagnostic.roomDirectiveId,
+    depth: diagnostic.depth,
+    roomType: diagnostic.roomType,
+    rulesetHash: diagnostic.rulesetHash
+  }, {
+    code: "INTERNAL_ERROR",
+    traceId: "trace-internal-checkpoint",
+    endpoint: "checkpoint",
+    operationId: "op_internal_checkpoint",
+    action: "checkpoint",
+    roomDirectiveId: room.directiveId,
+    depth: 12,
+    roomType: "combat",
+    rulesetHash: "sha256:boundary"
+  });
+  const reconnect = harness.uiMessages.at(-1);
+  assert.match(reconnect[1], /trace trace-internal-checkpoint/u);
+  const exportButton = reconnect[2].find((button) => button.label === "Export diagnostics");
+  assert.ok(exportButton, "reconnect should expose a diagnostic export");
+  exportButton.onClick();
+  assert.equal(harness.diagnosticExports.length, 1);
+  const exported = JSON.parse(harness.diagnosticExports[0].text);
+  assert.equal(exported.format, "dungeon-ranked-diagnostics-v1");
+  assert.equal(exported.rootDiagnostic.traceId, "trace-internal-checkpoint");
+  assert.equal(exported.diagnostics.at(-1).operationId, "op_internal_checkpoint");
+  assert.doesNotMatch(
+    harness.diagnosticExports[0].text,
+    /secret-checkpoint-token|secret-recovery-credential|secret-command-digest|secret-private-value/u
+  );
+});
+
+test("a blocking Observer Bot error records one redacted Ranked trace event", async () => {
+  const room = {
+    directiveId: "directive_observer_diagnostic",
+    roomNonce: "nonce_observer_diagnostic",
+    depth: 10,
+    roomType: "boss"
+  };
+  const internalError = Object.assign(new Error("Internal event failure."), {
+    code: "INTERNAL_ERROR",
+    status: 500,
+    retryable: true,
+    traceId: "trace-observer-internal"
+  });
+  const harness = createHarness({
+    observerBotActive: true,
+    boundarySettlement: true,
+    async onCheckpoint() { throw internalError; }
+  });
+  const client = harness.root.DungeonRankedV3Client.createRankedClient();
+  client.getSnapshot().publicState = metaState({
+    revision: 10,
+    rulesetHash: "sha256:observer-diagnostic",
+    assistanceClass: "observer_bot",
+    currentRoomDirective: room,
+    currentRewardEnvelope: { envelopeId: "reward_observer_diagnostic", fixedAwards: [] }
+  });
+  client.getSnapshot().pendingOperation = {
+    endpoint: "checkpoint",
+    operationId: "op_observer_diagnostic",
+    body: { checkpointToken: "secret-observer-token" }
+  };
+  const runtime = await installRuntime(harness);
+  await runtime.onRoomEntered(room);
+  await runtime.onLocalRoomCleared({
+    turnCount: 3,
+    rewardClaims: [],
+    reportedGoldDelta: 0,
+    completionCapability: harness.integrityContexts[0].completionCapability
+  });
+
+  runtime.onPortalEntry();
+  await waitFor(
+    () => harness.uiMessages.at(-1)?.[0] === "Ranked reconnect required",
+    "Observer diagnostic error did not enter recovery"
+  );
+
+  assert.equal(harness.rankedDiagnostics.length, 1);
+  assert.deepEqual({
+    code: harness.rankedDiagnostics[0].code,
+    traceId: harness.rankedDiagnostics[0].traceId,
+    operationId: harness.rankedDiagnostics[0].operationId,
+    depth: harness.rankedDiagnostics[0].depth,
+    roomType: harness.rankedDiagnostics[0].roomType
+  }, {
+    code: "INTERNAL_ERROR",
+    traceId: "trace-observer-internal",
+    operationId: "op_observer_diagnostic",
+    depth: 10,
+    roomType: "boss"
+  });
+  assert.doesNotMatch(JSON.stringify(harness.rankedDiagnostics), /secret-observer-token/u);
+});
+
+test("persisted Ranked diagnostics discard unrecognized local fields", async () => {
+  const harness = createHarness({ observerBotActive: false });
+  harness.root.localStorage.setItem("dungeonOnlineV3Diagnostics:v1", JSON.stringify([{
+    at: "2026-08-28T00:00:00.000Z",
+    kind: "client_error",
+    code: "INTERNAL_ERROR",
+    traceId: "trace-persisted-safe",
+    runId: "run_persisted_safe",
+    revision: 4,
+    endpoint: "event",
+    checkpointToken: "secret-persisted-token",
+    recoveryCredential: "secret-persisted-credential",
+    nested: { privateValue: "secret-persisted-value" }
+  }]));
+
+  const runtime = await installRuntime(harness);
+  const diagnostics = runtime.getDiagnostics();
+
+  assert.equal(diagnostics.length, 1);
+  assert.equal(diagnostics[0].traceId, "trace-persisted-safe");
+  assert.doesNotMatch(
+    JSON.stringify(diagnostics),
+    /checkpointToken|recoveryCredential|secret-persisted/u
+  );
 });
 
 test("failed automatic resync keeps the first diagnostic as the recovery root error", async () => {

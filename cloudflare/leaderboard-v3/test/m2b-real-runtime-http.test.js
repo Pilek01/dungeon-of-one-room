@@ -192,6 +192,43 @@ test("rejected registered requests emit a traceable diagnostic without request d
   assert.doesNotMatch(JSON.stringify(harness.diagnostics), /unexpectedClientField|must-not-be-logged/u);
 });
 
+test("rejected Ranked events log only safe request correlation fields", async () => {
+  const harness = createRealHarness();
+  const started = (await harness.start("diagnostic-event-start")).payload;
+  const session = (await harness.select(started, 0, "diagnostic-event-select")).payload;
+  const directive = session.metaState.currentRoomDirective;
+  const rejected = await harness.call("/api/v3/runs/event", {
+    runId: session.runId,
+    checkpointToken: session.checkpointToken,
+    roomDirectiveId: directive.directiveId,
+    roomNonce: directive.roomNonce,
+    type: "report_fatal_event",
+    payload: { classification: "local_fatal_event" },
+    clientProtocolVersion: "ranked-v3-checkpoint-1",
+    unexpectedClientField: "must-not-be-logged"
+  }, "diagnostic-event-operation");
+
+  assert.equal(rejected.response.status, 400);
+  const diagnostic = harness.diagnostics.at(-1);
+  assert.deepEqual({
+    runId: diagnostic.runId,
+    operationId: diagnostic.operationId,
+    action: diagnostic.action,
+    roomDirectiveId: diagnostic.roomDirectiveId,
+    clientProtocolVersion: diagnostic.clientProtocolVersion
+  }, {
+    runId: session.runId,
+    operationId: "diagnostic-event-operation",
+    action: "report_fatal_event",
+    roomDirectiveId: directive.directiveId,
+    clientProtocolVersion: "ranked-v3-checkpoint-1"
+  });
+  assert.doesNotMatch(
+    JSON.stringify(diagnostic),
+    new RegExp(`${session.checkpointToken}|${directive.roomNonce}|unexpectedClientField|must-not-be-logged`, "u")
+  );
+});
+
 test("authenticated starting selection returns one deterministic first room and exact retry", async () => {
   const harness = createRealHarness();
   const started = (await harness.start()).payload;

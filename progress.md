@@ -2102,3 +2102,22 @@ Updated next good targets
 - D1 retention now removes dependent non-finalized leaderboard snapshots before
   expired non-finalized runs in one batch, avoiding the observed foreign-key
   cleanup failure while preserving finalized entries.
+
+## 2026-08-28 - Ranked and Observer Bot diagnostic correlation
+
+- Ranked recovery diagnostics now retain a bounded, explicit allowlist of safe
+  correlation fields, including the complete trace ID, operation ID, action,
+  directive, depth, room type, ruleset, and game version.
+- The reconnect screen can export a redacted diagnostic JSON package. When the
+  Observer Bot is active, the same safe entry is also embedded in its trace so
+  a future Worker error can be matched to the exact client action.
+- Worker exception logs now add bounded request correlation context without
+  recording request bodies, tokens, nonces, credentials, digests, or arbitrary
+  client fields. Public error behavior and fail-closed recovery are unchanged.
+- Focused regression tests passed 77/77. Ranked recovery, current boot, protected
+  baseline, phase verification (1080/1080), guard verification (15/15), generated
+  Pages bundle syntax, and visual screenshot review all passed.
+- No gameplay, ruleset, D1 migration, commit, push, or deployment was included.
+  The already-finished production `INTERNAL_ERROR` cannot be reconstructed after
+  the fact; the added correlation is intended to identify its source on the next
+  occurrence.

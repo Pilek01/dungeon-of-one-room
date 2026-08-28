@@ -727,6 +727,15 @@ test("M4 game integration remains a narrow directive/checkpoint bridge", () => {
   assert.match(builder, /onMerchantLeave\?\.\(\{ enterPortal: true \}\)/u);
 });
 
+test("Observer Bot exports correlated redacted Ranked diagnostics", () => {
+  const builder = fs.readFileSync(new URL("../../../scripts/build-pages-v3.mjs", import.meta.url), "utf8");
+  assert.match(builder, /recordRankedDiagnostic\(diagnostic\)/u);
+  assert.match(builder, /appendObserverBotTrace\(\s*"ranked_error"/u);
+  assert.match(builder, /# Ranked Diagnostics \(JSONL\)/u);
+  assert.match(builder, /exportRankedDiagnostics\(filename, text\)/u);
+  assert.doesNotMatch(builder, /rankedDiagnostic[^\n]*(checkpointToken|recoveryCredential)/u);
+});
+
 test("public Ranked state carries the canonical potion capability marker only for v1", () => {
   const runtime = fs.readFileSync(new URL("../src/domain/ruleset-runtime.js", import.meta.url), "utf8");
   assert.match(runtime, /\.\.\.\(state\.potionPolicyVersion === "v1"/u);

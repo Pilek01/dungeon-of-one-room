@@ -1377,10 +1377,74 @@ for (const [sourceText, replacement] of rankedSpecialRoomScalingReplacements) {
   }
   game = game.replace(sourceText, replacement);
 }
+const rankedDiagnosticsGameReplacements = [
+  [
+`  function buildObserverBotTraceText() {`,
+`  function sanitizeRankedDiagnostic(diagnostic = {}) {
+    const reasonCodes = Array.isArray(diagnostic.reasonCodes)
+      ? diagnostic.reasonCodes.map((entry) => String(entry || "").slice(0, 96)).filter(Boolean).slice(0, 16)
+      : [];
+    return {
+      at: String(diagnostic.at || "").slice(0, 64),
+      kind: String(diagnostic.kind || "unknown").slice(0, 48),
+      code: String(diagnostic.code || "UNKNOWN").slice(0, 96),
+      status: Math.max(0, Math.floor(Number(diagnostic.status) || 0)),
+      traceId: String(diagnostic.traceId || "").slice(0, 128),
+      runId: String(diagnostic.runId || "unknown").slice(0, 80),
+      revision: Math.max(0, Math.floor(Number(diagnostic.revision) || 0)),
+      sessionState: String(diagnostic.sessionState || "unknown").slice(0, 64),
+      endpoint: String(diagnostic.endpoint || "unknown").slice(0, 48),
+      operationId: String(diagnostic.operationId || "").slice(0, 128),
+      action: String(diagnostic.action || "unknown").slice(0, 64),
+      roomDirectiveId: String(diagnostic.roomDirectiveId || "").slice(0, 128),
+      depth: Math.max(0, Math.floor(Number(diagnostic.depth) || 0)),
+      roomType: String(diagnostic.roomType || "unknown").slice(0, 48),
+      rulesetHash: String(diagnostic.rulesetHash || "unknown").slice(0, 96),
+      gameVersion: String(diagnostic.gameVersion || GAME_VERSION).slice(0, 64),
+      rankEligibility: String(diagnostic.rankEligibility || "unknown").slice(0, 32),
+      reasonCodes
+    };
+  }
+
+  function buildObserverBotTraceText() {`
+  ],
+  [
+`    const events = Array.isArray(bot?.traceEvents) ? bot.traceEvents : [];`,
+`    const events = Array.isArray(bot?.traceEvents) ? bot.traceEvents : [];
+    const rawRankedDiagnostics = window.DungeonOnlineV3?.getDiagnostics?.();
+    const rankedDiagnostics = Array.isArray(rawRankedDiagnostics)
+      ? rawRankedDiagnostics.slice(-20).map(sanitizeRankedDiagnostic)
+      : [];`
+  ],
+  [
+    '    lines.push(`events_total=${events.length}`);',
+    '    lines.push(`events_total=${events.length}`);\n    lines.push(`ranked_diagnostic_count=${rankedDiagnostics.length}`);'
+  ],
+  [
+    '    lines.push("# Schema");',
+    '    lines.push("# Ranked Diagnostics (JSONL)");\n    for (const diagnostic of rankedDiagnostics) {\n      lines.push(JSON.stringify(diagnostic));\n    }\n    lines.push("");\n    lines.push("# Schema");'
+  ]
+];
+for (const [sourceText, replacement] of rankedDiagnosticsGameReplacements) {
+  if (!game.includes(sourceText)) {
+    throw new Error(`Missing Ranked diagnostics source: ${sourceText.slice(0, 80)}`);
+  }
+  game = game.replace(sourceText, replacement);
+}
 const rankedGoldGameReplacements = [
   [
 `  window.DungeonOnlineV3GameBridge = Object.freeze({`,
 `  window.DungeonOnlineV3GameBridge = Object.freeze({
+    recordRankedDiagnostic(diagnostic) {
+      return appendObserverBotTrace(
+        "ranked_error",
+        { rankedDiagnostic: sanitizeRankedDiagnostic(diagnostic) },
+        { force: true }
+      );
+    },
+    exportRankedDiagnostics(filename, text) {
+      return downloadTextFile(filename, text);
+    },
     refreshRankedHud() {
       markUiDirty();
     },
