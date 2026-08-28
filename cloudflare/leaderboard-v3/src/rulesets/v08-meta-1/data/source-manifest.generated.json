@@ -6,8 +6,8 @@
   "sources": [
     {
       "file": "balance-progression.js",
-      "byteLength": 4872,
-      "sha256": "39377acd08ae734b4163dbdc127eddd287cdbb99239f70c7f4fee818a87ad295",
+      "byteLength": 6085,
+      "sha256": "53f40c37eab1dea9a271fd573ebfa5fa4ed6cadd2a049accfdd33892037ded2f",
       "evidenceSymbols": [
         "isRoomTypeUnlocked",
         "relic_ward",
@@ -77,8 +77,8 @@
     },
     {
       "file": "game.js",
-      "byteLength": 1374811,
-      "sha256": "5a7bffc946cd45a83e174cfc9298cdede65418e340b065a8442c4b5ad65ae6a7",
+      "byteLength": 1373821,
+      "sha256": "3ec189cc4e130dd20ebf0133b6b7bf5e7bf6ffb22c536913d9af6c599489d043",
       "evidenceSymbols": [
         "MAX_DEPTH",
         "MAX_RELICS",
@@ -112,8 +112,8 @@
     },
     {
       "file": "loot-tables.js",
-      "byteLength": 2509,
-      "sha256": "9343a62db72aacd89d16ab0efa3c1fba0c40d08cc1e82e10795990299467e0a9",
+      "byteLength": 2758,
+      "sha256": "3e6d12bd64daded964d881be9dbe52abdc1306663faad88155d07892d0066a87",
       "evidenceSymbols": [
         "CHEST_THRESHOLD_TREASURE",
         "CHEST_THRESHOLD_STANDARD",

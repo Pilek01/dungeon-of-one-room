@@ -1393,6 +1393,7 @@ const rankedGoldGameReplacements = [
       onlineV3RoomCompletionCapability = context.completionCapability || null;
       onlineV3BoundedProcClaims = context.boundedProcClaims === true;
       onlineV3BoundedCombatResources = context.boundedCombatResources === true;
+      onlineV3OrderedPotionClaims = context.orderedPotionClaims === true;
       onlineV3RoomStartingGold = Math.max(
         0,
         Math.floor(Number(context.startingGold) || 0)
@@ -1401,6 +1402,13 @@ const rankedGoldGameReplacements = [
     },
     captureRankedBoundary() {
       if (!state.onlineV3Ranked) return null;
+      const combatResources = onlineV3BoundedCombatResources
+        ? window.DungeonRankedV3Recorder.canonicalizeBoundaryCombatResources({
+            hp: state.player.hp,
+            maxHp: state.player.maxHp,
+            shrineMaxHpBonus: state.player.shrineMaxHpBonus
+          })
+        : null;
       const boundary = {
         turnCount: Math.max(
           0,
@@ -1411,12 +1419,7 @@ const rankedGoldGameReplacements = [
           0,
           Math.floor(Number(state.player.gold) || 0) - onlineV3RoomStartingGold
         ),
-        ...(onlineV3BoundedCombatResources
-          ? {
-              hp: Math.max(0, Math.floor(Number(state.player.hp) || 0)),
-              maxHp: Math.max(0, Math.floor(Number(state.player.maxHp) || 0))
-            }
-          : {}),
+        ...(combatResources || {}),
         completionCapability: onlineV3RoomCompletionCapability
       };
       onlineV3RoomCompletionCapability = null;
@@ -1434,7 +1437,8 @@ const rankedGoldGameReplacements = [
         0
       );
       onlineV3RewardRecorder = window.DungeonRankedV3Recorder?.createRewardClaimRecorder?.({
-        initialChestCount: consumedChestCount
+        initialChestCount: consumedChestCount,
+        orderedPotionClaims: onlineV3OrderedPotionClaims
       }) || null;
       onlineV3RoomStartingGold = Math.max(0, Math.floor(Number(state.player.gold) || 0));
       onlineV3RoomStartingTurn = Math.max(0, Math.floor(Number(state.turn) || 0));
@@ -1471,6 +1475,7 @@ const rankedGoldGameReplacements = [
   let onlineV3RoomCompletionCapability = null;
   let onlineV3BoundedProcClaims = false;
   let onlineV3BoundedCombatResources = false;
+  let onlineV3OrderedPotionClaims = false;
   let onlineV3RoomStartingGold = 0;
   let onlineV3RoomStartingTurn = 0;
   let onlineV3RoomClearDirectiveId = "";
@@ -1534,6 +1539,10 @@ const rankedGoldGameReplacements = [
   }
   function hydrateRankedChestCarry(publicState = {}, options = {}) {
     const bonuses = publicState?.campaign?.chestBonuses || {};
+    const schemaVersion = bonuses.schemaVersion === undefined ? 1 : bonuses.schemaVersion;
+    if (schemaVersion !== 1 && schemaVersion !== 2) {
+      throw new TypeError("RANKED_CHEST_BONUS_SCHEMA_UNSUPPORTED");
+    }
     const nextAttackBuckets = sanitizeChestAttackDepthBuckets(bonuses.attackDepthBuckets);
     const nextArmorBuckets = sanitizeChestAttackDepthBuckets(bonuses.armorDepthBuckets);
     const nextHealthBuckets = sanitizeChestAttackDepthBuckets(bonuses.healthDepthBuckets);
@@ -1541,10 +1550,23 @@ const rankedGoldGameReplacements = [
       sum + Number(count || 0) * (health
         ? getChestHealthUpgradeFlatByBucket(Number(bucket))
         : getChestUpgradeFlatByBucket(base, Number(bucket))), 0);
-    const next = {
+    const projected = {
       attack: flatFor(nextAttackBuckets, CHEST_ATTACK_UPGRADE_FLAT),
       armor: flatFor(nextArmorBuckets, CHEST_ARMOR_UPGRADE_FLAT),
       health: flatFor(nextHealthBuckets, CHEST_HEALTH_UPGRADE_FLAT, true)
+    };
+    const exactFlat = (field, fallback) => {
+      if (schemaVersion !== 2) return fallback;
+      const value = bonuses[field];
+      if (!Number.isSafeInteger(value) || value < 0) {
+        throw new TypeError("RANKED_CHEST_BONUS_FLAT_INVALID:" + field);
+      }
+      return value;
+    };
+    const next = {
+      attack: exactFlat("attackFlat", projected.attack),
+      armor: exactFlat("armorFlat", projected.armor),
+      health: exactFlat("healthFlat", projected.health)
     };
     const previous = {
       attack: Math.max(0, Number(state.sessionChestAttackFlat) || 0),
@@ -1708,7 +1730,9 @@ const rankedGoldGameReplacements = [
     if (state.onlineV3Ranked && state.onlineV3Directive) {`,
 `  function buildRoom() {
     onlineV3RewardRecorder = state.onlineV3Ranked
-      ? window.DungeonRankedV3Recorder?.createRewardClaimRecorder?.() || null
+      ? window.DungeonRankedV3Recorder?.createRewardClaimRecorder?.({
+          orderedPotionClaims: onlineV3OrderedPotionClaims
+        }) || null
       : null;
     if (state.onlineV3Ranked && state.onlineV3Directive) {`
   ],
@@ -1780,11 +1804,13 @@ const rankedGoldGameReplacements = [
   ],
   [
 `    const chestOutcome = lootTablesApi.rollChestOutcome({
+      depth: state.depth,
       inTreasureRoom,
       hasShrineWard: hasRelic("shrineward"),
       rng: Math.random
     });`,
 `    const chestOutcome = onlineV3CanonicalChestOutcome || lootTablesApi.rollChestOutcome({
+      depth: state.depth,
       inTreasureRoom,
       hasShrineWard: hasRelic("shrineward"),
       rng: Math.random

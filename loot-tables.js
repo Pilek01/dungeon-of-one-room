@@ -1,6 +1,7 @@
 (() => {
   const CHEST_BLESSING_LIFE_CHANCE = 0;
   const SHRINE_BLESSING_CHANCE = 0.85;
+  const MAP_FRAGMENT_MIN_DEPTH = 11;
 
   const CHEST_THRESHOLD_TREASURE = {
     health: 0.12,
@@ -22,8 +23,9 @@
     gold: 0.97
   };
 
-  function rollChestOutcome({ inTreasureRoom = false, hasShrineWard = false, rng = Math.random } = {}) {
+  function rollChestOutcome({ depth = 0, inTreasureRoom = false, hasShrineWard = false, rng = Math.random } = {}) {
     const table = inTreasureRoom ? CHEST_THRESHOLD_TREASURE : CHEST_THRESHOLD_STANDARD;
+    const safeDepth = Math.max(0, Math.floor(Number(depth) || 0));
     const roll = rng();
     let outcome = "trap";
     if (roll < table.health) outcome = "health";
@@ -33,6 +35,9 @@
     else if (roll < table.potion) outcome = "potion";
     else if (roll < table.map_fragment) outcome = "map_fragment";
     else if (roll < table.gold) outcome = "gold";
+    if (outcome === "map_fragment" && safeDepth < MAP_FRAGMENT_MIN_DEPTH) {
+      outcome = "gold";
+    }
     if (outcome === "trap" && hasShrineWard) {
       outcome = "gold";
     }
@@ -68,6 +73,7 @@
   window.DungeonLootTables = {
     CHEST_BLESSING_LIFE_CHANCE,
     SHRINE_BLESSING_CHANCE,
+    MAP_FRAGMENT_MIN_DEPTH,
     CHEST_THRESHOLD_TREASURE,
     CHEST_THRESHOLD_STANDARD,
     rollChestOutcome,

@@ -38,7 +38,7 @@ function directive(roomType = "combat") {
   };
 }
 
-async function issuedState({ roll = 0, depth = 1, campaign, relicId, pact, modifierIds, roomType = "combat" } = {}) {
+async function issuedState({ roll = 0, depth = 1, campaign, relicId, pact, modifierIds, roomType = "combat", capabilities = { canonicalChestOutcomes: "v1" } } = {}) {
   const state = createInitialMetaStateV08({ campaign }, context);
   state.status = "active";
   state.depth = depth;
@@ -69,7 +69,7 @@ async function issuedState({ roll = 0, depth = 1, campaign, relicId, pact, modif
     envelopeId: `reward_canonical_${depth}_${roll}`,
     ...context,
     randomOracle: { async deriveIntInclusive() { return roll; } },
-    capabilities: { canonicalChestOutcomes: "v1" }
+    capabilities
   });
   state.currentRoomDirective = currentDirective;
   state.currentRewardEnvelope = envelope;
@@ -176,9 +176,24 @@ test("canonical issuance follows the legacy standard chest distribution categori
     [980_000, "trap"]
   ];
   for (const [roll, outcome] of expected) {
-    const state = await issuedState({ roll });
+    const state = await issuedState({ roll, depth: 11 });
     assert.equal(state.currentRewardEnvelope.claimSlots[0].canonicalOutcome.outcome, outcome);
   }
+});
+
+test("canonical map fragments become gold before depth 11 and unlock at depth 11", async () => {
+  const historical = await issuedState({ roll: 920_000, depth: 10 });
+  assert.equal(historical.currentRewardEnvelope.claimSlots[0].canonicalOutcome.outcome, "map_fragment");
+
+  const capabilities = {
+    canonicalChestOutcomes: "v1",
+    mapFragmentMinDepth: "v1"
+  };
+  const depth10 = await issuedState({ roll: 920_000, depth: 10, capabilities });
+  assert.equal(depth10.currentRewardEnvelope.claimSlots[0].canonicalOutcome.outcome, "gold");
+
+  const depth11 = await issuedState({ roll: 920_000, depth: 11, capabilities });
+  assert.equal(depth11.currentRewardEnvelope.claimSlots[0].canonicalOutcome.outcome, "map_fragment");
 });
 
 test("canonical issuance resolves Shrine Ward, Alchemist, and Avarice conversions", async () => {
@@ -483,7 +498,7 @@ test("canonical claims reject wrong, reused, other-slot, and stale bindings", as
 
 test("canonical resource and gold categories require their exact evidence fields", async () => {
   for (const [roll, required] of [[800_000, "count"], [920_000, "count"], [950_000, "baseAmount"]]) {
-    const state = await issuedState({ roll });
+    const state = await issuedState({ roll, depth: 11 });
     const slot = state.currentRewardEnvelope.claimSlots[0];
     const evidence = { outcome: slot.canonicalOutcome.outcome, awardId: slot.canonicalOutcome.awardId };
     await assert.rejects(

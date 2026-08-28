@@ -6,6 +6,7 @@
   const RELIC_WARD_CHANCES = Object.freeze([0, 0.33, 0.66, 1]);
   const RELIC_WARD_UNLOCK_DEPTHS = Object.freeze([10, 30, 50]);
   const RELIC_APPRAISAL_UNLOCK_DEPTHS = Object.freeze([10, 20, 30]);
+  const CHEST_BUCKET_SIZE = 10;
 
   function safeLevel(value, maximum = Number.MAX_SAFE_INTEGER) {
     return Math.max(0, Math.min(maximum, Math.floor(Number(value) || 0)));
@@ -105,6 +106,33 @@
     return true;
   }
 
+  function getChestCarryFlatForDepth(stat, depth) {
+    const safeDepth = Math.max(0, Math.floor(Number(depth) || 0));
+    if (stat === "health") {
+      if (safeDepth >= 31) return 10;
+      if (safeDepth >= 21) return 7;
+      return 5;
+    }
+    if (safeDepth >= 40) return 5;
+    if (safeDepth >= 21) return 4;
+    if (safeDepth >= 11) return 3;
+    return 2;
+  }
+
+  function normalizeChestCarryFlat({ stat, flat, depthBuckets } = {}) {
+    const normalizedStat = stat === "health" ? "health" : stat === "armor" ? "armor" : "attack";
+    const buckets = depthBuckets && typeof depthBuckets === "object" && !Array.isArray(depthBuckets)
+      ? depthBuckets
+      : {};
+    const maximum = Object.entries(buckets).reduce((sum, [rawBucket, rawCount]) => {
+      const bucket = Math.max(0, Math.floor(Number(rawBucket) || 0));
+      const count = Math.max(0, Math.floor(Number(rawCount) || 0));
+      const bucketEndDepth = bucket * CHEST_BUCKET_SIZE + CHEST_BUCKET_SIZE - 1;
+      return sum + count * getChestCarryFlatForDepth(normalizedStat, bucketEndDepth);
+    }, 0);
+    return Math.max(0, Math.min(maximum, Math.floor(Number(flat) || 0)));
+  }
+
   const api = Object.freeze({
     ARMOR_REDUCTION_CAP,
     getArmorDamageReduction,
@@ -119,7 +147,8 @@
     getEligibleDeathRelicIndices,
     getCampUpgradeUnlockDepth,
     isCampUpgradeTierUnlocked,
-    isRoomTypeUnlocked
+    isRoomTypeUnlocked,
+    normalizeChestCarryFlat
   });
 
   if (typeof module !== "undefined" && module.exports) module.exports = api;

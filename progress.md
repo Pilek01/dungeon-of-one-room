@@ -1,5 +1,16 @@
 Original prompt: Diagnose and repair the Ranked Observer Bot production crashes, verify the smallest robust fixes, merge them to main, and deploy a working release.
 
+## 2026-08-28 - Shrine HP, Map Fragment depth gate, potion ordering, and exact chest carry verified locally
+
+- Ranked boundary capture now subtracts only the currently active temporary Shrine maximum-HP bonus before reporting combat resources. Local Shrine healing and display remain unchanged, while the Worker continues to validate exact canonical HP/max HP.
+- Practice and the new Ranked ruleset convert a would-be Map Fragment to the existing gold outcome before depth 11; fragments unlock at depth 11 without an extra RNG roll. Existing fragment progress is preserved.
+- Ranked potion claims now preserve their order around canonical potion chests. A legal `use x3 -> potion chest -> use x1` sequence no longer collapses into an impossible four-use claim before the chest. The Worker keeps the existing per-state and total limits, rejects adjacent duplicate segments, and applies one strict legacy repair only when a single later canonical potion chest proves the old aggregate ordering.
+- Practice Continue and Ranked checkpoint hydration now preserve the exact Worker-issued chest ATK/ARM/HP values at depth-scaling boundaries. The versioned v2 ledger validates exact totals against its bounded depth buckets; v1 states and historical rulesets keep their previous projection.
+- The combined behavior is hash-gated at `sha256:78ae2f6f797063b7f364e5652e3367f6b26d651302f5c6038576d304dc442ec3`. The previous production hash `sha256:25dbdb962a478b3a46375ad5b25a3603041edd95ff45b51e2846b13ce7ea2989` remains registered with its prior fragment behavior and the narrow potion-order compatibility repair for already-pinned runs.
+- RED/GREEN regressions cover the Shrine 125/125 -> canonical 115/115 boundary, damage clamping, unchanged non-Shrine resources, generated Pages bridge wiring, Practice depth 10/11 rolls, canonical Ranked depth 10/11 issuance, exact chest carry at depth 11/21/31 boundaries, forged v2 total rejection, previous-hash compatibility, ordered potion segments, strict legacy repair, excess use rejection, and adjacent-duplicate rejection.
+- Fresh combined checks pass: guard 15/15, Worker/ruleset/protocol phase 1076/1076, current-tree Practice Save/Continue, current-tree Ranked lifecycle, and protected committed baseline 3/3.
+- No commit, push, deployment, migration, or production ruleset activation was performed in this local implementation task.
+
 ## 2026-08-24 - Ranked boundary single-flight repair verified
 
 - Added scope: prevent duplicate/out-of-order portal checkpoint operations while preserving the first recovery diagnostic and all fail-closed server validation.

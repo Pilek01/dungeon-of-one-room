@@ -255,7 +255,7 @@ test("capable fatal events settle the journal before a prevented fatal and keep 
   const { state, context } = await activeRoom(
     "run_boundary_event_fatal",
     V08_META_1_LOCAL_RELEASE_DESCRIPTOR.capabilities,
-    (prepared) => { prepared.build.resources.hasSecondChance = true; }
+    (prepared) => { prepared.depth = 10; prepared.build.resources.hasSecondChance = true; }
   );
   assert.equal(state.currentRewardEnvelope.claimSlots[0].canonicalOutcome.outcome, "map_fragment");
   initializeRankEligibility(state, { integrityVersion: 1 });
@@ -281,6 +281,7 @@ test("same fatal journal with a changed bounded payload rejects before a second 
     "run_boundary_event_fatal_idempotency_mismatch",
     { ...V08_META_1_LOCAL_RELEASE_DESCRIPTOR.capabilities, boundedCombatResources: "v1" },
     (prepared) => {
+      prepared.depth = 10;
       prepared.build.resources.hp = 80;
       prepared.build.resources.maxHp = 100;
       prepared.build.resources.hasSecondChance = true;
@@ -323,7 +324,7 @@ test("an impossible boundary claim makes the run provisional but still resolves 
   const { state, context } = await activeRoom(
     "run_boundary_event_invalid_claim",
     V08_META_1_LOCAL_RELEASE_DESCRIPTOR.capabilities,
-    (prepared) => { prepared.build.resources.hasSecondChance = true; }
+    (prepared) => { prepared.depth = 10; prepared.build.resources.hasSecondChance = true; }
   );
   assert.equal(state.currentRewardEnvelope.claimSlots[0].canonicalOutcome.outcome, "map_fragment");
   initializeRankEligibility(state, { integrityVersion: 1 });
@@ -351,7 +352,8 @@ test("an impossible boundary claim makes the run provisional but still resolves 
 test("capable emergency extraction settles without clear and edited totals become provisional", async () => {
   const { state, context } = await activeRoom(
     "run_boundary_event_emergency",
-    V08_META_1_LOCAL_RELEASE_DESCRIPTOR.capabilities
+    V08_META_1_LOCAL_RELEASE_DESCRIPTOR.capabilities,
+    (prepared) => { prepared.depth = 10; }
   );
   initializeRankEligibility(state, { integrityVersion: 1 });
   captureRankIntegrityRoomContext(state);

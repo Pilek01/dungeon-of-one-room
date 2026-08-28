@@ -10,13 +10,13 @@
     },
     {
       "file": "game.js",
-      "byteLength": 1374811,
-      "sha256": "5a7bffc946cd45a83e174cfc9298cdede65418e340b065a8442c4b5ad65ae6a7"
+      "byteLength": 1373821,
+      "sha256": "3ec189cc4e130dd20ebf0133b6b7bf5e7bf6ffb22c536913d9af6c599489d043"
     },
     {
       "file": "loot-tables.js",
-      "byteLength": 2509,
-      "sha256": "9343a62db72aacd89d16ab0efa3c1fba0c40d08cc1e82e10795990299467e0a9"
+      "byteLength": 2758,
+      "sha256": "3e6d12bd64daded964d881be9dbe52abdc1306663faad88155d07892d0066a87"
     },
     {
       "file": "merchant-curation.js",

@@ -957,7 +957,8 @@
     getEligibleDeathRelicIndices,
     getCampUpgradeUnlockDepth,
     isCampUpgradeTierUnlocked,
-    isRoomTypeUnlocked
+    isRoomTypeUnlocked,
+    normalizeChestCarryFlat
   } = balanceProgressionApi;
   const {
     RARITY,
@@ -5297,41 +5298,23 @@
     state.campStartDepthPromptOpen = nextPhase === "camp" && Boolean(snapshot.campStartDepthPromptOpen);
     state.campStartDepthSelectionIndex = Math.max(0, Number(snapshot.campStartDepthSelectionIndex) || 0);
     state.sessionChestAttackDepthBuckets = sanitizeChestAttackDepthBuckets(snapshot.sessionChestAttackDepthBuckets);
-    const maxSessionChestFlat = Object.entries(state.sessionChestAttackDepthBuckets)
-      .reduce((sum, [bucketKey, rawCount]) => {
-        const bucketIndex = Math.max(0, Math.floor(Number(bucketKey) || 0));
-        const count = Math.max(0, Number(rawCount) || 0);
-        return sum + count * getChestUpgradeFlatByBucket(CHEST_ATTACK_UPGRADE_FLAT, bucketIndex);
-      }, 0);
-    state.sessionChestAttackFlat = clamp(
-      Math.max(0, Number(snapshot.sessionChestAttackFlat) || 0),
-      0,
-      Math.max(0, maxSessionChestFlat)
-    );
+    state.sessionChestAttackFlat = normalizeChestCarryFlat({
+      stat: "attack",
+      flat: snapshot.sessionChestAttackFlat,
+      depthBuckets: state.sessionChestAttackDepthBuckets
+    });
     state.sessionChestArmorDepthBuckets = sanitizeChestAttackDepthBuckets(snapshot.sessionChestArmorDepthBuckets);
-    const maxSessionChestArmorFlat = Object.entries(state.sessionChestArmorDepthBuckets)
-      .reduce((sum, [bucketKey, rawCount]) => {
-        const bucketIndex = Math.max(0, Math.floor(Number(bucketKey) || 0));
-        const count = Math.max(0, Number(rawCount) || 0);
-        return sum + count * getChestUpgradeFlatByBucket(CHEST_ARMOR_UPGRADE_FLAT, bucketIndex);
-      }, 0);
-    state.sessionChestArmorFlat = clamp(
-      Math.max(0, Number(snapshot.sessionChestArmorFlat) || 0),
-      0,
-      Math.max(0, maxSessionChestArmorFlat)
-    );
+    state.sessionChestArmorFlat = normalizeChestCarryFlat({
+      stat: "armor",
+      flat: snapshot.sessionChestArmorFlat,
+      depthBuckets: state.sessionChestArmorDepthBuckets
+    });
     state.sessionChestHealthDepthBuckets = sanitizeChestAttackDepthBuckets(snapshot.sessionChestHealthDepthBuckets);
-    const maxSessionChestHealthFlat = Object.entries(state.sessionChestHealthDepthBuckets)
-      .reduce((sum, [bucketKey, rawCount]) => {
-        const bucketIndex = Math.max(0, Math.floor(Number(bucketKey) || 0));
-        const count = Math.max(0, Number(rawCount) || 0);
-        return sum + count * getChestHealthUpgradeFlatByBucket(bucketIndex);
-      }, 0);
-    state.sessionChestHealthFlat = clamp(
-      Math.max(0, Number(snapshot.sessionChestHealthFlat) || 0),
-      0,
-      Math.max(0, maxSessionChestHealthFlat)
-    );
+    state.sessionChestHealthFlat = normalizeChestCarryFlat({
+      stat: "health",
+      flat: snapshot.sessionChestHealthFlat,
+      depthBuckets: state.sessionChestHealthDepthBuckets
+    });
 
     state.runMods = {
       goldMultiplier: Number(snapshot.runMods?.goldMultiplier) || 1,
@@ -17371,6 +17354,7 @@
     }
     const inTreasureRoom = state.roomType === "treasure";
     const chestOutcome = lootTablesApi.rollChestOutcome({
+      depth: state.depth,
       inTreasureRoom,
       hasShrineWard: hasRelic("shrineward"),
       rng: Math.random

@@ -145,6 +145,69 @@ test("Ranked reward recorder preserves v0.8 room-clear and default combat gold",
   }]);
 });
 
+test("Ranked boundary removes only the active temporary Shrine max-HP bonus", () => {
+  assert.deepEqual(
+    recorderApi.canonicalizeBoundaryCombatResources({
+      hp: 125,
+      maxHp: 125,
+      shrineMaxHpBonus: 10
+    }),
+    { hp: 115, maxHp: 115 }
+  );
+  assert.deepEqual(
+    recorderApi.canonicalizeBoundaryCombatResources({
+      hp: 105,
+      maxHp: 125,
+      shrineMaxHpBonus: 10
+    }),
+    { hp: 105, maxHp: 115 }
+  );
+  assert.deepEqual(
+    recorderApi.canonicalizeBoundaryCombatResources({
+      hp: 105,
+      maxHp: 115,
+      shrineMaxHpBonus: 0
+    }),
+    { hp: 105, maxHp: 115 }
+  );
+});
+
+test("generated Ranked bridge reports canonical HP while Shrine max-HP is active", async () => {
+  const root = new URL("../../..", import.meta.url);
+  execFileSync(process.execPath, ["scripts/build-pages-v3.mjs", "--target", "test"], {
+    cwd: root,
+    stdio: "ignore"
+  });
+  const game = await readFile(new URL("../../../output/pages-test-dist/game.js", import.meta.url), "utf8");
+  const start = game.indexOf("    captureRankedBoundary() {");
+  const end = game.indexOf("    resetRankedBoundaryRecorder()", start);
+  assert.ok(start >= 0 && end > start, "expected generated Ranked boundary bridge");
+  const methodSource = game.slice(start, end);
+  const context = {
+    result: null,
+    window: { DungeonRankedV3Recorder: recorderApi },
+    state: {
+      onlineV3Ranked: true,
+      turn: 7,
+      player: { gold: 20, hp: 125, maxHp: 125, shrineMaxHpBonus: 10 }
+    },
+    onlineV3RoomStartingTurn: 2,
+    onlineV3RoomStartingGold: 10,
+    onlineV3RewardRecorder: { snapshot: () => [] },
+    onlineV3BoundedCombatResources: true,
+    onlineV3RoomCompletionCapability: "room-capability"
+  };
+  vm.runInNewContext(`result = ({${methodSource}}).captureRankedBoundary();`, context);
+  assert.deepEqual(JSON.parse(JSON.stringify(context.result)), {
+    turnCount: 5,
+    rewardClaims: [],
+    reportedGoldDelta: 10,
+    hp: 115,
+    maxHp: 115,
+    completionCapability: "room-capability"
+  });
+});
+
 test("Ranked integrity elite adjustment stays bound to the v0.8 source bonus", async () => {
   const gameSource = await readFile(new URL("../../../game.js", import.meta.url), "utf8");
   assert.match(
@@ -297,6 +360,34 @@ test("Ranked reward recorder aggregates elite, hazard, and bounded chest evidenc
   ]);
 });
 
+test("Ranked reward recorder preserves potion-use order around canonical potion chests", () => {
+  const recorder = recorderApi.createRewardClaimRecorder({ orderedPotionClaims: true });
+  recorder.recordPotionUse();
+  recorder.recordPotionUse();
+  recorder.recordPotionUse();
+  const potionChest = recorder.openChest({
+    awardId: "award_potion_order_1",
+    outcome: "potion"
+  });
+  recorder.recordChestPotion(potionChest, 1);
+  recorder.recordPotionUse();
+
+  assert.deepEqual(recorder.snapshot(), [
+    { claimType: "resource", claimId: "potion-use", count: 3 },
+    {
+      claimType: "chest",
+      claimId: potionChest,
+      count: 1,
+      localEvidence: {
+        outcome: "potion",
+        awardId: "award_potion_order_1",
+        count: 1
+      }
+    },
+    { claimType: "resource", claimId: "potion-use", count: 1 }
+  ]);
+});
+
 test("canonical chest recorder seals exact award evidence and rejects mismatched helpers", () => {
   const recorder = recorderApi.createRewardClaimRecorder();
   const canonical = recorder.openChest({ awardId: "award_health_1", outcome: "health" });
@@ -341,6 +432,7 @@ test("production build wires collected claims and the visible v0.8 room-clear bo
   assert.match(builder, /recordChestPotion/u);
   assert.match(builder, /recordChestMapFragment/u);
   assert.match(builder, /recordPotionUse/u);
+  assert.match(builder, /orderedPotionClaims/u);
   assert.match(builder, /roomClearBaseV08/u);
   assert.match(builder, /Room clear bonus:/u);
   assert.match(builder, /rewardClaims: onlineV3RewardRecorder\?\.snapshot\(\) \|\| \[\]/u);
@@ -490,4 +582,56 @@ test("canonical issued health bypasses a stale capped local bucket without fallb
   assert.equal(context.state.sessionChestHealthFlat, 7);
   assert.equal(context.state.sessionChestHealthDepthBuckets["0"], 5);
   assert.equal(context.state.player.gold, undefined);
+});
+
+test("Ranked hydration uses server-issued exact chest totals instead of bucket-start estimates", async () => {
+  execFileSync(process.execPath, ["scripts/build-pages-v3.mjs", "--target", "test"], {
+    cwd: new URL("../../../", import.meta.url),
+    stdio: "ignore"
+  });
+  const generated = await readFile(new URL("../../../output/pages-test-dist/game.js", import.meta.url), "utf8");
+  const start = generated.indexOf("  function hydrateRankedChestCarry(");
+  const end = generated.indexOf("  function syncRankedCanonicalPotionState(", start);
+  assert.ok(start >= 0 && end > start);
+  const helper = generated.slice(start, end).replace(/^  /gmu, "");
+  const context = {
+    state: {
+      phase: "playing",
+      sessionChestAttackFlat: 0,
+      sessionChestAttackDepthBuckets: {},
+      sessionChestArmorFlat: 0,
+      sessionChestArmorDepthBuckets: {},
+      sessionChestHealthFlat: 0,
+      sessionChestHealthDepthBuckets: {},
+      player: { attack: 100, armor: 100, maxHp: 100, hp: 100 }
+    },
+    CHEST_ATTACK_UPGRADE_FLAT: 2,
+    CHEST_ARMOR_UPGRADE_FLAT: 2,
+    CHEST_HEALTH_UPGRADE_FLAT: 5,
+    sanitizeChestAttackDepthBuckets: (value) => ({ ...value }),
+    getChestUpgradeFlatByBucket: (_base, bucket) => bucket === 1 ? 2 : 3,
+    getChestHealthUpgradeFlatByBucket: () => 7,
+    scaleFlatAttackByBlade: (value) => value,
+    clamp: (value, minimum, maximum) => Math.min(maximum, Math.max(minimum, value))
+  };
+  vm.runInNewContext(helper, context);
+
+  const carried = context.hydrateRankedChestCarry({
+    campaign: {
+      chestBonuses: {
+        schemaVersion: 2,
+        attackDepthBuckets: { 1: 1 },
+        armorDepthBuckets: { 2: 1 },
+        healthDepthBuckets: { 3: 1 },
+        attackFlat: 3,
+        armorFlat: 4,
+        healthFlat: 10
+      }
+    }
+  }, { applyDelta: true });
+
+  assert.deepEqual({ ...carried }, { attack: 3, armor: 4, health: 10 });
+  assert.equal(context.state.player.attack, 103);
+  assert.equal(context.state.player.armor, 104);
+  assert.equal(context.state.player.maxHp, 110);
 });

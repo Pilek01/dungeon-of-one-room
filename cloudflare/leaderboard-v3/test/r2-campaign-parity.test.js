@@ -153,6 +153,91 @@ test("Ranked settlement preserves potion use and potion chest pickup", async () 
   assert.equal(cappedSettlement.state.build.resources.potions, 3);
 });
 
+test("Ranked settlement preserves ordered potion uses around a potion chest", async () => {
+  const capabilities = {
+    canonicalChestOutcomes: "v1",
+    potionClaimOrdering: "v1"
+  };
+  let state = initial();
+  state.status = "active";
+  state.campaign.forcedNextRoomType = "vault";
+  state.build.resources.maxPotions = 6;
+  state.build.resources.potions = 3;
+  state.build.buildDigest = await computeRelicBuildDigestV08(state.build, webcrypto);
+  state = await issueNextRoomDirectiveV08(state, { ...context, capabilities });
+  const slot = state.currentRewardEnvelope.claimSlots.find(
+    (entry) => entry.canonicalOutcome?.outcome === "potion"
+  );
+  assert.ok(slot);
+
+  const settled = await settleRoomRewardEnvelopeV3(state, rewardRequest(state, [
+    { claimType: "resource", claimId: "potion-use", count: 3 },
+    {
+      claimType: "chest",
+      claimId: slot.slotId,
+      count: 1,
+      localEvidence: {
+        outcome: "potion",
+        awardId: slot.canonicalOutcome.awardId,
+        count: 1
+      }
+    },
+    { claimType: "resource", claimId: "potion-use", count: 1 }
+  ]), { ...context, capabilities });
+
+  assert.equal(settled.state.build.resources.potions, 0);
+  assert.equal(settled.state.mutatorRunTracking.potionUses, 4);
+});
+
+test("Ranked settlement repairs one legacy aggregate backed by one potion chest", async () => {
+  const capabilities = {
+    canonicalChestOutcomes: "v1",
+    potionClaimOrdering: "v1"
+  };
+  let state = initial();
+  state.status = "active";
+  state.campaign.forcedNextRoomType = "vault";
+  state.build.resources.maxPotions = 6;
+  state.build.resources.potions = 3;
+  state.build.buildDigest = await computeRelicBuildDigestV08(state.build, webcrypto);
+  state = await issueNextRoomDirectiveV08(state, { ...context, capabilities });
+  const slot = state.currentRewardEnvelope.claimSlots.find(
+    (entry) => entry.canonicalOutcome?.outcome === "potion"
+  );
+  assert.ok(slot);
+  const potionChestClaim = {
+    claimType: "chest",
+    claimId: slot.slotId,
+    count: 1,
+    localEvidence: {
+      outcome: "potion",
+      awardId: slot.canonicalOutcome.awardId,
+      count: 1
+    }
+  };
+
+  const settled = await settleRoomRewardEnvelopeV3(state, rewardRequest(state, [
+    { claimType: "resource", claimId: "potion-use", count: 4 },
+    potionChestClaim
+  ]), { ...context, capabilities });
+  assert.equal(settled.state.build.resources.potions, 0);
+  assert.equal(settled.state.mutatorRunTracking.potionUses, 4);
+
+  await assert.rejects(
+    settleRoomRewardEnvelopeV3(state, rewardRequest(state, [
+      { claimType: "resource", claimId: "potion-use", count: 4 }
+    ]), { ...context, capabilities }),
+    /REWARD_CLAIM_POTION_USE_LIMIT/u
+  );
+  await assert.rejects(
+    settleRoomRewardEnvelopeV3(state, rewardRequest(state, [
+      { claimType: "resource", claimId: "potion-use", count: 1 },
+      { claimType: "resource", claimId: "potion-use", count: 1 }
+    ]), { ...context, capabilities }),
+    /REWARD_CLAIM_DUPLICATE/u
+  );
+});
+
 test("the tenth Ranked map fragment persists and queues a Vault", async () => {
   let state = initial();
   state.status = "active";
@@ -303,6 +388,6 @@ test("production bridge uses native Forge and native Camp checkpoint selection",
   assert.match(runtime, /eventPayload:[\s\S]*combatResources/u);
   assert.match(runtime, /fatalPayload\.boundarySettlement = mergeCapturedBoundary\(captureRankedBoundary\(\)\)\.eventPayload/u);
   assert.match(builder, /onlineV3BoundedCombatResources/u);
-  assert.match(builder, /hp: Math\.max\(0, Math\.floor\(Number\(state\.player\.hp\)/u);
-  assert.match(builder, /maxHp: Math\.max\(0, Math\.floor\(Number\(state\.player\.maxHp\)/u);
+  assert.match(builder, /canonicalizeBoundaryCombatResources/u);
+  assert.match(builder, /shrineMaxHpBonus/u);
 });

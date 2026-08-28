@@ -18,7 +18,8 @@ const {
   getEligibleDeathRelicIndices,
   getCampUpgradeUnlockDepth,
   isCampUpgradeTierUnlocked,
-  isRoomTypeUnlocked
+  isRoomTypeUnlocked,
+  normalizeChestCarryFlat
 } = require(balancePath);
 
 assert.equal(getArmorDamageReduction(0), 0);
@@ -28,6 +29,27 @@ assert.equal(getArmorDamageReduction(150), 0.6);
 assert.equal(getArmorDamageReduction(1000), 0.7);
 assert.equal(getDamageAfterArmor(200, 150, 10), 80);
 assert.equal(getDamageAfterArmor(20, 1000, 10), 10);
+
+assert.equal(normalizeChestCarryFlat({
+  stat: "armor",
+  flat: 3,
+  depthBuckets: { 1: 1 }
+}), 3);
+assert.equal(normalizeChestCarryFlat({
+  stat: "attack",
+  flat: 4,
+  depthBuckets: { 2: 1 }
+}), 4);
+assert.equal(normalizeChestCarryFlat({
+  stat: "health",
+  flat: 10,
+  depthBuckets: { 3: 1 }
+}), 10);
+assert.equal(normalizeChestCarryFlat({
+  stat: "armor",
+  flat: 999,
+  depthBuckets: { 1: 1 }
+}), 3);
 
 assert.equal(getBladeCampAttackBonus(0), 0);
 assert.equal(getBladeCampAttackBonus(15), 375);

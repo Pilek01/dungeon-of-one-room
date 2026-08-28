@@ -217,7 +217,8 @@
       completionCapability,
       startingGold,
       boundedProcClaims: protocol.supportsBoundedProcClaims?.(rulesetHash) === true,
-      boundedCombatResources: protocol.supportsBoundedCombatResources?.(rulesetHash) === true
+      boundedCombatResources: protocol.supportsBoundedCombatResources?.(rulesetHash) === true,
+      orderedPotionClaims: protocol.supportsPotionClaimOrdering?.(rulesetHash) === true
     });
   }
 

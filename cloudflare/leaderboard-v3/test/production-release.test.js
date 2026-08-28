@@ -26,6 +26,7 @@ import {
   V08_META_1_CANONICAL_CHEST_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR,
   V08_META_1_CHEST_HP_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR,
   V08_META_1_START_RESOURCE_PARITY_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR,
+  V08_META_1_MAP_FRAGMENT_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR,
   V08_META_1_PRODUCTION_RELEASE_DESCRIPTOR
 } from "../src/rulesets/releases.js";
 import * as releases from "../src/rulesets/releases.js";
@@ -38,6 +39,7 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../.
 const require = createRequire(import.meta.url);
 const protocol = require("../../../online-v3/ranked-v3-protocol.js");
 const EXPECTED_HASH = manifest.rulesetHash;
+const PREVIOUS_MAP_FRAGMENT_DEPTH_HASH = "sha256:25dbdb962a478b3a46375ad5b25a3603041edd95ff45b51e2846b13ce7ea2989";
 const PREVIOUS_POTION_MERCHANT_HASH = "sha256:bf17a65dc721066bf11a1c34063cc18254fe97766852827719eb6aabf36042fa";
 const PREVIOUS_START_RESOURCE_PARITY_HASH = "sha256:9d6069993fd07784ecfdc146825a8a7b82cde1fd7412f351aeba1ab86c539dbe";
 const PREVIOUS_CHEST_HP_HASH = "sha256:48b5bd86604a5f8dae58a4dcf2b1ed9a72252b3e4942fc20693b3e0a8e91438e";
@@ -77,6 +79,7 @@ test("bounded proc release activates a new hash and leaves every historical desc
     value.status === RULESET_RELEASE_STATES.PRODUCTION_RELEASED &&
     typeof value.rulesetHash === "string" &&
     value.rulesetHash !== manifest.rulesetHash &&
+    value.rulesetHash !== PREVIOUS_MAP_FRAGMENT_DEPTH_HASH &&
     value.rulesetHash !== PREVIOUS_START_RESOURCE_PARITY_HASH &&
     value.rulesetHash !== PREVIOUS_CHEST_HP_HASH &&
     value.rulesetHash !== PREVIOUS_POTION_MERCHANT_HASH &&
@@ -99,6 +102,7 @@ test("bounded proc release activates a new hash and leaves every historical desc
   assert.ok(protocol.SUPPORTED_RULESET_HASHES.includes(PREVIOUS_BOUNDED_PROC_HASH));
   assert.deepEqual(protocol.BOUNDED_PROC_CLAIMS_RULESET_HASHES, [
     manifest.rulesetHash,
+    PREVIOUS_MAP_FRAGMENT_DEPTH_HASH,
     PREVIOUS_START_RESOURCE_PARITY_HASH,
     PREVIOUS_CHEST_HP_HASH,
     PREVIOUS_POTION_MERCHANT_HASH,
@@ -138,12 +142,16 @@ test("canonical chest carry release is hash-gated and preserves the previous pro
     earlyBalanceOtterRepair: "v1",
     canonicalPotionResources: "v1",
     boundedCombatResources: "v1",
-    rankedStartResourceParity: "v1"
+    rankedStartResourceParity: "v1",
+    potionClaimOrdering: "v1",
+    mapFragmentMinDepth: "v1",
+    exactChestStatCarry: "v1"
   });
 
   assert.ok(protocol.SUPPORTED_RULESET_HASHES.includes(PREVIOUS_CHEST_CARRY_HASH));
   assert.deepEqual(protocol.CANONICAL_CHEST_OUTCOMES_RULESET_HASHES, [
     manifest.rulesetHash,
+    PREVIOUS_MAP_FRAGMENT_DEPTH_HASH,
     PREVIOUS_START_RESOURCE_PARITY_HASH,
     PREVIOUS_CHEST_HP_HASH,
     PREVIOUS_POTION_MERCHANT_HASH,
@@ -189,6 +197,7 @@ test("canonical chest repair release retains the previous canonical hash and cap
   assert.ok(protocol.SUPPORTED_RULESET_HASHES.includes(PREVIOUS_CANONICAL_CHEST_HASH));
   assert.deepEqual(protocol.CANONICAL_CHEST_OUTCOMES_RULESET_HASHES, [
     manifest.rulesetHash,
+    PREVIOUS_MAP_FRAGMENT_DEPTH_HASH,
     PREVIOUS_START_RESOURCE_PARITY_HASH,
     PREVIOUS_CHEST_HP_HASH,
     PREVIOUS_POTION_MERCHANT_HASH,
@@ -226,9 +235,28 @@ test("Ranked start resource parity is hash-gated and preserves the previous prod
   assert.ok(protocol.SUPPORTED_RULESET_HASHES.includes(PREVIOUS_START_RESOURCE_PARITY_HASH));
   assert.deepEqual(protocol.BOUNDED_COMBAT_RESOURCES_RULESET_HASHES, [
     manifest.rulesetHash,
+    PREVIOUS_MAP_FRAGMENT_DEPTH_HASH,
     PREVIOUS_START_RESOURCE_PARITY_HASH,
     PREVIOUS_CHEST_HP_HASH
   ]);
+});
+
+test("map-fragment depth gate is hash-bound and preserves previous production behavior", () => {
+  const active = V08_META_1_PRODUCTION_RELEASE_DESCRIPTOR;
+  const previous = V08_META_1_MAP_FRAGMENT_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR;
+
+  assert.equal(active.rulesetHash, manifest.rulesetHash);
+  assert.equal(active.capabilities.mapFragmentMinDepth, "v1");
+  assert.equal(V08_META_1_LOCAL_RELEASE_DESCRIPTOR.capabilities.mapFragmentMinDepth, "v1");
+  assert.equal(active.capabilities.exactChestStatCarry, "v1");
+  assert.equal(V08_META_1_LOCAL_RELEASE_DESCRIPTOR.capabilities.exactChestStatCarry, "v1");
+  assert.equal(previous.rulesetHash, PREVIOUS_MAP_FRAGMENT_DEPTH_HASH);
+  assert.equal(previous.capabilities.rankedStartResourceParity, "v1");
+  assert.equal(previous.capabilities.mapFragmentMinDepth, undefined);
+  assert.equal(previous.capabilities.exactChestStatCarry, undefined);
+  assert.ok(COMPATIBLE_RULESET_HASHES.includes(PREVIOUS_MAP_FRAGMENT_DEPTH_HASH));
+  assert.ok(protocol.SUPPORTED_RULESET_HASHES.includes(PREVIOUS_MAP_FRAGMENT_DEPTH_HASH));
+  assert.equal(protocol.supportsCanonicalChestOutcomes(PREVIOUS_MAP_FRAGMENT_DEPTH_HASH), true);
 });
 
 async function rootFile(relative) {

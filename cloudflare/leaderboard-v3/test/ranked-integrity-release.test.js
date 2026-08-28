@@ -6,6 +6,7 @@ import {
   V08_META_1_LOCAL_RELEASE_DESCRIPTOR,
   V08_META_1_POTION_MERCHANT_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR,
   V08_META_1_START_RESOURCE_PARITY_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR,
+  V08_META_1_MAP_FRAGMENT_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR,
   V08_META_1_PRODUCTION_RELEASE_DESCRIPTOR
 } from "../src/rulesets/releases.js";
 import { COMPATIBLE_RULESET_HASHES } from "../src/rulesets/v08-meta-1/ruleset-hash-policy.js";
@@ -19,6 +20,8 @@ const PREVIOUS_CHEST_HP_HASH =
   "sha256:48b5bd86604a5f8dae58a4dcf2b1ed9a72252b3e4942fc20693b3e0a8e91438e";
 const PREVIOUS_START_RESOURCE_PARITY_HASH =
   "sha256:9d6069993fd07784ecfdc146825a8a7b82cde1fd7412f351aeba1ab86c539dbe";
+const PREVIOUS_MAP_FRAGMENT_DEPTH_HASH =
+  "sha256:25dbdb962a478b3a46375ad5b25a3603041edd95ff45b51e2846b13ce7ea2989";
 
 test("bounded combat resources activate only on the new ruleset hash", () => {
   assert.equal(V08_META_1_PRODUCTION_RELEASE_DESCRIPTOR.rulesetHash, manifest.rulesetHash);
@@ -60,19 +63,38 @@ test("bounded combat resources activate only on the new ruleset hash", () => {
   assert.equal(startResourceParityPrevious.capabilities.rankedStartResourceParity, undefined);
   assert.equal(V08_META_1_PRODUCTION_RELEASE_DESCRIPTOR.capabilities.rankedStartResourceParity, "v1");
 
+  assert.equal(V08_META_1_PRODUCTION_RELEASE_DESCRIPTOR.capabilities.mapFragmentMinDepth, "v1");
+  assert.equal(V08_META_1_PRODUCTION_RELEASE_DESCRIPTOR.capabilities.exactChestStatCarry, "v1");
+
+  const mapFragmentPrevious = V08_META_1_MAP_FRAGMENT_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR;
+  assert.equal(mapFragmentPrevious.rulesetHash, PREVIOUS_MAP_FRAGMENT_DEPTH_HASH);
+  assert.equal(mapFragmentPrevious.capabilities.potionClaimOrdering, "v1");
+  assert.equal(mapFragmentPrevious.capabilities.mapFragmentMinDepth, undefined);
+  assert.equal(mapFragmentPrevious.capabilities.exactChestStatCarry, undefined);
+  assert.equal(V08_META_1_PRODUCTION_RELEASE_DESCRIPTOR.capabilities.potionClaimOrdering, "v1");
+
   assert.ok(COMPATIBLE_RULESET_HASHES.includes(manifest.rulesetHash));
   assert.ok(COMPATIBLE_RULESET_HASHES.includes(PREVIOUS_START_RESOURCE_PARITY_HASH));
   assert.ok(COMPATIBLE_RULESET_HASHES.includes(PREVIOUS_CHEST_HP_HASH));
+  assert.ok(COMPATIBLE_RULESET_HASHES.includes(PREVIOUS_MAP_FRAGMENT_DEPTH_HASH));
   assert.ok(COMPATIBLE_RULESET_HASHES.includes(PREVIOUS_PRODUCTION_HASH));
   assert.equal(protocol.RULESET_HASH, manifest.rulesetHash);
   assert.ok(protocol.SUPPORTED_RULESET_HASHES.includes(PREVIOUS_CHEST_HP_HASH));
   assert.ok(protocol.SUPPORTED_RULESET_HASHES.includes(PREVIOUS_PRODUCTION_HASH));
   assert.deepEqual(protocol.BOUNDED_COMBAT_RESOURCES_RULESET_HASHES, [
     manifest.rulesetHash,
+    PREVIOUS_MAP_FRAGMENT_DEPTH_HASH,
     PREVIOUS_START_RESOURCE_PARITY_HASH,
     PREVIOUS_CHEST_HP_HASH
   ]);
   assert.equal(protocol.supportsBoundedCombatResources(manifest.rulesetHash), true);
   assert.equal(protocol.supportsBoundedCombatResources(PREVIOUS_CHEST_HP_HASH), true);
   assert.equal(protocol.supportsBoundedCombatResources(PREVIOUS_PRODUCTION_HASH), false);
+  assert.deepEqual(protocol.POTION_CLAIM_ORDERING_RULESET_HASHES, [
+    manifest.rulesetHash,
+    PREVIOUS_MAP_FRAGMENT_DEPTH_HASH
+  ]);
+  assert.equal(protocol.supportsPotionClaimOrdering(manifest.rulesetHash), true);
+  assert.equal(protocol.supportsPotionClaimOrdering(PREVIOUS_MAP_FRAGMENT_DEPTH_HASH), true);
+  assert.equal(protocol.supportsPotionClaimOrdering(PREVIOUS_START_RESOURCE_PARITY_HASH), false);
 });

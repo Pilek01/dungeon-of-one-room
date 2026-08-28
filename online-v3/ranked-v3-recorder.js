@@ -102,9 +102,18 @@
     return Math.max(1, base);
   }
 
+  function canonicalizeBoundaryCombatResources(input = {}) {
+    const localMaxHp = Math.max(0, Math.floor(Number(input.maxHp) || 0));
+    const shrineMaxHpBonus = Math.max(0, Math.floor(Number(input.shrineMaxHpBonus) || 0));
+    const maxHp = Math.max(0, localMaxHp - shrineMaxHpBonus);
+    const hp = Math.max(0, Math.min(maxHp, Math.floor(Number(input.hp) || 0)));
+    return { hp, maxHp };
+  }
+
   function createRewardClaimRecorder(options = {}) {
     const claims = new Map();
     let chestCount = Math.max(0, Math.floor(Number(options.initialChestCount) || 0));
+    let potionClaimEpoch = 0;
     let sealedSnapshot = null;
 
     const canonicalChestOutcomes = new Set([
@@ -163,6 +172,9 @@
           ? { outcome: canonicalOutcome.outcome, awardId: canonicalOutcome.awardId }
           : { outcome: "opened" }
       });
+      if (options.orderedPotionClaims === true && canonicalOutcome?.outcome === "potion") {
+        potionClaimEpoch += 1;
+      }
       return claimId;
     }
 
@@ -199,6 +211,14 @@
     }
 
     function recordPotionUse() {
+      if (options.orderedPotionClaims === true) {
+        if (sealedSnapshot) return false;
+        const key = `resource:potion-use:${potionClaimEpoch}`;
+        const current = claims.get(key);
+        if (current) current.count += 1;
+        else claims.set(key, { claimType: "resource", claimId: "potion-use", count: 1 });
+        return true;
+      }
       return aggregate("resource", "potion-use");
     }
 
@@ -252,6 +272,7 @@
     canonicalJson,
     createRecorder,
     roomClearBaseV08,
+    canonicalizeBoundaryCombatResources,
     createRewardClaimRecorder
   });
 });

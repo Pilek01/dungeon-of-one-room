@@ -29,6 +29,7 @@ const progression = progressionDocument.canonicalData;
 const rewardBounds = rewardBoundsDocument.canonicalData;
 const HISTORY_LIMIT = rewardBounds.boundedHistoryLimit;
 const CANONICAL_CHEST_OUTCOME_CAPABILITY = "v1";
+const MAP_FRAGMENT_MIN_DEPTH = 11;
 const CANONICAL_CHEST_OUTCOMES = new Set([
   "health",
   "healing",
@@ -319,6 +320,7 @@ async function issueCanonicalChestSlots({
   envelopeId,
   outcomeRevision = state.revision,
   outcomeContext,
+  capabilities,
   cryptoProvider,
   randomOracle,
   secret
@@ -343,6 +345,9 @@ async function issueCanonicalChestSlots({
       cryptoProvider
     });
     let outcome = canonicalChestOutcomeFromRoll(directive.roomType, roll);
+    if (capabilities?.mapFragmentMinDepth === "v1" && outcome === "map_fragment" && Math.max(0, Number(directive.depth) || 0) < MAP_FRAGMENT_MIN_DEPTH) {
+      outcome = "gold";
+    }
     if (outcome === "trap" && hasShrineWard) outcome = "gold";
     if (hasAlchemist && (outcome === "health" || outcome === "healing")) {
       outcome = "fallback_gold";
@@ -538,6 +543,7 @@ export async function createRoomRewardEnvelopeV3({
         envelopeId,
         outcomeRevision: state.revision,
         outcomeContext: canonicalChestOutcomeContext,
+        capabilities,
         cryptoProvider,
         randomOracle,
         secret
@@ -875,6 +881,7 @@ async function assertIssuedChestOutcomes(state, envelope, capabilities, context 
     envelopeId: envelope.envelopeId,
     outcomeRevision: envelope.canonicalChestOutcomeRevision ?? envelope.revision,
     outcomeContext: envelope.canonicalChestOutcomeContext,
+    capabilities,
     cryptoProvider: context.cryptoProvider,
     randomOracle: context.randomOracle,
     secret: context.secret
@@ -910,6 +917,54 @@ function validateBindings(state, envelope, request) {
   if (request.roomType !== undefined && request.roomType !== envelope.roomType) {
     throw new TypeError("REWARD_CLAIM_ROOM_TYPE_MISMATCH");
   }
+}
+
+function isPotionUseClaim(claim) {
+  return claim?.claimType === "resource" && claim?.claimId === "potion-use";
+}
+
+function canonicalPotionChestClaim(envelope, claim) {
+  if (claim?.claimType !== "chest" || claim?.localEvidence?.outcome !== "potion") {
+    return false;
+  }
+  const slot = envelope.claimSlots.find((entry) => entry.slotId === claim.claimId);
+  return slot?.canonicalOutcome?.outcome === "potion";
+}
+
+function normalizeLegacyPotionClaimOrder(state, envelope, claims, capabilities = {}) {
+  if (capabilities.potionClaimOrdering !== "v1") return claims;
+  const potionClaims = claims
+    .map((claim, index) => ({ claim, index }))
+    .filter(({ claim }) => isPotionUseClaim(claim));
+  if (potionClaims.length !== 1) return claims;
+  const [{ claim, index: potionIndex }] = potionClaims;
+  const startingPotions = Math.max(0, Number(state.build.resources?.potions) || 0);
+  if (
+    startingPotions <= 0 ||
+    !Number.isSafeInteger(claim.count) ||
+    claim.count !== startingPotions + 1
+  ) return claims;
+  const potionChestIndexes = claims
+    .map((entry, index) => ({ entry, index }))
+    .filter(({ entry, index }) =>
+      index > potionIndex && canonicalPotionChestClaim(envelope, entry)
+    )
+    .map(({ index }) => index);
+  if (potionChestIndexes.length !== 1) return claims;
+
+  const potionChestIndex = potionChestIndexes[0];
+  const normalized = [];
+  for (let index = 0; index < claims.length; index += 1) {
+    if (index === potionIndex) {
+      normalized.push({ ...claim, count: startingPotions });
+      continue;
+    }
+    normalized.push(claims[index]);
+    if (index === potionChestIndex) {
+      normalized.push({ ...claim, count: 1 });
+    }
+  }
+  return normalized;
 }
 
 function calculateClaimAmount(
@@ -1209,7 +1264,22 @@ async function settleRewardEnvelopeV3(state, request, context = {}, options = {}
   const validationSlots = validationEnvelope
     ? new Map(validationEnvelope.claimSlots.map((slot) => [slot.slotId, slot]))
     : null;
-  for (const claim of request.claims) {
+  const settlementClaims = outcome === "cleared"
+    ? normalizeLegacyPotionClaimOrder(
+        next,
+        mutableEnvelope,
+        request.claims,
+        context.capabilities
+      )
+    : request.claims;
+  const orderedPotionClaimsEnabled =
+    context.capabilities?.potionClaimOrdering === "v1";
+  const potionUseMaximum = mutableEnvelope.boundedClaims.find(
+    (entry) => entry.claimType === "resource" && entry.claimId === "potion-use"
+  )?.maximumCount ?? 0;
+  let validatedPotionUseCount = 0;
+  let potionChestSinceLastUseSegment = false;
+  for (const claim of settlementClaims) {
     const appliesToOutcome = outcome !== "fatal" || (
       claim?.claimType === "resource" ||
       (
@@ -1218,8 +1288,28 @@ async function settleRewardEnvelopeV3(state, request, context = {}, options = {}
       )
     );
     const key = `${claim?.claimType}:${claim?.claimId}`;
-    if (seen.has(key)) throw new TypeError("REWARD_CLAIM_DUPLICATE");
-    seen.add(key);
+    const potionUseClaim = isPotionUseClaim(claim);
+    if (seen.has(key)) {
+      if (
+        !orderedPotionClaimsEnabled ||
+        !potionUseClaim ||
+        !potionChestSinceLastUseSegment
+      ) {
+        throw new TypeError("REWARD_CLAIM_DUPLICATE");
+      }
+    } else {
+      seen.add(key);
+    }
+    if (potionUseClaim) {
+      validatedPotionUseCount += requireInteger(
+        claim.count,
+        "REWARD_CLAIM_COUNT_INVALID"
+      );
+      if (validatedPotionUseCount > potionUseMaximum) {
+        throw new TypeError("REWARD_CLAIM_POTION_USE_LIMIT");
+      }
+      potionChestSinceLastUseSegment = false;
+    }
     if (claim.claimType === "enemy" || claim.claimType === "elite" || claim.claimType === "hazard") {
       validatedEnemyCount += requireInteger(claim.count, "REWARD_CLAIM_COUNT_INVALID");
     }
@@ -1240,6 +1330,13 @@ async function settleRewardEnvelopeV3(state, request, context = {}, options = {}
       context.capabilities,
       rewardGoldContext
     );
+    if (
+      appliesToOutcome &&
+      orderedPotionClaimsEnabled &&
+      canonicalPotionChestClaim(mutableEnvelope, claim)
+    ) {
+      potionChestSinceLastUseSegment = true;
+    }
     if (appliesToOutcome) {
       if (claim.claimType === "enemy" || claim.claimType === "elite" || claim.claimType === "hazard") {
         enemyCount += claim.count;
@@ -1258,6 +1355,8 @@ async function settleRewardEnvelopeV3(state, request, context = {}, options = {}
         next.campaign = applyIssuedChestStatBonusV08(next.campaign, {
           stat: result.chestStat,
           scalingDepth: mutableEnvelope.scalingDepth
+        }, {
+          exactStatCarry: context.capabilities?.exactChestStatCarry === "v1"
         });
         if (result.chestStat === "health") {
           const healthFlat = projectChestBonusesV08(

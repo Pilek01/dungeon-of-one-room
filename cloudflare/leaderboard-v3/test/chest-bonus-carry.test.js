@@ -56,9 +56,56 @@ test("chest projection derives exact low and tiered totals from depth buckets", 
   });
 });
 
-test("invalid chest ledger data is rejected instead of clamped", () => {
+test("exact carry preserves issued values across scaling boundaries in one depth bucket", () => {
+  let campaign = { chestBonuses: normalizeChestBonusesV08() };
+  for (const scalingDepth of [10, 11]) {
+    campaign = applyIssuedChestStatBonusV08(
+      campaign,
+      { stat: "attack", scalingDepth },
+      { exactStatCarry: true }
+    );
+  }
+  for (const scalingDepth of [20, 21]) {
+    campaign = applyIssuedChestStatBonusV08(
+      campaign,
+      { stat: "armor", scalingDepth },
+      { exactStatCarry: true }
+    );
+  }
+  for (const scalingDepth of [20, 21, 31]) {
+    campaign = applyIssuedChestStatBonusV08(
+      campaign,
+      { stat: "health", scalingDepth },
+      { exactStatCarry: true }
+    );
+  }
+
+  assert.deepEqual(projectChestBonusesV08(campaign.chestBonuses), {
+    schemaVersion: 2,
+    attackDepthBuckets: { 1: 2 },
+    armorDepthBuckets: { 2: 2 },
+    healthDepthBuckets: { 2: 2, 3: 1 },
+    attackFlat: 5,
+    armorFlat: 7,
+    healthFlat: 22
+  });
+});
+
+test("exact carry rejects totals that its bounded depth buckets could not issue", () => {
   assert.throws(() => normalizeChestBonusesV08({
     schemaVersion: 2,
+    attackDepthBuckets: { 1: 1 },
+    armorDepthBuckets: {},
+    healthDepthBuckets: {},
+    attackFlat: 4,
+    armorFlat: 0,
+    healthFlat: 0
+  }), /CHEST_BONUS_FLAT_INVALID:attackFlat/u);
+});
+
+test("invalid chest ledger data is rejected instead of clamped", () => {
+  assert.throws(() => normalizeChestBonusesV08({
+    schemaVersion: 3,
     attackDepthBuckets: {},
     armorDepthBuckets: {},
     healthDepthBuckets: {}

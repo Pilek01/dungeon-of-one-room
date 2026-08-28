@@ -9,11 +9,13 @@
 
   const PROTOCOL_VERSION = "ranked-v3-checkpoint-1";
   const RULESET_ID = "v08-meta-1";
-  const RULESET_HASH = "sha256:25dbdb962a478b3a46375ad5b25a3603041edd95ff45b51e2846b13ce7ea2989";
+  const RULESET_HASH = "sha256:78ae2f6f797063b7f364e5652e3367f6b26d651302f5c6038576d304dc442ec3";
+  const MAP_FRAGMENT_DEPTH_PREVIOUS_RULESET_HASH = "sha256:25dbdb962a478b3a46375ad5b25a3603041edd95ff45b51e2846b13ce7ea2989";
   const PREVIOUS_RULESET_HASH = "sha256:9d6069993fd07784ecfdc146825a8a7b82cde1fd7412f351aeba1ab86c539dbe";
   const CHEST_HP_PREVIOUS_RULESET_HASH = "sha256:48b5bd86604a5f8dae58a4dcf2b1ed9a72252b3e4942fc20693b3e0a8e91438e";
   const SUPPORTED_RULESET_HASHES = Object.freeze([
     RULESET_HASH,
+    MAP_FRAGMENT_DEPTH_PREVIOUS_RULESET_HASH,
     PREVIOUS_RULESET_HASH,
     CHEST_HP_PREVIOUS_RULESET_HASH,
     "sha256:bf17a65dc721066bf11a1c34063cc18254fe97766852827719eb6aabf36042fa",
@@ -49,6 +51,7 @@
   const legacyFatalPresentationCauseRulesetHashes = new Set(LEGACY_FATAL_PRESENTATION_CAUSE_RULESET_HASHES);
   const FATAL_PRESENTATION_CAUSE_RULESET_HASHES = Object.freeze([
     RULESET_HASH,
+    MAP_FRAGMENT_DEPTH_PREVIOUS_RULESET_HASH,
     PREVIOUS_RULESET_HASH,
     CHEST_HP_PREVIOUS_RULESET_HASH,
     "sha256:bf17a65dc721066bf11a1c34063cc18254fe97766852827719eb6aabf36042fa",
@@ -64,6 +67,7 @@
   const fatalPresentationCauseRulesetHashes = new Set(FATAL_PRESENTATION_CAUSE_RULESET_HASHES);
   const BOUNDARY_SETTLEMENT_RULESET_HASHES = Object.freeze([
     RULESET_HASH,
+    MAP_FRAGMENT_DEPTH_PREVIOUS_RULESET_HASH,
     PREVIOUS_RULESET_HASH,
     CHEST_HP_PREVIOUS_RULESET_HASH,
     "sha256:bf17a65dc721066bf11a1c34063cc18254fe97766852827719eb6aabf36042fa",
@@ -79,6 +83,7 @@
   const boundarySettlementRulesetHashes = new Set(BOUNDARY_SETTLEMENT_RULESET_HASHES);
   const POST_ROOM_PACT_RULESET_HASHES = Object.freeze([
     RULESET_HASH,
+    MAP_FRAGMENT_DEPTH_PREVIOUS_RULESET_HASH,
     PREVIOUS_RULESET_HASH,
     CHEST_HP_PREVIOUS_RULESET_HASH,
     "sha256:bf17a65dc721066bf11a1c34063cc18254fe97766852827719eb6aabf36042fa",
@@ -92,6 +97,7 @@
   const postRoomPactRulesetHashes = new Set(POST_ROOM_PACT_RULESET_HASHES);
   const BOUNDED_PROC_CLAIMS_RULESET_HASHES = Object.freeze([
     RULESET_HASH,
+    MAP_FRAGMENT_DEPTH_PREVIOUS_RULESET_HASH,
     PREVIOUS_RULESET_HASH,
     CHEST_HP_PREVIOUS_RULESET_HASH,
     "sha256:bf17a65dc721066bf11a1c34063cc18254fe97766852827719eb6aabf36042fa",
@@ -104,12 +110,14 @@
   const boundedProcClaimsRulesetHashes = new Set(BOUNDED_PROC_CLAIMS_RULESET_HASHES);
   const BOUNDED_COMBAT_RESOURCES_RULESET_HASHES = Object.freeze([
     RULESET_HASH,
+    MAP_FRAGMENT_DEPTH_PREVIOUS_RULESET_HASH,
     PREVIOUS_RULESET_HASH,
     CHEST_HP_PREVIOUS_RULESET_HASH
   ]);
   const boundedCombatResourcesRulesetHashes = new Set(BOUNDED_COMBAT_RESOURCES_RULESET_HASHES);
   const CANONICAL_CHEST_OUTCOMES_RULESET_HASHES = Object.freeze([
     RULESET_HASH,
+    MAP_FRAGMENT_DEPTH_PREVIOUS_RULESET_HASH,
     PREVIOUS_RULESET_HASH,
     CHEST_HP_PREVIOUS_RULESET_HASH,
     "sha256:bf17a65dc721066bf11a1c34063cc18254fe97766852827719eb6aabf36042fa",
@@ -119,6 +127,11 @@
     "sha256:0a922d5567e7cfba56644e915ac0e331ac74aa3fcc3a2aed478440d64e9878f7"
   ]);
   const canonicalChestOutcomesRulesetHashes = new Set(CANONICAL_CHEST_OUTCOMES_RULESET_HASHES);
+  const POTION_CLAIM_ORDERING_RULESET_HASHES = Object.freeze([
+    RULESET_HASH,
+    MAP_FRAGMENT_DEPTH_PREVIOUS_RULESET_HASH
+  ]);
+  const potionClaimOrderingRulesetHashes = new Set(POTION_CLAIM_ORDERING_RULESET_HASHES);
   const API_PREFIX = "/api/v3";
   const TOKEN_KINDS = Object.freeze({
     bootstrap: "run_bootstrap",
@@ -197,6 +210,11 @@
   function supportsCanonicalChestOutcomes(value) {
     const rulesetHash = typeof value === "string" ? value : value && value.rulesetHash;
     return canonicalChestOutcomesRulesetHashes.has(String(rulesetHash || ""));
+  }
+
+  function supportsPotionClaimOrdering(value) {
+    const rulesetHash = typeof value === "string" ? value : value && value.rulesetHash;
+    return potionClaimOrderingRulesetHashes.has(String(rulesetHash || ""));
   }
 
   function requireOptionalRecord(value, field) {
@@ -488,6 +506,8 @@
     supportsBoundedCombatResources,
     CANONICAL_CHEST_OUTCOMES_RULESET_HASHES,
     supportsCanonicalChestOutcomes,
+    POTION_CLAIM_ORDERING_RULESET_HASHES,
+    supportsPotionClaimOrdering,
     API_PREFIX,
     TOKEN_KINDS,
     ENDPOINTS,
