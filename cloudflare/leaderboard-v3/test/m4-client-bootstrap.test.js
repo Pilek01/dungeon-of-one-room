@@ -6,6 +6,7 @@ import fs from "node:fs";
 const require = createRequire(import.meta.url);
 const protocol = require("../../../online-v3/ranked-v3-protocol.js");
 const clientApi = require("../../../online-v3/ranked-v3-client.js");
+const recorderApi = require("../../../online-v3/ranked-v3-recorder.js");
 const sessionApi = require("../../../online-v3/ranked-v3-session.js");
 const directives = require("../../../online-v3/ranked-v3-directives.js");
 
@@ -157,6 +158,66 @@ test("M4 exact start retry persists recovery before entering Ranked", async () =
     rulesetId: protocol.RULESET_ID,
     rulesetHash: protocol.RULESET_HASH
   });
+  assert.equal(client.getSnapshot().pendingOperation, null);
+});
+
+test("M4 exact checkpoint retry repairs legacy local max HP before resending", async () => {
+  const directive = {
+    directiveId: "directive_retry_hp_1",
+    roomNonce: "nonce_retry_hp_1",
+    depth: 11,
+    roomType: "combat"
+  };
+  const current = meta("active", 1, directive);
+  current.build.resources = { hp: 163, maxHp: 163 };
+  const pendingOperation = {
+    endpoint: "checkpoint",
+    operationId: "op_retry_checkpoint_hp",
+    body: {
+      combatResources: { hp: 101, maxHp: 101 },
+      turnCount: 4,
+      rewardClaims: []
+    }
+  };
+  const store = memoryStore({
+    schemaVersion: 1,
+    mode: "ranked",
+    runId: "run_a1",
+    revision: 1,
+    token: { kind: protocol.TOKEN_KINDS.room, value: "checkpoint-secret" },
+    publicState: current,
+    pendingOperation
+  });
+  let sentBody = null;
+  const client = clientApi.createRankedClient({
+    store,
+    normalizeCheckpointCombatResources: recorderApi.canonicalizeBoundaryCombatResources,
+    transport: {
+      createOperationId: () => "op_unused",
+      async request(endpoint, request) {
+        assert.equal(endpoint.path, "/api/v3/runs/checkpoint");
+        assert.equal(request.operationId, pendingOperation.operationId);
+        sentBody = structuredClone(request.body);
+        const next = meta("active", 2, { ...directive, depth: 12 });
+        next.build.resources = { hp: 163, maxHp: 163 };
+        return {
+          payload: {
+            ok: true,
+            protocolVersion: protocol.PROTOCOL_VERSION,
+            runId: "run_a1",
+            revision: 2,
+            checkpointToken: "checkpoint-next",
+            acceptedBoundary: "room_cleared",
+            metaState: next
+          }
+        };
+      }
+    }
+  });
+
+  await client.retryPending();
+
+  assert.deepEqual(sentBody.combatResources, { hp: 163, maxHp: 163 });
   assert.equal(client.getSnapshot().pendingOperation, null);
 });
 test("M4 stale profile repair clears a failed start and rotates only Ranked identity", async () => {

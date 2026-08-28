@@ -2147,3 +2147,21 @@ Updated next good targets
   `sha256:78ae2f6f797063b7f364e5652e3367f6b26d651302f5c6038576d304dc442ec3`.
   D1 reported no migrations to apply. Pre-release Time Travel bookmark:
   `00000d08-00000000-000050d5-26b50efec54268b0114cf17cbeaf1066`.
+
+## 2026-08-28 - Ranked canonical max-HP checkpoint repair
+
+- Reproduced the production depth-11 checkpoint failure as a local-versus-
+  canonical maximum-HP mismatch caused by local relic and mutator effects.
+- Boundary settlement now preserves the local missing-HP amount while projecting
+  the result onto the Worker's canonical maximum HP. Worker validation remains
+  exact and unchanged.
+- Exact retry also normalizes an already-persisted legacy checkpoint before
+  resending it with the same operation identity, allowing the reported active
+  run to recover after the fixed Pages client is loaded.
+- Focused regression tests passed 83/83, including Shrine, Glass Cannon-style
+  reduced max HP, increased local max HP, runtime portal settlement, and legacy
+  pending-operation recovery. The related architecture test passed 15/15,
+  phase verification passed 1082/1082, the current-tree Ranked lifecycle browser
+  scenario passed, baseline protection passed 3/3, and guard checks passed 15/15.
+- No ruleset, Worker policy, D1 migration, commit, push, or deployment is included
+  in this implementation step.

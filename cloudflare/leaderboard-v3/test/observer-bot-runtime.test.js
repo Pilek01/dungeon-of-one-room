@@ -6,6 +6,7 @@ import vm from "node:vm";
 
 const require = createRequire(import.meta.url);
 const { decideBotPotionUse } = require("../../../bot-safety.js");
+const recorderApi = require("../../../online-v3/ranked-v3-recorder.js");
 
 test("Observer potion policy preserves deterministic hazard action identities", () => {
   const base = { hp: 40, maxHp: 100, incomingDamage: 45, effectiveHeal: 25, potions: 1, turn: 3, enemyTurn: 0, hazardIdentity: "mine:2,2:0" };
@@ -249,8 +250,10 @@ function createHarness(options = {}) {
     },
     DungeonRankedV3Protocol: {
       isSupportedRulesetHash() { return true; },
-      supportsBoundarySettlement() { return options.boundarySettlement === true; }
+      supportsBoundarySettlement() { return options.boundarySettlement === true; },
+      supportsBoundedCombatResources() { return options.boundedCombatResources === true; }
     },
+    DungeonRankedV3Recorder: recorderApi,
     DungeonRankedV3Client: {
       createRankedClient() { return client; },
       createLeaderboardClient() { return {}; },
@@ -306,7 +309,8 @@ function createHarness(options = {}) {
         return {
           turnCount: 4,
           rewardClaims: [],
-          reportedGoldDelta: 0
+          reportedGoldDelta: 0,
+          ...(options.localCombatResources || {})
         };
       },
       beginRankedExtraction() {},
@@ -810,6 +814,47 @@ test("portal entry restores a missing persisted Ranked boundary before Observer 
     "portal settlement did not continue after canonical boundary recovery"
   );
   assert.deepEqual(harness.calls.map((entry) => entry.action), ["resume", "checkpoint"]);
+});
+
+test("portal checkpoint projects local missing HP onto canonical Ranked max HP", async () => {
+  const room = {
+    directiveId: "directive_hp_projection_11",
+    roomNonce: "nonce_hp_projection_11",
+    depth: 11,
+    roomType: "combat"
+  };
+  const harness = createHarness({
+    observerBotActive: true,
+    boundarySettlement: true,
+    boundedCombatResources: true,
+    localCombatResources: { hp: 80, maxHp: 101 },
+    publicState: {
+      rulesetHash: "sha256:boundary",
+      currentRoomDirective: room,
+      currentRewardEnvelope: { envelopeId: "reward_hp_projection", fixedAwards: [] },
+      build: { resources: { hp: 163, maxHp: 163 } }
+    },
+    async onCheckpoint() {
+      return { metaState: metaState({ revision: 2, rulesetHash: "sha256:boundary" }) };
+    }
+  });
+  const runtime = await installRuntime(harness);
+  await runtime.onRoomEntered(room);
+  await runtime.onLocalRoomCleared({
+    turnCount: 4,
+    rewardClaims: [],
+    reportedGoldDelta: 0,
+    completionCapability: harness.integrityContexts[0].completionCapability
+  });
+
+  assert.equal(runtime.onPortalEntry(), true);
+  await waitFor(
+    () => harness.calls.some((entry) => entry.action === "checkpoint"),
+    "projected HP checkpoint did not start"
+  );
+
+  const checkpoint = harness.calls.find((entry) => entry.action === "checkpoint");
+  assert.deepEqual(checkpoint.payload.combatResources, { hp: 142, maxHp: 163 });
 });
 
 test("rapid repeated portal entry shares one checkpoint flight for player and Observer Bot", async () => {

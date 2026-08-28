@@ -519,7 +519,8 @@
     }
 
     async function retryPending() {
-      const pending = requireSnapshot().pendingOperation;
+      const current = requireSnapshot();
+      const pending = current.pendingOperation;
       if (!pending) throw new TypeError("RANKED_PENDING_OPERATION_MISSING");
       const endpoint = protocol.ENDPOINTS[pending.endpoint] || (
         pending.body?.type ? protocol.ENDPOINTS.event : protocol.ENDPOINTS.checkpoint
@@ -556,7 +557,20 @@
         }
         return clone(result.payload);
       }
-      const result = await execute(endpoint, pending);
+      const operation = pending.endpoint === "checkpoint" && pending.body?.combatResources &&
+        typeof options.normalizeCheckpointCombatResources === "function"
+        ? {
+            ...pending,
+            body: {
+              ...pending.body,
+              combatResources: options.normalizeCheckpointCombatResources({
+                ...pending.body.combatResources,
+                canonicalMaxHp: current.publicState?.build?.resources?.maxHp
+              })
+            }
+          }
+        : pending;
+      const result = await execute(endpoint, operation);
       if (pending.endpoint === "finalize") retireCompletedCampaign(result);
       return result;
     }

@@ -334,7 +334,11 @@
     const boundaryRevision = Math.max(0, Math.floor(Number(snapshot.revision) || 0));
     const boundaryFatalEvents = Math.max(0, Math.floor(Number(snapshot.lifeState?.fatalEvents) || 0));
     const boundedCombatResources = protocol.supportsBoundedCombatResources?.(snapshot?.rulesetHash) === true
-      ? { hp: Math.max(0, Math.floor(Number(captured.hp) || 0)), maxHp: Math.max(0, Math.floor(Number(captured.maxHp) || 0)) }
+      ? root.DungeonRankedV3Recorder.canonicalizeBoundaryCombatResources({
+          hp: captured.hp,
+          maxHp: captured.maxHp,
+          canonicalMaxHp: snapshot?.build?.resources?.maxHp
+        })
       : null;
     return {
       summary: {
@@ -414,6 +418,8 @@
       baseUrl: String(root.DUNGEON_ONLINE_V3_API || ""),
       storage: root.localStorage,
       cryptoProvider: root.crypto,
+      normalizeCheckpointCombatResources:
+        root.DungeonRankedV3Recorder?.canonicalizeBoundaryCombatResources,
       onSnapshot(snapshot) {
         rankedHudSyncing = Boolean(snapshot?.pendingOperation);
         root.DungeonOnlineV3GameBridge?.refreshRankedHud?.();

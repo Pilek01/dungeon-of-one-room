@@ -145,34 +145,42 @@ test("Ranked reward recorder preserves v0.8 room-clear and default combat gold",
   }]);
 });
 
-test("Ranked boundary removes only the active temporary Shrine max-HP bonus", () => {
+test("Ranked boundary projects local missing HP onto the canonical maximum", () => {
   assert.deepEqual(
     recorderApi.canonicalizeBoundaryCombatResources({
-      hp: 125,
-      maxHp: 125,
-      shrineMaxHpBonus: 10
+      hp: 101,
+      maxHp: 101,
+      canonicalMaxHp: 163
     }),
-    { hp: 115, maxHp: 115 }
+    { hp: 163, maxHp: 163 }
   );
   assert.deepEqual(
     recorderApi.canonicalizeBoundaryCombatResources({
-      hp: 105,
-      maxHp: 125,
-      shrineMaxHpBonus: 10
+      hp: 80,
+      maxHp: 101,
+      canonicalMaxHp: 163
     }),
-    { hp: 105, maxHp: 115 }
+    { hp: 142, maxHp: 163 }
   );
   assert.deepEqual(
     recorderApi.canonicalizeBoundaryCombatResources({
-      hp: 105,
-      maxHp: 115,
-      shrineMaxHpBonus: 0
+      hp: 160,
+      maxHp: 173,
+      canonicalMaxHp: 163
     }),
-    { hp: 105, maxHp: 115 }
+    { hp: 150, maxHp: 163 }
+  );
+  assert.deepEqual(
+    recorderApi.canonicalizeBoundaryCombatResources({
+      hp: 180,
+      maxHp: 200,
+      canonicalMaxHp: 150
+    }),
+    { hp: 130, maxHp: 150 }
   );
 });
 
-test("generated Ranked bridge reports canonical HP while Shrine max-HP is active", async () => {
+test("generated Ranked bridge reports raw local HP for canonical runtime projection", async () => {
   const root = new URL("../../..", import.meta.url);
   execFileSync(process.execPath, ["scripts/build-pages-v3.mjs", "--target", "test"], {
     cwd: root,
@@ -185,7 +193,7 @@ test("generated Ranked bridge reports canonical HP while Shrine max-HP is active
   const methodSource = game.slice(start, end);
   const context = {
     result: null,
-    window: { DungeonRankedV3Recorder: recorderApi },
+    window: {},
     state: {
       onlineV3Ranked: true,
       turn: 7,
@@ -202,8 +210,8 @@ test("generated Ranked bridge reports canonical HP while Shrine max-HP is active
     turnCount: 5,
     rewardClaims: [],
     reportedGoldDelta: 10,
-    hp: 115,
-    maxHp: 115,
+    hp: 125,
+    maxHp: 125,
     completionCapability: "room-capability"
   });
 });

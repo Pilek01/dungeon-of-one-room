@@ -388,6 +388,9 @@ test("production bridge uses native Forge and native Camp checkpoint selection",
   assert.match(runtime, /eventPayload:[\s\S]*combatResources/u);
   assert.match(runtime, /fatalPayload\.boundarySettlement = mergeCapturedBoundary\(captureRankedBoundary\(\)\)\.eventPayload/u);
   assert.match(builder, /onlineV3BoundedCombatResources/u);
-  assert.match(builder, /canonicalizeBoundaryCombatResources/u);
-  assert.match(builder, /shrineMaxHpBonus/u);
+  assert.match(builder, /hp: Math\.max\(0, Math\.floor\(Number\(state\.player\.hp\)/u);
+  assert.match(builder, /maxHp: Math\.max\(0, Math\.floor\(Number\(state\.player\.maxHp\)/u);
+  assert.doesNotMatch(builder, /shrineMaxHpBonus/u);
+  assert.match(runtime, /canonicalizeBoundaryCombatResources/u);
+  assert.match(runtime, /canonicalMaxHp: snapshot\?\.build\?\.resources\?\.maxHp/u);
 });

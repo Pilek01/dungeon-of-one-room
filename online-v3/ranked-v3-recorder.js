@@ -104,10 +104,15 @@
 
   function canonicalizeBoundaryCombatResources(input = {}) {
     const localMaxHp = Math.max(0, Math.floor(Number(input.maxHp) || 0));
-    const shrineMaxHpBonus = Math.max(0, Math.floor(Number(input.shrineMaxHpBonus) || 0));
-    const maxHp = Math.max(0, localMaxHp - shrineMaxHpBonus);
-    const hp = Math.max(0, Math.min(maxHp, Math.floor(Number(input.hp) || 0)));
-    return { hp, maxHp };
+    const canonicalMaxHp = Math.max(0, Math.floor(Number(input.canonicalMaxHp) || 0));
+    if (localMaxHp <= 0) throw new TypeError("RANKED_BOUNDARY_LOCAL_MAX_HP_INVALID");
+    if (canonicalMaxHp <= 0) throw new TypeError("RANKED_BOUNDARY_CANONICAL_MAX_HP_INVALID");
+    const localHp = Math.max(0, Math.min(localMaxHp, Math.floor(Number(input.hp) || 0)));
+    const missingHp = localMaxHp - localHp;
+    return {
+      hp: Math.max(0, canonicalMaxHp - missingHp),
+      maxHp: canonicalMaxHp
+    };
   }
 
   function createRewardClaimRecorder(options = {}) {

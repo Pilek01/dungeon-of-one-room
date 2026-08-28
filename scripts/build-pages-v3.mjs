@@ -1467,11 +1467,10 @@ const rankedGoldGameReplacements = [
     captureRankedBoundary() {
       if (!state.onlineV3Ranked) return null;
       const combatResources = onlineV3BoundedCombatResources
-        ? window.DungeonRankedV3Recorder.canonicalizeBoundaryCombatResources({
-            hp: state.player.hp,
-            maxHp: state.player.maxHp,
-            shrineMaxHpBonus: state.player.shrineMaxHpBonus
-          })
+        ? {
+            hp: Math.max(0, Math.floor(Number(state.player.hp) || 0)),
+            maxHp: Math.max(0, Math.floor(Number(state.player.maxHp) || 0))
+          }
         : null;
       const boundary = {
         turnCount: Math.max(
