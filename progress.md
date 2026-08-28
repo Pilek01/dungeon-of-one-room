@@ -2121,3 +2121,29 @@ Updated next good targets
   The already-finished production `INTERNAL_ERROR` cannot be reconstructed after
   the fact; the added correlation is intended to identify its source on the next
   occurrence.
+
+## 2026-08-28 - Ranked diagnostic correlation production release
+
+- Source commit `ff0a0a2dac3ae0785818f4072091d1b2c2e92323` was pushed to
+  `origin/main` and deployed to Pages and the production Worker.
+- Forced release verification passed 1104/1104 from the exact committed source;
+  the Worker suite passed 1080/1080, local Wrangler/D1 passed 21/21, the
+  protected baseline guard passed 3/3, and both committed browser scenarios
+  passed. Codex reviewed all six required archive screenshots; visual source
+  fingerprint: `sha256:52d389001ab98b282608a4c96cc90ce5c3d86484db6ac99487b99134ac22834b`.
+- Pages deployment `284844be-b8f4-49cc-a0db-67b01553d9fb` serves source
+  `ff0a0a2` at `https://284844be.dungeon-of-one-room.pages.dev`; direct Pages
+  rollback is `dcbfbc0b-bb37-494e-9054-2229fda4c6a3` from `617ef19`.
+- Worker version `5b4a41e4-a0c5-4c11-9dfb-f67a6506f93b` is active at 100%
+  in deployment `f71d42fc-245b-44cb-aee2-d1e01dc3cb48`; direct Worker rollback
+  is version `0fef666a-eee4-43a8-b29f-f635d47fe4f1`.
+- The Worker progressed through 5%, 25%, and 100%. The 5% window passed 60/60
+  availability checks over 15 minutes. The 25% window remained active for about
+  56 minutes across a local PC restart; pre-restart sampling reached 56/56 and
+  the resumed gate passed 50/50 availability plus 10/10 leaderboard checks.
+  Final production smoke passed 50/50 availability, 10/10 leaderboard, and 4/4
+  exact static asset checks.
+- Active ruleset remains
+  `sha256:78ae2f6f797063b7f364e5652e3367f6b26d651302f5c6038576d304dc442ec3`.
+  D1 reported no migrations to apply. Pre-release Time Travel bookmark:
+  `00000d08-00000000-000050d5-26b50efec54268b0114cf17cbeaf1066`.
