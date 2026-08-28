@@ -2165,3 +2165,25 @@ Updated next good targets
   scenario passed, baseline protection passed 3/3, and guard checks passed 15/15.
 - No ruleset, Worker policy, D1 migration, commit, push, or deployment is included
   in this implementation step.
+
+## 2026-08-29 - Ranked canonical max-HP production release
+
+- Source commit `5fef218ab69a35e2d4d6e8415ebd5bf0315b820a` was pushed to
+  `origin/main` and tagged `online-v3-production-2026-08-29-5fef218`.
+- Forced release verification passed 1106/1106 from the exact committed source:
+  Worker 1082/1082, local Wrangler/D1 21/21, protected baseline 3/3, and both
+  committed browser scenarios. Codex reviewed all six required archive
+  screenshots; visual source fingerprint is
+  `sha256:aae4bd33a91adb28c507284e734155e0e8a02a55a2dda2d7b903d41ee3d8cdd8`.
+- Pages deployment `dad85291-4ee2-499c-9f39-8cc43cbd9b17` serves source
+  `5fef218` at `https://dad85291.dungeon-of-one-room.pages.dev`. Direct Pages
+  rollback is `284844be-b8f4-49cc-a0db-67b01553d9fb` from `ff0a0a2`.
+- Stable and immutable roots, availability, and leaderboard returned HTTP 200;
+  local-versus-live hashes matched for `config.js`, `game.js`, Ranked runtime,
+  and the sanitized visual receipt.
+- The production Worker remains unchanged on version
+  `5b4a41e4-a0c5-4c11-9dfb-f67a6506f93b` at 100% because this release changes
+  no Worker source, ruleset, binding, or configuration. The active ruleset
+  remains `sha256:78ae2f6f797063b7f364e5652e3367f6b26d651302f5c6038576d304dc442ec3`.
+- D1 reported no migrations to apply. Pre-release Time Travel bookmark:
+  `00000d1c-00000000-000050d5-2fb356d453a892670917e10600ef85a5`.
