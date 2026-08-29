@@ -1,5 +1,15 @@
 Original prompt: Diagnose and repair the Ranked Observer Bot production crashes, verify the smallest robust fixes, merge them to main, and deploy a working release.
 
+## 2026-08-29 - Ranked gold parity and Observer economy released
+
+- Ranked now reconstructs the Worker's exact floating-point mutator order before reporting room gold. Exhaustive coverage checked 352,000 legal combinations without a mismatch; server validation remains exact and fail-closed, and Practice arithmetic is unchanged.
+- Observer economy spends on Vitality, Blade, Guard, potion slots, and potion strength through depth 10, reserves 326 gold from depth 11, and reserves 694 gold from depth 16.
+- Source `09d69e5d6521533f47a43eb7d79c29005cd3c225` passed `verify:full` 1112/1112 and is tagged `online-v3-production-2026-08-29-09d69e5`.
+- Worker version `eefeeff3-ec66-499b-bfb4-6eb6968e2a9f` passed 5% and 25% canaries and is active at 100% in deployment `3d781e55-0ac5-4c4d-a747-e1cf3e5e6af5`; rollback is `fec399a9-7ae6-4191-b281-a3b8f3fa4e94`.
+- Pages deployment `8bfbe730-9bc6-4f0a-b510-756653f67ce6` serves the exact verified build at `https://8bfbe730.dungeon-of-one-room.pages.dev`; rollback is `dad85291-4ee2-499c-9f39-8cc43cbd9b17`.
+- Active ruleset is `sha256:5ba35a1c03cf160787c553d55782ddb1ec4612a9a08f2dc26da562feeccc73c2`; previous `sha256:78ae2f6f797063b7f364e5652e3367f6b26d651302f5c6038576d304dc442ec3` remains retained. D1 had no migration; bookmark `00000d75-00000000-000050d6-ca57f10d044401fec88aec5830af14e4` was recorded.
+- Stable and immutable smoke passed root, availability, leaderboard, exact key-asset bytes, and four non-mutating JSON POST probes on each host.
+
 ## 2026-08-28 - Shrine HP, Map Fragment depth gate, potion ordering, and exact chest carry released
 
 - Ranked boundary capture now subtracts only the currently active temporary Shrine maximum-HP bonus before reporting combat resources. Local Shrine healing and display remain unchanged, while the Worker continues to validate exact canonical HP/max HP.
