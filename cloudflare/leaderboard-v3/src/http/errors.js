@@ -75,7 +75,7 @@ export function errorFromCause(cause) {
     return new HttpError(401, "TOKEN_INVALID", "Checkpoint token is invalid.");
   }
   if (
-    /^(STARTING_RELIC_|RELIC_|META_TRANSACTION_|MERCHANT_|FORGE_|CROSSROADS_|CAMP_|PACT_|ROOM_CHECKPOINT_|REWARD_CLAIM_|PUBLIC_|NORMAL_EXTRACTION_|EXTRACTION_)/u.test(code)
+    /^(STARTING_RELIC_|RELIC_|META_TRANSACTION_|MERCHANT_|FORGE_|CROSSROADS_|CAMP_|PACT_|ROOM_CHECKPOINT_|REWARD_CLAIM_|BOUNDARY_|PUBLIC_|NORMAL_EXTRACTION_|EXTRACTION_)/u.test(code)
   ) {
     return new HttpError(422, code, code);
   }

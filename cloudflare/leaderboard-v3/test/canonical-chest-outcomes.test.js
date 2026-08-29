@@ -1,6 +1,10 @@
 import assert from "node:assert/strict";
 import { webcrypto } from "node:crypto";
 import test from "node:test";
+import {
+  normalizeCheckpointCombatResourcesForIssuedHealthV08
+} from "../src/domain/checkpoint-boundary-compat.js";
+import { applyRulesetCheckpoint } from "../src/domain/ruleset-runtime.js";
 import { createInitialMetaStateV08 } from "../src/rulesets/v08-meta-1/meta-state.js";
 import {
   createRoomRewardEnvelopeV3,
@@ -10,6 +14,10 @@ import {
   settleRoomRewardEnvelopeV3
 } from "../src/rulesets/v08-meta-1/reward-policy.js";
 import { normalizeChestBonusesV08 } from "../src/rulesets/v08-meta-1/chest-bonus-policy.js";
+import {
+  issueNextRoomDirectiveV08
+} from "../src/rulesets/v08-meta-1/room-policy.js";
+import { createV08Meta1Ruleset } from "../src/rulesets/v08-meta-1/index.js";
 import {
   applyRelicAcquisition,
   computeRelicBuildDigestV08
@@ -302,6 +310,156 @@ test("canonical health chest advances effective max HP before bounded resource v
     ),
     /BOUNDARY_COMBAT_RESOURCES_MAX_MISMATCH/u
   );
+});
+
+test("canonical health chests rebase pre-settlement boundary HP before validation and replay exactly", async () => {
+  const capabilities = {
+    canonicalChestOutcomes: "v1",
+    boundedCombatResources: "v1",
+    exactChestStatCarry: "v1"
+  };
+  const state = await issuedState({
+    roll: 0,
+    depth: 31,
+    roomType: "treasure",
+    capabilities
+  });
+  const healthSlots = state.currentRewardEnvelope.claimSlots.filter(
+    (slot) => slot.canonicalOutcome?.outcome === "health"
+  );
+  assert.equal(healthSlots.length, 3);
+  const claims = healthSlots.map((slot) => ({
+    claimType: "chest",
+    claimId: slot.slotId,
+    count: 1,
+    localEvidence: {
+      outcome: slot.canonicalOutcome.outcome,
+      awardId: slot.canonicalOutcome.awardId
+    }
+  }));
+  const payload = {
+    ...requestFor(state, claims),
+    // The browser projects missing HP onto the last acknowledged canonical
+    // maximum. The Worker must rebase that projection by the Health rewards
+    // it authoritatively accepts in this same settlement.
+    combatResources: normalizeCheckpointCombatResourcesForIssuedHealthV08({
+      state,
+      rewardClaims: claims,
+      combatResources: { hp: 70, maxHp: 100 },
+      capabilities
+    })
+  };
+  assert.deepEqual(payload.combatResources, { hp: 100, maxHp: 130 });
+  assert.deepEqual(
+    normalizeCheckpointCombatResourcesForIssuedHealthV08({
+      state,
+      rewardClaims: [{
+        ...claims[0],
+        localEvidence: {
+          ...claims[0].localEvidence,
+          awardId: "award_forged"
+        }
+      }],
+      combatResources: { hp: 70, maxHp: 100 },
+      capabilities
+    }),
+    { hp: 70, maxHp: 100 }
+  );
+  assert.deepEqual(
+    normalizeCheckpointCombatResourcesForIssuedHealthV08({
+      state,
+      rewardClaims: claims,
+      combatResources: { hp: 100, maxHp: 130 },
+      capabilities
+    }),
+    { hp: 100, maxHp: 130 }
+  );
+
+  const settled = await settleRoomRewardEnvelopeV3(state, payload, {
+    ...context,
+    capabilities
+  });
+  assert.equal(settled.state.build.resources.maxHp, 130);
+  assert.equal(settled.state.build.resources.hp, 100);
+  assert.equal(settled.state.campaign.chestBonuses.healthDepthBuckets["3"], 3);
+
+  const replay = await settleRoomRewardEnvelopeV3(settled.state, payload, {
+    ...context,
+    capabilities
+  });
+  assert.equal(replay.replayed, true);
+  assert.equal(replay.state.build.resources.maxHp, 130);
+  assert.equal(replay.state.build.resources.hp, 100);
+  assert.equal(replay.state.campaign.chestBonuses.healthDepthBuckets["3"], 3);
+});
+
+test("legal Health checkpoint runtime consumes its directive and issues the next room", async () => {
+  const capabilities = {
+    canonicalChestOutcomes: "v1",
+    boundedCombatResources: "v1",
+    exactChestStatCarry: "v1"
+  };
+  const roomContext = {
+    ...context,
+    capabilities,
+    randomOracle: {
+      async deriveRandomBytes({ length }) {
+        return new Uint8Array(length);
+      },
+      async deriveIntInclusive(minimum) {
+        return minimum;
+      }
+    }
+  };
+  let state = createInitialMetaStateV08({}, roomContext);
+  state.status = "active";
+  state = await issueNextRoomDirectiveV08(state, roomContext);
+  const directive = state.currentRoomDirective;
+  const slot = state.currentRewardEnvelope.claimSlots.find(
+    (entry) => entry.canonicalOutcome?.outcome === "health"
+  );
+  assert.ok(slot);
+  const rewardClaims = [{
+    claimType: "chest",
+    claimId: slot.slotId,
+    count: 1,
+    localEvidence: {
+      outcome: slot.canonicalOutcome.outcome,
+      awardId: slot.canonicalOutcome.awardId
+    }
+  }];
+  const fixedGold = state.currentRewardEnvelope.fixedAwards.reduce(
+    (sum, award) => sum + award.amount,
+    0
+  );
+  const ruleset = createV08Meta1Ruleset({
+    rulesetHash: state.rulesetHash,
+    capabilities
+  });
+  const result = await applyRulesetCheckpoint(state, {
+    roomResult: "cleared",
+    rewardClaims,
+    reportedGoldDelta: fixedGold,
+    reportedGoldTotal: state.gold + fixedGold,
+    integrityVersion: 1,
+    integritySignals: [],
+    turnCount: 10,
+    elapsedMs: 1_000,
+    commandJournalDigest: "journal_health_checkpoint_runtime",
+    compactRoomProof: {
+      roomDirectiveId: directive.directiveId,
+      roomNonce: directive.roomNonce
+    },
+    combatResources: { hp: 100, maxHp: 100 }
+  }, ruleset, roomContext);
+  const next = result.nextState;
+
+  assert.equal(next.depth, directive.depth);
+  assert.equal(next.revision, state.revision + 1);
+  assert.equal(next.build.resources.maxHp, 105);
+  assert.equal(next.build.resources.hp, 105);
+  assert.equal(next.currentRoomDirective.depth, directive.depth + 1);
+  assert.equal(next.currentRoomDirective.consumed, false);
 });
 
 test("canonical attack and armor claims derive their envelope-depth buckets", async () => {

@@ -7,6 +7,9 @@ import {
   rankEligibilityOf,
   rankIntegrityRoomState
 } from "./rank-eligibility.js";
+import {
+  normalizeCheckpointCombatResourcesForIssuedHealthV08
+} from "./checkpoint-boundary-compat.js";
 
 function requireObject(value, code) {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
@@ -258,6 +261,17 @@ export async function applyRulesetCheckpoint(state, body, ruleset, context = {})
   }
   if (body.roomResult !== "cleared") throw new TypeError("ROOM_RESULT_INVALID");
   const wasOfficialRankEligible = isOfficialRankEligible(state);
+  const rewardClaims = Array.isArray(body.rewardClaims)
+    ? structuredClone(body.rewardClaims)
+    : [];
+  const combatResources = body.combatResources === undefined
+    ? undefined
+    : normalizeCheckpointCombatResourcesForIssuedHealthV08({
+        state,
+        rewardClaims,
+        combatResources: body.combatResources,
+        capabilities: ruleset.capabilities
+      });
   const operation = {
     directiveId: directive.directiveId,
     runId: state.runId,
@@ -272,9 +286,7 @@ export async function applyRulesetCheckpoint(state, body, ruleset, context = {})
       envelopeId: state.currentRewardEnvelope.envelopeId,
       roomDirectiveId: directive.directiveId,
       roomNonce: directive.roomNonce,
-      claims: Array.isArray(body.rewardClaims)
-        ? structuredClone(body.rewardClaims)
-        : [],
+      claims: rewardClaims,
       reportedGoldDelta: body.integrityVersion === 1
         ? body.reportedGoldDelta
         : 0,
@@ -285,8 +297,8 @@ export async function applyRulesetCheckpoint(state, body, ruleset, context = {})
       elapsedMs: body.elapsedMs,
       commandJournalDigest: body.commandJournalDigest,
       compactRoomProof: JSON.stringify(body.compactRoomProof),
-      ...(body.combatResources !== undefined
-        ? { combatResources: structuredClone(body.combatResources) }
+      ...(combatResources !== undefined
+        ? { combatResources }
         : {})
     }
   };

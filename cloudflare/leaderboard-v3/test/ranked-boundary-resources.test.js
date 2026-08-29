@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { createHash, webcrypto } from "node:crypto";
 import test from "node:test";
+import { errorFromCause } from "../src/http/errors.js";
 import { settleBoundaryRewardEnvelopeV3, settleRoomRewardEnvelopeV3 } from "../src/rulesets/v08-meta-1/reward-policy.js";
 import { createInitialMetaStateV08 } from "../src/rulesets/v08-meta-1/meta-state.js";
 import { computeRelicBuildDigestV08 } from "../src/rulesets/v08-meta-1/relic-policy.js";
@@ -86,6 +87,14 @@ test("bounded combat resources require exactly hp and maxHp with canonical bound
       /BOUNDARY_COMBAT_RESOURCES/u
     );
   }
+});
+
+test("bounded combat resource validation errors remain actionable instead of INTERNAL_ERROR", () => {
+  const mapped = errorFromCause(
+    new TypeError("BOUNDARY_COMBAT_RESOURCES_MAX_MISMATCH")
+  );
+  assert.equal(mapped.status, 422);
+  assert.equal(mapped.code, "BOUNDARY_COMBAT_RESOURCES_MAX_MISMATCH");
 });
 
 test("accepted boundary applies hp and turn/boost exactly once and exact replay is digest-keyed", async () => {
