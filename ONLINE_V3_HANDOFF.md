@@ -29,12 +29,14 @@ Do not describe the system as server-authoritative combat or cheat-proof.
 - Production provenance is the annotated tag
   `online-v3-production-2026-08-29-5fef218`, which points exactly to the
   deployed Pages source commit.
+- Production Worker source commit:
+  `f384eea02a39ce5f6ee36f372625131133d2b37a` from `main`, fixed by the
+  annotated tag `online-v3-production-2026-08-29-f384eea`.
 - Production Worker version:
-  `5b4a41e4-a0c5-4c11-9dfb-f67a6506f93b` at 100% (deployment
-  `f71d42fc-245b-44cb-aee2-d1e01dc3cb48`), unchanged because this release
-  changes no Worker source, ruleset, binding, or configuration.
+  `fec399a9-7ae6-4191-b281-a3b8f3fa4e94` at 100% (deployment
+  `0bbb3ce7-3b90-4fcb-8f0b-d2994b573323`).
 - Recorded Worker rollback version:
-  `0fef666a-eee4-43a8-b29f-f635d47fe4f1`.
+  `5b4a41e4-a0c5-4c11-9dfb-f67a6506f93b`.
 - Production Pages deployment:
   `dad85291-4ee2-499c-9f39-8cc43cbd9b17`, source `5fef218`, immutable URL
   `https://dad85291.dungeon-of-one-room.pages.dev`.
@@ -48,15 +50,23 @@ Do not describe the system as server-authoritative combat or cheat-proof.
   `No migrations to apply`. Pre-release Time Travel bookmark:
   `00000d1c-00000000-000050d5-2fb356d453a892670917e10600ef85a5`.
 
-This release repairs Ranked checkpoint HP projection without weakening the
-Worker boundary. The browser preserves local missing HP while projecting onto
-the canonical Worker maximum and repairs a persisted legacy checkpoint before
-retrying it with the same operation identity. Worker validation, rulesets, D1,
-Practice, and ordinary combat remain unchanged. The previous Pages deployment
-is the direct client rollback; the production Worker was not redeployed.
+This release repairs the Worker-side settlement of a legal Health chest when
+the browser sends its pre-settlement HP boundary. The compatibility layer uses
+only the server-issued, slot-bound canonical Health award, then leaves the
+authoritative ruleset to validate the normalized boundary. True `BOUNDARY_*`
+validation failures now remain actionable 422 diagnostics instead of becoming
+generic `INTERNAL_ERROR`. Rulesets, bindings, D1, Pages, Practice, and ordinary
+combat remain unchanged. The prior Worker version is the direct rollback.
 
 ## Latest release evidence
 
+- Exact committed Worker source `f384eea02a39ce5f6ee36f372625131133d2b37a`
+  passed the focused Health/boundary regression suite: 30/30. The release
+  gate reused an identical passing `verify:full` receipt: 1106/1106,
+  `output/verification/receipt-full.json`.
+- Worker version `fec399a9-7ae6-4191-b281-a3b8f3fa4e94` is active at 100%.
+  Production availability and leaderboard reads returned HTTP 200, the active
+  ruleset hash remained unchanged, and D1 reported `No migrations to apply`.
 - Exact committed source `5fef218ab69a35e2d4d6e8415ebd5bf0315b820a`
   passed a forced fresh `verify:full`: 1106/1106. The release log is
   `output/verification/full-20260828T221825804Z.log`.
@@ -74,9 +84,10 @@ is the direct client rollback; the production Worker was not redeployed.
   the exact local `config.js`, `game.js`, Ranked runtime, and sanitized visual
   receipt. Stable and immutable root, availability, and leaderboard smoke
   checks return HTTP 200 with JSON on API routes.
-- The Worker remained on version `5b4a41e4...` at 100%. Stable and immutable
-  Pages roots, availability, and leaderboard checks returned HTTP 200, and all
-  four exact asset comparisons matched the verified local release bundle.
+- The previous Pages release kept Worker version `5b4a41e4...` at 100%. Stable
+  and immutable Pages roots, availability, and leaderboard checks returned
+  HTTP 200, and all four exact asset comparisons matched that verified local
+  release bundle.
 - No release smoke mutated D1. The production database still reports no
   pending migrations; the pre-release Time Travel bookmark was recorded in
   the Wrangler output.
@@ -107,9 +118,10 @@ required screenshots after the source fingerprint changed.
 ## Protected working trees and release refs
 
 - The deployed Pages source is fixed by
-  `online-v3-production-2026-08-29-5fef218`; the unchanged Worker source remains
-  fixed by `online-v3-production-2026-08-28-ff0a0a2`. Subsequent documentation
-  commits are not part of either deployed artifact. The direct Pages rollback
+  `online-v3-production-2026-08-29-5fef218`; the deployed Worker source is fixed
+  by `online-v3-production-2026-08-29-f384eea`. Subsequent documentation commits
+  are not part of either deployed artifact. The direct Pages rollback source
+  is `online-v3-production-2026-08-28-ff0a0a2`; the direct Worker rollback
   source is `online-v3-production-2026-08-28-ff0a0a2`.
 - `npm run status:compact` reported zero protected Vault Guardian WIP entries
   and zero local Wrangler-state entries before the release record was written.
