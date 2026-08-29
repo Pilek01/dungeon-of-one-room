@@ -2276,3 +2276,19 @@ Updated next good targets
   the protected committed baseline passed 3/3, current-tree HD browser QA
   passed, and the final safety guard passed 15/15.
 - No commit, push, or deployment is included in this implementation step.
+
+## 2026-08-30 - Ranked enemy settlement idempotency fix
+
+- Diagnosed `REWARD_CLAIM_ROOM_ELITE_BUDGET` as duplicate settlement of an
+  already removed enemy; the Worker envelope correctly remained capped at four
+  elite kills.
+- Generated Online v3 Pages now rejects a repeated enemy settlement before
+  awarding gold, incrementing kill statistics, or recording the Ranked claim.
+- The protected base `game.js`, Practice behavior, Worker limits, and ruleset
+  bytes/hash remain unchanged.
+- The regression test reproduced the duplicate award (14 instead of 7 gold and
+  two claims), then passed after the fix.
+- Final verification passed: guard 15/15, phase 1091/1091, and the current-tree
+  Ranked Lifecycle scenario; its room-clear screenshot was inspected.
+- No commit, push, deployment, ruleset activation, or D1 migration is included
+  in this change.

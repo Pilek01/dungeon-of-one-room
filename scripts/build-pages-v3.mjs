@@ -1433,6 +1433,13 @@ for (const [sourceText, replacement] of rankedDiagnosticsGameReplacements) {
 }
 const rankedGoldGameReplacements = [
   [
+`  function killEnemy(enemy, reason, options = {}) {
+    const killX = enemy.x;`,
+`  function killEnemy(enemy, reason, options = {}) {
+    if (!enemy || !state.enemies.includes(enemy)) return false;
+    const killX = enemy.x;`
+  ],
+  [
 `  window.DungeonOnlineV3GameBridge = Object.freeze({`,
 `  window.DungeonOnlineV3GameBridge = Object.freeze({
     recordRankedDiagnostic(diagnostic) {
