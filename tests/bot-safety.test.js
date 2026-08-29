@@ -11,6 +11,7 @@ const {
   decideBotPotionUse,
   getBotEarlyPotionUpgradePlan,
   getBotGoldBankingPressure,
+  getBotSkillSavingsUpgradeCount,
   getForgeTargetForBot,
   getPendingBlastZones
 } = require("../bot-safety.js");
@@ -209,6 +210,22 @@ function run() {
     getBotGoldBankingPressure({ depth: 30, gold: 1000 }).threshold < deepGold.threshold,
     "gold bank threshold must scale upward with depth"
   );
+
+  assert.equal(typeof getBotSkillSavingsUpgradeCount, "function");
+  for (const [depth, expected] of [
+    [0, 0],
+    [10, 0],
+    [11, 1],
+    [15, 1],
+    [16, 2],
+    [70, 2]
+  ]) {
+    assert.equal(
+      getBotSkillSavingsUpgradeCount(depth),
+      expected,
+      `depth ${depth} must reserve for ${expected} planned skill upgrades`
+    );
+  }
 
   const profitableMine = decideBotOffensiveMine({
     dashAvailable: true,

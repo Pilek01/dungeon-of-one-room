@@ -22,6 +22,8 @@ const PREVIOUS_START_RESOURCE_PARITY_HASH =
   "sha256:9d6069993fd07784ecfdc146825a8a7b82cde1fd7412f351aeba1ab86c539dbe";
 const PREVIOUS_MAP_FRAGMENT_DEPTH_HASH =
   "sha256:25dbdb962a478b3a46375ad5b25a3603041edd95ff45b51e2846b13ce7ea2989";
+const PREVIOUS_GOLD_PARITY_HASH =
+  "sha256:78ae2f6f797063b7f364e5652e3367f6b26d651302f5c6038576d304dc442ec3";
 
 test("bounded combat resources activate only on the new ruleset hash", () => {
   assert.equal(V08_META_1_PRODUCTION_RELEASE_DESCRIPTOR.rulesetHash, manifest.rulesetHash);
@@ -83,6 +85,7 @@ test("bounded combat resources activate only on the new ruleset hash", () => {
   assert.ok(protocol.SUPPORTED_RULESET_HASHES.includes(PREVIOUS_PRODUCTION_HASH));
   assert.deepEqual(protocol.BOUNDED_COMBAT_RESOURCES_RULESET_HASHES, [
     manifest.rulesetHash,
+    PREVIOUS_GOLD_PARITY_HASH,
     PREVIOUS_MAP_FRAGMENT_DEPTH_HASH,
     PREVIOUS_START_RESOURCE_PARITY_HASH,
     PREVIOUS_CHEST_HP_HASH
@@ -92,6 +95,7 @@ test("bounded combat resources activate only on the new ruleset hash", () => {
   assert.equal(protocol.supportsBoundedCombatResources(PREVIOUS_PRODUCTION_HASH), false);
   assert.deepEqual(protocol.POTION_CLAIM_ORDERING_RULESET_HASHES, [
     manifest.rulesetHash,
+    PREVIOUS_GOLD_PARITY_HASH,
     PREVIOUS_MAP_FRAGMENT_DEPTH_HASH
   ]);
   assert.equal(protocol.supportsPotionClaimOrdering(manifest.rulesetHash), true);

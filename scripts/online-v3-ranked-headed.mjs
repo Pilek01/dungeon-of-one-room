@@ -10,6 +10,13 @@ import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
 
+import {
+  getCanonicalRelicReplacementKey,
+  shouldDismissCampGuide,
+  triggerCheckpointWithRetry,
+  triggerPortalWithRetry
+} from "./ranked-headed-relic-order.mjs";
+
 const require = createRequire(import.meta.url);
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const WORKER_ROOT = path.join(ROOT, "cloudflare", "leaderboard-v3");
@@ -559,17 +566,16 @@ async function chooseForgeRewardWithCanonicalReplacement(page, diagnostics) {
       ));
       return;
     }
-    const replacement = await page.evaluate(() => {
-      const state = window.DungeonOnlineV3?.getSnapshot?.()?.publicState;
-      const choice = state?.metaTransactionOffer?.choices?.find((candidate) =>
-        Array.isArray(candidate?.removals) && candidate.removals[0]?.relicId
-      );
-      const relicId = choice?.removals?.[0]?.relicId || "";
-      const index = state?.build?.relics?.findIndex((entry) => entry?.relicId === relicId) ?? -1;
-      const key = index === 9 ? "0" : index >= 0 ? String(index + 1) : "";
-      const control = key ? document.querySelector(`#screenOverlay [data-relic-key="${key}"]`) : null;
-      return { relicId, key, visible: Boolean(control?.getClientRects().length) };
-    });
+    const publicState = await page.evaluate(() =>
+      window.DungeonOnlineV3?.getSnapshot?.()?.publicState || null
+    );
+    const replacement = getCanonicalRelicReplacementKey(publicState);
+    replacement.visible = await page.evaluate((key) => {
+      const control = key
+        ? document.querySelector(`#screenOverlay [data-relic-key="${key}"]`)
+        : null;
+      return Boolean(control?.getClientRects().length);
+    }, replacement.key);
     assert.ok(replacement.relicId, JSON.stringify(replacement));
     assert.match(replacement.key, /^(?:[1-9]|0)$/u, JSON.stringify(replacement));
     assert.equal(replacement.visible, true, JSON.stringify(replacement));
@@ -661,8 +667,25 @@ async function clearVisibleRoom(page) {
   await page.waitForFunction(() => JSON.parse(window.render_game_to_text()).roomCleared === true);
 }
 
-async function enterVisiblePortal(page) {
-  assert.equal(await page.evaluate(() => window.__DUNGEON_TEST_CROSS_PORTAL?.()), true);
+async function enterVisiblePortal(page, expectedDepth) {
+  await triggerPortalWithRetry({
+    async trigger() {
+      assert.equal(await page.evaluate(() => window.__DUNGEON_TEST_CROSS_PORTAL?.()), true);
+    },
+    waitForProgress() {
+      return page.waitForFunction(
+        (depth) => {
+          const game = JSON.parse(window.render_game_to_text());
+          return game.depth >= depth ||
+            window.DungeonOnlineV3?.getSessionState?.() !== "ROOM_ACTIVE" ||
+            [...document.querySelectorAll(".ranked-v3-choice-relic")]
+              .some((element) => element.getClientRects().length > 0);
+        },
+        expectedDepth,
+        { timeout: 750 }
+      );
+    }
+  });
 }
 
 async function completeVisiblePortal(page, expectedDepth, diagnostics = null) {
@@ -706,7 +729,7 @@ async function completeVisiblePortal(page, expectedDepth, diagnostics = null) {
 }
 
 async function crossVisiblePortal(page, expectedDepth, diagnostics = null) {
-  await enterVisiblePortal(page);
+  await enterVisiblePortal(page, expectedDepth);
   await completeVisiblePortal(page, expectedDepth, diagnostics);
 }
 
@@ -1180,24 +1203,27 @@ ${fatalTestHookAnchor}`;
     }
     let releaseAssistance;
     let markAssistanceStarted;
+    let markAssistanceHandled;
     const assistanceStarted = new Promise((resolve) => { markAssistanceStarted = resolve; });
+    const assistanceHandled = new Promise((resolve) => { markAssistanceHandled = resolve; });
     const assistanceGate = new Promise((resolve) => { releaseAssistance = resolve; });
     await page.route("**/api/v3/runs/event", async (route) => {
       const body = route.request().postDataJSON();
-      if (body?.type === "mark_test_assistance") {
+      const isAssistance = body?.type === "mark_test_assistance";
+      if (isAssistance) {
         markAssistanceStarted();
         await assistanceGate;
       }
       await route.continue();
+      if (isAssistance) markAssistanceHandled();
     });
-    const unlockKey = page.keyboard.press("F9");
-    await Promise.race([
-      assistanceStarted,
-      new Promise((_, reject) => setTimeout(
-        () => reject(new Error("Ranked F9 assistance request did not start within 10 seconds")),
-        10_000
-      ))
-    ]);
+    await triggerCheckpointWithRetry({
+      trigger: () => page.keyboard.press("F9"),
+      checkpointStarted: assistanceStarted,
+      timeoutMs: 2_000,
+      attempts: 5,
+      failureLabel: "Ranked F9 assistance request"
+    });
     await page.waitForFunction(() => (
       JSON.parse(window.render_game_to_text()).rankedHudStatus?.syncing === true
     ));
@@ -1211,7 +1237,7 @@ ${fatalTestHookAnchor}`;
       animations: "disabled"
     });
     releaseAssistance();
-    await unlockKey;
+    await assistanceHandled;
     await page.unroute("**/api/v3/runs/event");
     const testMenu = page.locator(".overlay-card-debug-cheats");
     try {
@@ -2655,8 +2681,10 @@ ${fatalTestHookAnchor}`;
     });
     await clearVisibleRoom(page);
     assert.equal(await page.evaluate(() => window.DungeonOnlineV3.getSessionState()), "ROOM_ACTIVE");
-    await page.keyboard.press("q");
-    await checkpointStarted;
+    await triggerCheckpointWithRetry({
+      checkpointStarted,
+      trigger: () => page.keyboard.press("q")
+    });
     await page.waitForFunction(() => (
       JSON.parse(window.render_game_to_text()).rankedHudStatus?.syncing === true
     ));
@@ -2689,7 +2717,7 @@ ${fatalTestHookAnchor}`;
       nativeCamp: Boolean(document.querySelector(".camp-revamp"))
     }));
     assert.equal(campAudit.game.phase, "camp", JSON.stringify(campAudit));
-    if (!campAudit.nativeCamp && /Camp Guide/u.test(campAudit.game.overlayText)) {
+    if (shouldDismissCampGuide(campAudit)) {
       await page.keyboard.press("h");
     }
     await page.locator(".camp-revamp").waitFor({ state: "visible" });

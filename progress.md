@@ -2187,3 +2187,28 @@ Updated next good targets
   remains `sha256:78ae2f6f797063b7f364e5652e3367f6b26d651302f5c6038576d304dc442ec3`.
 - D1 reported no migrations to apply. Pre-release Time Travel bookmark:
   `00000d1c-00000000-000050d5-2fb356d453a892670917e10600ef85a5`.
+
+## 2026-08-29 - Ranked gold parity and Observer Bot early-economy release candidate
+
+- Observer Bot now spends early gold on Vitality, Blade, Guard, potion slots,
+  and potion strength through depth 10; it reserves 326 gold for the first
+  skill from depth 11 and 694 gold for two skill upgrades from depth 16.
+- Ranked gold grants rebuild the Worker's canonical modifier order before
+  rounding. This fixes the reproduced decimal boundary where the client awarded
+  37 room gold while the Worker expected 38 and rejected the checkpoint with
+  `REPORTED_GOLD_DELTA_MISMATCH`. Practice keeps its previous calculation.
+- The final local production ruleset hash is
+  `sha256:5ba35a1c03cf160787c553d55782ddb1ec4612a9a08f2dc26da562feeccc73c2`;
+  the current production hash
+  `sha256:78ae2f6f797063b7f364e5652e3367f6b26d651302f5c6038576d304dc442ec3`
+  remains registered and compatible for existing runs.
+- Ranked headed QA now expands canonical relic stacks before choosing a Forge
+  replacement key, dismisses a late-opening Camp Guide race, and retries a Camp
+  checkpoint input when a tutorial consumes the first key press. The actual
+  player-facing Forge selection path was already correct.
+- Exhaustive client-versus-Worker gold parity covered 352,000 combinations with
+  zero mismatches. Focused Forge/Camp regressions passed, current-tree Ranked
+  Lifecycle and Camp browser scenarios passed, and full release verification
+  passed 1112/1112.
+- No commit, push, deployment, ruleset activation, or D1 migration was performed
+  in this implementation and release-preparation step.

@@ -137,6 +137,7 @@
     decideBotPotionUse: decideBotPotionUseSafe = () => ({ use: false, reason: "blocked_empty", actionKey: "" }),
     getBotEarlyPotionUpgradePlan: getBotEarlyPotionUpgradePlanSafe = () => ({ active: false, recommendedUpgrade: null }),
     getBotGoldBankingPressure: getBotGoldBankingPressureSafe = () => ({ threshold: Infinity, score: 0, ratio: 0, strong: false }),
+    getBotSkillSavingsUpgradeCount: getBotSkillSavingsUpgradeCountSafe = () => 0,
     getForgeTargetForBot: getForgeTargetForBotSafe = () => null,
     getPendingBlastZones: getPendingBlastZonesSafe = () => ({})
   } = (typeof window !== "undefined" && window.botSafetyApi) || {};
@@ -12047,12 +12048,28 @@
     markUiDirty();
   }
 
+  function getGoldMultiplierForGrant() {
+    if (!state.onlineV3Ranked) return state.runMods.goldMultiplier;
+    let mutatorAdditive = 0;
+    const activeMutatorIds = MUTATORS
+      .filter((mutator) => isMutatorActive(mutator.id))
+      .map((mutator) => mutator.id)
+      .sort((left, right) => left.localeCompare(right));
+    for (const mutatorId of activeMutatorIds) {
+      mutatorAdditive += mutatorId === "greed" ? 0.4 : 0.2;
+    }
+    const idolStacks = state.relics.includes("idol") ? 1 : 0;
+    return 1 + idolStacks * GOLDEN_IDOL_GOLD_MULTIPLIER + mutatorAdditive;
+  }
+
   function grantGold(amount, options = {}) {
     const rawAmount = Math.max(0, Number(amount) || 0);
     if (rawAmount <= 0) return 0;
     const applyMultiplier = options.applyMultiplier !== false;
     const scaled = applyMultiplier
-      ? Math.max(1, Math.round(rawAmount * state.runMods.goldMultiplier * getPactGoldGainMultiplier()))
+      ? state.onlineV3Ranked
+        ? Math.max(1, Math.round(rawAmount * getGoldMultiplierForGrant() * getPactGoldGainMultiplier()))
+        : Math.max(1, Math.round(rawAmount * state.runMods.goldMultiplier * getPactGoldGainMultiplier()))
       : Math.max(1, Math.round(rawAmount));
     state.player.gold += scaled;
     state.runGoldEarned += scaled;
@@ -31159,10 +31176,7 @@
         )
       ) || 0)
     );
-    const maxPlannedUpgrades =
-      progressDepth >= 22 ? 3 :
-        progressDepth >= 12 ? 2 :
-          progressDepth >= 6 ? 1 : 0;
+    const maxPlannedUpgrades = getBotSkillSavingsUpgradeCountSafe(progressDepth);
     if (maxPlannedUpgrades <= 0) {
       return { reserve: 0, planned: [] };
     }

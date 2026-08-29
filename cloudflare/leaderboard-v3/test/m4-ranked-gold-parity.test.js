@@ -7,7 +7,8 @@ import { execFileSync } from "node:child_process";
 import { V08_LOCAL_ELITE_REWARD_BONUS } from "../src/domain/rank-eligibility.js";
 import {
   calculateChestGoldV08,
-  calculateEnemyGoldV08
+  calculateEnemyGoldV08,
+  calculateMultipliedGoldV08
 } from "../src/rulesets/v08-meta-1/gold-policy.js";
 import * as gamePatches from "../../../scripts/online-v3-game-patches.mjs";
 
@@ -30,7 +31,7 @@ function runModifierLedger(...modifierIds) {
   };
 }
 
-async function localRankedGoldProjection(modifierIds) {
+async function localRankedGoldProjection(modifierIds, options = {}) {
   const gameSource = await readFile(new URL("../../../game.js", import.meta.url), "utf8");
   const extractFunction = (name, nextName) => {
     const start = gameSource.indexOf(`  function ${name}(`);
@@ -53,22 +54,25 @@ async function localRankedGoldProjection(modifierIds) {
       },
       runMods: {},
       runGoldEarned: 0,
-      totalGoldEarned: 0
+      totalGoldEarned: 0,
+      onlineV3Ranked: options.onlineV3Ranked !== false,
+      relics: ["idol"]
     },
     MUTATORS: modifierIds.map((id) => ({ id })),
     isMutatorActive: (id) => modifierIds.includes(id),
     scaledCombat: (amount) => amount * 10,
     clamp: (value, min, max) => Math.min(max, Math.max(min, value)),
     CRIT_CHANCE_CAP: 0.55,
-    getBountyContractMultiplier: () => 1.3,
-    getPactGoldGainMultiplier: () => 1.4,
+    GOLDEN_IDOL_GOLD_MULTIPLIER: 0.15,
+    getBountyContractMultiplier: () => options.bountyMultiplier ?? 1.3,
+    getPactGoldGainMultiplier: () => options.pactMultiplier ?? 1.4,
     setStorageItem: () => {},
     STORAGE_TOTAL_GOLD: "test"
   };
   vm.runInNewContext(`
 ${extractFunction("resetRunModifiers", "applyCampUpgradesToRun")}
 ${extractFunction("applyMutatorsToRun", "applyMutatorMidRun")}
-${extractFunction("grantGold", "grantPotion")}
+${extractFunction("getGoldMultiplierForGrant", "grantPotion")}
 ${extractFunction("rewardForEnemy", "tryKnockbackEnemyFromPoint")}
 applyMutatorsToRun();
 state.runMods.goldMultiplier += 0.15;
@@ -79,7 +83,35 @@ state.player.gold = 0;
 const elite = grantGold(eliteBase);
 state.player.gold = 0;
 const chest = grantGold(Math.round(8 * 1.4));
-result = { runMods: { ...state.runMods }, normal, elite, chest };
+state.player.gold = 0;
+const normalSlime = grantGold(rewardForEnemy({ type: "slime", elite: false, rewardBonus: 0 }));
+state.player.gold = 0;
+const eliteSlime = grantGold(rewardForEnemy({
+  type: "slime",
+  elite: true,
+  rewardBonus: ${V08_LOCAL_ELITE_REWARD_BONUS}
+}));
+state.player.gold = 0;
+const eliteAcolyte = grantGold(rewardForEnemy({
+  type: "acolyte",
+  elite: true,
+  rewardBonus: ${V08_LOCAL_ELITE_REWARD_BONUS}
+}));
+state.player.gold = 0;
+const hazard = grantGold(1);
+state.player.gold = 0;
+const boundaryTen = grantGold(10);
+result = {
+  runMods: { ...state.runMods },
+  normal,
+  elite,
+  chest,
+  normalSlime,
+  eliteSlime,
+  eliteAcolyte,
+  hazard,
+  boundaryTen
+};
 `, context);
   return context.result;
 }
@@ -308,6 +340,81 @@ test("three mutators compose with Camp enemy and chest upgrades in canonical rou
     { normal: local.normal, elite: local.elite, chest: local.chest },
     { normal: 11, elite: 16, chest: 30 }
   );
+});
+
+test("Ranked normalizes the production decimal boundary before room gold is reported", async () => {
+  const modifierIds = ["berserker", "famine", "resilience"];
+  const canonicalRunModifiers = runModifierLedger(...modifierIds);
+  const canonicalBuild = {
+    relics: [{ relicId: "idol", stacks: 1 }],
+    pacts: [],
+    campUpgrades: {}
+  };
+  const canonicalEnemyGold =
+    (2 * calculateEnemyGoldV08({
+      canonicalBuild,
+      canonicalRunModifiers,
+      enemyType: "slime",
+      elite: true
+    }))
+    + calculateEnemyGoldV08({
+      canonicalBuild,
+      canonicalRunModifiers,
+      enemyType: "slime",
+      elite: false
+    })
+    + calculateEnemyGoldV08({
+      canonicalBuild,
+      canonicalRunModifiers,
+      enemyType: "acolyte",
+      elite: true
+    })
+    + 2;
+  const expectedLocalGold = canonicalEnemyGold + (3 * 5);
+
+  const ranked = await localRankedGoldProjection(modifierIds, {
+    onlineV3Ranked: true,
+    bountyMultiplier: 1,
+    pactMultiplier: 1
+  });
+  const practice = await localRankedGoldProjection(modifierIds, {
+    onlineV3Ranked: false,
+    bountyMultiplier: 1,
+    pactMultiplier: 1
+  });
+  const rankedRoomGold =
+    (2 * ranked.eliteSlime)
+    + ranked.normalSlime
+    + ranked.eliteAcolyte
+    + ranked.hazard;
+
+  assert.equal(canonicalEnemyGold, 23);
+  assert.equal(expectedLocalGold, 38);
+  assert.equal(ranked.normalSlime, 4);
+  assert.equal(rankedRoomGold, expectedLocalGold);
+  assert.equal(practice.normalSlime, 3, "Practice keeps its existing floating-point behavior");
+});
+
+test("Ranked follows the Worker operation order on the opposite decimal boundary", async () => {
+  const modifierIds = ["berserker"];
+  const canonical = calculateMultipliedGoldV08({
+    canonicalBuild: {
+      relics: [{ relicId: "idol", stacks: 1 }],
+      pacts: [],
+      campUpgrades: {}
+    },
+    canonicalRunModifiers: runModifierLedger(...modifierIds),
+    sourceId: "enemy-kill",
+    baseAmount: 10
+  });
+  const ranked = await localRankedGoldProjection(modifierIds, {
+    onlineV3Ranked: true,
+    bountyMultiplier: 1,
+    pactMultiplier: 1
+  });
+
+  assert.equal(canonical, 13);
+  assert.equal(ranked.boundaryTen, canonical);
 });
 
 test("Ranked Arena reserves the fourth elite slot for its forced second-wave elite", async () => {

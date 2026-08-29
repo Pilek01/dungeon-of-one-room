@@ -249,6 +249,16 @@
     };
   }
 
+  function getBotSkillSavingsUpgradeCount(depthValue) {
+    const numericDepth = Number(depthValue);
+    const depth = Number.isFinite(numericDepth)
+      ? Math.max(0, Math.floor(numericDepth))
+      : 0;
+    if (depth >= 16) return 2;
+    if (depth >= 11) return 1;
+    return 0;
+  }
+
   function getBotGoldBankingPressure(options = {}) {
     const depthValue = Number(options.depth);
     const depth = Number.isFinite(depthValue) ? Math.max(0, Math.floor(depthValue)) : 0;
@@ -400,6 +410,7 @@
     decideBotPotionUse,
     getBotEarlyPotionUpgradePlan,
     getBotGoldBankingPressure,
+    getBotSkillSavingsUpgradeCount,
     getForgeTargetForBot,
     getPendingBlastZones
   };
