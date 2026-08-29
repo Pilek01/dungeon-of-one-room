@@ -109,6 +109,17 @@ function makeBoundaryHarness({ legacy = false } = {}) {
         };
         return { metaState: snapshot.publicState };
       }
+      if (action === "request_extraction") {
+        snapshot = {
+          publicState: pactState({
+            revision: 10,
+            status: "extraction",
+            currentRoomDirective: undefined,
+            currentRewardEnvelope: undefined
+          })
+        };
+        return { metaState: snapshot.publicState };
+      }
       throw new Error(`Unexpected event: ${action}`);
     },
     async checkpoint(payload) {
@@ -131,6 +142,10 @@ function makeBoundaryHarness({ legacy = false } = {}) {
                 metaTransactionOffer: undefined
               }
             : {
+                currentRoomDirective: {
+                  ...pactState().currentRoomDirective,
+                  consumed: true
+                },
                 metaTransactionOffer: {
                   sourceType: "pact",
                   sourceId: "pact-choice",
@@ -149,6 +164,15 @@ function makeBoundaryHarness({ legacy = false } = {}) {
     async resumeCanonical() {
       calls.push({ action: "resume" });
       return { metaState: snapshot.publicState };
+    },
+    async finalize() {
+      calls.push({ action: "finalize" });
+      return {
+        metaState: {
+          ...snapshot.publicState,
+          status: "finalized"
+        }
+      };
     },
     releaseWriter() {},
     clear() {},
@@ -296,6 +320,35 @@ test("active Ranked Pact receives its canonical post-checkpoint offer before por
     harness.calls.some((entry) => entry.action === "open_meta_offer"),
     false,
     "post-room Pact capability must not issue a pre-checkpoint offer"
+  );
+});
+
+test("normal extraction after a cleared Ranked Pact commits the canonical offer before extracting", async () => {
+  const harness = makeBoundaryHarness();
+  const runtime = await installRuntime(harness);
+
+  await runtime.onRoomEntered(harness.root.DungeonRankedV3Client.createRankedClient().getSnapshot().publicState.currentRoomDirective);
+  await runtime.onLocalRoomCleared({
+    turnCount: 4,
+    rewardClaims: [],
+    completionCapability: harness.root.integrityContext.completionCapability
+  });
+  await runtime.onExtraction("normal");
+
+  assert.equal(
+    harness.calls.some((entry) => entry.action === "request_extraction"),
+    false,
+    "normal extraction must wait for the mandatory post-room Pact choice"
+  );
+  assert.equal(typeof harness.ui.choiceHandler, "function", "the canonical Pact offer must be presented");
+
+  await harness.ui.choiceHandler("pact_apply");
+
+  assert.deepEqual(
+    harness.calls
+      .map((entry) => entry.action)
+      .filter((action) => ["checkpoint", "commit_meta_transaction", "request_extraction"].includes(action)),
+    ["checkpoint", "commit_meta_transaction", "request_extraction"]
   );
 });
 

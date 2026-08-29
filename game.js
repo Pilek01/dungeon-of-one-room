@@ -3154,6 +3154,13 @@
       roomIndex: Math.max(0, Number(state.roomIndex) || 0),
       roomType: String(state.roomType || "combat"),
       bossRoom: Boolean(state.bossRoom),
+      roomCleared: Boolean(state.roomCleared),
+      portalPresent: Boolean(state.portal),
+      portalActive: Boolean(state.phase === "playing" && state.roomCleared && state.portal),
+      portalX: state.portal ? Number(state.portal.x) : null,
+      portalY: state.portal ? Number(state.portal.y) : null,
+      turnInProgress: Boolean(state.turnInProgress),
+      enemyTurnInProgress: Boolean(state.enemyTurnInProgress),
       hp: Math.max(0, Number(player.hp) || 0),
       maxHp: Math.max(1, Number(player.maxHp) || 1),
       hpRatio: Number(((Number(player.hp) || 0) / Math.max(1, Number(player.maxHp) || 1)).toFixed(3)),
@@ -3163,6 +3170,11 @@
       hasVampfang: hasRelic("vampfang"),
       aoeTier: Math.max(0, Number(getSkillTier("aoe")) || 0),
       dashTier: Math.max(0, Number(getSkillTier("dash")) || 0),
+      shieldTier: Math.max(0, Number(getSkillTier("shield")) || 0),
+      skillShield: Math.max(0, Number(player.skillShield) || 0),
+      fracturedShieldBarrier: Math.max(0, Number(player.fracturedShieldBarrier) || 0),
+      shieldStoredDamage: Math.max(0, Number(player.shieldStoredDamage) || 0),
+      playerShieldBrokeThisTurn: Boolean(state.playerShieldBrokeThisTurn),
       runGold: Math.max(0, Number(player.gold) || 0),
       campGold: Math.max(0, Number(state.campGold) || 0),
       potions: Math.max(0, Number(player.potions) || 0),
@@ -3330,7 +3342,7 @@
     lines.push(`extract_reason_top=${topExtractReasons || "none"}`);
     lines.push("");
     lines.push("# Schema");
-    lines.push("Each line below is JSON with: ts,event,runSeq,vampfangHealDelta,phase,depth,turn,roomIndex,roomType,bossRoom,hp,maxHp,hpRatio,armor,attack,vampfangHealRun,hasVampfang,aoeTier,dashTier,runGold,campGold,potions,maxPotions,lives,enemies,enemyHpTotal,enemyTypeCounts,targetType,decision,policy,farmMode,pressureDepth,pressureFailures,farmExtractDepth,farmGoldTarget,farmGuardTarget,farmVitalityTarget,farmBladeTarget,loopPingPong,loopPingPongTicks,loopAcolytePingPongTicks plus event-specific fields.");
+    lines.push("Each line below is JSON with: ts,event,runSeq,vampfangHealDelta,phase,depth,turn,roomIndex,roomType,bossRoom,roomCleared,portalPresent,portalActive,portalX,portalY,turnInProgress,enemyTurnInProgress,hp,maxHp,hpRatio,armor,attack,vampfangHealRun,hasVampfang,aoeTier,dashTier,shieldTier,skillShield,fracturedShieldBarrier,shieldStoredDamage,playerShieldBrokeThisTurn,runGold,campGold,potions,maxPotions,lives,enemies,enemyHpTotal,enemyTypeCounts,targetType,decision,policy,farmMode,pressureDepth,pressureFailures,farmExtractDepth,farmGoldTarget,farmGuardTarget,farmVitalityTarget,farmBladeTarget,loopPingPong,loopPingPongTicks,loopAcolytePingPongTicks plus event-specific fields.");
     lines.push("");
     lines.push("# Events (JSONL)");
     for (const row of events) {
@@ -20699,6 +20711,9 @@
     tickElixirEffect();
     tickCrownOfOneRoomShield();
     tickBarrier();
+
+    // Aegis Counter can kill the final enemy when the barrier expires.
+    checkRoomClearBonus();
     state.playerHpDamagedThisTurn = false;
     state.playerHitEnemyThisTurn = false;
     saveMetaProgress();

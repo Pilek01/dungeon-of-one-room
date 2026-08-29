@@ -559,6 +559,34 @@ async function main() {
     });
     await writeJson("hud-structure.json", hudStructure);
 
+    await hd.page.keyboard.press("h");
+    await hd.page.locator(".tutorial-overlay-card").waitFor({ state: "visible" });
+    const tutorialLayout = await hd.page.evaluate(() => {
+      const scroller = document.querySelector(".tutorial-overlay-card > .tutorial-sections");
+      const sections = [...document.querySelectorAll(".tutorial-overlay-card .tutorial-section")];
+      return {
+        scroller: {
+          clientHeight: scroller?.clientHeight || 0,
+          scrollHeight: scroller?.scrollHeight || 0,
+          overflowY: scroller ? getComputedStyle(scroller).overflowY : ""
+        },
+        sections: sections.map((section) => ({
+          title: section.querySelector("h3")?.textContent?.trim() || "",
+          clientHeight: section.clientHeight,
+          scrollHeight: section.scrollHeight
+        }))
+      };
+    });
+    assert.equal(tutorialLayout.sections.length >= 5, true, JSON.stringify(tutorialLayout));
+    assert.equal(
+      tutorialLayout.sections.every((section) => section.scrollHeight <= section.clientHeight + 1),
+      true,
+      `Tutorial sections must not clip their own rows: ${JSON.stringify(tutorialLayout)}`
+    );
+    results.checks.tutorialLayout = tutorialLayout;
+    results.screenshots.push(await screenshot(hd.page, "03-how-to-play.png"));
+    await hd.page.keyboard.press("h");
+
     await hd.page.keyboard.press("F9");
     await hd.page.waitForFunction(() => document.querySelector("#screenOverlay")?.textContent?.includes("Debug Cheats"));
     const cheatOptions = await hd.page.evaluate(() =>

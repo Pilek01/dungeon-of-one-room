@@ -14,6 +14,8 @@ import manifest from "../src/rulesets/v08-meta-1/data/ruleset-manifest.json" wit
 
 const require = createRequire(import.meta.url);
 const protocol = require("../../../online-v3/ranked-v3-protocol.js");
+const PREVIOUS_PORTAL_CLEAR_HASH =
+  "sha256:5ba35a1c03cf160787c553d55782ddb1ec4612a9a08f2dc26da562feeccc73c2";
 const PREVIOUS_PRODUCTION_HASH =
   "sha256:bf17a65dc721066bf11a1c34063cc18254fe97766852827719eb6aabf36042fa";
 const PREVIOUS_CHEST_HP_HASH =
@@ -85,6 +87,7 @@ test("bounded combat resources activate only on the new ruleset hash", () => {
   assert.ok(protocol.SUPPORTED_RULESET_HASHES.includes(PREVIOUS_PRODUCTION_HASH));
   assert.deepEqual(protocol.BOUNDED_COMBAT_RESOURCES_RULESET_HASHES, [
     manifest.rulesetHash,
+    PREVIOUS_PORTAL_CLEAR_HASH,
     PREVIOUS_GOLD_PARITY_HASH,
     PREVIOUS_MAP_FRAGMENT_DEPTH_HASH,
     PREVIOUS_START_RESOURCE_PARITY_HASH,
@@ -95,6 +98,7 @@ test("bounded combat resources activate only on the new ruleset hash", () => {
   assert.equal(protocol.supportsBoundedCombatResources(PREVIOUS_PRODUCTION_HASH), false);
   assert.deepEqual(protocol.POTION_CLAIM_ORDERING_RULESET_HASHES, [
     manifest.rulesetHash,
+    PREVIOUS_PORTAL_CLEAR_HASH,
     PREVIOUS_GOLD_PARITY_HASH,
     PREVIOUS_MAP_FRAGMENT_DEPTH_HASH
   ]);

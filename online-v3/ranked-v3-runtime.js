@@ -2256,14 +2256,14 @@
       showTerminal(state);
       return;
     }
+    if (state.metaTransactionOffer) {
+      await continueBoundary(state, operation);
+      return;
+    }
     if (pendingExtractionMode) {
       const extractionMode = pendingExtractionMode;
       clearPendingExtractionIntent();
       await performExtraction(extractionMode, null, operation);
-      return;
-    }
-    if (state.metaTransactionOffer) {
-      await continueBoundary(state, operation);
       return;
     }
     if (pendingBoundaryExit === "portal") {

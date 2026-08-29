@@ -1,5 +1,21 @@
 Original prompt: Diagnose and repair the Ranked Observer Bot production crashes, verify the smallest robust fixes, merge them to main, and deploy a working release.
 
+## 2026-08-29 - Ranked post-room Pact extraction ordering fix
+
+- Production diagnostics reproduced a normal extraction request racing ahead of
+  the mandatory canonical post-room Pact transaction.
+- Added a RED/GREEN runtime regression proving the required order is checkpoint,
+  Pact commit, then extraction.
+- The Ranked client now presents and commits a returned meta transaction offer
+  before consuming a remembered extraction intent. Worker fail-closed Pact
+  validation remains unchanged.
+- Focused Pact regressions pass 19/19, phase verification passes 1090/1090,
+  the current-tree Ranked lifecycle scenario passes, and the safety guard
+  passes 15/15. The gameplay screenshot from the headed scenario was visually
+  inspected.
+- No commit, push, deployment, ruleset activation, or D1 migration is included
+  in this step.
+
 ## 2026-08-29 - Ranked gold parity and Observer economy released
 
 - Ranked now reconstructs the Worker's exact floating-point mutator order before reporting room gold. Exhaustive coverage checked 352,000 legal combinations without a mismatch; server validation remains exact and fail-closed, and Practice arithmetic is unchanged.
@@ -2222,3 +2238,41 @@ Updated next good targets
   passed 1112/1112.
 - No commit, push, deployment, ruleset activation, or D1 migration was performed
   in this implementation and release-preparation step.
+
+## 2026-08-29 - Full Help section-clipping fix
+
+- Reproduced the HD How to Play defect in the current-tree browser scenario:
+  the outer manual reported no overflow while four inner sections clipped up to
+  109 pixels of their rows.
+- The manual grid now sizes implicit rows to their full content. Complete
+  section cards remain intact and the existing manual scroller exposes the
+  remaining sections with the documented Up/Down controls.
+- Added browser geometry regression coverage and a How to Play screenshot to
+  the HD scenario. No commit, push, or deployment is included in this step.
+
+## 2026-08-29 - Aegis Counter final-enemy portal regression
+
+- The supplied Observer Bot trace isolated a depth-25 stall where the Warden
+  died after the earlier room-clear check, leaving zero enemies while
+  `roomCleared` stayed false and no portal was rendered.
+- `tickBarrier()` can trigger the legendary Aegis Counter after the previous
+  final-enemy check. Turn finalization now checks room completion again after
+  that effect so its last-enemy kills reveal the portal normally.
+- Observer Bot traces now include room-clear, portal, turn-finalization, and
+  shield state so future stalls expose the relevant invariant directly.
+- Focused regressions were observed failing before the change and now pass
+  4/4. Broader browser and baseline verification is still in progress.
+- Regenerating the source-bound ruleset produced candidate hash
+  `sha256:91843a42a08ca6213e664cc0607e511fbd2c89f2bbfd749b45c0244924da067f`.
+  The current production hash
+  `sha256:5ba35a1c03cf160787c553d55782ddb1ec4612a9a08f2dc26da562feeccc73c2`
+  is retained in protocol and Worker registries with the same capabilities so
+  existing legal runs remain compatible after a future release.
+- Focused protocol, production-registry, and integrity tests were observed
+  failing before the compatibility binding and now pass 26/26.
+- Final ruleset generation is stable at
+  `sha256:91843a42a08ca6213e664cc0607e511fbd2c89f2bbfd749b45c0244924da067f`.
+  Phase verification passed 1089/1089, current-tree Ranked Lifecycle passed,
+  the protected committed baseline passed 3/3, current-tree HD browser QA
+  passed, and the final safety guard passed 15/15.
+- No commit, push, or deployment is included in this implementation step.

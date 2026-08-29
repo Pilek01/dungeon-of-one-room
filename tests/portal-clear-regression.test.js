@@ -5,15 +5,15 @@ const test = require("node:test");
 
 const gameSource = fs.readFileSync(path.resolve(__dirname, "..", "game.js"), "utf8");
 
-test("late turn kills are followed by a final room-clear check", () => {
+test("Aegis Counter kills are followed by a final room-clear check", () => {
   const start = gameSource.indexOf("function finishTurnAfterEnemySequence()");
   const end = gameSource.indexOf("function startEnemyTurnSequence()", start);
   assert.ok(start >= 0 && end > start, "finishTurnAfterEnemySequence source boundary");
   const body = gameSource.slice(start, end);
-  const lateEffect = body.indexOf("tickChaosOrb();");
-  const finalClearCheck = body.indexOf("checkRoomClearBonus();", lateEffect);
-  assert.ok(lateEffect >= 0, "Chaos Orb remains a late-turn effect");
-  assert.ok(finalClearCheck > lateEffect, "late-turn kills must reveal the portal");
+  const aegisCounterEffect = body.indexOf("tickBarrier();");
+  const finalClearCheck = body.indexOf("checkRoomClearBonus();", aegisCounterEffect);
+  assert.ok(aegisCounterEffect >= 0, "Aegis Counter remains a late-turn barrier effect");
+  assert.ok(finalClearCheck > aegisCounterEffect, "Aegis Counter kills must reveal the portal");
 });
 
 test("the first portal tutorial lets E and Q continue to their normal portal actions", () => {
