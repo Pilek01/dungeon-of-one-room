@@ -70,7 +70,9 @@ export function classifyImmediateFailure(sample) {
 }
 
 export function isBotRunComplete(sample) {
-  return ["FINALIZED", "ABANDONED_LOCAL_SESSION"].includes(String(sample?.sessionState || "").toUpperCase());
+  const sessionState = String(sample?.sessionState || "").toUpperCase();
+  if (sessionState === "ABANDONED_LOCAL_SESSION") return true;
+  return sessionState === "FINALIZED" && sample?.observer?.enabled === false;
 }
 
 function isKnownBoundaryWait(sample) {

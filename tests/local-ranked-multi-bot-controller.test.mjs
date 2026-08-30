@@ -197,6 +197,41 @@ test("marks a legally finalized run complete without creating failure artifacts"
   assert.equal(fixture.timers[0].cleared, true);
 });
 
+test("keeps polling while an active Observer moves from FINALIZED into the next run", async () => {
+  const fixture = createFixture();
+  const samples = [
+    {
+      game: { phase: "camp", depth: 12 },
+      observer: { enabled: true, lastDecision: "camp_start_run" },
+      sessionState: "FINALIZED",
+      overlayText: "",
+      pageErrors: []
+    },
+    {
+      game: { phase: "playing", depth: 1 },
+      observer: { enabled: true, lastDecision: "move" },
+      sessionState: "ROOM_ACTIVE",
+      overlayText: "",
+      pageErrors: []
+    }
+  ];
+  let sampleIndex = 0;
+  fixture.options.sampleBotPage = async () => samples[Math.min(sampleIndex++, samples.length - 1)];
+  const controller = await startMultiBotWall(fixture.options);
+
+  await fixture.timers[0].callback();
+  assert.equal(controller.bots[0].status, "running");
+  assert.notEqual(fixture.timers[0].cleared, true);
+
+  await fixture.timers[0].callback();
+  const latest = fixture.events.filter(
+    (event) => event.type === "bot_status" && event.botId === "bot-01"
+  ).at(-1);
+  assert.equal(latest.status, "running");
+  assert.equal(latest.depth, 1);
+  assert.equal(latest.lastDecision, "move");
+});
+
 test("keeps the last live bot state when a failure is captured", async () => {
   const fixture = createFixture();
   fixture.options.sampleBotPage = async () => ({
