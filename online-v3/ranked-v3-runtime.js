@@ -2043,10 +2043,16 @@
   }
   async function onMerchantLeave(options = {}) {
     if (merchantMutationPending) return true;
+    const requestedDirectiveId = activeRoomDirectiveId;
     if (
-      activeRoomDirectiveId &&
-      merchantLeaveCompletedDirectiveId === activeRoomDirectiveId
+      requestedDirectiveId &&
+      merchantLeaveCompletedDirectiveId === requestedDirectiveId
     ) return true;
+    if (boundaryOperation) {
+      await boundaryOperation.promise;
+      if (requestedDirectiveId && activeRoomDirectiveId !== requestedDirectiveId) return true;
+      return onMerchantLeave(options);
+    }
     merchantMutationPending = true;
     root.DungeonOnlineV3GameBridge?.beginRankedMerchantRequest?.();
     try {

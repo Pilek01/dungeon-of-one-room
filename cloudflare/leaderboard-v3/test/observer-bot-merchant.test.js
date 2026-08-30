@@ -132,6 +132,11 @@ function generatedMerchantActionRunner(game, decision) {
     isOnMerchant: () => true,
     buildObserverMerchantDecision: () => decision,
     openMerchantMenu() { calls.push({ kind: "open" }); return true; },
+    closeMerchantMenu() {
+      calls.push({ kind: "close" });
+      state.merchantMenuOpen = false;
+      return true;
+    },
     tryBuyPotionFromMerchant() { calls.push({ kind: "potion" }); return true; },
     tryBuySkillUpgradeFromMerchant() { calls.push({ kind: "skill" }); return true; },
     tryBuyRelicFromMerchant() { calls.push({ kind: "relic_wrapper" }); return true; },
@@ -179,7 +184,7 @@ test("generated Ranked policy forwards exact replacement and reserved-claim requ
   }]);
 });
 
-test("generated Ranked policy marks the Merchant visit done after requesting leave", async () => {
+test("generated Ranked policy closes the native Merchant before the bot walks to the portal", async () => {
   const game = await source("game.js");
   const result = generatedMerchantActionRunner(game, {
     action: "leave",
@@ -187,7 +192,8 @@ test("generated Ranked policy marks the Merchant visit done after requesting lea
     reason: "purchase_limit"
   });
   assert.equal(result.result, false);
-  assert.deepEqual(result.calls, [{ kind: "leave" }]);
+  assert.deepEqual(result.calls, [{ kind: "close" }]);
+  assert.equal(result.state.merchantMenuOpen, false);
 });
 
 test("Ranked Merchant leave checkpoints a local directive at most once", async () => {
@@ -201,6 +207,7 @@ test("Ranked Merchant leave checkpoints a local directive at most once", async (
     currentMerchantOffer: null,
     pendingRoomSummary: null,
     pendingBoundaryExit: null,
+    boundaryOperation: null,
     root: {
       DungeonOnlineV3GameBridge: {
         beginRankedMerchantRequest() {},
@@ -221,6 +228,60 @@ test("Ranked Merchant leave checkpoints a local directive at most once", async (
   assert.equal(await leave(), true);
   assert.equal(await leave(), true);
   assert.equal(checkpoints, 1);
+});
+
+test("Ranked Merchant leave waits for the previous room boundary before checkpointing", async () => {
+  const runtime = await source("online-v3/ranked-v3-runtime.js");
+  const merchantLeave = functionBody(runtime, "onMerchantLeave", "availableCampChoices");
+  let checkpoints = 0;
+  let previousBoundaryResolved = false;
+  let resolvePreviousBoundary;
+  const context = {
+    activeRoomDirectiveId: "merchant-directive-9",
+    merchantLeaveCompletedDirectiveId: "",
+    merchantMutationPending: false,
+    currentMerchantOffer: null,
+    pendingRoomSummary: null,
+    pendingBoundaryExit: null,
+    boundaryOperation: null,
+    root: {
+      DungeonOnlineV3GameBridge: {
+        beginRankedMerchantRequest() {},
+        syncCanonicalProjection() {},
+        enterNextDirective() {}
+      }
+    },
+    merchantChoiceFor: () => null,
+    createClient: () => ({ event: async () => ({ metaState: {} }) }),
+    usesBoundarySettlement: () => true,
+    captureRankedBoundary: () => ({ summary: { turnCount: 0 } }),
+    mergeCapturedBoundary: (captured) => captured,
+    resolveCheckpoint: async () => {
+      checkpoints += 1;
+      return true;
+    },
+    presentMerchantError() {}
+  };
+  const previousBoundaryPromise = new Promise((resolve) => {
+    resolvePreviousBoundary = () => {
+      previousBoundaryResolved = true;
+      context.boundaryOperation = null;
+      resolve(true);
+    };
+  });
+  context.boundaryOperation = { promise: previousBoundaryPromise };
+  const leave = vm.runInNewContext(`(async ${merchantLeave})`, context);
+
+  const resultPromise = leave({ enterPortal: true });
+  await Promise.resolve();
+  const checkpointsBeforePreviousBoundary = checkpoints;
+  resolvePreviousBoundary();
+
+  assert.equal(await resultPromise, true);
+  assert.equal(previousBoundaryResolved, true);
+  assert.equal(checkpointsBeforePreviousBoundary, 0);
+  assert.equal(checkpoints, 1);
+  assert.equal(context.pendingBoundaryExit, "portal");
 });
 
 test("generated Merchant completion consumes the offer and clears stale UI state", async () => {

@@ -2235,7 +2235,7 @@ const rankedMerchantPolicyBranch = [
   "        nextDepth: state.onlineV3NextDirective?.depth ?? ((Number(state.depth) || 0) + 1)",
   "      });",
   "      if (decision.action === \"leave\") {",
-  "        window.DungeonOnlineV3?.onMerchantLeave?.();",
+  "        closeMerchantMenu();",
   "        return false;",
   "      }",
   "      if (decision.action !== \"leave\" && decision.request) return Boolean(window.DungeonOnlineV3?.onMerchantAction?.(decision.request));",
