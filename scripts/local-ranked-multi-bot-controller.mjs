@@ -29,7 +29,14 @@ function safeEventStatus(entry, sample = entry.lastSample || {}) {
     name: entry.runtime.bot.name,
     status: entry.status,
     depth: Math.max(0, Number(sample.game?.depth) || 0),
-    score: Math.max(0, Number(sample.game?.score) || 0),
+    depthHighscore: Math.max(
+      0,
+      Number(sample.snapshot?.publicState?.mutatorProgress?.depthHighscore) || 0
+    ),
+    score: Math.max(
+      0,
+      Number(sample.snapshot?.publicState?.score?.score ?? sample.game?.score) || 0
+    ),
     hp: Math.max(0, Number(sample.game?.player?.hp ?? sample.game?.hp) || 0),
     lastDecision: String(sample.observer?.lastDecision || ""),
     error: String(entry.error || ""),
@@ -253,6 +260,7 @@ export async function startMultiBotWall(options) {
         name: bot.name,
         status: "starting",
         depth: 0,
+        depthHighscore: 0,
         score: 0,
         hp: 0,
         lastDecision: "",

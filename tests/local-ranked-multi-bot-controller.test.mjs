@@ -197,6 +197,32 @@ test("marks a legally finalized run complete without creating failure artifacts"
   assert.equal(fixture.timers[0].cleared, true);
 });
 
+test("publishes canonical Ranked score and depth highscore for the launcher", async () => {
+  const fixture = createFixture();
+  fixture.options.sampleBotPage = async () => ({
+    game: { phase: "playing", depth: 9, player: { hp: 54 } },
+    observer: { enabled: true, lastDecision: "move" },
+    sessionState: "ROOM_ACTIVE",
+    snapshot: {
+      publicState: {
+        score: { score: 48_174 },
+        mutatorProgress: { depthHighscore: 31 }
+      }
+    },
+    overlayText: "",
+    pageErrors: []
+  });
+  await startMultiBotWall(fixture.options);
+  await fixture.timers[0].callback();
+
+  const latest = fixture.events.filter(
+    (event) => event.type === "bot_status" && event.botId === "bot-01"
+  ).at(-1);
+  assert.equal(latest.depth, 9);
+  assert.equal(latest.depthHighscore, 31);
+  assert.equal(latest.score, 48_174);
+});
+
 test("keeps polling while an active Observer moves from FINALIZED into the next run", async () => {
   const fixture = createFixture();
   const samples = [
