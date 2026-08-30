@@ -1099,6 +1099,14 @@ const productionGameReplacements = [
     isRankedTestBotActive() {
       return Boolean(state.onlineV3Ranked && state.onlineV3TestBotUnlocked && isObserverBotActive());
     },
+    isRankedCanonicalLifeRestartReady() {
+      return Boolean(
+        state.onlineV3Ranked &&
+        state.phase === "dead" &&
+        state.onlineV3NextDirective &&
+        !state.finalGameOverPrompt
+      );
+    },
     requiresRankedTestAssistance() {
       return Boolean(state.onlineV3Ranked && state.onlineV3TestBotUnlocked);
     },

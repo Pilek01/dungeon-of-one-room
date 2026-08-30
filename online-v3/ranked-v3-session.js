@@ -53,7 +53,8 @@
     return Object.freeze({ getState: () => state, transition });
   }
 
-  function isObserverAutomationTransitionState(state) {
+  function isObserverAutomationTransitionState(state, context = {}) {
+    if (state === STATES.next && context.canonicalLifeRestartReady === true) return false;
     return state === STATES.entering || state === STATES.next;
   }
 

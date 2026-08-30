@@ -2340,3 +2340,44 @@ Updated next good targets
   1092/1092, current-tree Ranked Lifecycle, current-tree HD, protected baseline
   3/3, and guard 15/15.
 - No commit, push, deployment, ruleset activation, or D1 migration is included.
+
+## 2026-08-30 - Eight-bot physical window placement repair
+
+- Reproduced the broken portrait wall with the actual Windows rectangles. A requested
+  `3980,468 540x468` Chrome tile became `5173,608 702x609`, which put the right
+  column completely beyond the secondary display.
+- The launcher now removes Playwright's positional `about:blank`, fixes Chrome's
+  window scale at `1`, and applies every final tile through a per-monitor-aware
+  Win32 `SetWindowPos` helper after the CDP best-effort placement.
+- The native helper identifies each Chrome window from its isolated bot profile,
+  restores it from snapped/maximized state, retries the exact physical bounds, and
+  fails the startup if Windows does not confirm the requested tile.
+- RED/GREEN coverage requires native correction and rejects the measured 130-percent
+  transformed rectangle. The complete launcher suite passes 17/17.
+- A real two-bot HD smoke placed both columns at exactly `540x468`, started two
+  independent Ranked Observer runs, captured diagnostics, and shut down cleanly at
+  `output/multi-bot-runs/smoke-1788056130548-416a3ad7`.
+- The safety guard passes 15/15. No game, Ranked, Worker, ruleset, D1, commit, push,
+  or deployment change is included.
+
+## 2026-08-30 - Ranked Observer next-life and boundary-stall repair in progress
+
+- Root cause confirmed: the newly shared `ENTERING_NEXT_ROOM` automation guard
+  also blocks the native nonterminal death screen action that must start the next
+  canonical life.
+- The multi-bot monitor currently treats every recognized Ranked boundary as an
+  unlimited healthy wait, so the deadlock produces no failure artifacts.
+- RED regressions now fail on both behaviors before the production repair.
+- Ranked now exempts only the ready native next-life screen from the shared
+  `ENTERING_NEXT_ROOM` Observer guard; ordinary room-entry transitions remain
+  blocked. The real lifecycle scenario automatically started the next canonical
+  life and returned to `ROOM_ACTIVE` without manual input.
+- Unchanged Ranked boundary waits now receive a 60-second grace period instead
+  of unlimited immunity. After that, the launcher captures the existing seven
+  redacted artifacts and leaves the failed window visible.
+- GREEN evidence: focused launcher/session tests 28/28 with one optional real
+  smoke skipped, phase 1092/1092, current-tree Ranked Lifecycle PASS, committed
+  protected baseline 3/3, and guard 15/15. The before/after death screenshots
+  were visually inspected.
+- No Worker policy, ruleset, D1 migration, commit, push, or deployment is
+  included.

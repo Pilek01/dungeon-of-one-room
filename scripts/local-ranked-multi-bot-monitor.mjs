@@ -83,8 +83,14 @@ export class BotProgressMonitor {
   constructor(options = {}) {
     this.stallMs = Math.max(1, Number(options.stallMs) || 30_000);
     this.loopMs = Math.max(1, Number(options.loopMs) || 30_000);
+    this.boundaryStallMs = Math.max(
+      this.stallMs,
+      Number(options.boundaryStallMs) || 60_000
+    );
     this.lastFingerprint = null;
     this.lastProgressAt = null;
+    this.boundaryFingerprint = null;
+    this.boundaryStartedAt = null;
     this.history = [];
   }
 
@@ -94,11 +100,24 @@ export class BotProgressMonitor {
 
     const fingerprint = gameplayFingerprint(sample);
     if (isKnownBoundaryWait(sample)) {
+      if (fingerprint !== this.boundaryFingerprint) {
+        this.boundaryFingerprint = fingerprint;
+        this.boundaryStartedAt = nowMs;
+      } else if (nowMs - this.boundaryStartedAt >= this.boundaryStallMs) {
+        const boundary = String(sample?.sessionState || "SYNCING").toUpperCase();
+        return incident(
+          "boundary_stall",
+          `Ranked boundary ${boundary} made no progress for ${this.boundaryStallMs} ms.`
+        );
+      }
       this.lastFingerprint = fingerprint;
       this.lastProgressAt = nowMs;
       this.history = [];
       return null;
     }
+
+    this.boundaryFingerprint = null;
+    this.boundaryStartedAt = null;
 
     if (this.lastFingerprint === null) {
       this.lastFingerprint = fingerprint;

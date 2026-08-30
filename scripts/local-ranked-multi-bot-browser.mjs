@@ -1,6 +1,8 @@
 import { access as defaultAccess } from "node:fs/promises";
 import { chromium as defaultChromium } from "playwright-core";
 
+import { placeNativeChromeWindow } from "./local-ranked-native-window.mjs";
+
 const CHROME_CANDIDATES = Object.freeze([
   "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
   "C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe"
@@ -92,9 +94,11 @@ export async function launchBotWindow(options) {
     executablePath: options.chromeExecutable,
     headless: false,
     viewport: null,
+    ignoreDefaultArgs: ["about:blank"],
     acceptDownloads: true,
     args: [
       "--app=about:blank",
+      "--force-device-scale-factor=1",
       `--window-position=${options.bounds.x},${options.bounds.y}`,
       `--window-size=${options.bounds.width},${options.bounds.height}`,
       "--disable-background-timer-throttling",
@@ -126,6 +130,19 @@ export async function launchBotWindow(options) {
       windowState: "normal"
     }
   });
+  const nativeWindowPlacer = options.nativeWindowPlacer || placeNativeChromeWindow;
+  try {
+    await nativeWindowPlacer({
+      bot: options.bot,
+      bounds: options.bounds,
+      cdp,
+      windowId,
+      execFile: options.nativeWindowExecFile
+    });
+  } catch (error) {
+    await context.close().catch(() => {});
+    throw error;
+  }
   return createOwnedBotRuntime({ context, page, cdp, windowId, ...options });
 }
 

@@ -557,7 +557,10 @@
       isRankedObserverBotActive() &&
       (observerBotBoundaryPending ||
         observerBotAutomationHalted ||
-        root.DungeonRankedV3Session.isObserverAutomationTransitionState(session.getState()) ||
+        root.DungeonRankedV3Session.isObserverAutomationTransitionState(session.getState(), {
+          canonicalLifeRestartReady:
+            root.DungeonOnlineV3GameBridge?.isRankedCanonicalLifeRestartReady?.() === true
+        }) ||
         ["pending", "uncertain", "resyncing", "backoff"].includes(merchantOperation?.status) ||
         boundaryOperation ||
         campMutationPending ||

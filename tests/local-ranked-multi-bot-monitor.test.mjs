@@ -69,6 +69,28 @@ test("detects the exact 30-second stall while known boundary waits reset the clo
   assert.equal(boundaryMonitor.observe(activeSample("A"), 60_000)?.kind, "stall");
 });
 
+test("captures a Ranked boundary that remains unchanged beyond its bounded grace period", () => {
+  const monitor = new BotProgressMonitor({
+    stallMs: 30_000,
+    loopMs: 30_000,
+    boundaryStallMs: 60_000
+  });
+  const waiting = activeSample("A", {
+    sessionState: "ENTERING_NEXT_ROOM",
+    game: {
+      ...activeSample("A").game,
+      phase: "dead"
+    },
+    observer: { enabled: true, lastDecision: "online_v3_wait" }
+  });
+
+  assert.equal(monitor.observe(waiting, 0), null);
+  assert.equal(monitor.observe(waiting, 59_999), null);
+  const incident = monitor.observe(waiting, 60_000);
+  assert.equal(incident?.kind, "boundary_stall");
+  assert.match(incident?.detail || "", /ENTERING_NEXT_ROOM/u);
+});
+
 test("detects a sustained A-B-A-B loop without sharing state between bots", () => {
   const first = new BotProgressMonitor({ stallMs: 60_000, loopMs: 30_000 });
   const second = new BotProgressMonitor({ stallMs: 60_000, loopMs: 30_000 });

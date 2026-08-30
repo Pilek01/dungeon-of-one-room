@@ -875,7 +875,7 @@ async function main() {
     return { opened: chest.opened === true, type: String(chest.type || "normal") };
   };
   window.__DUNGEON_TEST_TOGGLE_OBSERVER_BOT = () => {
-    if (!canUseDebugCheats() || state.phase !== "playing") return false;
+    if (!canUseDebugCheats() || !["playing", "dead"].includes(state.phase)) return false;
     if (state.onlineV3Ranked && !state.onlineV3TestBotUnlocked) return false;
     return toggleObserverBot();
   };
@@ -1738,11 +1738,23 @@ ${fatalTestHookAnchor}`;
       path: path.join(ARTIFACT_ROOT, "ranked-nonterminal-death.png"),
       fullPage: true
     });
-    await page.keyboard.press("r");
+    assert.equal(
+      await page.evaluate(() => window.__DUNGEON_TEST_TOGGLE_OBSERVER_BOT?.()),
+      true,
+      "Observer Bot did not activate on the nonterminal death screen"
+    );
     await sessionState(page, "ROOM_ACTIVE");
     await page.waitForFunction(() => JSON.parse(window.render_game_to_text()).phase === "playing");
     const resumedAfterDeath = await visibleGameState(page);
     assert.equal(resumedAfterDeath.depth, deathAudit.nextDepth, JSON.stringify({ deathAudit, resumedAfterDeath }));
+    assert.equal(
+      await page.evaluate(() => window.__DUNGEON_TEST_TOGGLE_OBSERVER_BOT?.()),
+      true,
+      "Observer Bot did not stop after the automatic next-life regression"
+    );
+    await page.waitForFunction(() => (
+      window.DungeonOnlineV3GameBridge?.isRankedTestBotActive?.() === false
+    ));
     await page.screenshot({
       path: path.join(ARTIFACT_ROOT, "ranked-after-death-continue.png"),
       fullPage: true

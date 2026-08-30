@@ -34,7 +34,11 @@ function createLaunchHarness() {
   const cdp = {
     async send(method, value) {
       calls.cdp.push([method, value]);
-      return method === "Browser.getWindowForTarget" ? { windowId: 71 } : {};
+      if (method === "Browser.getWindowForTarget") return { windowId: 71 };
+      if (method === "SystemInfo.getProcessInfo") {
+        return { processInfo: [{ type: "browser", id: 42764 }] };
+      }
+      return {};
     }
   };
   const context = {
@@ -60,11 +64,16 @@ test("launches a visible isolated HD app window at the exact portrait tile", asy
   const harness = createLaunchHarness();
   const bot = { id: "bot-01", name: "bot 1", profileDir: "D:/runs/session/profiles/bot-01" };
   const bounds = { x: 3440, y: 0, width: 540, height: 468 };
+  const nativePlacements = [];
   const runtime = await launchBotWindow({
     bot,
     bounds,
     chromeExecutable: X86_CHROME,
     chromium: harness.chromium,
+    nativeWindowPlacer: async (request) => {
+      nativePlacements.push(request);
+      return { left: 3440, top: 0, width: 540, height: 468 };
+    },
     secrets: ["observer-secret"]
   });
 
@@ -73,15 +82,23 @@ test("launches a visible isolated HD app window at the exact portrait tile", asy
   assert.equal(launchOptions.headless, false);
   assert.equal(launchOptions.viewport, null);
   assert.equal(launchOptions.executablePath, X86_CHROME);
+  assert.deepEqual(launchOptions.ignoreDefaultArgs, ["about:blank"],
+    "Playwright's positional blank page must not turn the app window into a full browser window");
   assert.ok(launchOptions.args.includes("--disable-background-timer-throttling"));
   assert.ok(launchOptions.args.includes("--disable-renderer-backgrounding"));
   assert.ok(launchOptions.args.includes("--disable-backgrounding-occluded-windows"));
+  assert.ok(launchOptions.args.includes("--force-device-scale-factor=1"));
   assert.ok(launchOptions.args.includes("--window-position=3440,0"));
   assert.ok(launchOptions.args.includes("--window-size=540,468"));
   assert.deepEqual(harness.calls.cdp.at(-1), ["Browser.setWindowBounds", {
     windowId: 71,
     bounds: { left: 3440, top: 0, width: 540, height: 468, windowState: "normal" }
   }]);
+  assert.equal(nativePlacements.length, 1,
+    "the real Windows window must be corrected after Chrome applies its own coordinate transform");
+  assert.equal(nativePlacements[0].bot, bot);
+  assert.equal(nativePlacements[0].bounds, bounds);
+  assert.equal(nativePlacements[0].windowId, 71);
 
   const stored = new Map();
   const previousStorage = globalThis.localStorage;
@@ -105,6 +122,24 @@ test("launches a visible isolated HD app window at the exact portrait tile", asy
   await runtime.stop();
   await runtime.stop();
   assert.equal(harness.calls.closed, 1, "runtime must close only its owned context once");
+});
+
+test("rejects the observed 130 percent Windows transform instead of declaring the tile ready", async () => {
+  const harness = createLaunchHarness();
+  const bot = { id: "bot-02", name: "bot 2", profileDir: "D:/runs/session/profiles/bot-02" };
+  const bounds = { x: 3980, y: 468, width: 540, height: 468 };
+
+  await assert.rejects(launchBotWindow({
+    bot,
+    bounds,
+    chromeExecutable: X86_CHROME,
+    chromium: harness.chromium,
+    nativeWindowExecFile: async () => ({
+      stdout: JSON.stringify({ left: 5173, top: 608, width: 702, height: 609 }),
+      stderr: ""
+    }),
+    secrets: ["observer-secret"]
+  }), /Native window placement mismatch.*expected 3980,468 540x468.*received 5173,608 702x609/u);
 });
 
 test("starts fresh Ranked, selects the first relic, and enables Observer Bot", async () => {
