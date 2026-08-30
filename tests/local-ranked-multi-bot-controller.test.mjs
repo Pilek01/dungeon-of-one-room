@@ -197,6 +197,28 @@ test("marks a legally finalized run complete without creating failure artifacts"
   assert.equal(fixture.timers[0].cleared, true);
 });
 
+test("keeps the last live bot state when a failure is captured", async () => {
+  const fixture = createFixture();
+  fixture.options.sampleBotPage = async () => ({
+    game: { phase: "playing", depth: 4, score: 321, player: { hp: 27 } },
+    observer: { enabled: true, lastDecision: "extract" },
+    sessionState: "UNRECOVERABLE_PROTOCOL_ERROR",
+    overlayText: "Ranked reconnect required",
+    pageErrors: []
+  });
+  await startMultiBotWall(fixture.options);
+  await fixture.timers[0].callback();
+
+  const failed = fixture.events.filter(
+    (event) => event.type === "bot_status" && event.botId === "bot-01" && event.status === "failed"
+  ).at(-1);
+  assert.equal(failed.depth, 4);
+  assert.equal(failed.score, 321);
+  assert.equal(failed.hp, 27);
+  assert.equal(failed.lastDecision, "extract");
+  assert.equal(Number.isNaN(Date.parse(failed.updatedAt)), false);
+});
+
 test("rejects an escaped session identifier before creating or deleting paths", async () => {
   const fixture = createFixture();
   await assert.rejects(

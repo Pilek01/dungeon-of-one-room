@@ -135,6 +135,7 @@
     decideBotEmergencyExtract: decideBotEmergencyExtractSafe = () => ({ extract: false, reason: "not_lethal", projectedDamage: 0 }),
     decideBotOffensiveMine: decideBotOffensiveMineSafe = () => ({ use: false, reason: "mine_not_available", escape: null }),
     decideBotPotionUse: decideBotPotionUseSafe = () => ({ use: false, reason: "blocked_empty", actionKey: "" }),
+    getBotCombatChestAdjustment: getBotCombatChestAdjustmentSafe = () => 0,
     getBotEarlyPotionUpgradePlan: getBotEarlyPotionUpgradePlanSafe = () => ({ active: false, recommendedUpgrade: null }),
     getBotGoldBankingPressure: getBotGoldBankingPressureSafe = () => ({ threshold: Infinity, score: 0, ratio: 0, strong: false }),
     getBotSkillSavingsUpgradeCount: getBotSkillSavingsUpgradeCountSafe = () => 0,
@@ -29819,9 +29820,11 @@
         resultX = nx;
         resultY = ny;
       }
-      if (candidate.onChest && !state.roomCleared) {
-        score -= 110;
-      }
+      score += getBotCombatChestAdjustmentSafe({
+        onChest: candidate.onChest,
+        roomCleared: state.roomCleared,
+        chase: candidate.chase
+      });
       if (candidate.onSpike && !hasRelic("ironboots")) {
         score -= 36 * weights.spikeAversion;
       }
@@ -30079,6 +30082,7 @@
     if (!candidate) return "no_action";
     if (candidate.kind === "move") {
       if (candidate.attack) return "melee";
+      if (candidate.chase && candidate.onChest) return "open_chest_to_enemy";
       if (candidate.chase && candidate.risky) return "chase_enemy_risky";
       if (candidate.chase) return "chase_enemy";
       if (candidate.fallback) return "fallback_move";

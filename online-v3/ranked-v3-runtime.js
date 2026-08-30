@@ -557,6 +557,7 @@
       isRankedObserverBotActive() &&
       (observerBotBoundaryPending ||
         observerBotAutomationHalted ||
+        root.DungeonRankedV3Session.isObserverAutomationTransitionState(session.getState()) ||
         ["pending", "uncertain", "resyncing", "backoff"].includes(merchantOperation?.status) ||
         boundaryOperation ||
         campMutationPending ||

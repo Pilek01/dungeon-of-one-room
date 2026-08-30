@@ -47,6 +47,7 @@ $script:readyUrl = $null
 $script:artifactRoot = $null
 $script:isMultiBotSession = $false
 $script:botRows = @{}
+$script:botMilestones = @{}
 $script:launcherEventQueue = [System.Collections.Concurrent.ConcurrentQueue[string]]::new()
 
 function Quote-ProcessArgument([string] $Argument) {
@@ -89,10 +90,11 @@ function Set-ArtifactRoot([string] $Candidate) {
 function Initialize-BotRows {
   $botList.Items.Clear()
   $script:botRows = @{}
+  $script:botMilestones = @{}
   foreach ($index in 1..8) {
     $botId = "bot-{0:D2}" -f $index
     $row = [System.Windows.Forms.ListViewItem]::new("bot $index")
-    foreach ($value in @("Waiting", "0", "0", "0", "", "")) {
+    foreach ($value in @("Waiting", "0", "0", "0", "", "", "")) {
       [void] $row.SubItems.Add($value)
     }
     $row.Tag = $botId
@@ -110,7 +112,12 @@ function Update-BotRow($Message) {
   $row.SubItems[3].Text = [string] $Message.score
   $row.SubItems[4].Text = [string] $Message.hp
   $row.SubItems[5].Text = [string] $Message.lastDecision
-  $row.SubItems[6].Text = [string] $Message.error
+  try {
+    $row.SubItems[6].Text = [DateTimeOffset]::Parse([string] $Message.updatedAt).ToLocalTime().ToString("HH:mm:ss")
+  } catch {
+    $row.SubItems[6].Text = [string] $Message.updatedAt
+  }
+  $row.SubItems[7].Text = [string] $Message.error
   if ([string] $Message.status -in @("failed", "blocked")) {
     $row.BackColor = [System.Drawing.Color]::DarkRed
     $row.ForeColor = [System.Drawing.Color]::White
@@ -130,6 +137,38 @@ function Add-StatusLine([string] $Text) {
   $statusBox.AppendText("$safeText`r`n")
   $statusBox.SelectionStart = $statusBox.TextLength
   $statusBox.ScrollToCaret()
+}
+
+function Add-BotMilestone($Message) {
+  $botId = [string] $Message.botId
+  $status = [string] $Message.status
+  $depth = [string] $Message.depth
+  $errorText = [string] $Message.error
+  $milestone = "$status|$depth|$errorText"
+  if ($script:botMilestones.ContainsKey($botId) -and $script:botMilestones[$botId] -eq $milestone) {
+    return
+  }
+  $script:botMilestones[$botId] = $milestone
+  $detail = if ($errorText) { " | $errorText" } elseif ([string] $Message.lastDecision) {
+    " | $([string] $Message.lastDecision)"
+  } else { "" }
+  Add-StatusLine "$([string] $Message.name): $status | depth $depth$detail"
+}
+
+function Update-BotWallSummary {
+  $active = 0
+  $completed = 0
+  $failed = 0
+  $stopped = 0
+  foreach ($row in $script:botRows.Values) {
+    switch ([string] $row.SubItems[1].Text) {
+      { $_ -in @("starting", "running") } { $active += 1; break }
+      "completed" { $completed += 1; break }
+      { $_ -in @("failed", "blocked") } { $failed += 1; break }
+      "stopped" { $stopped += 1; break }
+    }
+  }
+  Set-SessionState "Active $active | Completed $completed | Failed $failed | Stopped $stopped"
 }
 
 function Set-SessionState([string] $State) {
@@ -163,19 +202,22 @@ function Process-LauncherEvents {
         Add-StatusLine "Starting 8 Observer Bots on commit $(([string] $message.commit).Substring(0, 12))."
       } elseif ($message.type -eq "bot_status") {
         Update-BotRow $message
+        Add-BotMilestone $message
+        Update-BotWallSummary
       } elseif ($message.type -eq "bot_failure") {
         if ($script:botRows.ContainsKey([string] $message.botId)) {
           $row = $script:botRows[[string] $message.botId]
-          $row.SubItems[6].Text = [string] $message.kind
+          $row.SubItems[7].Text = [string] $message.kind
           $row.BackColor = [System.Drawing.Color]::DarkRed
           $row.ForeColor = [System.Drawing.Color]::White
         }
+        Update-BotWallSummary
         Add-StatusLine "Failure $($message.botId): $($message.kind). Diagnostics: $($message.artifactDir)"
       } elseif ($message.type -eq "artifact_root") {
         Set-ArtifactRoot ([string] $message.path)
         Add-StatusLine "Diagnostics folder: $($script:artifactRoot)"
       } elseif ($message.type -eq "wall_ready") {
-        Set-SessionState "8 bots running"
+        Update-BotWallSummary
         Add-StatusLine "All 8 Observer Bots are running on the newest local commit."
       } elseif ($message.type -eq "command_failed") {
         Add-StatusLine "Command failed: $($message.message)"
@@ -451,8 +493,9 @@ $botList.GridLines = $true
 [void] $botList.Columns.Add("Depth", 70)
 [void] $botList.Columns.Add("Score", 90)
 [void] $botList.Columns.Add("HP", 70)
-[void] $botList.Columns.Add("Last decision", 360)
-[void] $botList.Columns.Add("Error", 330)
+[void] $botList.Columns.Add("Last decision", 285)
+[void] $botList.Columns.Add("Updated", 90)
+[void] $botList.Columns.Add("Error", 320)
 $form.Controls.Add($botList)
 
 $focusBotButton = [System.Windows.Forms.Button]::new()

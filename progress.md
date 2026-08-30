@@ -2317,3 +2317,26 @@ Updated next good targets
 - Repository policy requires inline single-agent execution. No implementation,
   commit, push, deployment, ruleset activation, or D1 migration is included in
   this planning step.
+
+## 2026-08-30 - Eight-bot live wall and Observer transition fixes
+
+- Diagnosed bot 3's apparent startup failure as an Observer action racing the
+  Ranked `ENTERING_NEXT_ROOM` handoff after depth 4. Automation now waits in
+  both room-entry states, preventing actions against the previous room.
+- Chrome receives each portrait tile at process startup and retains the exact
+  CDP bounds correction, so the eight windows no longer flash on another
+  monitor before forming the 2-by-4 wall.
+- The launcher now refreshes depth, score, HP, decision, and update time,
+  reports aggregate active/completed/failed/stopped counts, logs milestones,
+  and preserves the last sampled state when a bot fails.
+- Observer combat now treats a chest on the selected enemy route as a positive
+  transit action while retaining the existing penalty for unrelated combat
+  chests. The decision is exposed as `open_chest_to_enemy`.
+- Generated ruleset data is stable at
+  `sha256:9e6dfc472f9eb0ffd773e42f80cd3ecf7b579a1d76766affdb72417086016b7f`.
+  The previous `sha256:91843a42a08ca6213e664cc0607e511fbd2c89f2bbfd749b45c0244924da067f`
+  remains compatible with the same capabilities for already-started runs.
+- Final verification passed: focused launcher/session/chest regressions, phase
+  1092/1092, current-tree Ranked Lifecycle, current-tree HD, protected baseline
+  3/3, and guard 15/15.
+- No commit, push, deployment, ruleset activation, or D1 migration is included.

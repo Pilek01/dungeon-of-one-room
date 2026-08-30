@@ -51,9 +51,11 @@ test("Windows launcher exposes only the local Ranked test controls", async () =>
   assert.match(psSource, /Stop All/u);
   assert.match(psSource, /Open diagnostics folder/u);
   assert.match(psSource, /ListView/u);
-  for (const column of ["Bot", "Status", "Depth", "Score", "HP", "Last decision", "Error"]) {
+  for (const column of ["Bot", "Status", "Depth", "Score", "HP", "Last decision", "Updated", "Error"]) {
     assert.match(psSource, new RegExp("Columns\\.Add\\(\"" + column + "\"", "u"));
   }
+  assert.match(psSource, /function Update-BotWallSummary/u);
+  assert.match(psSource, /function Add-BotMilestone/u);
   assert.match(psSource, /bot_status/u);
   assert.match(psSource, /bot_failure/u);
   assert.match(psSource, /wall_ready/u);

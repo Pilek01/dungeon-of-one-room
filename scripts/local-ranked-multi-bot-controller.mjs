@@ -22,7 +22,7 @@ function sleep(milliseconds) {
   return new Promise((resolve) => setTimeout(resolve, milliseconds));
 }
 
-function safeEventStatus(entry, sample = {}) {
+function safeEventStatus(entry, sample = entry.lastSample || {}) {
   return {
     type: "bot_status",
     botId: entry.runtime.bot.id,
@@ -32,7 +32,8 @@ function safeEventStatus(entry, sample = {}) {
     score: Math.max(0, Number(sample.game?.score) || 0),
     hp: Math.max(0, Number(sample.game?.player?.hp ?? sample.game?.hp) || 0),
     lastDecision: String(sample.observer?.lastDecision || ""),
-    error: String(entry.error || "")
+    error: String(entry.error || ""),
+    updatedAt: new Date().toISOString()
   };
 }
 
@@ -154,6 +155,7 @@ export async function startMultiBotWall(options) {
       polling = true;
       try {
         const sample = await sampleBotPage(entry.runtime);
+        entry.lastSample = sample;
         if (isBotRunComplete(sample)) {
           entry.status = "completed";
           clearEntryTimer(entry);
@@ -245,7 +247,18 @@ export async function startMultiBotWall(options) {
   try {
     for (let index = 0; index < descriptors.length; index += 1) {
       const bot = descriptors[index];
-      emit({ type: "bot_status", botId: bot.id, name: bot.name, status: "starting" });
+      emit({
+        type: "bot_status",
+        botId: bot.id,
+        name: bot.name,
+        status: "starting",
+        depth: 0,
+        score: 0,
+        hp: 0,
+        lastDecision: "",
+        error: "",
+        updatedAt: new Date().toISOString()
+      });
       const runtime = await launchBotWindow({
         bot,
         bounds: tiles[index],
@@ -256,7 +269,7 @@ export async function startMultiBotWall(options) {
         secrets: [options.password, options.secret],
         emit
       });
-      const entry = { runtime, status: "starting", error: "", timer: null };
+      const entry = { runtime, status: "starting", error: "", timer: null, lastSample: null };
       entries.push(entry);
       await startBotRun(runtime, {
         url: options.worker.url,

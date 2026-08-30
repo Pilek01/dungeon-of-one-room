@@ -10,6 +10,7 @@ const {
   decideBotOffensiveMine,
   decideBotPotionUse,
   getBotEarlyPotionUpgradePlan,
+  getBotCombatChestAdjustment,
   getBotGoldBankingPressure,
   getBotSkillSavingsUpgradeCount,
   getForgeTargetForBot,
@@ -226,6 +227,23 @@ function run() {
       `depth ${depth} must reserve for ${expected} planned skill upgrades`
     );
   }
+
+  assert.equal(
+    getBotCombatChestAdjustment({ onChest: true, roomCleared: false, chase: false }),
+    -110,
+    "a random combat chest must keep the existing penalty"
+  );
+  assert.equal(
+    getBotCombatChestAdjustment({ onChest: true, roomCleared: false, chase: true }),
+    36,
+    "a chest on the selected enemy route must become a positive transit action"
+  );
+  assert.equal(
+    getBotCombatChestAdjustment({ onChest: true, roomCleared: true, chase: true }),
+    0,
+    "post-clear chest routing must remain unchanged"
+  );
+  assert.match(game, /if \(candidate\.chase && candidate\.onChest\) return "open_chest_to_enemy";/);
 
   const profitableMine = decideBotOffensiveMine({
     dashAvailable: true,

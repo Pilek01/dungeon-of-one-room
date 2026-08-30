@@ -9,6 +9,11 @@
     return { x: Math.round(x), y: Math.round(y) };
   }
 
+  function getBotCombatChestAdjustment(options = {}) {
+    if (options.onChest !== true || options.roomCleared === true) return 0;
+    return options.chase === true ? 36 : -110;
+  }
+
   function canBotDrinkPotion(options = {}) {
     if (options.hasRisk) return false;
     if (Math.max(0, Number(options.oathPotionLockTurns) || 0) > 0) return false;
@@ -408,6 +413,7 @@
     decideBotEmergencyExtract,
     decideBotOffensiveMine,
     decideBotPotionUse,
+    getBotCombatChestAdjustment,
     getBotEarlyPotionUpgradePlan,
     getBotGoldBankingPressure,
     getBotSkillSavingsUpgradeCount,

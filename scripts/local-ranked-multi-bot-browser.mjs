@@ -95,6 +95,8 @@ export async function launchBotWindow(options) {
     acceptDownloads: true,
     args: [
       "--app=about:blank",
+      `--window-position=${options.bounds.x},${options.bounds.y}`,
+      `--window-size=${options.bounds.width},${options.bounds.height}`,
       "--disable-background-timer-throttling",
       "--disable-renderer-backgrounding",
       "--disable-backgrounding-occluded-windows",

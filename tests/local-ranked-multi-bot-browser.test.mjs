@@ -76,6 +76,8 @@ test("launches a visible isolated HD app window at the exact portrait tile", asy
   assert.ok(launchOptions.args.includes("--disable-background-timer-throttling"));
   assert.ok(launchOptions.args.includes("--disable-renderer-backgrounding"));
   assert.ok(launchOptions.args.includes("--disable-backgrounding-occluded-windows"));
+  assert.ok(launchOptions.args.includes("--window-position=3440,0"));
+  assert.ok(launchOptions.args.includes("--window-size=540,468"));
   assert.deepEqual(harness.calls.cdp.at(-1), ["Browser.setWindowBounds", {
     windowId: 71,
     bounds: { left: 3440, top: 0, width: 540, height: 468, windowState: "normal" }

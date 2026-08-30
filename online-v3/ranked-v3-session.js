@@ -53,5 +53,9 @@
     return Object.freeze({ getState: () => state, transition });
   }
 
-  return Object.freeze({ STATES, TRANSITIONS, createStateMachine });
+  function isObserverAutomationTransitionState(state) {
+    return state === STATES.entering || state === STATES.next;
+  }
+
+  return Object.freeze({ STATES, TRANSITIONS, createStateMachine, isObserverAutomationTransitionState });
 });
