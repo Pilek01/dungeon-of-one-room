@@ -36,6 +36,32 @@ test("Windows launcher exposes only the local Ranked test controls", async () =>
   assert.doesNotMatch(psSource, /add_OutputDataReceived/u);
   assert.match(psSource, /commitList\.Items\[0\]\.Selected\s*=\s*\$true/u);
   assert.match(psSource, /Ready|Failed|Stopped/u);
+  assert.match(psSource, /function Get-SecondaryPortraitScreen/u);
+  assert.match(psSource, /Screen\]::AllScreens/u);
+  assert.match(psSource, /-not \$_.Primary/u);
+  assert.match(psSource, /WorkingArea\.Height -gt \$_.WorkingArea\.Width/u);
+  assert.match(psSource, /start.*--multi-bot.*--json-events/su);
+  for (const option of ["--monitor-x", "--monitor-y", "--monitor-width", "--monitor-height"]) {
+    assert.match(psSource, new RegExp(option, "u"));
+  }
+  assert.match(psSource, /RedirectStandardInput\s*=\s*\$true/u);
+  assert.match(psSource, /StandardInput\.WriteLine/u);
+  assert.match(psSource, /ConvertTo-Json -Compress/u);
+  assert.match(psSource, /Start 8 Observer Bots/u);
+  assert.match(psSource, /Stop All/u);
+  assert.match(psSource, /Open diagnostics folder/u);
+  assert.match(psSource, /ListView/u);
+  for (const column of ["Bot", "Status", "Depth", "Score", "HP", "Last decision", "Error"]) {
+    assert.match(psSource, new RegExp("Columns\\.Add\\(\"" + column + "\"", "u"));
+  }
+  assert.match(psSource, /bot_status/u);
+  assert.match(psSource, /bot_failure/u);
+  assert.match(psSource, /wall_ready/u);
+  assert.match(psSource, /artifact_root/u);
+  assert.match(psSource, /focus_bot/u);
+  assert.match(psSource, /stop_bot/u);
+  assert.doesNotMatch(psSource, /Get-Process|Stop-Process/u);
+  assert.doesNotMatch(psSource, /\$passwordBox\.Text\s*=\s*"[^"]+"/u);
   assert.doesNotMatch(psSource, /wrangler\s+deploy|pages\s+deploy|--remote|\btunnel\b/u);
   assert.doesNotMatch(psSource, /DUNGEON_ONLINE_TEST_BOT_PASSWORD\s*=/u);
 });

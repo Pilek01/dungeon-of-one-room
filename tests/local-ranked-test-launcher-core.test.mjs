@@ -1,13 +1,16 @@
 import assert from "node:assert/strict";
 import path from "node:path";
+import { PassThrough } from "node:stream";
 import test from "node:test";
 
 import {
+  attachLauncherCommandInput,
   chooseNewestBranch,
   launcherPaths,
   listLocalCandidates,
   parseBranchTips,
   parseCommitHistory,
+  runLauncherCli,
   selectListedCommit
 } from "../scripts/local-ranked-test-launcher-core.mjs";
 
@@ -118,4 +121,64 @@ test("parses the line-delimited NUL records emitted by git for-each-ref", () => 
     "main",
     "codex/observer-bot-record-archive-repair"
   ]);
+});
+
+test("multi-bot CLI always selects the newest listed commit and starts one shared Worker", async () => {
+  const events = [];
+  const calls = [];
+  const worker = { url: "http://127.0.0.1:9123", stop: async () => {} };
+  const wall = { sessionRoot: path.resolve("D:/repo/output/multi-bot-runs/session-a"), stop: async () => {} };
+  const result = await runLauncherCli([
+    "start", "--multi-bot", "--json-events",
+    "--monitor-x", "3440", "--monitor-y", "0",
+    "--monitor-width", "1080", "--monitor-height", "1872"
+  ], {
+    repoRoot: path.resolve("D:/repo"),
+    emit: (event) => events.push(event),
+    sessionId: "session-a",
+    listLocalCandidates: async () => ({ branch: { name: "main" }, commits: [
+      { hash: HASH_A, subject: "newest" }, { hash: HASH_B, subject: "older" }
+    ] }),
+    startLocalRankedTest: async (commit) => { calls.push(["worker", commit.hash]); return worker; },
+    startMultiBotWall: async (options) => {
+      calls.push(["wall", options.commit, options.worker]);
+      options.emit({ type: "artifact_root", path: wall.sessionRoot });
+      return wall;
+    }
+  });
+
+  assert.equal(result, wall);
+  assert.deepEqual(calls, [["worker", HASH_A], ["wall", HASH_A, worker]]);
+  assert.deepEqual(events.map((event) => event.type), ["wall_starting", "artifact_root", "wall_ready"]);
+});
+
+test("multi-bot CLI rejects commit overrides and non-portrait monitor bounds", async () => {
+  const base = ["start", "--multi-bot", "--json-events", "--monitor-x", "0", "--monitor-y", "0"];
+  await assert.rejects(
+    runLauncherCli([...base, "--monitor-width", "1080", "--monitor-height", "1872", "--commit", HASH_A], { emit() {} }),
+    /does not accept --commit/u
+  );
+  await assert.rejects(
+    runLauncherCli([...base, "--monitor-width", "1920", "--monitor-height", "1080"], { emit() {} }),
+    /portrait monitor/u
+  );
+});
+
+test("line-buffered stdin commands isolate bot actions and report invalid input without stopping the wall", async () => {
+  const input = new PassThrough();
+  const events = [];
+  const actions = [];
+  const controller = {
+    async focusBot(id) { actions.push(`focus:${id}`); },
+    async stopBot(id) { actions.push(`stop:${id}`); },
+    async stop() { actions.push("stop:all"); }
+  };
+  const commands = attachLauncherCommandInput(input, controller, (event) => events.push(event));
+  input.write('{"type":"focus_bot","botId":"bot-04"}\nnot-json\n');
+  input.write('{"type":"stop_bot","botId":"bot-04"}\n{"type":"stop"}\n');
+  await commands.drain();
+
+  assert.deepEqual(actions, ["focus:bot-04", "stop:bot-04", "stop:all"]);
+  assert.equal(events.filter((event) => event.type === "command_failed").length, 1);
+  assert.equal(events.at(-1).type, "stopped");
 });

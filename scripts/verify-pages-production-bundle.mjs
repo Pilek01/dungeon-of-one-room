@@ -6,9 +6,18 @@ import { RELEASE_RECEIPT_FILE, sanitizedReleaseReceipt, verifyRecordArchiveVisua
 
 const defaultRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
+export function assertNoLocalMultiBotTelemetry(game) {
+  if (String(game).includes("__DUNGEON_MULTI_BOT_TELEMETRY__")) {
+    throw new Error("Production Pages bundle must not contain local multi-bot telemetry.");
+  }
+}
+
 export async function verifyPagesProductionBundle({ root = defaultRoot } = {}) {
   const configPath = path.join(root, "output", "pages-dist", "config.js");
   const config = await readFile(configPath, "utf8");
+  const gamePath = path.join(root, "output", "pages-dist", "game.js");
+  const game = await readFile(gamePath, "utf8");
+  assertNoLocalMultiBotTelemetry(game);
   const enabled = /window\.DUNGEON_ONLINE_TEST_BOT_ENABLED\s*=\s*true;/u.test(config);
   const hashMatch = config.match(
     /window\.DUNGEON_ONLINE_TEST_BOT_PASSWORD_HASH\s*=\s*"(sha256:[a-f0-9]{64})";/u

@@ -2292,3 +2292,28 @@ Updated next good targets
   Ranked Lifecycle scenario; its room-clear screenshot was inspected.
 - No commit, push, deployment, ruleset activation, or D1 migration is included
   in this change.
+
+## 2026-08-30 - Eight-bot Local Ranked wall design
+
+- Approved a local test launcher extension that runs eight HD Observer Bots
+  from the newest local commit through one Worker and eight isolated Chrome
+  profiles.
+- Bot names are assigned automatically as `bot 1` through `bot 8`, with a
+  2-by-4 wall on the 1080-by-1920 secondary portrait display.
+- A per-bot supervisor freezes only a failing run, preserves its visible
+  window, and stores screenshots, Ranked diagnostics, Observer trace, game
+  state, console, and network evidence under `output/multi-bot-runs/`.
+- The written design is awaiting user review before implementation. No commit,
+  push, deployment, ruleset activation, or D1 migration is included.
+
+## 2026-08-30 - Eight-bot wall implementation plan
+
+- The approved design now has an eight-task, test-driven implementation plan
+  covering the pure wall model, test-only telemetry, isolated Chrome startup,
+  failure capture, one-Worker orchestration, WinForms controls, a two-bot real
+  smoke, and the final visible 8-by-HD acceptance run.
+- The plan pins `playwright-core` 1.62.1 and uses the installed Chrome without
+  downloading another browser.
+- Repository policy requires inline single-agent execution. No implementation,
+  commit, push, deployment, ruleset activation, or D1 migration is included in
+  this planning step.

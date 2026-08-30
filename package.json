@@ -13,7 +13,11 @@
     "verify:baseline": "node scripts/verify-online-v3.mjs baseline",
     "verify:baseline-committed": "node scripts/verify-online-v3.mjs baseline",
     "verify:ranked-headed": "node scripts/verify-online-v3.mjs ranked-headed",
+    "verify:multi-bot-smoke": "node scripts/local-ranked-multi-bot-smoke.mjs",
     "verify:full": "node scripts/verify-online-v3.mjs full",
     "verify:release": "node scripts/verify-online-v3.mjs full"
+  },
+  "devDependencies": {
+    "playwright-core": "1.62.1"
   }
 }

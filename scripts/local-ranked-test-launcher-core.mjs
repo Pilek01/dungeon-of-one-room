@@ -5,6 +5,7 @@ import net from "node:net";
 import path from "node:path";
 import { promisify } from "node:util";
 import { fileURLToPath } from "node:url";
+import { startMultiBotWall as defaultStartMultiBotWall } from "./local-ranked-multi-bot-controller.mjs";
 
 const FULL_COMMIT_HASH = /^[0-9a-f]{40}$/u;
 
@@ -400,6 +401,12 @@ export async function startLocalRankedTest(selectedCommit, options = {}) {
   attachLogStream(child.stderr, append);
   let stopped = false;
   let forceStopped = false;
+  const exitListeners = new Set();
+  child.on?.("exit", (code, signal) => {
+    for (const listener of exitListeners) {
+      Promise.resolve(listener({ expected: stopped, code, signal })).catch(() => {});
+    }
+  });
   const exitHandler = () => {
     if (!stopped && child.exitCode === null) child.kill();
   };
@@ -434,6 +441,11 @@ export async function startLocalRankedTest(selectedCommit, options = {}) {
     workerArgs: launch.workerArgs,
     hasExited: () => forceStopped || (child.exitCode !== null && child.exitCode !== undefined),
     getLogs: () => logs,
+    onExit(listener) {
+      if (typeof listener !== "function") throw new TypeError("A Worker exit listener is required.");
+      exitListeners.add(listener);
+      return () => exitListeners.delete(listener);
+    },
     stop
   });
 }
@@ -472,6 +484,28 @@ function readCliOption(args, name) {
   return index >= 0 ? args[index + 1] : null;
 }
 
+function readPortraitMonitor(args) {
+  const monitor = {
+    x: Number(readCliOption(args, "--monitor-x")),
+    y: Number(readCliOption(args, "--monitor-y")),
+    width: Number(readCliOption(args, "--monitor-width")),
+    height: Number(readCliOption(args, "--monitor-height"))
+  };
+  if (
+    !Object.values(monitor).every(Number.isInteger) ||
+    monitor.width < 800 ||
+    monitor.height <= monitor.width
+  ) {
+    throw new TypeError("Eight-bot mode requires four integer bounds for a portrait monitor.");
+  }
+  return Object.freeze(monitor);
+}
+
+function createMultiBotSessionId() {
+  const timestamp = new Date().toISOString().replace(/\D/gu, "").slice(0, 14);
+  return `session-${timestamp}-${randomBytes(4).toString("hex")}`;
+}
+
 function writeJsonLine(value) {
   process.stdout.write(`${JSON.stringify(value)}\n`);
 }
@@ -485,21 +519,71 @@ export async function runLauncherCli(args = process.argv.slice(2), options = {})
   const command = args[0];
   const emit = options.emit || writeJsonLine;
   const repoRoot = options.repoRoot || process.cwd();
+  const listCandidates = options.listLocalCandidates || listLocalCandidates;
+  const startWorker = options.startLocalRankedTest || startLocalRankedTest;
+  const startWall = options.startMultiBotWall || defaultStartMultiBotWall;
   if (command === "list" && args.includes("--json")) {
-    return listLocalCandidates({ repoRoot, execFile: options.execFile });
+    return listCandidates({ repoRoot, execFile: options.execFile });
   }
   if (command !== "start" || !args.includes("--json-events")) {
-    throw new Error("Use either 'list --json' or 'start --commit <full-hash> --json-events'.");
+    throw new Error("Use 'list --json', single 'start --commit <full-hash> --json-events', or 'start --multi-bot --json-events' with monitor bounds.");
   }
 
   try {
-    const candidates = await listLocalCandidates({ repoRoot, execFile: options.execFile });
-    const selectedCommit = selectListedCommit(candidates.commits, readCliOption(args, "--commit"));
+    const multiBot = args.includes("--multi-bot");
+    if (multiBot && args.includes("--commit")) {
+      throw new TypeError("Eight-bot mode does not accept --commit; it always uses the newest displayed commit.");
+    }
+    const monitor = multiBot ? readPortraitMonitor(args) : null;
+    const candidates = await listCandidates({ repoRoot, execFile: options.execFile });
+    const selectedCommit = multiBot
+      ? selectListedCommit(candidates.commits, candidates.commits[0]?.hash)
+      : selectListedCommit(candidates.commits, readCliOption(args, "--commit"));
+    const baseEnv = options.baseEnv || process.env;
+    const observerPassword = options.observerPassword ?? process.env.DUNGEON_ONLINE_TEST_BOT_PASSWORD;
+
+    if (multiBot) {
+      const workerSecret = options.workerSecret || randomBytes(48).toString("base64");
+      const sessionId = options.sessionId || createMultiBotSessionId();
+      emit({ type: "wall_starting", branch: candidates.branch.name, commit: selectedCommit.hash });
+      const worker = await startWorker(selectedCommit, {
+        repoRoot,
+        observerPassword,
+        baseEnv,
+        secret: workerSecret,
+        prepareRevision: options.prepareRevision,
+        buildSelectedTestBundle: options.buildSelectedTestBundle,
+        acquirePort: options.acquirePort,
+        spawn: options.spawn,
+        waitForLocalReady: options.waitForLocalReady,
+        applyLocalMigrations: options.applyLocalMigrations,
+        forceStopLocalWorker: options.forceStopLocalWorker
+      });
+      try {
+        const wall = await startWall({
+          repoRoot,
+          sessionId,
+          commit: selectedCommit.hash,
+          monitor,
+          worker,
+          password: observerPassword,
+          secret: workerSecret,
+          chromeExecutable: options.chromeExecutable,
+          emit
+        });
+        emit({ type: "wall_ready", url: worker.url, commit: selectedCommit.hash });
+        return wall;
+      } catch (error) {
+        await worker.stop().catch(() => {});
+        throw error;
+      }
+    }
+
     emit({ type: "starting", branch: candidates.branch.name, commit: selectedCommit.hash });
-    const controller = await startLocalRankedTest(selectedCommit, {
+    const controller = await startWorker(selectedCommit, {
       repoRoot,
-      observerPassword: process.env.DUNGEON_ONLINE_TEST_BOT_PASSWORD,
-      baseEnv: options.baseEnv || process.env,
+      observerPassword,
+      baseEnv,
       prepareRevision: options.prepareRevision,
       buildSelectedTestBundle: options.buildSelectedTestBundle,
       acquirePort: options.acquirePort,
@@ -514,6 +598,58 @@ export async function runLauncherCli(args = process.argv.slice(2), options = {})
   }
 }
 
+export function attachLauncherCommandInput(input, controller, emit = writeJsonLine) {
+  let buffer = "";
+  let chain = Promise.resolve();
+
+  const enqueue = (line) => {
+    if (!line.trim()) return;
+    chain = chain.then(async () => {
+      try {
+        const command = JSON.parse(line);
+        if (command?.type === "stop") {
+          await controller.stop();
+          emit({ type: "stopped" });
+          return;
+        }
+        if (!/^bot-0[1-8]$/u.test(String(command?.botId || ""))) {
+          throw new TypeError("A bot command requires bot-01 through bot-08.");
+        }
+        if (command.type === "stop_bot") {
+          await controller.stopBot(command.botId);
+          return;
+        }
+        if (command.type === "focus_bot") {
+          await controller.focusBot(command.botId);
+          return;
+        }
+        throw new TypeError("Unknown launcher command.");
+      } catch (error) {
+        emit({ type: "command_failed", message: launchErrorMessage(error) });
+      }
+    });
+  };
+
+  input.setEncoding?.("utf8");
+  input.on("data", (chunk) => {
+    buffer += String(chunk || "");
+    const lines = buffer.split(/\r?\n/u);
+    buffer = lines.pop() || "";
+    for (const line of lines) enqueue(line);
+  });
+  input.on("end", () => {
+    if (buffer.trim()) enqueue(buffer);
+    buffer = "";
+  });
+
+  return Object.freeze({
+    async drain() {
+      await Promise.resolve();
+      return chain;
+    }
+  });
+}
+
 async function runCliEntrypoint() {
   let controller = null;
   try {
@@ -522,11 +658,21 @@ async function runCliEntrypoint() {
       return;
     }
     controller = await runLauncherCli();
+    let exiting = false;
     const stop = async () => {
+      if (exiting) return;
+      exiting = true;
       await controller.stop();
       writeJsonLine({ type: "stopped" });
       process.exit(0);
     };
+    if (process.argv.includes("--multi-bot")) {
+      attachLauncherCommandInput(process.stdin, controller, (event) => {
+        writeJsonLine(event);
+        if (event.type === "stopped") process.exit(0);
+      });
+      process.stdin.resume();
+    }
     process.once("SIGINT", stop);
     process.once("SIGTERM", stop);
   } catch (error) {

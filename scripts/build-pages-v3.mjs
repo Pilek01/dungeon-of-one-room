@@ -3,6 +3,7 @@ import { execFileSync } from "node:child_process";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { observerBotReleaseConfig } from "./pages-release-preflight.mjs";
+import { injectMultiBotTelemetry } from "./local-ranked-multi-bot-bundle.mjs";
 import {
   patchObserverBotCampStart,
   patchRankedArenaWaveGoldParity,
@@ -231,6 +232,7 @@ game = patchRankedArenaWaveGoldParity(game);
 game = patchRankedEmergencyExtraction(game);
 game = patchRankedFatalPendingFreeze(game);
 game = patchRankedRoomClearOnce(game);
+game = injectMultiBotTelemetry(game, target);
 const practiceSource = 'title: "Start New Game",';
 if (!game.includes(practiceSource)) {
   throw new Error("Missing Practice menu source label.");
