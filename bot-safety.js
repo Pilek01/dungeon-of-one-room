@@ -14,6 +14,22 @@
     return options.chase === true ? 36 : -110;
   }
 
+  function mergeBotActionCandidate(existing, incoming) {
+    if (!existing || typeof existing !== "object") return { ...(incoming || {}) };
+    if (!incoming || typeof incoming !== "object") return { ...existing };
+    return { ...existing, ...incoming };
+  }
+
+  function shouldBotBlockPathTile(options = {}) {
+    if (options.pit === true) return true;
+    return options.avoidHazards === true && options.hazard === true && options.target !== true;
+  }
+
+  function getBotPostClearNavigationMode(options = {}) {
+    if (options.portalPresent !== true) return "missing_portal";
+    return options.loopPingPongActive === true ? "portal_recovery" : "normal";
+  }
+
   function canBotDrinkPotion(options = {}) {
     if (options.hasRisk) return false;
     if (Math.max(0, Number(options.oathPotionLockTurns) || 0) > 0) return false;
@@ -414,11 +430,14 @@
     decideBotOffensiveMine,
     decideBotPotionUse,
     getBotCombatChestAdjustment,
+    getBotPostClearNavigationMode,
     getBotEarlyPotionUpgradePlan,
     getBotGoldBankingPressure,
     getBotSkillSavingsUpgradeCount,
     getForgeTargetForBot,
-    getPendingBlastZones
+    getPendingBlastZones,
+    mergeBotActionCandidate,
+    shouldBotBlockPathTile
   };
 
   if (typeof module !== "undefined" && module.exports) {

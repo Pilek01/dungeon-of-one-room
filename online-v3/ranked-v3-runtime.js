@@ -1602,9 +1602,10 @@
       });
       if (postRoomPactOfferPending) {
         postRoomPactOfferPending = false;
-        pendingBoundaryExit = null;
         pendingRoomSummary = null;
-        await acceptResponse(response);
+        if (!pendingExtractionMode) pendingBoundaryExit = "portal";
+        root.DungeonOnlineV3GameBridge.syncCanonicalProjection(response.metaState);
+        await continueResolvedCheckpoint(response.metaState);
       } else if (pendingBoundaryExit === "portal") {
         root.DungeonOnlineV3GameBridge.syncCanonicalProjection(response.metaState);
         await continueResolvedCheckpoint(response.metaState);
@@ -1980,10 +1981,24 @@
     );
   }
 
+  function hasRoomAttachedMerchantOffer(state) {
+    return Boolean(
+      state?.metaTransactionOffer?.sourceType === "merchant" &&
+      state?.currentRoomDirective?.roomType === "merchant" &&
+      state.currentRoomDirective.consumed !== true
+    );
+  }
+
   function presentNativeMerchant(state, request = {}) {
     const offer = state?.metaTransactionOffer;
     if (!offer || offer.sourceType !== "merchant") {
       throw new TypeError("RANKED_MERCHANT_OFFER_INVALID");
+    }
+    if (session.getState() === root.DungeonRankedV3Session.STATES.offer) {
+      session.transition(root.DungeonRankedV3Session.STATES.resolving);
+    }
+    if (session.getState() === root.DungeonRankedV3Session.STATES.resolving) {
+      session.transition(root.DungeonRankedV3Session.STATES.active);
     }
     currentMerchantOffer = offer;
     merchantResetForOffer(offer);
@@ -2008,8 +2023,9 @@
     merchantMutationPending = true;
     root.DungeonOnlineV3GameBridge?.beginRankedMerchantRequest?.();
     try {
-      if (currentMerchantOffer?.sourceType === "merchant") {
-        presentNativeMerchant(createClient().getSnapshot()?.publicState || {}, {});
+      const state = createClient().getSnapshot()?.publicState || {};
+      if (hasRoomAttachedMerchantOffer(state)) {
+        presentNativeMerchant(state, {});
         return true;
       }
       const response = await createClient().event("open_meta_offer", {});
@@ -2293,7 +2309,15 @@
     root.DungeonOnlineV3GameBridge.syncCanonicalProjection(state);
     if (state.relicReplacement) return presentReplacement(state.relicReplacement, operation);
     if (state.relicOffer) return presentRelicOffer(state.relicOffer, operation);
-    if (state.metaTransactionOffer) return presentMetaOffer(state.metaTransactionOffer, state);
+    if (state.metaTransactionOffer) {
+      if (hasRoomAttachedMerchantOffer(state)) {
+        // Merchant offers belong to the native Merchant room and are presented only after entry.
+      } else if (state.metaTransactionOffer.sourceType === "merchant") {
+        throw new TypeError("RANKED_MERCHANT_OFFER_DIRECTIVE_MISMATCH");
+      } else {
+        return presentMetaOffer(state.metaTransactionOffer, state);
+      }
+    }
     const slot = offers.pendingRewardSlots(state, {
       roomClearPending: Boolean(pendingRoomSummary)
     })[0];
@@ -2340,8 +2364,10 @@
       return;
     }
     if (state.metaTransactionOffer) {
-      await continueBoundary(state, operation);
-      return;
+      if (!hasRoomAttachedMerchantOffer(state)) {
+        await continueBoundary(state, operation);
+        return;
+      }
     }
     if (pendingExtractionMode) {
       const extractionMode = pendingExtractionMode;

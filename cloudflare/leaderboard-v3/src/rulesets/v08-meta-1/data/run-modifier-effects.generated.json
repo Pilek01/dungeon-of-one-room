@@ -5,8 +5,8 @@
   "sources": [
     {
       "file": "game.js",
-      "byteLength": 1375881,
-      "sha256": "b4df2fdb0414dd5f85c4ebbb8e958794ea736d71779f886fc155d246409fda2e"
+      "byteLength": 1377532,
+      "sha256": "3d69ca19000f2860014f6385f30473793096801bc8ae33b438e78c92ac29eb32"
     },
     {
       "file": "mutator-data.js",

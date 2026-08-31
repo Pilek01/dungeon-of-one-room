@@ -2266,19 +2266,19 @@ rankedObserverPactSource = rankedObserverPactSource.replace(
   rankedPactPhaseSource,
   rankedPactPhaseReplacement
 );
-if (!rankedObserverPactSource.includes("      if (isOnPact()) {")) {
+if (!rankedObserverPactSource.includes("      if (allowPostClearOptional && isOnPact()) {")) {
   throw new Error("Missing Ranked Observer Bot Pact altar source.");
 }
 rankedObserverPactSource = rankedObserverPactSource.replace(
-  "      if (isOnPact()) {",
-  "      if (!rankedPactRoom && isOnPact()) {"
+  "      if (allowPostClearOptional && isOnPact()) {",
+  "      if (allowPostClearOptional && !rankedPactRoom && isOnPact()) {"
 );
-if (!rankedObserverPactSource.includes("      if (state.pact && !state.pact.used) {")) {
+if (!rankedObserverPactSource.includes("      if (allowPostClearOptional && state.pact && !state.pact.used) {")) {
   throw new Error("Missing Ranked Observer Bot Pact routing source.");
 }
 rankedObserverPactSource = rankedObserverPactSource.replace(
-  "      if (state.pact && !state.pact.used) {",
-  "      if (!rankedPactRoom && state.pact && !state.pact.used) {"
+  "      if (allowPostClearOptional && state.pact && !state.pact.used) {",
+  "      if (allowPostClearOptional && !rankedPactRoom && state.pact && !state.pact.used) {"
 );
 game = `${game.slice(0, rankedObserverPactStart)}${rankedObserverPactSource}${game.slice(rankedObserverPactEnd)}`;
 

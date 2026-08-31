@@ -2426,3 +2426,14 @@ Updated next good targets
 - A player receives an ordinary local `rejected` result and may choose again. Observer Bot receives a non-counting local `backoff`, which the existing Merchant controller interprets as leave-and-continue rather than retrying into a boundary stall.
 - RED/GREEN regressions cover the exact `60 gold / 600 price` case and Black Market against a no-longer-owned relic. Focused tests pass 47/47, current-tree Ranked Camp passes, and phase passes 1099/1099.
 - The production visual build remains gated by the expected source-fingerprint approval. No Worker policy, ruleset, D1 migration, commit, push, or deployment is included.
+
+## 2026-08-31 - Ranked room-transition and Observer loop repair in progress
+
+- Session `session-20260831014300-f855776b` confirmed separate failures in post-room Pact transition, room-attached Merchant offer routing, chest-blocked pursuit, post-clear navigation, and portal diagnostics.
+- Post-room Pact choices now continue through `ENTERING_NEXT_ROOM` instead of restarting from the offer state. Merchant offers remain attached to the native Merchant room, reuse the canonical snapshot, and normalize recovered offer state back to `ROOM_ACTIVE`.
+- Observer movement candidates now preserve pursuit metadata when a chest occupies the chase step, pits are never treated as ordinary risk, and sustained post-clear ping-pong switches to direct portal recovery.
+- Critical portal placement has a deterministic inner-tile fallback. The multi-bot monitor now reads the real rendered portal field, detects moving A-B loops independently of turn/decision churn, and captures a cleared room with no portal.
+- RED/GREEN focused coverage passes 36/36 plus the bot-safety suite; the broader related regression set passes 221/221.
+- Final candidate ruleset hash is `sha256:eaa89c2568870852173c67cfd601ddd32b649322b3d4bf3b66a2114621a6998a`; previous production `sha256:1b3103342a34e570842c73cd4454c9b2e5fa9b7895aac5835d18d4f1ee95b89b` remains registered with its full capability contract.
+- Final verification passes: phase 1103/1103, current-tree Ranked Lifecycle, current-tree HD, protected committed baseline 3/3, and guard 15/15.
+- No D1 migration, commit, push, ruleset activation, or deployment is included.

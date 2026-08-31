@@ -90,6 +90,118 @@ test("Ranked Merchant bot actions wait while the canonical open or commit is pen
   );
 });
 
+test("a room-attached Merchant offer enters the Merchant directive instead of the generic choice overlay", async () => {
+  const runtime = await source("online-v3/ranked-v3-runtime.js");
+  const boundary = functionBody(runtime, "continueBoundary", "continueResolvedCheckpoint")
+    .replace(/\s*async\s*$/u, "");
+  const calls = [];
+  const context = {
+    pendingRoomSummary: null,
+    pendingBoundaryExit: null,
+    root: {
+      DungeonOnlineV3GameBridge: {
+        syncCanonicalProjection() { calls.push("sync"); },
+        setNextDirective(directive) { calls.push({ kind: "directive", directive }); }
+      },
+      DungeonRankedV3Session: {
+        STATES: { offer: "OFFER", resolving: "RESOLVING", active: "ACTIVE", next: "NEXT" }
+      }
+    },
+    isCurrentBoundaryOperation: () => true,
+    hasRoomAttachedMerchantOffer: (state) => (
+      state?.metaTransactionOffer?.sourceType === "merchant" &&
+      state?.currentRoomDirective?.roomType === "merchant" &&
+      state.currentRoomDirective.consumed !== true
+    ),
+    presentReplacement() { calls.push("replacement"); },
+    presentRelicOffer() { calls.push("relic"); },
+    presentMetaOffer() { calls.push("generic-meta"); },
+    offers: { pendingRewardSlots: () => [] },
+    isOtterCrimsonSlot: () => false,
+    presentOtterCrimsonChest: () => false,
+    issueRelicSlot() {},
+    resolveCheckpoint() {},
+    usesBoundarySettlement: () => true,
+    directives: { applyOnlineV3RoomDirective: (directive) => directive },
+    session: {
+      getState: () => "ACTIVE",
+      transition(next) { calls.push({ kind: "transition", next }); }
+    },
+    ui: { hide() { calls.push("hide"); } }
+  };
+  const runBoundary = vm.runInNewContext(`(async ${boundary})`, context);
+  const directive = { directiveId: "merchant-room-4", roomType: "merchant", depth: 4 };
+  await runBoundary({
+    currentRoomDirective: directive,
+    metaTransactionOffer: { sourceType: "merchant", choices: [] }
+  });
+
+  assert.equal(calls.includes("generic-meta"), false);
+  assert.deepEqual(calls.find((entry) => entry?.kind === "directive")?.directive, directive);
+  assert.equal(calls.find((entry) => entry?.kind === "transition")?.next, "NEXT");
+});
+
+test("opening a Ranked Merchant reuses its canonical room-attached offer without a second network request", async () => {
+  const runtime = await source("online-v3/ranked-v3-runtime.js");
+  const merchantOpen = functionBody(runtime, "onMerchantOpen", "merchantErrorIsDeterministic");
+  const offer = { sourceType: "merchant", sourceId: "merchant-room-4", choices: [] };
+  const publicState = { currentRoomDirective: { roomType: "merchant" }, metaTransactionOffer: offer };
+  let presented = null;
+  let errors = 0;
+  const context = {
+    merchantMutationPending: false,
+    currentMerchantOffer: null,
+    hasRoomAttachedMerchantOffer: (state) => (
+      state?.metaTransactionOffer?.sourceType === "merchant" &&
+      state?.currentRoomDirective?.roomType === "merchant" &&
+      state.currentRoomDirective.consumed !== true
+    ),
+    root: { DungeonOnlineV3GameBridge: { beginRankedMerchantRequest() {} } },
+    createClient: () => ({
+      getSnapshot: () => ({ publicState }),
+      async event() { throw new Error("duplicate open_meta_offer"); }
+    }),
+    presentNativeMerchant(state) { presented = state; },
+    presentMerchantError() { errors += 1; }
+  };
+  const openMerchant = vm.runInNewContext(`(async ${merchantOpen})`, context);
+
+  assert.equal(await openMerchant(), true);
+  assert.equal(errors, 0);
+  assert.equal(presented, publicState);
+});
+
+test("native Merchant presentation normalizes a recovered offer state back to ROOM_ACTIVE", async () => {
+  const runtime = await source("online-v3/ranked-v3-runtime.js");
+  const nativeMerchant = functionBody(runtime, "presentNativeMerchant", "presentMerchantError");
+  const transitions = [];
+  let current = "OFFER";
+  let entered = false;
+  const context = {
+    currentMerchantOffer: null,
+    merchantResetForOffer() {},
+    session: {
+      getState: () => current,
+      transition(next) { transitions.push(next); current = next; }
+    },
+    root: {
+      DungeonRankedV3Session: {
+        STATES: { offer: "OFFER", resolving: "RESOLVING", active: "ACTIVE" }
+      },
+      DungeonOnlineV3GameBridge: {
+        enterRankedMerchant() { entered = true; }
+      }
+    },
+    ui: { hide() {} }
+  };
+  const present = vm.runInNewContext(`(${nativeMerchant})`, context);
+  present({ metaTransactionOffer: { sourceType: "merchant", choices: [] } });
+
+  assert.deepEqual(transitions, ["RESOLVING", "ACTIVE"]);
+  assert.equal(current, "ACTIVE");
+  assert.equal(entered, true);
+});
+
 test("Ranked Merchant exposes confirmed-only lifecycle callbacks and public mutation state", async () => {
   const runtime = await source("online-v3/ranked-v3-runtime.js");
   assert.match(runtime, /function completeRankedMerchantAction\(result\s*=\s*\{\}\)/u);

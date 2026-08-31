@@ -11,13 +11,30 @@ const {
   decideBotPotionUse,
   getBotEarlyPotionUpgradePlan,
   getBotCombatChestAdjustment,
+  getBotPostClearNavigationMode,
   getBotGoldBankingPressure,
   getBotSkillSavingsUpgradeCount,
   getForgeTargetForBot,
-  getPendingBlastZones
+  getPendingBlastZones,
+  mergeBotActionCandidate,
+  shouldBotBlockPathTile
 } = require("../bot-safety.js");
 
 function run() {
+  assert.deepEqual(
+    mergeBotActionCandidate(
+      { kind: "move", dx: 1, dy: 0, onChest: true, chase: false },
+      { kind: "move", dx: 1, dy: 0, onChest: true, chase: true, chaseTargetType: "skeleton" }
+    ),
+    { kind: "move", dx: 1, dy: 0, onChest: true, chase: true, chaseTargetType: "skeleton" }
+  );
+  assert.equal(shouldBotBlockPathTile({ pit: true, hazard: true, avoidHazards: false, target: true }), true);
+  assert.equal(shouldBotBlockPathTile({ pit: false, hazard: true, avoidHazards: false, target: false }), false);
+  assert.equal(shouldBotBlockPathTile({ pit: false, hazard: true, avoidHazards: true, target: false }), true);
+  assert.equal(getBotPostClearNavigationMode({ portalPresent: true, loopPingPongActive: true }), "portal_recovery");
+  assert.equal(getBotPostClearNavigationMode({ portalPresent: true, loopPingPongActive: false }), "normal");
+  assert.equal(getBotPostClearNavigationMode({ portalPresent: false, loopPingPongActive: true }), "missing_portal");
+
   assert.equal(canBotDrinkPotion({ potions: 2, hp: 30, maxHp: 100, oathPotionLockTurns: 0 }), true);
   assert.equal(canBotDrinkPotion({ potions: 1, hp: 100, maxHp: 100, poisonTurns: 3, poisonDamage: 8 }), true);
   assert.equal(canBotDrinkPotion({ potions: 1, hp: 100, maxHp: 100, poisonTurns: 1, poisonDamage: 1 }), false);

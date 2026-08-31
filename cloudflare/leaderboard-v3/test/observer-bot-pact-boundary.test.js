@@ -391,12 +391,15 @@ test("resumed Ranked Pact presents its pending offer before the consumed room se
   assert.equal(runtime.getSessionState(), "AWAITING_REWARD_OR_TRANSACTION", JSON.stringify(harness.ui.lastMessage));
   assert.equal(harness.calls.some((entry) => entry.action === "startRanked"), false);
   await harness.ui.choiceHandler("pact_apply");
-  assert.equal(harness.calls.filter((entry) => entry.action === "startRanked").length, 1);
-  assert.equal(harness.calls.find((entry) => entry.action === "startRanked").directive.roomIndex, 31);
+  assert.equal(harness.calls.filter((entry) => entry.action === "startRanked").length, 0);
+  assert.equal(harness.calls.filter((entry) => entry.action === "setNextDirective").length, 1);
+  assert.equal(harness.calls.filter((entry) => entry.action === "enterNextDirective").length, 1);
+  assert.equal(harness.calls.find((entry) => entry.action === "setNextDirective").directive.roomIndex, 31);
+  assert.equal(runtime.getSessionState(), "ENTERING_NEXT_ROOM");
   assert.equal(
     harness.projectionSyncCount,
-    0,
-    "post-room Pact resume must let startRanked hydrate the canonical projection exactly once"
+    1,
+    "post-room Pact continuation must synchronize the committed canonical projection exactly once"
   );
 });
 

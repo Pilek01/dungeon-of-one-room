@@ -20,7 +20,8 @@ function activeSample(fingerprint, extra = {}) {
       player: { x: 2, y: 3 },
       enemyCount: 1,
       enemyHpTotal: 10,
-      portalVisible: false
+      roomCleared: false,
+      interactables: { portal: { x: 7, y: 7 } }
     },
     observer: { enabled: true, lastDecision: `move-${fingerprint}` },
     sessionState: "ROOM_ACTIVE",
@@ -99,6 +100,29 @@ test("detects a sustained A-B-A-B loop without sharing state between bots", () =
   assert.equal(first.observe(activeSample("A"), 20_000), null);
   assert.equal(first.observe(activeSample("B"), 30_000)?.kind, "loop");
   assert.equal(second.observe(activeSample("A"), 30_000), null);
+});
+
+test("detects an A-B movement loop even while turns and decisions keep changing", () => {
+  const monitor = new BotProgressMonitor({ stallMs: 60_000, loopMs: 30_000 });
+  const position = (x, y, turn, decision) => activeSample(turn, {
+    game: { ...activeSample(turn).game, turn, player: { x, y } },
+    observer: { enabled: true, lastDecision: decision }
+  });
+  assert.equal(monitor.observe(position(2, 3, 10, "left"), 0), null);
+  assert.equal(monitor.observe(position(3, 3, 11, "right"), 10_000), null);
+  assert.equal(monitor.observe(position(2, 3, 12, "chase"), 20_000), null);
+  assert.equal(monitor.observe(position(3, 3, 13, "fallback"), 30_000)?.kind, "loop");
+});
+
+test("classifies a cleared active room without a portal as a missing-portal failure", () => {
+  const sample = activeSample("A", {
+    game: {
+      ...activeSample("A").game,
+      roomCleared: true,
+      interactables: { portal: null }
+    }
+  });
+  assert.equal(classifyImmediateFailure(sample)?.kind, "missing_portal");
 });
 
 test("captures all seven redacted artifacts once and leaves the failed page open", async (context) => {

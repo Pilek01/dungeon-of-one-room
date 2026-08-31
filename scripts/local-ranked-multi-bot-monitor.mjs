@@ -29,8 +29,22 @@ export function gameplayFingerprint(sample) {
     y: Number(sample.game?.player?.y) || 0,
     enemies: Number(sample.game?.enemyCount ?? sample.game?.enemies?.length) || 0,
     enemyHp: Number(sample.game?.enemyHpTotal) || 0,
-    portal: Boolean(sample.game?.portalVisible),
+    portal: Boolean(sample.game?.interactables?.portal),
     decision: String(sample.observer?.lastDecision || "")
+  });
+}
+
+export function gameplayLoopFingerprint(sample) {
+  return JSON.stringify({
+    phase: sample.game?.phase || "",
+    depth: Number(sample.game?.depth) || 0,
+    room: sample.game?.roomIndex ?? sample.game?.roomType ?? "",
+    x: Number(sample.game?.player?.x) || 0,
+    y: Number(sample.game?.player?.y) || 0,
+    enemies: Number(sample.game?.enemyCount ?? sample.game?.enemies?.length) || 0,
+    enemyHp: Number(sample.game?.enemyHpTotal) || 0,
+    roomCleared: sample.game?.roomCleared === true,
+    portal: Boolean(sample.game?.interactables?.portal)
   });
 }
 
@@ -62,6 +76,14 @@ export function classifyImmediateFailure(sample) {
     ["RECONNECT_REQUIRED", "UNRECOVERABLE_PROTOCOL_ERROR"].includes(String(sample?.sessionState || "").toUpperCase())
   ) {
     return incident("reconnect", sample.overlayText || sample.sessionState);
+  }
+  if (
+    String(sample?.sessionState || "").toUpperCase() === "ROOM_ACTIVE" &&
+    sample?.game?.phase === "playing" &&
+    sample?.game?.roomCleared === true &&
+    !sample?.game?.interactables?.portal
+  ) {
+    return incident("missing_portal", "The active cleared room has no portal in the rendered game state.");
   }
   if (sample?.observer && sample.observer.enabled === false && sample.expectObserver !== false) {
     return incident("observer_stopped", "Observer Bot became inactive unexpectedly.");
@@ -101,6 +123,7 @@ export class BotProgressMonitor {
     if (immediate) return immediate;
 
     const fingerprint = gameplayFingerprint(sample);
+    const loopFingerprint = gameplayLoopFingerprint(sample);
     if (isKnownBoundaryWait(sample)) {
       if (fingerprint !== this.boundaryFingerprint) {
         this.boundaryFingerprint = fingerprint;
@@ -133,7 +156,7 @@ export class BotProgressMonitor {
       this.lastProgressAt = nowMs;
     }
 
-    this.history.push(Object.freeze({ fingerprint, at: nowMs }));
+    this.history.push(Object.freeze({ fingerprint: loopFingerprint, at: nowMs }));
     if (this.history.length > 32) this.history.splice(0, this.history.length - 32);
     for (let period = 2; period <= 4; period += 1) {
       if (this.history.length < period * 2) continue;

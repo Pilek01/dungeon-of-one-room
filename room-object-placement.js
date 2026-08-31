@@ -67,6 +67,23 @@
     return choice;
   }
 
+  function chooseCriticalLargeObjectTile(occupied, options = {}) {
+    const attempts = [
+      { edgeInset: 2, margin: 1 },
+      { edgeInset: 2, margin: 0 },
+      { edgeInset: 1, margin: 0 }
+    ];
+    for (const attempt of attempts) {
+      const point = chooseLargeObjectTile(occupied, {
+        ...options,
+        ...attempt,
+        random: () => 0
+      });
+      if (point) return point;
+    }
+    return null;
+  }
+
   return Object.freeze({
     GRID_SIZE,
     LARGE_OBJECT_EDGE_INSET,
@@ -76,6 +93,7 @@
     footprintTiles,
     canPlaceLargeObject,
     reserveLargeObject,
-    chooseLargeObjectTile
+    chooseLargeObjectTile,
+    chooseCriticalLargeObjectTile
   });
 });

@@ -136,11 +136,16 @@
     decideBotOffensiveMine: decideBotOffensiveMineSafe = () => ({ use: false, reason: "mine_not_available", escape: null }),
     decideBotPotionUse: decideBotPotionUseSafe = () => ({ use: false, reason: "blocked_empty", actionKey: "" }),
     getBotCombatChestAdjustment: getBotCombatChestAdjustmentSafe = () => 0,
+    getBotPostClearNavigationMode: getBotPostClearNavigationModeSafe = ({ portalPresent }) => portalPresent ? "normal" : "missing_portal",
     getBotEarlyPotionUpgradePlan: getBotEarlyPotionUpgradePlanSafe = () => ({ active: false, recommendedUpgrade: null }),
     getBotGoldBankingPressure: getBotGoldBankingPressureSafe = () => ({ threshold: Infinity, score: 0, ratio: 0, strong: false }),
     getBotSkillSavingsUpgradeCount: getBotSkillSavingsUpgradeCountSafe = () => 0,
     getForgeTargetForBot: getForgeTargetForBotSafe = () => null,
-    getPendingBlastZones: getPendingBlastZonesSafe = () => ({})
+    getPendingBlastZones: getPendingBlastZonesSafe = () => ({}),
+    mergeBotActionCandidate: mergeBotActionCandidateSafe = (existing, incoming) => ({ ...(existing || {}), ...(incoming || {}) }),
+    shouldBotBlockPathTile: shouldBotBlockPathTileSafe = ({ pit, hazard, avoidHazards, target }) => (
+      pit === true || (avoidHazards === true && hazard === true && target !== true)
+    )
   } = (typeof window !== "undefined" && window.botSafetyApi) || {};
   const ELITE_THORNED_REFLECT_RATIO = 0.10;
   const ELITE_THORNED_REFLECT_CAP = 2 * COMBAT_SCALE;
@@ -3131,7 +3136,7 @@
       const d = recent[recent.length - 1];
       pingPong = a === c && b === d && a !== b;
     }
-    if (pingPong && Array.isArray(state.enemies) && state.enemies.length > 0) {
+    if (pingPong) {
       bot.loopPingPongTicks = Math.min(999, bot.loopPingPongTicks + 1);
       if (state.enemies.some((enemy) => enemy && enemy.type === "acolyte")) {
         bot.loopAcolytePingPongTicks = Math.min(999, bot.loopAcolytePingPongTicks + 1);
@@ -12137,6 +12142,13 @@
     return roomObjectPlacementApi.chooseLargeObjectTile(occupied, { ...shared, margin: 0 });
   }
 
+  function criticalFreePortalTile(occupied) {
+    if (!roomObjectPlacementApi || typeof roomObjectPlacementApi.chooseCriticalLargeObjectTile !== "function") return null;
+    return roomObjectPlacementApi.chooseCriticalLargeObjectTile(occupied, {
+      isBlocked: (x, y) => isPitAt(x, y) || isBonfireFloorTile(x, y)
+    });
+  }
+
   function buildDirectPath(fromX, fromY, toX, toY, horizontalFirst) {
     const path = [];
     let x = fromX;
@@ -13350,7 +13362,8 @@
     }
     state.portal = state.portal ||
       randomFreeLargeObjectTile(occupied, { avoidBonfire: true, allowTightFallback: true }) ||
-      randomFreeLargeObjectTile(occupied, { allowTightFallback: true });
+      randomFreeLargeObjectTile(occupied, { allowTightFallback: true }) ||
+      criticalFreePortalTile(occupied);
     if (state.roomType !== "treasure" && state.roomType !== "vault" && state.roomType !== "duel") {
       chestCount = rollChestCountWithChance(chestCount, NON_TREASURE_CHEST_CHANCE);
     }
@@ -14441,7 +14454,8 @@
 
     state.portal = state.portal ||
       randomFreeLargeObjectTile(occupied, { avoidBonfire: true, allowTightFallback: true }) ||
-      randomFreeLargeObjectTile(occupied, { allowTightFallback: true });
+      randomFreeLargeObjectTile(occupied, { allowTightFallback: true }) ||
+      criticalFreePortalTile(occupied);
     sanitizeRoomVisualConflicts();
     generateBeyondPits();
     carveSafeSpikePathToPortal();
@@ -28368,7 +28382,12 @@
         if (visited.has(key)) continue;
         const enemy = getEnemyAt(nx, ny);
         if (enemy && !(isTarget && allowTargetEnemy)) continue;
-        if (avoidSpikes && isHazardAt(nx, ny) && !isTarget) continue;
+        if (shouldBotBlockPathTileSafe({
+          pit: isPitAt(nx, ny),
+          hazard: isHazardAt(nx, ny),
+          avoidHazards: avoidSpikes,
+          target: isTarget
+        })) continue;
 
         const firstStep = node.firstStep || dir;
         if (isTarget) return firstStep;
@@ -29586,12 +29605,16 @@
   function buildObserverBotCombatActionCandidates(options = {}) {
     const forceAggro = Boolean(options.forceAggro);
     const out = [];
-    const seen = new Set();
+    const seen = new Map();
     const addCandidate = (candidate) => {
       if (!candidate || typeof candidate !== "object") return;
       const key = `${candidate.kind}:${candidate.dx || 0}:${candidate.dy || 0}`;
-      if (seen.has(key)) return;
-      seen.add(key);
+      if (seen.has(key)) {
+        const index = seen.get(key);
+        out[index] = mergeBotActionCandidateSafe(out[index], candidate);
+        return;
+      }
+      seen.set(key, out.length);
       out.push(candidate);
     };
 
@@ -32247,23 +32270,31 @@
     }
 
     if (state.roomCleared) {
-      resetObserverBotStallTracker();
-      if (isOnShrine()) {
+      const postClearNavigationMode = getBotPostClearNavigationModeSafe({
+        portalPresent: Boolean(state.portal),
+        loopPingPongActive: Boolean(bot.loopPingPongActive)
+      });
+      if (postClearNavigationMode === "missing_portal") {
+        bot.lastDecision = "missing_portal";
+        return false;
+      }
+      const allowPostClearOptional = postClearNavigationMode !== "portal_recovery";
+      if (allowPostClearOptional && isOnShrine()) {
         activateShrine();
         bot.lastDecision = "use_shrine_post_clear";
         return true;
       }
-      if (isOnForge()) {
+      if (allowPostClearOptional && isOnForge()) {
         openForgeRoom();
         bot.lastDecision = "use_forge_post_clear";
         return true;
       }
-      if (isOnPact()) {
+      if (allowPostClearOptional && isOnPact()) {
         openPactRoom();
         bot.lastDecision = "use_pact_post_clear";
         return true;
       }
-      const shrineTarget = getNearestShrineForBot();
+      const shrineTarget = allowPostClearOptional ? getNearestShrineForBot() : null;
       if (shrineTarget) {
         const shrineStep = findBotStepWithSpikePolicy(shrineTarget.x, shrineTarget.y, { context: "utility" });
         if (shrineStep) {
@@ -32272,7 +32303,7 @@
           return true;
         }
       }
-      const forgeTarget = getNearestForgeForBot();
+      const forgeTarget = allowPostClearOptional ? getNearestForgeForBot() : null;
       if (forgeTarget) {
         const forgeStep = findBotStepWithSpikePolicy(forgeTarget.x, forgeTarget.y, { context: "utility" });
         if (forgeStep) {
@@ -32281,7 +32312,7 @@
           return true;
         }
       }
-      if (state.pact && !state.pact.used) {
+      if (allowPostClearOptional && state.pact && !state.pact.used) {
         const pactStep = findBotStepWithSpikePolicy(state.pact.x, state.pact.y, { context: "utility" });
         if (pactStep) {
           tryMove(pactStep.dx, pactStep.dy);
@@ -32289,7 +32320,7 @@
           return true;
         }
       }
-      const postClearChest = getNearestChestForBot();
+      const postClearChest = allowPostClearOptional ? getNearestChestForBot() : null;
       if (postClearChest) {
         const chestStep = findBotStepWithSpikePolicy(postClearChest.x, postClearChest.y, { context: "utility" });
         if (chestStep) {
