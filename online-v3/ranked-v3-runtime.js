@@ -39,6 +39,8 @@
   let pendingElixirUsage = null;
   let currentMerchantOffer = null;
   let merchantMutationPending = false;
+  let merchantMutationFlight = null;
+  let merchantExitOperation = null;
   let merchantLeaveCompletedDirectiveId = "";
   const MERCHANT_FAILURE_LIMIT = 3;
   const MERCHANT_REASONS = new Set([
@@ -563,6 +565,7 @@
             root.DungeonOnlineV3GameBridge?.isRankedCanonicalLifeRestartReady?.() === true
         }) ||
         ["pending", "uncertain", "resyncing", "backoff"].includes(merchantOperation?.status) ||
+        merchantExitOperation ||
         boundaryOperation ||
         campMutationPending ||
         merchantMutationPending ||
@@ -2125,55 +2128,109 @@
     merchantOperation.status = "pending";
     merchantMutationPending = true;
     root.DungeonOnlineV3GameBridge?.beginRankedMerchantRequest?.();
-    submitRankedMerchantOperation(operation, request).catch((error) => {
+    const flight = submitRankedMerchantOperation(operation, request).catch((error) => {
       failRankedMerchantAction({ reason: "commit_rejected", error });
+    });
+    operation.promise = flight;
+    merchantMutationFlight = flight;
+    void flight.finally(() => {
+      if (merchantMutationFlight === flight) merchantMutationFlight = null;
     });
     return true;
   }
   async function onMerchantLeave(options = {}) {
-    if (merchantMutationPending) return true;
     const requestedDirectiveId = activeRoomDirectiveId;
     if (
       requestedDirectiveId &&
       merchantLeaveCompletedDirectiveId === requestedDirectiveId
     ) return true;
-    if (boundaryOperation) {
-      await boundaryOperation.promise;
+    if (
+      merchantExitOperation &&
+      merchantExitOperation.directiveId === requestedDirectiveId
+    ) return merchantExitOperation.promise;
+
+    const extractionMode = options.extractionMode === "normal"
+      ? "normal"
+      : options.extractionMode ? "emergency" : "";
+    const exitOperation = {
+      directiveId: requestedDirectiveId,
+      promise: null
+    };
+    const flight = (async () => {
+      const purchaseFlight = merchantMutationFlight;
+      if (purchaseFlight) await purchaseFlight;
       if (requestedDirectiveId && activeRoomDirectiveId !== requestedDirectiveId) return true;
-      return onMerchantLeave(options);
-    }
-    merchantMutationPending = true;
-    root.DungeonOnlineV3GameBridge?.beginRankedMerchantRequest?.();
-    try {
-      const leave = merchantChoiceFor({ action: "leave" });
-      if (leave) {
-        const response = await createClient().event("commit_meta_transaction", {
-          transactionId: leave.transactionId,
-          choiceId: leave.choiceId
-        });
+      if (["rejected", "backoff"].includes(merchantOperation?.status)) return false;
+
+      const previousBoundary = boundaryOperation;
+      if (previousBoundary) {
+        await previousBoundary.promise;
+        if (requestedDirectiveId && activeRoomDirectiveId !== requestedDirectiveId) return true;
+      }
+
+      merchantMutationPending = true;
+      root.DungeonOnlineV3GameBridge?.beginRankedMerchantRequest?.();
+      try {
+        const state = createClient().getSnapshot?.()?.publicState || {};
+        if (hasRoomAttachedMerchantOffer(state)) {
+          currentMerchantOffer = state.metaTransactionOffer;
+        } else if (state.metaTransactionOffer?.sourceType === "merchant") {
+          throw new TypeError("RANKED_MERCHANT_OFFER_DIRECTIVE_MISMATCH");
+        }
+        const leave = merchantChoiceFor({ action: "leave" });
+        if (hasRoomAttachedMerchantOffer(state) && !leave) {
+          throw new TypeError("RANKED_MERCHANT_LEAVE_CHOICE_REQUIRED");
+        }
+        if (leave) {
+          const response = await createClient().event("commit_meta_transaction", {
+            transactionId: leave.transactionId,
+            choiceId: leave.choiceId
+          });
+          const responseState = response?.metaState || response?.publicState || {};
+          if (hasRoomAttachedMerchantOffer(responseState)) {
+            throw new TypeError("RANKED_MERCHANT_LEAVE_UNCONFIRMED");
+          }
+          root.DungeonOnlineV3GameBridge.syncCanonicalProjection(responseState);
+        }
         currentMerchantOffer = null;
-        root.DungeonOnlineV3GameBridge.syncCanonicalProjection(response.metaState);
+
+        if (usesBoundarySettlement()) {
+          const captured = mergeCapturedBoundary(captureRankedBoundary());
+          pendingRoomSummary = captured.summary;
+          if (extractionMode) {
+            rememberPendingExtraction(extractionMode);
+          } else if (options.enterPortal === true) {
+            pendingBoundaryExit = "portal";
+          }
+        }
+        const resolved = await resolveCheckpoint({
+          onError: presentMerchantError,
+          silent: true,
+          loadingMessage: extractionMode
+            ? "Extracting..."
+            : options.enterPortal === true ? "Loading next depth..." : ""
+        });
+        if (resolved) merchantLeaveCompletedDirectiveId = requestedDirectiveId;
+        if (resolved && !usesBoundarySettlement()) {
+          if (extractionMode) {
+            await performExtraction(extractionMode);
+          } else if (options.enterPortal === true) {
+            root.DungeonOnlineV3GameBridge?.enterNextDirective?.();
+          }
+        }
+        return resolved;
+      } catch (error) {
+        presentMerchantError(error);
+        return false;
+      } finally {
+        merchantMutationPending = false;
       }
-      if (usesBoundarySettlement()) {
-        const captured = mergeCapturedBoundary(captureRankedBoundary());
-        pendingRoomSummary = captured.summary;
-        if (options.enterPortal === true) pendingBoundaryExit = "portal";
-      }
-      const resolved = await resolveCheckpoint({
-        onError: presentMerchantError,
-        silent: true,
-        loadingMessage: options.enterPortal === true ? "Loading next depth…" : ""
-      });
-      if (resolved) merchantLeaveCompletedDirectiveId = requestedDirectiveId;
-      if (resolved && options.enterPortal === true && !usesBoundarySettlement()) {
-        root.DungeonOnlineV3GameBridge?.enterNextDirective?.();
-      }
-    } catch (error) {
-      presentMerchantError(error);
-    } finally {
-      merchantMutationPending = false;
-    }
-    return true;
+    })();
+    exitOperation.promise = flight.finally(() => {
+      if (merchantExitOperation === exitOperation) merchantExitOperation = null;
+    });
+    merchantExitOperation = exitOperation;
+    return exitOperation.promise;
   }
 
   function availableCampChoices() {
@@ -2606,6 +2663,8 @@
     if (directive.roomType === "merchant") {
       currentMerchantOffer = null;
       merchantOperation = null;
+      merchantMutationFlight = null;
+      merchantExitOperation = null;
       merchantFailureCount = 0;
       merchantMutationPending = false;
       merchantConfirmedReceipts.clear();
@@ -2728,6 +2787,13 @@
 
   async function onExtraction(mode) {
     const extractionMode = mode === "normal" ? "normal" : "emergency";
+    const currentDirective = createClient().getSnapshot()?.publicState?.currentRoomDirective;
+    if (
+      currentDirective?.roomType === "merchant" &&
+      currentDirective.consumed !== true
+    ) {
+      return onMerchantLeave({ extractionMode });
+    }
     if (boundaryOperation) return;
     if (session.getState() === root.DungeonRankedV3Session.STATES.resolving) {
       rememberPendingExtraction(extractionMode);

@@ -406,6 +406,11 @@
       "sha256": "8dd608fdcecf2ccb54a08fc7a794f91d6e4e1d998ffdc0fbeec1807fa3a284dc"
     },
     {
+      "file": "otter-relic-eligibility.js",
+      "byteLength": 613,
+      "sha256": "0388f03e22aa22670cabf867c3c11c78cf237d2f5ecb312006b797aa9e70336a"
+    },
+    {
       "file": "outcome-policy.js",
       "byteLength": 4027,
       "sha256": "2b3870885c3b8a2bcf1dd6449189994bd13925b64cc0c2379960cd49a3f55b2a"
@@ -427,8 +432,8 @@
     },
     {
       "file": "regular-relic-offer.js",
-      "byteLength": 29643,
-      "sha256": "d73bcbe08c94051991fe4e844f00d1e1a07759761eb0b9c424e963d3e73a77c8"
+      "byteLength": 29975,
+      "sha256": "050f2bdb1f333451ef540e87b84f3f09aa9c27849d433ea72e8f07a30af9e544"
     },
     {
       "file": "relic-offer-common.js",
@@ -452,8 +457,8 @@
     },
     {
       "file": "reward-policy.js",
-      "byteLength": 58656,
-      "sha256": "83f4843100dbc43cdae2c683606e49d73788c8733d8d4fb6b8af7d82f7149adb"
+      "byteLength": 58496,
+      "sha256": "6e8cd6e16ae374bd51c22b5894876fe04f472ad62395064e2496af458930647a"
     },
     {
       "file": "rng.js",
@@ -472,8 +477,8 @@
     },
     {
       "file": "ruleset-hash-policy.js",
-      "byteLength": 2584,
-      "sha256": "7dca10196a52aa3d66856f7ec6aa15a316a888c9cdc1476d79193cc4d173609d"
+      "byteLength": 2661,
+      "sha256": "3b2b2673fcb5609e5f37f618244b96e13a4763a6d734940290ffd5db27356094"
     },
     {
       "file": "run-modifiers.js",
@@ -586,5 +591,5 @@
       "sha256": "cfce80fea7bd5d1328020055f2012bcaeaf9b61e5438e437bf948a4288fb8bf0"
     }
   ],
-  "rulesetHash": "sha256:eaa89c2568870852173c67cfd601ddd32b649322b3d4bf3b66a2114621a6998a"
+  "rulesetHash": "sha256:4b8b1439673fb3531fb44d3cc17d2b611ef392f9ee19b07ede687b9209ff05e0"
 }

@@ -46,6 +46,17 @@ function supportsEventJournalBoundary(ruleset) {
   return ruleset?.capabilities?.boundarySettlementMode === "event-journal-v1";
 }
 
+function assertMerchantRoomExitSettled(state, ruleset) {
+  if (
+    ruleset?.capabilities?.merchantExitBarrier === "v1" &&
+    state?.currentRoomDirective?.roomType === "merchant" &&
+    state?.currentRoomDirective?.consumed !== true &&
+    state?.pendingInventory?.sourceType === "merchant"
+  ) {
+    throw new TypeError("MERCHANT_ROOM_TRANSACTION_PENDING");
+  }
+}
+
 function exactBoundarySettlement(payload, capabilities = {}) {
   const fields = [
     "envelopeId",
@@ -247,6 +258,7 @@ export function publicRulesetMetaState(state, ruleset) {
 
 export async function applyRulesetCheckpoint(state, body, ruleset, context = {}) {
   if (state.status !== "active") throw new TypeError("RUN_NOT_ACTIVE");
+  assertMerchantRoomExitSettled(state, ruleset);
   if (
     ruleset.capabilities?.postRoomPactSettlement === "post-room-pact-v1" &&
     (state.pendingPostRoomPact || state.pendingInventory?.sourceType === "pact")
@@ -603,6 +615,7 @@ export async function applyRulesetEvent(state, body, ruleset, context = {}) {
       break;
     }
     case "request_extraction": {
+      assertMerchantRoomExitSettled(state, ruleset);
       const rawRequest = requireObject(body.payload, "EXTRACTION_PAYLOAD_INVALID");
       const hasBoundarySettlement = Object.hasOwn(rawRequest, "boundarySettlement");
       const request = exactPayload(rawRequest, hasBoundarySettlement

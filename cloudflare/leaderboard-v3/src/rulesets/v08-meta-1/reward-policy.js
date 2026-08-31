@@ -20,6 +20,7 @@ import {
 } from "./chest-bonus-policy.js";
 import { deriveIntInclusive } from "./rng.js";
 import { RULESET_ID } from "./constants.js";
+import { isOtterRelicRewardEligibleV08 } from "./otter-relic-eligibility.js";
 
 const arenaRelicOfferPolicy = arenaRelicOfferPolicyDocument.canonicalData;
 const chestBounds = chestBoundsDocument.canonicalData;
@@ -412,13 +413,7 @@ function relicOfferSlots(directive, envelopeId) {
   ) {
     sourcePolicy = regularRelicOfferPolicy;
     offerPolicyRef = "regular-relic-offer-policy.generated.json";
-  } else if (
-    directive.roomCategory === "special" &&
-    directive.roomType === otterRelicOfferPolicy.roomType &&
-    directive.depth >= otterRelicOfferPolicy.minimumDepth &&
-    directive.depth <= otterRelicOfferPolicy.maximumDepth &&
-    directive.depth % otterRelicOfferPolicy.excludedBossInterval !== 0
-  ) {
+  } else if (isOtterRelicRewardEligibleV08(directive, otterRelicOfferPolicy)) {
     sourcePolicy = otterRelicOfferPolicy;
     offerPolicyRef = "otter-relic-offer-policy.generated.json";
   } else if (

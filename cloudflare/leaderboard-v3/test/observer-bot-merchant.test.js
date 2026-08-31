@@ -316,6 +316,9 @@ test("Ranked Merchant leave checkpoints a local directive at most once", async (
     activeRoomDirectiveId: "merchant-directive-3",
     merchantLeaveCompletedDirectiveId: "",
     merchantMutationPending: false,
+    merchantMutationFlight: null,
+    merchantExitOperation: null,
+    merchantOperation: null,
     currentMerchantOffer: null,
     pendingRoomSummary: null,
     pendingBoundaryExit: null,
@@ -329,6 +332,7 @@ test("Ranked Merchant leave checkpoints a local directive at most once", async (
     },
     merchantChoiceFor: () => null,
     createClient: () => ({ event: async () => ({ metaState: {} }) }),
+    hasRoomAttachedMerchantOffer: () => false,
     usesBoundarySettlement: () => true,
     captureRankedBoundary: () => ({ summary: { turnCount: 0 } }),
     mergeCapturedBoundary: (captured) => captured,
@@ -350,6 +354,9 @@ test("consecutive Ranked Merchant directives checkpoint independently", async ()
     activeRoomDirectiveId: "merchant-directive-first",
     merchantLeaveCompletedDirectiveId: "",
     merchantMutationPending: false,
+    merchantMutationFlight: null,
+    merchantExitOperation: null,
+    merchantOperation: null,
     currentMerchantOffer: null,
     pendingRoomSummary: null,
     pendingBoundaryExit: null,
@@ -363,6 +370,7 @@ test("consecutive Ranked Merchant directives checkpoint independently", async ()
     },
     merchantChoiceFor: () => null,
     createClient: () => ({ event: async () => ({ metaState: {} }) }),
+    hasRoomAttachedMerchantOffer: () => false,
     usesBoundarySettlement: () => true,
     captureRankedBoundary: () => ({ summary: { turnCount: 0 } }),
     mergeCapturedBoundary: (captured) => captured,
@@ -393,6 +401,9 @@ test("Ranked Merchant leave waits for the previous room boundary before checkpoi
     activeRoomDirectiveId: "merchant-directive-9",
     merchantLeaveCompletedDirectiveId: "",
     merchantMutationPending: false,
+    merchantMutationFlight: null,
+    merchantExitOperation: null,
+    merchantOperation: null,
     currentMerchantOffer: null,
     pendingRoomSummary: null,
     pendingBoundaryExit: null,
@@ -406,6 +417,7 @@ test("Ranked Merchant leave waits for the previous room boundary before checkpoi
     },
     merchantChoiceFor: () => null,
     createClient: () => ({ event: async () => ({ metaState: {} }) }),
+    hasRoomAttachedMerchantOffer: () => false,
     usesBoundarySettlement: () => true,
     captureRankedBoundary: () => ({ summary: { turnCount: 0 } }),
     mergeCapturedBoundary: (captured) => captured,
@@ -435,6 +447,102 @@ test("Ranked Merchant leave waits for the previous room boundary before checkpoi
   assert.equal(checkpointsBeforePreviousBoundary, 0);
   assert.equal(checkpoints, 1);
   assert.equal(context.pendingBoundaryExit, "portal");
+});
+
+test("Ranked Merchant leave requested during a purchase is queued and checkpoints once", async () => {
+  const runtime = await source("online-v3/ranked-v3-runtime.js");
+  const merchantLeave = functionBody(runtime, "onMerchantLeave", "availableCampChoices");
+  let finishPurchase;
+  let checkpoints = 0;
+  const purchaseFlight = new Promise((resolve) => { finishPurchase = resolve; });
+  const context = {
+    activeRoomDirectiveId: "merchant-directive-race",
+    merchantLeaveCompletedDirectiveId: "",
+    merchantMutationPending: true,
+    merchantMutationFlight: purchaseFlight,
+    merchantExitOperation: null,
+    merchantOperation: null,
+    currentMerchantOffer: null,
+    pendingRoomSummary: null,
+    pendingBoundaryExit: null,
+    boundaryOperation: null,
+    root: {
+      DungeonOnlineV3GameBridge: {
+        beginRankedMerchantRequest() {},
+        syncCanonicalProjection() {},
+        enterNextDirective() {}
+      }
+    },
+    merchantChoiceFor: () => null,
+    createClient: () => ({ event: async () => ({ metaState: {} }) }),
+    hasRoomAttachedMerchantOffer: () => false,
+    usesBoundarySettlement: () => true,
+    captureRankedBoundary: () => ({ summary: { turnCount: 0 } }),
+    mergeCapturedBoundary: (captured) => captured,
+    resolveCheckpoint: async () => { checkpoints += 1; return true; },
+    presentMerchantError() {}
+  };
+  const leave = vm.runInNewContext(`(async ${merchantLeave})`, context);
+
+  const first = leave({ enterPortal: true });
+  const duplicate = leave({ enterPortal: true });
+  await Promise.resolve();
+  assert.equal(checkpoints, 0, "the checkpoint must wait for the purchase result");
+  finishPurchase(true);
+
+  assert.equal(await first, true);
+  assert.equal(await duplicate, true);
+  assert.equal(checkpoints, 1, "duplicate portal callbacks must share one leave flight");
+  assert.equal(context.pendingBoundaryExit, "portal");
+});
+
+test("normal and emergency extraction from Merchant use the canonical Merchant exit", async () => {
+  const runtime = await source("online-v3/ranked-v3-runtime.js");
+  const extraction = functionBody(runtime, "onExtraction", "resumeRanked")
+    .replace(/\s*async\s*$/u, "");
+  const merchantExits = [];
+  let genericBoundaries = 0;
+  const context = {
+    boundaryOperation: null,
+    session: {
+      getState: () => "ROOM_ACTIVE"
+    },
+    root: {
+      DungeonRankedV3Session: {
+        STATES: { resolving: "ROOM_RESOLVING" }
+      },
+      DungeonOnlineV3GameBridge: {
+        beginRankedExtraction() {}
+      }
+    },
+    createClient: () => ({
+      getSnapshot: () => ({
+        publicState: {
+          currentRoomDirective: {
+            directiveId: "merchant-extract-directive",
+            roomType: "merchant",
+            consumed: false
+          }
+        }
+      })
+    }),
+    onMerchantLeave: async (options) => {
+      merchantExits.push(options.extractionMode);
+      return true;
+    },
+    usesBoundarySettlement: () => true,
+    startBoundaryOperation: async () => {
+      genericBoundaries += 1;
+      return true;
+    },
+    presentError() {}
+  };
+  const extract = vm.runInNewContext(`(async ${extraction})`, context);
+
+  assert.equal(await extract("normal"), true);
+  assert.equal(await extract("emergency"), true);
+  assert.deepEqual(merchantExits, ["normal", "emergency"]);
+  assert.equal(genericBoundaries, 0);
 });
 
 test("generated Merchant completion consumes the offer and clears stale UI state", async () => {

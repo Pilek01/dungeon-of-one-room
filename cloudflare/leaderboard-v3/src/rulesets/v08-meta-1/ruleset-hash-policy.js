@@ -2,6 +2,7 @@ import manifest from "./data/ruleset-manifest.json" with { type: "json" };
 
 const COMPATIBLE_RULESET_HASHES = Object.freeze([
   manifest.rulesetHash,
+  "sha256:eaa89c2568870852173c67cfd601ddd32b649322b3d4bf3b66a2114621a6998a",
   "sha256:1b3103342a34e570842c73cd4454c9b2e5fa9b7895aac5835d18d4f1ee95b89b",
   "sha256:9e6dfc472f9eb0ffd773e42f80cd3ecf7b579a1d76766affdb72417086016b7f",
   "sha256:91843a42a08ca6213e664cc0607e511fbd2c89f2bbfd749b45c0244924da067f",

@@ -30,6 +30,10 @@ import {
   assertCanonicalRunModifierDigestV08,
   deriveRunModifierEffects
 } from "./run-modifiers.js";
+import {
+  isOtterRelicRewardEligibleV08,
+  otterRelicRewardScalingDepthV08
+} from "./otter-relic-eligibility.js";
 
 const arenaPolicy = arenaPolicyDocument.canonicalData;
 const catalog = catalogDocument.canonicalData;
@@ -484,11 +488,7 @@ export async function issueRegularRelicOffer(metaState, rawRequest = {}, context
     }
     ({ selected } = await chooseRelics(metaState, context, tier));
   } else if (binding.sourcePolicy === otterPolicy) {
-    const depth = Math.max(
-      binding.directive.depth,
-      Number(binding.directive.specialRoomPayload?.scalingDepth) ||
-        binding.directive.depth
-    );
+    const scalingDepth = otterRelicRewardScalingDepthV08(binding.directive);
     const occurrences = Math.max(
       0,
       Number(metaState.specialRoomScheduleState.otterRoomsSeenThisRun) || 0
@@ -499,17 +499,23 @@ export async function issueRegularRelicOffer(metaState, rawRequest = {}, context
     ) {
       throw new TypeError("OTTER_RELIC_REWARD_DIRECTIVE_INVALID");
     }
+    const usesActualDepthEligibility =
+      context?.capabilities?.otterActualDepthEligibility === "v1";
+    const legacyDepthEligible =
+      scalingDepth >= otterPolicy.minimumDepth &&
+      scalingDepth <= otterPolicy.maximumDepth &&
+      scalingDepth % otterPolicy.excludedBossInterval !== 0;
     if (
-      depth < otterPolicy.minimumDepth ||
-      depth > otterPolicy.maximumDepth ||
-      depth % otterPolicy.excludedBossInterval === 0
+      usesActualDepthEligibility
+        ? !isOtterRelicRewardEligibleV08(binding.directive, otterPolicy)
+        : !legacyDepthEligible
     ) {
       throw new TypeError("OTTER_RELIC_REWARD_DEPTH_INVALID");
     }
     if (occurrences < 1 || occurrences > otterPolicy.maximumOccurrencesPerRun) {
       throw new TypeError("OTTER_RELIC_REWARD_RUN_LIMIT_INVALID");
     }
-    ({ selected } = await chooseOtterRelics(metaState, context, depth));
+    ({ selected } = await chooseOtterRelics(metaState, context, scalingDepth));
     offerIdPurpose = "otter-relic-offer-id";
     choiceIdPurpose = "otter-relic-choice-id";
   } else if (binding.sourcePolicy === arenaPolicy) {

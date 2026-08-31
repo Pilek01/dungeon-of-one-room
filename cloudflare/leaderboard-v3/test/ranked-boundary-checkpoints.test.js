@@ -10,6 +10,7 @@ import {
 import * as rewardPolicy from "../src/rulesets/v08-meta-1/reward-policy.js";
 import { createV08Meta1Ruleset } from "../src/rulesets/v08-meta-1/index.js";
 import { applyFatalEventV08 } from "../src/rulesets/v08-meta-1/life-policy.js";
+import { issueMerchantInventoryV08 } from "../src/rulesets/v08-meta-1/merchant-policy.js";
 import { createInitialMetaStateV08 } from "../src/rulesets/v08-meta-1/meta-state.js";
 import { requestExtractionV08 } from "../src/rulesets/v08-meta-1/outcome-policy.js";
 import { consumeRoomDirectiveV08, issueNextRoomDirectiveV08 } from "../src/rulesets/v08-meta-1/room-policy.js";
@@ -81,6 +82,29 @@ async function activeRoom(runId, capabilities, prepare) {
   return { state: issued, context };
 }
 
+async function merchantBarrierRoom(runId, capabilities) {
+  const baseOracle = oracle();
+  const context = {
+    runId,
+    season: "boundary-season",
+    startedAt: NOW,
+    now: NOW,
+    secret: SECRET,
+    cryptoProvider: webcrypto,
+    randomOracle: baseOracle,
+    capabilities
+  };
+  const state = createInitialMetaStateV08({}, context);
+  state.status = "active";
+  state.depth = 7;
+  state.roomIndex = 7;
+  const issued = await issueNextRoomDirectiveV08(state, context);
+  assert.equal(issued.currentRoomDirective.roomType, "merchant");
+  const offered = await issueMerchantInventoryV08(issued, context);
+  assert.equal(offered.pendingInventory.sourceType, "merchant");
+  return { state: offered, context };
+}
+
 function boundaryRequest(state, claims, overrides = {}) {
   return {
     envelopeId: state.currentRewardEnvelope.envelopeId,
@@ -140,6 +164,57 @@ test("emergency boundary settles a map fragment without room-clear reward, clear
   assert.equal(extracted.depth, state.depth);
   assert.equal(extracted.statistics.roomsCompleted, 0);
   assert.equal(extracted.extraction.walletBefore, state.gold);
+});
+
+test("Merchant exit barrier rejects checkpoint while the room offer is unresolved", async () => {
+  const capabilities = {
+    ...V08_META_1_LOCAL_RELEASE_DESCRIPTOR.capabilities,
+    merchantExitBarrier: "v1"
+  };
+  const { state, context } = await merchantBarrierRoom(
+    "run_merchant_checkpoint_barrier",
+    capabilities
+  );
+  const ruleset = createV08Meta1Ruleset({
+    rulesetHash: state.rulesetHash,
+    capabilities
+  });
+
+  await assert.rejects(
+    applyRulesetCheckpoint(state, {
+      roomResult: "cleared",
+      rewardClaims: [],
+      turnCount: 0,
+      elapsedMs: 0,
+      commandJournalDigest: "merchant-checkpoint-barrier",
+      compactRoomProof: { version: 1 },
+      combatResources: canonicalCombatResources(state)
+    }, ruleset, context),
+    /MERCHANT_ROOM_TRANSACTION_PENDING/u
+  );
+});
+
+test("Merchant exit barrier rejects extraction while the room offer is unresolved", async () => {
+  const capabilities = {
+    ...V08_META_1_LOCAL_RELEASE_DESCRIPTOR.capabilities,
+    merchantExitBarrier: "v1"
+  };
+  const { state, context } = await merchantBarrierRoom(
+    "run_merchant_extraction_barrier",
+    capabilities
+  );
+  const ruleset = createV08Meta1Ruleset({
+    rulesetHash: state.rulesetHash,
+    capabilities
+  });
+
+  await assert.rejects(
+    applyRulesetEvent(state, {
+      type: "request_extraction",
+      payload: { mode: "normal" }
+    }, ruleset, context),
+    /MERCHANT_ROOM_TRANSACTION_PENDING/u
+  );
 });
 
 test("fatal boundary preserves one durable map fragment and an exact retry is a replay", async () => {

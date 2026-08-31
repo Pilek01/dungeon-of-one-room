@@ -173,7 +173,10 @@ async function issued(options = {}) {
   result.state = await issueRegularRelicOffer(
     result.state,
     issueRequest(result.state),
-    result.resolvedContext
+    {
+      ...result.resolvedContext,
+      capabilities: { otterActualDepthEligibility: "v1" }
+    }
   );
   return result;
 }
@@ -306,6 +309,24 @@ test("Otter boundaries and occurrence limit are enforced by issued directive and
     issueRegularRelicOffer(result.state, issueRequest(result.state), result.resolvedContext),
     /OTTER_RELIC_REWARD_RUN_LIMIT_INVALID/u
   );
+});
+
+test("Otter eligibility uses actual depth while rarity uses the higher scaling depth", async () => {
+  const result = await otterState({ runId: "otter_actual_23_scaling_25", depth: 23 });
+  result.state = structuredClone(result.state);
+  result.state.currentRoomDirective.specialRoomPayload.scalingDepth = 25;
+  result.state = await issueRegularRelicOffer(
+    result.state,
+    issueRequest(result.state),
+    {
+      ...result.resolvedContext,
+      capabilities: { otterActualDepthEligibility: "v1" }
+    }
+  );
+  assert.equal(result.state.currentRoomDirective.depth, 23);
+  assert.equal(result.state.currentRoomDirective.specialRoomPayload.scalingDepth, 25);
+  assert.equal(result.state.pendingOffer.sourceType, "otter");
+  assert.equal(result.state.pendingOffer.choices.length, 9);
 });
 
 test("Otter issue rejects fake slot, stale revision, source and directive mismatches", async () => {
