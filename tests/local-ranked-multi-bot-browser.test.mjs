@@ -88,6 +88,7 @@ test("launches a visible isolated HD app window at the exact portrait tile", asy
   assert.ok(launchOptions.args.includes("--disable-renderer-backgrounding"));
   assert.ok(launchOptions.args.includes("--disable-backgrounding-occluded-windows"));
   assert.ok(launchOptions.args.includes("--force-device-scale-factor=1"));
+  assert.ok(launchOptions.args.includes("--mute-audio"));
   assert.ok(launchOptions.args.includes("--window-position=3440,0"));
   assert.ok(launchOptions.args.includes("--window-size=540,468"));
   assert.deepEqual(harness.calls.cdp.at(-1), ["Browser.setWindowBounds", {
@@ -142,10 +143,11 @@ test("rejects the observed 130 percent Windows transform instead of declaring th
   }), /Native window placement mismatch.*expected 3980,468 540x468.*received 5173,608 702x609/u);
 });
 
-test("starts fresh Ranked, selects the first relic, and enables Observer Bot", async () => {
+test("starts fresh Ranked, selects the bot-assigned relic, and enables Observer Bot", async () => {
   const actions = [];
   const locator = (selector) => ({
-    first: () => ({ click: async () => actions.push(`click:${selector}:first`) }),
+    count: async () => 3,
+    nth: (index) => ({ click: async () => actions.push(`click:${selector}:nth:${index}`) }),
     waitFor: async ({ state }) => actions.push(`wait:${selector}:${state}`)
   });
   const page = {
@@ -164,7 +166,7 @@ test("starts fresh Ranked, selects the first relic, and enables Observer Bot", a
     keyboard: { async press(key) { actions.push(`press:${key}`); } }
   };
 
-  const status = await startBotRun({ bot: { id: "bot-01", name: "bot 1" }, page }, {
+  const status = await startBotRun({ bot: { id: "bot-05", index: 5, name: "bot 5" }, page }, {
     url: "http://127.0.0.1:8787",
     password: "observer-secret"
   });
@@ -180,7 +182,7 @@ test("starts fresh Ranked, selects the first relic, and enables Observer Bot", a
     "openRanked",
     "visible:button:Start New Ranked",
     "click:button:Start New Ranked",
-    "click:.ranked-v3-choice-relic:first",
+    "click:.ranked-v3-choice-relic:nth:1",
     "waitForFunction",
     "password:observer-secret",
     "press:F9",

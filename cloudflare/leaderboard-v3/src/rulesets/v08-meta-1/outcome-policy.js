@@ -1,5 +1,6 @@
 import sourceAuditDocument from "./data/m3-finalization-source-audit.generated.json" with { type: "json" };
 import { composeCampaignScoreCarryV08 } from "./score-policy.js";
+import { composeCampaignChronicleCarryV08 } from "./chronicle-policy.js";
 import { applyMutatorProgressDeltaV08 } from "./mutator-progression.js";
 
 const extractionPolicy = sourceAuditDocument.canonicalData.extraction;
@@ -99,9 +100,11 @@ export function requestExtractionV08(state, request) {
     });
   }
   next.campGold += campGoldAwarded;
+  const chronicleCarry = composeCampaignChronicleCarryV08(next);
   next.campaign = {
     ...next.campaign,
-    scoreCarry: composeCampaignScoreCarryV08(next)
+    scoreCarry: composeCampaignScoreCarryV08(next),
+    ...(chronicleCarry ? { chronicleCarry } : {})
   };
   clearTransientBoundary(next);
   next.status = "extraction";

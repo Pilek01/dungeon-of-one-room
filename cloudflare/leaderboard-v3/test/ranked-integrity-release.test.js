@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { createRequire } from "node:module";
 import {
   V08_META_1_AEGIS_PORTAL_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR,
+  V08_META_1_CHRONICLE_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR,
   V08_META_1_CHEST_HP_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR,
   V08_META_1_LOCAL_RELEASE_DESCRIPTOR,
   V08_META_1_POTION_MERCHANT_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR,
@@ -19,6 +20,8 @@ const PREVIOUS_PORTAL_CLEAR_HASH =
   "sha256:5ba35a1c03cf160787c553d55782ddb1ec4612a9a08f2dc26da562feeccc73c2";
 const PREVIOUS_AEGIS_PORTAL_HASH =
   "sha256:91843a42a08ca6213e664cc0607e511fbd2c89f2bbfd749b45c0244924da067f";
+const PREVIOUS_CHRONICLE_HASH =
+  "sha256:9e6dfc472f9eb0ffd773e42f80cd3ecf7b579a1d76766affdb72417086016b7f";
 const PREVIOUS_PRODUCTION_HASH =
   "sha256:bf17a65dc721066bf11a1c34063cc18254fe97766852827719eb6aabf36042fa";
 const PREVIOUS_CHEST_HP_HASH =
@@ -88,7 +91,7 @@ test("bounded combat resources activate only on the new ruleset hash", () => {
   );
   assert.deepEqual(
     V08_META_1_AEGIS_PORTAL_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR.capabilities,
-    V08_META_1_PRODUCTION_RELEASE_DESCRIPTOR.capabilities
+    V08_META_1_CHRONICLE_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR.capabilities
   );
   assert.ok(COMPATIBLE_RULESET_HASHES.includes(PREVIOUS_START_RESOURCE_PARITY_HASH));
   assert.ok(COMPATIBLE_RULESET_HASHES.includes(PREVIOUS_CHEST_HP_HASH));
@@ -99,6 +102,7 @@ test("bounded combat resources activate only on the new ruleset hash", () => {
   assert.ok(protocol.SUPPORTED_RULESET_HASHES.includes(PREVIOUS_PRODUCTION_HASH));
   assert.deepEqual(protocol.BOUNDED_COMBAT_RESOURCES_RULESET_HASHES, [
     manifest.rulesetHash,
+    PREVIOUS_CHRONICLE_HASH,
     PREVIOUS_AEGIS_PORTAL_HASH,
     PREVIOUS_PORTAL_CLEAR_HASH,
     PREVIOUS_GOLD_PARITY_HASH,
@@ -111,6 +115,7 @@ test("bounded combat resources activate only on the new ruleset hash", () => {
   assert.equal(protocol.supportsBoundedCombatResources(PREVIOUS_PRODUCTION_HASH), false);
   assert.deepEqual(protocol.POTION_CLAIM_ORDERING_RULESET_HASHES, [
     manifest.rulesetHash,
+    PREVIOUS_CHRONICLE_HASH,
     PREVIOUS_AEGIS_PORTAL_HASH,
     PREVIOUS_PORTAL_CLEAR_HASH,
     PREVIOUS_GOLD_PARITY_HASH,

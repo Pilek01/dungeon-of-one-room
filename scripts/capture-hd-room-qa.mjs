@@ -1,3 +1,4 @@
+import { launchMutedBrowser } from "./playwright-muted-launch.mjs";
 import fs from "node:fs";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
@@ -24,7 +25,7 @@ const priorSummary = resume && fs.existsSync(summaryPath)
   ? JSON.parse(fs.readFileSync(summaryPath, "utf8"))
   : [];
 const priorByKey = new Map(priorSummary.map((entry) => [`${entry.viewport}/${entry.scenario}`, entry]));
-const browser = await chromium.launch({
+const browser = await launchMutedBrowser(chromium, {
   headless: true,
   args: ["--use-gl=angle", "--use-angle=swiftshader", "--autoplay-policy=no-user-gesture-required"]
 });

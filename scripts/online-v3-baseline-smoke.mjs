@@ -1,3 +1,4 @@
+import { launchMutedBrowser } from "./playwright-muted-launch.mjs";
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
 import crypto from "node:crypto";
@@ -499,7 +500,7 @@ async function main() {
     motionTimeline: []
   };
 
-  const browser = await chromium.launch({ headless: HEADLESS });
+  const browser = await launchMutedBrowser(chromium, { headless: HEADLESS });
   try {
     if (RUN_BOOT) {
     const bootContext = await createContext(browser, { seed: false });

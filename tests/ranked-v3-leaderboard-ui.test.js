@@ -453,8 +453,9 @@ test("Ranked inspect plate renders only the approved build and Chronicle fields"
       },
       summary: {
         durationMs: 3723000,
+        turns: 984,
         roomsCompleted: 312,
-        bossesCompleted: 7,
+        bossesCompleted: 8,
         gold: { earned: 8550 },
         presentationCause: "Defeated by The Hollow Seraph",
         rulesetId: "v08-meta-1",
@@ -510,9 +511,9 @@ test("Ranked inspect plate renders only the approved build and Chronicle fields"
 
   const chronicleRows = visit(plate, (node) => hasClass(node, "ranked-v3-inspect-chronicle-row"));
   assert.deepEqual(chronicleRows.map((row) => row.children[0].textContent), [
-    "Time Played", "Rooms Cleared", "Bosses Defeated", "Mutators", "Highest Depth", "Gold Earned", "Final Score"
+    "Turns", "Rooms Cleared", "Bosses Defeated", "Mutators", "Highest Depth", "Gold Earned", "Final Score"
   ]);
-  assert.match(text, /01:02:03.*312.*7.*19.*8,550.*43,600/isu);
+  assert.match(text, /984.*312.*8.*19.*8,550.*43,600/isu);
   const tooltip = visit(plate, (node) => hasClass(node, "ranked-v3-inspect-mutators"));
   assert.equal(tooltip.length, 1);
   assert.equal(tooltip[0].attributes.get("tabindex"), "0");

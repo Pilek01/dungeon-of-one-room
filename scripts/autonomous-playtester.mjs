@@ -1,3 +1,4 @@
+import { launchMutedBrowser } from "./playwright-muted-launch.mjs";
 import fs from "node:fs";
 import http from "node:http";
 import os from "node:os";
@@ -261,7 +262,7 @@ async function main() {
     }
 
     const { chromium } = await loadPlaywright();
-    browser = await chromium.launch({
+    browser = await launchMutedBrowser(chromium, {
       headless: false,
       slowMo: 60,
       args: ["--autoplay-policy=no-user-gesture-required"]

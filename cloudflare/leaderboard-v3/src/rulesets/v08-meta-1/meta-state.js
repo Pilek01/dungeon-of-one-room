@@ -32,6 +32,7 @@ import {
   createLifeLedgerV08
 } from "./life-policy.js";
 import { normalizeCampaignScoreCarryV08 } from "./score-policy.js";
+import { normalizeCampaignChronicleCarryV08 } from "./chronicle-policy.js";
 import { TERMINAL_ELIGIBLE_STATUSES } from "./outcome-policy.js";
 import {
   isCompatibleRulesetHashV08,
@@ -117,7 +118,7 @@ function createRelicOfferState() {
   };
 }
 
-function createCampaignState(input = {}) {
+function createCampaignState(input = {}, context = {}) {
   const source = input.campaign && typeof input.campaign === "object"
     ? input.campaign
     : input;
@@ -143,6 +144,9 @@ function createCampaignState(input = {}) {
     (depth) => Number.isSafeInteger(depth) && depth !== progression.entranceStartDepth && progression.allowedStartDepths.includes(depth)
   ))].sort((left, right) => left - right);
   const scoreCarry = normalizeCampaignScoreCarryV08(source.scoreCarry);
+  const chronicleEnabled =
+    context.capabilities?.campaignChronicle === "v1" ||
+    Object.hasOwn(source, "chronicleCarry");
   return {
     treasureMapFragments,
     forcedNextRoomType,
@@ -156,12 +160,15 @@ function createCampaignState(input = {}) {
       ? source.protectedStarterRelicId
       : "",
     scoreCarry,
+    ...(chronicleEnabled
+      ? { chronicleCarry: normalizeCampaignChronicleCarryV08(source.chronicleCarry) }
+      : {}),
     chestBonuses: normalizeChestBonusesV08(source.chestBonuses)
   };
 }
 
-export function normalizeCampaignStateV08(input = {}) {
-  return createCampaignState(input);
+export function normalizeCampaignStateV08(input = {}, context = {}) {
+  return createCampaignState(input, context);
 }
 
 function assertCampaignState(campaign) {
@@ -249,7 +256,7 @@ export function createInitialMetaStateV08(input = {}, context = {}) {
     runModifiers: createEmptyRunModifierLedgerV08(),
     mutatorProgress: createEmptyMutatorProgressV08(),
     mutatorRunTracking: { potionUses: 0 },
-    campaign: createCampaignState(input),
+    campaign: createCampaignState(input, context),
     pendingOffer: null,
     offerSettlementHistory: [],
     pendingRelicTransaction: null,

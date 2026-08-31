@@ -1,3 +1,4 @@
+import { launchMutedBrowser } from "./playwright-muted-launch.mjs";
 import fs from "node:fs";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
@@ -244,7 +245,7 @@ fs.copyFileSync(
   path.join(outputRoot, "status-emblems-contact-sheet.png")
 );
 
-const browser = await chromium.launch({
+const browser = await launchMutedBrowser(chromium, {
   headless: true,
   args: ["--use-gl=angle", "--use-angle=swiftshader", "--autoplay-policy=no-user-gesture-required"]
 });

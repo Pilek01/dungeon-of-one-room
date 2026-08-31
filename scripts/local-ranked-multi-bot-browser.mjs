@@ -2,6 +2,8 @@ import { access as defaultAccess } from "node:fs/promises";
 import { chromium as defaultChromium } from "playwright-core";
 
 import { placeNativeChromeWindow } from "./local-ranked-native-window.mjs";
+import { assignedStartingRelicIndex } from "./local-ranked-multi-bot-domain.mjs";
+import { launchMutedPersistentContext } from "./playwright-muted-launch.mjs";
 
 const CHROME_CANDIDATES = Object.freeze([
   "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
@@ -90,7 +92,7 @@ function createOwnedBotRuntime(options) {
 
 export async function launchBotWindow(options) {
   const chromium = options.chromium || defaultChromium;
-  const context = await chromium.launchPersistentContext(options.bot.profileDir, {
+  const context = await launchMutedPersistentContext(chromium, options.bot.profileDir, {
     executablePath: options.chromeExecutable,
     headless: false,
     viewport: null,
@@ -162,7 +164,13 @@ export async function startBotRun(runtime, options) {
   } else {
     await page.getByRole("button", { name: "Start Ranked", exact: true }).click();
   }
-  await page.locator(".ranked-v3-choice-relic").first().click();
+  const startingRelics = page.locator(".ranked-v3-choice-relic");
+  const startingRelicCount = await startingRelics.count();
+  const startingRelicIndex = assignedStartingRelicIndex(
+    runtime.bot.index,
+    startingRelicCount
+  );
+  await startingRelics.nth(startingRelicIndex).click();
   await page.waitForFunction(() => window.DungeonOnlineV3?.getSessionState?.() === "ROOM_ACTIVE");
   await page.evaluate((password) => { window.prompt = () => password; }, options.password);
   await page.keyboard.press("F9");

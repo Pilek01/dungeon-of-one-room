@@ -2,6 +2,18 @@ import path from "node:path";
 
 export const MULTI_BOT_COUNT = 8;
 
+export function assignedStartingRelicIndex(botIndex, choiceCount) {
+  const normalizedBotIndex = Number(botIndex);
+  const normalizedChoiceCount = Number(choiceCount);
+  if (
+    !Number.isSafeInteger(normalizedBotIndex) || normalizedBotIndex < 1 ||
+    !Number.isSafeInteger(normalizedChoiceCount) || normalizedChoiceCount < 1
+  ) {
+    throw new TypeError("Starting relic assignment requires positive integer bot and choice counts.");
+  }
+  return (normalizedBotIndex - 1) % normalizedChoiceCount;
+}
+
 export function assertOwnedSessionChild(sessionRoot, candidate) {
   const root = path.resolve(sessionRoot);
   const resolved = path.resolve(candidate);

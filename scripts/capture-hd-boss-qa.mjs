@@ -1,3 +1,4 @@
+import { launchMutedBrowser } from "./playwright-muted-launch.mjs";
 import fs from "node:fs";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
@@ -11,7 +12,7 @@ const scenarios = ["vault_guardian_hd", "blacksmith_guardian_hd", "warden_phase1
 const viewports = { desktop: { width: 1440, height: 1000 }, mobile: { width: 390, height: 844 } };
 const summary = [];
 fs.mkdirSync(outputRoot, { recursive: true });
-const browser = await chromium.launch({ headless: true, args: ["--use-gl=angle", "--use-angle=swiftshader"] });
+const browser = await launchMutedBrowser(chromium, { headless: true, args: ["--use-gl=angle", "--use-angle=swiftshader"] });
 try {
   for (const [viewportName, viewport] of Object.entries(viewports)) {
     const context = await browser.newContext({ viewport });

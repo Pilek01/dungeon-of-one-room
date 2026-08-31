@@ -230,6 +230,47 @@ test("Ranked Merchant leave checkpoints a local directive at most once", async (
   assert.equal(checkpoints, 1);
 });
 
+test("consecutive Ranked Merchant directives checkpoint independently", async () => {
+  const runtime = await source("online-v3/ranked-v3-runtime.js");
+  const merchantLeave = functionBody(runtime, "onMerchantLeave", "availableCampChoices");
+  const checkpoints = [];
+  const context = {
+    activeRoomDirectiveId: "merchant-directive-first",
+    merchantLeaveCompletedDirectiveId: "",
+    merchantMutationPending: false,
+    currentMerchantOffer: null,
+    pendingRoomSummary: null,
+    pendingBoundaryExit: null,
+    boundaryOperation: null,
+    root: {
+      DungeonOnlineV3GameBridge: {
+        beginRankedMerchantRequest() {},
+        syncCanonicalProjection() {},
+        enterNextDirective() {}
+      }
+    },
+    merchantChoiceFor: () => null,
+    createClient: () => ({ event: async () => ({ metaState: {} }) }),
+    usesBoundarySettlement: () => true,
+    captureRankedBoundary: () => ({ summary: { turnCount: 0 } }),
+    mergeCapturedBoundary: (captured) => captured,
+    resolveCheckpoint: async () => {
+      checkpoints.push(context.activeRoomDirectiveId);
+      if (context.activeRoomDirectiveId === "merchant-directive-first") {
+        context.activeRoomDirectiveId = "merchant-directive-second";
+      }
+      return true;
+    },
+    presentMerchantError() {}
+  };
+  const leave = vm.runInNewContext(`(async ${merchantLeave})`, context);
+
+  assert.equal(await leave({ enterPortal: true }), true);
+  assert.equal(context.merchantLeaveCompletedDirectiveId, "merchant-directive-first");
+  assert.equal(await leave({ enterPortal: true }), true);
+  assert.deepEqual(checkpoints, ["merchant-directive-first", "merchant-directive-second"]);
+});
+
 test("Ranked Merchant leave waits for the previous room boundary before checkpointing", async () => {
   const runtime = await source("online-v3/ranked-v3-runtime.js");
   const merchantLeave = functionBody(runtime, "onMerchantLeave", "availableCampChoices");

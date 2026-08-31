@@ -135,7 +135,10 @@ export async function hydrateRunFromProfileV08(state, profile, context = {}) {
   next.runModifiers = structuredClone(
     profile.runModifiers || createEmptyRunModifierLedgerV08()
   );
-  next.campaign = normalizeCampaignStateV08({ campaign: profile.campaign || next.campaign });
+  next.campaign = normalizeCampaignStateV08(
+    { campaign: profile.campaign || next.campaign },
+    context
+  );
   const modifierEffects = deriveRunModifierEffects(next.runModifiers);
   const potionModifiers = modifierEffects.potionModifiers;
   const maximumHpMultiplier =

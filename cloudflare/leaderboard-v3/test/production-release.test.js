@@ -28,6 +28,7 @@ import {
   V08_META_1_START_RESOURCE_PARITY_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR,
   V08_META_1_MAP_FRAGMENT_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR,
   V08_META_1_AEGIS_PORTAL_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR,
+  V08_META_1_CHRONICLE_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR,
   V08_META_1_PRODUCTION_RELEASE_DESCRIPTOR
 } from "../src/rulesets/releases.js";
 import * as releases from "../src/rulesets/releases.js";
@@ -41,6 +42,7 @@ const require = createRequire(import.meta.url);
 const protocol = require("../../../online-v3/ranked-v3-protocol.js");
 const EXPECTED_HASH = manifest.rulesetHash;
 const PREVIOUS_AEGIS_PORTAL_HASH = "sha256:91843a42a08ca6213e664cc0607e511fbd2c89f2bbfd749b45c0244924da067f";
+const PREVIOUS_CHRONICLE_HASH = "sha256:9e6dfc472f9eb0ffd773e42f80cd3ecf7b579a1d76766affdb72417086016b7f";
 const PREVIOUS_PORTAL_CLEAR_HASH = "sha256:5ba35a1c03cf160787c553d55782ddb1ec4612a9a08f2dc26da562feeccc73c2";
 const PREVIOUS_MAP_FRAGMENT_DEPTH_HASH = "sha256:25dbdb962a478b3a46375ad5b25a3603041edd95ff45b51e2846b13ce7ea2989";
 const PREVIOUS_GOLD_PARITY_HASH = "sha256:78ae2f6f797063b7f364e5652e3367f6b26d651302f5c6038576d304dc442ec3";
@@ -72,7 +74,7 @@ test("Ranked gold parity release retains the previous production hash", () => {
   assert.ok(previous, "the previous gold-parity descriptor must be retained");
   assert.equal(active.rulesetHash, manifest.rulesetHash);
   assert.equal(previous.rulesetHash, PREVIOUS_GOLD_PARITY_HASH);
-  assert.deepEqual(previous.capabilities, active.capabilities);
+  assert.deepEqual(previous.capabilities, V08_META_1_CHRONICLE_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR.capabilities);
   assert.ok(COMPATIBLE_RULESET_HASHES.includes(PREVIOUS_GOLD_PARITY_HASH));
   assert.ok(protocol.SUPPORTED_RULESET_HASHES.includes(PREVIOUS_GOLD_PARITY_HASH));
 });
@@ -84,7 +86,7 @@ test("portal-clear release retains the currently active production hash", () => 
   assert.ok(previous, "the previous portal-clear descriptor must be retained");
   assert.equal(active.rulesetHash, manifest.rulesetHash);
   assert.equal(previous.rulesetHash, PREVIOUS_PORTAL_CLEAR_HASH);
-  assert.deepEqual(previous.capabilities, active.capabilities);
+  assert.deepEqual(previous.capabilities, V08_META_1_CHRONICLE_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR.capabilities);
   assert.ok(COMPATIBLE_RULESET_HASHES.includes(PREVIOUS_PORTAL_CLEAR_HASH));
   assert.ok(protocol.SUPPORTED_RULESET_HASHES.includes(PREVIOUS_PORTAL_CLEAR_HASH));
 });
@@ -94,7 +96,7 @@ test("Aegis portal release retains the immediately previous production hash", ()
   const previous = V08_META_1_AEGIS_PORTAL_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR;
   assert.equal(active.rulesetHash, manifest.rulesetHash);
   assert.equal(previous.rulesetHash, PREVIOUS_AEGIS_PORTAL_HASH);
-  assert.deepEqual(previous.capabilities, active.capabilities);
+  assert.deepEqual(previous.capabilities, V08_META_1_CHRONICLE_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR.capabilities);
   assert.ok(COMPATIBLE_RULESET_HASHES.includes(PREVIOUS_AEGIS_PORTAL_HASH));
   assert.ok(protocol.SUPPORTED_RULESET_HASHES.includes(PREVIOUS_AEGIS_PORTAL_HASH));
 });
@@ -117,6 +119,7 @@ test("bounded proc release activates a new hash and leaves every historical desc
     value.status === RULESET_RELEASE_STATES.PRODUCTION_RELEASED &&
     typeof value.rulesetHash === "string" &&
     value.rulesetHash !== manifest.rulesetHash &&
+    value.rulesetHash !== PREVIOUS_CHRONICLE_HASH &&
     value.rulesetHash !== PREVIOUS_AEGIS_PORTAL_HASH &&
     value.rulesetHash !== PREVIOUS_PORTAL_CLEAR_HASH &&
     value.rulesetHash !== PREVIOUS_GOLD_PARITY_HASH &&
@@ -143,6 +146,7 @@ test("bounded proc release activates a new hash and leaves every historical desc
   assert.ok(protocol.SUPPORTED_RULESET_HASHES.includes(PREVIOUS_BOUNDED_PROC_HASH));
   assert.deepEqual(protocol.BOUNDED_PROC_CLAIMS_RULESET_HASHES, [
     manifest.rulesetHash,
+    PREVIOUS_CHRONICLE_HASH,
     PREVIOUS_AEGIS_PORTAL_HASH,
     PREVIOUS_PORTAL_CLEAR_HASH,
     PREVIOUS_GOLD_PARITY_HASH,
@@ -189,12 +193,14 @@ test("canonical chest carry release is hash-gated and preserves the previous pro
     rankedStartResourceParity: "v1",
     potionClaimOrdering: "v1",
     mapFragmentMinDepth: "v1",
-    exactChestStatCarry: "v1"
+    exactChestStatCarry: "v1",
+    campaignChronicle: "v1"
   });
 
   assert.ok(protocol.SUPPORTED_RULESET_HASHES.includes(PREVIOUS_CHEST_CARRY_HASH));
   assert.deepEqual(protocol.CANONICAL_CHEST_OUTCOMES_RULESET_HASHES, [
     manifest.rulesetHash,
+    PREVIOUS_CHRONICLE_HASH,
     PREVIOUS_AEGIS_PORTAL_HASH,
     PREVIOUS_PORTAL_CLEAR_HASH,
     PREVIOUS_GOLD_PARITY_HASH,
@@ -244,6 +250,7 @@ test("canonical chest repair release retains the previous canonical hash and cap
   assert.ok(protocol.SUPPORTED_RULESET_HASHES.includes(PREVIOUS_CANONICAL_CHEST_HASH));
   assert.deepEqual(protocol.CANONICAL_CHEST_OUTCOMES_RULESET_HASHES, [
     manifest.rulesetHash,
+    PREVIOUS_CHRONICLE_HASH,
     PREVIOUS_AEGIS_PORTAL_HASH,
     PREVIOUS_PORTAL_CLEAR_HASH,
     PREVIOUS_GOLD_PARITY_HASH,
@@ -285,6 +292,7 @@ test("Ranked start resource parity is hash-gated and preserves the previous prod
   assert.ok(protocol.SUPPORTED_RULESET_HASHES.includes(PREVIOUS_START_RESOURCE_PARITY_HASH));
   assert.deepEqual(protocol.BOUNDED_COMBAT_RESOURCES_RULESET_HASHES, [
     manifest.rulesetHash,
+    PREVIOUS_CHRONICLE_HASH,
     PREVIOUS_AEGIS_PORTAL_HASH,
     PREVIOUS_PORTAL_CLEAR_HASH,
     PREVIOUS_GOLD_PARITY_HASH,
@@ -349,6 +357,7 @@ test("production entry activates the post-room Pact ruleset", async () => {
     V08_META_1_START_RESOURCE_PARITY_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR,
     releases.V08_META_1_GOLD_PARITY_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR,
     releases.V08_META_1_PORTAL_CLEAR_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR,
+    V08_META_1_CHRONICLE_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR,
     V08_META_1_PRODUCTION_RELEASE_DESCRIPTOR
   ]);
   const resolved = registry.resolve({
@@ -367,7 +376,7 @@ test("production entry activates the post-room Pact ruleset", async () => {
   assert.equal(portalClearPrevious.rulesetHash, PREVIOUS_PORTAL_CLEAR_HASH);
   assert.deepEqual(
     portalClearPrevious.capabilities,
-    V08_META_1_PRODUCTION_RELEASE_DESCRIPTOR.capabilities
+    V08_META_1_CHRONICLE_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR.capabilities
   );
   const chestHpPrevious = registry.resolve({
     rulesetId: "v08-meta-1",

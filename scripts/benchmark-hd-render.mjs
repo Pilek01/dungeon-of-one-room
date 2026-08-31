@@ -1,3 +1,4 @@
+import { launchMutedBrowser } from "./playwright-muted-launch.mjs";
 import fs from "node:fs";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
@@ -16,7 +17,7 @@ const results = [];
 const consoleErrors = [];
 
 fs.mkdirSync(path.dirname(outputPath), { recursive: true });
-const browser = await chromium.launch({ headless: true, args: ["--use-gl=angle", "--use-angle=swiftshader"] });
+const browser = await launchMutedBrowser(chromium, { headless: true, args: ["--use-gl=angle", "--use-angle=swiftshader"] });
 const context = await browser.newContext({ viewport: profiles[0].viewport });
 const page = await context.newPage();
 page.on("console", (message) => {

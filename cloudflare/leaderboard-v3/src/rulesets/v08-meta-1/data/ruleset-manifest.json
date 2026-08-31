@@ -161,6 +161,11 @@
       "sha256": "de38b4415942418c8af19f951ef4f229b3893314fed8fe488ed443314927d48e"
     },
     {
+      "file": "chronicle-policy.js",
+      "byteLength": 2091,
+      "sha256": "2561d3dd35df4c73370d4d55ebecc44eaeaf90c854ee805f07cf03d044f227b8"
+    },
+    {
       "file": "constants.js",
       "byteLength": 465,
       "sha256": "b1838d41712516d17d0605cafd43b16f3d41e2c99e4d78aeded021dc35c99bca"
@@ -372,8 +377,8 @@
     },
     {
       "file": "leaderboard-summary.js",
-      "byteLength": 5356,
-      "sha256": "4ff1321f4eebbe8be4356bcfee23a23d9b5aa9f8c921fd96ff5a77235cef0510"
+      "byteLength": 5663,
+      "sha256": "4a8dd1a8a693c826d6cd671295b3af1f5faa47f7b7ddf71ff05b79d1bfc6cd10"
     },
     {
       "file": "life-policy.js",
@@ -387,8 +392,8 @@
     },
     {
       "file": "meta-state.js",
-      "byteLength": 18161,
-      "sha256": "abc4cce15b036a44acc32c783b7c72d62fba9c4a156aeac0a121c3684ae79cf3"
+      "byteLength": 18535,
+      "sha256": "20b5aa94e670e1b2b2fa175999eb748cb51cbcd7ecd2fb108fd6538d8a7cff3d"
     },
     {
       "file": "meta-transaction.js",
@@ -402,8 +407,8 @@
     },
     {
       "file": "outcome-policy.js",
-      "byteLength": 3837,
-      "sha256": "6ef642aa444154cfb58206f72f109360e427a30093e4cbf999ac2c108bf2c043"
+      "byteLength": 4027,
+      "sha256": "2b3870885c3b8a2bcf1dd6449189994bd13925b64cc0c2379960cd49a3f55b2a"
     },
     {
       "file": "pact-policy.js",
@@ -417,8 +422,8 @@
     },
     {
       "file": "profile-policy.js",
-      "byteLength": 9415,
-      "sha256": "48d4e6d1ffce02b702a3ef5fcb9dcbbb4b84cbd5dd2d1f9634fd52e42820f246"
+      "byteLength": 9436,
+      "sha256": "f0dc8652bb9b9b1d049a4bef77c18c6cbfe1831fa3c4f17dd6c93a3ed06fc158"
     },
     {
       "file": "regular-relic-offer.js",
@@ -467,8 +472,8 @@
     },
     {
       "file": "ruleset-hash-policy.js",
-      "byteLength": 2430,
-      "sha256": "048565ba5a1fe01e5943c1dc924db537fa7bfc3cf4bda402bed2f33a4cd2bca6"
+      "byteLength": 2507,
+      "sha256": "0fb561a228138dd84831eed3f42ff32153e374834fad625c0111b432723360aa"
     },
     {
       "file": "run-modifiers.js",
@@ -581,5 +586,5 @@
       "sha256": "cfce80fea7bd5d1328020055f2012bcaeaf9b61e5438e437bf948a4288fb8bf0"
     }
   ],
-  "rulesetHash": "sha256:9e6dfc472f9eb0ffd773e42f80cd3ecf7b579a1d76766affdb72417086016b7f"
+  "rulesetHash": "sha256:1b3103342a34e570842c73cd4454c9b2e5fa9b7895aac5835d18d4f1ee95b89b"
 }

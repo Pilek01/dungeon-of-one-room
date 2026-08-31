@@ -37,6 +37,12 @@ function safeEventStatus(entry, sample = entry.lastSample || {}) {
       0,
       Number(sample.snapshot?.publicState?.score?.score ?? sample.game?.score) || 0
     ),
+    lives: Math.max(0, Number(sample.snapshot?.publicState?.lives) || 0),
+    currentGold: Math.max(0, Number(sample.snapshot?.publicState?.gold) || 0),
+    totalGoldEarned: Math.max(
+      0,
+      Number(sample.snapshot?.publicState?.score?.inputs?.acceptedRunGoldEarned) || 0
+    ),
     hp: Math.max(0, Number(sample.game?.player?.hp ?? sample.game?.hp) || 0),
     lastDecision: String(sample.observer?.lastDecision || ""),
     error: String(entry.error || ""),
@@ -262,6 +268,9 @@ export async function startMultiBotWall(options) {
         depth: 0,
         depthHighscore: 0,
         score: 0,
+        lives: 0,
+        currentGold: 0,
+        totalGoldEarned: 0,
         hp: 0,
         lastDecision: "",
         error: "",

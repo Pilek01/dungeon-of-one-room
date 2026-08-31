@@ -1,3 +1,4 @@
+import { launchMutedBrowser } from "./playwright-muted-launch.mjs";
 import fs from "node:fs";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
@@ -30,7 +31,7 @@ async function waitForScenario(page, scenario) {
   await page.waitForTimeout(1800);
 }
 
-const browser = await chromium.launch({
+const browser = await launchMutedBrowser(chromium, {
   headless: true,
   args: ["--use-gl=angle", "--use-angle=swiftshader", "--autoplay-policy=no-user-gesture-required"]
 });

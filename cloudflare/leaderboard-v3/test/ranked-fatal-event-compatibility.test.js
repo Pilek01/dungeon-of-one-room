@@ -170,7 +170,8 @@ test("historical production releases strip fatal causes while the activated rele
       rankedStartResourceParity: "v1",
       potionClaimOrdering: "v1",
       mapFragmentMinDepth: "v1",
-      exactChestStatCarry: "v1"
+      exactChestStatCarry: "v1",
+      campaignChronicle: "v1"
     }
   );
   assert.deepEqual(
@@ -187,7 +188,8 @@ test("historical production releases strip fatal causes while the activated rele
       rankedStartResourceParity: "v1",
       potionClaimOrdering: "v1",
       mapFragmentMinDepth: "v1",
-      exactChestStatCarry: "v1"
+      exactChestStatCarry: "v1",
+      campaignChronicle: "v1"
     }
   );
   assert.deepEqual(

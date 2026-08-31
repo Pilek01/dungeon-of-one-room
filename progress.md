@@ -2381,3 +2381,27 @@ Updated next good targets
   were visually inspected.
 - No Worker policy, ruleset, D1 migration, commit, push, or deployment is
   included.
+
+## 2026-08-31 - Ranked campaign Chronicle and eight-bot diagnostics package
+
+- Consecutive Merchant rooms now remember the directive that was actually
+  checkpointed, so a Merchant -> Merchant sequence can leave both rooms once.
+- The eight-bot launcher now reports lives, current canonical gold, and total
+  campaign gold earned. Starting relic choices rotate deterministically across
+  every available option, keeping eight bots distributed as evenly as possible.
+- A capability-gated campaign Chronicle carry now preserves every accepted
+  combat turn and every defeated Warden across extracted descents. The final
+  Warden is included, and Run Chronicle displays `Turns` instead of wall-clock
+  time. Historical rulesets remain registered without the new state field.
+- Repository-controlled Playwright and Chrome launchers now share one
+  `--mute-audio` wrapper; ordinary player browser sessions are unchanged.
+- Candidate ruleset hash is
+  `sha256:1b3103342a34e570842c73cd4454c9b2e5fa9b7895aac5835d18d4f1ee95b89b`;
+  previous `sha256:9e6dfc472f9eb0ffd773e42f80cd3ecf7b579a1d76766affdb72417086016b7f`
+  remains registered with its exact prior capabilities.
+- RED/GREEN focused tests for Merchant chaining, launcher metrics, relic
+  distribution, Chromium muting, campaign carry, release compatibility, and
+  Chronicle rendering pass. Final verification passes: focused regressions,
+  phase 1097/1097, Ranked Lifecycle, current-tree HD, protected baseline 3/3,
+  and guard 15/15.
+- No commit, push, deployment, ruleset activation, or D1 migration is included.

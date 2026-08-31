@@ -1,3 +1,4 @@
+import { launchMutedBrowser } from "./playwright-muted-launch.mjs";
 import assert from "node:assert/strict";
 import { execFile, spawn } from "node:child_process";
 import { randomBytes } from "node:crypto";
@@ -931,7 +932,7 @@ ${fatalTestHookAnchor}`;
     checkpointBodies: []
   };
   const { chromium } = loadPlaywright();
-  const browser = await chromium.launch({ headless: HEADLESS });
+  const browser = await launchMutedBrowser(chromium, { headless: HEADLESS });
   try {
     const context = await browser.newContext({ viewport: { width: 1536, height: 1080 } });
     await context.addInitScript((season) => {
@@ -2544,7 +2545,7 @@ ${fatalTestHookAnchor}`;
     assert.equal(detailPlateAudit.occupiedSlots, 10, JSON.stringify(detailPlateAudit));
     assert.equal(detailPlateAudit.visibleIcons, 10, JSON.stringify(detailPlateAudit));
     assert.deepEqual(detailPlateAudit.chronicleLabels, [
-      "Time Played", "Rooms Cleared", "Bosses Defeated", "Mutators",
+      "Turns", "Rooms Cleared", "Bosses Defeated", "Mutators",
       "Highest Depth", "Gold Earned", "Final Score"
     ]);
     assert.match(detailPlateAudit.terminalText, /Game Over.*Fell in combat.*Defeated by The Hollow Seraph/isu);

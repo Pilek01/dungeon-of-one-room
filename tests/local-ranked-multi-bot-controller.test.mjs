@@ -197,7 +197,7 @@ test("marks a legally finalized run complete without creating failure artifacts"
   assert.equal(fixture.timers[0].cleared, true);
 });
 
-test("publishes canonical Ranked score and depth highscore for the launcher", async () => {
+test("publishes canonical Ranked run metrics for the launcher", async () => {
   const fixture = createFixture();
   fixture.options.sampleBotPage = async () => ({
     game: { phase: "playing", depth: 9, player: { hp: 54 } },
@@ -205,7 +205,12 @@ test("publishes canonical Ranked score and depth highscore for the launcher", as
     sessionState: "ROOM_ACTIVE",
     snapshot: {
       publicState: {
-        score: { score: 48_174 },
+        lives: 4,
+        gold: 287,
+        score: {
+          score: 48_174,
+          inputs: { acceptedRunGoldEarned: 1_942 }
+        },
         mutatorProgress: { depthHighscore: 31 }
       }
     },
@@ -221,6 +226,9 @@ test("publishes canonical Ranked score and depth highscore for the launcher", as
   assert.equal(latest.depth, 9);
   assert.equal(latest.depthHighscore, 31);
   assert.equal(latest.score, 48_174);
+  assert.equal(latest.lives, 4);
+  assert.equal(latest.currentGold, 287);
+  assert.equal(latest.totalGoldEarned, 1_942);
 });
 
 test("keeps polling while an active Observer moves from FINALIZED into the next run", async () => {

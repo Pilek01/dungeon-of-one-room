@@ -1,3 +1,4 @@
+import { launchMutedBrowser } from "./playwright-muted-launch.mjs";
 import assert from "node:assert/strict";
 import { createRequire } from "node:module";
 import { promises as fs } from "node:fs";
@@ -736,7 +737,7 @@ async function main() {
   await fs.mkdir(OUTPUT_ROOT, { recursive: true });
   const preview = await startMobilePreviewServer({ host: "127.0.0.1", port: 0 });
   const { chromium } = loadPlaywright();
-  const browser = await chromium.launch({ headless: true });
+  const browser = await launchMutedBrowser(chromium, { headless: true });
   const report = [];
   try {
     await capturePortrait(browser, preview.url, report);

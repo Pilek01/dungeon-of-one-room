@@ -4,11 +4,21 @@ import test from "node:test";
 
 import {
   MULTI_BOT_COUNT,
+  assignedStartingRelicIndex,
   assertOwnedSessionChild,
   calculatePortraitTiles,
   createBotDescriptors,
   createMultiBotSessionPaths
 } from "../scripts/local-ranked-multi-bot-domain.mjs";
+
+test("distributes eight bots evenly across every available starting relic", () => {
+  const assignments = Array.from(
+    { length: 8 },
+    (_, index) => assignedStartingRelicIndex(index + 1, 3)
+  );
+  assert.deepEqual(assignments, [0, 1, 2, 0, 1, 2, 0, 1]);
+  assert.deepEqual([...new Set(assignments)].sort(), [0, 1, 2]);
+});
 
 test("tiles eight windows across the portrait working area", () => {
   assert.equal(MULTI_BOT_COUNT, 8);

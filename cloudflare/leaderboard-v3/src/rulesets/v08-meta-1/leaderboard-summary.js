@@ -4,6 +4,7 @@ import {
   getRelicCatalogEntryV08
 } from "./relic-policy.js";
 import { projectPublicRunModifiers } from "./run-modifiers.js";
+import { deriveCampaignChronicleV08 } from "./chronicle-policy.js";
 
 export const DURATION_POLICY_VERSION =
   sourceAuditDocument.canonicalData.duration.version;
@@ -100,6 +101,7 @@ export function buildFinalProjectionsV08(state, final) {
   };
   const goldEarned = score.inputs.acceptedRunGoldEarned;
   const presentationCause = terminalDefeatPresentationCause(state, outcome);
+  const chronicle = deriveCampaignChronicleV08(state);
   const summary = {
     outcome,
     finalDepth: score.inputs.acceptedMaxDepth,
@@ -121,8 +123,11 @@ export function buildFinalProjectionsV08(state, final) {
       preventedDeaths: state.lifeLedger.preventedDeaths,
       lifeLosses: state.lifeLedger.lifeLosses
     },
+    ...(chronicle.enabled ? { turns: chronicle.turns } : {}),
     roomsCompleted: state.statistics.roomsCompleted,
-    bossesCompleted: state.statistics.bossRoomsCompleted,
+    bossesCompleted: chronicle.enabled
+      ? chronicle.wardensDefeated
+      : state.statistics.bossRoomsCompleted,
     finalRoomsCompleted: state.statistics.finalRoomsCompleted || 0,
     metaTransactionsCompleted: state.metaTransactionReceipts.length,
     rulesetId: state.rulesetId,
@@ -140,6 +145,7 @@ export function buildFinalProjectionsV08(state, final) {
       scoreVersion: summary.scoreVersion,
       goldEarned: summary.gold.earned,
       durationMs: summary.durationMs,
+      ...(chronicle.enabled ? { turns: summary.turns } : {}),
       livesRemaining: summary.lives.remaining,
       roomsCompleted: summary.roomsCompleted,
       bossesCompleted: summary.bossesCompleted,

@@ -720,7 +720,11 @@
     recordNavMeta(mutators, "detail-action", "mutators");
     const earnedGold = summary.gold && typeof summary.gold === "object" ? summary.gold.earned : (summary.goldEarned ?? detail.gold);
     metrics.append(
-      chronicleRow(documentRef, "Time Played", duration(summary.durationMs ?? detail.durationMs)),
+      chronicleRow(
+        documentRef,
+        "Turns",
+        Number.isSafeInteger(summary.turns) ? grouped(summary.turns) : "—"
+      ),
       chronicleRow(documentRef, "Rooms Cleared", grouped(summary.roomsCompleted)),
       chronicleRow(documentRef, "Bosses Defeated", grouped(summary.bossesCompleted)),
       chronicleRow(documentRef, "Mutators", mutators),

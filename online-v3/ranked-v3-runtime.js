@@ -2075,7 +2075,7 @@
         silent: true,
         loadingMessage: options.enterPortal === true ? "Loading next depth…" : ""
       });
-      if (resolved) merchantLeaveCompletedDirectiveId = activeRoomDirectiveId;
+      if (resolved) merchantLeaveCompletedDirectiveId = requestedDirectiveId;
       if (resolved && options.enterPortal === true && !usesBoundarySettlement()) {
         root.DungeonOnlineV3GameBridge?.enterNextDirective?.();
       }

@@ -1,3 +1,4 @@
+import { launchMutedBrowser } from "./playwright-muted-launch.mjs";
 import assert from "node:assert/strict";
 import { execFile } from "node:child_process";
 import { createRequire } from "node:module";
@@ -361,7 +362,7 @@ async function main() {
   const proxy = await startServer(api);
   const diagnostics = { consoleErrors: [], pageErrors: [], failedRequests: [] };
   const { chromium } = loadPlaywright();
-  const browser = await chromium.launch({ headless: HEADLESS });
+  const browser = await launchMutedBrowser(chromium, { headless: HEADLESS });
   try {
     const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
     await context.addInitScript(() => {

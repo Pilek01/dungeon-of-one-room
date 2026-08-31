@@ -94,7 +94,7 @@ function Initialize-BotRows {
   foreach ($index in 1..8) {
     $botId = "bot-{0:D2}" -f $index
     $row = [System.Windows.Forms.ListViewItem]::new("bot $index")
-    foreach ($value in @("Waiting", "0", "0", "0", "0", "", "", "")) {
+    foreach ($value in @("Waiting", "0", "0", "0", "0", "0", "0", "0", "", "", "")) {
       [void] $row.SubItems.Add($value)
     }
     $row.Tag = $botId
@@ -111,14 +111,17 @@ function Update-BotRow($Message) {
   $row.SubItems[2].Text = [string] $Message.depth
   $row.SubItems[3].Text = [string] $Message.depthHighscore
   $row.SubItems[4].Text = [string] $Message.score
-  $row.SubItems[5].Text = [string] $Message.hp
-  $row.SubItems[6].Text = [string] $Message.lastDecision
+  $row.SubItems[5].Text = [string] $Message.lives
+  $row.SubItems[6].Text = [string] $Message.currentGold
+  $row.SubItems[7].Text = [string] $Message.totalGoldEarned
+  $row.SubItems[8].Text = [string] $Message.hp
+  $row.SubItems[9].Text = [string] $Message.lastDecision
   try {
-    $row.SubItems[7].Text = [DateTimeOffset]::Parse([string] $Message.updatedAt).ToLocalTime().ToString("HH:mm:ss")
+    $row.SubItems[10].Text = [DateTimeOffset]::Parse([string] $Message.updatedAt).ToLocalTime().ToString("HH:mm:ss")
   } catch {
-    $row.SubItems[7].Text = [string] $Message.updatedAt
+    $row.SubItems[10].Text = [string] $Message.updatedAt
   }
-  $row.SubItems[8].Text = [string] $Message.error
+  $row.SubItems[11].Text = [string] $Message.error
   if ([string] $Message.status -in @("failed", "blocked")) {
     $row.BackColor = [System.Drawing.Color]::DarkRed
     $row.ForeColor = [System.Drawing.Color]::White
@@ -208,7 +211,7 @@ function Process-LauncherEvents {
       } elseif ($message.type -eq "bot_failure") {
         if ($script:botRows.ContainsKey([string] $message.botId)) {
           $row = $script:botRows[[string] $message.botId]
-          $row.SubItems[8].Text = [string] $message.kind
+          $row.SubItems[11].Text = [string] $message.kind
           $row.BackColor = [System.Drawing.Color]::DarkRed
           $row.ForeColor = [System.Drawing.Color]::White
         }
@@ -494,6 +497,9 @@ $botList.GridLines = $true
 [void] $botList.Columns.Add("Depth", 65)
 [void] $botList.Columns.Add("Depth Highscore", 105)
 [void] $botList.Columns.Add("Score", 85)
+[void] $botList.Columns.Add("Lives", 50)
+[void] $botList.Columns.Add("Current Gold", 85)
+[void] $botList.Columns.Add("Total Gold Earned", 115)
 [void] $botList.Columns.Add("HP", 60)
 [void] $botList.Columns.Add("Last decision", 250)
 [void] $botList.Columns.Add("Updated", 80)

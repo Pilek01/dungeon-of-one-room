@@ -1,3 +1,4 @@
+import { launchMutedBrowser } from "./playwright-muted-launch.mjs";
 import fs from "node:fs";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
@@ -111,7 +112,7 @@ async function capture(page, name) {
 }
 
 fs.mkdirSync(outputRoot, { recursive: true });
-const browser = await chromium.launch({
+const browser = await launchMutedBrowser(chromium, {
   headless: true,
   args: ["--autoplay-policy=no-user-gesture-required"]
 });
