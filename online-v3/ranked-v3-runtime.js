@@ -44,7 +44,8 @@
   const MERCHANT_REASONS = new Set([
     "offer_pending", "no_canonical_choice", "bag_full", "stock_sufficient",
     "insufficient_wallet", "camp_reserve", "run_reserve", "no_useful_upgrade",
-    "purchase_limit", "commit_rejected", "resync_required", "failure_backoff"
+    "purchase_limit", "relic_unavailable", "reservation_unavailable",
+    "canonical_state_missing", "commit_rejected", "resync_required", "failure_backoff"
   ]);
   let merchantOperation = null;
   let merchantFailureCount = 0;
@@ -1876,6 +1877,49 @@
       : [];
   }
 
+  function merchantOwnedRelicCount(state, relicId) {
+    const wanted = String(relicId || "");
+    if (!wanted) return 0;
+    const relics = Array.isArray(state?.build?.relics) ? state.build.relics : [];
+    return relics.reduce((total, relic) =>
+      String(relic?.relicId || relic?.id || "") === wanted
+        ? total + Math.max(1, Math.floor(Number(relic?.stacks) || 1))
+        : total, 0);
+  }
+
+  function merchantChoiceClientValidity(state, choice, request = {}) {
+    if (!state || !choice) return { ok: false, reason: "canonical_state_missing" };
+    const action = String(request.action || "");
+    const targetRelicId = String(choice.targetRelicId || request.relicId || choice.relicId || "");
+    const removalRelicId = String(request.removalRelicId || "");
+    if (["black_market", "buyback"].includes(action) && merchantOwnedRelicCount(state, targetRelicId) <= 0) {
+      return { ok: false, reason: "relic_unavailable" };
+    }
+    if (removalRelicId && merchantOwnedRelicCount(state, removalRelicId) <= 0) {
+      return { ok: false, reason: "relic_unavailable" };
+    }
+    if (["claim_reserved", "discard_reserved"].includes(action)) {
+      const reservedRelicId = String(state?.build?.merchant?.reservedRelic?.relicId || "");
+      if (!reservedRelicId || (targetRelicId && targetRelicId !== reservedRelicId)) {
+        return { ok: false, reason: "reservation_unavailable" };
+      }
+    }
+    const cost = Math.max(0, Number(
+      choice.kind === "merchant_relic_reserve" ? choice.deposit : choice.price
+    ) || 0);
+    const runGold = Math.max(0, Number(state.gold) || 0);
+    const campGold = Math.max(0, Number(state.campGold) || 0);
+    const currency = String(choice.currency || "run_then_camp");
+    const affordable = currency === "run_gold"
+      ? runGold >= cost
+      : currency === "camp_gold"
+        ? campGold >= cost
+        : runGold + campGold >= cost;
+    return affordable
+      ? { ok: true, reason: "" }
+      : { ok: false, reason: "insufficient_wallet" };
+  }
+
   function merchantChoiceFor(request = {}) {
     const action = String(request.action || "");
     const relicId = String(request.relicId || "");
@@ -1907,6 +1951,25 @@
       if (action === "leave") return choice.kind === "leave";
       return false;
     }) || null;
+  }
+
+  function rejectLocalMerchantAction(result = {}) {
+    const reason = merchantReason(result.reason, "commit_rejected");
+    merchantMutationPending = false;
+    merchantFailureCount = 0;
+    merchantOperation = {
+      status: isRankedObserverBotActive() ? "backoff" : "rejected",
+      receiptKey: "",
+      action: String(result.action || ""),
+      reason
+    };
+    root.DungeonOnlineV3GameBridge?.failRankedMerchantAction?.({ ...result, reason });
+    if (result.requestNotified !== true) {
+      root.DungeonOnlineV3GameBridge?.failRankedMerchantRequest?.(
+        result.message || "That Merchant choice is no longer valid."
+      );
+    }
+    return false;
   }
 
   function merchantReplacementChoices(request = {}) {
@@ -2016,6 +2079,16 @@
       return false;
     }
     const state = merchantPublicState();
+    const validity = merchantChoiceClientValidity(state, choice, request);
+    if (!validity.ok) {
+      return rejectLocalMerchantAction({
+        action: request.action,
+        reason: validity.reason,
+        message: validity.reason === "insufficient_wallet"
+          ? "Not enough canonical gold for that Merchant choice."
+          : "That Merchant choice is no longer valid."
+      });
+    }
     const operationId = root.DungeonRankedV3Transport.randomOperationId(root.crypto);
     const operation = {
       status: "pending",

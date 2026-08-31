@@ -1993,6 +1993,9 @@ test("player Forge offer stays on the native Practice surface through canonical 
 function merchantOfferState(overrides = {}) {
   return metaState({
     revision: 1,
+    gold: 100,
+    campGold: 0,
+    build: { relics: [], merchant: { reservedRelic: null } },
     currentRoomDirective: { directiveId: "directive_merchant", depth: 2, roomType: "merchant" },
     metaTransactionOffer: {
       sourceType: "merchant",
@@ -2083,6 +2086,88 @@ test("deterministic Merchant rejection and missing choice fail without a confirm
   );
   assert.equal(harness.merchantCompletions.length, 0);
   assert.equal(harness.merchantFailures.at(-1)?.reason, "commit_rejected");
+});
+
+test("Merchant refuses an unaffordable stale choice before dispatch", async () => {
+  let commitCalls = 0;
+  const state = merchantOfferState({
+    gold: 60,
+    campGold: 0,
+    build: { relics: [], merchant: { reservedRelic: null } },
+    metaTransactionOffer: {
+      sourceType: "merchant",
+      offerId: "merchant_offer_low_wallet",
+      choices: [
+        {
+          transactionId: "merchant_tx_aoe",
+          choiceId: "aoe_1",
+          kind: "merchant_skill_upgrade",
+          skillId: "aoe",
+          tier: 1,
+          status: "available",
+          currency: "run_then_camp",
+          price: 600
+        }
+      ]
+    }
+  });
+  const harness = createHarness({
+    observerBotActive: false,
+    async onEvent(action) {
+      if (action === "open_meta_offer") return { metaState: state };
+      if (action === "commit_meta_transaction") commitCalls += 1;
+      throw new Error(`unexpected Merchant event: ${action}`);
+    }
+  });
+  const runtime = await installRuntime(harness);
+  await runtime.onMerchantOpen();
+
+  assert.equal(runtime.onMerchantAction({ action: "skill_upgrade", skillId: "aoe" }), false);
+  assert.equal(commitCalls, 0);
+  assert.equal(runtime.getRankedMerchantMutationState().status, "rejected");
+  assert.equal(runtime.getRankedMerchantMutationState().reason, "insufficient_wallet");
+});
+
+test("Merchant refuses stale Black Market choices for relics no longer owned", async () => {
+  let commitCalls = 0;
+  const state = merchantOfferState({
+    gold: 134,
+    campGold: 983,
+    build: {
+      relics: [{ relicId: "trapweave", stacks: 1 }],
+      merchant: { reservedRelic: null }
+    },
+    metaTransactionOffer: {
+      sourceType: "merchant",
+      offerId: "merchant_offer_stale_black_market",
+      choices: [
+        {
+          transactionId: "merchant_tx_black_market",
+          choiceId: "black_market_removed_relic",
+          kind: "merchant_black_market",
+          targetRelicId: "laststandtorque",
+          status: "available",
+          currency: "run_gold",
+          price: 0
+        }
+      ]
+    }
+  });
+  const harness = createHarness({
+    observerBotActive: true,
+    async onEvent(action) {
+      if (action === "open_meta_offer") return { metaState: state };
+      if (action === "commit_meta_transaction") commitCalls += 1;
+      throw new Error(`unexpected Merchant event: ${action}`);
+    }
+  });
+  const runtime = await installRuntime(harness);
+  await runtime.onMerchantOpen();
+
+  assert.equal(runtime.onMerchantAction({ action: "black_market", relicId: "laststandtorque" }), false);
+  assert.equal(commitCalls, 0);
+  assert.equal(runtime.getRankedMerchantMutationState().status, "backoff");
+  assert.equal(runtime.getRankedMerchantMutationState().reason, "relic_unavailable");
 });
 
 test("uncertain Merchant transport resumes before one retry with the same operation identity", async () => {

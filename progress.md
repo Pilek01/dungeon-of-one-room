@@ -2418,3 +2418,11 @@ Updated next good targets
 - The real two-bot smoke on the committed repair started separate profiles and
   Ranked runs, enabled Observer Bot in both windows, observed continued bot 2
   progress, and passed with visually inspected depth-2 gameplay evidence.
+
+## 2026-08-31 - Ranked Merchant stale-choice validation
+
+- Session `session-20260831004549-c33b78af` exposed one shared stale-offer defect across five bots. Bots 4, 5, and 7 submitted purchases priced above their post-transaction canonical wallet; bots 2 and 3 submitted Black Market choices for relics removed by the immediately preceding full-inventory replacement.
+- The Ranked runtime now validates the current canonical wallet, currency, owned/removal relics, and active reservation before dispatching any Merchant transaction. Invalid choices never reach the Worker or create a persisted pending operation.
+- A player receives an ordinary local `rejected` result and may choose again. Observer Bot receives a non-counting local `backoff`, which the existing Merchant controller interprets as leave-and-continue rather than retrying into a boundary stall.
+- RED/GREEN regressions cover the exact `60 gold / 600 price` case and Black Market against a no-longer-owned relic. Focused tests pass 47/47, current-tree Ranked Camp passes, and phase passes 1099/1099.
+- The production visual build remains gated by the expected source-fingerprint approval. No Worker policy, ruleset, D1 migration, commit, push, or deployment is included.
