@@ -165,6 +165,7 @@ export async function startBotRun(runtime, options) {
     await page.getByRole("button", { name: "Start Ranked", exact: true }).click();
   }
   const startingRelics = page.locator(".ranked-v3-choice-relic");
+  await startingRelics.first().waitFor({ state: "visible" });
   const startingRelicCount = await startingRelics.count();
   const startingRelicIndex = assignedStartingRelicIndex(
     runtime.bot.index,

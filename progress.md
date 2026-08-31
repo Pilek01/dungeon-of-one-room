@@ -2405,3 +2405,16 @@ Updated next good targets
   phase 1097/1097, Ranked Lifecycle, current-tree HD, protected baseline 3/3,
   and guard 15/15.
 - No commit, push, deployment, ruleset activation, or D1 migration is included.
+
+## 2026-08-31 - Eight-bot starting relic readiness repair
+
+- A real launch of commit `ec1999e` failed before bot 1 entered Ranked because
+  the new relic distribution counted `.ranked-v3-choice-relic` immediately
+  after the asynchronous Start Ranked click and observed zero choices.
+- The launcher now waits conditionally for the first starting relic to become
+  visible before counting all choices and applying the deterministic bot index.
+- The delayed-choice RED regression reproduced the same positive-integer
+  validation failure; the focused browser/domain suite passes 8/8 after the fix.
+- The real two-bot smoke on the committed repair started separate profiles and
+  Ranked runs, enabled Observer Bot in both windows, observed continued bot 2
+  progress, and passed with visually inspected depth-2 gameplay evidence.

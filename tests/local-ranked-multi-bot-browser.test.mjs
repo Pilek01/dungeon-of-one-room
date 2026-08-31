@@ -145,8 +145,19 @@ test("rejects the observed 130 percent Windows transform instead of declaring th
 
 test("starts fresh Ranked, selects the bot-assigned relic, and enables Observer Bot", async () => {
   const actions = [];
+  let startingRelicsVisible = false;
   const locator = (selector) => ({
-    count: async () => 3,
+    count: async () => selector === ".ranked-v3-choice-relic"
+      ? (startingRelicsVisible ? 3 : 0)
+      : 1,
+    first: () => ({
+      waitFor: async ({ state }) => {
+        actions.push(`wait:${selector}:${state}`);
+        if (selector === ".ranked-v3-choice-relic" && state === "visible") {
+          startingRelicsVisible = true;
+        }
+      }
+    }),
     nth: (index) => ({ click: async () => actions.push(`click:${selector}:nth:${index}`) }),
     waitFor: async ({ state }) => actions.push(`wait:${selector}:${state}`)
   });
@@ -182,6 +193,7 @@ test("starts fresh Ranked, selects the bot-assigned relic, and enables Observer 
     "openRanked",
     "visible:button:Start New Ranked",
     "click:button:Start New Ranked",
+    "wait:.ranked-v3-choice-relic:visible",
     "click:.ranked-v3-choice-relic:nth:1",
     "waitForFunction",
     "password:observer-secret",
