@@ -5,6 +5,7 @@ import {
   V08_META_1_AEGIS_PORTAL_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR,
   V08_META_1_CHRONICLE_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR,
   V08_META_1_ROOM_REPAIR_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR,
+  V08_META_1_ROOM_NAVIGATION_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR,
   V08_META_1_CHEST_HP_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR,
   V08_META_1_LOCAL_RELEASE_DESCRIPTOR,
   V08_META_1_POTION_MERCHANT_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR,
@@ -25,6 +26,8 @@ const PREVIOUS_CHRONICLE_HASH =
   "sha256:9e6dfc472f9eb0ffd773e42f80cd3ecf7b579a1d76766affdb72417086016b7f";
 const PREVIOUS_ROOM_REPAIR_HASH =
   "sha256:1b3103342a34e570842c73cd4454c9b2e5fa9b7895aac5835d18d4f1ee95b89b";
+const PREVIOUS_ROOM_NAVIGATION_HASH =
+  "sha256:eaa89c2568870852173c67cfd601ddd32b649322b3d4bf3b66a2114621a6998a";
 const PREVIOUS_PRODUCTION_HASH =
   "sha256:bf17a65dc721066bf11a1c34063cc18254fe97766852827719eb6aabf36042fa";
 const PREVIOUS_CHEST_HP_HASH =
@@ -36,8 +39,8 @@ const PREVIOUS_MAP_FRAGMENT_DEPTH_HASH =
 const PREVIOUS_GOLD_PARITY_HASH =
   "sha256:78ae2f6f797063b7f364e5652e3367f6b26d651302f5c6038576d304dc442ec3";
 
-test("bounded combat resources activate only on the new ruleset hash", () => {
-  assert.notEqual(V08_META_1_PRODUCTION_RELEASE_DESCRIPTOR.rulesetHash, manifest.rulesetHash);
+test("bounded combat resources remain active when the candidate is promoted", () => {
+  assert.equal(V08_META_1_PRODUCTION_RELEASE_DESCRIPTOR.rulesetHash, manifest.rulesetHash);
   assert.equal(V08_META_1_LOCAL_RELEASE_DESCRIPTOR.rulesetHash, manifest.rulesetHash);
   assert.equal(
     V08_META_1_PRODUCTION_RELEASE_DESCRIPTOR.capabilities.boundedCombatResources,
@@ -94,7 +97,7 @@ test("bounded combat resources activate only on the new ruleset hash", () => {
   );
   assert.deepEqual(
     V08_META_1_ROOM_REPAIR_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR.capabilities,
-    V08_META_1_PRODUCTION_RELEASE_DESCRIPTOR.capabilities
+    V08_META_1_ROOM_NAVIGATION_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR.capabilities
   );
   assert.ok(COMPATIBLE_RULESET_HASHES.includes(PREVIOUS_AEGIS_PORTAL_HASH));
   assert.equal(
@@ -114,6 +117,7 @@ test("bounded combat resources activate only on the new ruleset hash", () => {
   assert.ok(protocol.SUPPORTED_RULESET_HASHES.includes(PREVIOUS_PRODUCTION_HASH));
   assert.deepEqual(protocol.BOUNDED_COMBAT_RESOURCES_RULESET_HASHES, [
     V08_META_1_PRODUCTION_RELEASE_DESCRIPTOR.rulesetHash,
+    PREVIOUS_ROOM_NAVIGATION_HASH,
     PREVIOUS_ROOM_REPAIR_HASH,
     PREVIOUS_CHRONICLE_HASH,
     PREVIOUS_AEGIS_PORTAL_HASH,
@@ -123,7 +127,7 @@ test("bounded combat resources activate only on the new ruleset hash", () => {
     PREVIOUS_START_RESOURCE_PARITY_HASH,
     PREVIOUS_CHEST_HP_HASH
   ]);
-  assert.equal(protocol.supportsBoundedCombatResources(manifest.rulesetHash), false);
+  assert.equal(protocol.supportsBoundedCombatResources(manifest.rulesetHash), true);
   assert.equal(
     protocol.supportsBoundedCombatResources(V08_META_1_PRODUCTION_RELEASE_DESCRIPTOR.rulesetHash),
     true
@@ -132,6 +136,7 @@ test("bounded combat resources activate only on the new ruleset hash", () => {
   assert.equal(protocol.supportsBoundedCombatResources(PREVIOUS_PRODUCTION_HASH), false);
   assert.deepEqual(protocol.POTION_CLAIM_ORDERING_RULESET_HASHES, [
     V08_META_1_PRODUCTION_RELEASE_DESCRIPTOR.rulesetHash,
+    PREVIOUS_ROOM_NAVIGATION_HASH,
     PREVIOUS_ROOM_REPAIR_HASH,
     PREVIOUS_CHRONICLE_HASH,
     PREVIOUS_AEGIS_PORTAL_HASH,
@@ -139,7 +144,7 @@ test("bounded combat resources activate only on the new ruleset hash", () => {
     PREVIOUS_GOLD_PARITY_HASH,
     PREVIOUS_MAP_FRAGMENT_DEPTH_HASH
   ]);
-  assert.equal(protocol.supportsPotionClaimOrdering(manifest.rulesetHash), false);
+  assert.equal(protocol.supportsPotionClaimOrdering(manifest.rulesetHash), true);
   assert.equal(
     protocol.supportsPotionClaimOrdering(V08_META_1_PRODUCTION_RELEASE_DESCRIPTOR.rulesetHash),
     true

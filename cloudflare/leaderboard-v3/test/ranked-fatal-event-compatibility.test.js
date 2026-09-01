@@ -192,7 +192,10 @@ test("historical production releases strip fatal causes while the activated rele
       potionClaimOrdering: "v1",
       mapFragmentMinDepth: "v1",
       exactChestStatCarry: "v1",
-      campaignChronicle: "v1"
+      campaignChronicle: "v1",
+      merchantExitBarrier: "v1",
+      otterActualDepthEligibility: "v1",
+      roomEliteBudgetByType: "v1"
     }
   );
   assert.deepEqual(
