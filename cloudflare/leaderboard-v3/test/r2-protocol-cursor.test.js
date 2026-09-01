@@ -72,15 +72,12 @@ test("R2 registered mutations reject unknown fields and protocol mismatch", asyn
   assert.equal((await mismatch.json()).error.code, "PROTOCOL_VERSION_MISMATCH");
 });
 
-test("released client rejects a local-candidate bootstrap before launcher patching", async () => {
+test("released client accepts the activated candidate bootstrap without launcher patching", async () => {
   const localWorker = registeredWorker();
   const localStartedResponse = await postStart(localWorker, startBody());
   assert.equal(localStartedResponse.status, 201);
   const localStarted = await localStartedResponse.json();
-  assert.throws(
-    () => protocol.validateMutationResponse(localStarted),
-    /PROTOCOL_RULESET_HASH_UNSUPPORTED/u
-  );
+  assert.doesNotThrow(() => protocol.validateMutationResponse(localStarted));
 });
 
 test("R2 availability descriptor is explicit and does not require D1", async () => {
@@ -125,11 +122,11 @@ test("R2 public seek cursor is versioned, strict, and malformed input returns 40
   assert.equal((await response.json()).error.code, "LEADERBOARD_CURSOR_INVALID");
 });
 
-test("R2 client accepts released save hashes and rejects local-only or unknown hashes", () => {
+test("R2 client accepts the activated manifest and released save hashes while rejecting unknown hashes", () => {
   assert.equal(protocol.RULESET_HASH, V08_META_1_PRODUCTION_RELEASE_DESCRIPTOR.rulesetHash);
-  assert.notEqual(protocol.RULESET_HASH, V08_META_1_LOCAL_RELEASE_DESCRIPTOR.rulesetHash);
+  assert.equal(protocol.RULESET_HASH, V08_META_1_LOCAL_RELEASE_DESCRIPTOR.rulesetHash);
   assert.equal(V08_META_1_LOCAL_RELEASE_DESCRIPTOR.rulesetHash, manifest.rulesetHash);
-  assert.equal(protocol.isSupportedRulesetHash(manifest.rulesetHash), false);
+  assert.equal(protocol.isSupportedRulesetHash(manifest.rulesetHash), true);
   assert.equal(protocol.supportsPostRoomPact(protocol.RULESET_HASH), true);
   assert.equal(protocol.supportsBoundedProcClaims(protocol.RULESET_HASH), true);
   assert.equal(

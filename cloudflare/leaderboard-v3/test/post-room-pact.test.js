@@ -187,7 +187,7 @@ test("post-room Pact retries are fail-closed and resume projects the opaque offe
   assert.throws(() => assertMetaStateV08(forgedSequence), /META_STATE_INVALID:pendingPostRoomPact_binding/u);
   assert.equal(V08_META_1_PRODUCTION_RELEASE_DESCRIPTOR.capabilities.postRoomPactSettlement, "post-room-pact-v1");
   assert.equal(V08_META_1_LOCAL_RELEASE_DESCRIPTOR.rulesetHash, state.rulesetHash);
-  assert.notEqual(V08_META_1_PRODUCTION_RULESET_HASH, state.rulesetHash);
+  assert.equal(V08_META_1_PRODUCTION_RULESET_HASH, state.rulesetHash);
   assert.notEqual(V08_META_1_PACT_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR.rulesetHash, state.rulesetHash);
 });
 
