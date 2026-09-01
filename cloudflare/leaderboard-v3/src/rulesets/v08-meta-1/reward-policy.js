@@ -132,6 +132,19 @@ function enemyMaximumForRoom(roomType) {
   return Math.max(0, Number(rewardBounds.enemyClaims.maximumEnemiesByRoom[roomType]) || 0);
 }
 
+function eliteMaximumForRoom(roomType, capabilities = {}) {
+  const configured = capabilities?.roomEliteBudgetByType === "v1"
+    ? rewardBounds.enemyClaims.maximumElitesByRoom?.[roomType]
+    : undefined;
+  if (configured !== undefined && Number.isFinite(Number(configured))) {
+    return Math.max(0, Number(configured));
+  }
+  return Math.min(
+    enemyMaximumForRoom(roomType),
+    Math.max(0, Number(rewardBounds.enemyClaims.maximumElitesPerRoom) || 0)
+  );
+}
+
 function canonicalBuildHasRelic(build, relicId) {
   return Array.isArray(build?.relics) && build.relics.some(
     (entry) => entry?.relicId === relicId && Number(entry.stacks) >= 1
@@ -230,7 +243,7 @@ function claimDefinitions(roomType, canonicalBuild, capabilities) {
       definitions.push({
         claimType: "elite",
         claimId: `elite:${enemyType}`,
-        maximumCount: Math.min(maximumEnemies, rewardBounds.enemyClaims.maximumElitesPerRoom),
+        maximumCount: Math.min(maximumEnemies, eliteMaximumForRoom(roomType, capabilities)),
         maximumAmount: null,
         unitPolicyRef: `elite-kill:${enemyType}`,
         requiredRoomType: roomType,
@@ -1378,7 +1391,7 @@ async function settleRewardEnvelopeV3(state, request, context = {}, options = {}
   if (validatedEnemyCount > enemyMaximumForRoom(envelope.roomType)) {
     throw new TypeError("REWARD_CLAIM_ROOM_ENEMY_BUDGET");
   }
-  if (validatedEliteCount > rewardBounds.enemyClaims.maximumElitesPerRoom) {
+  if (validatedEliteCount > eliteMaximumForRoom(envelope.roomType, context.capabilities)) {
     throw new TypeError("REWARD_CLAIM_ROOM_ELITE_BUDGET");
   }
   if (voidReaperProcCount > validatedEnemyKillCount + validatedEliteKillCount) {

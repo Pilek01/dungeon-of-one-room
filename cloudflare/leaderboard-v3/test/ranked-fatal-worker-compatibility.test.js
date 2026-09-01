@@ -200,7 +200,8 @@ test("historical production descriptors strip fatal cause while current producti
       exactChestStatCarry: "v1",
       campaignChronicle: "v1",
       merchantExitBarrier: "v1",
-      otterActualDepthEligibility: "v1"
+      otterActualDepthEligibility: "v1",
+      roomEliteBudgetByType: "v1"
     }
   );
   assert.deepEqual(

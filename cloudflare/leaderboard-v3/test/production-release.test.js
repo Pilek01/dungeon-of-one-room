@@ -349,10 +349,12 @@ test("local candidate does not activate its ruleset in production", async () => 
   assert.equal(V08_META_1_LOCAL_RELEASE_DESCRIPTOR.status, RULESET_RELEASE_STATES.LOCAL_RELEASE_CANDIDATE);
   assert.equal(V08_META_1_LOCAL_RELEASE_DESCRIPTOR.capabilities.merchantExitBarrier, "v1");
   assert.equal(V08_META_1_LOCAL_RELEASE_DESCRIPTOR.capabilities.otterActualDepthEligibility, "v1");
+  assert.equal(V08_META_1_LOCAL_RELEASE_DESCRIPTOR.capabilities.roomEliteBudgetByType, "v1");
   assert.equal(V08_META_1_PRODUCTION_RELEASE_DESCRIPTOR.rulesetHash, CURRENT_PRODUCTION_HASH);
   assert.notEqual(V08_META_1_PRODUCTION_RELEASE_DESCRIPTOR.rulesetHash, EXPECTED_HASH);
   assert.equal(V08_META_1_PRODUCTION_RELEASE_DESCRIPTOR.capabilities.merchantExitBarrier, undefined);
   assert.equal(V08_META_1_PRODUCTION_RELEASE_DESCRIPTOR.capabilities.otterActualDepthEligibility, undefined);
+  assert.equal(V08_META_1_PRODUCTION_RELEASE_DESCRIPTOR.capabilities.roomEliteBudgetByType, undefined);
   assert.equal(V08_META_1_PRODUCTION_RELEASE_DESCRIPTOR.status, RULESET_RELEASE_STATES.PRODUCTION_RELEASED);
   assert.equal(
     V08_META_1_PRODUCTION_RELEASE_DESCRIPTOR.capabilities.boundarySettlementMode,

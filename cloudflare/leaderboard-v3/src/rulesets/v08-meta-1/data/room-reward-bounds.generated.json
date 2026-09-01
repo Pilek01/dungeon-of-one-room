@@ -17,6 +17,11 @@
       "file": "mutator-data.js",
       "byteLength": 3244,
       "sha256": "3e45b4bd282137fb324c6d452bbe248d422c208a2a802028e79263138d1be0b8"
+    },
+    {
+      "file": "pact-room.js",
+      "byteLength": 5791,
+      "sha256": "d94a3d19bab8fe69bf9d3f2dac5a0555e268af7327855c5a675e53149d4355c6"
     }
   ],
   "canonicalData": {
@@ -71,6 +76,24 @@
         "vault": 1
       },
       "maximumElitesPerRoom": 4,
+      "maximumElitesByRoom": {
+        "ambush": 4,
+        "arena": 4,
+        "boss": 4,
+        "combat": 4,
+        "crossroads": 0,
+        "cursed": 4,
+        "duel": 1,
+        "final": 4,
+        "forge": 1,
+        "horde": 4,
+        "merchant": 0,
+        "otter": 4,
+        "pact": 7,
+        "shrine": 4,
+        "treasure": 4,
+        "vault": 1
+      },
       "rewardBonusByRoom": {
         "horde": 1,
         "duel": 10,

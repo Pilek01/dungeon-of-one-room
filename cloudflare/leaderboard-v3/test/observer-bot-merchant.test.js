@@ -38,6 +38,10 @@ function functionBody(text, name, nextName) {
   return text.slice(start, end);
 }
 
+function plain(value) {
+  return JSON.parse(JSON.stringify(value));
+}
+
 test("Ranked Observer Bot opens the canonical Merchant offer before choosing a skill", async () => {
   const game = await source("game.js");
   const merchantAction = functionBody(
@@ -225,7 +229,7 @@ test("Merchant action submission uses a stable operation identity and resyncs un
 });
 
 
-function generatedMerchantActionRunner(game, decision) {
+function generatedMerchantActionRunner(game, decision, options = {}) {
   const start = game.indexOf("function runObserverMerchantAction()");
   const end = game.indexOf("\n  function ", start + 1);
   assert.ok(start >= 0 && end > start, "missing generated Observer Merchant action");
@@ -261,6 +265,7 @@ function generatedMerchantActionRunner(game, decision) {
     tryUseBlackMarket() { calls.push({ kind: "blackmarket" }); return true; },
     window: {
       DungeonOnlineV3: {
+        getRankedAutomationBlockState: () => options.blockState || { blocked: false, reasons: [] },
         isRankedAutomationBlocked: () => false,
         isObserverBotBoundaryPending: () => false,
         onMerchantAction(request) { calls.push({ kind: "action", request }); return true; },
@@ -279,7 +284,7 @@ test("generated Ranked policy forwards exact replacement and reserved-claim requ
     request: { action: "relic_purchase", relicId: "vampfang", removalRelicId: "fang" },
     reason: "useful_upgrade"
   });
-  assert.equal(replacement.result, true);
+  assert.deepEqual(plain(replacement.result), { status: "acted", reason: "relic_purchase" });
   assert.deepEqual(replacement.calls, [{
     kind: "action",
     request: { action: "relic_purchase", relicId: "vampfang", removalRelicId: "fang" }
@@ -289,7 +294,7 @@ test("generated Ranked policy forwards exact replacement and reserved-claim requ
     request: { action: "claim_reserved", relicId: "idol", removalRelicId: "fang" },
     reason: "useful_upgrade"
   });
-  assert.equal(claim.result, true);
+  assert.deepEqual(plain(claim.result), { status: "acted", reason: "claim_reserved" });
   assert.deepEqual(claim.calls, [{
     kind: "action",
     request: { action: "claim_reserved", relicId: "idol", removalRelicId: "fang" }
@@ -303,9 +308,147 @@ test("generated Ranked policy closes the native Merchant before the bot walks to
     request: { action: "leave" },
     reason: "purchase_limit"
   });
-  assert.equal(result.result, false);
+  assert.deepEqual(plain(result.result), { status: "done", reason: "purchase_limit" });
   assert.deepEqual(result.calls, [{ kind: "close" }]);
   assert.equal(result.state.merchantMenuOpen, false);
+});
+
+test("generated Ranked Merchant reports waiting separately from completion", async () => {
+  const game = await source("game.js");
+  const result = generatedMerchantActionRunner(game, {
+    action: "leave",
+    request: { action: "leave" },
+    reason: "failure_backoff"
+  }, {
+    blockState: { blocked: true, reasons: ["merchant_operation_pending"] }
+  });
+
+  assert.deepEqual(plain(result.result), {
+    status: "waiting",
+    reason: "merchant_operation_pending"
+  });
+  assert.deepEqual(result.calls, []);
+  assert.equal(result.state.merchantMenuOpen, true);
+});
+
+test("safe Merchant backoff is terminal for purchasing but does not globally block leaving", async () => {
+  const runtime = await source("online-v3/ranked-v3-runtime.js");
+  const blockStateSource = functionBody(
+    runtime,
+    "getRankedAutomationBlockState",
+    "isRankedAutomationBlocked"
+  );
+  const context = {
+    isRankedObserverBotActive: () => true,
+    observerBotBoundaryPending: false,
+    observerBotAutomationHalted: false,
+    session: { getState: () => "ROOM_ACTIVE" },
+    root: {
+      DungeonRankedV3Session: {
+        isObserverAutomationTransitionState: () => false
+      },
+      DungeonOnlineV3GameBridge: {
+        isRankedCanonicalLifeRestartReady: () => false
+      }
+    },
+    merchantOperation: {
+      status: "backoff",
+      reason: "insufficient_wallet",
+      leaveAllowed: true
+    },
+    merchantExitOperation: null,
+    boundaryOperation: null,
+    campMutationPending: false,
+    merchantMutationPending: false,
+    metaMutationPending: false,
+    forgeMutationPending: false,
+    pendingNativeRelicReplacement: null
+  };
+  const getBlockState = vm.runInNewContext(`(${blockStateSource})`, context);
+
+  assert.deepEqual(plain(getBlockState()), {
+    blocked: false,
+    reasons: [],
+    sessionState: "ROOM_ACTIVE",
+    merchantOperation: {
+      status: "backoff",
+      action: "",
+      reason: "insufficient_wallet",
+      operationId: "",
+      leaveAllowed: true
+    }
+  });
+});
+
+test("Ranked Merchant leave proceeds after a safe local backoff", async () => {
+  const runtime = await source("online-v3/ranked-v3-runtime.js");
+  const merchantLeave = functionBody(runtime, "onMerchantLeave", "availableCampChoices");
+  let checkpoints = 0;
+  let leaveCommits = 0;
+  const offer = {
+    sourceType: "merchant",
+    choices: [{
+      kind: "leave",
+      transactionId: "merchant-transaction-safe-backoff",
+      choiceId: "merchant-leave-safe-backoff",
+      status: "available"
+    }]
+  };
+  const publicState = {
+    currentRoomDirective: {
+      directiveId: "merchant-directive-safe-backoff",
+      roomType: "merchant",
+      consumed: false
+    },
+    metaTransactionOffer: offer
+  };
+  const context = {
+    activeRoomDirectiveId: "merchant-directive-safe-backoff",
+    merchantLeaveCompletedDirectiveId: "",
+    merchantMutationPending: false,
+    merchantMutationFlight: null,
+    merchantExitOperation: null,
+    merchantOperation: { status: "backoff", leaveAllowed: true },
+    currentMerchantOffer: offer,
+    pendingRoomSummary: null,
+    pendingBoundaryExit: null,
+    boundaryOperation: null,
+    root: {
+      DungeonOnlineV3GameBridge: {
+        beginRankedMerchantRequest() {},
+        syncCanonicalProjection() {},
+        enterNextDirective() {}
+      }
+    },
+    merchantChoiceFor: () => offer.choices[0],
+    createClient: () => ({
+      getSnapshot: () => ({ publicState }),
+      async event() {
+        leaveCommits += 1;
+        return {
+          metaState: {
+            currentRoomDirective: { ...publicState.currentRoomDirective, consumed: true },
+            metaTransactionOffer: null
+          }
+        };
+      }
+    }),
+    hasRoomAttachedMerchantOffer: (state) => Boolean(
+      state?.metaTransactionOffer?.sourceType === "merchant" &&
+      state?.currentRoomDirective?.roomType === "merchant" &&
+      state.currentRoomDirective.consumed !== true
+    ),
+    usesBoundarySettlement: () => true,
+    captureRankedBoundary: () => ({ summary: { turnCount: 0 } }),
+    mergeCapturedBoundary: (captured) => captured,
+    resolveCheckpoint: async () => { checkpoints += 1; return true; },
+    presentMerchantError() {}
+  };
+  const leave = vm.runInNewContext(`(async ${merchantLeave})`, context);
+
+  assert.equal(await leave({ enterPortal: true }), true);
+  assert.equal(leaveCommits, 1);
+  assert.equal(checkpoints, 1);
 });
 
 test("Ranked Merchant leave checkpoints a local directive at most once", async () => {

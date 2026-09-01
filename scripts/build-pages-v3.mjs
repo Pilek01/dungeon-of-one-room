@@ -449,14 +449,25 @@ const productionGameReplacements = [
     if (!isObserverBotActive()) return false;`,
 `  function runObserverBotStep() {
     if (!isObserverBotActive()) return false;
+    const rankedAutomationBlockState = state.onlineV3Ranked
+      ? window.DungeonOnlineV3?.getRankedAutomationBlockState?.()
+      : null;
     if (state.onlineV3Ranked && (
       state.turnInProgress ||
-      window.DungeonOnlineV3?.isRankedAutomationBlocked?.() ||
+      rankedAutomationBlockState?.blocked ||
+      (!rankedAutomationBlockState && window.DungeonOnlineV3?.isRankedAutomationBlocked?.()) ||
       window.DungeonOnlineV3?.isObserverBotBoundaryPending?.()
     )) {
-      state.observerBot.lastDecision = "online_v3_wait";
+      state.observerBot.onlineV3BlockState = rankedAutomationBlockState || {
+        blocked: true,
+        reasons: ["ranked_operation_pending"]
+      };
+      state.observerBot.lastDecision = "online_v3_wait_" + String(
+        state.observerBot.onlineV3BlockState.reasons?.[0] || "ranked_operation_pending"
+      );
       return false;
-    }`
+    }
+    state.observerBot.onlineV3BlockState = null;`
   ],
   [
 `    state.elixirLoadout.charges = Math.max(0, charges - 1);`,
@@ -2031,13 +2042,22 @@ const rankedMerchantGameReplacements = [
     if (state.onlineV3Ranked && !state.merchantMenuOpen) {
       openMerchantMenu();
       state.observerBot.lastDecision = "merchant_open";
-      return true;
+      return { status: "acted", reason: "merchant_open" };
     }
+    const rankedMerchantBlockState = state.onlineV3Ranked
+      ? window.DungeonOnlineV3?.getRankedAutomationBlockState?.()
+      : null;
     if (state.onlineV3Ranked && (
       state.turnInProgress ||
+      rankedMerchantBlockState?.blocked ||
       window.DungeonOnlineV3?.isRankedAutomationBlocked?.() ||
       window.DungeonOnlineV3?.isObserverBotBoundaryPending?.()
-    )) return false;`
+    )) {
+      return {
+        status: "waiting",
+        reason: String(rankedMerchantBlockState?.reasons?.[0] || "ranked_operation_pending")
+      };
+    }`
   ],
   [
 `  function openMerchantMenu() {
@@ -2224,7 +2244,7 @@ for (const [sourceText, replacement] of rankedMerchantGameReplacements) {
   game = game.replace(sourceText, replacement);
 }
 
-const rankedMerchantPolicyMarker = "    if (state.onlineV3Ranked && (\n      state.turnInProgress ||\n      window.DungeonOnlineV3?.isRankedAutomationBlocked?.() ||\n      window.DungeonOnlineV3?.isObserverBotBoundaryPending?.()\n    )) return false;";
+const rankedMerchantPolicyMarker = "    if (state.observerBot.merchantPurchasesThisRoom >= 6) return false;";
 const rankedMerchantPolicyBranch = [
   "",
   "    if (state.onlineV3Ranked) {",
@@ -2236,15 +2256,72 @@ const rankedMerchantPolicyBranch = [
   "      });",
   "      if (decision.action === \"leave\") {",
   "        closeMerchantMenu();",
-  "        return false;",
+  "        return { status: \"done\", reason: String(decision.reason || \"leave\") };",
   "      }",
-  "      if (decision.action !== \"leave\" && decision.request) return Boolean(window.DungeonOnlineV3?.onMerchantAction?.(decision.request));",
+  "      if (decision.action !== \"leave\" && decision.request) {",
+  "        const accepted = Boolean(window.DungeonOnlineV3?.onMerchantAction?.(decision.request));",
+  "        return accepted",
+  "          ? { status: \"acted\", reason: String(decision.action) }",
+  "          : { status: \"waiting\", reason: \"merchant_action_rejected\" };",
+  "      }",
   "      state.observerBot.lastDecision = \"merchant_\" + decision.reason;",
-  "      return false;",
+  "      return { status: \"failed\", reason: String(decision.reason || \"invalid_decision\") };",
   "    }"
 ].join("\n");
 if (!game.includes(rankedMerchantPolicyMarker)) throw new Error("Missing Ranked Merchant policy marker.");
-game = game.replace(rankedMerchantPolicyMarker, rankedMerchantPolicyMarker + rankedMerchantPolicyBranch);
+game = game.replace(
+  rankedMerchantPolicyMarker,
+  rankedMerchantPolicyBranch + "\n" + rankedMerchantPolicyMarker
+);
+
+const rankedMerchantResultSource = `        if (runObserverMerchantAction()) {
+          return true;
+        }
+        bot.merchantDoneRoomIndex = state.roomIndex;
+        bot.lastDecision = "merchant_done";`;
+const rankedMerchantResultReplacement = `        const merchantActionResult = runObserverMerchantAction();
+        if (state.onlineV3Ranked) {
+          const merchantStatus = String(merchantActionResult?.status || "failed");
+          const merchantReason = String(merchantActionResult?.reason || "invalid_result");
+          if (merchantStatus === "acted") return true;
+          if (merchantStatus === "waiting") {
+            bot.lastDecision = "merchant_wait_" + merchantReason;
+            return false;
+          }
+          if (merchantStatus !== "done") {
+            bot.lastDecision = "merchant_failed_" + merchantReason;
+            return false;
+          }
+        } else if (merchantActionResult) {
+          return true;
+        }
+        bot.merchantDoneRoomIndex = state.roomIndex;
+        bot.lastDecision = "merchant_done";`;
+if (!game.includes(rankedMerchantResultSource)) {
+  throw new Error("Missing Ranked Merchant result contract source.");
+}
+game = game.replace(rankedMerchantResultSource, rankedMerchantResultReplacement);
+
+const rankedObserverTraceBlockSource = `      loopPingPongTicks: Math.max(0, Number(state.observerBot?.loopPingPongTicks) || 0),
+      loopAcolytePingPongTicks: Math.max(0, Number(state.observerBot?.loopAcolytePingPongTicks) || 0)`;
+const rankedObserverTraceBlockReplacement = `      loopPingPongTicks: Math.max(0, Number(state.observerBot?.loopPingPongTicks) || 0),
+      loopAcolytePingPongTicks: Math.max(0, Number(state.observerBot?.loopAcolytePingPongTicks) || 0),
+      onlineV3BlockState: state.onlineV3Ranked && state.observerBot?.onlineV3BlockState
+        ? {
+            blocked: Boolean(state.observerBot.onlineV3BlockState.blocked),
+            reasons: Array.isArray(state.observerBot.onlineV3BlockState.reasons)
+              ? state.observerBot.onlineV3BlockState.reasons.map((reason) => String(reason || ""))
+              : [],
+            sessionState: String(state.observerBot.onlineV3BlockState.sessionState || ""),
+            merchantOperation: state.observerBot.onlineV3BlockState.merchantOperation
+              ? { ...state.observerBot.onlineV3BlockState.merchantOperation }
+              : null
+          }
+        : null`;
+if (!game.includes(rankedObserverTraceBlockSource)) {
+  throw new Error("Missing Ranked Observer trace block source.");
+}
+game = game.replace(rankedObserverTraceBlockSource, rankedObserverTraceBlockReplacement);
 
 const rankedObserverPactStart = game.indexOf("  function runObserverBotPlayingAction() {");
 const rankedObserverPactEnd = game.indexOf("  function chooseObserverBotCampStartDepth()", rankedObserverPactStart);

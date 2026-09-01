@@ -297,8 +297,8 @@
     },
     {
       "file": "data/room-reward-bounds.generated.json",
-      "byteLength": 2529,
-      "sha256": "f461074ea2ba1c8cae101b2975500cb0a558403ffa995ffe194d763717524da5"
+      "byteLength": 3052,
+      "sha256": "22987eaa1f3b3c0d095cdd271d35c1fe0d159f1e5c312a8cd7c181f2ea3da29d"
     },
     {
       "file": "data/room-types.generated.json",
@@ -457,8 +457,8 @@
     },
     {
       "file": "reward-policy.js",
-      "byteLength": 58496,
-      "sha256": "6e8cd6e16ae374bd51c22b5894876fe04f472ad62395064e2496af458930647a"
+      "byteLength": 58974,
+      "sha256": "ef554f550b6817c9a4b1e5f66652d8142357985b5ed1c177ea9e0c8fa5bbbf4d"
     },
     {
       "file": "rng.js",
@@ -591,5 +591,5 @@
       "sha256": "cfce80fea7bd5d1328020055f2012bcaeaf9b61e5438e437bf948a4288fb8bf0"
     }
   ],
-  "rulesetHash": "sha256:4b8b1439673fb3531fb44d3cc17d2b611ef392f9ee19b07ede687b9209ff05e0"
+  "rulesetHash": "sha256:ce2e838fc8359c266396e98ed3ab87b54c92725b7e4d235c0dd96b770ba31389"
 }

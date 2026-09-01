@@ -11,6 +11,7 @@ import {
   issueNextRoomDirectiveV08
 } from "../src/rulesets/v08-meta-1/room-policy.js";
 import {
+  createRoomRewardEnvelopeV3,
   settleRoomRewardEnvelopeV3
 } from "../src/rulesets/v08-meta-1/reward-policy.js";
 import {
@@ -157,9 +158,12 @@ async function settleWithClaims(claims, options = {}) {
   return { state, request, result };
 }
 
-async function expectRejected(state, request, pattern) {
+async function expectRejected(state, request, pattern, settlementContext = {}) {
   const before = structuredClone(state);
-  await assert.rejects(settleRoomRewardEnvelopeV3(state, request), pattern);
+  await assert.rejects(
+    settleRoomRewardEnvelopeV3(state, request, settlementContext),
+    pattern
+  );
   assert.deepEqual(state, before);
 }
 
@@ -173,6 +177,95 @@ test("boss reward envelope accepts the v0.8 Warden kill reward", async () => {
     { claimType: "enemy", claimId: "enemy:warden", count: 1 }
   ], { depth: 4 });
   assert.equal(result.authoritativeGoldDelta, 49);
+});
+
+async function pactRoomIssuedState(capabilities = { roomEliteBudgetByType: "v1" }) {
+  const resolvedContext = context("run_pact_elite_budget");
+  const state = await issuedState({ runId: resolvedContext.runId, depth: 24 });
+  const directive = {
+    ...state.currentRoomDirective,
+    roomType: "pact",
+    roomCategory: "special",
+    specialRoomPayload: { scalingDepth: 25 }
+  };
+  state.currentRoomDirective = directive;
+  state.currentRewardEnvelope = await createRoomRewardEnvelopeV3({
+    state,
+    directive,
+    envelopeId: "envelope_pact_elite_budget",
+    cryptoProvider: globalThis.crypto,
+    capabilities,
+    randomOracle: resolvedContext.randomOracle,
+    secret: resolvedContext.secret
+  });
+  return state;
+}
+
+test("Pact room accepts its source-authored maximum of seven elite enemies", async () => {
+  const capabilities = { roomEliteBudgetByType: "v1" };
+  const state = await pactRoomIssuedState(capabilities);
+  const eliteClaims = [
+    { claimType: "elite", claimId: "elite:slime", count: 2 },
+    { claimType: "elite", claimId: "elite:skeleton", count: 2 },
+    { claimType: "elite", claimId: "elite:brute", count: 2 },
+    { claimType: "elite", claimId: "elite:acolyte", count: 1 }
+  ];
+
+  const result = await settleRoomRewardEnvelopeV3(
+    state,
+    validRequest(state, { claims: eliteClaims }),
+    { capabilities }
+  );
+
+  assert.equal(result.state.mutatorProgress.eliteKills, 7);
+});
+
+test("Pact room rejects an eighth elite while ordinary rooms retain the cap of four", async () => {
+  const capabilities = { roomEliteBudgetByType: "v1" };
+  const pactState = await pactRoomIssuedState(capabilities);
+  await expectRejected(
+    pactState,
+    validRequest(pactState, {
+      claims: [
+        { claimType: "elite", claimId: "elite:slime", count: 2 },
+        { claimType: "elite", claimId: "elite:skeleton", count: 2 },
+        { claimType: "elite", claimId: "elite:brute", count: 2 },
+        { claimType: "elite", claimId: "elite:acolyte", count: 2 }
+      ]
+    }),
+    /REWARD_CLAIM_ROOM_ELITE_BUDGET/u,
+    { capabilities }
+  );
+
+  const ordinaryState = await issuedState();
+  await expectRejected(
+    ordinaryState,
+    validRequest(ordinaryState, {
+      claims: [
+        { claimType: "elite", claimId: "elite:slime", count: 2 },
+        { claimType: "elite", claimId: "elite:skeleton", count: 2 },
+        { claimType: "elite", claimId: "elite:brute", count: 1 }
+      ]
+    }),
+    /REWARD_CLAIM_ROOM_ELITE_BUDGET/u
+  );
+});
+
+test("historical rulesets retain the legacy global elite cap", async () => {
+  const state = await pactRoomIssuedState({});
+  const request = validRequest(state, {
+    claims: [
+      { claimType: "elite", claimId: "elite:slime", count: 2 },
+      { claimType: "elite", claimId: "elite:skeleton", count: 2 },
+      { claimType: "elite", claimId: "elite:brute", count: 1 }
+    ]
+  });
+
+  await expectRejected(
+    state,
+    request,
+    /REWARD_CLAIM_ROOM_ELITE_BUDGET/u
+  );
 });
 
 test("legacy boss envelope without a Warden definition is repaired at settlement", async () => {

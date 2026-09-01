@@ -555,24 +555,47 @@
     );
   }
 
+  function getRankedAutomationBlockState() {
+    const sessionState = String(session.getState() || "");
+    const merchantStatus = String(merchantOperation?.status || "");
+    const safeMerchantBackoff = merchantStatus === "backoff" &&
+      merchantOperation?.leaveAllowed === true;
+    const reasons = [];
+    if (observerBotBoundaryPending) reasons.push("observer_boundary_pending");
+    if (observerBotAutomationHalted) reasons.push("observer_automation_halted");
+    if (root.DungeonRankedV3Session.isObserverAutomationTransitionState?.(sessionState, {
+      canonicalLifeRestartReady:
+        root.DungeonOnlineV3GameBridge?.isRankedCanonicalLifeRestartReady?.() === true
+    }) === true) reasons.push("session_transition");
+    if (["pending", "uncertain", "resyncing"].includes(merchantStatus)) {
+      reasons.push(`merchant_operation_${merchantStatus}`);
+    } else if (merchantStatus === "backoff" && !safeMerchantBackoff) {
+      reasons.push("merchant_operation_backoff");
+    }
+    if (merchantExitOperation) reasons.push("merchant_exit_pending");
+    if (boundaryOperation) reasons.push("boundary_pending");
+    if (campMutationPending) reasons.push("camp_mutation_pending");
+    if (merchantMutationPending) reasons.push("merchant_mutation_pending");
+    if (metaMutationPending) reasons.push("meta_mutation_pending");
+    if (forgeMutationPending) reasons.push("forge_mutation_pending");
+    if (pendingNativeRelicReplacement) reasons.push("relic_replacement_pending");
+    const active = isRankedObserverBotActive();
+    return {
+      blocked: active && reasons.length > 0,
+      reasons: active ? reasons : [],
+      sessionState,
+      merchantOperation: merchantOperation ? {
+        status: merchantStatus,
+        action: String(merchantOperation.action || ""),
+        reason: String(merchantOperation.reason || ""),
+        operationId: String(merchantOperation.operationId || ""),
+        leaveAllowed: merchantOperation.leaveAllowed === true
+      } : null
+    };
+  }
+
   function isRankedAutomationBlocked() {
-    return Boolean(
-      isRankedObserverBotActive() &&
-      (observerBotBoundaryPending ||
-        observerBotAutomationHalted ||
-        root.DungeonRankedV3Session.isObserverAutomationTransitionState(session.getState(), {
-          canonicalLifeRestartReady:
-            root.DungeonOnlineV3GameBridge?.isRankedCanonicalLifeRestartReady?.() === true
-        }) ||
-        ["pending", "uncertain", "resyncing", "backoff"].includes(merchantOperation?.status) ||
-        merchantExitOperation ||
-        boundaryOperation ||
-        campMutationPending ||
-        merchantMutationPending ||
-        metaMutationPending ||
-        forgeMutationPending ||
-        pendingNativeRelicReplacement)
-    );
+    return getRankedAutomationBlockState().blocked;
   }
 
   async function runObserverBotBoundary(task) {
@@ -1777,12 +1800,14 @@
       operation.reason = merchantFailureCount >= MERCHANT_FAILURE_LIMIT
         ? "failure_backoff"
         : reason;
+      operation.leaveAllowed = result.leaveAllowed === true;
     } else {
       merchantOperation = {
         status: "rejected",
         receiptKey: "",
         action: String(result.action || ""),
-        reason
+        reason,
+        leaveAllowed: result.leaveAllowed === true
       };
     }
     merchantMutationPending = false;
@@ -1965,7 +1990,8 @@
       status: isRankedObserverBotActive() ? "backoff" : "rejected",
       receiptKey: "",
       action: String(result.action || ""),
-      reason
+      reason,
+      leaveAllowed: true
     };
     root.DungeonOnlineV3GameBridge?.failRankedMerchantAction?.({ ...result, reason });
     if (result.requestNotified !== true) {
@@ -2057,7 +2083,7 @@
       settleMerchantSuccess(response, operation, request);
     } catch (error) {
       if (merchantErrorIsDeterministic(error)) {
-        failRankedMerchantAction({ reason: "commit_rejected", error });
+        failRankedMerchantAction({ reason: "commit_rejected", error, leaveAllowed: true });
       } else {
         await resyncRankedMerchantOperation(operation, error);
       }
@@ -2093,7 +2119,8 @@
         action: request.action,
         reason: "no_canonical_choice",
         message: "That Merchant offer is not available.",
-        requestNotified: true
+        requestNotified: true,
+        leaveAllowed: true
       });
       return false;
     }
@@ -2160,7 +2187,10 @@
       const purchaseFlight = merchantMutationFlight;
       if (purchaseFlight) await purchaseFlight;
       if (requestedDirectiveId && activeRoomDirectiveId !== requestedDirectiveId) return true;
-      if (["rejected", "backoff"].includes(merchantOperation?.status)) return false;
+      if (
+        ["rejected", "backoff"].includes(merchantOperation?.status) &&
+        merchantOperation?.leaveAllowed !== true
+      ) return false;
 
       const previousBoundary = boundaryOperation;
       if (previousBoundary) {
@@ -2971,6 +3001,7 @@
     onRelicReplacementChoice,
     onRelicReplacementCancel,
     supportsPostRoomPactSettlement,
+    getRankedAutomationBlockState,
     isRankedAutomationBlocked,
     isObserverBotBoundaryPending,
     getSessionState: () => session.getState(),

@@ -456,6 +456,24 @@ function parsePactProfiles(source) {
   return profiles;
 }
 
+function parsePactEncounterProfiles(source) {
+  const block = extractBalancedBlock(source, "const PACT_ENCOUNTER_PROFILES", "[", "]");
+  const profiles = [];
+  const pattern = /minDepth:\s*(\d+),\s*minEnemies:\s*(\d+),\s*maxEnemies:\s*(\d+),\s*eliteOnly:\s*(true|false)/gu;
+  for (const match of block.matchAll(pattern)) {
+    profiles.push({
+      minDepth: Number(match[1]),
+      minEnemies: Number(match[2]),
+      maxEnemies: Number(match[3]),
+      eliteOnly: match[4] === "true"
+    });
+  }
+  if (profiles.length === 0) {
+    throw new Error("SOURCE_PARSE_FAILED:PACT_ENCOUNTER_PROFILES:entries");
+  }
+  return profiles;
+}
+
 function parseRelics(source) {
   const block = extractBalancedBlock(source, "const RELICS", "[", "]");
   const relics = [];
@@ -2030,6 +2048,7 @@ function buildCanonicalData(records, textByFile) {
   const regionConfigs = parseCampaignRegionConfigs(gameSource);
   const expansionRooms = parseExpansionRoomTypes(expansionSource);
   const pactProfiles = parsePactProfiles(pactSource);
+  const pactEncounterProfiles = parsePactEncounterProfiles(pactSource);
   const chooseRoomType = extractBalancedBlock(gameSource, "function chooseRoomType");
   const isBossDepth = extractBalancedBlock(gameSource, "function isBossDepth");
   const bossInterval = Number(requireMatch(
@@ -2773,11 +2792,24 @@ function buildCanonicalData(records, textByFile) {
                   : 9
     ])
   );
+  const maximumPactElites = Math.max(...pactEncounterProfiles.map((profile) =>
+    profile.eliteOnly
+      ? profile.maxEnemies
+      : Math.min(profile.maxEnemies, maximumElitesPerRoom)
+  ));
+  const maximumElitesByRoom = Object.fromEntries(
+    Object.entries(maximumEnemiesByRoom).map(([roomType, maximumEnemies]) => [
+      roomType,
+      roomType === "pact"
+        ? Math.min(maximumEnemies, maximumPactElites)
+        : Math.min(maximumEnemies, maximumElitesPerRoom)
+    ])
+  );
   const roomRewardBoundsData = {
     schemaVersion: 1,
     rulesetId: RULESET_ID,
     sourceCommit,
-    sources: sourceRefs(records, ["game.js", "camp-data.js", "mutator-data.js"]),
+    sources: sourceRefs(records, ["game.js", "camp-data.js", "mutator-data.js", "pact-room.js"]),
     canonicalData: {
       policyVersion: "v08-gold-claims-1",
       roomClear: {
@@ -2791,6 +2823,7 @@ function buildCanonicalData(records, textByFile) {
         baseGoldByEnemyType: enemyBase,
         maximumEnemiesByRoom,
         maximumElitesPerRoom,
+        maximumElitesByRoom,
         rewardBonusByRoom: { horde: 1, duel: 10, arena: 2 },
         duplicatePolicy: "REJECT_DUPLICATE_CLAIM_ID"
       },

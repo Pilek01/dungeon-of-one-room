@@ -63,6 +63,10 @@ const MERCHANT_EXIT_OTTER_CAPABILITIES = Object.freeze({
   merchantExitBarrier: "v1",
   otterActualDepthEligibility: "v1"
 });
+const ROOM_ELITE_BUDGET_CAPABILITIES = Object.freeze({
+  ...MERCHANT_EXIT_OTTER_CAPABILITIES,
+  roomEliteBudgetByType: "v1"
+});
 const LOCAL_ENVIRONMENTS = Object.freeze(["test", "local"]);
 const PRODUCTION_ENVIRONMENTS = Object.freeze(["test", "local", "production"]);
 const V08_ELIXIR_IDS = new Set(
@@ -117,7 +121,7 @@ export const V08_META_1_LOCAL_RELEASE_DESCRIPTOR = createReleaseDescriptor(
   V08_META_1_DESCRIPTOR.rulesetHash,
   RULESET_RELEASE_STATES.LOCAL_RELEASE_CANDIDATE,
   LOCAL_ENVIRONMENTS,
-  MERCHANT_EXIT_OTTER_CAPABILITIES
+  ROOM_ELITE_BUDGET_CAPABILITIES
 );
 
 export const V08_META_1_PACT_PREVIOUS_PRODUCTION_RULESET_HASH =

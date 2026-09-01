@@ -173,7 +173,8 @@ test("historical production releases strip fatal causes while the activated rele
       exactChestStatCarry: "v1",
       campaignChronicle: "v1",
       merchantExitBarrier: "v1",
-      otterActualDepthEligibility: "v1"
+      otterActualDepthEligibility: "v1",
+      roomEliteBudgetByType: "v1"
     }
   );
   assert.deepEqual(
