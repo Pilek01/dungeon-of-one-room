@@ -171,7 +171,10 @@ export async function startBotRun(runtime, options) {
     runtime.bot.index,
     startingRelicCount
   );
-  await startingRelics.nth(startingRelicIndex).click();
+  const startingRelic = startingRelics.nth(startingRelicIndex);
+  const relicId = String(await startingRelic.getAttribute("data-relic-id") || "");
+  const relicName = String(await startingRelic.locator("strong").first().textContent() || relicId).trim();
+  await startingRelic.click();
   await page.waitForFunction(() => window.DungeonOnlineV3?.getSessionState?.() === "ROOM_ACTIVE");
   await page.evaluate((password) => { window.prompt = () => password; }, options.password);
   await page.keyboard.press("F9");
@@ -181,5 +184,9 @@ export async function startBotRun(runtime, options) {
   await page.keyboard.press("F9");
   await page.waitForFunction(() => JSON.parse(window.render_game_to_text()).rankedHudStatus?.kind === "observer");
 
-  return Object.freeze({ botId: runtime.bot.id, status: "running" });
+  return Object.freeze({
+    botId: runtime.bot.id,
+    status: "running",
+    startingRelic: Object.freeze({ relicId, name: relicName || relicId })
+  });
 }

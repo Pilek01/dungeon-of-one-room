@@ -12,7 +12,10 @@ import {
   getRelicCatalogEntryV08,
   V08_RELIC_POLICY_DATA
 } from "./relic-policy.js";
-import { evaluateRelicAcquisition } from "./relic-replacement.js";
+import {
+  evaluateRelicAcquisition,
+  isRelicDraftEligibleV08
+} from "./relic-replacement.js";
 import { deriveIntInclusive } from "./rng.js";
 
 const policy = forgePolicyDocument.canonicalData;
@@ -78,21 +81,12 @@ async function randomInt(metaState, context, purpose, counter, maximum) {
   });
 }
 
-function baselineDraftEligible(metaState, relic) {
+function baselineDraftEligible(metaState, relic, context = {}) {
   if (!relic.acquisitionSources.includes("forge")) return false;
-  const owned = metaState.build.relics.find((entry) => entry.relicId === relic.relicId);
-  if (owned && !relic.stackable) return false;
-  if (owned && owned.stacks >= relic.maximumStacks) return false;
-  if (
-    relic.mythic &&
-    metaState.build.relics.some((entry) => getRelicCatalogEntryV08(entry.relicId).mythic)
-  ) {
-    return false;
-  }
-  return true;
+  return isRelicDraftEligibleV08(metaState.build, relic.relicId, context);
 }
 
-async function temperAcquisitionChoices(metaState, relic) {
+async function temperAcquisitionChoices(metaState, relic, context = {}) {
   const decision = await evaluateRelicAcquisition(metaState, {
     incomingRelicId: relic.relicId,
     incomingStacks: 1,
@@ -100,7 +94,7 @@ async function temperAcquisitionChoices(metaState, relic) {
     sourceOfferId: "forge_pending_offer",
     sourceChoiceId: "forge_pending_choice",
     sourceRewardSlotId: null
-  });
+  }, context);
   if (decision.decision === "ACQUIRE_DIRECT") {
     return [{
       kind: "forge_temper",
@@ -175,7 +169,7 @@ export async function issueForgeTemperOfferV08(metaState, context = {}) {
   const pool = catalog.filter(
     (relic) =>
       profile.allowedRarities.includes(relic.rarity) &&
-      baselineDraftEligible(metaState, relic)
+      baselineDraftEligible(metaState, relic, context)
   );
   if (!pool.length) return structuredClone(metaState);
   const candidateIndex = await randomInt(
@@ -186,7 +180,7 @@ export async function issueForgeTemperOfferV08(metaState, context = {}) {
     pool.length - 1
   );
   const relic = pool[candidateIndex];
-  const choices = await temperAcquisitionChoices(metaState, relic);
+  const choices = await temperAcquisitionChoices(metaState, relic, context);
   if (!choices.length) return structuredClone(metaState);
   const prepared = structuredClone(metaState);
   markForgeConsumed(prepared, binding, "temper");

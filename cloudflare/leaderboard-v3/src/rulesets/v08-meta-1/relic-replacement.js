@@ -4,6 +4,7 @@ import {
   applyRelicReplacementBuildV08,
   canAcquireRelic,
   getRelicCatalogEntryV08,
+  isRelicAcquisitionStackableV08,
   projectPublicBuild
 } from "./relic-policy.js";
 import {
@@ -47,7 +48,7 @@ function normalizeAcquisition(acquisition) {
   return normalized;
 }
 
-export function isRelicDraftEligibleV08(build, relicId) {
+export function isRelicDraftEligibleV08(build, relicId, context = {}) {
   let policy;
   try {
     policy = getRelicCatalogEntryV08(relicId);
@@ -55,7 +56,13 @@ export function isRelicDraftEligibleV08(build, relicId) {
     return false;
   }
   const existing = build.relics.find((entry) => entry.relicId === policy.relicId);
-  if (existing && (!policy.stackable || existing.stacks >= policy.maximumStacks)) return false;
+  if (
+    existing &&
+    (
+      !isRelicAcquisitionStackableV08(policy.relicId, context) ||
+      existing.stacks >= policy.maximumStacks
+    )
+  ) return false;
   if (policy.mythic && countBy(build, "mythic") >= slotPolicy.maximumMythicRelics) return false;
   return true;
 }
@@ -193,7 +200,11 @@ export async function evaluateRelicAcquisition(metaState, acquisition, context =
   if (incoming.acquisitionSource === "starting_relic" && metaState.build.relicSlotsUsed !== 0) {
     return { decision: "REJECT", code: "STARTING_RELIC_BUILD_NOT_EMPTY" };
   }
-  const verdict = canAcquireRelic(metaState.build, incoming.incomingRelicId);
+  const verdict = canAcquireRelic(
+    metaState.build,
+    incoming.incomingRelicId,
+    context
+  );
   if (verdict.allowed) {
     return { decision: "ACQUIRE_DIRECT", incoming };
   }

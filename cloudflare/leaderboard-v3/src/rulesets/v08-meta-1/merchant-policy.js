@@ -13,7 +13,10 @@ import {
   getRelicCatalogEntryV08,
   V08_RELIC_POLICY_DATA
 } from "./relic-policy.js";
-import { evaluateRelicAcquisition } from "./relic-replacement.js";
+import {
+  evaluateRelicAcquisition,
+  isRelicDraftEligibleV08
+} from "./relic-replacement.js";
 import { deriveIntInclusive } from "./rng.js";
 import { deriveRunModifierEffects } from "./run-modifiers.js";
 
@@ -115,19 +118,28 @@ function rarityForRoll(roll) {
   return policy.relicTiers.at(-1);
 }
 
-function candidatePool(metaState, rarity, excluded = new Set()) {
+function candidatePool(metaState, rarity, excluded = new Set(), context = {}) {
   const owned = new Set(metaState.build.relics.map((entry) => entry.relicId));
   const all = catalog.filter(
     (entry) =>
       entry.rarity === rarity &&
       entry.acquisitionSources.includes("merchant") &&
-      !excluded.has(entry.relicId)
+      !excluded.has(entry.relicId) &&
+      isRelicDraftEligibleV08(metaState.build, entry.relicId, context)
   );
   const unowned = all.filter((entry) => !owned.has(entry.relicId));
   return unowned.length ? unowned : all;
 }
 
-async function acquisitionChoices(metaState, relicId, source, cost, currency, group) {
+async function acquisitionChoices(
+  metaState,
+  relicId,
+  source,
+  cost,
+  currency,
+  group,
+  context = {}
+) {
   const decision = await evaluateRelicAcquisition(metaState, {
     incomingRelicId: relicId,
     incomingStacks: 1,
@@ -135,7 +147,7 @@ async function acquisitionChoices(metaState, relicId, source, cost, currency, gr
     sourceOfferId: "merchant_pending_offer",
     sourceChoiceId: "merchant_pending_choice",
     sourceRewardSlotId: null
-  });
+  }, context);
   const relic = getRelicCatalogEntryV08(relicId);
   if (decision.decision === "ACQUIRE_DIRECT") {
     return [{
@@ -323,7 +335,8 @@ export async function issueMerchantInventoryV08(metaState, context = {}) {
       "merchant",
       reserved.remainingPrice,
       "run_then_camp",
-      "merchant-reserved"
+      "merchant-reserved",
+      context
     ));
     choices.push({
       kind: "merchant_reserved_discard",
@@ -347,7 +360,7 @@ export async function issueMerchantInventoryV08(metaState, context = {}) {
       totalWeight - 1
     );
     const tier = rarityForRoll(rarityRoll);
-    const pool = candidatePool(metaState, tier.rarity);
+    const pool = candidatePool(metaState, tier.rarity, new Set(), context);
     if (pool.length) {
       const candidateIndex = await randomInt(
         metaState,
@@ -364,7 +377,8 @@ export async function issueMerchantInventoryV08(metaState, context = {}) {
         "merchant",
         price,
         "run_then_camp",
-        "merchant-relic-slot"
+        "merchant-relic-slot",
+        context
       ));
       const deposit = Math.max(1, Math.round(price * policy.reservationDepositRatio));
       const claimChoices = await acquisitionChoices(
@@ -373,7 +387,8 @@ export async function issueMerchantInventoryV08(metaState, context = {}) {
         "merchant",
         price - deposit,
         "run_then_camp",
-        "merchant-reserved"
+        "merchant-reserved",
+        context
       );
       for (const claimChoice of claimChoices) {
         claimChoice.status = "locked";

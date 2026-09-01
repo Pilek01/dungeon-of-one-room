@@ -13,7 +13,10 @@ import {
   getRelicCatalogEntryV08,
   V08_RELIC_POLICY_DATA
 } from "./relic-policy.js";
-import { evaluateRelicAcquisition } from "./relic-replacement.js";
+import {
+  evaluateRelicAcquisition,
+  isRelicDraftEligibleV08
+} from "./relic-replacement.js";
 import { deriveIntInclusive } from "./rng.js";
 import { deriveRunModifierEffects } from "./run-modifiers.js";
 
@@ -66,19 +69,10 @@ async function randomInt(metaState, context, purpose, counter, maximum) {
   });
 }
 
-function baselineDraftEligible(metaState, relic) {
+function baselineDraftEligible(metaState, relic, context = {}) {
   if (!relic.acquisitionSources.includes("relic_draft")) return false;
   if (!policy.power.eligibleRarities.includes(relic.rarity)) return false;
-  const owned = metaState.build.relics.find((entry) => entry.relicId === relic.relicId);
-  if (owned && !relic.stackable) return false;
-  if (owned && owned.stacks >= relic.maximumStacks) return false;
-  if (
-    relic.mythic &&
-    metaState.build.relics.some((entry) => getRelicCatalogEntryV08(entry.relicId).mythic)
-  ) {
-    return false;
-  }
-  return true;
+  return isRelicDraftEligibleV08(metaState.build, relic.relicId, context);
 }
 
 async function rollNonBossRarity(metaState, context, depth, counter) {
@@ -106,7 +100,9 @@ async function rollNonBossRarity(metaState, context, depth, counter) {
 }
 
 async function powerRelics(metaState, binding, context) {
-  const basePool = catalog.filter((relic) => baselineDraftEligible(metaState, relic));
+  const basePool = catalog.filter((relic) =>
+    baselineDraftEligible(metaState, relic, context)
+  );
   const used = new Set();
   const choices = [];
   const count = Math.max(
@@ -139,7 +135,7 @@ async function powerRelics(metaState, binding, context) {
   return choices;
 }
 
-async function powerAcquisitionChoices(metaState, relic, group) {
+async function powerAcquisitionChoices(metaState, relic, group, context = {}) {
   const decision = await evaluateRelicAcquisition(metaState, {
     incomingRelicId: relic.relicId,
     incomingStacks: 1,
@@ -147,7 +143,7 @@ async function powerAcquisitionChoices(metaState, relic, group) {
     sourceOfferId: "crossroads_pending_offer",
     sourceChoiceId: "crossroads_pending_choice",
     sourceRewardSlotId: null
-  });
+  }, context);
   if (decision.decision === "ACQUIRE_DIRECT") {
     return [{
       kind: "crossroads_power_relic",
@@ -234,7 +230,8 @@ export async function issueCrossroadsOfferV08(metaState, context = {}) {
     powerChoices.push(...await powerAcquisitionChoices(
       metaState,
       relic,
-      `power-result-${index}`
+      `power-result-${index}`,
+      context
     ));
   }
   if (powerChoices.length) {

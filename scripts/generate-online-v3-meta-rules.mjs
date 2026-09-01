@@ -645,6 +645,7 @@ function buildRelicCanonicalData(records, textByFile) {
         maximumNormalRelicStack,
         stackableRelicIds: catalog.filter((entry) => entry.stackable).map((entry) => entry.relicId),
         nonStackableRelicIds: catalog.filter((entry) => !entry.stackable).map((entry) => entry.relicId),
+        nonStackableAcquisitionRelicIds: ["merchfavor1"],
         stackUnitConsumesSlot: true
       }
     }],

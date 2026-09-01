@@ -43,6 +43,8 @@ test("creates exact bot names and isolated paths", () => {
   ]);
   assert.equal(new Set(bots.map((bot) => bot.profileDir)).size, 8);
   assert.equal(new Set(bots.map((bot) => bot.artifactDir)).size, 8);
+  assert.equal(new Set(bots.map((bot) => bot.resultPath)).size, 8);
+  assert.equal(bots[0].resultPath, path.join(root, "bot-01", "bot-result.json"));
 });
 
 test("rejects cleanup paths outside the owned session root", () => {

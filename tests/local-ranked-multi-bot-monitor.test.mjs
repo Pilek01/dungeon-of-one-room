@@ -7,7 +7,8 @@ import test from "node:test";
 import {
   BotProgressMonitor,
   captureBotFailure,
-  classifyImmediateFailure
+  classifyImmediateFailure,
+  sampleBotPage
 } from "../scripts/local-ranked-multi-bot-monitor.mjs";
 
 function activeSample(fingerprint, extra = {}) {
@@ -123,6 +124,50 @@ test("classifies a cleared active room without a portal as a missing-portal fail
     }
   });
   assert.equal(classifyImmediateFailure(sample)?.kind, "missing_portal");
+});
+
+test("samples readable names for every canonical relic in the current build", async (context) => {
+  const previousWindow = globalThis.window;
+  const previousDocument = globalThis.document;
+  context.after(() => {
+    globalThis.window = previousWindow;
+    globalThis.document = previousDocument;
+  });
+  globalThis.window = {
+    render_game_to_text: () => JSON.stringify({ depth: 9 }),
+    DungeonOnlineV3: {
+      getSessionState: () => "ROOM_ACTIVE",
+      getSnapshot: () => ({
+        publicState: {
+          build: {
+            relics: [
+              { relicId: "fang", stacks: 1 },
+              { relicId: "merchfavor1", stacks: 2 }
+            ]
+          }
+        }
+      })
+    },
+    __DUNGEON_MULTI_BOT_TELEMETRY__: {
+      observerState: () => ({ enabled: true }),
+      relicName: (relicId) => ({ fang: "Blood Fang", merchfavor1: "Merchant's Favor I" })[relicId]
+    }
+  };
+  globalThis.document = { querySelector: () => null };
+  const runtime = {
+    pageErrors: [],
+    page: {
+      async evaluate(callback) { return callback(); },
+      isClosed: () => false
+    }
+  };
+
+  const sample = await sampleBotPage(runtime);
+
+  assert.deepEqual(sample.relicNames, {
+    fang: "Blood Fang",
+    merchfavor1: "Merchant's Favor I"
+  });
 });
 
 test("captures all seven redacted artifacts once and leaves the failed page open", async (context) => {

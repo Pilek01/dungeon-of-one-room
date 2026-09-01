@@ -94,7 +94,7 @@ function Initialize-BotRows {
   foreach ($index in 1..8) {
     $botId = "bot-{0:D2}" -f $index
     $row = [System.Windows.Forms.ListViewItem]::new("bot $index")
-    foreach ($value in @("Waiting", "0", "0", "0", "0", "0", "0", "0", "", "", "")) {
+    foreach ($value in @("", "Waiting", "0", "0", "0", "0", "0", "0", "0", "", "", "")) {
       [void] $row.SubItems.Add($value)
     }
     $row.Tag = $botId
@@ -107,21 +107,22 @@ function Update-BotRow($Message) {
   $botId = [string] $Message.botId
   if (-not $script:botRows.ContainsKey($botId)) { return }
   $row = $script:botRows[$botId]
-  $row.SubItems[1].Text = [string] $Message.status
-  $row.SubItems[2].Text = [string] $Message.depth
-  $row.SubItems[3].Text = [string] $Message.depthHighscore
-  $row.SubItems[4].Text = [string] $Message.score
-  $row.SubItems[5].Text = [string] $Message.lives
-  $row.SubItems[6].Text = [string] $Message.currentGold
-  $row.SubItems[7].Text = [string] $Message.totalGoldEarned
-  $row.SubItems[8].Text = [string] $Message.hp
-  $row.SubItems[9].Text = [string] $Message.lastDecision
+  $row.SubItems[1].Text = [string] $Message.startingRelic
+  $row.SubItems[2].Text = [string] $Message.status
+  $row.SubItems[3].Text = [string] $Message.depth
+  $row.SubItems[4].Text = [string] $Message.depthHighscore
+  $row.SubItems[5].Text = [string] $Message.score
+  $row.SubItems[6].Text = [string] $Message.lives
+  $row.SubItems[7].Text = [string] $Message.currentGold
+  $row.SubItems[8].Text = [string] $Message.totalGoldEarned
+  $row.SubItems[9].Text = [string] $Message.hp
+  $row.SubItems[10].Text = [string] $Message.lastDecision
   try {
-    $row.SubItems[10].Text = [DateTimeOffset]::Parse([string] $Message.updatedAt).ToLocalTime().ToString("HH:mm:ss")
+    $row.SubItems[11].Text = [DateTimeOffset]::Parse([string] $Message.updatedAt).ToLocalTime().ToString("HH:mm:ss")
   } catch {
-    $row.SubItems[10].Text = [string] $Message.updatedAt
+    $row.SubItems[11].Text = [string] $Message.updatedAt
   }
-  $row.SubItems[11].Text = [string] $Message.error
+  $row.SubItems[12].Text = [string] $Message.error
   if ([string] $Message.status -in @("failed", "blocked")) {
     $row.BackColor = [System.Drawing.Color]::DarkRed
     $row.ForeColor = [System.Drawing.Color]::White
@@ -165,7 +166,7 @@ function Update-BotWallSummary {
   $failed = 0
   $stopped = 0
   foreach ($row in $script:botRows.Values) {
-    switch ([string] $row.SubItems[1].Text) {
+    switch ([string] $row.SubItems[2].Text) {
       { $_ -in @("starting", "running") } { $active += 1; break }
       "completed" { $completed += 1; break }
       { $_ -in @("failed", "blocked") } { $failed += 1; break }
@@ -211,7 +212,7 @@ function Process-LauncherEvents {
       } elseif ($message.type -eq "bot_failure") {
         if ($script:botRows.ContainsKey([string] $message.botId)) {
           $row = $script:botRows[[string] $message.botId]
-          $row.SubItems[11].Text = [string] $message.kind
+          $row.SubItems[12].Text = [string] $message.kind
           $row.BackColor = [System.Drawing.Color]::DarkRed
           $row.ForeColor = [System.Drawing.Color]::White
         }
@@ -369,6 +370,179 @@ function Get-LocalCandidates {
   return ([string]::Join("`n", @($json)) | ConvertFrom-Json -ErrorAction Stop)
 }
 
+function Get-LocalBotLeaderboard([string] $Scope) {
+  # Read-only Node protocol: leaderboard --json --scope today|all.
+  $json = & node.exe $corePath leaderboard --json --scope $Scope 2>&1
+  if ($LASTEXITCODE -ne 0) {
+    throw ([string]::Join([Environment]::NewLine, @($json)))
+  }
+  $payload = [string]::Join("`n", @($json)) | ConvertFrom-Json -ErrorAction Stop
+  return @($payload.records)
+}
+
+function Format-BotLeaderboardDetails($Record) {
+  if ($null -eq $Record) { return "Select a bot result to inspect its relic build." }
+  $startingRelic = if ($null -ne $Record.startingRelic) {
+    [string] $Record.startingRelic.name
+  } else { "Unknown" }
+  $buildHeading = if ([string] $Record.buildLabel -eq "final_last_life") {
+    "Relics on final/last-life build"
+  } else {
+    "Relics in last observed build"
+  }
+  $relicLines = @()
+  foreach ($relic in @($Record.relics)) {
+    $name = if ([string] $relic.name) { [string] $relic.name } else { [string] $relic.relicId }
+    $relicLines += "  - $name x$([int] $relic.stacks)"
+  }
+  if ($relicLines.Count -eq 0) { $relicLines = @("  - No relic build captured") }
+  $finished = if ([string] $Record.finishedAt) { [string] $Record.finishedAt } else { [string] $Record.updatedAt }
+  return @(
+    "$([string] $Record.botName) | $([string] $Record.status)",
+    "Score: $([int64] $Record.score) | Depth highscore: $([int] $Record.depthHighscore)",
+    "Starting relic: $startingRelic",
+    "Session: $([string] $Record.sessionId)",
+    "Commit: $([string] $Record.commit)",
+    "Updated: $finished",
+    "Error: $([string] $Record.error)",
+    "",
+    $buildHeading,
+    $relicLines
+  ) -join [Environment]::NewLine
+}
+
+function Show-BotLeaderboard {
+  $leaderboardForm = [System.Windows.Forms.Form]::new()
+  $leaderboardForm.Text = "Dungeon Online v3 - Bot Leaderboard"
+  $leaderboardForm.ClientSize = [System.Drawing.Size]::new(1220, 720)
+  $leaderboardForm.StartPosition = "CenterParent"
+  $leaderboardForm.MinimizeBox = $false
+  $leaderboardForm.MaximizeBox = $false
+
+  $scopeLabel = [System.Windows.Forms.Label]::new()
+  $scopeLabel.Location = [System.Drawing.Point]::new(16, 18)
+  $scopeLabel.Size = [System.Drawing.Size]::new(50, 22)
+  $scopeLabel.Text = "Scope:"
+  $leaderboardForm.Controls.Add($scopeLabel)
+
+  $leaderboardScope = [System.Windows.Forms.ComboBox]::new()
+  $leaderboardScope.Location = [System.Drawing.Point]::new(70, 15)
+  $leaderboardScope.Size = [System.Drawing.Size]::new(130, 24)
+  $leaderboardScope.DropDownStyle = [System.Windows.Forms.ComboBoxStyle]::DropDownList
+  [void] $leaderboardScope.Items.AddRange([object[]] @("Today", "All Time"))
+  $leaderboardForm.Controls.Add($leaderboardScope)
+
+  $statusFilterLabel = [System.Windows.Forms.Label]::new()
+  $statusFilterLabel.Location = [System.Drawing.Point]::new(220, 18)
+  $statusFilterLabel.Size = [System.Drawing.Size]::new(50, 22)
+  $statusFilterLabel.Text = "Status:"
+  $leaderboardForm.Controls.Add($statusFilterLabel)
+
+  $leaderboardStatus = [System.Windows.Forms.ComboBox]::new()
+  $leaderboardStatus.Location = [System.Drawing.Point]::new(275, 15)
+  $leaderboardStatus.Size = [System.Drawing.Size]::new(130, 24)
+  $leaderboardStatus.DropDownStyle = [System.Windows.Forms.ComboBoxStyle]::DropDownList
+  [void] $leaderboardStatus.Items.AddRange([object[]] @(
+    "All", "completed", "failed", "blocked", "stopped", "running", "starting"
+  ))
+  $leaderboardForm.Controls.Add($leaderboardStatus)
+
+  $refreshLeaderboardButton = [System.Windows.Forms.Button]::new()
+  $refreshLeaderboardButton.Location = [System.Drawing.Point]::new(425, 12)
+  $refreshLeaderboardButton.Size = [System.Drawing.Size]::new(105, 30)
+  $refreshLeaderboardButton.Text = "Refresh"
+  $leaderboardForm.Controls.Add($refreshLeaderboardButton)
+
+  $leaderboardList = [System.Windows.Forms.ListView]::new()
+  $leaderboardList.Location = [System.Drawing.Point]::new(16, 55)
+  $leaderboardList.Size = [System.Drawing.Size]::new(1188, 400)
+  $leaderboardList.View = [System.Windows.Forms.View]::Details
+  $leaderboardList.FullRowSelect = $true
+  $leaderboardList.MultiSelect = $false
+  $leaderboardList.GridLines = $true
+  [void] $leaderboardList.Columns.Add("Rank", 50)
+  [void] $leaderboardList.Columns.Add("Bot", 80)
+  [void] $leaderboardList.Columns.Add("Score", 90)
+  [void] $leaderboardList.Columns.Add("Depth Highscore", 110)
+  [void] $leaderboardList.Columns.Add("Starting Relic", 170)
+  [void] $leaderboardList.Columns.Add("Status", 90)
+  [void] $leaderboardList.Columns.Add("Updated", 150)
+  [void] $leaderboardList.Columns.Add("Session", 240)
+  [void] $leaderboardList.Columns.Add("Commit", 110)
+  $leaderboardForm.Controls.Add($leaderboardList)
+
+  $leaderboardDetails = [System.Windows.Forms.TextBox]::new()
+  $leaderboardDetails.Location = [System.Drawing.Point]::new(16, 470)
+  $leaderboardDetails.Size = [System.Drawing.Size]::new(1188, 230)
+  $leaderboardDetails.Multiline = $true
+  $leaderboardDetails.ReadOnly = $true
+  $leaderboardDetails.ScrollBars = [System.Windows.Forms.ScrollBars]::Vertical
+  $leaderboardDetails.Text = "Select a bot result to inspect its relic build."
+  $leaderboardForm.Controls.Add($leaderboardDetails)
+
+  $reloadLeaderboard = {
+    try {
+      $scope = if ([string] $leaderboardScope.SelectedItem -eq "Today") { "today" } else { "all" }
+      $status = [string] $leaderboardStatus.SelectedItem
+      $records = @(Get-LocalBotLeaderboard $scope)
+      if ($status -and $status -ne "All") {
+        $records = @($records | Where-Object { [string] $_.status -eq $status })
+      }
+      $leaderboardList.Items.Clear()
+      $rank = 0
+      foreach ($record in $records) {
+        $rank += 1
+        $startingRelic = if ($null -ne $record.startingRelic) {
+          [string] $record.startingRelic.name
+        } else { "" }
+        $timestamp = if ([string] $record.finishedAt) {
+          [string] $record.finishedAt
+        } else { [string] $record.updatedAt }
+        try {
+          $timestamp = [DateTimeOffset]::Parse($timestamp).ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss")
+        } catch { }
+        $commit = [string] $record.commit
+        if ($commit.Length -gt 12) { $commit = $commit.Substring(0, 12) }
+        $row = [System.Windows.Forms.ListViewItem]::new([string] $rank)
+        foreach ($value in @(
+          [string] $record.botName,
+          [string] $record.score,
+          [string] $record.depthHighscore,
+          $startingRelic,
+          [string] $record.status,
+          $timestamp,
+          [string] $record.sessionId,
+          $commit
+        )) {
+          [void] $row.SubItems.Add($value)
+        }
+        $row.Tag = $record
+        [void] $leaderboardList.Items.Add($row)
+      }
+      $leaderboardDetails.Text = if ($records.Count -eq 0) {
+        "No local bot results match this scope and status."
+      } else {
+        "Select a bot result to inspect its relic build."
+      }
+    } catch {
+      $leaderboardList.Items.Clear()
+      $leaderboardDetails.Text = "Failed to load local bot leaderboard: $($_.Exception.Message)"
+    }
+  }
+  $leaderboardList.add_SelectedIndexChanged({
+    if ($leaderboardList.SelectedItems.Count -eq 1) {
+      $leaderboardDetails.Text = Format-BotLeaderboardDetails $leaderboardList.SelectedItems[0].Tag
+    }
+  })
+  $refreshLeaderboardButton.add_Click($reloadLeaderboard)
+  $leaderboardScope.add_SelectedIndexChanged($reloadLeaderboard)
+  $leaderboardStatus.add_SelectedIndexChanged($reloadLeaderboard)
+  $leaderboardScope.SelectedIndex = 0
+  $leaderboardStatus.SelectedIndex = 0
+  & $reloadLeaderboard
+  [void] $leaderboardForm.ShowDialog($form)
+}
+
 $form = [System.Windows.Forms.Form]::new()
 $form.Text = "Dungeon Online v3 - Local Ranked Test"
 $form.ClientSize = [System.Drawing.Size]::new(1180, 850)
@@ -493,6 +667,7 @@ $botList.FullRowSelect = $true
 $botList.MultiSelect = $false
 $botList.GridLines = $true
 [void] $botList.Columns.Add("Bot", 80)
+[void] $botList.Columns.Add("Starting Relic", 145)
 [void] $botList.Columns.Add("Status", 100)
 [void] $botList.Columns.Add("Depth", 65)
 [void] $botList.Columns.Add("Depth Highscore", 105)
@@ -529,6 +704,13 @@ $stopBotButton.add_Click({
   }
 })
 $form.Controls.Add($stopBotButton)
+
+$leaderboardButton = [System.Windows.Forms.Button]::new()
+$leaderboardButton.Location = [System.Drawing.Point]::new(345, 570)
+$leaderboardButton.Size = [System.Drawing.Size]::new(170, 32)
+$leaderboardButton.Text = "Bot Leaderboard"
+$leaderboardButton.add_Click({ Show-BotLeaderboard })
+$form.Controls.Add($leaderboardButton)
 
 $botList.add_DoubleClick({
   if ($botList.SelectedItems.Count -eq 1 -and $focusBotButton.Enabled) {

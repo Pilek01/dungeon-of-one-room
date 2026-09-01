@@ -1,6 +1,7 @@
 import catalogDocument from "./data/relic-catalog.generated.json" with { type: "json" };
 import buildMetadataDocument from "./data/relic-build-metadata.generated.json" with { type: "json" };
 import slotPolicyDocument from "./data/relic-slot-policy.generated.json" with { type: "json" };
+import stackPolicyDocument from "./data/relic-stack-policy.generated.json" with { type: "json" };
 import {
   applyPotionResourceTransitionV08,
   assertCanonicalPotionResourcesV08,
@@ -14,7 +15,9 @@ import {
 const catalog = catalogDocument.canonicalData;
 const buildMetadata = buildMetadataDocument.canonicalData;
 const slotPolicy = slotPolicyDocument.canonicalData;
+const stackPolicy = stackPolicyDocument.canonicalData;
 const relicById = new Map(catalog.relics.map((entry) => [entry.relicId, entry]));
+const UNIQUE_MERCHANT_FAVOR_CAPABILITY = "v1";
 
 function canonicalJson(value) {
   if (Array.isArray(value)) return `[${value.map(canonicalJson).join(",")}]`;
@@ -172,11 +175,25 @@ export function getRelicSlotLimit(build) {
   return summarizeRelics(Array.isArray(build?.relics) ? build.relics : []).relicSlotLimit;
 }
 
-export function canAcquireRelic(build, relicId) {
+export function isRelicAcquisitionStackableV08(relicId, context = {}) {
+  const policy = requireRelic(relicId);
+  const capabilityEnabled =
+    context.capabilities?.merchantFavorTierOneUnique ===
+    UNIQUE_MERCHANT_FAVOR_CAPABILITY;
+  if (
+    capabilityEnabled &&
+    stackPolicy.nonStackableAcquisitionRelicIds.includes(policy.relicId)
+  ) {
+    return false;
+  }
+  return policy.stackable;
+}
+
+export function canAcquireRelic(build, relicId, context = {}) {
   const policy = requireRelic(relicId);
   const relics = Array.isArray(build?.relics) ? build.relics : [];
   const existing = relics.find((entry) => entry.relicId === relicId);
-  if (existing && !policy.stackable) {
+  if (existing && !isRelicAcquisitionStackableV08(relicId, context)) {
     return { allowed: false, code: `RELIC_UNIQUE_DUPLICATE:${relicId}` };
   }
   if (existing && existing.stacks >= policy.maximumStacks) {
@@ -212,11 +229,11 @@ export function canAcquireRelic(build, relicId) {
   return { allowed: true, code: null };
 }
 
-export function previewRelicAcquisitionV08(build, relicId) {
+export function previewRelicAcquisitionV08(build, relicId, context = {}) {
   const policy = requireRelic(relicId);
   const relics = Array.isArray(build?.relics) ? build.relics : [];
   const existing = relics.find((entry) => entry.relicId === relicId);
-  const verdict = canAcquireRelic(build, relicId);
+  const verdict = canAcquireRelic(build, relicId, context);
   if (!verdict.allowed) throw new TypeError(verdict.code);
   const summary = summarizeRelics(relics);
   const incomingBonus = existing ? 0 : policy.bonusRelicSlots;
@@ -266,7 +283,7 @@ export async function applyRelicAcquisition(build, acquisition, context = {}) {
   const potionContext = await prepareFlaskMutationContext(context);
   const relicId = String(acquisition?.relicId || "");
   const policy = requireRelic(relicId);
-  const verdict = canAcquireRelic(build, relicId);
+  const verdict = canAcquireRelic(build, relicId, context);
   if (!verdict.allowed) throw new TypeError(verdict.code);
   if (!Number.isSafeInteger(acquisition.acquiredRevision) || acquisition.acquiredRevision < 0) {
     throw new TypeError("RELIC_ACQUIRED_REVISION_INVALID");
@@ -512,4 +529,9 @@ export function projectPublicBuild(build) {
   ]));
 }
 
-export const V08_RELIC_POLICY_DATA = Object.freeze({ catalog, buildMetadata, slotPolicy });
+export const V08_RELIC_POLICY_DATA = Object.freeze({
+  catalog,
+  buildMetadata,
+  slotPolicy,
+  stackPolicy
+});

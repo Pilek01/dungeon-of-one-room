@@ -158,7 +158,24 @@ test("starts fresh Ranked, selects the bot-assigned relic, and enables Observer 
         }
       }
     }),
-    nth: (index) => ({ click: async () => actions.push(`click:${selector}:nth:${index}`) }),
+    nth: (index) => ({
+      async getAttribute(name) {
+        if (name === "data-relic-id") return ["fang", "chronoloop", "scoutlens"][index] || "";
+        return "";
+      },
+      locator(childSelector) {
+        return {
+          first: () => ({
+            async textContent() {
+              return childSelector === "strong"
+                ? ["Blood Fang", "Chronoloop", "Scout Lens"][index] || ""
+                : "";
+            }
+          })
+        };
+      },
+      click: async () => actions.push(`click:${selector}:nth:${index}`)
+    }),
     waitFor: async ({ state }) => actions.push(`wait:${selector}:${state}`)
   });
   const page = {
@@ -183,6 +200,7 @@ test("starts fresh Ranked, selects the bot-assigned relic, and enables Observer 
   });
 
   assert.equal(status.status, "running");
+  assert.deepEqual(status.startingRelic, { relicId: "chronoloop", name: "Chronoloop" });
   assert.deepEqual(actions, [
     "goto:http://127.0.0.1:8787:domcontentloaded",
     "waitForFunction",

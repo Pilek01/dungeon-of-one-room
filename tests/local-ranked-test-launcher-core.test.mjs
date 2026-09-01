@@ -164,6 +164,38 @@ test("multi-bot CLI rejects commit overrides and non-portrait monitor bounds", a
   );
 });
 
+test("leaderboard CLI reads only repo-owned local bot results for the requested scope", async () => {
+  const calls = [];
+  const records = [{ botId: "bot-02", score: 900 }];
+  const result = await runLauncherCli([
+    "leaderboard", "--json", "--scope", "today"
+  ], {
+    repoRoot: path.resolve("D:/repo"),
+    async listBotLeaderboard(outputRoot, options) {
+      calls.push([outputRoot, options.scope]);
+      return records;
+    },
+    listLocalCandidates: async () => { throw new Error("git must not run"); },
+    startLocalRankedTest: async () => { throw new Error("Worker must not start"); }
+  });
+
+  assert.deepEqual(result, { records });
+  assert.deepEqual(calls, [[
+    path.resolve("D:/repo/output/multi-bot-runs"),
+    "today"
+  ]]);
+});
+
+test("leaderboard CLI rejects unsupported scopes", async () => {
+  await assert.rejects(
+    runLauncherCli(["leaderboard", "--json", "--scope", "week"], {
+      repoRoot: path.resolve("D:/repo"),
+      listBotLeaderboard: async () => []
+    }),
+    /today or all/u
+  );
+});
+
 test("line-buffered stdin commands isolate bot actions and report invalid input without stopping the wall", async () => {
   const input = new PassThrough();
   const events = [];

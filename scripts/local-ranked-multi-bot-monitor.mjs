@@ -180,10 +180,20 @@ export async function sampleBotPage(runtime) {
     } catch {
       game = {};
     }
+    const snapshot = window.DungeonOnlineV3?.getSnapshot?.() || null;
+    const relicName = window.__DUNGEON_MULTI_BOT_TELEMETRY__?.relicName;
+    const relics = Array.isArray(snapshot?.publicState?.build?.relics)
+      ? snapshot.publicState.build.relics
+      : [];
+    const relicNames = Object.fromEntries(relics.map((relic) => {
+      const relicId = String(relic?.relicId || relic?.id || "");
+      return [relicId, typeof relicName === "function" ? String(relicName(relicId) || relicId) : relicId];
+    }).filter(([relicId]) => relicId));
     return {
       game,
       sessionState: window.DungeonOnlineV3?.getSessionState?.() || "",
-      snapshot: window.DungeonOnlineV3?.getSnapshot?.() || null,
+      snapshot,
+      relicNames,
       observer: window.__DUNGEON_MULTI_BOT_TELEMETRY__?.observerState?.() || null,
       overlayText: document.querySelector(".ranked-v3-overlay:not(.hidden), #screenOverlay:not(.hidden)")?.innerText || ""
     };

@@ -10,6 +10,7 @@ export function injectMultiBotTelemetry(source, target) {
   }
 
   const hook = `  window.__DUNGEON_MULTI_BOT_TELEMETRY__ = Object.freeze({
+    relicName: (relicId) => String(getRelicById(relicId)?.name || relicId || ""),
     observerTrace: () => buildObserverBotTraceText(),
     observerState: () => ({
       enabled: isObserverBotActive(),

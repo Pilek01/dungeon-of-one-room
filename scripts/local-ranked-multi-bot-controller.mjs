@@ -17,36 +17,34 @@ import {
   isBotRunComplete,
   sampleBotPage as defaultSampleBotPage
 } from "./local-ranked-multi-bot-monitor.mjs";
+import {
+  mergeBotResult,
+  writeBotResult as defaultWriteBotResult
+} from "./local-ranked-bot-results.mjs";
 
 function sleep(milliseconds) {
   return new Promise((resolve) => setTimeout(resolve, milliseconds));
 }
 
-function safeEventStatus(entry, sample = entry.lastSample || {}) {
+function safeEventStatus(entry) {
+  const result = entry.result || {};
   return {
     type: "bot_status",
     botId: entry.runtime.bot.id,
     name: entry.runtime.bot.name,
     status: entry.status,
-    depth: Math.max(0, Number(sample.game?.depth) || 0),
-    depthHighscore: Math.max(
-      0,
-      Number(sample.snapshot?.publicState?.mutatorProgress?.depthHighscore) || 0
-    ),
-    score: Math.max(
-      0,
-      Number(sample.snapshot?.publicState?.score?.score ?? sample.game?.score) || 0
-    ),
-    lives: Math.max(0, Number(sample.snapshot?.publicState?.lives) || 0),
-    currentGold: Math.max(0, Number(sample.snapshot?.publicState?.gold) || 0),
-    totalGoldEarned: Math.max(
-      0,
-      Number(sample.snapshot?.publicState?.score?.inputs?.acceptedRunGoldEarned) || 0
-    ),
-    hp: Math.max(0, Number(sample.game?.player?.hp ?? sample.game?.hp) || 0),
-    lastDecision: String(sample.observer?.lastDecision || ""),
+    depth: Math.max(0, Number(result.depth) || 0),
+    depthHighscore: Math.max(0, Number(result.depthHighscore) || 0),
+    score: Math.max(0, Number(result.score) || 0),
+    lives: Math.max(0, Number(result.lives) || 0),
+    currentGold: Math.max(0, Number(result.currentGold) || 0),
+    totalGoldEarned: Math.max(0, Number(result.totalGoldEarned) || 0),
+    hp: Math.max(0, Number(result.hp) || 0),
+    startingRelic: String(result.startingRelic?.name || result.startingRelic?.relicId || ""),
+    relics: Array.isArray(result.relics) ? result.relics : [],
+    lastDecision: String(result.lastDecision || ""),
     error: String(entry.error || ""),
-    updatedAt: new Date().toISOString()
+    updatedAt: String(result.updatedAt || new Date().toISOString())
   };
 }
 
@@ -93,7 +91,10 @@ export async function startMultiBotWall(options) {
   const startBotRun = options.startBotRun || defaultStartBotRun;
   const captureBotFailure = options.captureBotFailure || defaultCaptureBotFailure;
   const sampleBotPage = options.sampleBotPage || defaultSampleBotPage;
+  const writeBotResult = options.writeBotResult || defaultWriteBotResult;
   const wait = options.wait || sleep;
+  const now = options.now || (() => Date.now());
+  const resultPersistMs = Math.max(1_000, Number(options.resultPersistMs) || 10_000);
   const setIntervalImpl = options.setInterval || globalThis.setInterval;
   const clearIntervalImpl = options.clearInterval || globalThis.clearInterval;
   const emit = options.emit || (() => {});
@@ -130,13 +131,43 @@ export async function startMultiBotWall(options) {
     return entry;
   }
 
+  function updateEntryResult(entry, sample = null, extra = {}) {
+    entry.result = mergeBotResult(entry.result, {
+      status: entry.status,
+      error: entry.error,
+      sample,
+      updatedAt: new Date(now()).toISOString(),
+      ...extra
+    });
+    return entry.result;
+  }
+
+  async function persistEntry(entry, force = false) {
+    const timestamp = now();
+    if (!force && timestamp - entry.lastPersistedAt < resultPersistMs) return;
+    entry.lastPersistedAt = timestamp;
+    const result = entry.result;
+    entry.persistPromise = entry.persistPromise.then(
+      () => writeBotResult(entry.runtime.bot.resultPath, result)
+    ).catch((error) => {
+      emit({
+        type: "result_write_failed",
+        botId: entry.runtime.bot.id,
+        message: redact(error?.message || error)
+      });
+    });
+    await entry.persistPromise;
+  }
+
   async function captureBot(botId, failureIncident) {
     const entry = findEntry(botId);
     if (capturePromises.has(botId)) return capturePromises.get(botId);
     clearEntryTimer(entry);
     entry.status = "failed";
     entry.error = String(failureIncident?.kind || "failure");
+    updateEntryResult(entry, entry.lastSample);
     emit(safeEventStatus(entry));
+    await persistEntry(entry, true);
     const promise = captureBotFailure(entry.runtime, failureIncident, {
       secrets: [options.password, options.secret]
     }).then((record) => {
@@ -153,7 +184,9 @@ export async function startMultiBotWall(options) {
         window.__DUNGEON_MULTI_BOT_TELEMETRY__?.stopObserverBot?.();
         document.documentElement.style.outline = "8px solid #c5162e";
       }).catch(() => {});
+      updateEntryResult(entry, entry.lastSample);
       emit(safeEventStatus(entry));
+      await persistEntry(entry, true);
       throw error;
     });
     capturePromises.set(botId, promise);
@@ -169,14 +202,18 @@ export async function startMultiBotWall(options) {
       try {
         const sample = await sampleBotPage(entry.runtime);
         entry.lastSample = sample;
+        updateEntryResult(entry, sample);
         if (isBotRunComplete(sample)) {
           entry.status = "completed";
+          updateEntryResult(entry, sample);
           clearEntryTimer(entry);
-          emit(safeEventStatus(entry, sample));
+          emit(safeEventStatus(entry));
+          await persistEntry(entry, true);
           return;
         }
-        emit(safeEventStatus(entry, sample));
-        const failureIncident = monitor.observe(sample, Date.now());
+        emit(safeEventStatus(entry));
+        await persistEntry(entry);
+        const failureIncident = monitor.observe(sample, now());
         if (failureIncident) await captureBot(entry.runtime.bot.id, failureIncident);
       } catch (error) {
         await captureBot(entry.runtime.bot.id, {
@@ -197,8 +234,10 @@ export async function startMultiBotWall(options) {
     stoppedBotIds.add(botId);
     clearEntryTimer(entry);
     entry.status = "stopped";
-    await entry.runtime.stop();
+    updateEntryResult(entry, entry.lastSample);
     emit(safeEventStatus(entry));
+    await persistEntry(entry, true);
+    await entry.runtime.stop();
   }
 
   async function focusBot(botId) {
@@ -212,7 +251,9 @@ export async function startMultiBotWall(options) {
       clearEntryTimer(entry);
       entry.status = "blocked";
       entry.error = `Shared local Worker exited${event.code === undefined ? "" : ` (${event.code})`}.`;
+      updateEntryResult(entry, entry.lastSample);
       emit(safeEventStatus(entry));
+      await persistEntry(entry, true);
     }
     await flushWorkerLog();
   }
@@ -230,6 +271,12 @@ export async function startMultiBotWall(options) {
       for (const entry of entries) {
         if (stoppedBotIds.has(entry.runtime.bot.id)) continue;
         stoppedBotIds.add(entry.runtime.bot.id);
+        if (!["completed", "failed", "blocked", "stopped"].includes(entry.status)) {
+          entry.status = "stopped";
+          updateEntryResult(entry, entry.lastSample);
+          emit(safeEventStatus(entry));
+          await persistEntry(entry, true);
+        }
         try {
           await entry.runtime.stop();
         } catch (error) {
@@ -272,6 +319,8 @@ export async function startMultiBotWall(options) {
         currentGold: 0,
         totalGoldEarned: 0,
         hp: 0,
+        startingRelic: "",
+        relics: [],
         lastDecision: "",
         error: "",
         updatedAt: new Date().toISOString()
@@ -286,15 +335,33 @@ export async function startMultiBotWall(options) {
         secrets: [options.password, options.secret],
         emit
       });
-      const entry = { runtime, status: "starting", error: "", timer: null, lastSample: null };
+      const entry = {
+        runtime,
+        status: "starting",
+        error: "",
+        timer: null,
+        lastSample: null,
+        lastPersistedAt: 0,
+        persistPromise: Promise.resolve(),
+        result: mergeBotResult(null, {
+          sessionId: options.sessionId,
+          botId: bot.id,
+          botName: bot.name,
+          commit: options.commit,
+          status: "starting",
+          updatedAt: new Date(now()).toISOString()
+        })
+      };
       entries.push(entry);
-      await startBotRun(runtime, {
+      const started = await startBotRun(runtime, {
         url: options.worker.url,
         commit: options.commit,
         password: options.password
       });
       entry.status = "running";
+      updateEntryResult(entry, null, { startingRelic: started?.startingRelic });
       emit(safeEventStatus(entry));
+      await persistEntry(entry, true);
       beginMonitoring(entry);
       if (index + 1 < descriptors.length) await wait(150);
     }
@@ -305,6 +372,12 @@ export async function startMultiBotWall(options) {
     wallStopped = true;
     for (const entry of entries) {
       clearEntryTimer(entry);
+      if (!["completed", "failed", "blocked", "stopped"].includes(entry.status)) {
+        entry.status = "stopped";
+        updateEntryResult(entry, entry.lastSample);
+        emit(safeEventStatus(entry));
+        await persistEntry(entry, true);
+      }
       await entry.runtime.stop().catch(() => {});
     }
     await flushWorkerLog().catch(() => {});

@@ -15,6 +15,7 @@ function createFixture() {
   const timers = [];
   const manifests = [];
   const removals = [];
+  const resultWrites = [];
   let workerExit = null;
   const worker = {
     url: "http://127.0.0.1:9123",
@@ -32,6 +33,7 @@ function createFixture() {
     timers,
     manifests,
     removals,
+    resultWrites,
     worker,
     async triggerWorkerExit() { await workerExit?.({ expected: false, code: 7 }); },
     options: {
@@ -47,6 +49,7 @@ function createFixture() {
       async mkdir() {},
       async writeManifest(manifestPath, manifest) { manifests.push([manifestPath, manifest]); },
       async writeFile(filePath, text) { order.push(`write:${path.basename(filePath)}:${text}`); },
+      async writeBotResult(filePath, result) { resultWrites.push([filePath, result]); },
       async rm(candidate, options) { removals.push([candidate, options]); },
       async launchBotWindow(options) {
         launched.push(options);
@@ -61,7 +64,10 @@ function createFixture() {
       async startBotRun(runtime, options) {
         started.push([runtime.bot.id, options.url, options.commit]);
         order.push(`${runtime.bot.id}:start`);
-        return { status: "running" };
+        return {
+          status: "running",
+          startingRelic: { relicId: "fang", name: "Blood Fang" }
+        };
       },
       async captureBotFailure(runtime, incident) {
         captures.push([runtime.bot.id, incident]);
@@ -94,6 +100,12 @@ test("starts eight isolated windows sequentially on one Worker and one commit", 
   assert.equal(fixture.timers.length, 8);
   assert.equal(controller.bots.length, 8);
   assert.deepEqual(fixture.events[0], { type: "artifact_root", path: controller.sessionRoot });
+  const startingEvents = fixture.events.filter(
+    (event) => event.type === "bot_status" && event.status === "starting"
+  );
+  assert.equal(startingEvents.length, 8);
+  assert.ok(startingEvents.every((event) => event.startingRelic === ""));
+  assert.ok(startingEvents.every((event) => Array.isArray(event.relics)));
 
   const manifestText = JSON.stringify(fixture.manifests[0][1]);
   assert.match(manifestText, new RegExp(COMMIT, "u"));
@@ -195,6 +207,79 @@ test("marks a legally finalized run complete without creating failure artifacts"
   assert.equal(controller.bots[0].status, "completed");
   assert.equal(fixture.captures.length, 0);
   assert.equal(fixture.timers[0].cleared, true);
+});
+
+test("preserves the final score, highscore, starting relic, and last-life relic build", async () => {
+  const fixture = createFixture();
+  const samples = [
+    {
+      game: { phase: "playing", depth: 31, player: { hp: 44 } },
+      observer: { enabled: true, lastDecision: "move" },
+      sessionState: "ROOM_ACTIVE",
+      relicNames: { fang: "Blood Fang", merchfavor1: "Merchant's Favor I" },
+      snapshot: { publicState: {
+        lives: 1,
+        gold: 91,
+        build: { relics: [
+          { relicId: "fang", stacks: 1 },
+          { relicId: "merchfavor1", stacks: 2 }
+        ] },
+        score: { score: 48_174, inputs: { acceptedRunGoldEarned: 1_942 } },
+        mutatorProgress: { depthHighscore: 31 }
+      } },
+      overlayText: "",
+      pageErrors: []
+    },
+    {
+      game: { phase: "defeat" },
+      observer: { enabled: false },
+      sessionState: "FINALIZED",
+      snapshot: null,
+      overlayText: "",
+      pageErrors: []
+    }
+  ];
+  let index = 0;
+  fixture.options.sampleBotPage = async () => samples[Math.min(index++, samples.length - 1)];
+  const controller = await startMultiBotWall(fixture.options);
+  await fixture.timers[0].callback();
+  await fixture.timers[0].callback();
+
+  const completed = fixture.events.filter(
+    (event) => event.type === "bot_status" && event.botId === "bot-01"
+  ).at(-1);
+  assert.equal(completed.status, "completed");
+  assert.equal(completed.score, 48_174);
+  assert.equal(completed.depthHighscore, 31);
+  assert.equal(completed.startingRelic, "Blood Fang");
+  assert.deepEqual(completed.relics, [
+    { relicId: "fang", name: "Blood Fang", stacks: 1 },
+    { relicId: "merchfavor1", name: "Merchant's Favor I", stacks: 2 }
+  ]);
+  assert.equal(fixture.resultWrites.at(-1)[1].buildLabel, "final_last_life");
+  assert.equal(controller.bots[0].status, "completed");
+});
+
+test("persists stopped bot results immediately without zeroing their last sample", async () => {
+  const fixture = createFixture();
+  fixture.options.sampleBotPage = async () => ({
+    game: { phase: "playing", depth: 7, score: 700, player: { hp: 33 } },
+    observer: { enabled: true, lastDecision: "portal" },
+    sessionState: "ROOM_ACTIVE",
+    snapshot: { publicState: { mutatorProgress: { depthHighscore: 9 } } },
+    overlayText: "",
+    pageErrors: []
+  });
+  const controller = await startMultiBotWall(fixture.options);
+  await fixture.timers[0].callback();
+  await controller.stopBot("bot-01");
+
+  const persisted = fixture.resultWrites.at(-1)[1];
+  assert.equal(persisted.status, "stopped");
+  assert.equal(persisted.score, 700);
+  assert.equal(persisted.depth, 7);
+  assert.equal(persisted.depthHighscore, 9);
+  assert.equal(persisted.buildLabel, "last_observed");
 });
 
 test("publishes canonical Ranked run metrics for the launcher", async () => {

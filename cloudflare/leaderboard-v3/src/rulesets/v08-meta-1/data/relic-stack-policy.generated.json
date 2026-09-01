@@ -98,6 +98,9 @@
       "abyssalreliquary",
       "crownconcord"
     ],
+    "nonStackableAcquisitionRelicIds": [
+      "merchfavor1"
+    ],
     "stackUnitConsumesSlot": true
   }
 }

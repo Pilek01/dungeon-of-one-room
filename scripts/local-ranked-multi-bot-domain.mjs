@@ -52,7 +52,8 @@ export function createBotDescriptors(sessionRoot) {
       index,
       name: `bot ${index}`,
       profileDir: ownedChild(sessionRoot, "profiles", id),
-      artifactDir: ownedChild(sessionRoot, id)
+      artifactDir: ownedChild(sessionRoot, id),
+      resultPath: ownedChild(sessionRoot, id, "bot-result.json")
     });
   }));
 }

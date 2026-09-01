@@ -226,49 +226,49 @@ async function rollArenaRarity(state, context, depth, counter) {
   return "normal";
 }
 
-function candidatePool(state, tier) {
+function candidatePool(state, tier, context = {}) {
   const allowedRarities = unlockedRarities(tier);
   return catalog.relics.filter((relic) => (
     allowedRarities.has(relic.rarity) &&
     relic.acquisitionSources.includes("boss_drop") &&
-    isRelicDraftEligibleV08(state.build, relic.relicId)
+    isRelicDraftEligibleV08(state.build, relic.relicId, context)
   ));
 }
 
-export function getRegularRelicCandidatePoolV08(state, depth) {
+export function getRegularRelicCandidatePoolV08(state, depth, context = {}) {
   const tier = rarityTierForDepth(depth);
   if (!tier) return [];
-  return candidatePool(state, tier).map((entry) => entry.relicId);
+  return candidatePool(state, tier, context).map((entry) => entry.relicId);
 }
 
-function otterCandidatePool(state) {
+function otterCandidatePool(state, context = {}) {
   const allowedRarities = new Set(otterPolicy.allowedRarities);
   return catalog.relics.filter((relic) => (
     allowedRarities.has(relic.rarity) &&
     relic.acquisitionSources.includes(otterPolicy.candidateAcquisitionSource) &&
-    isRelicDraftEligibleV08(state.build, relic.relicId)
+    isRelicDraftEligibleV08(state.build, relic.relicId, context)
   ));
 }
 
-export function getOtterRelicCandidatePoolV08(state) {
-  return otterCandidatePool(state).map((entry) => entry.relicId);
+export function getOtterRelicCandidatePoolV08(state, context = {}) {
+  return otterCandidatePool(state, context).map((entry) => entry.relicId);
 }
 
-function arenaCandidatePool(state) {
+function arenaCandidatePool(state, context = {}) {
   const allowedRarities = new Set(arenaPolicy.allowedRarities);
   return catalog.relics.filter((relic) => (
     allowedRarities.has(relic.rarity) &&
     relic.acquisitionSources.includes(arenaPolicy.candidateAcquisitionSource) &&
-    isRelicDraftEligibleV08(state.build, relic.relicId)
+    isRelicDraftEligibleV08(state.build, relic.relicId, context)
   ));
 }
 
-export function getArenaRelicCandidatePoolV08(state) {
-  return arenaCandidatePool(state).map((entry) => entry.relicId);
+export function getArenaRelicCandidatePoolV08(state, context = {}) {
+  return arenaCandidatePool(state, context).map((entry) => entry.relicId);
 }
 
 async function chooseRelics(state, context, tier) {
-  const pool = candidatePool(state, tier);
+  const pool = candidatePool(state, tier, context);
   if (pool.length === 0) return { pool, selected: [] };
   const selected = [];
   const used = new Set();
@@ -310,7 +310,7 @@ async function chooseRelics(state, context, tier) {
 }
 
 async function chooseOtterRelics(state, context, depth) {
-  const pool = otterCandidatePool(state);
+  const pool = otterCandidatePool(state, context);
   if (pool.length === 0) return { pool, selected: [] };
   const selected = [];
   const used = new Set();
@@ -350,7 +350,7 @@ async function chooseOtterRelics(state, context, depth) {
 }
 
 async function chooseArenaRelics(state, context, depth) {
-  const pool = arenaCandidatePool(state);
+  const pool = arenaCandidatePool(state, context);
   if (pool.length === 0) return { pool, selected: [] };
   const selected = [];
   const used = new Set();

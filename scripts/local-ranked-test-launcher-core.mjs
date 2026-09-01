@@ -6,6 +6,7 @@ import path from "node:path";
 import { promisify } from "node:util";
 import { fileURLToPath } from "node:url";
 import { startMultiBotWall as defaultStartMultiBotWall } from "./local-ranked-multi-bot-controller.mjs";
+import { listBotLeaderboard as defaultListBotLeaderboard } from "./local-ranked-bot-results.mjs";
 
 const FULL_COMMIT_HASH = /^[0-9a-f]{40}$/u;
 
@@ -520,13 +521,25 @@ export async function runLauncherCli(args = process.argv.slice(2), options = {})
   const emit = options.emit || writeJsonLine;
   const repoRoot = options.repoRoot || process.cwd();
   const listCandidates = options.listLocalCandidates || listLocalCandidates;
+  const listBotLeaderboard = options.listBotLeaderboard || defaultListBotLeaderboard;
   const startWorker = options.startLocalRankedTest || startLocalRankedTest;
   const startWall = options.startMultiBotWall || defaultStartMultiBotWall;
   if (command === "list" && args.includes("--json")) {
     return listCandidates({ repoRoot, execFile: options.execFile });
   }
+  if (command === "leaderboard" && args.includes("--json")) {
+    const scope = String(readCliOption(args, "--scope") || "all").toLowerCase();
+    if (!["today", "all"].includes(scope)) {
+      throw new TypeError("Local bot leaderboard scope must be today or all.");
+    }
+    const records = await listBotLeaderboard(
+      path.join(path.resolve(repoRoot), "output", "multi-bot-runs"),
+      { scope }
+    );
+    return Object.freeze({ records });
+  }
   if (command !== "start" || !args.includes("--json-events")) {
-    throw new Error("Use 'list --json', single 'start --commit <full-hash> --json-events', or 'start --multi-bot --json-events' with monitor bounds.");
+    throw new Error("Use 'list --json', 'leaderboard --json --scope today|all', single 'start --commit <full-hash> --json-events', or 'start --multi-bot --json-events' with monitor bounds.");
   }
 
   try {
@@ -653,7 +666,7 @@ export function attachLauncherCommandInput(input, controller, emit = writeJsonLi
 async function runCliEntrypoint() {
   let controller = null;
   try {
-    if (process.argv[2] === "list") {
+    if (["list", "leaderboard"].includes(process.argv[2])) {
       writeJsonLine(await runLauncherCli());
       return;
     }

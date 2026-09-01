@@ -18,6 +18,7 @@ test("injects read-only Observer telemetry only into test bundles", () => {
   const instrumented = injectMultiBotTelemetry(source, "test");
   assert.match(instrumented, /__DUNGEON_MULTI_BOT_TELEMETRY__/u);
   assert.match(instrumented, /observerTrace: \(\) => buildObserverBotTraceText\(\)/u);
+  assert.match(instrumented, /relicName: \(relicId\) => String\(getRelicById\(relicId\)\?\.name/u);
   assert.equal(injectMultiBotTelemetry(source, "release"), source);
 });
 
