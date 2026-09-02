@@ -4,6 +4,21 @@ const path = require("node:path");
 
 const game = fs.readFileSync(path.join(__dirname, "..", "game.js"), "utf8");
 
+function extractFunction(source, name) {
+  const start = source.indexOf(`function ${name}`);
+  assert.ok(start >= 0, `missing ${name}`);
+  const open = source.indexOf("{", source.indexOf(")", start));
+  let depth = 0;
+  for (let index = open; index < source.length; index += 1) {
+    if (source[index] === "{") depth += 1;
+    if (source[index] === "}") {
+      depth -= 1;
+      if (depth === 0) return source.slice(start, index + 1);
+    }
+  }
+  throw new Error(`unterminated ${name}`);
+}
+
 const {
   canBotDrinkPotion,
   decideBotEmergencyExtract,
@@ -40,7 +55,7 @@ function run() {
   assert.equal(canBotDrinkPotion({ potions: 1, hp: 100, maxHp: 100, poisonTurns: 1, poisonDamage: 1 }), false);
   assert.equal(canBotDrinkPotion({ potions: 2, hp: 30, maxHp: 100, oathPotionLockTurns: 2 }), false);
   assert.equal(canBotDrinkPotion({ potions: 2, hp: 30, maxHp: 100, hasRisk: true }), false);
-  assert.equal(decideBotPotionUse({ hp: 90, maxHp: 100, incomingDamage: 5, effectiveHeal: 20, potions: 2 }).use, false);
+  assert.equal(decideBotPotionUse({ hp: 95, maxHp: 100, incomingDamage: 5, effectiveHeal: 20, potions: 2 }).use, false);
   assert.equal(decideBotPotionUse({ hp: 40, maxHp: 100, incomingDamage: 45, effectiveHeal: 25, potions: 2 }).reason, "prevent_lethal");
   assert.equal(decideBotPotionUse({ hp: 50, maxHp: 100, incomingDamage: 20, effectiveHeal: 20, potions: 1 }).reason, "prevent_critical");
   assert.equal(decideBotPotionUse({ hp: 30, maxHp: 100, incomingDamage: 10, effectiveHeal: 20, potions: 1 }).reason, "low_hp_useful_heal");
@@ -50,6 +65,52 @@ function run() {
   assert.equal(decideBotPotionUse({ hp: 80, maxHp: 100, incomingDamage: 1, poisonTurns: 1, poisonDamage: 1, effectiveHeal: 20, potions: 1 }).reason, "high_hp_low_threat");
   assert.equal(decideBotPotionUse({ hp: 100, maxHp: 100, poisonTurns: 3, poisonDamage: 8, potions: 1 }).reason, "cleanse_poison");
   assert.equal(decideBotPotionUse({ hp: 100, maxHp: 100, bleedTurns: 2, bleedDamage: 12, potions: 1 }).reason, "cleanse_bleed");
+
+  assert.equal(
+    decideBotPotionUse({ hp: 80, maxHp: 100, incomingDamage: 5, effectiveHeal: 40, potions: 1 }).reason,
+    "low_hp_useful_heal",
+    "ordinary danger uses a potion when missing HP reaches half the effective heal"
+  );
+  assert.equal(
+    decideBotPotionUse({ hp: 85, maxHp: 100, incomingDamage: 5, effectiveHeal: 40, bossRoom: true, potions: 1 }).reason,
+    "low_hp_useful_heal",
+    "boss danger uses the lower 35% effective-heal threshold"
+  );
+  assert.equal(
+    decideBotPotionUse({ hp: 85, maxHp: 100, incomingDamage: 5, effectiveHeal: 40, lives: 2, potions: 1 }).reason,
+    "low_hp_useful_heal",
+    "at most two lives uses the lower 35% effective-heal threshold"
+  );
+  assert.equal(
+    decideBotPotionUse({ hp: 85, maxHp: 100, incomingDamage: 5, effectiveHeal: 40, potions: 1 }).use,
+    false,
+    "ordinary danger keeps the full 50% threshold when life count is omitted"
+  );
+  assert.equal(
+    decideBotPotionUse({ hp: 95, maxHp: 100, incomingDamage: 5, effectiveHeal: 40, potions: 1 }).use,
+    false,
+    "near-full HP must not waste a potion"
+  );
+  assert.equal(
+    decideBotPotionUse({ hp: 81, maxHp: 100, incomingDamage: 5, effectiveHeal: 40, potions: 1 }).use,
+    false,
+    "ordinary danger just below the usefulness threshold must not drink"
+  );
+  assert.equal(
+    decideBotPotionUse({ hp: 87, maxHp: 100, incomingDamage: 5, effectiveHeal: 40, lives: 2, potions: 1 }).use,
+    false,
+    "high-pressure danger just below the usefulness threshold must not drink"
+  );
+  assert.deepEqual(
+    decideBotPotionUse({ hp: 20, maxHp: 100, incomingDamage: 30, effectiveHeal: 5, potions: 1 }),
+    { use: false, reason: "heal_waste", actionKey: "potion:0:0:ordinary" },
+    "a modeled post-heal lethal potion must remain unused"
+  );
+  assert.deepEqual(
+    decideBotPotionUse({ hp: 20, maxHp: 100, incomingDamage: 35, poisonTurns: 2, poisonDamage: 5, effectiveHeal: 10, potions: 1 }),
+    { use: false, reason: "heal_waste", actionKey: "potion:0:0:ordinary" },
+    "post-heal lethal poison must not be cleansed at the cost of survival"
+  );
   for (const [options, reason] of [
     [{ hp: 50, maxHp: 100, incomingDamage: 1, effectiveHeal: 20, potions: 1, hasRisk: true }, "blocked_risk"],
     [{ hp: 50, maxHp: 100, incomingDamage: 1, effectiveHeal: 20, potions: 1, oathPotionLockTurns: 1 }, "blocked_oath"],
@@ -58,6 +119,8 @@ function run() {
     [{ hp: 50, maxHp: 100, incomingDamage: 1, effectiveHeal: 20, potions: 1, boundaryPending: true }, "blocked_boundary"],
     [{ hp: 50, maxHp: 100, incomingDamage: 1, effectiveHeal: 20, potions: 1, turnInProgress: true }, "blocked_turn"],
     [{ hp: 50, maxHp: 100, incomingDamage: 1, effectiveHeal: 20, potions: 1, cooldownTurns: 2 }, "blocked_cooldown"],
+    [{ hp: 50, maxHp: 100, incomingDamage: 1, effectiveHeal: 20, potions: 1, potionCooldown: 2 }, "blocked_cooldown"],
+    [{ hp: 50, maxHp: 100, incomingDamage: 1, effectiveHeal: 20, potions: 1, autoPotionCooldown: 2 }, "blocked_cooldown"],
     [{ hp: 50, maxHp: 100, incomingDamage: 1, effectiveHeal: 20, potions: 1, enemyTurnPending: true }, "blocked_turn"],
   ]) {
     assert.equal(decideBotPotionUse(options).reason, reason);
@@ -75,6 +138,75 @@ function run() {
   assert.equal(decideBotPotionUse({ hp: 30, maxHp: 100, incomingDamage: 1, effectiveHeal: 5, potions: 1 }).reason, "heal_waste");
   assert.match(game, /const potionDecision = getObserverBotPotionDecision\(\);\s*if \(potionDecision\.use\)/);
   assert.match(game, /recordObserverBotPotionUse\(potionDecision\.actionKey\)/);
+  assert.match(game, /bossRoom: state\.bossRoom === true/);
+  assert.match(game, /lives: state\.lives/);
+  assert.match(game, /cooldownTurns: state\.player\.cooldownTurns/);
+  assert.match(game, /potionCooldown: state\.player\.potionCooldown/);
+  assert.match(game, /autoPotionCooldown: state\.player\.autoPotionCooldown/);
+  const emergencyGateIndex = game.indexOf("if (shouldObserverBotEmergencyExtractNow())");
+  assert.ok(emergencyGateIndex >= 0);
+  const emergencyExtractIndex = game.indexOf("openEmergencyExtractConfirm()", emergencyGateIndex);
+  const gatePotionIndex = game.indexOf("maybeObserverBotUsePotionOrDefensiveEscapeBeforeExtract()", emergencyGateIndex);
+  assert.ok(
+    gatePotionIndex > emergencyGateIndex && gatePotionIndex < emergencyExtractIndex,
+    "ordinary emergency extraction must yield to a useful potion decision"
+  );
+
+  const makePreExtractHelper = new Function(
+    "getObserverBotPotionDecision",
+    "state",
+    "drinkPotion",
+    "recordObserverBotPotionUse",
+    "maybeObserverBotUseShield",
+    "maybeObserverBotUseDash",
+    `return (${extractFunction(game, "maybeObserverBotUsePotionOrDefensiveEscapeBeforeExtract")});`
+  );
+  const usefulState = { player: { potions: 1 }, observerBot: { lastDecision: "" } };
+  let drinkCalls = 0;
+  let shieldCalls = 0;
+  let dashCalls = 0;
+  const usefulHelper = makePreExtractHelper(
+    () => ({ use: true, actionKey: "potion:1:0:ordinary" }),
+    usefulState,
+    () => { drinkCalls += 1; usefulState.player.potions -= 1; },
+    () => {},
+    () => { shieldCalls += 1; return true; },
+    () => { dashCalls += 1; return true; }
+  );
+  assert.equal(usefulHelper(), true, "a useful potion suppresses ordinary extraction fallthrough");
+  assert.equal(usefulState.player.potions, 0);
+  assert.equal(drinkCalls, 1);
+  assert.equal(shieldCalls, 0);
+  assert.equal(dashCalls, 0);
+
+  const blockedState = { player: { potions: 1 }, observerBot: { lastDecision: "" } };
+  shieldCalls = 0;
+  dashCalls = 0;
+  const shieldHelper = makePreExtractHelper(
+    () => ({ use: false, reason: "blocked_risk", actionKey: "potion:1:0:ordinary" }),
+    blockedState,
+    () => { throw new Error("blocked potion must not be consumed"); },
+    () => {},
+    () => { shieldCalls += 1; return true; },
+    () => { dashCalls += 1; return true; }
+  );
+  assert.equal(shieldHelper(), true, "a viable shield suppresses ordinary extraction fallthrough");
+  assert.equal(shieldCalls, 1);
+  assert.equal(dashCalls, 0);
+
+  shieldCalls = 0;
+  dashCalls = 0;
+  const noDefenseHelper = makePreExtractHelper(
+    () => ({ use: false, reason: "heal_waste", actionKey: "potion:1:0:ordinary" }),
+    blockedState,
+    () => { throw new Error("post-heal lethal potion must not be consumed"); },
+    () => {},
+    () => { shieldCalls += 1; return false; },
+    () => { dashCalls += 1; return false; }
+  );
+  assert.equal(noDefenseHelper(), false, "blocked/lethal potion and unavailable defenses allow extraction");
+  assert.equal(shieldCalls, 1);
+  assert.equal(dashCalls, 1);
 
   assert.equal(getForgeTargetForBot(null), null);
   assert.equal(

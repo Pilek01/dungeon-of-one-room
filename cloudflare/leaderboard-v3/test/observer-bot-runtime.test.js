@@ -525,6 +525,51 @@ test("an ordinary post-Camp Ranked run starts without test assistance", async ()
   assert.deepEqual(harness.calls.map((entry) => entry.action), ["start"]);
 });
 
+test("synchronous initial Crossroads entry opens its meta offer in a real session", async () => {
+  const initialRoom = {
+    directiveId: "directive_initial_crossroads",
+    roomNonce: "nonce_initial_crossroads",
+    depth: 1,
+    roomType: "crossroads"
+  };
+  const metaOffer = {
+    offerId: "offer_initial_crossroads",
+    sourceType: "crossroads",
+    choices: [{ choiceId: "choice_initial_crossroads", status: "available" }]
+  };
+  let runtime = null;
+  let roomEntry = null;
+  const harness = createHarness({
+    observerBotActive: false,
+    async onStart() {
+      return {
+        metaState: metaState({
+          currentRoomDirective: initialRoom,
+          metaTransactionOffer: null
+        })
+      };
+    },
+    async onEvent(action) {
+      assert.equal(action, "open_meta_offer");
+      return {
+        metaState: metaState({
+          currentRoomDirective: initialRoom,
+          metaTransactionOffer: metaOffer
+        })
+      };
+    }
+  });
+  harness.root.DungeonOnlineV3GameBridge.startRanked = (directive, state, options) => {
+    roomEntry = runtime.onRoomEntered(directive);
+  };
+  runtime = await installRuntime(harness, { realSession: true });
+
+  await runtime.startRanked();
+  await roomEntry;
+  assert.equal(runtime.getSessionState(), "AWAITING_REWARD_OR_TRANSACTION");
+  assert.equal(harness.calls.at(-1)?.action, "open_meta_offer");
+});
+
 test("Start New Ranked abandons recovery before starting a clean campaign", async () => {
   const staleState = metaState({
     runId: "run_stale_recovery",

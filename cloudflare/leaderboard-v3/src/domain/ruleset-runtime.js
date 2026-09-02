@@ -1,6 +1,7 @@
 import {
   applyCheckpointRankEligibility,
   captureRankIntegrityRoomContext,
+  checkpointGoldIntegrityExpectation,
   checkpointGoldIntegrityReasons,
   initializeRankEligibility,
   isOfficialRankEligible,
@@ -44,6 +45,54 @@ function runtimeContext(state, context = {}, capabilities) {
 
 function supportsEventJournalBoundary(ruleset) {
   return ruleset?.capabilities?.boundarySettlementMode === "event-journal-v1";
+}
+
+const REPORTED_GOLD_ANOMALIES = new Set([
+  "REPORTED_GOLD_DELTA_MISMATCH",
+  "REPORTED_GOLD_TOTAL_MISMATCH"
+]);
+
+function reconcileExactLocalEliteGoldAnomalies(
+  nextState,
+  integrityState,
+  integrityBody,
+  authoritativeGoldDelta
+) {
+  if (integrityBody?.integrityVersion !== 1) return;
+  const expectation = checkpointGoldIntegrityExpectation(
+    integrityState,
+    integrityBody,
+    authoritativeGoldDelta
+  );
+  if (
+    !expectation.localPair ||
+    expectation.canonicalPair ||
+    expectation.expectedLocalDelta === expectation.canonicalDelta
+  ) return;
+  const latest = nextState.rewardSettlementHistory?.at(-1);
+  if (!latest || Number(latest.authoritativeGoldDelta) !== expectation.canonicalDelta) return;
+  const removed = (Array.isArray(latest.anomalies) ? latest.anomalies : [])
+    .filter((code) => REPORTED_GOLD_ANOMALIES.has(code));
+  if (removed.length === 0) return;
+  latest.anomalies = latest.anomalies.filter((code) => !REPORTED_GOLD_ANOMALIES.has(code));
+  const previousFlags = Array.isArray(integrityState?.goldLedger?.anomalyFlags)
+    ? integrityState.goldLedger.anomalyFlags
+    : [];
+  const historyLimit = Math.max(
+    previousFlags.length,
+    Array.isArray(nextState.goldLedger.anomalyFlags)
+      ? nextState.goldLedger.anomalyFlags.length
+      : 0
+  );
+  nextState.goldLedger.anomalyFlags = [
+    ...previousFlags,
+    ...latest.anomalies
+  ].slice(-historyLimit);
+  const previousScore = Number(integrityState?.goldLedger?.anomalyScore) || 0;
+  nextState.goldLedger.anomalyScore = Math.min(
+    100,
+    previousScore + latest.anomalies.length
+  );
 }
 
 function assertMerchantRoomExitSettled(state, ruleset) {
@@ -120,17 +169,26 @@ async function settleEventJournalBoundary(state, payload, outcome, ruleset, cont
       runtimeContext(state, { ...context, elapsedMs: request.elapsedMs }, ruleset.capabilities)
     );
   }
+  const boundaryIntegrityBody = {
+    ...request,
+    integrityVersion: 1,
+    rewardClaims: request.claims
+  };
+  if (outcome === "emergency" && !boundaryInvalid) {
+    reconcileExactLocalEliteGoldAnomalies(
+      settlement.state,
+      roomIntegrityState || state,
+      boundaryIntegrityBody,
+      settlement.authoritativeGoldDelta
+    );
+  }
   applyCheckpointRankEligibility(settlement.state, {
     integrityVersion: 1,
     integritySignals: [],
     goldIntegrityReasons: outcome === "emergency" && !boundaryInvalid
       ? checkpointGoldIntegrityReasons(
         roomIntegrityState || state,
-        {
-          ...request,
-          integrityVersion: 1,
-          rewardClaims: request.claims
-        },
+        boundaryIntegrityBody,
         settlement.authoritativeGoldDelta
       )
       : []
@@ -345,6 +403,12 @@ export async function applyRulesetCheckpoint(state, body, ruleset, context = {})
   const authoritativeGoldDelta = Math.max(
     0,
     Number(nextState.rewardSettlementHistory?.at(-1)?.authoritativeGoldDelta) || 0
+  );
+  reconcileExactLocalEliteGoldAnomalies(
+    nextState,
+    roomIntegrityState || state,
+    body,
+    authoritativeGoldDelta
   );
   applyCheckpointRankEligibility(nextState, {
     integrityVersion: body.integrityVersion,

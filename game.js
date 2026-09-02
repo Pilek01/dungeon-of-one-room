@@ -2292,6 +2292,8 @@
       lastPotionActionKey: "",
       potionUseTurns: [],
       offensiveMinePlan: null,
+      forgeRecoveryRunId: "",
+      forgeRecoveryRoomIndex: -1,
       currentRoomIndex: -1,
       merchantPurchasesThisRoom: 0,
       merchantDoneRoomIndex: -1,
@@ -3028,6 +3030,8 @@
     state.observerBot.enabled = next;
     state.observerBot.actionTimerMs = 0;
     state.observerBot.currentRoomIndex = -1;
+    state.observerBot.forgeRecoveryRunId = "";
+    state.observerBot.forgeRecoveryRoomIndex = -1;
     state.observerBot.merchantPurchasesThisRoom = 0;
     state.observerBot.merchantDoneRoomIndex = -1;
     state.observerBot.offensiveMinePlan = null;
@@ -14514,6 +14518,8 @@
     state.observerBot.lastPotionActionKey = "";
     state.observerBot.potionUseTurns = [];
     state.observerBot.offensiveMinePlan = null;
+    state.observerBot.forgeRecoveryRunId = "";
+    state.observerBot.forgeRecoveryRoomIndex = -1;
     state.roomIndex = 0;
     state.bossRoom = false;
     state.roomType = "combat";
@@ -20869,6 +20875,7 @@
       for (let x = 1; x <= GRID_SIZE - 2; x += 1) {
         if (x === state.player.x && y === state.player.y) continue;
         if (isHazardAt(x, y)) continue;
+        if (isForgeBlockedTile(x, y)) continue;
         if (getEnemyAt(x, y)) continue;
         if (state.chests.some((chest) => !chest.opened && chest.x === x && chest.y === y)) continue;
         if (state.merchant && state.merchant.x === x && state.merchant.y === y) continue;
@@ -28579,6 +28586,29 @@
     return getForgeTargetForBotSafe(state.forge);
   }
 
+  function maybeObserverBotRecoverFromForgeBlockedTile() {
+    if (!isObserverBotActive() || state.phase !== "playing") return false;
+    if (!isForgeBlockedTile(state.player.x, state.player.y)) return false;
+
+    const bot = state.observerBot;
+    const runId = String(state.currentRunId || "");
+    const roomIndex = Math.max(0, Number(state.roomIndex) || 0);
+    if (bot.forgeRecoveryRunId === runId && bot.forgeRecoveryRoomIndex === roomIndex) {
+      return false;
+    }
+
+    // Snapshot restore can preserve a legacy blocked Forge coordinate. Reuse
+    // the existing emergency-extract flow, but only for an active Observer Bot.
+    const confirmed = state.extractConfirm
+      ? confirmEmergencyExtract()
+      : openEmergencyExtractConfirm() && confirmEmergencyExtract();
+    if (!confirmed) return false;
+    bot.forgeRecoveryRunId = runId;
+    bot.forgeRecoveryRoomIndex = roomIndex;
+    bot.lastDecision = "emergency_extract_forge";
+    return true;
+  }
+
   function getObserverBotPendingBlastMap() {
     return getPendingBlastZonesSafe({
       mines: (state.mines || []).map((mine) => ({
@@ -29097,6 +29127,7 @@
       const nx = state.player.x + dir.dx;
       const ny = state.player.y + dir.dy;
       if (!inBounds(nx, ny)) continue;
+      if (isForgeBlockedTile(nx, ny)) continue;
       if (getEnemyAt(nx, ny)) continue;
       candidates.push({ dir, spike: isHazardAt(nx, ny) });
     }
@@ -29146,9 +29177,14 @@
       potions: state.player.potions,
       hp: state.player.hp,
       maxHp: state.player.maxHp,
+      bossRoom: state.bossRoom === true,
+      lives: state.lives,
       incomingDamage,
       barrier: getTotalPlayerShield(),
       effectiveHeal: getPotionHealAmount(),
+      cooldownTurns: state.player.cooldownTurns,
+      potionCooldown: state.player.potionCooldown,
+      autoPotionCooldown: state.player.autoPotionCooldown,
       bleedTurns: state.player.bleedTurns,
       bleedDamage: state.player.bleedDamage,
       poisonTurns: state.player.poisonTurns,
@@ -31716,9 +31752,14 @@
       potions: state.player.potions,
       hp: state.player.hp,
       maxHp: state.player.maxHp,
+      bossRoom: state.bossRoom === true,
+      lives: state.lives,
       incomingDamage,
       barrier: getTotalPlayerShield(),
       effectiveHeal: reliablePotionHeal,
+      cooldownTurns: state.player.cooldownTurns,
+      potionCooldown: state.player.potionCooldown,
+      autoPotionCooldown: state.player.autoPotionCooldown,
       bleedTurns: state.player.bleedTurns,
       bleedDamage: state.player.bleedDamage,
       poisonTurns: state.player.poisonTurns,
@@ -32175,6 +32216,22 @@
     return false;
   }
 
+  function maybeObserverBotUsePotionOrDefensiveEscapeBeforeExtract() {
+    const potionDecision = getObserverBotPotionDecision();
+    if (potionDecision.use) {
+      const potionsBefore = state.player.potions;
+      drinkPotion();
+      if (state.player.potions < potionsBefore) {
+        recordObserverBotPotionUse(potionDecision.actionKey);
+        state.observerBot.lastDecision = "pre_extract_potion";
+        return true;
+      }
+    }
+    if (maybeObserverBotUseShield()) return true;
+    if (maybeObserverBotUseDash()) return true;
+    return false;
+  }
+
   function runObserverBotPlayingAction() {
     if (state.phase !== "playing") return false;
     const bot = state.observerBot;
@@ -32209,6 +32266,8 @@
     const roomChanged = bot.currentRoomIndex !== state.roomIndex;
     if (roomChanged) {
       bot.currentRoomIndex = state.roomIndex;
+      bot.forgeRecoveryRunId = "";
+      bot.forgeRecoveryRoomIndex = -1;
       bot.merchantPurchasesThisRoom = 0;
       bot.merchantDoneRoomIndex = bot.merchantDoneRoomIndex === state.roomIndex
         ? bot.merchantDoneRoomIndex
@@ -32218,6 +32277,10 @@
       bot.lastPolicy = getObserverBotPolicyProfile().mode;
       resetObserverBotStallTracker();
     }
+    if (maybeObserverBotRecoverFromForgeBlockedTile()) {
+      return true;
+    }
+
     getObserverBotEconomyPlan({ forceRefresh: roomChanged });
 
     if (state.extractConfirm) {
@@ -32229,6 +32292,9 @@
       return true;
     }
     if (shouldObserverBotEmergencyExtractNow()) {
+      if (maybeObserverBotUsePotionOrDefensiveEscapeBeforeExtract()) {
+        return true;
+      }
       openEmergencyExtractConfirm();
       confirmEmergencyExtract();
       bot.lastDecision = "emergency_extract";

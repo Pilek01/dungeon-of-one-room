@@ -42,6 +42,8 @@
   }
   const CRITICAL_HP_RATIO = 0.35;
   const POTION_MEANINGFUL_STATUS_RATIO = 0.1;
+  const POTION_ORDINARY_EFFECTIVE_HEAL_RATIO = 0.5;
+  const POTION_HIGH_PRESSURE_EFFECTIVE_HEAL_RATIO = 0.35;
 
   function normalizePotionStatus(options = {}, turnsKey, damageKey, maxHp) {
     const turns = Math.max(0, Math.floor(Number(options[turnsKey]) || 0));
@@ -105,6 +107,9 @@
     const meaningfulHeal = utilizedHeal >= Math.max(1, Math.ceil(maxHp * POTION_MEANINGFUL_STATUS_RATIO));
     const hpRatio = hp / maxHp;
     if (hpAfterThreat <= 0 && hpAfterPotionThreat > 0) return { use: true, reason: "prevent_lethal", actionKey };
+    if (hpAfterThreat <= 0 && hpAfterPotionThreat <= 0) {
+      return { use: false, reason: "heal_waste", actionKey };
+    }
     if (bleed.meaningful || poison.meaningful) {
       const cleanseBleed = bleed.meaningful && (!poison.meaningful || bleed.remainingDamage >= poison.remainingDamage);
       return { use: true, reason: cleanseBleed ? "cleanse_bleed" : "cleanse_poison", actionKey };
@@ -112,7 +117,20 @@
     if (hpRatio > CRITICAL_HP_RATIO && hpAfterThreat / maxHp <= CRITICAL_HP_RATIO && meaningfulHeal && hpAfterPotionThreat > hpAfterThreat) {
       return { use: true, reason: "prevent_critical", actionKey };
     }
+    const livesValue = Number(options.lives);
+    const pressure = options.bossRoom === true || (Number.isFinite(livesValue) && livesValue <= 2);
+    const effectiveHealRatio = pressure
+      ? POTION_HIGH_PRESSURE_EFFECTIVE_HEAL_RATIO
+      : POTION_ORDINARY_EFFECTIVE_HEAL_RATIO;
+    const missingHp = Math.max(0, maxHp - hp);
+    const usefulThreshold = Math.max(
+      maxHp * POTION_MEANINGFUL_STATUS_RATIO,
+      effectiveHeal * effectiveHealRatio
+    );
     if (hpRatio <= CRITICAL_HP_RATIO && meaningfulHeal) return { use: true, reason: "low_hp_useful_heal", actionKey };
+    const dangerThreshold = Math.max(1, Math.ceil(maxHp * 0.05));
+    const usefulHeal = meaningfulHeal && missingHp >= usefulThreshold && projectedDamage >= dangerThreshold;
+    if (usefulHeal) return { use: true, reason: "low_hp_useful_heal", actionKey };
     if (hpRatio >= 0.8 && barrierAdjustedDamage < Math.max(1, Math.ceil(maxHp * POTION_MEANINGFUL_STATUS_RATIO))) {
       return { use: false, reason: "high_hp_low_threat", actionKey };
     }

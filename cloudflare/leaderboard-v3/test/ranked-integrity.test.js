@@ -20,14 +20,18 @@ import { calculateEnemyGoldV08 } from "../src/rulesets/v08-meta-1/gold-policy.js
 import { createV08Meta1Ruleset } from "../src/rulesets/v08-meta-1/index.js";
 import { applyRelicAcquisition } from "../src/rulesets/v08-meta-1/relic-policy.js";
 import manifest from "../src/rulesets/v08-meta-1/data/ruleset-manifest.json" with { type: "json" };
+import {
+  V08_META_1_PRODUCTION_RELEASE_DESCRIPTOR
+} from "../src/rulesets/releases.js";
 import { TEST_SECRET } from "./fixtures/harness.js";
 
 const NOW = 1_860_000_000_000;
 
-async function activeState(seed = 1) {
+async function activeState(seed = 1, rulesetOptions = {}) {
   const ruleset = createV08Meta1Ruleset({
     secret: TEST_SECRET,
-    cryptoProvider: webcrypto
+    cryptoProvider: webcrypto,
+    ...rulesetOptions
   });
   const bootstrap = await createAuthenticatedRunBootstrap({
     playerName: "Integrity",
@@ -228,6 +232,79 @@ test("the local v0.8 elite bonus is accepted with canonical build and mutator mu
     }, canonicalDelta),
     ["REPORTED_GOLD_DELTA_MISMATCH", "REPORTED_GOLD_TOTAL_MISMATCH"]
   );
+});
+
+test("production checkpoint treats the exact legacy elite +3 report as clean without changing canonical credit", async () => {
+  const value = await activeState(34, {
+    rulesetHash: V08_META_1_PRODUCTION_RELEASE_DESCRIPTOR.rulesetHash,
+    capabilities: V08_META_1_PRODUCTION_RELEASE_DESCRIPTOR.capabilities
+  });
+  const priorAnomalyFlags = Array.from(
+    { length: 64 },
+    (_, index) => `PRIOR_ANOMALY_${index}`
+  );
+  value.state.goldLedger.anomalyFlags = [...priorAnomalyFlags];
+  value.state.goldLedger.anomalyScore = 100;
+  const roomStart = value.state;
+  const fixedGold = roomStart.currentRewardEnvelope.fixedAwards.reduce(
+    (sum, award) => sum + award.amount,
+    0
+  );
+  const canonicalEnemyGold = calculateEnemyGoldV08({
+    canonicalBuild: roomStart.build,
+    canonicalRunModifiers: roomStart.runModifiers,
+    enemyType: "slime",
+    elite: true,
+    rewardBonus: 0
+  });
+  const localEnemyGold = calculateEnemyGoldV08({
+    canonicalBuild: roomStart.build,
+    canonicalRunModifiers: roomStart.runModifiers,
+    enemyType: "slime",
+    elite: true,
+    rewardBonus: V08_LOCAL_ELITE_REWARD_BONUS
+  });
+  const canonicalDelta = fixedGold + canonicalEnemyGold;
+  const localDelta = fixedGold + localEnemyGold;
+  const result = await checkpoint(value, {
+    rewardClaims: [{ claimType: "elite", claimId: "elite:slime", count: 1 }],
+    reportedGoldDelta: localDelta,
+    reportedGoldTotal: roomStart.gold + localDelta,
+    combatResources: {
+      hp: roomStart.build.resources.hp,
+      maxHp: roomStart.build.resources.maxHp
+    }
+  });
+  assert.equal(result.nextState.gold, roomStart.gold + canonicalDelta);
+  assert.equal(result.nextState.goldLedger.lastDelta, canonicalDelta);
+  assert.deepEqual(result.nextState.goldLedger.anomalyFlags, priorAnomalyFlags);
+  assert.equal(result.nextState.goldLedger.anomalyScore, 100);
+  assert.equal(result.nextState.rankEligibility, "official");
+});
+
+test("historical checkpoint capability does not inherit the current elite +3 compatibility", async () => {
+  const value = await activeState(35);
+  const roomStart = structuredClone(value.state);
+  roomStart.currentRewardEnvelope.claimPolicyVersion = "v08-gold-claims-legacy";
+  const fixedGold = roomStart.currentRewardEnvelope.fixedAwards.reduce(
+    (sum, award) => sum + award.amount,
+    0
+  );
+  const localEnemyGold = calculateEnemyGoldV08({
+    canonicalBuild: roomStart.build,
+    canonicalRunModifiers: roomStart.runModifiers,
+    enemyType: "slime",
+    elite: true,
+    rewardBonus: V08_LOCAL_ELITE_REWARD_BONUS
+  });
+  const localDelta = fixedGold + localEnemyGold;
+  const result = await checkpoint({ ...value, state: roomStart }, {
+    rewardClaims: [{ claimType: "elite", claimId: "elite:slime", count: 1 }],
+    reportedGoldDelta: localDelta,
+    reportedGoldTotal: roomStart.gold + localDelta
+  });
+  assert.equal(result.nextState.rankEligibility, "provisional");
+  assert(result.nextState.rankIntegrity.reasonCodes.includes("REPORTED_GOLD_DELTA_MISMATCH"));
 });
 
 test("the first active room captures its gold integrity context", async () => {

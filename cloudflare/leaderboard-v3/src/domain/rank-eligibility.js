@@ -154,30 +154,33 @@ function v08LocalEliteGoldAdjustment(state, rewardClaims) {
   return adjustment;
 }
 
-export function checkpointGoldIntegrityReasons(state, body, authoritativeGoldDelta) {
-  if (body?.integrityVersion !== 1) return [];
+export function checkpointGoldIntegrityExpectation(state, body, authoritativeGoldDelta) {
   const canonicalDelta = Math.max(0, Number(authoritativeGoldDelta) || 0);
   const expectedLocalDelta = canonicalDelta + v08LocalEliteGoldAdjustment(
     state,
-    body.rewardClaims
+    body?.rewardClaims
   );
   const canonicalTotal = Math.max(0, Number(state?.gold) || 0) + canonicalDelta;
   const expectedLocalTotal = Math.max(0, Number(state?.gold) || 0) + expectedLocalDelta;
-  if (
-    (
-      body.reportedGoldDelta === canonicalDelta &&
-      body.reportedGoldTotal === canonicalTotal
-    ) ||
-    (
-      body.reportedGoldDelta === expectedLocalDelta &&
-      body.reportedGoldTotal === expectedLocalTotal
-    )
-  ) return [];
+  return {
+    canonicalDelta,
+    expectedLocalDelta,
+    canonicalTotal,
+    expectedLocalTotal,
+    canonicalPair: body?.reportedGoldDelta === canonicalDelta && body?.reportedGoldTotal === canonicalTotal,
+    localPair: body?.reportedGoldDelta === expectedLocalDelta && body?.reportedGoldTotal === expectedLocalTotal
+  };
+}
+
+export function checkpointGoldIntegrityReasons(state, body, authoritativeGoldDelta) {
+  if (body?.integrityVersion !== 1) return [];
+  const expectation = checkpointGoldIntegrityExpectation(state, body, authoritativeGoldDelta);
+  if (expectation.canonicalPair || expectation.localPair) return [];
   const reasons = [];
-  if (body.reportedGoldDelta !== expectedLocalDelta) {
+  if (body.reportedGoldDelta !== expectation.expectedLocalDelta) {
     reasons.push(RANK_INTEGRITY_REASON.reportedGoldDeltaMismatch);
   }
-  if (body.reportedGoldTotal !== expectedLocalTotal) {
+  if (body.reportedGoldTotal !== expectation.expectedLocalTotal) {
     reasons.push(RANK_INTEGRITY_REASON.reportedGoldTotalMismatch);
   }
   return reasons;

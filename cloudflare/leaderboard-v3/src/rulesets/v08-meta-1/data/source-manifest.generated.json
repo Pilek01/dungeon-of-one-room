@@ -77,8 +77,8 @@
     },
     {
       "file": "game.js",
-      "byteLength": 1377532,
-      "sha256": "3d69ca19000f2860014f6385f30473793096801bc8ae33b438e78c92ac29eb32",
+      "byteLength": 1380126,
+      "sha256": "82e89d1ff97d8a3448eb8ff076aa74dff483ec5c08e88c71d161549eacc2d9bb",
       "evidenceSymbols": [
         "MAX_DEPTH",
         "MAX_RELICS",

@@ -1249,7 +1249,9 @@
       const newCampaign = pendingFreshCampaign;
       bridge.startRanked(directive, state, { newCampaign });
       pendingFreshCampaign = false;
-      session.transition(root.DungeonRankedV3Session.STATES.active);
+      if (session.getState() === root.DungeonRankedV3Session.STATES.entering) {
+        session.transition(root.DungeonRankedV3Session.STATES.active);
+      }
       return;
     }
     if (["victory", "defeat", "extraction"].includes(state.status)) {
@@ -2687,7 +2689,10 @@
     if (!directive) return;
     activeRoomDirectiveId = String(directive.directiveId || "");
     installRoomIntegrityContext(directive);
-    if (session.getState() === root.DungeonRankedV3Session.STATES.next) {
+    if ([
+      root.DungeonRankedV3Session.STATES.entering,
+      root.DungeonRankedV3Session.STATES.next
+    ].includes(session.getState())) {
       session.transition(root.DungeonRankedV3Session.STATES.active);
     }
     if (directive.roomType === "merchant") {
