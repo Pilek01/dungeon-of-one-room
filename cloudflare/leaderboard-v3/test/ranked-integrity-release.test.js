@@ -11,6 +11,7 @@ import {
   V08_META_1_POTION_MERCHANT_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR,
   V08_META_1_START_RESOURCE_PARITY_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR,
   V08_META_1_MAP_FRAGMENT_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR,
+  V08_META_1_MERCHANT_FAVOR_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR,
   V08_META_1_PRODUCTION_RELEASE_DESCRIPTOR
 } from "../src/rulesets/releases.js";
 import { COMPATIBLE_RULESET_HASHES } from "../src/rulesets/v08-meta-1/ruleset-hash-policy.js";
@@ -89,7 +90,11 @@ test("bounded combat resources remain active when the candidate is promoted", ()
   assert.equal(mapFragmentPrevious.capabilities.potionClaimOrdering, "v1");
   assert.equal(mapFragmentPrevious.capabilities.mapFragmentMinDepth, undefined);
   assert.equal(mapFragmentPrevious.capabilities.exactChestStatCarry, undefined);
-  assert.equal(V08_META_1_PRODUCTION_RELEASE_DESCRIPTOR.capabilities.potionClaimOrdering, "v1");
+  assert.equal(V08_META_1_PRODUCTION_RELEASE_DESCRIPTOR.capabilities.potionClaimOrdering, "v2");
+  assert.equal(
+    V08_META_1_MERCHANT_FAVOR_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR.capabilities.potionClaimOrdering,
+    "v1"
+  );
 
   assert.ok(COMPATIBLE_RULESET_HASHES.includes(manifest.rulesetHash));
   assert.ok(COMPATIBLE_RULESET_HASHES.includes(PREVIOUS_ROOM_REPAIR_HASH));
@@ -119,6 +124,7 @@ test("bounded combat resources remain active when the candidate is promoted", ()
   assert.ok(protocol.SUPPORTED_RULESET_HASHES.includes(PREVIOUS_PRODUCTION_HASH));
   assert.deepEqual(protocol.BOUNDED_COMBAT_RESOURCES_RULESET_HASHES, [
     V08_META_1_PRODUCTION_RELEASE_DESCRIPTOR.rulesetHash,
+    V08_META_1_MERCHANT_FAVOR_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR.rulesetHash,
     PREVIOUS_ROOM_ELITE_BUDGET_HASH,
     PREVIOUS_ROOM_NAVIGATION_HASH,
     PREVIOUS_ROOM_REPAIR_HASH,
@@ -139,6 +145,7 @@ test("bounded combat resources remain active when the candidate is promoted", ()
   assert.equal(protocol.supportsBoundedCombatResources(PREVIOUS_PRODUCTION_HASH), false);
   assert.deepEqual(protocol.POTION_CLAIM_ORDERING_RULESET_HASHES, [
     V08_META_1_PRODUCTION_RELEASE_DESCRIPTOR.rulesetHash,
+    V08_META_1_MERCHANT_FAVOR_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR.rulesetHash,
     PREVIOUS_ROOM_ELITE_BUDGET_HASH,
     PREVIOUS_ROOM_NAVIGATION_HASH,
     PREVIOUS_ROOM_REPAIR_HASH,

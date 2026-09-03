@@ -457,8 +457,8 @@
     },
     {
       "file": "reward-policy.js",
-      "byteLength": 58974,
-      "sha256": "ef554f550b6817c9a4b1e5f66652d8142357985b5ed1c177ea9e0c8fa5bbbf4d"
+      "byteLength": 60733,
+      "sha256": "33ef32806202bc034c1fe7ce0b38e664327f4100c3eb3b516f854a9332a975fd"
     },
     {
       "file": "rng.js",
@@ -477,8 +477,8 @@
     },
     {
       "file": "ruleset-hash-policy.js",
-      "byteLength": 2738,
-      "sha256": "a93ce805911455333dcc3c59cad732854c023fd5a5c1df4556e3c8ee54e32731"
+      "byteLength": 2815,
+      "sha256": "014fc0d4b5c1023575b80432ec8c507a93c86d843b3f7f143cd8a9def96dcd23"
     },
     {
       "file": "run-modifiers.js",
@@ -591,5 +591,5 @@
       "sha256": "cfce80fea7bd5d1328020055f2012bcaeaf9b61e5438e437bf948a4288fb8bf0"
     }
   ],
-  "rulesetHash": "sha256:125736f040dfd77d8d7a1fe26126a235dc80dd39c7899c2e84d55dcaf7ea5ea5"
+  "rulesetHash": "sha256:6272204a1127cd12cebcbde90e27d098684d4e1131a41526924fce4283f2620e"
 }

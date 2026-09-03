@@ -3,6 +3,7 @@ import { createHash, webcrypto } from "node:crypto";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 import { applyRulesetCheckpoint, applyRulesetEvent } from "../src/domain/ruleset-runtime.js";
+import { RUN_TTL_MS } from "../src/config.js";
 import {
   captureRankIntegrityRoomContext,
   initializeRankEligibility
@@ -13,6 +14,7 @@ import { applyFatalEventV08 } from "../src/rulesets/v08-meta-1/life-policy.js";
 import { issueMerchantInventoryV08 } from "../src/rulesets/v08-meta-1/merchant-policy.js";
 import { createInitialMetaStateV08 } from "../src/rulesets/v08-meta-1/meta-state.js";
 import { requestExtractionV08 } from "../src/rulesets/v08-meta-1/outcome-policy.js";
+import { computeRelicBuildDigestV08 } from "../src/rulesets/v08-meta-1/relic-policy.js";
 import { consumeRoomDirectiveV08, issueNextRoomDirectiveV08 } from "../src/rulesets/v08-meta-1/room-policy.js";
 import {
   V08_META_1_INTEGRITY_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR,
@@ -54,7 +56,7 @@ function oracle() {
   };
 }
 
-async function activeRoom(runId, capabilities, prepare) {
+async function activeRoom(runId, capabilities, prepare, chestRoll = 920_000) {
   const baseOracle = oracle();
   const context = {
     runId,
@@ -67,7 +69,7 @@ async function activeRoom(runId, capabilities, prepare) {
       ? {
           ...baseOracle,
           async deriveIntInclusive(minimum, maximum, options = {}) {
-            if (options.purpose === "reward/chest-outcome") return 920_000;
+            if (options.purpose === "reward/chest-outcome") return chestRoll;
             return baseOracle.deriveIntInclusive(minimum, maximum, options);
           }
         }
@@ -76,7 +78,8 @@ async function activeRoom(runId, capabilities, prepare) {
   };
   const state = createInitialMetaStateV08({}, context);
   state.status = "active";
-  prepare?.(state);
+  state.expiresAt = state.startedAt + RUN_TTL_MS;
+  await prepare?.(state);
   const issued = await issueNextRoomDirectiveV08(state, context);
   assert.ok(issued.currentRewardEnvelope.claimSlots.length > 0, "fixture room needs a chest slot");
   return { state: issued, context };
@@ -422,6 +425,192 @@ test("an impossible boundary claim makes the run provisional but still resolves 
   assert.ok(result.nextState.rankIntegrity.reasonCodes.includes("BOUNDARY_SETTLEMENT_INVALID"));
   assert.equal(result.nextState.lifeLedger.secondChancePreventions, 1);
   assert.equal(result.nextState.currentRoomDirective.directiveId, state.currentRoomDirective.directiveId);
+});
+
+test("fatal settlement accepts potion use ordered around a canonical potion chest", async () => {
+  const { state, context } = await activeRoom(
+    "run_boundary_event_fatal_potion_chest",
+    V08_META_1_LOCAL_RELEASE_DESCRIPTOR.capabilities,
+    (prepared) => { prepared.build.resources.hasSecondChance = true; },
+    850_000
+  );
+  const slot = state.currentRewardEnvelope.claimSlots.find(
+    (entry) => entry.canonicalOutcome?.outcome === "potion"
+  );
+  assert.ok(slot, "fixture room needs a canonical potion chest");
+  initializeRankEligibility(state, { integrityVersion: 1 });
+  captureRankIntegrityRoomContext(state);
+  const ruleset = V08_META_1_LOCAL_RELEASE_DESCRIPTOR.createRuleset();
+  const result = await applyRulesetEvent(state, {
+    type: "report_fatal_event",
+    payload: {
+      classification: "local_fatal_event",
+      boundarySettlement: boundaryRequest(state, [
+        { claimType: "resource", claimId: "potion-use", count: 3 },
+        {
+          claimType: "chest",
+          claimId: slot.slotId,
+          count: 1,
+          localEvidence: {
+            outcome: "potion",
+            awardId: slot.canonicalOutcome.awardId,
+            count: 1
+          }
+        },
+        { claimType: "resource", claimId: "potion-use", count: 1 }
+      ], {
+        combatResources: canonicalCombatResources(state)
+      })
+    }
+  }, ruleset, context);
+
+  assert.equal(result.nextState.rankEligibility, "official");
+  assert.deepEqual(result.nextState.rankIntegrity.reasonCodes, []);
+  assert.equal(result.nextState.build.resources.potions, 0);
+  assert.equal(
+    result.nextState.currentRewardEnvelope.claimSlots.find(
+      (entry) => entry.slotId === slot.slotId
+    ).consumed,
+    true
+  );
+});
+
+test("fatal settlement permits every canonical potion chest to extend the room use budget", async () => {
+  const { state, context } = await activeRoom(
+    "run_boundary_event_fatal_many_potion_chests",
+    V08_META_1_LOCAL_RELEASE_DESCRIPTOR.capabilities,
+    async (prepared) => {
+      prepared.campaign.forcedNextRoomType = "vault";
+      prepared.build.campUpgrades.satchel = 6;
+      prepared.build.resources.maxPotions = 9;
+      prepared.build.resources.potions = 9;
+      prepared.build.resources.hasSecondChance = true;
+      prepared.build.buildDigest = await computeRelicBuildDigestV08(
+        prepared.build,
+        webcrypto
+      );
+    },
+    850_000
+  );
+  const potionSlots = state.currentRewardEnvelope.claimSlots.filter(
+    (entry) => entry.canonicalOutcome?.outcome === "potion"
+  );
+  assert.equal(potionSlots.length, 10);
+  const claims = [
+    { claimType: "resource", claimId: "potion-use", count: 9 }
+  ];
+  for (const slot of potionSlots) {
+    claims.push({
+      claimType: "chest",
+      claimId: slot.slotId,
+      count: 1,
+      localEvidence: {
+        outcome: "potion",
+        awardId: slot.canonicalOutcome.awardId,
+        count: 1
+      }
+    });
+    claims.push({ claimType: "resource", claimId: "potion-use", count: 1 });
+  }
+  initializeRankEligibility(state, { integrityVersion: 1 });
+  captureRankIntegrityRoomContext(state);
+  const ruleset = V08_META_1_LOCAL_RELEASE_DESCRIPTOR.createRuleset();
+  const result = await applyRulesetEvent(state, {
+    type: "report_fatal_event",
+    payload: {
+      classification: "local_fatal_event",
+      boundarySettlement: boundaryRequest(state, claims, {
+        combatResources: canonicalCombatResources(state)
+      })
+    }
+  }, ruleset, context);
+
+  assert.equal(result.nextState.rankEligibility, "official");
+  assert.deepEqual(result.nextState.rankIntegrity.reasonCodes, []);
+  assert.equal(result.nextState.mutatorRunTracking.potionUses, 19);
+  assert.equal(result.nextState.build.resources.potions, 0);
+  assert.equal(
+    result.nextState.currentRewardEnvelope.claimSlots.filter(
+      (entry) => entry.canonicalOutcome?.outcome === "potion" && entry.consumed
+    ).length,
+    10
+  );
+});
+
+test("fatal settlement still rejects potion use without a canonical source", async () => {
+  const { state, context } = await activeRoom(
+    "run_boundary_event_fatal_forged_potion_use",
+    V08_META_1_LOCAL_RELEASE_DESCRIPTOR.capabilities
+  );
+  initializeRankEligibility(state, { integrityVersion: 1 });
+  captureRankIntegrityRoomContext(state);
+  const ruleset = V08_META_1_LOCAL_RELEASE_DESCRIPTOR.createRuleset();
+  const result = await applyRulesetEvent(state, {
+    type: "report_fatal_event",
+    payload: {
+      classification: "local_fatal_event",
+      boundarySettlement: boundaryRequest(state, [{
+        claimType: "resource",
+        claimId: "potion-use",
+        count: state.build.resources.potions + 1
+      }], {
+        combatResources: canonicalCombatResources(state)
+      })
+    }
+  }, ruleset, context);
+
+  assert.equal(result.nextState.rankEligibility, "provisional");
+  assert.deepEqual(result.nextState.rankIntegrity.reasonCodes, [
+    "BOUNDARY_SETTLEMENT_INVALID"
+  ]);
+});
+
+test("a full potion bag chest cannot create a phantom fatal-use budget", async () => {
+  const { state, context } = await activeRoom(
+    "run_boundary_event_fatal_full_potion_chest",
+    V08_META_1_LOCAL_RELEASE_DESCRIPTOR.capabilities,
+    undefined,
+    850_000
+  );
+  const slot = state.currentRewardEnvelope.claimSlots.find(
+    (entry) => entry.canonicalOutcome?.outcome === "potion"
+  );
+  assert.ok(slot, "fixture room needs a canonical potion chest");
+  state.build.resources.potions = state.build.resources.maxPotions;
+  state.build.buildDigest = await computeRelicBuildDigestV08(state.build, webcrypto);
+  initializeRankEligibility(state, { integrityVersion: 1 });
+  captureRankIntegrityRoomContext(state);
+  const ruleset = V08_META_1_LOCAL_RELEASE_DESCRIPTOR.createRuleset();
+  const result = await applyRulesetEvent(state, {
+    type: "report_fatal_event",
+    payload: {
+      classification: "local_fatal_event",
+      boundarySettlement: boundaryRequest(state, [
+        {
+          claimType: "chest",
+          claimId: slot.slotId,
+          count: 1,
+          localEvidence: {
+            outcome: "potion",
+            awardId: slot.canonicalOutcome.awardId,
+            count: 1
+          }
+        },
+        {
+          claimType: "resource",
+          claimId: "potion-use",
+          count: state.build.resources.potions + 1
+        }
+      ], {
+        combatResources: canonicalCombatResources(state)
+      })
+    }
+  }, ruleset, context);
+
+  assert.equal(result.nextState.rankEligibility, "provisional");
+  assert.deepEqual(result.nextState.rankIntegrity.reasonCodes, [
+    "BOUNDARY_SETTLEMENT_INVALID"
+  ]);
 });
 
 test("capable emergency extraction settles without clear and edited totals become provisional", async () => {

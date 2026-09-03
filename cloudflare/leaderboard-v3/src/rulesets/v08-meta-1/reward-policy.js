@@ -1280,11 +1280,18 @@ async function settleRewardEnvelopeV3(state, request, context = {}, options = {}
         context.capabilities
       )
     : request.claims;
+  const potionClaimOrdering = context.capabilities?.potionClaimOrdering;
   const orderedPotionClaimsEnabled =
-    context.capabilities?.potionClaimOrdering === "v1";
+    potionClaimOrdering === "v1" || potionClaimOrdering === "v2";
+  const fatalPotionSequenceValidationEnabled =
+    outcome === "fatal" && potionClaimOrdering === "v2";
   const potionUseMaximum = mutableEnvelope.boundedClaims.find(
     (entry) => entry.claimType === "resource" && entry.claimId === "potion-use"
   )?.maximumCount ?? 0;
+  const fatalStartingPotions = fatalPotionSequenceValidationEnabled
+    ? Math.max(0, Number(next.build.resources?.potions) || 0)
+    : 0;
+  let fatalPotionUseBudget = fatalStartingPotions;
   let validatedPotionUseCount = 0;
   let potionChestSinceLastUseSegment = false;
   for (const claim of settlementClaims) {
@@ -1313,7 +1320,10 @@ async function settleRewardEnvelopeV3(state, request, context = {}, options = {}
         claim.count,
         "REWARD_CLAIM_COUNT_INVALID"
       );
-      if (validatedPotionUseCount > potionUseMaximum) {
+      const maximumPotionUses = fatalPotionSequenceValidationEnabled
+        ? fatalPotionUseBudget
+        : potionUseMaximum;
+      if (validatedPotionUseCount > maximumPotionUses) {
         throw new TypeError("REWARD_CLAIM_POTION_USE_LIMIT");
       }
       potionChestSinceLastUseSegment = false;
@@ -1330,20 +1340,54 @@ async function settleRewardEnvelopeV3(state, request, context = {}, options = {}
     if (claim.claimType === "proc" && claim.claimId === "chaos-orb-gold-roll") {
       chaosOrbProcCount += requireInteger(claim.count, "REWARD_CLAIM_COUNT_INVALID");
     }
+    const validationPotionsBefore = fatalPotionSequenceValidationEnabled
+      ? validationState.build.resources.potions
+      : 0;
     const result = calculateClaimAmount(
-      appliesToOutcome ? next : validationState,
-      appliesToOutcome ? mutableEnvelope : validationEnvelope,
+      fatalPotionSequenceValidationEnabled
+        ? validationState
+        : appliesToOutcome ? next : validationState,
+      fatalPotionSequenceValidationEnabled
+        ? validationEnvelope
+        : appliesToOutcome ? mutableEnvelope : validationEnvelope,
       claim,
-      appliesToOutcome ? slotById : validationSlots,
+      fatalPotionSequenceValidationEnabled
+        ? validationSlots
+        : appliesToOutcome ? slotById : validationSlots,
       context.capabilities,
       rewardGoldContext
     );
-    if (
-      appliesToOutcome &&
+    const canonicalPotionChest =
       orderedPotionClaimsEnabled &&
-      canonicalPotionChestClaim(mutableEnvelope, claim)
+      canonicalPotionChestClaim(mutableEnvelope, claim);
+    if (fatalPotionSequenceValidationEnabled && canonicalPotionChest) {
+      fatalPotionUseBudget += Math.max(
+        0,
+        validationState.build.resources.potions - validationPotionsBefore
+      );
+      const durableSlot = slotById.get(claim.claimId);
+      if (durableSlot) durableSlot.consumed = true;
+    }
+    if (
+      canonicalPotionChest &&
+      (appliesToOutcome || fatalPotionSequenceValidationEnabled)
     ) {
       potionChestSinceLastUseSegment = true;
+    }
+    if (
+      fatalPotionSequenceValidationEnabled &&
+      appliesToOutcome &&
+      !potionUseClaim &&
+      !canonicalPotionChest
+    ) {
+      calculateClaimAmount(
+        next,
+        mutableEnvelope,
+        claim,
+        slotById,
+        context.capabilities,
+        rewardGoldContext
+      );
     }
     if (appliesToOutcome) {
       if (claim.claimType === "enemy" || claim.claimType === "elite" || claim.claimType === "hazard") {
@@ -1387,6 +1431,12 @@ async function settleRewardEnvelopeV3(state, request, context = {}, options = {}
       if (evidence.has(evidenceId)) throw new TypeError("REWARD_CLAIM_DUPLICATE_EVIDENCE");
       evidence.add(evidenceId);
     }
+  }
+  if (fatalPotionSequenceValidationEnabled) {
+    next.build.resources.potions = Math.max(
+      0,
+      fatalStartingPotions - validatedPotionUseCount
+    );
   }
   if (validatedEnemyCount > enemyMaximumForRoom(envelope.roomType)) {
     throw new TypeError("REWARD_CLAIM_ROOM_ENEMY_BUDGET");

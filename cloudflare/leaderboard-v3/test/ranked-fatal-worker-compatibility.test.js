@@ -11,6 +11,7 @@ import {
   V08_META_1_LOCAL_RELEASE_DESCRIPTOR,
   V08_META_1_PLAYTEST_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR,
   V08_META_1_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR,
+  V08_META_1_MERCHANT_FAVOR_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR,
   V08_META_1_POTION_MERCHANT_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR,
   V08_META_1_PRODUCTION_RELEASE_DESCRIPTOR,
   V08_META_1_R2_PRODUCTION_RELEASE_DESCRIPTOR,
@@ -34,6 +35,7 @@ const PRODUCTION_RELEASES = Object.freeze([
   ...LEGACY_PRODUCTION_RELEASES,
   V08_META_1_INTEGRITY_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR,
   V08_META_1_POTION_MERCHANT_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR,
+  V08_META_1_MERCHANT_FAVOR_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR,
   V08_META_1_PRODUCTION_RELEASE_DESCRIPTOR
 ]);
 
@@ -195,7 +197,7 @@ test("historical production descriptors strip fatal cause while current producti
       canonicalPotionResources: "v1",
       boundedCombatResources: "v1",
       rankedStartResourceParity: "v1",
-      potionClaimOrdering: "v1",
+      potionClaimOrdering: "v2",
       mapFragmentMinDepth: "v1",
       exactChestStatCarry: "v1",
       campaignChronicle: "v1",
@@ -217,7 +219,7 @@ test("historical production descriptors strip fatal cause while current producti
       canonicalPotionResources: "v1",
       boundedCombatResources: "v1",
       rankedStartResourceParity: "v1",
-      potionClaimOrdering: "v1",
+      potionClaimOrdering: "v2",
       mapFragmentMinDepth: "v1",
       exactChestStatCarry: "v1",
       campaignChronicle: "v1",
