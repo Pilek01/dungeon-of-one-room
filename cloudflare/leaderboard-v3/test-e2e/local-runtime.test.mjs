@@ -431,7 +431,7 @@ describe("Online v3 local Wrangler runtime and persistent D1", {
     baseUrl = `http://127.0.0.1:${port}`;
     const version = await runWrangler(["--version"]);
     report.wranglerVersion = version.stdout.trim();
-    assert.equal(report.wranglerVersion, "4.114.0");
+    assert.equal(report.wranglerVersion, "4.116.0");
 
     const migration = await runWrangler([
       "d1",

@@ -94,7 +94,7 @@ function Initialize-BotRows {
   foreach ($index in 1..8) {
     $botId = "bot-{0:D2}" -f $index
     $row = [System.Windows.Forms.ListViewItem]::new("bot $index")
-    foreach ($value in @("", "Waiting", "0", "0", "0", "0", "0", "0", "0", "", "", "")) {
+    foreach ($value in @("", "", "Waiting", "0", "0", "0", "0", "0", "0", "0", "", "", "")) {
       [void] $row.SubItems.Add($value)
     }
     $row.Tag = $botId
@@ -107,22 +107,23 @@ function Update-BotRow($Message) {
   $botId = [string] $Message.botId
   if (-not $script:botRows.ContainsKey($botId)) { return }
   $row = $script:botRows[$botId]
-  $row.SubItems[1].Text = [string] $Message.startingRelic
-  $row.SubItems[2].Text = [string] $Message.status
-  $row.SubItems[3].Text = [string] $Message.depth
-  $row.SubItems[4].Text = [string] $Message.depthHighscore
-  $row.SubItems[5].Text = [string] $Message.score
-  $row.SubItems[6].Text = [string] $Message.lives
-  $row.SubItems[7].Text = [string] $Message.currentGold
-  $row.SubItems[8].Text = [string] $Message.totalGoldEarned
-  $row.SubItems[9].Text = [string] $Message.hp
-  $row.SubItems[10].Text = [string] $Message.lastDecision
+  $row.SubItems[1].Text = [string] $Message.profile
+  $row.SubItems[2].Text = [string] $Message.startingRelic
+  $row.SubItems[3].Text = [string] $Message.status
+  $row.SubItems[4].Text = [string] $Message.depth
+  $row.SubItems[5].Text = [string] $Message.depthHighscore
+  $row.SubItems[6].Text = [string] $Message.score
+  $row.SubItems[7].Text = [string] $Message.lives
+  $row.SubItems[8].Text = [string] $Message.currentGold
+  $row.SubItems[9].Text = [string] $Message.totalGoldEarned
+  $row.SubItems[10].Text = [string] $Message.hp
+  $row.SubItems[11].Text = [string] $Message.lastDecision
   try {
-    $row.SubItems[11].Text = [DateTimeOffset]::Parse([string] $Message.updatedAt).ToLocalTime().ToString("HH:mm:ss")
+    $row.SubItems[12].Text = [DateTimeOffset]::Parse([string] $Message.updatedAt).ToLocalTime().ToString("HH:mm:ss")
   } catch {
-    $row.SubItems[11].Text = [string] $Message.updatedAt
+    $row.SubItems[12].Text = [string] $Message.updatedAt
   }
-  $row.SubItems[12].Text = [string] $Message.error
+  $row.SubItems[13].Text = [string] $Message.error
   if ([string] $Message.status -in @("failed", "blocked")) {
     $row.BackColor = [System.Drawing.Color]::DarkRed
     $row.ForeColor = [System.Drawing.Color]::White
@@ -166,7 +167,7 @@ function Update-BotWallSummary {
   $failed = 0
   $stopped = 0
   foreach ($row in $script:botRows.Values) {
-    switch ([string] $row.SubItems[2].Text) {
+    switch ([string] $row.SubItems[3].Text) {
       { $_ -in @("starting", "running") } { $active += 1; break }
       "completed" { $completed += 1; break }
       { $_ -in @("failed", "blocked") } { $failed += 1; break }
@@ -212,7 +213,7 @@ function Process-LauncherEvents {
       } elseif ($message.type -eq "bot_failure") {
         if ($script:botRows.ContainsKey([string] $message.botId)) {
           $row = $script:botRows[[string] $message.botId]
-          $row.SubItems[12].Text = [string] $message.kind
+          $row.SubItems[13].Text = [string] $message.kind
           $row.BackColor = [System.Drawing.Color]::DarkRed
           $row.ForeColor = [System.Drawing.Color]::White
         }
@@ -224,6 +225,11 @@ function Process-LauncherEvents {
       } elseif ($message.type -eq "wall_ready") {
         Update-BotWallSummary
         Add-StatusLine "All 8 Observer Bots are running on the newest local commit."
+      } elseif ($message.type -eq "worker_restarted") {
+        Set-SessionState "8 bots running"
+        Add-StatusLine "Local Worker recovered after crash (attempt $($message.attempt)); $($message.recoveredBots) bot pages checked for reconnect."
+      } elseif ($message.type -eq "worker_bot_recovery_failed") {
+        Add-StatusLine "Reconnect helper failed for $($message.botId): $($message.message)"
       } elseif ($message.type -eq "command_failed") {
         Add-StatusLine "Command failed: $($message.message)"
       } elseif ($message.type -eq "failed") {
@@ -397,8 +403,13 @@ function Format-BotLeaderboardDetails($Record) {
   }
   if ($relicLines.Count -eq 0) { $relicLines = @("  - No relic build captured") }
   $finished = if ([string] $Record.finishedAt) { [string] $Record.finishedAt } else { [string] $Record.updatedAt }
+  $profileProperty = $Record.PSObject.Properties["botProfile"]
+  $profileLabel = if ($null -ne $profileProperty -and $null -ne $Record.botProfile -and [string] $Record.botProfile.label) {
+    [string] $Record.botProfile.label
+  } else { "Legacy / unspecified" }
   return @(
     "$([string] $Record.botName) | $([string] $Record.status)",
+    "Profile: $profileLabel",
     "Score: $([int64] $Record.score) | Depth highscore: $([int] $Record.depthHighscore)",
     "Starting relic: $startingRelic",
     "Session: $([string] $Record.sessionId)",
@@ -462,6 +473,7 @@ function Show-BotLeaderboard {
   $leaderboardList.GridLines = $true
   [void] $leaderboardList.Columns.Add("Rank", 50)
   [void] $leaderboardList.Columns.Add("Bot", 80)
+  [void] $leaderboardList.Columns.Add("Profile", 130)
   [void] $leaderboardList.Columns.Add("Score", 90)
   [void] $leaderboardList.Columns.Add("Depth Highscore", 110)
   [void] $leaderboardList.Columns.Add("Starting Relic", 170)
@@ -495,6 +507,10 @@ function Show-BotLeaderboard {
         $startingRelic = if ($null -ne $record.startingRelic) {
           [string] $record.startingRelic.name
         } else { "" }
+        $profileProperty = $record.PSObject.Properties["botProfile"]
+        $profileLabel = if ($null -ne $profileProperty -and $null -ne $record.botProfile -and [string] $record.botProfile.label) {
+          [string] $record.botProfile.label
+        } else { "Legacy" }
         $timestamp = if ([string] $record.finishedAt) {
           [string] $record.finishedAt
         } else { [string] $record.updatedAt }
@@ -506,6 +522,7 @@ function Show-BotLeaderboard {
         $row = [System.Windows.Forms.ListViewItem]::new([string] $rank)
         foreach ($value in @(
           [string] $record.botName,
+          $profileLabel,
           [string] $record.score,
           [string] $record.depthHighscore,
           $startingRelic,
@@ -667,6 +684,7 @@ $botList.FullRowSelect = $true
 $botList.MultiSelect = $false
 $botList.GridLines = $true
 [void] $botList.Columns.Add("Bot", 80)
+[void] $botList.Columns.Add("Profile", 125)
 [void] $botList.Columns.Add("Starting Relic", 145)
 [void] $botList.Columns.Add("Status", 100)
 [void] $botList.Columns.Add("Depth", 65)

@@ -18,6 +18,7 @@ function initialResult(overrides = {}) {
     sessionId: "session-20260901120000-abcd1234",
     botId: "bot-01",
     botName: "bot 1",
+    botProfile: { id: "endurance_d50", label: "Endurance D50" },
     commit: COMMIT,
     status: "starting",
     updatedAt: "2026-09-01T10:00:00.000Z",
@@ -70,6 +71,7 @@ test("merges stable launcher metrics and preserves immutable starting relic", ()
   assert.equal(boundary.totalGoldEarned, 1_942);
   assert.equal(boundary.hp, 54);
   assert.equal(boundary.lastDecision, "move");
+  assert.deepEqual(boundary.botProfile, { id: "endurance_d50", label: "Endurance D50" });
   assert.deepEqual(boundary.startingRelic, { relicId: "fang", name: "Blood Fang" });
   assert.deepEqual(boundary.relics, [
     { relicId: "fang", name: "Blood Fang", stacks: 1 },

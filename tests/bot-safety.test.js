@@ -28,6 +28,8 @@ const {
   getBotCombatChestAdjustment,
   getBotPostClearNavigationMode,
   getBotGoldBankingPressure,
+  getObserverBotTestProfilePolicy,
+  selectObserverBotStartDepth,
   getBotSkillSavingsUpgradeCount,
   getForgeTargetForBot,
   getPendingBlastZones,
@@ -36,6 +38,51 @@ const {
 } = require("../bot-safety.js");
 
 function run() {
+  assert.deepEqual(getObserverBotTestProfilePolicy("endurance_d50"), {
+    id: "endurance_d50",
+    label: "Endurance D50",
+    allowMutators: false,
+    skillReserveRatio: 0.35,
+    proactivePotionHpRatio: 0.62,
+    farmAfterFailures: 1,
+    targetCheckpoint: 0
+  });
+  assert.equal(getObserverBotTestProfilePolicy("unknown").id, "player_like");
+  assert.equal(getObserverBotTestProfilePolicy("endgame_coverage").targetCheckpoint, 41);
+  assert.equal(selectObserverBotStartDepth({
+    profile: "endgame_coverage",
+    availableDepths: [0, 11, 21],
+    farmMode: false,
+    pressureActive: false
+  }), 0, "endgame coverage builds naturally until the late-game checkpoint is legal");
+  assert.equal(selectObserverBotStartDepth({
+    profile: "endgame_coverage",
+    availableDepths: [0, 11, 21, 31],
+    farmMode: false,
+    pressureActive: false
+  }), 31, "endgame coverage starts using the first legal late-game checkpoint at D31");
+  assert.equal(selectObserverBotStartDepth({
+    profile: "endgame_coverage",
+    availableDepths: [0, 11, 21, 31, 41, 51],
+    farmMode: false,
+    pressureActive: false
+  }), 41, "endgame coverage reuses the legal D41 checkpoint without overshooting it");
+  assert.equal(selectObserverBotStartDepth({
+    profile: "endurance_d50",
+    availableDepths: [0, 11, 21],
+    farmMode: true,
+    pressureActive: true
+  }), 0);
+  assert.match(game, /DUNGEON_OBSERVER_TEST_PROFILE/);
+  assert.match(game, /if \(!OBSERVER_BOT_TEST_POLICY\.allowMutators\) return \[\];/);
+  assert.match(game, /selectObserverBotStartDepthSafe\(\{/);
+  assert.match(game, /OBSERVER_BOT_TEST_POLICY\.skillReserveRatio/);
+  assert.match(game, /registerObserverBotFatalFailure\(reason\)/);
+  assert.doesNotMatch(
+    extractFunction(game, "projectObserverBotCombatLookahead"),
+    /incoming = Math\.max\(0, incoming - Math\.round\(armor \* 0\.25\)\)/,
+    "lookahead must not subtract armor twice after the threat map already applied it"
+  );
   assert.deepEqual(
     mergeBotActionCandidate(
       { kind: "move", dx: 1, dy: 0, onChest: true, chase: false },
@@ -56,6 +103,14 @@ function run() {
   assert.equal(canBotDrinkPotion({ potions: 2, hp: 30, maxHp: 100, oathPotionLockTurns: 2 }), false);
   assert.equal(canBotDrinkPotion({ potions: 2, hp: 30, maxHp: 100, hasRisk: true }), false);
   assert.equal(decideBotPotionUse({ hp: 95, maxHp: 100, incomingDamage: 5, effectiveHeal: 20, potions: 2 }).use, false);
+  assert.equal(
+    decideBotPotionUse({ hp: 60, maxHp: 100, incomingDamage: 1, effectiveHeal: 40, potions: 2, profile: "endurance_d50" }).reason,
+    "profile_survival_heal"
+  );
+  assert.equal(
+    decideBotPotionUse({ hp: 60, maxHp: 100, incomingDamage: 1, effectiveHeal: 40, potions: 2, profile: "player_like" }).use,
+    false
+  );
   assert.equal(decideBotPotionUse({ hp: 40, maxHp: 100, incomingDamage: 45, effectiveHeal: 25, potions: 2 }).reason, "prevent_lethal");
   assert.equal(decideBotPotionUse({ hp: 50, maxHp: 100, incomingDamage: 20, effectiveHeal: 20, potions: 1 }).reason, "prevent_critical");
   assert.equal(decideBotPotionUse({ hp: 30, maxHp: 100, incomingDamage: 10, effectiveHeal: 20, potions: 1 }).reason, "low_hp_useful_heal");

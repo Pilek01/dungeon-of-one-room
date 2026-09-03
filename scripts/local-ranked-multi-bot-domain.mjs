@@ -2,6 +2,24 @@ import path from "node:path";
 
 export const MULTI_BOT_COUNT = 8;
 
+const BOT_PROFILES = Object.freeze({
+  endurance_d50: Object.freeze({ id: "endurance_d50", label: "Endurance D50" }),
+  player_like: Object.freeze({ id: "player_like", label: "Player-like" }),
+  endgame_coverage: Object.freeze({ id: "endgame_coverage", label: "Endgame coverage" })
+});
+
+export const BOT_PROFILE_IDS = Object.freeze(Object.keys(BOT_PROFILES));
+
+export function assignedBotProfile(botIndex) {
+  const index = Number(botIndex);
+  if (!Number.isSafeInteger(index) || index < 1 || index > MULTI_BOT_COUNT) {
+    throw new TypeError("Bot profile assignment requires bot 1 through bot 8.");
+  }
+  if (index <= 4) return BOT_PROFILES.endurance_d50;
+  if (index <= 6) return BOT_PROFILES.player_like;
+  return BOT_PROFILES.endgame_coverage;
+}
+
 export function assignedStartingRelicIndex(botIndex, choiceCount) {
   const normalizedBotIndex = Number(botIndex);
   const normalizedChoiceCount = Number(choiceCount);
@@ -39,6 +57,7 @@ export function createMultiBotSessionPaths(repoRoot, sessionId) {
     sessionRoot,
     manifestPath: ownedChild(sessionRoot, "manifest.json"),
     workerLogPath: ownedChild(sessionRoot, "worker.log"),
+    wranglerLogPath: ownedChild(sessionRoot, "wrangler-debug.log"),
     profilesRoot: ownedChild(sessionRoot, "profiles")
   });
 }
@@ -51,6 +70,7 @@ export function createBotDescriptors(sessionRoot) {
       id,
       index,
       name: `bot ${index}`,
+      botProfile: assignedBotProfile(index),
       profileDir: ownedChild(sessionRoot, "profiles", id),
       artifactDir: ownedChild(sessionRoot, id),
       resultPath: ownedChild(sessionRoot, id, "bot-result.json")

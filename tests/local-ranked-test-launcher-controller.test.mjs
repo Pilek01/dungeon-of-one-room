@@ -21,6 +21,29 @@ const prepared = Object.freeze({
   wranglerPath: path.resolve("D:/launcher/worktree/cloudflare/leaderboard-v3/node_modules/wrangler/bin/wrangler.js")
 });
 
+function createWorkerChild() {
+  const output = new EventEmitter();
+  const errors = new EventEmitter();
+  output.setEncoding = () => {};
+  errors.setEncoding = () => {};
+  const child = new EventEmitter();
+  child.stdout = output;
+  child.stderr = errors;
+  child.exitCode = null;
+  child.kill = () => {
+    if (child.exitCode === null) {
+      child.exitCode = 0;
+      child.emit("exit", 0, "SIGTERM");
+    }
+    return true;
+  };
+  child.crash = (code = 1) => {
+    child.exitCode = code;
+    child.emit("exit", code, null);
+  };
+  return child;
+}
+
 test("builds the selected test bundle and patches only its local protocol hash", async () => {
   const calls = [];
   const writes = [];
@@ -84,6 +107,7 @@ test("starts only the tracked loopback Worker and stops that child", async () =>
   const controller = await startLocalRankedTest({ hash: HASH_A }, {
     baseEnv: { PATH: "fixture" },
     secret: "s".repeat(64),
+    wranglerLogPath: path.resolve("D:/launcher/session/wrangler-debug.log"),
     prepareRevision: async () => prepared,
     buildSelectedTestBundle: async () => {},
     applyLocalMigrations: async (candidate, options) => {
@@ -105,7 +129,9 @@ test("starts only the tracked loopback Worker and stops that child", async () =>
       workerEnv: {
         PATH: "fixture",
         CLOUDFLARE_INCLUDE_PROCESS_ENV: "true",
-        RANKED_V3_HMAC_SECRET: "s".repeat(64)
+        RANKED_V3_HMAC_SECRET: "s".repeat(64),
+        WRANGLER_LOG_PATH: path.resolve("D:/launcher/session/wrangler-debug.log"),
+        WRANGLER_LOG_SANITIZE: "true"
       }
     }
   ]);
@@ -133,7 +159,9 @@ test("starts only the tracked loopback Worker and stops that child", async () =>
       env: {
         PATH: "fixture",
         CLOUDFLARE_INCLUDE_PROCESS_ENV: "true",
-        RANKED_V3_HMAC_SECRET: "s".repeat(64)
+        RANKED_V3_HMAC_SECRET: "s".repeat(64),
+        WRANGLER_LOG_PATH: path.resolve("D:/launcher/session/wrangler-debug.log"),
+        WRANGLER_LOG_SANITIZE: "true"
       },
       stdio: ["ignore", "pipe", "pipe"],
       windowsHide: true
@@ -145,6 +173,74 @@ test("starts only the tracked loopback Worker and stops that child", async () =>
   await controller.stop();
   assert.equal(child.killed, true);
   assert.equal(controller.hasExited(), true);
+});
+test("restarts an unexpectedly crashed local Worker on the same URL and keeps the supervisor alive", async () => {
+  const spawned = [];
+  const readyUrls = [];
+  const terminalExits = [];
+  let resolveRestart;
+  const restarted = new Promise((resolve) => { resolveRestart = resolve; });
+  const controller = await startLocalRankedTest({ hash: HASH_A }, {
+    prepareRevision: async () => prepared,
+    buildSelectedTestBundle: async () => {},
+    applyLocalMigrations: async () => {},
+    acquirePort: async () => 9237,
+    waitForLocalReady: async (url) => { readyUrls.push(url); },
+    spawn: () => {
+      const child = createWorkerChild();
+      spawned.push(child);
+      return child;
+    },
+    restartDelayMs: 0,
+    maxWorkerRestarts: 2
+  });
+  controller.onExit((event) => terminalExits.push(event));
+  controller.onRestart((event) => resolveRestart(event));
+
+  spawned[0].crash(1);
+  const restartEvent = await restarted;
+
+  assert.equal(spawned.length, 2);
+  assert.deepEqual(readyUrls, ["http://127.0.0.1:9237", "http://127.0.0.1:9237"]);
+  assert.equal(restartEvent.attempt, 1);
+  assert.equal(restartEvent.previousCode, 1);
+  assert.deepEqual(terminalExits, []);
+  assert.equal(controller.hasExited(), false);
+  await controller.stop();
+});
+test("reports a terminal exit only after the bounded Worker restart budget is exhausted", async () => {
+  const spawned = [];
+  let readyCalls = 0;
+  let resolveExit;
+  const exited = new Promise((resolve) => { resolveExit = resolve; });
+  const controller = await startLocalRankedTest({ hash: HASH_A }, {
+    prepareRevision: async () => prepared,
+    buildSelectedTestBundle: async () => {},
+    applyLocalMigrations: async () => {},
+    acquirePort: async () => 9238,
+    waitForLocalReady: async () => {
+      readyCalls += 1;
+      if (readyCalls > 1) throw new Error("replacement never became ready");
+    },
+    spawn: () => {
+      const child = createWorkerChild();
+      spawned.push(child);
+      return child;
+    },
+    restartDelayMs: 0,
+    maxWorkerRestarts: 1
+  });
+  controller.onExit(resolveExit);
+
+  spawned[0].crash(1);
+  const event = await exited;
+
+  assert.equal(spawned.length, 2);
+  assert.equal(event.expected, false);
+  assert.equal(event.restartAttempts, 1);
+  assert.match(event.error, /replacement never became ready/u);
+  assert.equal(controller.hasExited(), true);
+  await controller.stop();
 });
 test("applies D1 migrations only to the selected local state before launch", async () => {
   const calls = [];

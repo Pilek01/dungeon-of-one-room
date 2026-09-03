@@ -3,13 +3,30 @@ import path from "node:path";
 import test from "node:test";
 
 import {
+  BOT_PROFILE_IDS,
   MULTI_BOT_COUNT,
+  assignedBotProfile,
   assignedStartingRelicIndex,
   assertOwnedSessionChild,
   calculatePortraitTiles,
   createBotDescriptors,
   createMultiBotSessionPaths
 } from "../scripts/local-ranked-multi-bot-domain.mjs";
+
+test("assigns the eight-bot wall to the approved 4/2/2 profile matrix", () => {
+  assert.deepEqual(BOT_PROFILE_IDS, ["endurance_d50", "player_like", "endgame_coverage"]);
+  assert.deepEqual(
+    Array.from({ length: 8 }, (_, index) => assignedBotProfile(index + 1).id),
+    [
+      "endurance_d50", "endurance_d50", "endurance_d50", "endurance_d50",
+      "player_like", "player_like",
+      "endgame_coverage", "endgame_coverage"
+    ]
+  );
+  assert.equal(assignedBotProfile(1).label, "Endurance D50");
+  assert.equal(assignedBotProfile(5).label, "Player-like");
+  assert.equal(assignedBotProfile(7).label, "Endgame coverage");
+});
 
 test("distributes eight bots evenly across every available starting relic", () => {
   const assignments = Array.from(
@@ -45,6 +62,10 @@ test("creates exact bot names and isolated paths", () => {
   assert.equal(new Set(bots.map((bot) => bot.artifactDir)).size, 8);
   assert.equal(new Set(bots.map((bot) => bot.resultPath)).size, 8);
   assert.equal(bots[0].resultPath, path.join(root, "bot-01", "bot-result.json"));
+  assert.deepEqual(bots.map((bot) => bot.botProfile.id), [
+    "endurance_d50", "endurance_d50", "endurance_d50", "endurance_d50",
+    "player_like", "player_like", "endgame_coverage", "endgame_coverage"
+  ]);
 });
 
 test("rejects cleanup paths outside the owned session root", () => {

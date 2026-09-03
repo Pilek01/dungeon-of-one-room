@@ -7,6 +7,7 @@ import { promisify } from "node:util";
 import { fileURLToPath } from "node:url";
 import { startMultiBotWall as defaultStartMultiBotWall } from "./local-ranked-multi-bot-controller.mjs";
 import { listBotLeaderboard as defaultListBotLeaderboard } from "./local-ranked-bot-results.mjs";
+import { createMultiBotSessionPaths } from "./local-ranked-multi-bot-domain.mjs";
 
 const FULL_COMMIT_HASH = /^[0-9a-f]{40}$/u;
 
@@ -207,6 +208,10 @@ export function createWorkerLaunchPlan(prepared, options = {}) {
   delete workerEnv.DUNGEON_ONLINE_TEST_BOT_PASSWORD;
   workerEnv.CLOUDFLARE_INCLUDE_PROCESS_ENV = "true";
   workerEnv.RANKED_V3_HMAC_SECRET = secret;
+  if (String(options.wranglerLogPath || "")) {
+    workerEnv.WRANGLER_LOG_PATH = path.resolve(String(options.wranglerLogPath));
+    workerEnv.WRANGLER_LOG_SANITIZE = "true";
+  }
   const configPath = path.join(workerRoot, "wrangler.local.jsonc");
   const workerArgs = Object.freeze([
     "dev",
@@ -382,34 +387,138 @@ export async function startLocalRankedTest(selectedCommit, options = {}) {
   const launch = createWorkerLaunchPlan(prepared, {
     baseEnv,
     port,
-    secret: options.secret
+    secret: options.secret,
+    wranglerLogPath: options.wranglerLogPath
   });
   await applyMigrations(prepared, { workerEnv: launch.workerEnv });
-  const child = spawn(launch.command, launch.args, {
-    cwd: prepared.workerRoot,
-    env: launch.workerEnv,
-    stdio: ["ignore", "pipe", "pipe"],
-    windowsHide: true
-  });
   let logs = "";
   const append = (chunk) => {
     logs = redactLaunchLog(
-      `${logs}${String(chunk || "")}`.slice(-20_000),
+      `${logs}${String(chunk || "")}`.slice(-100_000),
       [launch.workerEnv.RANKED_V3_HMAC_SECRET, options.observerPassword]
     );
   };
-  attachLogStream(child.stdout, append);
-  attachLogStream(child.stderr, append);
   let stopped = false;
   let forceStopped = false;
+  let terminalExited = false;
+  let initialReady = false;
+  let currentChild = null;
+  let restartPromise = null;
+  let consecutiveRestartAttempts = 0;
+  const maxWorkerRestarts = Math.max(0, Math.min(10, Math.floor(
+    options.maxWorkerRestarts === undefined ? 3 : Number(options.maxWorkerRestarts)
+  )));
+  const restartDelayMs = Math.max(0, Math.min(10_000,
+    options.restartDelayMs === undefined ? 250 : Number(options.restartDelayMs)
+  ));
   const exitListeners = new Set();
-  child.on?.("exit", (code, signal) => {
+  const restartListeners = new Set();
+
+  function notifyExit(event) {
     for (const listener of exitListeners) {
-      Promise.resolve(listener({ expected: stopped, code, signal })).catch(() => {});
+      Promise.resolve(listener(event)).catch(() => {});
     }
-  });
+  }
+
+  function notifyRestart(event) {
+    for (const listener of restartListeners) {
+      Promise.resolve(listener(event)).catch(() => {});
+    }
+  }
+
+  async function stopChild(child) {
+    if (!child || (child.exitCode !== null && child.exitCode !== undefined)) return;
+    let forceConfirmed = false;
+    child.kill();
+    await Promise.race([awaitChildExit(child), wait(5_000)]);
+    if (child.exitCode === null) {
+      forceConfirmed = await forceStop(child);
+      forceStopped = forceStopped || forceConfirmed;
+      await Promise.race([awaitChildExit(child), wait(5_000)]);
+    }
+    if (child.exitCode === null && !forceConfirmed) {
+      throw new Error("Local Worker did not exit after Stop.");
+    }
+  }
+
+  async function recoverWorker(initialEvent) {
+    let lastEvent = initialEvent;
+    let lastError = null;
+    while (!stopped && consecutiveRestartAttempts < maxWorkerRestarts) {
+      consecutiveRestartAttempts += 1;
+      const attempt = consecutiveRestartAttempts;
+      append(`\n[launcher] Shared local Worker exited (${lastEvent.code ?? "unknown"}); restart ${attempt}/${maxWorkerRestarts}.\n`);
+      if (restartDelayMs > 0) await wait(restartDelayMs);
+      if (stopped) return;
+      const replacement = spawnWorker();
+      try {
+        await waitForReady(launch.url, { fetchImpl: options.fetchImpl });
+        if (replacement.exitCode !== null && replacement.exitCode !== undefined) {
+          throw new Error(`Replacement local Worker exited (${replacement.exitCode}) before readiness.`);
+        }
+        if (stopped) {
+          await stopChild(replacement);
+          return;
+        }
+        append(`[launcher] Shared local Worker restart ${attempt} is ready at ${launch.url}.\n`);
+        consecutiveRestartAttempts = 0;
+        notifyRestart({
+          attempt,
+          previousCode: initialEvent.code,
+          previousSignal: initialEvent.signal,
+          url: launch.url
+        });
+        return;
+      } catch (error) {
+        lastError = error;
+        append(`[launcher] Shared local Worker restart ${attempt} failed: ${error?.message || error}.\n`);
+        await stopChild(replacement).catch(() => {});
+        lastEvent = {
+          code: replacement.exitCode,
+          signal: null
+        };
+      }
+    }
+    if (stopped) return;
+    terminalExited = true;
+    notifyExit({
+      expected: false,
+      code: initialEvent.code,
+      signal: initialEvent.signal,
+      restartAttempts: consecutiveRestartAttempts,
+      error: String(lastError?.message || "Local Worker restart budget exhausted.")
+    });
+  }
+
+  function spawnWorker() {
+    const child = spawn(launch.command, launch.args, {
+      cwd: prepared.workerRoot,
+      env: launch.workerEnv,
+      stdio: ["ignore", "pipe", "pipe"],
+      windowsHide: true
+    });
+    currentChild = child;
+    attachLogStream(child.stdout, append);
+    attachLogStream(child.stderr, append);
+    child.on?.("exit", (code, signal) => {
+      if (child !== currentChild) return;
+      if (stopped) {
+        notifyExit({ expected: true, code, signal });
+        return;
+      }
+      if (!initialReady) return;
+      if (restartPromise) return;
+      restartPromise = recoverWorker({ code, signal }).finally(() => {
+        restartPromise = null;
+      });
+    });
+    return child;
+  }
+
+  spawnWorker();
   const exitHandler = () => {
-    if (!stopped && child.exitCode === null) child.kill();
+    stopped = true;
+    if (currentChild?.exitCode === null) currentChild.kill();
   };
   process.once("exit", exitHandler);
 
@@ -417,19 +526,16 @@ export async function startLocalRankedTest(selectedCommit, options = {}) {
     if (stopped) return;
     stopped = true;
     process.removeListener("exit", exitHandler);
-    if (child.exitCode === null) child.kill();
-    await Promise.race([awaitChildExit(child), wait(5_000)]);
-    if (child.exitCode === null) {
-      forceStopped = await forceStop(child);
-      await Promise.race([awaitChildExit(child), wait(5_000)]);
-    }
-    if (child.exitCode === null && !forceStopped) {
-      throw new Error("Local Worker did not exit after Stop.");
-    }
+    await stopChild(currentChild);
+    terminalExited = true;
   }
 
   try {
     await waitForReady(launch.url, { fetchImpl: options.fetchImpl });
+    if (currentChild?.exitCode !== null && currentChild?.exitCode !== undefined) {
+      throw new Error(`Local Worker exited (${currentChild.exitCode}) before initial readiness.`);
+    }
+    initialReady = true;
   } catch (error) {
     await stop();
     throw error;
@@ -440,12 +546,17 @@ export async function startLocalRankedTest(selectedCommit, options = {}) {
     prepared,
     bundle,
     workerArgs: launch.workerArgs,
-    hasExited: () => forceStopped || (child.exitCode !== null && child.exitCode !== undefined),
+    hasExited: () => stopped || forceStopped || terminalExited,
     getLogs: () => logs,
     onExit(listener) {
       if (typeof listener !== "function") throw new TypeError("A Worker exit listener is required.");
       exitListeners.add(listener);
       return () => exitListeners.delete(listener);
+    },
+    onRestart(listener) {
+      if (typeof listener !== "function") throw new TypeError("A Worker restart listener is required.");
+      restartListeners.add(listener);
+      return () => restartListeners.delete(listener);
     },
     stop
   });
@@ -558,12 +669,16 @@ export async function runLauncherCli(args = process.argv.slice(2), options = {})
     if (multiBot) {
       const workerSecret = options.workerSecret || randomBytes(48).toString("base64");
       const sessionId = options.sessionId || createMultiBotSessionId();
+      const sessionPaths = createMultiBotSessionPaths(repoRoot, sessionId);
       emit({ type: "wall_starting", branch: candidates.branch.name, commit: selectedCommit.hash });
       const worker = await startWorker(selectedCommit, {
         repoRoot,
         observerPassword,
         baseEnv,
         secret: workerSecret,
+        wranglerLogPath: sessionPaths.wranglerLogPath,
+        restartDelayMs: options.restartDelayMs,
+        maxWorkerRestarts: options.maxWorkerRestarts,
         prepareRevision: options.prepareRevision,
         buildSelectedTestBundle: options.buildSelectedTestBundle,
         acquirePort: options.acquirePort,

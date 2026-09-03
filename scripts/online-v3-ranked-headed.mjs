@@ -766,7 +766,7 @@ async function main() {
   await fsPromises.mkdir(PERSIST_ROOT, { recursive: true });
   await fsPromises.mkdir(XDG_ROOT, { recursive: true });
   const version = await runWrangler(["--version"]);
-  assert.equal(version.stdout.trim(), "4.114.0");
+  assert.equal(version.stdout.trim(), "4.116.0");
   await runWrangler([
     "d1",
     "migrations",

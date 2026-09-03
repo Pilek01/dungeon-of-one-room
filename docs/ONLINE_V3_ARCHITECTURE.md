@@ -82,7 +82,7 @@ client-controlled public seek data, not a cryptographic capability.
 
 ## Local R2 runtime
 
-Wrangler `4.114.0` is pinned. Local conformance applies migrations `0001`–`0003`
+Wrangler `4.116.0` is pinned. Local conformance applies migrations `0001`–`0003`
 and runs the real `v08-meta-1` registry through HTTP and persistent D1. Tests
 cover exact replay, restart recovery, profile Camp, concurrency, atomic
 finalization/extraction, retention, cursor semantics, and public projections.

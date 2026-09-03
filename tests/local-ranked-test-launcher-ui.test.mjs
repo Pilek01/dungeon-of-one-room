@@ -51,14 +51,15 @@ test("Windows launcher exposes only the local Ranked test controls", async () =>
   assert.match(psSource, /Stop All/u);
   assert.match(psSource, /Open diagnostics folder/u);
   assert.match(psSource, /ListView/u);
-  for (const column of ["Bot", "Starting Relic", "Status", "Depth", "Depth Highscore", "Score", "Lives", "Current Gold", "Total Gold Earned", "HP", "Last decision", "Updated", "Error"]) {
+  for (const column of ["Bot", "Profile", "Starting Relic", "Status", "Depth", "Depth Highscore", "Score", "Lives", "Current Gold", "Total Gold Earned", "HP", "Last decision", "Updated", "Error"]) {
     assert.match(psSource, new RegExp("Columns\\.Add\\(\"" + column + "\"", "u"));
   }
-  assert.match(psSource, /SubItems\[1\]\.Text\s*=\s*\[string\]\s*\$Message\.startingRelic/u);
-  assert.match(psSource, /SubItems\[4\]\.Text\s*=\s*\[string\]\s*\$Message\.depthHighscore/u);
-  assert.match(psSource, /SubItems\[6\]\.Text\s*=\s*\[string\]\s*\$Message\.lives/u);
-  assert.match(psSource, /SubItems\[7\]\.Text\s*=\s*\[string\]\s*\$Message\.currentGold/u);
-  assert.match(psSource, /SubItems\[8\]\.Text\s*=\s*\[string\]\s*\$Message\.totalGoldEarned/u);
+  assert.match(psSource, /SubItems\[1\]\.Text\s*=\s*\[string\]\s*\$Message\.profile/u);
+  assert.match(psSource, /SubItems\[2\]\.Text\s*=\s*\[string\]\s*\$Message\.startingRelic/u);
+  assert.match(psSource, /SubItems\[5\]\.Text\s*=\s*\[string\]\s*\$Message\.depthHighscore/u);
+  assert.match(psSource, /SubItems\[7\]\.Text\s*=\s*\[string\]\s*\$Message\.lives/u);
+  assert.match(psSource, /SubItems\[8\]\.Text\s*=\s*\[string\]\s*\$Message\.currentGold/u);
+  assert.match(psSource, /SubItems\[9\]\.Text\s*=\s*\[string\]\s*\$Message\.totalGoldEarned/u);
   assert.match(psSource, /function Get-LocalBotLeaderboard/u);
   assert.match(psSource, /function Show-BotLeaderboard/u);
   assert.match(psSource, /leaderboard --json --scope/u);
@@ -66,7 +67,7 @@ test("Windows launcher exposes only the local Ranked test controls", async () =>
   assert.match(psSource, /Today/u);
   assert.match(psSource, /All Time/u);
   assert.match(psSource, /final\/last-life build/u);
-  for (const column of ["Rank", "Bot", "Score", "Depth Highscore", "Starting Relic", "Status", "Updated", "Session", "Commit"]) {
+  for (const column of ["Rank", "Bot", "Profile", "Score", "Depth Highscore", "Starting Relic", "Status", "Updated", "Session", "Commit"]) {
     assert.match(psSource, new RegExp("leaderboardList\\.Columns\\.Add\\(\"" + column + "\"", "u"));
   }
   assert.match(psSource, /function Update-BotWallSummary/u);

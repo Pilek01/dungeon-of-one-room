@@ -35,6 +35,7 @@ function element() {
 
 function createHarness(rulesetHash) {
   const calls = [];
+  const fatalFailures = [];
   let snapshot = {
     publicState: {
       status: "active",
@@ -167,11 +168,12 @@ function createHarness(rulesetHash) {
       isRanked() { return true; },
       isRankedTestBotActive() { return false; },
       syncCanonicalProjection() {},
+      registerObserverBotFatalFailure(reason) { fatalFailures.push(reason); },
       resumeAfterFatal() {},
       resumePreventedFatal() {}
     }
   };
-  return { root, calls };
+  return { root, calls, fatalFailures };
 }
 
 async function captureFatalPayload(rulesetHash, options = {}) {
@@ -184,6 +186,7 @@ async function captureFatalPayload(rulesetHash, options = {}) {
   await harness.root.DungeonOnlineV3.onFatalEvent({ reason: options.reason });
   assert.equal(harness.calls.length, 1);
   assert.equal(harness.calls[0].action, "report_fatal_event");
+  assert.deepEqual(harness.fatalFailures, [options.reason]);
   return JSON.parse(JSON.stringify(harness.calls[0].payload));
 }
 

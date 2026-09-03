@@ -37,7 +37,7 @@ Planning baseline reviewed at commit `f2ec175c2a379b8004a9538a05caf360565b6558` 
 | Surface | Current state | M5 implication |
 | --- | --- | --- |
 | Worker entrypoint | `cloudflare/leaderboard-v3/src/index.js` | Has HTTP and scheduled handlers; must be packaged as an explicit staging or production version. |
-| Wrangler | `cloudflare/leaderboard-v3/wrangler.toml`, Wrangler `4.114.0` | Current D1 ID is a placeholder and is not deployable release configuration. |
+| Wrangler | `cloudflare/leaderboard-v3/wrangler.toml`, Wrangler `4.116.0` | Current D1 ID is a placeholder and is not deployable release configuration. |
 | Local ruleset entrypoint | `local-ruleset-entry.js` | Registers `v08-meta-1` only for test/local use. It must not become production merely because code is deployed. |
 | API | `/api/v3` | Browser uses `DUNGEON_ONLINE_V3_API || ""`; same-origin routing is the lowest-risk topology. |
 | Practice | No Online v3 API traffic | Must stay network-free in M5. |

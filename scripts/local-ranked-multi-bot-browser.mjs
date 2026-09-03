@@ -12,6 +12,10 @@ const CHROME_CANDIDATES = Object.freeze([
 
 const MAX_RING_ENTRIES = 200;
 
+function sleep(milliseconds) {
+  return new Promise((resolve) => setTimeout(resolve, milliseconds));
+}
+
 export async function resolveChromeExecutable(options = {}) {
   const access = options.access || defaultAccess;
   const candidates = options.candidates || CHROME_CANDIDATES;
@@ -110,7 +114,8 @@ export async function launchBotWindow(options) {
       "--no-default-browser-check"
     ]
   });
-  await context.addInitScript(({ name }) => {
+  await context.addInitScript(({ name, profileId }) => {
+    globalThis.DUNGEON_OBSERVER_TEST_PROFILE = profileId;
     localStorage.setItem("dungeonOneRoomPlayerName", name);
     localStorage.setItem("dungeonOneRoomGraphicsMode", "hd");
     localStorage.setItem("dungeonOneRoomAudioMuted", "1");
@@ -118,7 +123,10 @@ export async function launchBotWindow(options) {
     localStorage.setItem("dungeonOneRoomTutorialCampSeenV1", "1");
     localStorage.setItem("dungeonOneRoomTutorialMerchantSeenV1", "1");
     localStorage.setItem("dungeonOneRoomTutorialPortalSeenV1", "1");
-  }, { name: options.bot.name });
+  }, {
+    name: options.bot.name,
+    profileId: String(options.bot.botProfile?.id || "player_like")
+  });
   const page = context.pages()[0] || await context.newPage();
   const cdp = await context.newCDPSession(page);
   const { windowId } = await cdp.send("Browser.getWindowForTarget");
@@ -187,6 +195,29 @@ export async function startBotRun(runtime, options) {
   return Object.freeze({
     botId: runtime.bot.id,
     status: "running",
+    botProfile: runtime.bot.botProfile,
     startingRelic: Object.freeze({ relicId, name: relicName || relicId })
   });
+}
+
+export async function recoverBotAfterWorkerRestart(runtime, options = {}) {
+  const page = runtime?.page;
+  if (!page?.getByRole) throw new TypeError("A live bot page is required for Worker recovery.");
+  const attempts = Math.max(1, Math.min(100, Math.floor(Number(options.attempts) || 30)));
+  const wait = options.wait || sleep;
+
+  for (let attempt = 0; attempt < attempts; attempt += 1) {
+    const retry = page.getByRole("button", { name: "Retry exact action", exact: true });
+    if (await retry.isVisible().catch(() => false)) {
+      await retry.click();
+      return "retry";
+    }
+    const resync = page.getByRole("button", { name: "Resync Ranked Run", exact: true });
+    if (await resync.isVisible().catch(() => false)) {
+      await resync.click();
+      return "resync";
+    }
+    if (attempt + 1 < attempts) await wait(100);
+  }
+  return "healthy";
 }

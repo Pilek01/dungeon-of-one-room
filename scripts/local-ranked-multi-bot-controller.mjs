@@ -2,6 +2,7 @@ import { mkdir as fsMkdir, rm as fsRm, writeFile as fsWriteFile } from "node:fs/
 
 import {
   launchBotWindow as defaultLaunchBotWindow,
+  recoverBotAfterWorkerRestart as defaultRecoverBotAfterWorkerRestart,
   resolveChromeExecutable as defaultResolveChromeExecutable,
   startBotRun as defaultStartBotRun
 } from "./local-ranked-multi-bot-browser.mjs";
@@ -32,6 +33,8 @@ function safeEventStatus(entry) {
     type: "bot_status",
     botId: entry.runtime.bot.id,
     name: entry.runtime.bot.name,
+    profile: String(result.botProfile?.label || entry.runtime.bot.botProfile?.label || ""),
+    profileId: String(result.botProfile?.id || entry.runtime.bot.botProfile?.id || ""),
     status: entry.status,
     depth: Math.max(0, Number(result.depth) || 0),
     depthHighscore: Math.max(0, Number(result.depthHighscore) || 0),
@@ -55,10 +58,13 @@ function buildManifest(options, paths, descriptors) {
     sessionRoot: paths.sessionRoot,
     commit: options.commit,
     workerUrl: options.worker.url,
+    workerLogPath: paths.workerLogPath,
+    wranglerLogPath: paths.wranglerLogPath,
     createdAt: new Date().toISOString(),
     bots: descriptors.map((bot) => ({
       id: bot.id,
       name: bot.name,
+      botProfile: bot.botProfile,
       artifactDir: bot.artifactDir
     }))
   });
@@ -90,6 +96,7 @@ export async function startMultiBotWall(options) {
   const launchBotWindow = options.launchBotWindow || defaultLaunchBotWindow;
   const startBotRun = options.startBotRun || defaultStartBotRun;
   const captureBotFailure = options.captureBotFailure || defaultCaptureBotFailure;
+  const recoverBotAfterWorkerRestart = options.recoverBotAfterWorkerRestart || defaultRecoverBotAfterWorkerRestart;
   const sampleBotPage = options.sampleBotPage || defaultSampleBotPage;
   const writeBotResult = options.writeBotResult || defaultWriteBotResult;
   const wait = options.wait || sleep;
@@ -112,6 +119,7 @@ export async function startMultiBotWall(options) {
   let workerExitHandled = false;
   let workerLogFlushed = false;
   let unsubscribeWorkerExit = () => {};
+  let unsubscribeWorkerRestart = () => {};
 
   async function flushWorkerLog() {
     if (workerLogFlushed) return;
@@ -258,11 +266,36 @@ export async function startMultiBotWall(options) {
     await flushWorkerLog();
   }
 
+  async function handleWorkerRestart(event = {}) {
+    if (wallStopped) return;
+    const activeEntries = entries.filter((entry) => entry.status === "running");
+    const outcomes = await Promise.all(activeEntries.map(async (entry) => {
+      try {
+        return await recoverBotAfterWorkerRestart(entry.runtime);
+      } catch (error) {
+        emit({
+          type: "worker_bot_recovery_failed",
+          botId: entry.runtime.bot.id,
+          message: redact(error?.message || error)
+        });
+        return "failed";
+      }
+    }));
+    emit({
+      type: "worker_restarted",
+      attempt: Math.max(1, Number(event.attempt) || 1),
+      previousCode: event.previousCode,
+      recoveredBots: outcomes.filter((outcome) => outcome !== "failed").length,
+      recoveryActions: outcomes
+    });
+  }
+
   async function stop() {
     if (stopPromise) return stopPromise;
     stopPromise = (async () => {
       wallStopped = true;
       unsubscribeWorkerExit();
+      unsubscribeWorkerRestart();
       let firstError = null;
       const rememberError = (error) => {
         if (!firstError) firstError = error instanceof Error ? error : new Error(String(error));
@@ -304,6 +337,13 @@ export async function startMultiBotWall(options) {
     return stopPromise;
   }
 
+  if (typeof options.worker.onExit === "function") {
+    unsubscribeWorkerExit = options.worker.onExit(handleUnexpectedWorkerExit) || (() => {});
+  }
+  if (typeof options.worker.onRestart === "function") {
+    unsubscribeWorkerRestart = options.worker.onRestart(handleWorkerRestart) || (() => {});
+  }
+
   try {
     for (let index = 0; index < descriptors.length; index += 1) {
       const bot = descriptors[index];
@@ -311,6 +351,8 @@ export async function startMultiBotWall(options) {
         type: "bot_status",
         botId: bot.id,
         name: bot.name,
+        profile: bot.botProfile.label,
+        profileId: bot.botProfile.id,
         status: "starting",
         depth: 0,
         depthHighscore: 0,
@@ -347,6 +389,7 @@ export async function startMultiBotWall(options) {
           sessionId: options.sessionId,
           botId: bot.id,
           botName: bot.name,
+          botProfile: bot.botProfile,
           commit: options.commit,
           status: "starting",
           updatedAt: new Date(now()).toISOString()
@@ -359,17 +402,19 @@ export async function startMultiBotWall(options) {
         password: options.password
       });
       entry.status = "running";
-      updateEntryResult(entry, null, { startingRelic: started?.startingRelic });
+      updateEntryResult(entry, null, {
+        botProfile: started?.botProfile || bot.botProfile,
+        startingRelic: started?.startingRelic
+      });
       emit(safeEventStatus(entry));
       await persistEntry(entry, true);
       beginMonitoring(entry);
       if (index + 1 < descriptors.length) await wait(150);
     }
-    if (typeof options.worker.onExit === "function") {
-      unsubscribeWorkerExit = options.worker.onExit(handleUnexpectedWorkerExit) || (() => {});
-    }
   } catch (error) {
     wallStopped = true;
+    unsubscribeWorkerExit();
+    unsubscribeWorkerRestart();
     for (const entry of entries) {
       clearEntryTimer(entry);
       if (!["completed", "failed", "blocked", "stopped"].includes(entry.status)) {

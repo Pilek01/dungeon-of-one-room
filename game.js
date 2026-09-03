@@ -140,9 +140,21 @@
     getBotEarlyPotionUpgradePlan: getBotEarlyPotionUpgradePlanSafe = () => ({ active: false, recommendedUpgrade: null }),
     getBotGoldBankingPressure: getBotGoldBankingPressureSafe = () => ({ threshold: Infinity, score: 0, ratio: 0, strong: false }),
     getBotSkillSavingsUpgradeCount: getBotSkillSavingsUpgradeCountSafe = () => 0,
+    getObserverBotTestProfilePolicy: getObserverBotTestProfilePolicySafe = () => ({
+      id: "player_like",
+      label: "Player-like",
+      allowMutators: true,
+      skillReserveRatio: 1,
+      proactivePotionHpRatio: 0,
+      farmAfterFailures: 2,
+      targetCheckpoint: 0
+    }),
     getForgeTargetForBot: getForgeTargetForBotSafe = () => null,
     getPendingBlastZones: getPendingBlastZonesSafe = () => ({}),
     mergeBotActionCandidate: mergeBotActionCandidateSafe = (existing, incoming) => ({ ...(existing || {}), ...(incoming || {}) }),
+    selectObserverBotStartDepth: selectObserverBotStartDepthSafe = ({ availableDepths }) => (
+      Array.isArray(availableDepths) && availableDepths.length > 0 ? availableDepths[availableDepths.length - 1] : 0
+    ),
     shouldBotBlockPathTile: shouldBotBlockPathTileSafe = ({ pit, hazard, avoidHazards, target }) => (
       pit === true || (avoidHazards === true && hazard === true && target !== true)
     )
@@ -316,6 +328,12 @@
     ["safe", "balanced", "aggressive"],
     "safe"
   );
+  const OBSERVER_BOT_TEST_PROFILE = readGlobalEnum(
+    "DUNGEON_OBSERVER_TEST_PROFILE",
+    ["endurance_d50", "player_like", "endgame_coverage"],
+    "player_like"
+  );
+  const OBSERVER_BOT_TEST_POLICY = getObserverBotTestProfilePolicySafe(OBSERVER_BOT_TEST_PROFILE);
   const OBSERVER_AI_DEFAULT_WEIGHTS = Object.freeze({
     survival: 1.45,
     kill: 0.98,
@@ -3196,6 +3214,7 @@
       targetType: getObserverTargetType(),
       decision: String(state.observerBot?.lastDecision || "idle"),
       policy: String(state.observerBot?.lastPolicy || "default"),
+      testProfile: OBSERVER_BOT_TEST_PROFILE,
       farmMode: Boolean(state.observerBot?.farmMode),
       pressureDepth: Math.max(0, Number(state.observerBot?.pressureDepth) || 0),
       pressureFailures: Math.max(0, Number(state.observerBot?.pressureFailures) || 0),
@@ -3352,7 +3371,7 @@
     lines.push(`extract_reason_top=${topExtractReasons || "none"}`);
     lines.push("");
     lines.push("# Schema");
-    lines.push("Each line below is JSON with: ts,event,runSeq,vampfangHealDelta,phase,depth,turn,roomIndex,roomType,bossRoom,roomCleared,portalPresent,portalActive,portalX,portalY,turnInProgress,enemyTurnInProgress,hp,maxHp,hpRatio,armor,attack,vampfangHealRun,hasVampfang,aoeTier,dashTier,shieldTier,skillShield,fracturedShieldBarrier,shieldStoredDamage,playerShieldBrokeThisTurn,runGold,campGold,potions,maxPotions,lives,enemies,enemyHpTotal,enemyTypeCounts,targetType,decision,policy,farmMode,pressureDepth,pressureFailures,farmExtractDepth,farmGoldTarget,farmGuardTarget,farmVitalityTarget,farmBladeTarget,loopPingPong,loopPingPongTicks,loopAcolytePingPongTicks plus event-specific fields.");
+    lines.push("Each line below is JSON with: ts,event,runSeq,vampfangHealDelta,phase,depth,turn,roomIndex,roomType,bossRoom,roomCleared,portalPresent,portalActive,portalX,portalY,turnInProgress,enemyTurnInProgress,hp,maxHp,hpRatio,armor,attack,vampfangHealRun,hasVampfang,aoeTier,dashTier,shieldTier,skillShield,fracturedShieldBarrier,shieldStoredDamage,playerShieldBrokeThisTurn,runGold,campGold,potions,maxPotions,lives,enemies,enemyHpTotal,enemyTypeCounts,targetType,decision,policy,testProfile,farmMode,pressureDepth,pressureFailures,farmExtractDepth,farmGoldTarget,farmGuardTarget,farmVitalityTarget,farmBladeTarget,loopPingPong,loopPingPongTicks,loopAcolytePingPongTicks plus event-specific fields.");
     lines.push("");
     lines.push("# Events (JSONL)");
     for (const row of events) {
@@ -29195,7 +29214,8 @@
       turn: state.turn,
       enemyTurn: state.enemyTurnInProgress ? state.enemyTurnStepIndex : 0,
       hazardIdentity: options.hazardIdentity || getObserverBotPotionHazardIdentity(pendingBlastMap),
-      lastPotionActionKey: ""
+      lastPotionActionKey: "",
+      profile: OBSERVER_BOT_TEST_PROFILE
     };
     const preview = decideBotPotionUseSafe(actionInputs);
     if (bot && bot.lastPotionActionKey && bot.lastPotionActionKey !== preview.actionKey) {
@@ -30041,7 +30061,6 @@
         chests: (state.chests || []).filter((chest) => !chest.opened)
       });
       let incoming = futureThreat.damageAt(simX, simY);
-      incoming = Math.max(0, incoming - Math.round(armor * 0.25));
       if (simShieldPool > 0 && incoming > 0) {
         const absorbed = Math.min(incoming, simShieldPool);
         simShieldPool = Math.max(0, simShieldPool - absorbed);
@@ -31042,7 +31061,8 @@
     const prevDepth = Math.max(0, Number(state.observerBot.pressureDepth) || 0);
     const prevFailures = Math.max(0, Number(state.observerBot.pressureFailures) || 0);
     const failures = prevDepth === safeDepth ? prevFailures + 1 : 1;
-    if (safeDepth <= 10 && failures < 2) {
+    const farmAfterFailures = Math.max(1, Number(OBSERVER_BOT_TEST_POLICY.farmAfterFailures) || 1);
+    if (safeDepth <= 10 && failures < farmAfterFailures) {
       state.observerBot.pressureDepth = safeDepth;
       state.observerBot.pressureFailures = failures;
       state.observerBot.farmMode = false;
@@ -31134,6 +31154,9 @@
     }
     if (relic.id === "glasscannon" && hpRatio < 0.65 && !hasRelic("titanheart")) {
       score -= 45;
+    }
+    if (OBSERVER_BOT_TEST_PROFILE !== "player_like" && ["glasscannon", "risk"].includes(relic.id)) {
+      score -= 220;
     }
     if (relic.id === "flask" && state.player.potions <= 1) {
       score += 16;
@@ -31290,7 +31313,12 @@
     const planned = candidates.slice(0, maxPlannedUpgrades);
     const reserveRaw = planned.reduce((sum, entry) => sum + Math.round(entry.cost * 0.92), 0);
     const reserveCap = progressDepth >= 24 ? 2200 : progressDepth >= 16 ? 1500 : 850;
-    const reserve = clamp(reserveRaw + (planned.length > 0 ? 50 : 0), 0, reserveCap);
+    const reserveRatio = clamp(Number(OBSERVER_BOT_TEST_POLICY.skillReserveRatio) || 0, 0, 1);
+    const reserve = clamp(
+      Math.round((reserveRaw + (planned.length > 0 ? 50 : 0)) * reserveRatio),
+      0,
+      reserveCap
+    );
     return { reserve, planned };
   }
 
@@ -31770,7 +31798,8 @@
       turn: state.turn,
       enemyTurn: state.enemyTurnInProgress ? state.enemyTurnStepIndex : 0,
       hazardIdentity: getObserverBotPotionHazardIdentity(pendingBlastMap),
-      lastPotionActionKey: state.observerBot?.lastPotionActionKey || ""
+      lastPotionActionKey: state.observerBot?.lastPotionActionKey || "",
+      profile: OBSERVER_BOT_TEST_PROFILE
     });
     const shieldTier = getSkillTier("shield");
     const rawShield = Math.max(
@@ -32445,15 +32474,17 @@
 
   function chooseObserverBotCampStartDepth() {
     const options = getAvailableStartDepths();
-    if (options.length <= 0) return 0;
-    if (options.length === 1) return options[0];
-    if (state.observerBot?.farmMode) return 0;
     const pressureStatus = getObserverBotDepthPressureStatus({ includeRunGold: false });
-    if (pressureStatus.active) return 0;
-    return options[options.length - 1];
+    return selectObserverBotStartDepthSafe({
+      profile: OBSERVER_BOT_TEST_PROFILE,
+      availableDepths: options,
+      farmMode: Boolean(state.observerBot?.farmMode),
+      pressureActive: pressureStatus.active
+    });
   }
 
   function getObserverBotDesiredMutatorIds() {
+    if (!OBSERVER_BOT_TEST_POLICY.allowMutators) return [];
     const unlocked = MUTATORS.filter((mutator) => state.unlockedMutators?.[mutator.id]);
     if (unlocked.length <= 0) return [];
     const capabilityDepth = Math.max(
@@ -34521,6 +34552,9 @@
       state.lives = Math.max(0, Number(publicState?.lives) || 0);
       state.runMaxDepth = Math.max(0, Number(publicState?.maxDepth) || state.runMaxDepth);
       markUiDirty();
+    },
+    registerObserverBotFatalFailure(reason) {
+      registerObserverBotDepthFailure(state.depth, reason);
     },
     showRankedOtterRewardChest(slot) {
       return showRankedOtterRewardChest(slot);

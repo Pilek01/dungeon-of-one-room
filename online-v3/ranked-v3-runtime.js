@@ -2782,6 +2782,7 @@
           ui.hide();
           return;
         }
+        root.DungeonOnlineV3GameBridge?.registerObserverBotFatalFailure?.(context?.reason);
         root.DungeonOnlineV3GameBridge.resumeAfterFatal(directive, state, {
           reason: String(context?.reason || ""),
           lostRelicId: offers.lostRelicId(previousState?.build, state?.build)

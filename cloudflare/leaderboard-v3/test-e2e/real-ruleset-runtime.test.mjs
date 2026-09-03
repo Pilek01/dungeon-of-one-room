@@ -328,7 +328,7 @@ describe("Online v3 real ruleset Wrangler and D1 lifecycle", {
     port = await acquirePort();
     baseUrl = `http://127.0.0.1:${port}`;
     const version = await runWrangler(["--version"]);
-    assert.equal(version.stdout.trim(), "4.114.0");
+    assert.equal(version.stdout.trim(), "4.116.0");
     const migration = await runWrangler([
       "d1",
       "migrations",

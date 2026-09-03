@@ -2437,3 +2437,38 @@ Updated next good targets
 - Final candidate ruleset hash is `sha256:eaa89c2568870852173c67cfd601ddd32b649322b3d4bf3b66a2114621a6998a`; previous production `sha256:1b3103342a34e570842c73cd4454c9b2e5fa9b7895aac5835d18d4f1ee95b89b` remains registered with its full capability contract.
 - Final verification passes: phase 1103/1103, current-tree Ranked Lifecycle, current-tree HD, protected committed baseline 3/3, and guard 15/15.
 - No D1 migration, commit, push, ruleset activation, or deployment is included.
+## 2026-08-31 - Eight-bot session ee2fb62: three-failure diagnosis
+
+- Session `session-20260831033942-54e12c65` produced exactly three captured failures: bot 1 (`RANKED_MERCHANT_OFFER_DIRECTIVE_MISMATCH`), bot 5 (`INTERNAL_ERROR` while `issue_relic_offer` for Otter), and bot 6 (Merchant stall).
+- Bots 1 and 6 expose one Merchant boundary serialization defect. The Observer Bot closes only the native menu for a `leave` decision, while the canonical Merchant offer remains pending. Portal/extraction can then checkpoint or race before the canonical `leave` transaction finishes. Bot 1 persisted a depth-24 Merchant offer while the Worker had already issued the depth-25 boss directive; bot 6 reached the portal while its preceding Merchant purchase/leave sequence was still unresolved and remained automation-blocked.
+- Bot 5 exposes a separate Otter eligibility mismatch. The reward slot is issued from actual directive depth 23, but offer issuance validates `max(directive.depth, specialRoomPayload.scalingDepth)`; campaign scaling depth 25 is divisible by the boss interval and incorrectly throws `OTTER_RELIC_REWARD_DEPTH_INVALID`. Actual room eligibility must use directive depth; scaling depth may affect reward rarity/scaling only.
+- No product fix, ruleset regeneration, commit, push, or deployment was performed during this diagnostic step.
+
+## 2026-09-03 - Three-profile Observer Bot test wall
+
+- The eight-bot launcher now assigns and displays three explicit profiles:
+  bots 1-4 use `Endurance D50`, bots 5-6 use `Player-like`, and bots 7-8 use
+  `Endgame coverage`. The selected profile is preserved in live status,
+  diagnostics, session manifests, final results, and the local bot leaderboard.
+- `Endurance D50` prioritizes survivability, spends more of its early wallet,
+  uses potions proactively under incoming pressure, avoids high-risk relics and
+  mutators, farms after the first failed depth, and still advances through the
+  natural campaign.
+- `Player-like` preserves the existing ordinary-player risk and mutator policy
+  as the comparison/control cohort.
+- `Endgame coverage` uses the same legal Ranked lifecycle and may select an
+  already unlocked D31/D41 checkpoint after earning it inside its isolated bot
+  profile. It remains password-gated Observer QA and cannot publish an
+  assisted run to the official leaderboard.
+- Ranked fatal recovery now records an accepted Observer death before the next
+  canonical life begins, enabling the existing failure-driven farming policy.
+  Real-player Ranked behavior is unchanged. Combat projection also no longer
+  subtracts armor twice.
+- Candidate ruleset hash is
+  `sha256:3d96a2903ae98981d09fc0a36c2cb759ea79615e97d7d22b3827bdff7f7bd15a`;
+  it is generated and validated locally only, with no activation or deployment.
+- Verification passes: focused profile/launcher/runtime regressions 57/57,
+  additional Ranked compatibility regressions 71/71, phase 1128/1128,
+  current-tree Ranked Lifecycle, and protected committed baseline 3/3.
+- No commit, push, deployment, D1 migration, or production ruleset activation
+  is included.

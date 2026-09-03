@@ -17,10 +17,12 @@ function createFixture() {
   const removals = [];
   const resultWrites = [];
   let workerExit = null;
+  let workerRestart = null;
   const worker = {
     url: "http://127.0.0.1:9123",
     getLogs: () => "worker log",
     onExit(listener) { workerExit = listener; return () => { workerExit = null; }; },
+    onRestart(listener) { workerRestart = listener; return () => { workerRestart = null; }; },
     async stop() { order.push("worker:stop"); }
   };
 
@@ -36,6 +38,7 @@ function createFixture() {
     resultWrites,
     worker,
     async triggerWorkerExit() { await workerExit?.({ expected: false, code: 7 }); },
+    async triggerWorkerRestart() { await workerRestart?.({ attempt: 1, previousCode: 1 }); },
     options: {
       repoRoot: path.resolve("D:/repo"),
       sessionId: "session-a",
@@ -73,6 +76,10 @@ function createFixture() {
         captures.push([runtime.bot.id, incident]);
         return { botId: runtime.bot.id, artifactDir: runtime.bot.artifactDir, pageLeftOpen: true };
       },
+      async recoverBotAfterWorkerRestart(runtime) {
+        order.push(`${runtime.bot.id}:recover`);
+        return "retry";
+      },
       setInterval(callback) { const timer = { callback }; timers.push(timer); return timer; },
       clearInterval(timer) { timer.cleared = true; },
       wait: async () => {}
@@ -104,11 +111,18 @@ test("starts eight isolated windows sequentially on one Worker and one commit", 
     (event) => event.type === "bot_status" && event.status === "starting"
   );
   assert.equal(startingEvents.length, 8);
+  assert.deepEqual(startingEvents.map((event) => event.profileId), [
+    "endurance_d50", "endurance_d50", "endurance_d50", "endurance_d50",
+    "player_like", "player_like", "endgame_coverage", "endgame_coverage"
+  ]);
   assert.ok(startingEvents.every((event) => event.startingRelic === ""));
   assert.ok(startingEvents.every((event) => Array.isArray(event.relics)));
 
   const manifestText = JSON.stringify(fixture.manifests[0][1]);
   assert.match(manifestText, new RegExp(COMMIT, "u"));
+  assert.match(manifestText, /Endurance D50/u);
+  assert.match(manifestText, /Player-like/u);
+  assert.match(manifestText, /Endgame coverage/u);
   assert.doesNotMatch(manifestText, /observer-secret|signing-secret/u);
 });
 
@@ -190,6 +204,17 @@ test("marks every bot blocked and flushes the Worker log once on unexpected Work
   assert.equal(fixture.order.filter((entry) => entry.startsWith("write:worker.log")).length, 1);
   assert.equal(fixture.order.some((entry) => entry.endsWith(":stop")), false);
   assert.ok(controller.bots.every((bot) => bot.status === "blocked"));
+});
+
+test("keeps active bots running and recovers their pages after the shared Worker restarts", async () => {
+  const fixture = createFixture();
+  const controller = await startMultiBotWall(fixture.options);
+  await fixture.triggerWorkerRestart();
+
+  assert.equal(fixture.order.filter((entry) => entry.endsWith(":recover")).length, 8);
+  assert.ok(controller.bots.every((bot) => bot.status === "running"));
+  assert.equal(fixture.events.filter((event) => event.type === "worker_restarted").length, 1);
+  assert.equal(fixture.events.filter((event) => event.type === "bot_status" && event.status === "blocked").length, 0);
 });
 
 test("marks a legally finalized run complete without creating failure artifacts", async () => {

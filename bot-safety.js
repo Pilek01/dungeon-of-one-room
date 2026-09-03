@@ -1,6 +1,57 @@
 "use strict";
 
 (function initBotSafety(globalScope) {
+  const OBSERVER_BOT_TEST_PROFILE_POLICIES = Object.freeze({
+    endurance_d50: Object.freeze({
+      id: "endurance_d50",
+      label: "Endurance D50",
+      allowMutators: false,
+      skillReserveRatio: 0.35,
+      proactivePotionHpRatio: 0.62,
+      farmAfterFailures: 1,
+      targetCheckpoint: 0
+    }),
+    player_like: Object.freeze({
+      id: "player_like",
+      label: "Player-like",
+      allowMutators: true,
+      skillReserveRatio: 1,
+      proactivePotionHpRatio: 0,
+      farmAfterFailures: 2,
+      targetCheckpoint: 0
+    }),
+    endgame_coverage: Object.freeze({
+      id: "endgame_coverage",
+      label: "Endgame coverage",
+      allowMutators: false,
+      skillReserveRatio: 0.55,
+      proactivePotionHpRatio: 0.56,
+      farmAfterFailures: 1,
+      targetCheckpoint: 41
+    })
+  });
+
+  function getObserverBotTestProfilePolicy(profile) {
+    const id = String(profile || "player_like").trim().toLowerCase();
+    return OBSERVER_BOT_TEST_PROFILE_POLICIES[id] || OBSERVER_BOT_TEST_PROFILE_POLICIES.player_like;
+  }
+
+  function selectObserverBotStartDepth(options = {}) {
+    const availableDepths = [...new Set((Array.isArray(options.availableDepths) ? options.availableDepths : [])
+      .map((depth) => Math.max(0, Math.floor(Number(depth) || 0))))]
+      .sort((left, right) => left - right);
+    if (availableDepths.length <= 0) return 0;
+    if (options.farmMode === true || options.pressureActive === true) return availableDepths.includes(0) ? 0 : availableDepths[0];
+    const policy = getObserverBotTestProfilePolicy(options.profile);
+    if (policy.targetCheckpoint > 0) {
+      const endgameDepths = availableDepths.filter((depth) => depth >= 31 && depth <= policy.targetCheckpoint);
+      return endgameDepths.length > 0
+        ? endgameDepths[endgameDepths.length - 1]
+        : (availableDepths.includes(0) ? 0 : availableDepths[0]);
+    }
+    return availableDepths[availableDepths.length - 1];
+  }
+
   function getForgeTargetForBot(forge) {
     if (!forge || forge.used || !forge.awakened) return null;
     const x = Number.isFinite(Number(forge.interactX)) ? Number(forge.interactX) : Number(forge.x);
@@ -116,6 +167,16 @@
     }
     if (hpRatio > CRITICAL_HP_RATIO && hpAfterThreat / maxHp <= CRITICAL_HP_RATIO && meaningfulHeal && hpAfterPotionThreat > hpAfterThreat) {
       return { use: true, reason: "prevent_critical", actionKey };
+    }
+    const profilePolicy = getObserverBotTestProfilePolicy(options.profile);
+    if (
+      profilePolicy.proactivePotionHpRatio > 0 &&
+      hpRatio <= profilePolicy.proactivePotionHpRatio &&
+      projectedDamage > 0 &&
+      meaningfulHeal &&
+      hpAfterPotionThreat > hpAfterThreat
+    ) {
+      return { use: true, reason: "profile_survival_heal", actionKey };
     }
     const livesValue = Number(options.lives);
     const pressure = options.bossRoom === true || (Number.isFinite(livesValue) && livesValue <= 2);
@@ -452,9 +513,11 @@
     getBotEarlyPotionUpgradePlan,
     getBotGoldBankingPressure,
     getBotSkillSavingsUpgradeCount,
+    getObserverBotTestProfilePolicy,
     getForgeTargetForBot,
     getPendingBlastZones,
     mergeBotActionCandidate,
+    selectObserverBotStartDepth,
     shouldBotBlockPathTile
   };
 

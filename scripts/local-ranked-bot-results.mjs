@@ -54,6 +54,15 @@ function normalizeStartingRelic(value) {
   });
 }
 
+function normalizeBotProfile(value) {
+  const id = nonEmptyString(value?.id);
+  if (!id) return null;
+  return Object.freeze({
+    id,
+    label: nonEmptyString(value?.label) || id
+  });
+}
+
 export function normalizeRelics(value, names = {}) {
   if (!Array.isArray(value)) return Object.freeze([]);
   const grouped = new Map();
@@ -95,6 +104,7 @@ export function mergeBotResult(previous, update = {}) {
   const startedAt = validTimestamp(prior.startedAt) || validTimestamp(update.startedAt) || updatedAt;
   const previousStartingRelic = normalizeStartingRelic(prior.startingRelic);
   const startingRelic = previousStartingRelic || normalizeStartingRelic(update.startingRelic);
+  const botProfile = normalizeBotProfile(prior.botProfile) || normalizeBotProfile(update.botProfile);
   const canonicalRelics = publicState.build && Array.isArray(publicState.build.relics)
     ? normalizeRelics(publicState.build.relics, sample.relicNames)
     : null;
@@ -115,6 +125,7 @@ export function mergeBotResult(previous, update = {}) {
     sessionId: nonEmptyString(prior.sessionId) || nonEmptyString(update.sessionId) || "",
     botId: nonEmptyString(prior.botId) || nonEmptyString(update.botId) || "",
     botName: nonEmptyString(prior.botName) || nonEmptyString(update.botName) || "",
+    botProfile,
     commit: nonEmptyString(prior.commit) || nonEmptyString(update.commit) || "",
     startedAt,
     updatedAt,
@@ -161,6 +172,11 @@ function validResult(value) {
   if (!validTimestamp(value.updatedAt) || !validTimestamp(value.startedAt)) return false;
   if (value.finishedAt !== null && value.finishedAt !== undefined && !validTimestamp(value.finishedAt)) return false;
   if (String(value.botName || "").length > 100) return false;
+  if (value.botProfile !== null && value.botProfile !== undefined) {
+    if (!value.botProfile || typeof value.botProfile !== "object") return false;
+    if (!nonEmptyString(value.botProfile.id) || String(value.botProfile.id).length > 100) return false;
+    if (!nonEmptyString(value.botProfile.label) || String(value.botProfile.label).length > 200) return false;
+  }
   if (String(value.error || "").length > 4_000 || String(value.lastDecision || "").length > 500) return false;
   if (!["live", "final_last_life", "last_observed"].includes(String(value.buildLabel || ""))) return false;
   if (value.startingRelic !== null && value.startingRelic !== undefined) {

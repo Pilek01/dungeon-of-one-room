@@ -6,6 +6,7 @@ import {
   resolveChromeExecutable,
   startBotRun
 } from "../scripts/local-ranked-multi-bot-browser.mjs";
+import * as botBrowser from "../scripts/local-ranked-multi-bot-browser.mjs";
 
 const X86_CHROME = "C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe";
 
@@ -222,4 +223,58 @@ test("starts fresh Ranked, selects the bot-assigned relic, and enables Observer 
     "press:F9",
     "waitForFunction"
   ]);
+});
+
+test("recovers a bot with the exact pending action before falling back to canonical resync", async () => {
+  assert.equal(typeof botBrowser.recoverBotAfterWorkerRestart, "function");
+  const clicks = [];
+  const page = {
+    getByRole(_role, options) {
+      return {
+        async isVisible() { return options.name === "Retry exact action"; },
+        async click() { clicks.push(options.name); }
+      };
+    }
+  };
+
+  const action = await botBrowser.recoverBotAfterWorkerRestart({ page }, {
+    attempts: 1,
+    wait: async () => {}
+  });
+
+  assert.equal(action, "retry");
+  assert.deepEqual(clicks, ["Retry exact action"]);
+});
+
+test("injects the assigned test profile before game scripts load", async () => {
+  const initValues = [];
+  const page = { on() {}, async bringToFront() {} };
+  const cdp = {
+    async send(method) {
+      if (method === "Browser.getWindowForTarget") return { windowId: 7 };
+      return {};
+    }
+  };
+  const context = {
+    addInitScript(_fn, value) { initValues.push(value); },
+    pages() { return [page]; },
+    async newCDPSession() { return cdp; },
+    async close() {}
+  };
+  const chromium = { async launchPersistentContext() { return context; } };
+  await launchBotWindow({
+    chromium,
+    chromeExecutable: X86_CHROME,
+    bot: {
+      id: "bot-07",
+      index: 7,
+      name: "bot 7",
+      profileDir: "D:/profiles/bot-07",
+      botProfile: { id: "endgame_coverage", label: "Endgame coverage" }
+    },
+    bounds: { x: 0, y: 0, width: 540, height: 468 },
+    nativeWindowPlacer: async () => {}
+  });
+
+  assert.equal(initValues[0].profileId, "endgame_coverage");
 });

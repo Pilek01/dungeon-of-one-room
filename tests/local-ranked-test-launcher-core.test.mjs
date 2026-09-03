@@ -139,7 +139,10 @@ test("multi-bot CLI always selects the newest listed commit and starts one share
     listLocalCandidates: async () => ({ branch: { name: "main" }, commits: [
       { hash: HASH_A, subject: "newest" }, { hash: HASH_B, subject: "older" }
     ] }),
-    startLocalRankedTest: async (commit) => { calls.push(["worker", commit.hash]); return worker; },
+    startLocalRankedTest: async (commit, workerOptions) => {
+      calls.push(["worker", commit.hash, workerOptions.wranglerLogPath]);
+      return worker;
+    },
     startMultiBotWall: async (options) => {
       calls.push(["wall", options.commit, options.worker]);
       options.emit({ type: "artifact_root", path: wall.sessionRoot });
@@ -148,7 +151,11 @@ test("multi-bot CLI always selects the newest listed commit and starts one share
   });
 
   assert.equal(result, wall);
-  assert.deepEqual(calls, [["worker", HASH_A], ["wall", HASH_A, worker]]);
+  assert.deepEqual(calls, [[
+    "worker",
+    HASH_A,
+    path.resolve("D:/repo/output/multi-bot-runs/session-a/wrangler-debug.log")
+  ], ["wall", HASH_A, worker]]);
   assert.deepEqual(events.map((event) => event.type), ["wall_starting", "artifact_root", "wall_ready"]);
 });
 

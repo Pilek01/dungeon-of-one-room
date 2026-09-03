@@ -24,6 +24,6 @@ test("local Wrangler config selects the exact real release candidate and contain
   assert.equal("RANKED_V3_HMAC_SECRET" in config.vars, false);
   assert.doesNotMatch(configText, /ONLINE_V3_LOCAL_FIXTURE|fixture-season/u);
   assert.doesNotMatch(configText, /REPLACE_WITH_D1_DATABASE_ID|api[_-]?key|token\s*:/iu);
-  assert.equal(packageJson.devDependencies.wrangler, "4.114.0");
-  assert.equal(packageLock.packages["node_modules/wrangler"].version, "4.114.0");
+  assert.equal(packageJson.devDependencies.wrangler, "4.116.0");
+  assert.equal(packageLock.packages["node_modules/wrangler"].version, "4.116.0");
 });
