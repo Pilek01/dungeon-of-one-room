@@ -81,6 +81,27 @@
     return options.loopPingPongActive === true ? "portal_recovery" : "normal";
   }
 
+  function getBotCombatProgressState(options = {}) {
+    const moved = options.moved === true;
+    const enemyCount = Math.max(0, Number(options.enemyCount) || 0);
+    const previousEnemyCount = Math.max(0, Number(options.previousEnemyCount) || 0);
+    const enemyHpTotal = Math.max(0, Number(options.enemyHpTotal) || 0);
+    const previousEnemyHpTotal = Math.max(0, Number(options.previousEnemyHpTotal) || 0);
+    const loopPingPongActive = options.loopPingPongActive === true;
+    const enemyProgress = enemyCount < previousEnemyCount || enemyHpTotal < previousEnemyHpTotal;
+    const madeProgress = enemyProgress || (moved && !loopPingPongActive);
+    const stallTicks = madeProgress
+      ? 0
+      : Math.min(999, Math.max(0, Number(options.stallTicks) || 0) + 1);
+    return {
+      moved,
+      enemyProgress,
+      madeProgress,
+      stallTicks,
+      forceAggro: (!enemyProgress && loopPingPongActive) || stallTicks >= 5
+    };
+  }
+
   function canBotDrinkPotion(options = {}) {
     if (options.hasRisk) return false;
     if (Math.max(0, Number(options.oathPotionLockTurns) || 0) > 0) return false;
@@ -509,6 +530,7 @@
     decideBotOffensiveMine,
     decideBotPotionUse,
     getBotCombatChestAdjustment,
+    getBotCombatProgressState,
     getBotPostClearNavigationMode,
     getBotEarlyPotionUpgradePlan,
     getBotGoldBankingPressure,

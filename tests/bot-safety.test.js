@@ -26,6 +26,7 @@ const {
   decideBotPotionUse,
   getBotEarlyPotionUpgradePlan,
   getBotCombatChestAdjustment,
+  getBotCombatProgressState,
   getBotPostClearNavigationMode,
   getBotGoldBankingPressure,
   getObserverBotTestProfilePolicy,
@@ -96,6 +97,81 @@ function run() {
   assert.equal(getBotPostClearNavigationMode({ portalPresent: true, loopPingPongActive: true }), "portal_recovery");
   assert.equal(getBotPostClearNavigationMode({ portalPresent: true, loopPingPongActive: false }), "normal");
   assert.equal(getBotPostClearNavigationMode({ portalPresent: false, loopPingPongActive: true }), "missing_portal");
+  assert.deepEqual(
+    getBotCombatProgressState({
+      moved: true,
+      loopPingPongActive: true,
+      enemyCount: 1,
+      previousEnemyCount: 1,
+      enemyHpTotal: 40,
+      previousEnemyHpTotal: 40,
+      stallTicks: 0
+    }),
+    {
+      moved: true,
+      enemyProgress: false,
+      madeProgress: false,
+      stallTicks: 1,
+      forceAggro: true
+    },
+    "A-B movement without enemy progress must break the combat loop"
+  );
+  assert.deepEqual(
+    getBotCombatProgressState({
+      moved: true,
+      loopPingPongActive: false,
+      enemyCount: 1,
+      previousEnemyCount: 1,
+      enemyHpTotal: 40,
+      previousEnemyHpTotal: 40,
+      stallTicks: 4
+    }),
+    {
+      moved: true,
+      enemyProgress: false,
+      madeProgress: true,
+      stallTicks: 0,
+      forceAggro: false
+    },
+    "ordinary movement remains valid progress"
+  );
+  assert.equal(
+    getBotCombatProgressState({
+      moved: true,
+      loopPingPongActive: true,
+      enemyCount: 1,
+      previousEnemyCount: 1,
+      enemyHpTotal: 30,
+      previousEnemyHpTotal: 40,
+      stallTicks: 3
+    }).forceAggro,
+    false,
+    "real combat progress must not trigger the loop breaker"
+  );
+  const forceAggroSource = extractFunction(game, "shouldObserverBotForceAggro");
+  assert.match(forceAggroSource, /getBotCombatProgressStateSafe\(\{/);
+  assert.match(forceAggroSource, /loopPingPongActive: bot\.loopPingPongActive/);
+  assert.match(forceAggroSource, /return progress\.forceAggro;/);
+
+  const observerThreatSource = extractFunction(game, "buildObserverBotThreatMap");
+  assert.match(observerThreatSource, /: state\.spikes;/, "Observer threat scoring must model actual spikes only");
+  assert.doesNotMatch(
+    observerThreatSource,
+    /getEnemyHazardTiles\(\)/,
+    "unarmed mines must not be scored as immediate spike damage"
+  );
+  const candidateSource = extractFunction(game, "buildObserverBotCombatActionCandidates");
+  assert.doesNotMatch(candidateSource, /onSpike: isHazardAt\(/);
+  assert.equal(
+    (candidateSource.match(/onSpike: isSpikeAt\(/g) || []).length,
+    3,
+    "all Observer movement candidates must distinguish spikes from mines"
+  );
+  assert.doesNotMatch(
+    extractFunction(game, "projectObserverBotCombatLookahead"),
+    /spikes: getEnemyHazardTiles\(\)/,
+    "Observer lookahead must not turn mines into spike damage"
+  );
 
   assert.equal(canBotDrinkPotion({ potions: 2, hp: 30, maxHp: 100, oathPotionLockTurns: 0 }), true);
   assert.equal(canBotDrinkPotion({ potions: 1, hp: 100, maxHp: 100, poisonTurns: 3, poisonDamage: 8 }), true);

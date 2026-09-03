@@ -136,6 +136,18 @@
     decideBotOffensiveMine: decideBotOffensiveMineSafe = () => ({ use: false, reason: "mine_not_available", escape: null }),
     decideBotPotionUse: decideBotPotionUseSafe = () => ({ use: false, reason: "blocked_empty", actionKey: "" }),
     getBotCombatChestAdjustment: getBotCombatChestAdjustmentSafe = () => 0,
+    getBotCombatProgressState: getBotCombatProgressStateSafe = ({ moved, enemyCount, previousEnemyCount, enemyHpTotal, previousEnemyHpTotal, stallTicks, loopPingPongActive }) => {
+      const enemyProgress = enemyCount < previousEnemyCount || enemyHpTotal < previousEnemyHpTotal;
+      const madeProgress = enemyProgress || (moved === true && loopPingPongActive !== true);
+      const nextStallTicks = madeProgress ? 0 : Math.min(999, Math.max(0, Number(stallTicks) || 0) + 1);
+      return {
+        moved: moved === true,
+        enemyProgress,
+        madeProgress,
+        stallTicks: nextStallTicks,
+        forceAggro: (!enemyProgress && loopPingPongActive === true) || nextStallTicks >= 5
+      };
+    },
     getBotPostClearNavigationMode: getBotPostClearNavigationModeSafe = ({ portalPresent }) => portalPresent ? "normal" : "missing_portal",
     getBotEarlyPotionUpgradePlan: getBotEarlyPotionUpgradePlanSafe = () => ({ active: false, recommendedUpgrade: null }),
     getBotGoldBankingPressure: getBotGoldBankingPressureSafe = () => ({ threshold: Infinity, score: 0, ratio: 0, strong: false }),
@@ -29077,19 +29089,22 @@
     const prevEnemyCount = Math.max(0, Number(bot.lastEnemyCount) || 0);
     const prevEnemyHpTotal = Math.max(0, Number(bot.lastEnemyHpTotal) || 0);
     const moved = prevX !== state.player.x || prevY !== state.player.y;
-    const madeProgress = moved || enemyCount < prevEnemyCount || enemyHpTotal < prevEnemyHpTotal;
-
-    if (madeProgress) {
-      bot.stallTicks = 0;
-    } else {
-      bot.stallTicks = Math.min(999, Math.max(0, Number(bot.stallTicks) || 0) + 1);
-    }
+    const progress = getBotCombatProgressStateSafe({
+      moved,
+      enemyCount,
+      previousEnemyCount: prevEnemyCount,
+      enemyHpTotal,
+      previousEnemyHpTotal: prevEnemyHpTotal,
+      stallTicks: bot.stallTicks,
+      loopPingPongActive: bot.loopPingPongActive
+    });
+    bot.stallTicks = progress.stallTicks;
 
     bot.lastPosX = state.player.x;
     bot.lastPosY = state.player.y;
     bot.lastEnemyCount = enemyCount;
     bot.lastEnemyHpTotal = enemyHpTotal;
-    return bot.stallTicks >= 5;
+    return progress.forceAggro;
   }
 
   function shouldBotRiskSpikeStep(context = "combat") {
@@ -29280,7 +29295,7 @@
     const depth = Math.max(0, Number(options.depth ?? state.depth) || 0);
     const playerArmor = Math.max(0, Number(options.playerArmor ?? state.player.armor) || 0);
     const enemies = Array.isArray(options.enemies) ? options.enemies : state.enemies;
-    const spikes = Array.isArray(options.spikes) ? options.spikes : getEnemyHazardTiles();
+    const spikes = Array.isArray(options.spikes) ? options.spikes : state.spikes;
     const chests = Array.isArray(options.chests)
       ? options.chests
       : (state.chests || []).filter((chest) => !chest.opened);
@@ -29709,7 +29724,7 @@
         dy: dir.dy,
         attack: Boolean(targetEnemy),
         targetEnemy: targetEnemy || null,
-        onSpike: isHazardAt(nx, ny),
+        onSpike: isSpikeAt(nx, ny),
         onChest: Boolean(getChestAt(nx, ny))
       });
     }
@@ -29728,7 +29743,7 @@
         risky: Boolean(chasePlan.risky),
         attack: Boolean(getEnemyAt(nx, ny)),
         targetEnemy: getEnemyAt(nx, ny),
-        onSpike: isHazardAt(nx, ny),
+        onSpike: isSpikeAt(nx, ny),
         onChest: Boolean(getChestAt(nx, ny))
       });
     }
@@ -29744,7 +29759,7 @@
         fallback: true,
         attack: Boolean(getEnemyAt(nx, ny)),
         targetEnemy: getEnemyAt(nx, ny),
-        onSpike: isHazardAt(nx, ny),
+        onSpike: isSpikeAt(nx, ny),
         onChest: Boolean(getChestAt(nx, ny))
       });
     }
@@ -30057,7 +30072,7 @@
         depth: state.depth,
         playerArmor: armor,
         enemies: simEnemies,
-        spikes: getEnemyHazardTiles(),
+        spikes: state.spikes,
         chests: (state.chests || []).filter((chest) => !chest.opened)
       });
       let incoming = futureThreat.damageAt(simX, simY);
