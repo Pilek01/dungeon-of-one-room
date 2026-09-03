@@ -24501,7 +24501,7 @@
           return ri.label;
         });
         if (state.startingRelicDraft) {
-          subtitle = "Pick 1 of 3 fixed normal relics before entering the dungeon.";
+          subtitle = "Pick 1 of 3 fixed normal relics. Your starting relic cannot be lost on death through Depth 10.";
         } else if (state.roomType === "forge") {
           title = state.forgeTransmutePending ? "Forge Transmute" : (state.forgeRewardMode === "temper" ? "Forge Temper" : "Forge Chamber");
           subtitle = state.forgeTransmutePending

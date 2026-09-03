@@ -12,6 +12,7 @@ import {
   V08_META_1_PLAYTEST_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR,
   V08_META_1_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR,
   V08_META_1_MERCHANT_FAVOR_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR,
+  V08_META_1_SHRINE_ELITE_BUDGET_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR,
   V08_META_1_POTION_MERCHANT_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR,
   V08_META_1_PRODUCTION_RELEASE_DESCRIPTOR,
   V08_META_1_R2_PRODUCTION_RELEASE_DESCRIPTOR,
@@ -175,7 +176,7 @@ test("historical production releases strip fatal causes while the activated rele
       campaignChronicle: "v1",
       merchantExitBarrier: "v1",
       otterActualDepthEligibility: "v1",
-      roomEliteBudgetByType: "v1",
+      roomEliteBudgetByType: "v2",
       merchantFavorTierOneUnique: "v1"
     }
   );
@@ -197,7 +198,7 @@ test("historical production releases strip fatal causes while the activated rele
       campaignChronicle: "v1",
       merchantExitBarrier: "v1",
       otterActualDepthEligibility: "v1",
-      roomEliteBudgetByType: "v1",
+      roomEliteBudgetByType: "v2",
       merchantFavorTierOneUnique: "v1"
     }
   );
@@ -213,6 +214,7 @@ test("every retained production hash can create its own initial state", () => {
     V08_META_1_INTEGRITY_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR,
     V08_META_1_POTION_MERCHANT_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR,
     V08_META_1_MERCHANT_FAVOR_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR,
+    V08_META_1_SHRINE_ELITE_BUDGET_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR,
     V08_META_1_PRODUCTION_RELEASE_DESCRIPTOR
   ]) {
     const state = descriptor.createRuleset().createInitialMetaState({

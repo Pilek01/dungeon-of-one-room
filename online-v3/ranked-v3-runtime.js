@@ -1205,7 +1205,7 @@
       const offer = state.startingRelicOffer;
       ui.showChoices(
         "Choose Starting Relic",
-        "Choose one relic to carry into the dungeon.",
+        "Choose one relic to carry into the dungeon. Your starting relic cannot be lost on death through Depth 10.",
         offer?.publicChoices || [],
         async (choiceId) => {
           try {

@@ -133,9 +133,12 @@ function enemyMaximumForRoom(roomType) {
 }
 
 function eliteMaximumForRoom(roomType, capabilities = {}) {
-  const configured = capabilities?.roomEliteBudgetByType === "v1"
-    ? rewardBounds.enemyClaims.maximumElitesByRoom?.[roomType]
-    : undefined;
+  const budgetVersion = capabilities?.roomEliteBudgetByType;
+  const configured = budgetVersion === "v2"
+    ? rewardBounds.enemyClaims.maximumCumulativeElitesByRoom?.[roomType]
+    : budgetVersion === "v1"
+      ? rewardBounds.enemyClaims.maximumElitesByRoom?.[roomType]
+      : undefined;
   if (configured !== undefined && Number.isFinite(Number(configured))) {
     return Math.max(0, Number(configured));
   }

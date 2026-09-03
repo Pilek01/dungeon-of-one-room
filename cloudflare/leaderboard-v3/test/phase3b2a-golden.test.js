@@ -201,6 +201,102 @@ async function pactRoomIssuedState(capabilities = { roomEliteBudgetByType: "v1" 
   return state;
 }
 
+async function shrineRoomIssuedState(capabilities = { roomEliteBudgetByType: "v2" }) {
+  const resolvedContext = context("run_shrine_elite_budget");
+  const state = await issuedState({ runId: resolvedContext.runId, depth: 21 });
+  const directive = {
+    ...state.currentRoomDirective,
+    roomType: "shrine",
+    roomCategory: "special",
+    specialRoomPayload: { scalingDepth: 22 }
+  };
+  state.currentRoomDirective = directive;
+  state.currentRewardEnvelope = await createRoomRewardEnvelopeV3({
+    state,
+    directive,
+    envelopeId: "envelope_shrine_elite_budget",
+    cryptoProvider: globalThis.crypto,
+    capabilities,
+    randomOracle: resolvedContext.randomOracle,
+    secret: resolvedContext.secret
+  });
+  return state;
+}
+
+test("Shrine accepts five cumulative elite kills after a legal curse summon and preserves their gold", async () => {
+  const capabilities = { roomEliteBudgetByType: "v2" };
+  const state = await shrineRoomIssuedState(capabilities);
+  const claims = [
+    { claimType: "enemy", claimId: "enemy:skitter", count: 1 },
+    { claimType: "enemy", claimId: "enemy:acolyte", count: 1 },
+    { claimType: "elite", claimId: "elite:skitter", count: 1 },
+    { claimType: "elite", claimId: "elite:brute", count: 1 },
+    { claimType: "elite", claimId: "elite:slime", count: 1 },
+    { claimType: "elite", claimId: "elite:skeleton", count: 1 },
+    { claimType: "elite", claimId: "elite:acolyte", count: 1 }
+  ];
+
+  const result = await settleRoomRewardEnvelopeV3(
+    state,
+    validRequest(state, {
+      claims,
+      reportedGoldDelta: 41,
+      reportedGoldTotal: 41
+    }),
+    { capabilities }
+  );
+
+  assert.equal(result.authoritativeGoldDelta, 41);
+  assert.equal(result.state.mutatorProgress.eliteKills, 5);
+  assert.equal(result.state.gold, 41);
+});
+
+test("Shrine v2 accepts at most six cumulative elites while v1 retains the cap of four", async () => {
+  const v2Capabilities = { roomEliteBudgetByType: "v2" };
+  const maximumClaims = [
+    { claimType: "elite", claimId: "elite:slime", count: 2 },
+    { claimType: "elite", claimId: "elite:skeleton", count: 1 },
+    { claimType: "elite", claimId: "elite:brute", count: 1 },
+    { claimType: "elite", claimId: "elite:skitter", count: 1 },
+    { claimType: "elite", claimId: "elite:acolyte", count: 1 }
+  ];
+  const maximumState = await shrineRoomIssuedState(v2Capabilities);
+  const maximumResult = await settleRoomRewardEnvelopeV3(
+    maximumState,
+    validRequest(maximumState, { claims: maximumClaims }),
+    { capabilities: v2Capabilities }
+  );
+  assert.equal(maximumResult.state.mutatorProgress.eliteKills, 6);
+
+  const excessiveState = await shrineRoomIssuedState(v2Capabilities);
+  await expectRejected(
+    excessiveState,
+    validRequest(excessiveState, {
+      claims: [
+        ...maximumClaims,
+        { claimType: "elite", claimId: "elite:totem", count: 1 }
+      ]
+    }),
+    /REWARD_CLAIM_ROOM_ELITE_BUDGET/u,
+    { capabilities: v2Capabilities }
+  );
+
+  const v1Capabilities = { roomEliteBudgetByType: "v1" };
+  const legacyState = await shrineRoomIssuedState(v1Capabilities);
+  await expectRejected(
+    legacyState,
+    validRequest(legacyState, {
+      claims: [
+        { claimType: "elite", claimId: "elite:slime", count: 2 },
+        { claimType: "elite", claimId: "elite:skeleton", count: 2 },
+        { claimType: "elite", claimId: "elite:brute", count: 1 }
+      ]
+    }),
+    /REWARD_CLAIM_ROOM_ELITE_BUDGET/u,
+    { capabilities: v1Capabilities }
+  );
+});
+
 test("Pact room accepts its source-authored maximum of seven elite enemies", async () => {
   const capabilities = { roomEliteBudgetByType: "v1" };
   const state = await pactRoomIssuedState(capabilities);

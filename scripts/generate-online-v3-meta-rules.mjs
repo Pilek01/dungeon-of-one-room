@@ -2798,12 +2798,35 @@ function buildCanonicalData(records, textByFile) {
       ? profile.maxEnemies
       : Math.min(profile.maxEnemies, maximumElitesPerRoom)
   ));
+  const shrineCurseSpawn = extractFunctionSlice(gameSource, "spawnShrineCurseEnemies");
+  const maximumShrineCurseEnemies = Number(requireMatch(
+    shrineCurseSpawn,
+    /const spawnCount = clamp\([\s\S]*?,\s*0,\s*(\d+)\);/u,
+    "spawnShrineCurseEnemies:maximum"
+  )[1]);
+  const activateShrine = extractFunctionSlice(gameSource, "activateShrine");
+  const maximumShrineCurseRoll = Number(requireMatch(
+    activateShrine,
+    /spawnShrineCurseEnemies\(randInt\(1,\s*(\d+)\)\)/u,
+    "activateShrine:summonMaximum"
+  )[1]);
+  if (maximumShrineCurseEnemies !== maximumShrineCurseRoll) {
+    throw new Error("SHRINE_CURSE_SOURCE_REVIEW_REQUIRED:SUMMON_MAXIMUM_MISMATCH");
+  }
   const maximumElitesByRoom = Object.fromEntries(
     Object.entries(maximumEnemiesByRoom).map(([roomType, maximumEnemies]) => [
       roomType,
       roomType === "pact"
         ? Math.min(maximumEnemies, maximumPactElites)
         : Math.min(maximumEnemies, maximumElitesPerRoom)
+    ])
+  );
+  const maximumCumulativeElitesByRoom = Object.fromEntries(
+    Object.entries(maximumElitesByRoom).map(([roomType, maximumElites]) => [
+      roomType,
+      roomType === "shrine"
+        ? Math.min(maximumEnemiesByRoom[roomType], maximumElites + maximumShrineCurseEnemies)
+        : maximumElites
     ])
   );
   const roomRewardBoundsData = {
@@ -2825,6 +2848,7 @@ function buildCanonicalData(records, textByFile) {
         maximumEnemiesByRoom,
         maximumElitesPerRoom,
         maximumElitesByRoom,
+        maximumCumulativeElitesByRoom,
         rewardBonusByRoom: { horde: 1, duel: 10, arena: 2 },
         duplicatePolicy: "REJECT_DUPLICATE_CLAIM_ID"
       },
