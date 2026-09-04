@@ -2505,3 +2505,27 @@ Updated next good targets
   pass, and their fresh screenshots were visually inspected.
 - Production release verification and deployment are intentionally recorded
   after the exact candidate commit exists.
+
+## 2026-09-04 - v0.8.3 production release
+
+- Release commit `1562a29dbc73167315da4d57c90465fca4ac9bbc` passed
+  `verify:full` 1155/1155 after Kamil approved all six archive screenshots;
+  visual fingerprint is
+  `sha256:f5c903f96da4cb9c16f9b32f1ab3a0c5178ebd2a847df18c8533f42877234b9d`.
+- `main` was pushed through `1562a29`. Production D1 had no pending
+  migrations; pre-release Time Travel bookmark is
+  `00000fc9-00000000-000050dc-e927053b30d03bdbc29c865604717dc7`.
+- Worker version `8657997c-3b6f-48c8-b25d-4d6af7b948f5` passed 5% and 25%
+  canaries with zero availability errors and is active at 100%. Direct Worker
+  rollback is `21927095-1d9e-4501-be9a-f68477fb4960`.
+- Active production ruleset is
+  `sha256:6f3df4c80298d16c42ca9277adb533f63a6c767fed209000aa17340ad7da8758`;
+  predecessor `sha256:125736f040dfd77d8d7a1fe26126a235dc80dd39c7899c2e84d55dcaf7ea5ea5`
+  remains compatible.
+- Corrected Pages deployment `d595de32-9428-4573-b8d9-b35b2e28ed96`
+  includes the Functions bundle and is live at both the stable hostname and
+  `https://d595de32.dungeon-of-one-room.pages.dev`. The first static-only
+  `4306e67f...` upload was caught by smoke and immediately superseded.
+- Stable and immutable Pages roots, availability, and leaderboard return HTTP
+  200; API responses are JSON and four critical client files match the local
+  release byte-for-byte. Direct Pages rollback is `5eb58a9d...`.
