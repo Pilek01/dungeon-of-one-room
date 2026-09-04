@@ -186,10 +186,7 @@ export async function startBotRun(runtime, options) {
   await page.waitForFunction(() => window.DungeonOnlineV3?.getSessionState?.() === "ROOM_ACTIVE");
   await page.evaluate((password) => { window.prompt = () => password; }, options.password);
   await page.keyboard.press("F9");
-  await page.locator(".overlay-card-debug-cheats").waitFor({ state: "visible" });
-  await page.keyboard.press("b");
   await page.waitForFunction(() => window.DungeonOnlineV3GameBridge?.isRankedTestBotActive?.() === true);
-  await page.keyboard.press("F9");
   await page.waitForFunction(() => JSON.parse(window.render_game_to_text()).rankedHudStatus?.kind === "observer");
 
   return Object.freeze({

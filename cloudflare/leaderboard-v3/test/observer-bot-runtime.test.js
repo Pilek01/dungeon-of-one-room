@@ -100,6 +100,7 @@ function createHarness(options = {}) {
   const runtimeSnapshots = [];
   const diagnosticExports = [];
   const rankedDiagnostics = [];
+  const botProfileStarts = [];
   let snapshot = {
     publicState: metaState({
       currentRoomDirective: {
@@ -228,6 +229,9 @@ function createHarness(options = {}) {
       ? (timer) => { if (timer) timer.cleared = true; }
       : clearTimeout,
     location: { href: "https://example.test/" },
+    prompt: () => options.botPassword ?? "",
+    DUNGEON_ONLINE_TEST_BOT_ENABLED: options.testBotEnabled === true,
+    DUNGEON_OBSERVER_TEST_PROFILE: options.preconfiguredBotProfile,
     document: {
       body: { append() {} },
       createElement: element
@@ -302,6 +306,15 @@ function createHarness(options = {}) {
       createStore() { return store; }
     },
     DungeonOnlineV3GameBridge: {
+      async unlockRankedTestBot(password) {
+        return typeof options.unlockTestBot === "function"
+          ? options.unlockTestBot(password)
+          : false;
+      },
+      startRankedTestBot(profile) {
+        botProfileStarts.push(profile);
+        return true;
+      },
       isRankedTestBotActive() { return options.observerBotActive !== false; },
       requiresRankedTestAssistance() { return options.testAssistanceRequired === true; },
       syncCanonicalProjection() {},
@@ -370,7 +383,8 @@ function createHarness(options = {}) {
     merchantPresentations,
     runtimeSnapshots,
     diagnosticExports,
-    rankedDiagnostics
+    rankedDiagnostics,
+    botProfileStarts
   };
 }
 
@@ -407,6 +421,43 @@ async function waitForTimer(predicate, message) {
   }
   assert.fail(message);
 }
+
+test("password unlock presents all profiles and starts the selected Observer Bot immediately", async () => {
+  const harness = createHarness({
+    testBotEnabled: true,
+    botPassword: "chosen-locally",
+    unlockTestBot(password) { return password === "chosen-locally"; }
+  });
+  await installRuntime(harness);
+
+  assert.equal(await harness.root.DungeonOnlineV3.requestTestControlsUnlock(), true);
+  assert.deepEqual(harness.botProfileStarts, []);
+  const [title, description, buttons] = harness.uiMenus.at(-1);
+  assert.equal(title, "Observer Bot Profile");
+  assert.match(description, /starts immediately/u);
+  assert.deepEqual(Array.from(buttons, (button) => button.label), [
+    "1 · Endurance D50",
+    "2 · Player-like",
+    "3 · Endgame coverage"
+  ]);
+
+  await buttons[0].onClick();
+  assert.deepEqual(harness.botProfileStarts, ["endurance_d50"]);
+});
+
+test("a launcher-preconfigured profile bypasses the chooser and starts immediately", async () => {
+  const harness = createHarness({
+    testBotEnabled: true,
+    botPassword: "chosen-locally",
+    preconfiguredBotProfile: "endgame_coverage",
+    unlockTestBot(password) { return password === "chosen-locally"; }
+  });
+  await installRuntime(harness);
+
+  assert.equal(await harness.root.DungeonOnlineV3.requestTestControlsUnlock(), true);
+  assert.deepEqual(harness.botProfileStarts, ["endgame_coverage"]);
+  assert.equal(harness.uiMenus.length, 0);
+});
 
 function deferred() {
   let resolve;

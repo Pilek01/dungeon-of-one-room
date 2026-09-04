@@ -217,10 +217,7 @@ test("starts fresh Ranked, selects the bot-assigned relic, and enables Observer 
     "waitForFunction",
     "password:observer-secret",
     "press:F9",
-    "wait:.overlay-card-debug-cheats:visible",
-    "press:b",
     "waitForFunction",
-    "press:F9",
     "waitForFunction"
   ]);
 });

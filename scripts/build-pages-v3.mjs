@@ -1134,10 +1134,17 @@ const productionGameReplacements = [
       state.audioMuted = true;
       setStorageItem(STORAGE_AUDIO_MUTED, "1");
       syncBgmWithState(true);
-      toggleDebugCheatMenu(true, { botOnly: false });
       pushLog("Ranked test controls unlocked for this run.", "warn");
       markUiDirty();
       return true;
+    },
+    startRankedTestBot(profile) {
+      if (!state.onlineV3Ranked || !state.onlineV3TestBotUnlocked) return false;
+      if (!setObserverBotTestProfile(profile)) return false;
+      setObserverBotEnabled(true);
+      pushLog("Observer Bot profile: " + String(profile) + ".", "warn");
+      markUiDirty();
+      return isObserverBotActive();
     },
     enterRankedCamp(profile, offer) {
       const wasCamp = state.phase === "camp";

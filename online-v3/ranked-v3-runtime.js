@@ -2887,14 +2887,40 @@
     setRankedHudSyncing(false);
     return response;
   }
+  const TEST_BOT_PROFILES = Object.freeze([
+    Object.freeze({ id: "endurance_d50", label: "1 · Endurance D50" }),
+    Object.freeze({ id: "player_like", label: "2 · Player-like" }),
+    Object.freeze({ id: "endgame_coverage", label: "3 · Endgame coverage" })
+  ]);
+  function startTestBotProfile(profile) {
+    const started = root.DungeonOnlineV3GameBridge?.startRankedTestBot?.(profile) === true;
+    if (!started) {
+      ui.setStatus("The Observer Bot profile could not be started.");
+      return false;
+    }
+    ui.hide();
+    return true;
+  }
   async function unlockTestBot() {
     const password = typeof root.prompt === "function" ? root.prompt("Observer Bot password") : "";
     if (password === null) return false;
     try {
       const unlocked = await root.DungeonOnlineV3GameBridge?.unlockRankedTestBot?.(password);
       if (!unlocked) ui.setStatus("The test password was not accepted.");
-      else ui.hide();
-      return Boolean(unlocked);
+      if (!unlocked) return false;
+      const preconfiguredProfile = String(root.DUNGEON_OBSERVER_TEST_PROFILE || "");
+      if (TEST_BOT_PROFILES.some((profile) => profile.id === preconfiguredProfile)) {
+        return startTestBotProfile(preconfiguredProfile);
+      }
+      ui.showMenu(
+        "Observer Bot Profile",
+        "Choose a test profile. The Observer Bot starts immediately.",
+        TEST_BOT_PROFILES.map((profile) => ui.button(
+          profile.label,
+          () => startTestBotProfile(profile.id)
+        ))
+      );
+      return true;
     } catch (error) {
       presentError(error);
       return false;

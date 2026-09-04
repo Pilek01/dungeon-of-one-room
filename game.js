@@ -340,12 +340,19 @@
     ["safe", "balanced", "aggressive"],
     "safe"
   );
-  const OBSERVER_BOT_TEST_PROFILE = readGlobalEnum(
+  let OBSERVER_BOT_TEST_PROFILE = readGlobalEnum(
     "DUNGEON_OBSERVER_TEST_PROFILE",
     ["endurance_d50", "player_like", "endgame_coverage"],
     "player_like"
   );
-  const OBSERVER_BOT_TEST_POLICY = getObserverBotTestProfilePolicySafe(OBSERVER_BOT_TEST_PROFILE);
+  let OBSERVER_BOT_TEST_POLICY = getObserverBotTestProfilePolicySafe(OBSERVER_BOT_TEST_PROFILE);
+  function setObserverBotTestProfile(profile) {
+    const normalized = String(profile || "").trim().toLowerCase();
+    if (!["endurance_d50", "player_like", "endgame_coverage"].includes(normalized)) return false;
+    OBSERVER_BOT_TEST_PROFILE = normalized;
+    OBSERVER_BOT_TEST_POLICY = getObserverBotTestProfilePolicySafe(normalized);
+    return true;
+  }
   const OBSERVER_AI_DEFAULT_WEIGHTS = Object.freeze({
     survival: 1.45,
     kill: 0.98,

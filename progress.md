@@ -2529,3 +2529,16 @@ Updated next good targets
 - Stable and immutable Pages roots, availability, and leaderboard return HTTP
   200; API responses are JSON and four critical client files match the local
   release byte-for-byte. Direct Pages rollback is `5eb58a9d...`.
+
+## 2026-09-04 - Production Observer Bot profile chooser in progress
+
+- The new user-scoped Observer Bot password is present without being exposed.
+- After a successful production password unlock, Ranked now presents Endurance
+  D50, Player-like, and Endgame coverage choices; choosing one updates the live
+  bot policy and starts the Observer Bot immediately.
+- Launcher-injected profiles bypass the chooser and start automatically, while
+  the existing Toggle remains available to pause and resume the selected bot.
+- RED/GREEN runtime coverage passes 50/50; the combined focused profile,
+  launcher, and Ranked integration set passes 73/73. The current-tree Ranked
+  Lifecycle browser scenario passes, including the visually inspected chooser,
+  immediate start, pause, and resume flow.

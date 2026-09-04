@@ -1240,9 +1240,9 @@ ${fatalTestHookAnchor}`;
     releaseAssistance();
     await assistanceHandled;
     await page.unroute("**/api/v3/runs/event");
-    const testMenu = page.locator(".overlay-card-debug-cheats");
+    const playerLikeProfile = page.getByRole("button", { name: "2 · Player-like", exact: true });
     try {
-      await testMenu.waitFor({ state: "visible" });
+      await playerLikeProfile.waitFor({ state: "visible" });
     } catch (error) {
       const unlockState = await page.evaluate(() => ({
         sessionState: window.DungeonOnlineV3?.getSessionState?.() || null,
@@ -1251,12 +1251,16 @@ ${fatalTestHookAnchor}`;
         screenOverlay: document.querySelector("#screenOverlay")?.innerText || "",
         game: JSON.parse(window.render_game_to_text())
       }));
-      throw new Error(`Ranked F9 unlock did not open test controls: ${JSON.stringify({
+      throw new Error(`Ranked F9 unlock did not open the Observer Bot profile chooser: ${JSON.stringify({
         unlockState,
         network: diagnostics
       })}`, { cause: error });
     }
-    await testMenu.getByText("Toggle Observer Bot", { exact: true }).waitFor({ state: "visible" });
+    await page.screenshot({
+      path: path.join(ARTIFACT_ROOT, "ranked-f9-test-controls.png"),
+      fullPage: true
+    });
+    await playerLikeProfile.click();
     await page.waitForFunction(() => (
       JSON.parse(window.render_game_to_text()).rankedHudStatus?.kind === "observer"
     ));
@@ -1265,10 +1269,18 @@ ${fatalTestHookAnchor}`;
       1,
       "Observer Bot Ranked should show one blue status dot before the player name"
     );
-    await page.screenshot({
-      path: path.join(ARTIFACT_ROOT, "ranked-f9-test-controls.png"),
-      fullPage: true
-    });
+    assert.equal(
+      await page.evaluate(() => window.__DUNGEON_TEST_TOGGLE_OBSERVER_BOT?.()),
+      true,
+      "QA hook could not pause the selected Observer Bot profile"
+    );
+    await page.waitForFunction(() => (
+      window.DungeonOnlineV3GameBridge?.isRankedTestBotActive?.() === false
+    ));
+    await page.keyboard.press("F9");
+    const testMenu = page.locator(".overlay-card-debug-cheats");
+    await testMenu.waitFor({ state: "visible" });
+    await testMenu.getByText("Toggle Observer Bot", { exact: true }).waitFor({ state: "visible" });
     await page.keyboard.press("b");
     const observerAfterMenuHotkey = await page.evaluate(() => ({
       active: window.DungeonOnlineV3GameBridge?.isRankedTestBotActive?.() === true,
@@ -1491,11 +1503,20 @@ ${fatalTestHookAnchor}`;
       await resumedRunTutorial.waitFor({ state: "hidden" });
     }
     await page.keyboard.press("F9");
-    const resumedTestMenu = page.locator(".overlay-card-debug-cheats");
-    await resumedTestMenu.waitFor({ state: "visible" });
-    await resumedTestMenu.getByText("Toggle Observer Bot", { exact: true }).waitFor({ state: "visible" });
-    await page.keyboard.press("F9");
-    await resumedTestMenu.waitFor({ state: "hidden" });
+    const resumedProfileChoice = page.getByRole("button", { name: "2 · Player-like", exact: true });
+    await resumedProfileChoice.waitFor({ state: "visible" });
+    await resumedProfileChoice.click();
+    await page.waitForFunction(() => (
+      window.DungeonOnlineV3GameBridge?.isRankedTestBotActive?.() === true
+    ));
+    assert.equal(
+      await page.evaluate(() => window.__DUNGEON_TEST_TOGGLE_OBSERVER_BOT?.()),
+      true,
+      "QA hook could not pause the resumed Observer Bot profile"
+    );
+    await page.waitForFunction(() => (
+      window.DungeonOnlineV3GameBridge?.isRankedTestBotActive?.() === false
+    ));
 
     const firstRoom = await visibleGameState(page);
     const firstCanonicalGold = await page.evaluate(() => (

@@ -425,8 +425,10 @@ test("deployed test bot remains password-gated and test music is muted", async (
   );
   assert.match(
     builder,
-    /toggleDebugCheatMenu\(true, \{ botOnly: false \}\)/u
+    /startRankedTestBot\(profile\)[\s\S]*setObserverBotTestProfile\(profile\)[\s\S]*setObserverBotEnabled\(true\)/u
   );
+  assert.match(runtime, /Observer Bot Profile/u);
+  assert.match(runtime, /Endurance D50[\s\S]*Player-like[\s\S]*Endgame coverage/u);
   assert.doesNotMatch(headed, /Start \+ Observer Bot|Continue \+ Observer Bot/u);
   assert.match(
     headed,
