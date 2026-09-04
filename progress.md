@@ -2542,3 +2542,29 @@ Updated next good targets
   launcher, and Ranked integration set passes 73/73. The current-tree Ranked
   Lifecycle browser scenario passes, including the visually inspected chooser,
   immediate start, pause, and resume flow.
+
+## 2026-09-04 - Production Observer Bot profile chooser release
+
+- Commits `aa75f00`, `66e85ca`, and `e7271b3` were pushed to `origin/main`;
+  exact deployed source is `e7271b35d7501527152ce3144a778a7192a74bcc`.
+- The final release ruleset is
+  `sha256:dc8b9d11a97fe35d670089a03141b70174d62d9af39a8dabd12733193ae2ce3e`.
+  Canonical gameplay data and capabilities are unchanged; predecessor
+  `sha256:6f3df4c80298d16c42ca9277adb533f63a6c767fed209000aa17340ad7da8758`
+  remains registered and protocol-compatible for active runs.
+- Fresh `verify:full` passed 1157/1157. Worker unit/property/regression passed
+  1133/1133, local Wrangler/D1 passed 21/21, protected baseline passed 3/3,
+  and both committed browser scenarios passed. Release log:
+  `output/verification/full-20260904T190908375Z.log`.
+- Worker `e0e2f9c6-6ede-4c5f-9106-ca009743abae` passed 5% and 25% canaries
+  with exact 5/115 and 30/90 new/prior samples and zero errors, then reached
+  100%; final availability was 100/100 on the new ruleset. Rollback Worker is
+  `8657997c-3b6f-48c8-b25d-4d6af7b948f5`.
+- Pages `d3c90d21-ccf9-4eb6-b717-6f5d8bf9c690` is live at the stable host and
+  `https://d3c90d21.dungeon-of-one-room.pages.dev`. Stable and immutable smoke
+  returned 200 for root, availability, and leaderboard; Functions returned
+  JSON validation envelopes, four critical assets matched the local bundle
+  byte-for-byte, and the password hash matched while the raw password remained
+  absent. Rollback Pages is `d595de32-9428-4573-b8d9-b35b2e28ed96`.
+- Production D1 had no pending migrations. Pre-release Time Travel bookmark:
+  `00000fd7-00000000-000050dc-3988f506dee72cc7b2db95b14bacbd79`.
