@@ -308,6 +308,72 @@ function wait(milliseconds) {
   return new Promise((resolve) => setTimeout(resolve, milliseconds));
 }
 
+export function createLocalWorkerHealthMonitor(url, options = {}) {
+  const fetchImpl = options.fetchImpl || globalThis.fetch;
+  if (typeof fetchImpl !== "function") throw new TypeError("A fetch implementation is required.");
+  const setIntervalImpl = options.setInterval || globalThis.setInterval;
+  const clearIntervalImpl = options.clearInterval || globalThis.clearInterval;
+  const intervalMs = Math.max(100, Math.floor(Number(options.intervalMs) || 500));
+  const failureThreshold = Math.max(1, Math.floor(Number(options.failureThreshold) || 2));
+  const onUnavailable = typeof options.onUnavailable === "function" ? options.onUnavailable : () => {};
+  const onRecovered = typeof options.onRecovered === "function" ? options.onRecovered : () => {};
+  let consecutiveFailures = 0;
+  let confirmedOutageFailures = 0;
+  let outage = false;
+  let checking = false;
+  let stopped = false;
+
+  async function checkNow() {
+    if (stopped || checking) return;
+    checking = true;
+    let healthy = false;
+    try {
+      const response = await fetchImpl(`${String(url).replace(/\/+$/u, "")}/api/v3/availability`, {
+        cache: "no-store"
+      });
+      healthy = response?.ok === true;
+    } catch {}
+
+    try {
+      if (healthy) {
+        if (outage) {
+          const failures = confirmedOutageFailures;
+          outage = false;
+          consecutiveFailures = 0;
+          confirmedOutageFailures = 0;
+          await onRecovered(Object.freeze({ url: String(url), failures }));
+        } else {
+          consecutiveFailures = 0;
+        }
+        return;
+      }
+
+      consecutiveFailures += 1;
+      if (!outage && consecutiveFailures >= failureThreshold) {
+        outage = true;
+        confirmedOutageFailures = consecutiveFailures;
+        await onUnavailable(Object.freeze({ url: String(url), failures: consecutiveFailures }));
+      } else if (outage) {
+        confirmedOutageFailures = consecutiveFailures;
+      }
+    } finally {
+      checking = false;
+    }
+  }
+
+  const timer = setIntervalImpl(() => { checkNow().catch(() => {}); }, intervalMs);
+  timer?.unref?.();
+
+  return Object.freeze({
+    checkNow,
+    stop() {
+      if (stopped) return;
+      stopped = true;
+      clearIntervalImpl(timer);
+    }
+  });
+}
+
 export async function waitForLocalReady(url, options = {}) {
   const fetchImpl = options.fetchImpl || globalThis.fetch;
   const sleep = options.sleep || wait;
@@ -375,6 +441,7 @@ export async function startLocalRankedTest(selectedCommit, options = {}) {
   const acquirePort = options.acquirePort || acquireLoopbackPort;
   const spawn = options.spawn || nodeSpawn;
   const waitForReady = options.waitForLocalReady || waitForLocalReady;
+  const createHealthMonitor = options.createLocalWorkerHealthMonitor || createLocalWorkerHealthMonitor;
   const applyMigrations = options.applyLocalMigrations || applyLocalMigrations;
   const forceStop = options.forceStopLocalWorker || forceStopLocalWorker;
   const baseEnv = options.baseEnv || process.env;
@@ -403,6 +470,8 @@ export async function startLocalRankedTest(selectedCommit, options = {}) {
   let terminalExited = false;
   let initialReady = false;
   let currentChild = null;
+  let healthMonitor = null;
+  let healthOutageChild = null;
   let restartPromise = null;
   let consecutiveRestartAttempts = 0;
   const maxWorkerRestarts = Math.max(0, Math.min(10, Math.floor(
@@ -481,6 +550,7 @@ export async function startLocalRankedTest(selectedCommit, options = {}) {
     }
     if (stopped) return;
     terminalExited = true;
+    healthMonitor?.stop();
     notifyExit({
       expected: false,
       code: initialEvent.code,
@@ -526,6 +596,7 @@ export async function startLocalRankedTest(selectedCommit, options = {}) {
     if (stopped) return;
     stopped = true;
     process.removeListener("exit", exitHandler);
+    healthMonitor?.stop();
     await stopChild(currentChild);
     terminalExited = true;
   }
@@ -536,6 +607,35 @@ export async function startLocalRankedTest(selectedCommit, options = {}) {
       throw new Error(`Local Worker exited (${currentChild.exitCode}) before initial readiness.`);
     }
     initialReady = true;
+    healthMonitor = createHealthMonitor(launch.url, {
+      fetchImpl: options.fetchImpl,
+      intervalMs: options.healthCheckIntervalMs,
+      failureThreshold: options.healthFailureThreshold,
+      onUnavailable(event) {
+        healthOutageChild = currentChild;
+        append(`\n[launcher] Shared local Worker availability was lost after ${event.failures} failed probes.\n`);
+      },
+      async onRecovered(event) {
+        const outageChild = healthOutageChild;
+        healthOutageChild = null;
+        if (
+          stopped ||
+          !outageChild ||
+          outageChild !== currentChild ||
+          restartPromise ||
+          outageChild.exitCode !== null && outageChild.exitCode !== undefined
+        ) return;
+        append(`[launcher] Shared local Worker recovered internally after ${event.failures} failed probes.\n`);
+        notifyRestart({
+          attempt: 1,
+          previousCode: null,
+          previousSignal: null,
+          url: launch.url,
+          internalRuntime: true,
+          healthFailures: event.failures
+        });
+      }
+    });
   } catch (error) {
     await stop();
     throw error;

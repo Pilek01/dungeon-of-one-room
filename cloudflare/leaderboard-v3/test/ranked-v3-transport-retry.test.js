@@ -22,6 +22,15 @@ function response(status, code) {
   };
 }
 
+function unreadableResponse(status) {
+  return {
+    ok: status >= 200 && status < 300,
+    status,
+    headers: { get() { return null; } },
+    async json() { throw new SyntaxError("Unexpected token '<'"); }
+  };
+}
+
 async function captureFailure(status, code) {
   const calls = [];
   const waits = [];
@@ -78,3 +87,63 @@ for (const status of [500, 502, 503]) {
     assert.equal(new Set(result.calls.map((call) => call.options.body)).size, 1);
   });
 }
+
+test("an unreadable retryable response survives a short Worker restart with one operation identity", async () => {
+  const calls = [];
+  const waits = [];
+  const transport = transportApi.createTransport({
+    baseUrl: "https://worker.invalid",
+    retryPolicy: {
+      ...protocol.RETRY_POLICY,
+      timeoutMs: 1000
+    },
+    wait: async (milliseconds) => waits.push(milliseconds),
+    cryptoProvider: {
+      randomUUID() { return "11111111-2222-3333-4444-555555555555"; }
+    },
+    fetchImpl: async (url, options) => {
+      calls.push({ url, options });
+      if (calls.length < 6) return unreadableResponse(500);
+      return {
+        ok: true,
+        status: 200,
+        headers: { get() { return null; } },
+        async json() { return { ok: true }; }
+      };
+    }
+  });
+
+  const result = await transport.request(protocol.ENDPOINTS.checkpoint, {
+    body: { type: "checkpoint" }
+  });
+
+  assert.equal(result.payload.ok, true);
+  assert.equal(calls.length, 6);
+  assert.deepEqual(waits, [250, 500, 1000, 1500, 1500]);
+  assert.deepEqual(
+    calls.map((call) => call.options.headers["Idempotency-Key"]),
+    Array(6).fill(OPERATION_ID)
+  );
+  assert.equal(new Set(calls.map((call) => call.options.body)).size, 1);
+});
+
+test("an unreadable non-retryable response still fails closed without retrying", async () => {
+  let calls = 0;
+  const transport = transportApi.createTransport({
+    baseUrl: "https://worker.invalid",
+    retryPolicy: { ...protocol.RETRY_POLICY, baseDelayMs: 0, timeoutMs: 1000 },
+    fetchImpl: async () => {
+      calls += 1;
+      return unreadableResponse(400);
+    }
+  });
+
+  await assert.rejects(
+    transport.request(protocol.ENDPOINTS.checkpoint, {
+      operationId: OPERATION_ID,
+      body: { type: "checkpoint" }
+    }),
+    (error) => error.code === "RESPONSE_NOT_JSON" && error.retryable === false
+  );
+  assert.equal(calls, 1);
+});

@@ -2472,3 +2472,36 @@ Updated next good targets
   current-tree Ranked Lifecycle, and protected committed baseline 3/3.
 - No commit, push, deployment, D1 migration, or production ruleset activation
   is included.
+
+## 2026-09-04 - Transient Ranked response and local Worker recovery
+
+- The bot 1 and bot 3 failures from session
+  `session-20260903193135-868d50a4` were simultaneous local Wrangler runtime
+  outages, not gameplay, ruleset, or anti-cheat rejections. Both checkpoint
+  responses were temporary non-JSON HTTP 500 pages while the Wrangler process
+  itself remained alive.
+- Ranked transport now gives only retryable non-JSON HTTP statuses a longer,
+  bounded retry window. Every retry preserves the exact request body and
+  idempotency key; unreadable success responses and non-retryable 4xx responses
+  still fail closed.
+- If that bounded window is exhausted, the runtime uses the existing canonical
+  server resync instead of trusting or rebuilding player-provided state. The
+  local launcher also detects a Wrangler runtime self-recovery without a PID
+  exit and invokes the existing page recovery path for active bots.
+- Ordinary gameplay, bot decisions, rewards, Worker rules, ruleset bindings,
+  D1 schema, and anti-cheat limits are unchanged.
+- Focused regressions pass 89/89, phase passes 1131/1131, and the current-tree
+  Ranked Recovery browser scenario passes with visually inspected recovery and
+  main-menu evidence.
+- No commit, push, deployment, D1 migration, or ruleset activation is included.
+
+## 2026-09-04 - v0.8.3 release preparation
+
+- The live game version and active Ranked/browser QA fallbacks are aligned on
+  `v0.8.3`; historical fixtures and release records retain their original
+  version values.
+- Version expectations failed against `v0.8.2` before the source change and
+  pass 14/14 after it. Current-tree Boot and Ranked Recovery browser scenarios
+  pass, and their fresh screenshots were visually inspected.
+- Production release verification and deployment are intentionally recorded
+  after the exact candidate commit exists.

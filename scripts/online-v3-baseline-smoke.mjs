@@ -511,7 +511,7 @@ async function main() {
     assert.equal(results.httpStatus, 200);
     await bootPage.waitForFunction(() => typeof window.render_game_to_text === "function");
     results.gameVersion = await bootPage.evaluate(() => window.DUNGEON_GAME_VERSION);
-    assert.equal(results.gameVersion, "v0.8.2");
+    assert.equal(results.gameVersion, "v0.8.3");
     assert.equal(await bootPage.locator("#bootScreen").isVisible(), true);
     results.screenshots.push(await screenshot(bootPage, "01-boot.png"));
     await waitForBootAdvance(bootPage, diagnostics);

@@ -234,6 +234,7 @@
   const RETRY_POLICY = Object.freeze({
     retryableStatus: Object.freeze([408, 425, 429, 500, 502, 503, 504]),
     maxAttempts: 3,
+    unreadableResponseMaxAttempts: 6,
     baseDelayMs: 250,
     maxDelayMs: 1500,
     timeoutMs: 8000,

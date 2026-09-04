@@ -1155,6 +1155,67 @@ test("a transient checkpoint failure auto-resyncs calmly and continues exactly o
   assert.equal(harness.calls.filter((entry) => entry.action === "resume").length, 1);
 });
 
+test("a retryable unreadable checkpoint response remains recoverable and canonically resyncs", async () => {
+  const room = {
+    directiveId: "directive_unreadable_before",
+    roomNonce: "nonce_unreadable_before",
+    depth: 53,
+    roomType: "duel"
+  };
+  const nextRoom = metaState({
+    revision: 4,
+    rulesetHash: "sha256:boundary",
+    currentRoomDirective: {
+      directiveId: "directive_unreadable_after",
+      roomNonce: "nonce_unreadable_after",
+      depth: 54,
+      roomType: "duel"
+    },
+    currentRewardEnvelope: { envelopeId: "reward_unreadable_after" }
+  });
+  const unreadableError = Object.assign(new Error("Worker returned an unreadable response."), {
+    code: "RESPONSE_NOT_JSON",
+    status: 500,
+    retryable: true
+  });
+  const harness = createHarness({
+    observerBotActive: false,
+    boundarySettlement: true,
+    async onCheckpoint() { throw unreadableError; },
+    async onResume() { return { metaState: nextRoom }; }
+  });
+  const client = harness.root.DungeonRankedV3Client.createRankedClient();
+  client.getSnapshot().publicState = metaState({
+    revision: 3,
+    rulesetHash: "sha256:boundary",
+    currentRoomDirective: room,
+    currentRewardEnvelope: { envelopeId: "reward_unreadable_before", fixedAwards: [] }
+  });
+  const runtime = await installRuntime(harness);
+  await runtime.onRoomEntered(room);
+  await runtime.onLocalRoomCleared({
+    turnCount: 21,
+    rewardClaims: [],
+    reportedGoldDelta: 54,
+    completionCapability: harness.integrityContexts[0].completionCapability
+  });
+
+  runtime.onPortalEntry();
+  await waitForTimer(
+    () => harness.calls.some((entry) => entry.action === "resume"),
+    "retryable unreadable response did not schedule canonical resync"
+  );
+  await waitFor(
+    () => harness.directives.some((entry) => entry.directiveId === "directive_unreadable_after"),
+    `unreadable-response recovery did not restore the next room (state ${runtime.getSessionState()})`
+  );
+
+  assert.deepEqual(harness.calls.map((entry) => entry.action), ["checkpoint", "resume"]);
+  assert.equal(harness.uiMessages.length, 0);
+  assert.ok(harness.uiSyncCalls.includes("Synchronizing Ranked…"));
+  assert.equal(runtime.getSessionState(), "ROOM_ACTIVE");
+});
+
 test("a retryable internal checkpoint error stops safely instead of rebuilding the room", async () => {
   const room = {
     directiveId: "directive_internal_error",

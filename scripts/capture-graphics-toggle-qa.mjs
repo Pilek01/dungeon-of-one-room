@@ -88,7 +88,7 @@ async function waitForPlaying(page) {
 async function assertHd(page, label) {
   await waitForRenderer(page);
   const metrics = await readMetrics(page);
-  if (metrics.gameVersion !== "v0.8.2" || metrics.graphicsMode !== "hd" || metrics.canvasWidth !== 576 || metrics.canvasHeight !== 576 || !metrics.hdUi) {
+  if (metrics.gameVersion !== "v0.8.3" || metrics.graphicsMode !== "hd" || metrics.canvasWidth !== 576 || metrics.canvasHeight !== 576 || !metrics.hdUi) {
     throw new Error(`${label}: HD contract failed: ${JSON.stringify(metrics)}`);
   }
   return metrics;
@@ -150,7 +150,7 @@ try {
     consoleErrors,
     checkpoints
   });
-  console.info("HD startup/reload QA passed: v0.8.2, 576x576 canvas, zero forbidden asset requests");
+  console.info("HD startup/reload QA passed: v0.8.3, 576x576 canvas, zero forbidden asset requests");
 } finally {
   await page.close();
   await context.close();

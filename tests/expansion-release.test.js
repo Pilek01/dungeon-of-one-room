@@ -11,7 +11,7 @@ const hdLayers = fs.readFileSync(path.join(root, "render", "hd-renderer-layers.j
 const { RELIC_BUILD_TAGS } = require("../build-identity.js");
 const { PACTS } = require("../pact-room.js");
 
-assert.match(configSource, /window\.GAME_VERSION\s*=\s*["']v0\.8\.2["']/);
+assert.match(configSource, /window\.GAME_VERSION\s*=\s*["']v0\.8\.3["']/);
 assert.match(html, /<link\s+rel=["']icon["']\s+href=["']data:image\/svg\+xml/);
 
 const expansionRelics = [

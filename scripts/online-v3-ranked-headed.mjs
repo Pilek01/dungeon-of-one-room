@@ -381,7 +381,7 @@ async function seedStaleRankedProfile(page) {
     const startBody = {
       playerName: "StaleProfile",
       season,
-      gameVersion: String(window.DUNGEON_GAME_VERSION || window.GAME_VERSION || "v0.8.2"),
+      gameVersion: String(window.DUNGEON_GAME_VERSION || window.GAME_VERSION || "v0.8.3"),
       rulesetId: protocol.RULESET_ID,
       rulesetHash: protocol.RULESET_HASH,
       clientInstallIdHash: "a".repeat(64),

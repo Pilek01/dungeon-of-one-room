@@ -30,8 +30,8 @@ test("startup never invokes Classic sprite preloaders", () => {
   assert.doesNotMatch(startup, /\bload[A-Z][A-Za-z0-9]*(?:Sprite|Sprites)\s*\(/u);
 });
 
-test("live version is v0.8.2", () => {
-  assert.match(config, /window\.GAME_VERSION\s*=\s*"v0\.8\.2"/u);
+test("live version is v0.8.3", () => {
+  assert.match(config, /window\.GAME_VERSION\s*=\s*"v0\.8\.3"/u);
 });
 
 test("scenario overrides cannot bypass HD readiness", () => {

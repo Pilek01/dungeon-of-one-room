@@ -62,7 +62,13 @@
         ? undefined
         : JSON.stringify(requestOptions.body);
       let lastError;
-      for (let attempt = 1; attempt <= policy.maxAttempts; attempt += 1) {
+      const ordinaryAttemptLimit = Math.max(1, Math.floor(Number(policy.maxAttempts) || 1));
+      const unreadableAttemptLimit = Math.max(
+        ordinaryAttemptLimit,
+        Math.floor(Number(policy.unreadableResponseMaxAttempts) || ordinaryAttemptLimit)
+      );
+      let attemptLimit = ordinaryAttemptLimit;
+      for (let attempt = 1; attempt <= attemptLimit; attempt += 1) {
         const controller = new AbortController();
         const timeout = setTimeout(() => controller.abort("timeout"), policy.timeoutMs);
         try {
@@ -86,9 +92,11 @@
           try {
             payload = await response.json();
           } catch {
+            const retryable = policy.retryableStatus.includes(response.status);
             throw new RankedV3HttpError("Worker returned an unreadable response.", {
               status: response.status,
-              code: "RESPONSE_NOT_JSON"
+              code: "RESPONSE_NOT_JSON",
+              retryable
             });
           }
           if (response.ok) {
@@ -112,7 +120,10 @@
                 cause?.name === "AbortError" ? "Online v3 request timed out." : "Online v3 is unreachable.",
                 { code: cause?.name === "AbortError" ? "TIMEOUT" : "NETWORK_ERROR", retryable: true }
               );
-          if (!lastError.retryable || attempt >= policy.maxAttempts) throw lastError;
+          if (lastError.retryable && lastError.code === "RESPONSE_NOT_JSON") {
+            attemptLimit = unreadableAttemptLimit;
+          }
+          if (!lastError.retryable || attempt >= attemptLimit) throw lastError;
           await wait(Math.min(policy.maxDelayMs, policy.baseDelayMs * (2 ** (attempt - 1))));
         } finally {
           clearTimeout(timeout);

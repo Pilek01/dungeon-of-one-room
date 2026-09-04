@@ -46,7 +46,7 @@ test("test Pages build embeds the checked-out commit hash and date", async () =>
   }
   const builtIndex = await readFile(path.join(output, "index.html"), "utf8");
   assert.doesNotMatch(builtIndex, /assets\/logo\.png|graphics-preference\.js/u);
-  assert.match(config, /window\.GAME_VERSION\s*=\s*"v0\.8\.2"/u);
+  assert.match(config, /window\.GAME_VERSION\s*=\s*"v0\.8\.3"/u);
 
 
   assert.match(config, new RegExp(`window\\.DUNGEON_BUILD_COMMIT = ${JSON.stringify(expectedCommit)}`));

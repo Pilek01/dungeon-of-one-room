@@ -1031,6 +1031,7 @@
     return Boolean(
       error?.conflict ||
       error?.status === 409 ||
+      code === "RESPONSE_NOT_JSON" && error?.retryable === true ||
       [
         "NETWORK_ERROR",
         "TIMEOUT",
@@ -1057,10 +1058,10 @@
     const rootCode = String(rootDiagnostic?.code || code);
     const conflict = error?.conflict || error?.status === 409;
     const writerHeld = ["RANKED_WRITER_LEASE_HELD", "RANKED_MUTATION_LOCKED"].includes(String(error?.message || ""));
+    const retryableUnreadableResponse = code === "RESPONSE_NOT_JSON" && error?.retryable === true;
     const protocolFailure = error instanceof TypeError && !writerHeld || [
-      "PROTOCOL_VERSION_MISMATCH",
-      "RESPONSE_NOT_JSON"
-    ].includes(code);
+      "PROTOCOL_VERSION_MISMATCH"
+    ].includes(code) || code === "RESPONSE_NOT_JSON" && !retryableUnreadableResponse;
     moveToRecoveryState(protocolFailure
       ? root.DungeonRankedV3Session.STATES.protocolError
       : root.DungeonRankedV3Session.STATES.reconnect);
@@ -1331,7 +1332,7 @@
       let response = await createClient().start({
         playerName: publicName(),
         season: String(root.DUNGEON_ONLINE_V3_SEASON || "local-m4"),
-        gameVersion: String(root.DUNGEON_GAME_VERSION || root.GAME_VERSION || "v0.8.2"),
+        gameVersion: String(root.DUNGEON_GAME_VERSION || root.GAME_VERSION || "v0.8.3"),
         startDepth: Math.max(0, Math.floor(Number(startDepth) || 0)),
         newCampaign: pendingFreshCampaign,
         clientInstallIdHash: await installationHash()

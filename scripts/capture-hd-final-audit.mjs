@@ -86,7 +86,7 @@ async function captureBoot(viewportName, viewport) {
         };
         return {
           gameVersion: window.DUNGEON_GAME_VERSION || window.GAME_VERSION || "",
-          versionIsExpected: window.DUNGEON_GAME_VERSION === "v0.8.2",
+          versionIsExpected: window.DUNGEON_GAME_VERSION === "v0.8.3",
           hdUi: document.body.classList.contains("graphics-hd-ui"),
           appHidden: document.querySelector("#gameApp")?.classList.contains("app-hidden") || false,
           bootLogoVisible: visible(document.querySelector("#bootScreen .boot-logo")),
@@ -98,7 +98,7 @@ async function captureBoot(viewportName, viewport) {
       await bootPage.screenshot({ path: path.join(outputRoot, viewportName, bootViewportRelative) });
       summary.push({ viewport: viewportName, scenario: "boot", bootMenuVisible, bootGraphics, forbiddenClassicRequests, consoleErrors: bootErrors });
       if (
-        !bootMenuVisible || !bootGraphics.versionIsExpected || bootGraphics.gameVersion !== "v0.8.2" || !bootGraphics.hdUi || !bootGraphics.appHidden
+        !bootMenuVisible || !bootGraphics.versionIsExpected || bootGraphics.gameVersion !== "v0.8.3" || !bootGraphics.hdUi || !bootGraphics.appHidden
         || bootGraphics.bootLogoVisible || !bootGraphics.hdBrandVisible || bootErrors.length || forbiddenClassicRequests.length
       ) throw new Error(`boot audit failed for ${viewportName}: ${JSON.stringify({ bootMenuVisible, bootGraphics, forbiddenClassicRequests, bootErrors })}`);
       await bootPage.close();
@@ -207,10 +207,10 @@ async function captureScenarioBatch(viewportName, viewport, batchScenarios) {
 
           const mobileChromeMissing = viewportName === "mobile" && (!metrics.skillsBarVisible || !metrics.mobileControlsVisible);
           if (
-            metrics.gameVersion !== "v0.8.2" || metrics.graphicsMode !== "hd" || metrics.canvasWidth !== 576 || metrics.canvasHeight !== 576
+            metrics.gameVersion !== "v0.8.3" || metrics.graphicsMode !== "hd" || metrics.canvasWidth !== 576 || metrics.canvasHeight !== 576
             || metrics.scrollY !== 0 || metrics.horizontalOverflow || mobileChromeMissing
             || metrics.nonTransparentRatio < 0.98 || metrics.magentaKeyRatio > 0.001
-            || metrics.meanLuminance < 15 || metrics.meanLuminance > 190 || reloadGraphics.gameVersion !== "v0.8.2"
+            || metrics.meanLuminance < 15 || metrics.meanLuminance > 190 || reloadGraphics.gameVersion !== "v0.8.3"
             || reloadGraphics.graphicsMode !== "hd" || reloadGraphics.canvasWidth !== 576 || reloadGraphics.canvasHeight !== 576
             || !reloadGraphics.hdUi || forbiddenClassicRequests.length || reloadForbiddenClassicRequests.length || consoleErrors.length
           ) throw new Error(`final HD audit failed: ${JSON.stringify(result)}`);

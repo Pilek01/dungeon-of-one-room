@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { EventEmitter } from "node:events";
 import path from "node:path";
 import { PassThrough } from "node:stream";
 import test from "node:test";
@@ -6,12 +7,14 @@ import test from "node:test";
 import {
   attachLauncherCommandInput,
   chooseNewestBranch,
+  createLocalWorkerHealthMonitor,
   launcherPaths,
   listLocalCandidates,
   parseBranchTips,
   parseCommitHistory,
   runLauncherCli,
-  selectListedCommit
+  selectListedCommit,
+  startLocalRankedTest
 } from "../scripts/local-ranked-test-launcher-core.mjs";
 
 const HASH_A = "a".repeat(40);
@@ -110,6 +113,91 @@ test("keeps isolated D1 state on a short per-commit output path", () => {
   assert.equal(paths.worktree, path.join(paths.cacheRoot, "worktrees", HASH_A));
   assert.equal(paths.stateRoot, path.join(root, "output", "r", HASH_A));
   assert.throws(() => launcherPaths(root, "../main"), /full commit hash/u);
+});
+
+test("health monitor reports only a confirmed internal Worker outage recovery", async () => {
+  const scheduled = [];
+  const events = [];
+  const responses = [
+    new TypeError("connection lost"),
+    { ok: false, status: 500 },
+    { ok: true, status: 200 }
+  ];
+  const monitor = createLocalWorkerHealthMonitor("http://127.0.0.1:9123", {
+    failureThreshold: 2,
+    intervalMs: 500,
+    setInterval(callback) {
+      scheduled.push(callback);
+      return { unref() {} };
+    },
+    clearInterval() {},
+    async fetchImpl() {
+      const next = responses.shift();
+      if (next instanceof Error) throw next;
+      return next;
+    },
+    onUnavailable(event) { events.push(["unavailable", event.failures]); },
+    onRecovered(event) { events.push(["recovered", event.failures]); }
+  });
+
+  await monitor.checkNow();
+  assert.deepEqual(events, [], "one failed health probe incorrectly declared an outage");
+  await monitor.checkNow();
+  assert.deepEqual(events, [["unavailable", 2]]);
+  await monitor.checkNow();
+  assert.deepEqual(events, [["unavailable", 2], ["recovered", 2]]);
+  assert.equal(scheduled.length, 1);
+  monitor.stop();
+});
+
+test("local Worker surfaces an internal availability-gap recovery without waiting for process exit", async () => {
+  const child = new EventEmitter();
+  child.stdout = new PassThrough();
+  child.stderr = new PassThrough();
+  child.exitCode = null;
+  child.pid = 1234;
+  child.kill = () => {
+    child.exitCode = 0;
+    child.emit("exit", 0, null);
+    return true;
+  };
+  let healthOptions = null;
+  let healthStopped = false;
+  const prepared = {
+    workerRoot: path.resolve("D:/repo/worker"),
+    bundleRoot: path.resolve("D:/repo/bundle"),
+    stateRoot: path.resolve("D:/repo/state"),
+    wranglerPath: path.resolve("D:/repo/worker/node_modules/wrangler/bin/wrangler.js")
+  };
+  const worker = await startLocalRankedTest({ hash: HASH_A }, {
+    repoRoot: path.resolve("D:/repo"),
+    secret: "x".repeat(32),
+    async prepareRevision() { return prepared; },
+    async buildSelectedTestBundle() { return { rulesetHash: "sha256:test" }; },
+    async acquirePort() { return 9123; },
+    async applyLocalMigrations() {},
+    spawn() { return child; },
+    async waitForLocalReady() {},
+    createLocalWorkerHealthMonitor(url, options) {
+      assert.equal(url, "http://127.0.0.1:9123");
+      healthOptions = options;
+      return {
+        stop() { healthStopped = true; }
+      };
+    }
+  });
+  const restarts = [];
+  worker.onRestart((event) => restarts.push(event));
+
+  healthOptions.onUnavailable({ failures: 2 });
+  await healthOptions.onRecovered({ failures: 3 });
+
+  assert.equal(restarts.length, 1);
+  assert.equal(restarts[0].internalRuntime, true);
+  assert.equal(restarts[0].healthFailures, 3);
+  assert.equal(child.exitCode, null, "health recovery must not kill a self-recovered Wrangler process");
+  await worker.stop();
+  assert.equal(healthStopped, true);
 });
 test("parses the line-delimited NUL records emitted by git for-each-ref", () => {
   const branches = parseBranchTips(

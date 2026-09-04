@@ -47,7 +47,7 @@ test("HD browser audit captures forbidden Classic requests and live version acro
   assert.match(source, /forbiddenClassicRequests/u);
   assert.match(source, /pathname === ["']\/assets\/logo\.png["']/u);
   assert.match(source, /pathname\.startsWith\(["']\/assets\/sprite\/["']\)/u);
-  assert.match(source, /DUNGEON_GAME_VERSION[^\n]*v0\.8\.2/u);
+  assert.match(source, /DUNGEON_GAME_VERSION[^\n]*v0\.8\.3/u);
   assert.match(source, /page\.reload\(/u);
   assert.match(source, /reload[^\n]*forbiddenClassicRequests|forbiddenClassicRequests[^\n]*reload/iu);
 });
@@ -63,7 +63,7 @@ test("HD baseline and graphics QA no longer exercise Classic mode or preference 
   assert.match(graphics, /forbiddenClassicRequests|assets\/sprite\//u);
 });
 
-test("live Ranked client/runtime/headed fallbacks identify v0.8.2", () => {
+test("live Ranked client/runtime/headed fallbacks identify v0.8.3", () => {
   for (const relative of [
     "online-v3/ranked-v3-client.js",
     "online-v3/ranked-v3-runtime.js",
@@ -71,6 +71,6 @@ test("live Ranked client/runtime/headed fallbacks identify v0.8.2", () => {
   ]) {
     const source = fs.readFileSync(path.join(root, relative), "utf8");
     assert.doesNotMatch(source, /v0\.8\.0/gu, relative);
-    assert.match(source, /v0\.8\.2/u, relative);
+    assert.match(source, /v0\.8\.3/u, relative);
   }
 });
