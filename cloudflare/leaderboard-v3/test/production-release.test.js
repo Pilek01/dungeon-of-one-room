@@ -33,6 +33,7 @@ import {
   V08_META_1_ROOM_ELITE_BUDGET_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR,
   V08_META_1_MERCHANT_FAVOR_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR,
   V08_META_1_SHRINE_ELITE_BUDGET_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR,
+  V08_META_1_OBSERVER_PROFILE_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR,
   V08_META_1_PRODUCTION_RELEASE_DESCRIPTOR
 } from "../src/rulesets/releases.js";
 import * as releases from "../src/rulesets/releases.js";
@@ -46,6 +47,7 @@ const require = createRequire(import.meta.url);
 const protocol = require("../../../online-v3/ranked-v3-protocol.js");
 const EXPECTED_HASH = manifest.rulesetHash;
 const CURRENT_PRODUCTION_HASH = EXPECTED_HASH;
+const PREVIOUS_OBSERVER_PROFILE_HASH = "sha256:6f3df4c80298d16c42ca9277adb533f63a6c767fed209000aa17340ad7da8758";
 const PREVIOUS_SHRINE_ELITE_BUDGET_HASH = "sha256:6272204a1127cd12cebcbde90e27d098684d4e1131a41526924fce4283f2620e";
 const PREVIOUS_MERCHANT_FAVOR_HASH = "sha256:125736f040dfd77d8d7a1fe26126a235dc80dd39c7899c2e84d55dcaf7ea5ea5";
 const PREVIOUS_ROOM_ELITE_BUDGET_HASH = "sha256:ce2e838fc8359c266396e98ed3ab87b54c92725b7e4d235c0dd96b770ba31389";
@@ -79,7 +81,8 @@ const LEGACY_HASH = "sha256:0bf00607056dbf3c30ffe57bbcfc77cea95b21c9ccc23aa985ec
 
 test("production promotion activates the exact candidate and retains its immediate predecessor", () => {
   const active = V08_META_1_PRODUCTION_RELEASE_DESCRIPTOR;
-  const previous = V08_META_1_SHRINE_ELITE_BUDGET_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR;
+  const previous = V08_META_1_OBSERVER_PROFILE_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR;
+  const shrineEliteBudgetPrevious = V08_META_1_SHRINE_ELITE_BUDGET_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR;
   const roomNavigationPrevious =
     releases.V08_META_1_ROOM_NAVIGATION_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR;
 
@@ -89,9 +92,11 @@ test("production promotion activates the exact candidate and retains its immedia
   assert.equal(active.capabilities.roomEliteBudgetByType, "v2");
   assert.equal(active.capabilities.merchantFavorTierOneUnique, "v1");
   assert.equal(active.capabilities.potionClaimOrdering, "v2");
-  assert.ok(previous, "the previous Shrine elite-budget descriptor must be retained");
-  assert.equal(previous.rulesetHash, PREVIOUS_SHRINE_ELITE_BUDGET_HASH);
-  assert.equal(previous.capabilities.roomEliteBudgetByType, "v1");
+  assert.ok(previous, "the previous Observer-profile descriptor must be retained");
+  assert.equal(previous.rulesetHash, PREVIOUS_OBSERVER_PROFILE_HASH);
+  assert.deepEqual(previous.capabilities, active.capabilities);
+  assert.equal(shrineEliteBudgetPrevious.rulesetHash, PREVIOUS_SHRINE_ELITE_BUDGET_HASH);
+  assert.equal(shrineEliteBudgetPrevious.capabilities.roomEliteBudgetByType, "v1");
   assert.equal(previous.capabilities.merchantFavorTierOneUnique, "v1");
   assert.equal(previous.capabilities.potionClaimOrdering, "v2");
   assert.equal(roomNavigationPrevious.rulesetHash, PREVIOUS_ROOM_NAVIGATION_HASH);
@@ -167,6 +172,7 @@ test("bounded proc release activates a new hash and leaves every historical desc
     value.status === RULESET_RELEASE_STATES.PRODUCTION_RELEASED &&
     typeof value.rulesetHash === "string" &&
     value.rulesetHash !== manifest.rulesetHash &&
+    value.rulesetHash !== PREVIOUS_OBSERVER_PROFILE_HASH &&
     value.rulesetHash !== PREVIOUS_SHRINE_ELITE_BUDGET_HASH &&
     value.rulesetHash !== PREVIOUS_MERCHANT_FAVOR_HASH &&
     value.rulesetHash !== PREVIOUS_ROOM_ELITE_BUDGET_HASH &&
@@ -199,6 +205,7 @@ test("bounded proc release activates a new hash and leaves every historical desc
   assert.ok(protocol.SUPPORTED_RULESET_HASHES.includes(PREVIOUS_BOUNDED_PROC_HASH));
   assert.deepEqual(protocol.BOUNDED_PROC_CLAIMS_RULESET_HASHES, [
     CURRENT_PRODUCTION_HASH,
+    PREVIOUS_OBSERVER_PROFILE_HASH,
     PREVIOUS_SHRINE_ELITE_BUDGET_HASH,
     PREVIOUS_MERCHANT_FAVOR_HASH,
     PREVIOUS_ROOM_ELITE_BUDGET_HASH,
@@ -262,6 +269,7 @@ test("canonical chest carry release is hash-gated and preserves the previous pro
   assert.ok(protocol.SUPPORTED_RULESET_HASHES.includes(PREVIOUS_CHEST_CARRY_HASH));
   assert.deepEqual(protocol.CANONICAL_CHEST_OUTCOMES_RULESET_HASHES, [
     CURRENT_PRODUCTION_HASH,
+    PREVIOUS_OBSERVER_PROFILE_HASH,
     PREVIOUS_SHRINE_ELITE_BUDGET_HASH,
     PREVIOUS_MERCHANT_FAVOR_HASH,
     PREVIOUS_ROOM_ELITE_BUDGET_HASH,
@@ -317,6 +325,7 @@ test("canonical chest repair release retains the previous canonical hash and cap
   assert.ok(protocol.SUPPORTED_RULESET_HASHES.includes(PREVIOUS_CANONICAL_CHEST_HASH));
   assert.deepEqual(protocol.CANONICAL_CHEST_OUTCOMES_RULESET_HASHES, [
     CURRENT_PRODUCTION_HASH,
+    PREVIOUS_OBSERVER_PROFILE_HASH,
     PREVIOUS_SHRINE_ELITE_BUDGET_HASH,
     PREVIOUS_MERCHANT_FAVOR_HASH,
     PREVIOUS_ROOM_ELITE_BUDGET_HASH,
@@ -364,6 +373,7 @@ test("Ranked start resource parity is hash-gated and preserves the previous prod
   assert.ok(protocol.SUPPORTED_RULESET_HASHES.includes(PREVIOUS_START_RESOURCE_PARITY_HASH));
   assert.deepEqual(protocol.BOUNDED_COMBAT_RESOURCES_RULESET_HASHES, [
     CURRENT_PRODUCTION_HASH,
+    PREVIOUS_OBSERVER_PROFILE_HASH,
     PREVIOUS_SHRINE_ELITE_BUDGET_HASH,
     PREVIOUS_MERCHANT_FAVOR_HASH,
     PREVIOUS_ROOM_ELITE_BUDGET_HASH,
@@ -450,6 +460,7 @@ test("local candidate is promoted to production with its exact capability contra
     V08_META_1_ROOM_ELITE_BUDGET_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR,
     V08_META_1_MERCHANT_FAVOR_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR,
     V08_META_1_SHRINE_ELITE_BUDGET_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR,
+    V08_META_1_OBSERVER_PROFILE_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR,
     V08_META_1_PRODUCTION_RELEASE_DESCRIPTOR
   ]);
   const resolved = registry.resolve({
