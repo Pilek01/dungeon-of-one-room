@@ -845,7 +845,7 @@ test("player layer draws the selected critical frame bottom-centered on the HD t
   assert.deepEqual(calls, [[image, 120, 176, 80, 80]]);
 });
 
-test("player layer preserves the existing 120 ms eased movement tween in HD coordinates", () => {
+test("player layer preserves the 120 ms tile tween beneath the small walking pose offset", () => {
   const calls = [];
   const image = Object.freeze({ id: "east-move" });
   const context = { drawImage(...args) { calls.push(args); }, fillRect() {} };
@@ -866,7 +866,7 @@ test("player layer preserves the existing 120 ms eased movement tween in HD coor
   assert.equal(selected.clip, "move");
   const drawn = layersApi.drawPlayerLayer(context, snapshot, new Map([[selected.key, image]]));
   assert.equal(drawn, true);
-  assert.deepEqual(calls, [[image, 168, 176, 80, 80]]);
+  assert.deepEqual(calls, [[image, 169.5, 174.2, 80, 80]]);
 });
 
 test("a missing critical player frame keeps HD presentation fail closed", async () => {

@@ -1264,9 +1264,14 @@
       elapsed = Math.max(0, 120 - (Number(player.hitFlash) || 0));
     } else if (clip === "death" && Number.isFinite(Number(player.visualDeathTimer))) {
       elapsed = Math.max(0, Number(player.visualDeathTimer));
+    } else if (clip === "move") {
+      // A step lasts 120 ms: drive its poses from the step, not the idle clock.
+      elapsed = Math.max(0, Number(player._tweenT) || 0);
     }
     const rawIndex = clip === "attack" && Number.isFinite(Number(player.visualActionTimer))
       ? Math.floor(elapsed / (PLAYER_ATTACK_VISUAL_MS / descriptor.frameCount))
+      : clip === "move"
+      ? Math.floor(elapsed / (PLAYER_TWEEN_MS / descriptor.frameCount))
       : Math.floor(elapsed / (1000 / descriptor.fps));
     const frameIndex = descriptor.loop
       ? rawIndex % descriptor.frameCount
@@ -1281,10 +1286,47 @@
     });
   }
 
+  function selectPlayerMotion(snapshot, selection = selectPlayerVisual(snapshot)) {
+    const visual = snapshot || {};
+    const player = visual.player || {};
+    if (selection.clip === "death") return { x: 0, y: 0 };
+    const time = Math.max(0, Number(visual.playerAnimTimer ?? visual.nowMs) || 0);
+    // Keep the original pixel art, palette and dimensions. Only translate the
+    // pose by a few HD pixels; tile positions and all gameplay timers stay intact.
+    const breath = -0.6 * (1 - Math.cos(time * Math.PI * 2 / 2400));
+    const direction = { east: [1, 0], west: [-1, 0], north: [0, -1], south: [0, 1] }[selection.direction];
+    const unit = (value) => Math.max(0, Math.min(1, value));
+    let travel = 0;
+    let lift = 0;
+    if (selection.clip === "move") {
+      const progress = unit((Number(player._tweenT) || 0) / PLAYER_TWEEN_MS);
+      const stride = Math.sin(progress * Math.PI) ** 2;
+      travel = 1.5 * stride;
+      lift = -1.8 * stride;
+    } else if (selection.clip === "attack" && Number.isFinite(Number(player.visualActionTimer))) {
+      const progress = unit(1 - Number(player.visualActionTimer) / PLAYER_ATTACK_VISUAL_MS);
+      // Smooth wind-up, a quick lunge, then a longer return to the ready pose.
+      const keys = [[0, 0], [0.2, -2], [0.5, 5], [1, 0]];
+      for (let index = 1; index < keys.length; index += 1) {
+        if (progress > keys[index][0]) continue;
+        const [start, from] = keys[index - 1];
+        const [end, to] = keys[index];
+        const t = unit((progress - start) / (end - start));
+        travel = from + (to - from) * t * t * (3 - 2 * t);
+        break;
+      }
+    } else if (selection.clip === "hit") {
+      const progress = unit(1 - (Number(player.hitFlash) || 0) / 120);
+      travel = -3 * Math.sin(progress * Math.PI) ** 2;
+    }
+    return { x: direction[0] * travel || 0, y: breath + lift + direction[1] * travel || 0 };
+  }
+
   function drawPlayerLayer(context, snapshot, assets) {
     const player = snapshot && snapshot.player;
     if (!player) return false;
     const selection = selectPlayerVisual(snapshot);
+    const motion = selectPlayerMotion(snapshot, selection);
     let logicalX = Number(player.x);
     let logicalY = Number(player.y);
     const tweenTime = Number(player._tweenT);
@@ -1314,8 +1356,8 @@
           context,
           assets,
           selection.key,
-          drawX,
-          drawY,
+          drawX + motion.x,
+          drawY + motion.y,
           PLAYER_RENDER_SIZE,
           PLAYER_RENDER_SIZE
         )
@@ -1469,6 +1511,7 @@
     drawStatusRail,
     drawEnemyCrests,
     selectPlayerVisual,
+    selectPlayerMotion,
     drawPlayerLayer,
     renderLayers
   });
