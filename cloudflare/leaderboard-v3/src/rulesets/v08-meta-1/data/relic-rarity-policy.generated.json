@@ -25,8 +25,8 @@
     },
     {
       "file": "game.js",
-      "byteLength": 1382700,
-      "sha256": "5554af5795dbb91d949914718db8960c1efff1e86f208fb60d6df70d8906da65"
+      "byteLength": 1386221,
+      "sha256": "695ef03c79e23cb54f65847c484d838bb6cc90aa3faae552c78ceede70210ff9"
     },
     {
       "file": "loot-tables.js",
@@ -55,8 +55,8 @@
     },
     {
       "file": "room-pity.js",
-      "byteLength": 1075,
-      "sha256": "4b25c0160a9d339248a969627b7a82c93b464966b671d21c9e30f2e83c70cb76"
+      "byteLength": 4019,
+      "sha256": "5ed408418674e52918285bfce274a4198e7dd9679326f3ca7ad449a133251b86"
     },
     {
       "file": "vault-room.js",

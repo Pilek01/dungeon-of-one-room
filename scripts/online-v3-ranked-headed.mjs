@@ -1653,9 +1653,11 @@ ${fatalTestHookAnchor}`;
     });
 
     assert.equal(await page.locator(".ranked-v3-choice-relic:visible").count(), 0);
-    const wardenPotionsBefore = await page.evaluate(() => (
-      window.DungeonOnlineV3.getSnapshot()?.publicState?.build?.resources?.potions || 0
+    const wardenBuildBefore = await page.evaluate(() => (
+      window.DungeonOnlineV3.getSnapshot().publicState.build
     ));
+    const wardenPotionsBefore = wardenBuildBefore.resources.potions;
+    const wardenFlasksBefore = wardenBuildBefore.relics.find((relic) => relic.relicId === "flask")?.stacks || 0;
     assert(wardenPotionsBefore > 0, "Warden potion regression requires a canonical potion");
     assert.equal(await page.evaluate(() => window.__DUNGEON_TEST_USE_POTION?.()), true);
     await clearVisibleRoom(page);
@@ -1711,11 +1713,20 @@ ${fatalTestHookAnchor}`;
     const postWardenAudit = await page.evaluate(() => ({
       session: window.DungeonOnlineV3.getSessionState(),
       potions: window.DungeonOnlineV3.getSnapshot()?.publicState?.build?.resources?.potions || 0,
+      maxPotions: window.DungeonOnlineV3.getSnapshot().publicState.build.resources.maxPotions,
+      flaskStacks: window.DungeonOnlineV3.getSnapshot().publicState.build.relics
+        .find((relic) => relic.relicId === "flask")?.stacks || 0,
       reconnectVisible: [...document.querySelectorAll(".ranked-v3-overlay h1, .ranked-v3-overlay h2")]
         .some((element) => element.getClientRects().length && /reconnect required/iu.test(element.textContent || "")),
       game: JSON.parse(window.render_game_to_text())
     }));
-    assert.equal(postWardenAudit.potions, wardenPotionsBefore - 1, JSON.stringify(postWardenAudit));
+    const wardenFlaskDelta = postWardenAudit.flaskStacks - wardenFlasksBefore;
+    assert.equal(postWardenAudit.maxPotions, wardenBuildBefore.resources.maxPotions + wardenFlaskDelta);
+    // The room use precedes the Warden reward; a newly acquired Flask grants one potion.
+    assert.equal(postWardenAudit.potions, Math.min(
+      postWardenAudit.maxPotions,
+      wardenPotionsBefore - 1 + Math.max(0, wardenFlaskDelta)
+    ), JSON.stringify(postWardenAudit));
     assert.equal(postWardenAudit.reconnectVisible, false, JSON.stringify(postWardenAudit));
     await page.screenshot({
       path: path.join(ARTIFACT_ROOT, "ranked-warden-potion-checkpoint.png"),

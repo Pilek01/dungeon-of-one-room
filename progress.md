@@ -1,5 +1,21 @@
 Original prompt: Diagnose and repair the Ranked Observer Bot production crashes, verify the smallest robust fixes, merge them to main, and deploy a working release.
 
+## 2026-09-07 - Player animation polish
+
+- User approved smoother player animations preserving the existing style and requested a backup first.
+- Verified `art/backups/player-animation-2026-09-07.zip`: 99 original working-tree files with SHA256 manifest, including HD player sprites, source sheets and animation code. The archived game.js includes earlier unrelated changes; restore only intended paths.
+- HD rendering now uses all four walking poses within the existing 120 ms step and adds subtle breathing, stride lift, smooth attack wind-up/lunge/recovery and hit recoil. Original sprite pixels, dimensions and simulation state remain unchanged.
+- PASS: five new motion regressions, actor-proportion checks, changed JavaScript syntax, current-tree HD browser scenario, committed baseline and whitespace check. Inspected gameplay screenshot plus four-direction motion previews at sampled times; no preview browser errors.
+- Full player asset suite: 20/23 PASS with Pillow 12.1.1 installed under ignored output/player-animation-python. Three source rebuild checks are blocked by the external remove_chroma_key.py hash differing from the pinned toolchain; do not alter pins or regenerate assets for this task.
+- Interactive local preview: output/verification/player-motion-preview.html. No commit or deployment requested.
+
+## 2026-09-04 - Special-room rotation redesign in progress
+
+- User approved implementation of deterministic Merchant rooms on display depths D9/D19/.../D99, map-fragment-only Vaults, per-type special-room cooldowns, and a two-normal-room global gap between natural special rooms.
+- Scope excludes Shrine, Cursed, Ambush, Horde, and Duel. Scheduled Merchant, map-forced Vault, and debug/test-forced rooms do not consume natural special-room cooldowns; Forge/Otter pity does.
+- Practice and the next local Ranked ruleset must remain behaviorally aligned. Existing production ruleset hashes and active runs remain pinned to their prior behavior until a separately authorized release.
+- RED regressions are being added before implementation for Merchant cadence, Vault priority/preservation, removal of random Vaults, cooldown eligibility, and schedule persistence.
+
 ## 2026-08-29 - Ranked post-room Pact extraction ordering fix
 
 - Production diagnostics reproduced a normal extraction request racing ahead of
@@ -2568,3 +2584,21 @@ Updated next good targets
   absent. Rollback Pages is `d595de32-9428-4573-b8d9-b35b2e28ed96`.
 - Production D1 had no pending migrations. Pre-release Time Travel bookmark:
   `00000fd7-00000000-000050dc-3988f506dee72cc7b2db95b14bacbd79`.
+
+## 2026-09-04 - Special-room rotation implementation verified
+
+- Practice and new Ranked runs now share the approved special-room rotation:
+  Merchant on D9/D19/.../D99, Vault only from a completed treasure map,
+  per-room cooldowns for Forge/Pact/Crossroads/Arena/Otter, and two ordinary
+  depths between natural tracked special rooms.
+- Boss priority, pending Vault preservation across a scheduled Merchant,
+  pity-room accounting, debug exclusions, and Practice save/Continue state are
+  covered. D22 Otter remains a normal probability roll rather than a fixed room.
+- New production ruleset binding is
+  `sha256:3628a830db1935df8fd02394bf621b4234cf966f54311cdbbb8fa281c0f1ca47`;
+  predecessor `sha256:dc8b9d11a97fe35d670089a03141b70174d62d9af39a8dabd12733193ae2ce3e`
+  remains registered with its old capability contract for active Ranked runs.
+- Focused tests passed 56/56, `verify:phase` passed 1139/1139,
+  `verify:ui-current -- --scenario save`,
+  `verify:ranked-headed -- --scenario lifecycle`, and `verify:baseline` passed.
+- No commit, push, deploy, D1 migration, or remote ruleset activation was run.

@@ -2136,6 +2136,9 @@
     finalBossPhase: 0,
     roomType: "combat",
     runMerchantRoomsSeen: 0,
+    lastNaturalSpecialDepth: null,
+    lastIssuedSpecialDepthByType: {},
+    forcedNextRoomSource: "",
     forgeSeenThisGame: false,
     forgePityUsedThisGame: false,
     otterSeenThisGame: false,
@@ -3884,6 +3887,7 @@
         available: () => (state.phase === "playing" || state.phase === "relic") && state.depth < MAX_DEPTH,
         run: () => {
           state.forcedNextRoomType = "otter";
+          state.forcedNextRoomSource = "debug-forced";
           pushLog("Debug: next non-boss depth forced to Otter room.", "warn");
           saveAfterDebugCheat();
         }
@@ -3896,6 +3900,7 @@
         available: () => (state.phase === "playing" || state.phase === "relic") && state.depth < MAX_DEPTH,
         run: () => {
           state.forcedNextRoomType = "vault";
+          state.forcedNextRoomSource = "debug-forced";
           pushLog("Debug: next non-boss depth forced to Vault room.", "warn");
           saveAfterDebugCheat();
         }
@@ -3908,6 +3913,7 @@
         available: () => (state.phase === "playing" || state.phase === "relic") && state.depth < MAX_DEPTH,
         run: () => {
           state.forcedNextRoomType = "pact";
+          state.forcedNextRoomSource = "debug-forced";
           pushLog("Debug: next non-boss depth forced to Pact room.", "warn");
           saveAfterDebugCheat();
         }
@@ -3920,6 +3926,7 @@
         available: () => (state.phase === "playing" || state.phase === "relic") && state.depth < MAX_DEPTH,
         run: () => {
           state.forcedNextRoomType = "forge";
+          state.forcedNextRoomSource = "debug-forced";
           pushLog("Debug: next non-boss depth forced to Forge room.", "warn");
           saveAfterDebugCheat();
         }
@@ -3933,6 +3940,7 @@
         run: () => {
           state.depth = Math.max(0, MAX_DEPTH - 1);
           state.forcedNextRoomType = "";
+          state.forcedNextRoomSource = "";
           pushLog(`Debug: next descent will enter the Final Chamber at depth ${MAX_DEPTH}.`, "warn");
           saveAfterDebugCheat();
         }
@@ -4957,6 +4965,9 @@
     state.forgePityUsedThisGame = false;
     state.otterSeenThisGame = false;
     state.otterPityUsedThisGame = false;
+    state.lastNaturalSpecialDepth = null;
+    state.lastIssuedSpecialDepthByType = {};
+    state.forcedNextRoomSource = "";
     state.startDepthUnlocks = sanitizeStartDepthUnlocks({});
     state.campStartDepthPromptOpen = false;
     state.campStartDepthSelectionIndex = 0;
@@ -5052,7 +5063,12 @@
       roomType: state.roomType,
       treasureMapFragments: state.treasureMapFragments,
       forcedNextRoomType: state.forcedNextRoomType,
+      forcedNextRoomSource: state.forcedNextRoomSource,
       runMerchantRoomsSeen: state.runMerchantRoomsSeen || 0,
+      lastNaturalSpecialDepth: Number.isFinite(Number(state.lastNaturalSpecialDepth))
+        ? Math.max(0, Math.floor(Number(state.lastNaturalSpecialDepth)))
+        : null,
+      lastIssuedSpecialDepthByType: { ...(state.lastIssuedSpecialDepthByType || {}) },
       forgeSeenThisGame: Boolean(state.forgeSeenThisGame),
       forgePityUsedThisGame: Boolean(state.forgePityUsedThisGame),
       otterSeenThisGame: Boolean(state.otterSeenThisGame),
@@ -5202,6 +5218,9 @@
     state.treasureMapFragments = Math.max(0, Number(snapshot.treasureMapFragments) || 0);
     const forcedRoomType = String(snapshot.forcedNextRoomType || "").trim();
     state.forcedNextRoomType = ROOM_TYPE_LABELS[forcedRoomType] ? forcedRoomType : "";
+    state.forcedNextRoomSource = typeof snapshot.forcedNextRoomSource === "string"
+      ? snapshot.forcedNextRoomSource
+      : "";
     state.runMerchantRoomsSeen = Math.max(
       0,
       Number(snapshot.runMerchantRoomsSeen) || (state.roomType === "merchant" ? 1 : 0)
@@ -5210,6 +5229,13 @@
     state.forgePityUsedThisGame = Boolean(snapshot.forgePityUsedThisGame);
     state.otterSeenThisGame = Boolean(snapshot.otterSeenThisGame);
     state.otterPityUsedThisGame = Boolean(snapshot.otterPityUsedThisGame);
+    state.lastNaturalSpecialDepth = Number.isFinite(Number(snapshot.lastNaturalSpecialDepth))
+      ? Math.max(0, Math.floor(Number(snapshot.lastNaturalSpecialDepth)))
+      : null;
+    state.lastIssuedSpecialDepthByType = snapshot.lastIssuedSpecialDepthByType &&
+      typeof snapshot.lastIssuedSpecialDepthByType === "object"
+      ? { ...snapshot.lastIssuedSpecialDepthByType }
+      : {};
     state.otterRoomsSeenThisRun = Math.max(0, Number(snapshot.otterRoomsSeenThisRun) || 0);
     state.otterRoomRelicOfferIds = Array.isArray(snapshot.otterRoomRelicOfferIds)
       ? snapshot.otterRoomRelicOfferIds
@@ -8170,6 +8196,14 @@
     if (nextDepth > 0 && nextDepth % 5 === 0) return false;
     if ((Number(state.otterRoomsSeenThisRun) || 0) >= OTTER_ROOM_MAX_PER_RUN) return false;
     if (String(state.forcedNextRoomType || "").trim()) return false;
+    if (
+      window.roomPityApi &&
+      typeof window.roomPityApi.isNaturalSpecialRoomEligible === "function" &&
+      !window.roomPityApi.isNaturalSpecialRoomEligible("otter", nextDepth, {
+        lastNaturalSpecialDepth: state.lastNaturalSpecialDepth,
+        lastIssuedDepthByType: state.lastIssuedSpecialDepthByType
+      })
+    ) return false;
     return true;
   }
 
@@ -8179,6 +8213,7 @@
     const otterChance = nextDepth >= ULTRA_THEME_START_DEPTH ? OTTER_ROOM_CHANCE_ULTRA : OTTER_ROOM_CHANCE;
     if (!chance(otterChance)) return false;
     state.forcedNextRoomType = "otter";
+    state.forcedNextRoomSource = "queued-otter";
     pushLog("A crimson rift stirs. Next depth is an Otter room.", "warn");
     return true;
   }
@@ -8211,39 +8246,74 @@
     return true;
   }
 
+  function selectLocalRoomType(roomType, source) {
+    if (
+      window.roomPityApi &&
+      typeof window.roomPityApi.recordIssuedSpecialRoom === "function"
+    ) {
+      const schedule = window.roomPityApi.recordIssuedSpecialRoom({
+        lastNaturalSpecialDepth: state.lastNaturalSpecialDepth,
+        lastIssuedDepthByType: state.lastIssuedSpecialDepthByType
+      }, roomType, state.depth, source);
+      state.lastNaturalSpecialDepth = schedule.lastNaturalSpecialDepth;
+      state.lastIssuedSpecialDepthByType = schedule.lastIssuedDepthByType;
+    }
+    return roomType;
+  }
+
+  function isNaturalSpecialRoomEligible(roomType) {
+    return !window.roomPityApi ||
+      typeof window.roomPityApi.isNaturalSpecialRoomEligible !== "function" ||
+      window.roomPityApi.isNaturalSpecialRoomEligible(roomType, state.depth, {
+        lastNaturalSpecialDepth: state.lastNaturalSpecialDepth,
+        lastIssuedDepthByType: state.lastIssuedSpecialDepthByType
+      });
+  }
+
   function chooseRoomType() {
     if (state.testScenarioRoomTypeOverride && !isBossDepth()) {
       const forcedType = state.testScenarioRoomTypeOverride;
       state.testScenarioRoomTypeOverride = "";
-      return forcedType;
+      return selectLocalRoomType(forcedType, "debug-forced");
     }
     const regionConfig = getCampaignRegionConfig();
+    const scheduledMerchant = !isBossDepth() && window.roomPityApi &&
+      typeof window.roomPityApi.isScheduledMerchantRoom === "function" &&
+      window.roomPityApi.isScheduledMerchantRoom(state.roomIndex);
+    if (scheduledMerchant) {
+      return selectLocalRoomType("merchant", "merchant-schedule");
+    }
     if (state.forcedNextRoomType === "vault" && !isBossDepth() && isRoomTypeUnlocked("vault", state.depth, true)) {
       state.forcedNextRoomType = "";
+      state.forcedNextRoomSource = "";
       pushLog("Treasure Map complete: forced Vault room this depth.", "good");
-      return "vault";
+      return selectLocalRoomType("vault", "treasure-map-forced-vault");
     }
     if (state.forcedNextRoomType === "otter" && !isBossDepth()) {
+      const source = state.forcedNextRoomSource === "queued-otter" ? "queued-otter" : "debug-forced";
       state.forcedNextRoomType = "";
+      state.forcedNextRoomSource = "";
       pushLog("Crimson surge: forced Otter room this depth.", "warn");
-      return "otter";
+      return selectLocalRoomType("otter", source);
     }
     if (state.forcedNextRoomType === "pact" && !isBossDepth()) {
       state.forcedNextRoomType = "";
+      state.forcedNextRoomSource = "";
       pushLog("A forbidden sigil tears open. Forced Pact room this depth.", "warn");
-      return "pact";
+      return selectLocalRoomType("pact", "debug-forced");
     }
     if (state.forcedNextRoomType === "forge" && !isBossDepth()) {
       state.forcedNextRoomType = "";
+      state.forcedNextRoomSource = "";
       pushLog("The forge roars awake. Forced Forge room this depth.", "warn");
-      return "forge";
+      return selectLocalRoomType("forge", "debug-forced");
     }
     if (!isBossDepth() && state.forcedNextRoomType === "cheat_merchant") {
       state.forcedNextRoomType = "";
       state.debugCheatMerchantActive = true;
       state.debugCheatMerchantClaimed = false;
       pushLog("A Cheat Merchant opens for the Observer Bot.", "warn");
-      return "merchant";
+      return selectLocalRoomType("merchant", "debug-forced");
     }
     const debugForcedRoomTypes = new Set([
       "treasure", "shrine", "cursed", "merchant",
@@ -8253,7 +8323,7 @@
       const forcedType = state.forcedNextRoomType;
       state.forcedNextRoomType = "";
       pushLog(`Debug: forced ${ROOM_TYPE_LABELS[forcedType] || forcedType} room this depth.`, "warn");
-      return forcedType;
+      return selectLocalRoomType(forcedType, "debug-forced");
     }
 
     if (!isBossDepth() && window.roomPityApi && typeof window.roomPityApi.getGuaranteedCampaignRoom === "function") {
@@ -8268,24 +8338,13 @@
       if (pityRoomType === "forge") {
         state.forgePityUsedThisGame = true;
         pushLog("The campaign guarantees a first Forge room on depth 21.", "good");
-        return "forge";
+        return selectLocalRoomType("forge", "forge-pity");
       }
       if (pityRoomType === "otter") {
         state.otterPityUsedThisGame = true;
         pushLog("The campaign guarantees a first Otter room on depth 41.", "warn");
-        return "otter";
+        return selectLocalRoomType("otter", "otter-pity");
       }
-    }
-    const guaranteedMerchantRoom = state.roomIndex === 18 || (
-      state.roomIndex === 8 && Math.max(0, Number(state.runMerchantRoomsSeen) || 0) <= 0
-    );
-    if (guaranteedMerchantRoom) {
-      return "merchant";
-    }
-
-    const vaultChance = Number(regionConfig.vaultChance) || 0;
-    if (isRoomTypeUnlocked("vault", state.depth, false) && chance(vaultChance)) {
-      return "vault";
     }
 
     const roomWeights = { ...(regionConfig.roomWeights || {}) };
@@ -8306,13 +8365,17 @@
           ? Number(pactRoomApi.getPactRoomWeight(state.depth)) || 0
           : 0;
     }
+    roomWeights.merchant = 0;
+    for (const specialType of ["forge", "pact", "crossroads", "arena", "otter"]) {
+      if (!isNaturalSpecialRoomEligible(specialType)) roomWeights[specialType] = 0;
+    }
 
     let type = pickWeightedValue(roomWeights, "combat");
     if (!isRoomTypeUnlocked(type, state.depth, false)) type = type === "cursed" || type === "forge" || type === "vault" ? "treasure" : "combat";
     if (state.depth < 3 && type === "merchant") type = "combat";
     if (type === "pact" && (!pactRoomApi || typeof pactRoomApi.canOfferPactRoom !== "function" || !pactRoomApi.canOfferPactRoom(state.depth))) type = "combat";
     // (noMerchants was removed; Famine no longer blocks merchants)
-    return type;
+    return selectLocalRoomType(type, "weighted-room");
   }
 
   function getMerchantRelicBasePriceByRarity(rarity) {
@@ -17254,6 +17317,7 @@
     }
     if (completions > 0) {
       state.forcedNextRoomType = "vault";
+      state.forcedNextRoomSource = "treasure-map-forced-vault";
     }
     return completions;
   }

@@ -2720,6 +2720,11 @@
       reportedGoldDelta: 0,
       integritySignals: []
     };
+    if (directive.specialRoomPayload?.crossroadsResolution) {
+      root.DungeonOnlineV3GameBridge.syncCanonicalProjection(createClient().getSnapshot().publicState);
+      ui.hide();
+      return;
+    }
     const openBoundary = async () => {
       session.transition(root.DungeonRankedV3Session.STATES.offer);
       await openMetaOffer(directive.roomType);

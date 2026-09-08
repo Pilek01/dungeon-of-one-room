@@ -91,8 +91,26 @@ function createGoldLedger() {
   };
 }
 
-function createScheduleState(history = {}) {
+function normalizeSpecialRoomRotationState(value = {}) {
+  const source = value && typeof value === "object" && !Array.isArray(value) ? value : {};
+  const lastIssuedDepthByType = {};
+  for (const roomType of ["forge", "pact", "crossroads", "arena", "otter"]) {
+    const depth = Number(source.lastIssuedDepthByType?.[roomType]);
+    if (Number.isSafeInteger(depth) && depth >= 0) lastIssuedDepthByType[roomType] = depth;
+  }
+  const lastNaturalSpecialDepth = source.lastNaturalSpecialDepth == null
+    ? NaN
+    : Number(source.lastNaturalSpecialDepth);
   return {
+    lastNaturalSpecialDepth: Number.isSafeInteger(lastNaturalSpecialDepth) && lastNaturalSpecialDepth >= 0
+      ? lastNaturalSpecialDepth
+      : null,
+    lastIssuedDepthByType
+  };
+}
+
+function createScheduleState(history = {}, capabilities = {}) {
+  const schedule = {
     schemaVersion: 1,
     counts: {},
     runMerchantRoomsSeen: 0,
@@ -105,6 +123,10 @@ function createScheduleState(history = {}) {
     lastIssuedSpecialDepth: null,
     lastIssuedRoomType: null
   };
+  if (capabilities?.specialRoomRotation === "v1" || Object.hasOwn(history || {}, "lastIssuedDepthByType")) {
+    Object.assign(schedule, normalizeSpecialRoomRotationState(history));
+  }
+  return schedule;
 }
 
 function createRelicOfferState() {
@@ -147,6 +169,9 @@ function createCampaignState(input = {}, context = {}) {
   const chronicleEnabled =
     context.capabilities?.campaignChronicle === "v1" ||
     Object.hasOwn(source, "chronicleCarry");
+  const specialRoomRotationEnabled =
+    context.capabilities?.specialRoomRotation === "v1" ||
+    Object.hasOwn(source, "specialRoomRotationState");
   return {
     treasureMapFragments,
     forcedNextRoomType,
@@ -163,6 +188,9 @@ function createCampaignState(input = {}, context = {}) {
     ...(chronicleEnabled
       ? { chronicleCarry: normalizeCampaignChronicleCarryV08(source.chronicleCarry) }
       : {}),
+    ...(specialRoomRotationEnabled
+      ? { specialRoomRotationState: normalizeSpecialRoomRotationState(source.specialRoomRotationState) }
+      : {}),
     chestBonuses: normalizeChestBonusesV08(source.chestBonuses)
   };
 }
@@ -178,7 +206,7 @@ function assertCampaignState(campaign) {
   const normalized = createCampaignState({ campaign });
   const expectedKeys = Object.keys(normalized).sort();
   const actualKeys = Object.keys(campaign).sort();
-  const optionalLegacyKeys = ["scoreCarry", "chestBonuses", "otterSeenInCampaign", "otterPityUsedInCampaign", "protectedStarterRelicId"];
+  const optionalLegacyKeys = ["scoreCarry", "chestBonuses", "otterSeenInCampaign", "otterPityUsedInCampaign", "protectedStarterRelicId", "specialRoomRotationState"];
   const validKeySets = Array.from({ length: 1 << optionalLegacyKeys.length }, (_, mask) =>
     expectedKeys.filter((key) => {
       const optionalIndex = optionalLegacyKeys.indexOf(key);
@@ -203,6 +231,10 @@ function assertCampaignState(campaign) {
     Boolean(campaign.otterSeenInCampaign) !== normalized.otterSeenInCampaign ||
     Boolean(campaign.otterPityUsedInCampaign) !== normalized.otterPityUsedInCampaign ||
     String(campaign.protectedStarterRelicId || "") !== normalized.protectedStarterRelicId ||
+    (
+      Object.hasOwn(campaign, "specialRoomRotationState") &&
+      canonicalJson(campaign.specialRoomRotationState) !== canonicalJson(normalized.specialRoomRotationState)
+    ) ||
     canonicalJson(campaign.chestBonuses ?? normalizeChestBonusesV08()) !== canonicalJson(normalized.chestBonuses) ||
     (
       hasCarry && (
@@ -268,7 +300,10 @@ export function createInitialMetaStateV08(input = {}, context = {}) {
     metaTransactionReceipts: [],
     metaSourceConsumptions: [],
     campSession: null,
-    specialRoomScheduleState: createScheduleState(input.specialRoomHistory),
+    specialRoomScheduleState: createScheduleState(
+      input.specialRoomHistory || input.campaign?.specialRoomRotationState,
+      context.capabilities
+    ),
     statistics: {
       roomsIssued: 0,
       roomsCompleted: 0,

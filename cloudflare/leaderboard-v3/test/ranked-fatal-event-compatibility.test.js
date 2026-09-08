@@ -177,7 +177,8 @@ test("historical production releases strip fatal causes while the activated rele
       merchantExitBarrier: "v1",
       otterActualDepthEligibility: "v1",
       roomEliteBudgetByType: "v2",
-      merchantFavorTierOneUnique: "v1"
+      merchantFavorTierOneUnique: "v1",
+      specialRoomRotation: "v1"
     }
   );
   assert.deepEqual(
@@ -199,7 +200,8 @@ test("historical production releases strip fatal causes while the activated rele
       merchantExitBarrier: "v1",
       otterActualDepthEligibility: "v1",
       roomEliteBudgetByType: "v2",
-      merchantFavorTierOneUnique: "v1"
+      merchantFavorTierOneUnique: "v1",
+      specialRoomRotation: "v1"
     }
   );
   assert.deepEqual(

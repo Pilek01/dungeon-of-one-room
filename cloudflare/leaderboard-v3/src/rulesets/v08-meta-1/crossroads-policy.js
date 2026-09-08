@@ -328,6 +328,10 @@ export async function commitCrossroadsTransactionV08(metaState, request, context
     }
     const action = choice.privateData?.action;
     consumeCrossroads(state, offer, action);
+    state.currentRoomDirective.specialRoomPayload = {
+      ...state.currentRoomDirective.specialRoomPayload,
+      crossroadsResolution: { transactionId: request.transactionId, action }
+    };
     if (action === "mercy") {
       const result = applyMercy(state);
       return {

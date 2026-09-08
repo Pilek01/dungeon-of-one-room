@@ -6,8 +6,8 @@
   "sources": [
     {
       "file": "balance-progression.js",
-      "byteLength": 6085,
-      "sha256": "53f40c37eab1dea9a271fd573ebfa5fa4ed6cadd2a049accfdd33892037ded2f",
+      "byteLength": 6066,
+      "sha256": "0c89194888d40caf0f68b8cd1f6e1a27555d2cacbd5035c590b2036428761863",
       "evidenceSymbols": [
         "isRoomTypeUnlocked",
         "relic_ward",
@@ -77,8 +77,8 @@
     },
     {
       "file": "game.js",
-      "byteLength": 1382700,
-      "sha256": "5554af5795dbb91d949914718db8960c1efff1e86f208fb60d6df70d8906da65",
+      "byteLength": 1386221,
+      "sha256": "695ef03c79e23cb54f65847c484d838bb6cc90aa3faae552c78ceede70210ff9",
       "evidenceSymbols": [
         "MAX_DEPTH",
         "MAX_RELICS",
@@ -175,8 +175,8 @@
     },
     {
       "file": "room-pity.js",
-      "byteLength": 1075,
-      "sha256": "4b25c0160a9d339248a969627b7a82c93b464966b671d21c9e30f2e83c70cb76",
+      "byteLength": 4019,
+      "sha256": "5ed408418674e52918285bfce274a4198e7dd9679326f3ca7ad449a133251b86",
       "evidenceSymbols": [
         "FORGE_PITY_DEPTH",
         "OTTER_PITY_DEPTH",

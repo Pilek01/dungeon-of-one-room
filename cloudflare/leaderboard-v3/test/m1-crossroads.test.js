@@ -170,6 +170,10 @@ test("POWER applies rounded max-HP cost, canonical relic and exact retry once", 
   assert.equal(committed.specialRoomScheduleState.crossroadsPenaltyActive, true);
   assert.equal(committed.metaSourceConsumptions.length, 1);
   assert.equal(committed.pendingInventory, null);
+  assert.deepEqual(committed.currentRoomDirective.specialRoomPayload.crossroadsResolution, {
+    transactionId: power.transactionId,
+    action: "power_acquire"
+  });
   assertCanonicalRelicBuildV08(committed.build);
   assert.deepEqual(
     await commitCrossroadsTransactionV08(committed, request(power), result.context),

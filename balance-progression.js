@@ -102,7 +102,7 @@
     const safeDepth = Math.max(0, Math.floor(Number(depth) || 0));
     if (roomType === "cursed") return safeDepth >= 6;
     if (roomType === "forge") return safeDepth >= 11;
-    if (roomType === "vault") return Boolean(forcedByMapFragments) || safeDepth >= 11;
+    if (roomType === "vault") return Boolean(forcedByMapFragments);
     return true;
   }
 

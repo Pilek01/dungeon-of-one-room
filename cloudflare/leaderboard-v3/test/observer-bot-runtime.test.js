@@ -621,6 +621,19 @@ test("synchronous initial Crossroads entry opens its meta offer in a real sessio
   assert.equal(harness.calls.at(-1)?.action, "open_meta_offer");
 });
 
+test("resuming a resolved Crossroads never opens a second canonical offer", async () => {
+  const directive = { directiveId: "resolved_crossroads", depth: 43, roomType: "crossroads",
+    specialRoomPayload: { crossroadsResolution: { transactionId: "mercy_receipt", action: "mercy" } } };
+  const harness = createHarness({ boundarySettlement: true, publicState: { currentRoomDirective: directive, currentRewardEnvelope: { fixedAwards: [] } },
+    onEvent() { assert.fail("resolved Crossroads must not request another offer"); } });
+  const runtime = await installRuntime(harness);
+  await runtime.onRoomEntered(directive);
+  assert.equal(harness.calls.length, 0);
+  assert.equal(runtime.onPortalEntry(), true);
+  await waitForBoundary(runtime);
+  assert.equal(harness.calls.filter(call => call.action === "checkpoint").length, 1);
+});
+
 test("Start New Ranked abandons recovery before starting a clean campaign", async () => {
   const staleState = metaState({
     runId: "run_stale_recovery",

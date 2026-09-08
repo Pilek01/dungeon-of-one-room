@@ -21,6 +21,30 @@ import {
 import { deriveIntInclusive } from "./rng.js";
 import { RULESET_ID } from "./constants.js";
 import { isOtterRelicRewardEligibleV08 } from "./otter-relic-eligibility.js";
+import { applyPotionResourceTransitionV08 } from "./potion-policy.js";
+
+// Server-only history: reward-time Flask changes occur after the room's uses.
+export function capturePreRewardPotionTransitionV08(before, after) {
+  const envelope = before.currentRewardEnvelope;
+  if (before.potionPolicyVersion !== "v1" || !envelope || envelope.consumed) return after;
+  const stacks = (build) => build.relics.find((entry) => entry.relicId === "flask")?.stacks || 0;
+  const delta = stacks(after.build) - stacks(before.build);
+  if (!delta) return after;
+  const previous = before.preRewardPotionSettlement;
+  if (previous && previous.envelopeId !== envelope.envelopeId) {
+    throw new TypeError("REWARD_POTION_TRANSITION_BINDING_INVALID");
+  }
+  after.preRewardPotionSettlement = {
+    envelopeId: envelope.envelopeId,
+    startingPotions: previous?.startingPotions ?? before.build.resources.potions,
+    startingMaximum: previous?.startingMaximum ?? before.build.resources.maxPotions,
+    transitions: [...(previous?.transitions || []), {
+      nextMaximum: after.build.resources.maxPotions,
+      currentGrant: Math.max(0, delta)
+    }]
+  };
+  return after;
+}
 
 const arenaRelicOfferPolicy = arenaRelicOfferPolicyDocument.canonicalData;
 const chestBounds = chestBoundsDocument.canonicalData;
@@ -1255,6 +1279,18 @@ async function settleRewardEnvelopeV3(state, request, context = {}, options = {}
     context.cryptoProvider
   );
   const mutableEnvelope = next.currentRewardEnvelope;
+  const potionSettlement = next.preRewardPotionSettlement;
+  if (potionSettlement) {
+    if (potionSettlement.envelopeId !== mutableEnvelope.envelopeId || outcome !== "cleared") {
+      throw new TypeError("REWARD_POTION_TRANSITION_BINDING_INVALID");
+    }
+    const starting = { potions: potionSettlement.startingPotions, maxPotions: potionSettlement.startingMaximum };
+    const projected = potionSettlement.transitions.reduce(applyPotionResourceTransitionV08, starting);
+    if (projected.potions !== next.build.resources.potions || projected.maxPotions !== next.build.resources.maxPotions) {
+      throw new TypeError("REWARD_POTION_TRANSITION_STATE_INVALID");
+    }
+    Object.assign(next.build.resources, starting);
+  }
   repairLegacyWardenClaimEnvelope(next, mutableEnvelope);
   const slotById = new Map(mutableEnvelope.claimSlots.map((slot) => [slot.slotId, slot]));
   const seen = new Set();
@@ -1440,6 +1476,12 @@ async function settleRewardEnvelopeV3(state, request, context = {}, options = {}
       0,
       fatalStartingPotions - validatedPotionUseCount
     );
+  }
+  if (potionSettlement) {
+    next.build.resources = potionSettlement.transitions.reduce(
+      applyPotionResourceTransitionV08, next.build.resources
+    );
+    delete next.preRewardPotionSettlement;
   }
   if (validatedEnemyCount > enemyMaximumForRoom(envelope.roomType)) {
     throw new TypeError("REWARD_CLAIM_ROOM_ENEMY_BUDGET");

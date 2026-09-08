@@ -43,10 +43,35 @@ function earlyBalanceOtterEnabled(context) {
     context.capabilities.earlyBalanceOtterRepair === "v1";
 }
 
+function specialRoomRotationEnabled(context) {
+  return context?.capabilities?.specialRoomRotation === "v1";
+}
+
+function isScheduledMerchantRoom(roomIndex) {
+  const indexes = specialPolicy.guaranteedMerchantRoomIndexes || [];
+  return indexes.includes(roomIndex);
+}
+
+function isNaturalSpecialRoomEligible(scheduleState, roomType, depth) {
+  const cooldown = Number(specialPolicy.cooldownDepths?.[roomType]);
+  if (!Number.isFinite(cooldown)) return true;
+  const lastTypeDepth = Number(scheduleState.lastIssuedDepthByType?.[roomType]);
+  if (Number.isFinite(lastTypeDepth) && depth - lastTypeDepth < cooldown) return false;
+  const lastNaturalSpecialDepth = scheduleState.lastNaturalSpecialDepth == null
+    ? NaN
+    : Number(scheduleState.lastNaturalSpecialDepth);
+  return !Number.isFinite(lastNaturalSpecialDepth) ||
+    depth - lastNaturalSpecialDepth > Number(specialPolicy.globalGapDepths || 0);
+}
+
 function roomMinimumDepth(roomType, context) {
+  if (roomType === "vault") {
+    if (specialRoomRotationEnabled(context)) return Number.POSITIVE_INFINITY;
+    return earlyBalanceOtterEnabled(context) ? 11 : 6;
+  }
   if (!earlyBalanceOtterEnabled(context)) {
     if (roomType === "cursed") return 2;
-    if (roomType === "forge" || roomType === "vault") return 6;
+    if (roomType === "forge") return 6;
   }
   return roomEligibility.get(roomType)?.minDepth;
 }
@@ -145,7 +170,7 @@ function pactWeightForDepth(depth) {
   return selected.enabled ? selected.weight : 0;
 }
 
-function weightedEntriesForDepth(depth, scheduleState) {
+function weightedEntriesForDepth(depth, scheduleState, context = {}) {
   const region = regionForDepth(depth);
   const config = eligibility.regionConfigs[region.id];
   const weights = { ...config.roomWeights };
@@ -156,6 +181,14 @@ function weightedEntriesForDepth(depth, scheduleState) {
   }
   weights.pact = pactWeightForDepth(depth);
   if (scheduleState.crossroadsPenaltyActive) weights.crossroads = 0;
+  if (specialRoomRotationEnabled(context)) {
+    weights.merchant = 0;
+    for (const roomType of Object.keys(specialPolicy.cooldownDepths || {})) {
+      if (!isNaturalSpecialRoomEligible(scheduleState, roomType, depth)) {
+        weights[roomType] = 0;
+      }
+    }
+  }
   return Object.entries(weights)
     .map(([roomType, weight]) => ({
       roomType,
@@ -165,7 +198,7 @@ function weightedEntriesForDepth(depth, scheduleState) {
 }
 
 async function chooseWeightedRoom(state, context, depth, counter) {
-  const entries = weightedEntriesForDepth(depth, state.specialRoomScheduleState);
+  const entries = weightedEntriesForDepth(depth, state.specialRoomScheduleState, context);
   const total = entries.reduce((sum, entry) => sum + entry.weight, 0);
   if (total <= 0) return { roomType: "combat", source: "weighted-fallback" };
   let roll = await randomInt(
@@ -190,13 +223,17 @@ async function chooseWeightedRoom(state, context, depth, counter) {
   return { roomType: "combat", source: "weighted-fallback" };
 }
 
-function canIssueOtter(state, depth) {
+function canIssueOtter(state, depth, context) {
   const policy = specialPolicy.otter;
   return (
     state.statistics.roomsCompleted > 0 &&
     depth >= policy.minDepth &&
     depth % V08_RUN_PROGRESSION.bossInterval !== 0 &&
-    state.specialRoomScheduleState.otterRoomsSeenThisRun < policy.maxPerRun
+    state.specialRoomScheduleState.otterRoomsSeenThisRun < policy.maxPerRun &&
+    (
+      !specialRoomRotationEnabled(context) ||
+      isNaturalSpecialRoomEligible(state.specialRoomScheduleState, "otter", depth)
+    )
   );
 }
 
@@ -208,12 +245,16 @@ async function selectRoomType(state, context, depth, roomIndex) {
     return { roomType: "boss", source: "boss-priority" };
   }
 
+  if (specialRoomRotationEnabled(context) && isScheduledMerchantRoom(roomIndex)) {
+    return { roomType: "merchant", source: "merchant-schedule" };
+  }
+
   if (state.campaign?.forcedNextRoomType === "vault") {
     return { roomType: "vault", source: "treasure-map-forced-vault" };
   }
 
   const schedule = state.specialRoomScheduleState;
-  if (canIssueOtter(state, depth)) {
+  if (canIssueOtter(state, depth, context)) {
     const chance = depth >= specialPolicy.otter.ultraStartDepth
       ? specialPolicy.otter.ultraChance
       : specialPolicy.otter.chance;
@@ -250,18 +291,20 @@ async function selectRoomType(state, context, depth, roomIndex) {
     return { roomType: "otter", source: "otter-pity" };
   }
 
-  if (
+  if (!specialRoomRotationEnabled(context) && (
     roomIndex === specialPolicy.guaranteedMerchantRoomIndexes[1] ||
     (
       roomIndex === specialPolicy.guaranteedMerchantRoomIndexes[0] &&
       schedule.runMerchantRoomsSeen <= 0
     )
-  ) {
+  )) {
     return { roomType: "merchant", source: "merchant-guarantee" };
   }
 
   const region = regionForDepth(depth);
-  const vaultChance = Math.max(0, Number(eligibility.regionConfigs[region.id].vaultChance) || 0);
+  const vaultChance = specialRoomRotationEnabled(context)
+    ? 0
+    : Math.max(0, Number(eligibility.regionConfigs[region.id].vaultChance) || 0);
   if (depth >= roomMinimumDepth("vault", context) && vaultChance > 0) {
     const roll = await randomInt(
       state,
@@ -279,7 +322,7 @@ async function selectRoomType(state, context, depth, roomIndex) {
   return chooseWeightedRoom(state, context, depth, roomIndex);
 }
 
-function updateScheduleForIssuedRoom(scheduleState, roomType, depth) {
+function updateScheduleForIssuedRoom(scheduleState, roomType, depth, source, context) {
   const next = structuredClone(scheduleState);
   next.counts[roomType] = Math.max(0, Number(next.counts[roomType]) || 0) + 1;
   next.lastIssuedRoomType = roomType;
@@ -296,6 +339,17 @@ function updateScheduleForIssuedRoom(scheduleState, roomType, depth) {
   }
   if (roomType === "otter" && depth === specialPolicy.otterPityDepth) {
     next.otterPityUsedInGame = true;
+  }
+  if (
+    specialRoomRotationEnabled(context) &&
+    ["weighted-room", "queued-otter", "forge-pity", "otter-pity"].includes(source) &&
+    Object.hasOwn(specialPolicy.cooldownDepths || {}, roomType)
+  ) {
+    next.lastNaturalSpecialDepth = depth;
+    next.lastIssuedDepthByType = {
+      ...(next.lastIssuedDepthByType || {}),
+      [roomType]: depth
+    };
   }
   return next;
 }
@@ -391,8 +445,16 @@ export async function issueNextRoomDirectiveV08(state, context = {}) {
   next.specialRoomScheduleState = updateScheduleForIssuedRoom(
     next.specialRoomScheduleState,
     directive.roomType,
-    directive.depth
+    directive.depth,
+    selection.source,
+    context
   );
+  if (specialRoomRotationEnabled(context)) {
+    next.campaign.specialRoomRotationState = {
+      lastNaturalSpecialDepth: next.specialRoomScheduleState.lastNaturalSpecialDepth,
+      lastIssuedDepthByType: { ...next.specialRoomScheduleState.lastIssuedDepthByType }
+    };
+  }
   if (directive.roomType === "forge") {
     next.campaign.forgeSeenInCampaign = true;
   }

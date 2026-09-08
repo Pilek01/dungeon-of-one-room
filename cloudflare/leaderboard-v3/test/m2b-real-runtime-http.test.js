@@ -280,7 +280,10 @@ test("real runtime preserves the issued canonical chest outcome across Observer 
     awardId: issuedOutcome.awardId
   };
   if (["potion", "map_fragment"].includes(issuedOutcome.outcome)) localEvidence.count = 1;
-  if (["gold", "fallback_gold"].includes(issuedOutcome.outcome)) localEvidence.baseAmount = 4;
+  if (issuedOutcome.outcome === "gold") {
+    localEvidence.baseAmount = session.metaState.currentRoomDirective.roomType === "treasure" ? 24 : 4;
+  }
+  if (issuedOutcome.outcome === "fallback_gold") localEvidence.baseAmount = 4;
 
   const tampered = await harness.checkpoint(
     session,
@@ -320,7 +323,7 @@ test("real runtime preserves the issued canonical chest outcome across Observer 
       localEvidence
     }] }
   );
-  assert.equal(checkpointed.response.status, 200);
+  assert.equal(checkpointed.response.status, 200, JSON.stringify(checkpointed.payload));
 });
 
 test("starting selection rejects fake authority, stale bindings and token-kind substitution", async () => {

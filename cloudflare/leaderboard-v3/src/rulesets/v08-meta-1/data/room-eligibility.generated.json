@@ -10,8 +10,8 @@
     },
     {
       "file": "game.js",
-      "byteLength": 1382700,
-      "sha256": "5554af5795dbb91d949914718db8960c1efff1e86f208fb60d6df70d8906da65"
+      "byteLength": 1386221,
+      "sha256": "695ef03c79e23cb54f65847c484d838bb6cc90aa3faae552c78ceede70210ff9"
     },
     {
       "file": "pact-room.js",
@@ -20,8 +20,8 @@
     },
     {
       "file": "room-pity.js",
-      "byteLength": 1075,
-      "sha256": "4b25c0160a9d339248a969627b7a82c93b464966b671d21c9e30f2e83c70cb76"
+      "byteLength": 4019,
+      "sha256": "5ed408418674e52918285bfce274a4198e7dd9679326f3ca7ad449a133251b86"
     }
   ],
   "canonicalData": {
@@ -236,7 +236,7 @@
         "minDepth": 40,
         "maxDepth": 99,
         "maxPerRun": null,
-        "cooldownDepths": null,
+        "cooldownDepths": 10,
         "deterministic": false,
         "mutualExclusions": [
           "boss",
@@ -287,7 +287,7 @@
         "minDepth": 30,
         "maxDepth": 99,
         "maxPerRun": null,
-        "cooldownDepths": null,
+        "cooldownDepths": 15,
         "deterministic": false,
         "mutualExclusions": [
           "boss",
@@ -338,7 +338,7 @@
         "minDepth": 11,
         "maxDepth": 99,
         "maxPerRun": null,
-        "cooldownDepths": null,
+        "cooldownDepths": 20,
         "deterministic": false,
         "mutualExclusions": [
           "boss",
@@ -366,7 +366,7 @@
         "maxDepth": 99,
         "maxPerRun": null,
         "cooldownDepths": null,
-        "deterministic": false,
+        "deterministic": true,
         "mutualExclusions": [
           "boss",
           "final"
@@ -374,15 +374,23 @@
         "id": "merchant",
         "guaranteedRoomIndexes": [
           8,
-          18
+          18,
+          28,
+          38,
+          48,
+          58,
+          68,
+          78,
+          88,
+          98
         ],
-        "scheduleRule": "weighted or guaranteed by roomIndex"
+        "scheduleRule": "deterministic every ten room indexes from 8 through 98; excluded from weighted selection"
       },
       {
         "minDepth": 20,
         "maxDepth": 99,
         "maxPerRun": 3,
-        "cooldownDepths": null,
+        "cooldownDepths": 20,
         "deterministic": false,
         "mutualExclusions": [
           "boss",
@@ -396,7 +404,7 @@
         "minDepth": 25,
         "maxDepth": 99,
         "maxPerRun": null,
-        "cooldownDepths": null,
+        "cooldownDepths": 10,
         "deterministic": false,
         "mutualExclusions": [
           "boss",
@@ -432,17 +440,17 @@
         "scheduleRule": "weighted by campaign region"
       },
       {
-        "minDepth": 11,
+        "minDepth": null,
         "maxDepth": 99,
         "maxPerRun": null,
         "cooldownDepths": null,
-        "deterministic": false,
+        "deterministic": true,
         "mutualExclusions": [
           "boss",
           "final"
         ],
         "id": "vault",
-        "scheduleRule": "independent region vaultChance before weighted selection"
+        "scheduleRule": "only after ten collected map fragments; excluded from random selection"
       }
     ]
   }

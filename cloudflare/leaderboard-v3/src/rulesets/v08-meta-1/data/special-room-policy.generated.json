@@ -10,8 +10,8 @@
     },
     {
       "file": "game.js",
-      "byteLength": 1382700,
-      "sha256": "5554af5795dbb91d949914718db8960c1efff1e86f208fb60d6df70d8906da65"
+      "byteLength": 1386221,
+      "sha256": "695ef03c79e23cb54f65847c484d838bb6cc90aa3faae552c78ceede70210ff9"
     },
     {
       "file": "pact-room.js",
@@ -20,25 +20,41 @@
     },
     {
       "file": "room-pity.js",
-      "byteLength": 1075,
-      "sha256": "4b25c0160a9d339248a969627b7a82c93b464966b671d21c9e30f2e83c70cb76"
+      "byteLength": 4019,
+      "sha256": "5ed408418674e52918285bfce274a4198e7dd9679326f3ca7ad449a133251b86"
     }
   ],
   "canonicalData": {
     "priority": [
       "final",
       "boss",
+      "merchant-schedule",
+      "treasure-map-forced-vault",
       "queued-otter",
       "forge-pity",
       "otter-pity",
-      "merchant-guarantee",
-      "vault-roll",
       "weighted-room"
     ],
     "guaranteedMerchantRoomIndexes": [
       8,
-      18
+      18,
+      28,
+      38,
+      48,
+      58,
+      68,
+      78,
+      88,
+      98
     ],
+    "globalGapDepths": 2,
+    "cooldownDepths": {
+      "forge": 20,
+      "pact": 10,
+      "crossroads": 15,
+      "arena": 10,
+      "otter": 20
+    },
     "forgePityDepth": 21,
     "otterPityDepth": 41,
     "otter": {
@@ -75,11 +91,6 @@
       }
     ],
     "deferredOutsidePhase3B1": [
-      {
-        "ruleId": "treasure-map-forced-vault",
-        "sourceReference": "game.js:forcedNextRoomType=VAULT",
-        "reason": "Depends on reward/economy state deferred to Phase 3B2."
-      },
       {
         "ruleId": "crossroads-power-exclusion",
         "sourceReference": "game.js:isCrossroadsPowerPenaltyActive",

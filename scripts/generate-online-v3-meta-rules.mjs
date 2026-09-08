@@ -2050,17 +2050,21 @@ function buildCanonicalData(records, textByFile) {
   const expansionRooms = parseExpansionRoomTypes(expansionSource);
   const pactProfiles = parsePactProfiles(pactSource);
   const pactEncounterProfiles = parsePactEncounterProfiles(pactSource);
-  const chooseRoomType = extractBalancedBlock(gameSource, "function chooseRoomType");
   const isBossDepth = extractBalancedBlock(gameSource, "function isBossDepth");
   const bossInterval = Number(requireMatch(
     isBossDepth,
     /state\.depth\s*%\s*(\d+)\s*===\s*0/u,
     "isBossDepth:interval"
   )[1]);
-  const guaranteedMerchantRoomIndexes = Array.from(
-    chooseRoomType.matchAll(/state\.roomIndex\s*===\s*(\d+)/gu),
-    (match) => Number(match[1])
-  ).sort((left, right) => left - right);
+  const merchantFirstRoomIndex = extractNumber(pitySource, "MERCHANT_FIRST_ROOM_INDEX");
+  const merchantLastRoomIndex = extractNumber(pitySource, "MERCHANT_LAST_ROOM_INDEX");
+  const merchantRoomInterval = extractNumber(pitySource, "MERCHANT_ROOM_INTERVAL");
+  const guaranteedMerchantRoomIndexes = [];
+  for (
+    let roomIndex = merchantFirstRoomIndex;
+    roomIndex <= merchantLastRoomIndex;
+    roomIndex += merchantRoomInterval
+  ) guaranteedMerchantRoomIndexes.push(roomIndex);
   const otterMinDepth = extractNumber(gameSource, "OTTER_ROOM_MIN_DEPTH");
   const otterMaxPerRun = extractNumber(gameSource, "OTTER_ROOM_MAX_PER_RUN");
   const otterChance = extractNumber(gameSource, "OTTER_ROOM_CHANCE");
@@ -2068,6 +2072,10 @@ function buildCanonicalData(records, textByFile) {
   const ultraThemeStartDepth = extractNumber(gameSource, "ULTRA_THEME_START_DEPTH");
   const forgePityDepth = extractNumber(pitySource, "FORGE_PITY_DEPTH");
   const otterPityDepth = extractNumber(pitySource, "OTTER_PITY_DEPTH");
+  const specialRoomGlobalGapDepths = extractNumber(pitySource, "SPECIAL_ROOM_GLOBAL_GAP_DEPTHS");
+  const specialRoomCooldownDepths = parseNumericMap(
+    extractBalancedBlock(pitySource, "const SPECIAL_ROOM_COOLDOWN_DEPTHS")
+  );
   const sourceCommit = BASELINE_COMMIT;
   const maxRelics = extractNumber(gameSource, "MAX_RELICS");
   const maxNormalRelicStack = extractNumber(gameSource, "MAX_NORMAL_RELIC_STACK");
@@ -2150,7 +2158,7 @@ function buildCanonicalData(records, textByFile) {
       minDepth: 1,
       maxDepth: room.id === "final" ? maxDepth : maxDepth - 1,
       maxPerRun: null,
-      cooldownDepths: null,
+      cooldownDepths: specialRoomCooldownDepths[room.id] ?? null,
       deterministic: false,
       mutualExclusions: ["boss", "final"]
     };
@@ -2193,19 +2201,17 @@ function buildCanonicalData(records, textByFile) {
         id: room.id,
         minDepth: 3,
         guaranteedRoomIndexes: guaranteedMerchantRoomIndexes,
-        scheduleRule: "weighted or guaranteed by roomIndex"
+        deterministic: true,
+        scheduleRule: "deterministic every ten room indexes from 8 through 98; excluded from weighted selection"
       };
     }
     if (room.id === "vault") {
       return {
         ...defaults,
         id: room.id,
-        minDepth: Number(requireMatch(
-          balanceSource,
-          /roomType === "vault"\) return Boolean\(forcedByMapFragments\) \|\| safeDepth >= (\d+)/u,
-          "vault:minDepth"
-        )[1]),
-        scheduleRule: "independent region vaultChance before weighted selection"
+        minDepth: null,
+        deterministic: true,
+        scheduleRule: "only after ten collected map fragments; excluded from random selection"
       };
     }
     if (room.id === "forge") {
@@ -2327,14 +2333,16 @@ function buildCanonicalData(records, textByFile) {
       priority: [
         "final",
         "boss",
+        "merchant-schedule",
+        "treasure-map-forced-vault",
         "queued-otter",
         "forge-pity",
         "otter-pity",
-        "merchant-guarantee",
-        "vault-roll",
         "weighted-room"
       ],
       guaranteedMerchantRoomIndexes,
+      globalGapDepths: specialRoomGlobalGapDepths,
+      cooldownDepths: specialRoomCooldownDepths,
       forgePityDepth,
       otterPityDepth,
       otter: {
@@ -2371,11 +2379,6 @@ function buildCanonicalData(records, textByFile) {
         }
       ],
       deferredOutsidePhase3B1: [
-        {
-          ruleId: "treasure-map-forced-vault",
-          sourceReference: "game.js:forcedNextRoomType=VAULT",
-          reason: "Depends on reward/economy state deferred to Phase 3B2."
-        },
         {
           ruleId: "crossroads-power-exclusion",
           sourceReference: "game.js:isCrossroadsPowerPenaltyActive",
@@ -2836,6 +2839,7 @@ function buildCanonicalData(records, textByFile) {
     sources: sourceRefs(records, ["game.js", "camp-data.js", "mutator-data.js", "pact-room.js"]),
     canonicalData: {
       policyVersion: "v08-gold-claims-1",
+      preRewardPotionSettlement: "room-uses-and-chests-before-flask-transitions-v1",
       roomClear: {
         baseFormula: "2 + floor(depth / 2)",
         excludedRoomTypes: ["crossroads", "merchant"],
@@ -3181,6 +3185,7 @@ function buildCanonicalData(records, textByFile) {
     ]),
     canonicalData: {
       policyVersion: "v08-crossroads-transaction-1",
+      canonicalChoiceProjection: "single-durable-room-resolution-v1",
       implementationStatus: "m1-disconnected-test-only",
       trigger: "Crossroads room exposes mutually exclusive POWER and MERCY chests",
       power: {

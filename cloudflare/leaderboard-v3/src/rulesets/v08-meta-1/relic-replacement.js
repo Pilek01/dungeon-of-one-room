@@ -1,4 +1,5 @@
 import { isCompatibleRulesetHashV08 } from "./ruleset-hash-policy.js";
+import { capturePreRewardPotionTransitionV08 } from "./reward-policy.js";
 import slotPolicyDocument from "./data/relic-slot-policy.generated.json" with { type: "json" };
 import {
   applyRelicReplacementBuildV08,
@@ -484,6 +485,12 @@ export async function commitRelicReplacement(metaState, request, context = {}) {
     resultingBuildDigest: next.build.buildDigest,
     transaction: completed
   });
+  const rewardSlot = metaState.currentRewardEnvelope?.rewardSlots?.find(
+    (slot) => slot.slotId === transaction.incoming.sourceRewardSlotId
+  );
+  if (rewardSlot?.availabilityMode === "pre_offer") {
+    capturePreRewardPotionTransitionV08(metaState, next);
+  }
   next.updatedAt = next.startedAt + next.revision;
   return next;
 }

@@ -1,4 +1,5 @@
 import arenaPolicyDocument from "./data/arena-relic-offer-policy.generated.json" with { type: "json" };
+import { capturePreRewardPotionTransitionV08 } from "./reward-policy.js";
 import catalogDocument from "./data/relic-catalog.generated.json" with { type: "json" };
 import pityPolicyDocument from "./data/relic-pity-policy.generated.json" with { type: "json" };
 import rarityPolicyDocument from "./data/relic-rarity-policy.generated.json" with { type: "json" };
@@ -815,6 +816,9 @@ export async function selectRegularRelic(metaState, request = {}, context = {}) 
     }
   });
   next.updatedAt = next.startedAt + next.revision;
+  if (binding.slot.availabilityMode === "pre_offer") {
+    capturePreRewardPotionTransitionV08(metaState, next);
+  }
   return next;
 }
 

@@ -1086,6 +1086,8 @@ const productionGameReplacements = [
       }
       const resources = publicState?.build?.resources || {};
       const campaign = publicState?.campaign || {};
+      syncRankedBoundaryGold(publicState);
+      syncRankedCrossroadsResolution(publicState);
       syncRankedCanonicalPotionState(publicState);
       if (Array.isArray(publicState?.build?.relics)) {
         syncRankedCanonicalRelics(publicState?.build || {});
@@ -1461,6 +1463,16 @@ for (const [sourceText, replacement] of rankedDiagnosticsGameReplacements) {
 }
 const rankedGoldGameReplacements = [
   [
+`  function openCrossroadsPowerChest(chest) {`,
+`  function openCrossroadsPowerChest(chest) {
+    if (state.onlineV3Ranked) return;`
+  ],
+  [
+`  function openCrossroadsMercyChest(chest) {`,
+`  function openCrossroadsMercyChest(chest) {
+    if (state.onlineV3Ranked) return;`
+  ],
+  [
 `  function killEnemy(enemy, reason, options = {}) {
     const killX = enemy.x;`,
 `  function killEnemy(enemy, reason, options = {}) {
@@ -1497,6 +1509,7 @@ const rankedGoldGameReplacements = [
         0,
         Math.floor(Number(context.startingGold) || 0)
       );
+      onlineV3LastCanonicalRoomGold = onlineV3RoomStartingGold;
       onlineV3RoomStartingTurn = Math.max(0, Math.floor(Number(state.turn) || 0));
     },
     captureRankedBoundary() {
@@ -1539,6 +1552,7 @@ const rankedGoldGameReplacements = [
         orderedPotionClaims: onlineV3OrderedPotionClaims
       }) || null;
       onlineV3RoomStartingGold = Math.max(0, Math.floor(Number(state.player.gold) || 0));
+      onlineV3LastCanonicalRoomGold = onlineV3RoomStartingGold;
       onlineV3RoomStartingTurn = Math.max(0, Math.floor(Number(state.turn) || 0));
       return true;
     },
@@ -1575,6 +1589,7 @@ const rankedGoldGameReplacements = [
   let onlineV3BoundedCombatResources = false;
   let onlineV3OrderedPotionClaims = false;
   let onlineV3RoomStartingGold = 0;
+  let onlineV3LastCanonicalRoomGold = 0;
   let onlineV3RoomStartingTurn = 0;
   let onlineV3RoomClearDirectiveId = "";
   let onlineV3RoomClearReported = false;
@@ -1584,6 +1599,59 @@ const rankedGoldGameReplacements = [
   const ONLINE_V3_SPECIAL_CHEST_TYPES = new Set([
     "arena_reward", "otter_red", "crossroads_power", "crossroads_mercy"
   ]);
+  function syncRankedBoundaryGold(publicState) {
+    if (!state.onlineV3Ranked || !state.onlineV3Directive?.directiveId ||
+        publicState?.currentRoomDirective?.directiveId !== state.onlineV3Directive.directiveId) return;
+    const gold = Math.max(0, Math.floor(Number(publicState.gold) || 0));
+    onlineV3RoomStartingGold += gold - onlineV3LastCanonicalRoomGold;
+    onlineV3LastCanonicalRoomGold = gold;
+  }
+  function syncRankedCrossroadsResolution(publicState) {
+    const directive = publicState?.currentRoomDirective;
+    const resolution = directive?.specialRoomPayload?.crossroadsResolution;
+    if (!state.onlineV3Ranked || state.roomType !== "crossroads" ||
+        directive?.directiveId !== state.onlineV3Directive?.directiveId || !resolution) return;
+    for (const chest of state.chests) {
+      if (["crossroads_power", "crossroads_mercy"].includes(chest.type)) {
+        chest.opened = true;
+        chest.confirmPending = false;
+      }
+    }
+    if (state.onlineV3CrossroadsResolutionId === resolution.transactionId) return;
+    const resources = publicState.build.resources;
+    if (resolution.action === "mercy") {
+      state.player.hp = state.player.maxHp;
+      state.skillCooldowns = { ...resources.skillCooldowns };
+    } else {
+      // Match openCrossroadsPowerChest: pay the cost before gaining the relic.
+      // A reconstructed room already contains its awarded build; use its saved cost.
+      const restored = state.onlineV3Directive.specialRoomPayload?.crossroadsResolution;
+      const cost = restored
+        ? Math.max(0, resources.crossroadsPowerMaxHpPenalty)
+        : Math.max(1, Math.round(state.player.maxHp * CROSSROADS_POWER_HP_COST_MULTIPLIER));
+      if (!(restored && state.player.crossroadsPowerMaxHpPenalty > 0)) {
+        state.player.maxHp = Math.max(1, state.player.maxHp - cost);
+        state.player.hp = Math.min(state.player.hp, state.player.maxHp);
+        state.player.crossroadsPowerMaxHpPenalty = cost;
+        const remaining = restored
+          ? Math.max(0, resources.crossroadsPowerExpireTurn - resources.turn)
+          : CROSSROADS_POWER_DURATION_TURNS;
+        state.player.crossroadsPowerExpireTurn = remaining > 0 ? state.turn + remaining : -1;
+      }
+    }
+    const count = (ids, id) => ids.filter((entry) => entry === id).length;
+    const before = state.relics.slice();
+    const after = (publicState.build.relics || []).flatMap((entry) =>
+      Array.from({ length: entry.stacks }, () => entry.relicId));
+    for (const id of new Set([...before, ...after])) {
+      // These effects are already projected by canonical inventory/resources.
+      if (id === "idol" || id === "flask") continue;
+      const delta = count(after, id) - count(before, id);
+      for (let i = 0; i < -delta; i++) removeRelicEffects(id);
+      for (let i = 0; i < delta; i++) applyRelicEffects(id);
+    }
+    state.onlineV3CrossroadsResolutionId = resolution.transactionId;
+  }
   function resetRankedCanonicalChestSlots(publicState = null) {
     onlineV3CanonicalChestSlots = [];
     onlineV3CanonicalChestSlotCursor = 0;

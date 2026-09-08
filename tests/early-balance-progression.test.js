@@ -87,6 +87,7 @@ assert.equal(isRoomTypeUnlocked("cursed", 6, false), true);
 assert.equal(isRoomTypeUnlocked("forge", 10, false), false);
 assert.equal(isRoomTypeUnlocked("forge", 11, false), true);
 assert.equal(isRoomTypeUnlocked("vault", 10, false), false);
+assert.equal(isRoomTypeUnlocked("vault", 11, false), false);
 assert.equal(isRoomTypeUnlocked("vault", 10, true), true);
 
 console.log("Early balance progression tests passed");
