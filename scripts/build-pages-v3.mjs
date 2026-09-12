@@ -99,12 +99,15 @@ for (const entry of await readdir(root, { withFileTypes: true })) {
 }
 
 for (const directory of ["assets", "render", "online-v3"]) {
-  const tracked = execFileSync(
+  // Current-tree QA must include new runtime files before they are committed.
+  // Release builds retain their tracked-only asset boundary.
+  const runtimeFiles = execFileSync(
     "git",
-    ["-c", `safe.directory=${root.replaceAll("\\", "/")}`, "ls-files", "-z", "--", directory],
+    ["-c", `safe.directory=${root.replaceAll("\\", "/")}`, "ls-files", "-z",
+      ...(target === "test" ? ["--cached", "--others", "--exclude-standard"] : []), "--", directory],
     { cwd: root, encoding: "utf8" }
   ).split("\0").filter(Boolean);
-  for (const relative of tracked) {
+  for (const relative of new Set(runtimeFiles)) {
     if (isRetiredClassicPresentation(relative)) continue;
     const source = path.join(root, relative);
     const destination = path.join(output, relative);

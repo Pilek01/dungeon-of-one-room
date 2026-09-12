@@ -1,0 +1,756 @@
+/* Mobile v2: two thumb zones around an unobstructed board. Desktop is untouched. */
+body#dungeonApp.mobile-touch {
+  --mv-gold: #dbc392;
+  --mv-muted: #a9aaa1;
+  --mv-surface: #10100f;
+  --mv-line: #60574a;
+  --mv-safe-l: env(safe-area-inset-left, 0px);
+  --mv-safe-r: env(safe-area-inset-right, 0px);
+  --mv-safe-t: env(safe-area-inset-top, 0px);
+  --mv-safe-b: env(safe-area-inset-bottom, 0px);
+  --mv-left: clamp(132px, 18vw, 192px);
+  --mv-right: clamp(164px, 22vw, 228px);
+  --mv-cell: clamp(48px, 6.1vw, 64px);
+  --mv-board: min(calc(100dvh - 16px - var(--mv-safe-t) - var(--mv-safe-b)), calc(100vw - var(--mv-left) - var(--mv-right) - 84px - var(--mv-safe-l) - var(--mv-safe-r)));
+  margin: 0 !important;
+  padding: 0 !important;
+  background: #070b0d !important;
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+body#dungeonApp.mobile-touch #gameApp,
+body#dungeonApp.mobile-touch #gameApp .layout,
+body#dungeonApp.mobile-touch #gameApp .layout-track {
+  position: relative !important;
+  width: 100% !important;
+  height: 100dvh !important;
+  min-height: 0 !important;
+  max-width: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  transform: none !important;
+  overflow: hidden !important;
+  display: block !important;
+  box-shadow: none !important;
+  background: transparent !important;
+}
+body#dungeonApp.mobile-touch #gameApp .layout-track > .board {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  box-sizing: border-box;
+  width: 100% !important;
+  height: 100dvh !important;
+  min-height: 0 !important;
+  padding: var(--mv-safe-t) calc(var(--mv-right) + var(--mv-safe-r)) var(--mv-safe-b) calc(var(--mv-left) + var(--mv-safe-l)) !important;
+  margin: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: radial-gradient(ellipse at 45% 45%, #211a1230, #030405b3 80%), url('assets/hd/ui/abyssal-gothic/panel-texture.png') center / 320px !important;
+  box-shadow: inset 0 0 80px #0009 !important;
+}
+body#dungeonApp.mobile-touch #gameApp .board::before,
+body#dungeonApp.mobile-touch #gameApp .board::after,
+body#dungeonApp.mobile-touch #gameApp .titlebar,
+body#dungeonApp.mobile-touch #gameApp #depthBadge,
+body#dungeonApp.mobile-touch #gameApp #skillsBar,
+body#dungeonApp.mobile-touch #gameApp .app-footer,
+body#dungeonApp.mobile-touch #gameApp #mobileSwipeHint,
+body#dungeonApp.mobile-touch #gameApp .room-resource-rail { display: none !important; }
+body#dungeonApp.mobile-touch #gameApp .room-stage {
+  position: relative !important;
+  display: flex !important;
+  align-items: stretch !important;
+  justify-content: center !important;
+  flex: 0 0 auto !important;
+  gap: 4px !important;
+  width: calc(var(--mv-board) + 72px) !important;
+  height: var(--mv-board) !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  transform: none !important;
+  overflow: visible !important;
+}
+body#dungeonApp.mobile-touch #gameApp .room-stage .canvas-wrap {
+  position: relative !important;
+  flex: 0 0 var(--mv-board) !important;
+  width: var(--mv-board) !important;
+  height: var(--mv-board) !important;
+  max-width: none !important;
+  max-height: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  border: 0 !important;
+  border-radius: 2px !important;
+  outline: 1px solid #66583c;
+  box-shadow: 0 0 0 3px #030506, 0 6px 18px #000c !important;
+  background: #050809 !important;
+}
+body#dungeonApp.mobile-touch #gameApp .canvas-wrap::before,
+body#dungeonApp.mobile-touch #gameApp .canvas-wrap::after { display: none !important; }
+body#dungeonApp.mobile-touch #gameApp #game {
+  display: block !important;
+  width: 100% !important;
+  height: 100% !important;
+  max-width: none !important;
+  max-height: none !important;
+  border: 0 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  object-fit: contain;
+  touch-action: none;
+}
+/* Reuse the PC resource values and semantics at a readable mobile scale. */
+body#dungeonApp.mobile-touch #gameApp .room-vital-rail {
+  position: relative !important;
+  display: flex !important;
+  align-items: center;
+  flex: 0 0 auto;
+  height: 100% !important;
+  box-sizing: border-box;
+  padding: 4px 3px !important;
+  margin: 0 !important;
+  border: 1px solid #474639;
+  border-radius: 4px;
+  background: linear-gradient(90deg, #29272080, #060707b3), url('assets/hd/ui/abyssal-gothic/panel-texture.png') center / 120px !important;
+  overflow: visible !important;
+  filter: none;
+}
+body#dungeonApp.mobile-touch #gameApp #hpRail { width: 28px; flex-direction: column; }
+body#dungeonApp.mobile-touch #gameApp #protectionRail { width: 36px; gap: 4px; }
+body#dungeonApp.mobile-touch #gameApp .room-protection-meter { display: flex; flex-direction: column; align-items: center; flex: 1; height: 100%; min-width: 0; }
+body#dungeonApp.mobile-touch #gameApp .room-vital-track { position: relative; flex: 1; min-height: 0; width: 100%; overflow: hidden; background: #020404; border: 1px solid #373d3b; }
+body#dungeonApp.mobile-touch #gameApp .room-vital-fill { position: absolute; inset: auto 1px 1px; height: max(0px, calc(var(--meter-fill, 0%) - 2px)); width: auto; transition: height 150ms ease-out; }
+body#dungeonApp.mobile-touch #gameApp #hpRail .room-vital-fill { background: linear-gradient(90deg, #971e28, #ed6260 65%, #b72832); }
+body#dungeonApp.mobile-touch #gameApp #shieldRailTrack .room-vital-fill { background: linear-gradient(90deg, #93651c, #f1c769); }
+body#dungeonApp.mobile-touch #gameApp #barrierRailTrack .room-vital-fill { background: linear-gradient(90deg, #165c85, #61ccee); }
+body#dungeonApp.mobile-touch #gameApp .room-vital-value { display: block; writing-mode: vertical-rl; transform: rotate(180deg); color: #fff2d6; font: 700 13px/1.1 system-ui, sans-serif; margin: 0 0 6px; padding: 1px; }
+body#dungeonApp.mobile-touch #gameApp .room-vital-label { display: block; color: #dcd5c6; font: 700 10px/1 system-ui, sans-serif; margin-top: 6px; }
+body#dungeonApp.mobile-low-health #gameApp #hpRail { border-color: #f08073; box-shadow: 0 0 10px #ed423d66; }
+body#dungeonApp.mobile-low-health #gameApp #hpRailValue { color: #ffbcb3; }
+body#dungeonApp.mobile-touch #gameApp #mobileCommandDeck {
+  position: absolute !important;
+  top: calc(14px + var(--mv-safe-t)) !important;
+  left: calc(12px + var(--mv-safe-l)) !important;
+  width: calc(var(--mv-left) - 20px) !important;
+  height: auto !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  border: 0 !important;
+  background: none !important;
+  box-shadow: none !important;
+  display: block !important;
+}
+body#dungeonApp.mobile-touch #gameApp #mobileCommandDeck[hidden] { display: none !important; }
+body#dungeonApp.mobile-touch #gameApp .mobile-command-header,
+body#dungeonApp.mobile-touch #gameApp .mobile-command-location { display: flex; flex-direction: column; align-items: flex-start; gap: 3px; padding: 0; margin: 0; min-height: 0; width: 100%; border: 0; }
+body#dungeonApp.mobile-touch #gameApp .mobile-command-location::before { display: none; }
+body#dungeonApp.mobile-touch #gameApp .mobile-command-kicker { display: none; }
+body#dungeonApp.mobile-touch #gameApp #mobileDepthValue { font: 700 22px/1.1 Georgia, serif; color: var(--mv-gold); }
+body#dungeonApp.mobile-touch #gameApp #mobileRoomValue { font: 11px/1.3 system-ui, sans-serif; letter-spacing: .05em; color: #b3b7af; white-space: normal; text-transform: uppercase; }
+body#dungeonApp.mobile-touch #gameApp #mobileHud { display: flex !important; flex-direction: column; align-items: flex-start; gap: 7px; margin-top: 10px; padding: 0; }
+body#dungeonApp.mobile-touch #gameApp #mobileHud .mobile-hud-meter,
+body#dungeonApp.mobile-touch #gameApp #mobileDetailsButton { display: none !important; }
+body#dungeonApp.mobile-touch #gameApp .mobile-hud-fury,
+body#dungeonApp.mobile-touch #gameApp .mobile-hud-gold { display: flex; align-items: center; width: auto; gap: 6px; color: #c5c9c2; font: 11px/1.3 system-ui, sans-serif; }
+body#dungeonApp.mobile-touch #gameApp .mobile-hud-fury img { width: 18px; height: 18px; }
+body#dungeonApp.mobile-touch #gameApp .mobile-fury-meter-track { width: 32px; height: 5px; }
+body#dungeonApp.mobile-touch #gameApp .mobile-hud-gold strong { color: var(--mv-gold); font-size: 14px; }
+body#dungeonApp.mobile-touch #gameApp #mobileControls,
+body#dungeonApp.mobile-touch #gameApp #mobileControls .mobile-controls-row { display: contents !important; }
+body#dungeonApp.mobile-touch #gameApp #mobileControls.hidden { display: none !important; }
+body#dungeonApp.mobile-touch #gameApp #mobileControls .mobile-controls-row::before,
+body#dungeonApp.mobile-touch #gameApp #mobileControls .mobile-controls-row::after { display: none !important; }
+body#dungeonApp.mobile-touch #gameApp #mobileActionDock {
+  position: absolute !important;
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  grid-auto-rows: clamp(52px, 17dvh, 70px) !important;
+  grid-template-rows: repeat(3, clamp(52px, 17dvh, 70px)) !important;
+  gap: 7px !important;
+  left: calc(10px + var(--mv-safe-l)) !important;
+  bottom: calc(14px + var(--mv-safe-b)) !important;
+  top: auto !important;
+  right: auto !important;
+  width: calc(var(--mv-left) - 18px) !important;
+  height: auto !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  background: none !important;
+}
+body#dungeonApp.mobile-touch #gameApp #mobileActionDock::before,
+body#dungeonApp.mobile-touch #gameApp #mobileActionDock::after { display: none !important; }
+body#dungeonApp.mobile-touch #gameApp #mobileActionDock .mact-btn {
+  display: flex !important;
+  position: relative !important;
+  flex-direction: column !important;
+  justify-content: center !important;
+  align-items: center !important;
+  gap: 1px;
+  width: 100% !important;
+  height: 100% !important;
+  min-width: 0 !important;
+  min-height: 48px !important;
+  padding: 4px 2px !important;
+  margin: 0 !important;
+  border: 1px solid #6e6247 !important;
+  border-image: none !important;
+  border-radius: 5px !important;
+  background: var(--mv-metal-bg) !important;
+  box-shadow: inset 0 1px #ceba7933, 0 3px 0 #020504 !important;
+  color: #efe4cc;
+  touch-action: manipulation;
+}
+body#dungeonApp.mobile-touch #gameApp #mobileActionDock .mact-btn::before,
+body#dungeonApp.mobile-touch #gameApp #mobileActionDock .mact-btn::after { display: none !important; }
+body#dungeonApp.mobile-touch #gameApp #mobileActionDock .mact-btn > img { position: static !important; display: block !important; width: 34px !important; height: 34px !important; margin: 0 !important; object-fit: contain; opacity: 1; filter: none; }
+body#dungeonApp.mobile-touch #gameApp .mobile-action-copy { display: flex !important; position: static !important; flex-direction: column; align-items: center; gap: 1px; width: auto !important; height: auto !important; transform: none !important; }
+body#dungeonApp.mobile-touch #gameApp .mobile-action-copy :is(strong, small) { position: static !important; inset: auto !important; width: auto !important; height: auto !important; transform: none !important; padding: 0 !important; }
+body#dungeonApp.mobile-touch #gameApp .mobile-action-copy :is(strong, small)::after { display: none !important; }
+body#dungeonApp.mobile-touch #gameApp .mobile-action-copy strong { font: 650 11px/1.15 system-ui, sans-serif !important; text-transform: none; letter-spacing: 0; color: #ece7db; white-space: nowrap; }
+body#dungeonApp.mobile-touch #gameApp .mobile-action-copy small { display: block !important; font: 700 11px/1.1 system-ui, sans-serif !important; color: #ccb981; letter-spacing: .02em; }
+body#dungeonApp.mobile-touch #gameApp .mobile-action-key { display: none !important; }
+body#dungeonApp.mobile-touch #gameApp #mobileActionDock #mbtnQ { display: none !important; }
+body#dungeonApp.mobile-touch #gameApp #mbtnE { grid-column: 2; grid-row: 3; }
+body#dungeonApp.mobile-touch #gameApp #mbtnE.is-context-hidden { visibility: hidden; pointer-events: none; }
+body#dungeonApp.mobile-touch #gameApp #mobileActionDock .is-cooling { border-color: #52606a !important; opacity: 1; }
+body#dungeonApp.mobile-touch #gameApp #mobileActionDock .is-armed { border-color: #74c4f4 !important; box-shadow: 0 0 9px #3caff466 !important; }
+body#dungeonApp.mobile-touch #gameApp #mobileActionDock [aria-disabled='true'] { opacity: 1; border-color: #3b4446 !important; color: #b5bfc0; }
+body#dungeonApp.mobile-touch #gameApp .mobile-dpad {
+  position: absolute !important;
+  display: grid !important;
+  grid-template-columns: repeat(3, var(--mv-cell)) !important;
+  grid-template-rows: repeat(3, var(--mv-cell)) !important;
+  gap: 2px !important;
+  width: calc(var(--mv-cell) * 3 + 4px) !important;
+  height: calc(var(--mv-cell) * 3 + 4px) !important;
+  right: calc(12px + var(--mv-safe-r)) !important;
+  bottom: calc(22px + var(--mv-safe-b)) !important;
+  left: auto !important;
+  top: auto !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  background: none !important;
+  border: 0 !important;
+  filter: none !important;
+}
+body#dungeonApp.mobile-touch #gameApp .mobile-dpad::before { inset: -6px; opacity: .18; filter: none; }
+body#dungeonApp.mobile-touch #gameApp .dpad-middle-row { display: contents !important; }
+body#dungeonApp.mobile-touch #gameApp .mobile-dpad :is(.dpad-btn, .dpad-center) {
+  position: relative !important;
+  width: var(--mv-cell) !important;
+  height: var(--mv-cell) !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  border: 1px solid #86724e !important;
+  border-image: none !important;
+  border-radius: 7px !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  background: linear-gradient(145deg, #303a3b, #131b1e) !important;
+  box-shadow: inset 0 1px #e7cb7733, 0 3px 0 #010303 !important;
+  touch-action: manipulation;
+}
+body#dungeonApp.mobile-touch #gameApp .dpad-btn::before { display: block !important; content: ''; position: absolute; inset: 9px !important; background: url('assets/hd/ui/mobile/dpad-arrow.png') center / contain no-repeat !important; opacity: .95; }
+body#dungeonApp.mobile-touch #gameApp .dpad-btn::after { display: none !important; }
+body#dungeonApp.mobile-touch #gameApp .dpad-up { grid-area: 1 / 2; }
+body#dungeonApp.mobile-touch #gameApp .dpad-left { grid-area: 2 / 1; }
+body#dungeonApp.mobile-touch #gameApp .dpad-right { grid-area: 2 / 3; }
+body#dungeonApp.mobile-touch #gameApp .dpad-down { grid-area: 3 / 2; }
+body#dungeonApp.mobile-touch #gameApp .dpad-left::before { transform: rotate(-90deg); }
+body#dungeonApp.mobile-touch #gameApp .dpad-right::before { transform: rotate(90deg); }
+body#dungeonApp.mobile-touch #gameApp .dpad-down::before { transform: rotate(180deg); }
+body#dungeonApp.mobile-touch #gameApp .dpad-center { grid-area: 2 / 2; opacity: .3; border-color: #3b4a4c !important; border-radius: 50% !important; pointer-events: none; }
+body#dungeonApp.mobile-touch #gameApp :is(.dpad-btn, .mact-btn).is-pressed { transform: translateY(2px); filter: brightness(1.35); box-shadow: inset 0 0 12px #caba6b44 !important; }
+body#dungeonApp.mobile-touch #mobileFullscreenButton,
+body#dungeonApp.mobile-touch #mobileMenuButton {
+  position: fixed !important;
+  top: calc(12px + var(--mv-safe-t)) !important;
+  right: calc(12px + var(--mv-safe-r)) !important;
+  width: 64px !important;
+  height: 44px !important;
+  padding: 4px !important;
+  border: 1px solid var(--mv-line) !important;
+  border-image: none !important;
+  border-radius: 7px !important;
+  background: var(--mv-metal-bg) !important;
+  box-shadow: inset 0 1px #baa57122 !important;
+  color: var(--mv-gold) !important;
+  font: 600 12px/1.2 system-ui, sans-serif !important;
+  text-transform: none !important;
+  z-index: 45;
+  touch-action: manipulation;
+}
+body#dungeonApp.mobile-touch #mobileFullscreenButton { right: calc(84px + var(--mv-safe-r)) !important; width: 76px !important; }
+#mobileFullscreenButton[hidden], body:not(.mobile-touch) #mobileFullscreenButton { display: none !important; }
+body#dungeonApp.mobile-touch #gameApp .panel { display: none !important; }
+body#dungeonApp.mobile-touch.mobile-details-open #gameApp .panel-left {
+  display: block !important; position: fixed !important; z-index: 60; inset: 8px auto 8px 8px !important;
+  width: min(360px, calc(100vw - 88px)) !important; height: auto !important; padding: 16px !important;
+  box-sizing: border-box; border: 1px solid var(--mv-line); border-radius: 8px; background: #101619 !important; overflow: auto !important;
+}
+body#dungeonApp.mobile-touch.mobile-details-open #gameApp #mobileDetailsButton { display: block !important; position: fixed !important; top: 68px !important; right: 12px !important; left: auto !important; width: 64px !important; min-height: 44px; z-index: 65; }
+body#dungeonApp.mobile-touch.mobile-details-open #gameApp #mobileControls { display: none !important; }
+body#dungeonApp.mobile-touch:has(#gameApp) #screenOverlay { inset: 0 !important; padding: max(8px, env(safe-area-inset-top)) max(8px, env(safe-area-inset-right)) max(8px, env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-left)) !important; background: #030405ed !important; }
+body#dungeonApp.mobile-touch:has(#gameApp) #screenOverlay > .overlay-card { max-height: calc(100dvh - 16px) !important; overflow-y: auto !important; }
+body#dungeonApp.mobile-touch:has(#gameApp) #screenOverlay .overlay-menu-row {
+  min-height: 54px !important; box-sizing: border-box; padding: 12px 14px !important;
+  border: 1px solid #5b5e4d !important; border-image: none !important; border-radius: 8px !important;
+  background: linear-gradient(#202a2e, #11191d) !important; box-shadow: none !important;
+}
+body#dungeonApp.mobile-touch:has(#gameApp) #screenOverlay .overlay-menu-row::before,
+body#dungeonApp.mobile-touch:has(#gameApp) #screenOverlay .overlay-menu-row::after { display: none !important; }
+body#dungeonApp.mobile-touch:has(#gameApp) #screenOverlay .overlay-menu-row strong { font-size: 14px !important; color: #eee0bd; }
+body#dungeonApp.mobile-touch:has(#gameApp) #screenOverlay :is(.overlay-subtitle, .overlay-hint, .overlay-menu-desc) { font-size: 12px !important; line-height: 1.45 !important; }
+body#dungeonApp.mobile-touch:has(#gameApp) #screenOverlay .overlay-title { font-size: 24px !important; line-height: 1.15 !important; }
+body#dungeonApp.mobile-touch:has(#gameApp) #screenOverlay .camp-revamp-copy strong { font-size: 14px !important; }
+body#dungeonApp.mobile-touch:has(#gameApp) #screenOverlay .camp-revamp-copy small { font-size: 12px !important; line-height: 1.35 !important; }
+body#dungeonApp.mobile-touch:has(#gameApp) #screenOverlay button { touch-action: manipulation; }
+/* Native dialogs are in the top layer: board, skills and keyboard input stay inert. */
+.mobile-journey-dialog {
+  width: min(520px, calc(100vw - 40px)); max-height: calc(100dvh - 28px);
+  box-sizing: border-box; padding: 24px; border: 1px solid #84714f; border-radius: 12px;
+  background: linear-gradient(#182124ed, #0a1013f5), url('assets/hd/ui/abyssal-gothic/panel-texture.png') center / 260px;
+  color: #e9e1d0; box-shadow: 0 20px 100px #000; overflow-y: auto;
+}
+.mobile-journey-dialog::backdrop { background: #020304dc; backdrop-filter: blur(3px); }
+.journey-kicker { font: 600 10px/1.4 system-ui, sans-serif; text-transform: uppercase; letter-spacing: .18em; color: #c8ac70; }
+.mobile-journey-dialog h2 { margin: 8px 0; font: 500 28px/1.15 Georgia, serif; color: #f4dfaf; }
+.mobile-journey-dialog p { margin: 8px 0 18px; font: 13px/1.5 system-ui, sans-serif; color: #aebaba; }
+.journey-choices { display: grid; gap: 9px; }
+.journey-choice { display: flex; flex-direction: column; gap: 5px; text-align: left; min-height: 52px; padding: 12px 16px; border: 1px solid #45514e; border-radius: 8px; background: #192328; color: #e6e6dc; touch-action: manipulation; }
+.journey-choice strong { font: 600 15px/1.2 system-ui, sans-serif; }
+.journey-choice span { font: 12px/1.3 system-ui, sans-serif; color: #b0bdbb; }
+.journey-choice.primary { background: linear-gradient(100deg, #584b2e, #302d21); border-color: #a18952; color: #ffe4a4; }
+.journey-choice.danger { border-color: #855244; color: #f1b79e; }
+.journey-choice:disabled { opacity: .45; }
+.journey-choice:active { filter: brightness(1.3); }
+body#dungeonApp.mobile-touch :is(button, [role='button']):focus-visible { outline: 2px solid #f4d394 !important; outline-offset: 2px; }
+.mobile-journey-dialog .journey-feedback:empty { display: none; }
+@media (orientation: landscape) and (max-height: 340px) {
+  body#dungeonApp.mobile-touch { --mv-cell: 48px; }
+  body#dungeonApp.mobile-touch #gameApp #mobileHud { flex-direction: row; flex-wrap: wrap; margin-top: 4px; gap: 3px 8px; }
+  body#dungeonApp.mobile-touch #gameApp .mobile-fury-meter-track { display: none; }
+  body#dungeonApp.mobile-touch #gameApp #mobileActionDock { gap: 5px !important; bottom: calc(8px + var(--mv-safe-b)) !important; grid-auto-rows: 52px !important; }
+  body#dungeonApp.mobile-touch #gameApp #mobileActionDock { grid-template-rows: repeat(3, 52px) !important; }
+  body#dungeonApp.mobile-touch #gameApp #mobileActionDock .mact-btn > img { width: 20px !important; height: 20px !important; }
+  body#dungeonApp.mobile-touch #gameApp .mobile-dpad { bottom: calc(12px + var(--mv-safe-b)) !important; }
+  .mobile-journey-dialog { padding: 16px 22px; }
+  .mobile-journey-dialog h2 { font-size: 23px; }
+  .journey-choices { grid-template-columns: 1fr 1fr; }
+}
+@media (orientation: portrait) {
+  body#dungeonApp.mobile-touch { --mv-board: min(calc(100vw - 84px - var(--mv-safe-l) - var(--mv-safe-r)), calc(100dvh - 282px - var(--mv-safe-t) - var(--mv-safe-b))); --mv-cell: clamp(48px, 13.4vw, 60px); --mv-left: 46vw; }
+  body#dungeonApp.mobile-touch #gameApp .layout-track > .board { padding: calc(84px + var(--mv-safe-t)) 0 calc(252px + var(--mv-safe-b)) !important; align-items: center !important; }
+  body#dungeonApp.mobile-touch #gameApp #mobileCommandDeck { top: calc(12px + var(--mv-safe-t)) !important; width: calc(100vw - 178px) !important; }
+  body#dungeonApp.mobile-touch #gameApp #mobileHud { margin-top: 4px; flex-direction: row; flex-wrap: wrap; gap: 3px 8px; }
+  body#dungeonApp.mobile-touch #gameApp .mobile-fury-meter-track,
+  body#dungeonApp.mobile-touch #gameApp .mobile-hud-gold > span { display: none; }
+  body#dungeonApp.mobile-touch #gameApp #mobileRoomValue { max-width: 180px; font-size: 10px; }
+  body#dungeonApp.mobile-touch #gameApp #mobileDepthValue { font-size: 20px; }
+  body#dungeonApp.mobile-touch #gameApp #mobileActionDock { width: calc(46vw - 18px) !important; grid-auto-rows: 70px !important; bottom: calc(14px + var(--mv-safe-b)) !important; }
+  body#dungeonApp.mobile-touch #gameApp #mobileActionDock { grid-template-rows: repeat(3, 70px) !important; }
+  body#dungeonApp.mobile-touch #gameApp #mobileActionDock .mact-btn > img { width: 32px !important; height: 32px !important; }
+  body#dungeonApp.mobile-touch #gameApp .mobile-dpad { bottom: calc(24px + var(--mv-safe-b)) !important; right: calc(10px + var(--mv-safe-r)) !important; }
+}
+@media (prefers-reduced-motion: reduce) {
+  body#dungeonApp.mobile-touch #gameApp .room-vital-track, body#dungeonApp.mobile-touch #gameApp .room-vital-fill { animation: none !important; transition: none !important; }
+}
+/* Visual audit polish: one material and typography system across mobile surfaces. */
+body#dungeonApp.mobile-touch {
+  --mv-title-font: Georgia, 'Times New Roman', serif;
+  --mv-copy-font: system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --mv-paper: #eee2cd;
+  --mv-copy: #c3c8c5;
+  --mv-panel-bg: linear-gradient(115deg, #201b1466, #07090ba8 55%, #080807bc), url('assets/hd/ui/abyssal-gothic/panel-texture.png') center / 300px;
+  --mv-metal-bg: linear-gradient(115deg, #4a44394a, #07090955), url('assets/hd/ui/abyssal-gothic/panel-texture.png') center / 180px;
+  --mv-selected-bg: linear-gradient(100deg, #5b432e8a, #261d167d), url('assets/hd/ui/abyssal-gothic/panel-texture.png') center / 180px;
+  --mv-frame: url('assets/hd/ui/abyssal-gothic/section-plaque.png');
+  --mv-button-frame: url('assets/hd/ui/mobile/gothic/gothic-button-frame.png');
+  font-family: var(--mv-copy-font);
+}
+body#dungeonApp.mobile-touch #gameApp #mobileDepthValue { font-size: 24px; letter-spacing: -.02em; }
+body#dungeonApp.mobile-touch #gameApp .mobile-hud-gold { padding-top: 4px; border-top: 1px solid #a184493b; }
+body#dungeonApp.mobile-touch #gameApp .mobile-hud-gold > span { display: inline !important; color: #b7bdbb; font-size: 11px; }
+body#dungeonApp.mobile-touch #gameApp #mobileActionDock .mact-btn { border-top-color: #a19069 !important; text-shadow: 0 1px 2px #000; }
+body#dungeonApp.mobile-touch #gameApp #mobileActionDock #mbtnZ { background: radial-gradient(at 50% 10%, #17415b40, transparent 75%), var(--mv-metal-bg) !important; }
+body#dungeonApp.mobile-touch #gameApp #mobileActionDock #mbtnX { background: radial-gradient(at 50% 10%, #61388140, transparent 75%), var(--mv-metal-bg) !important; }
+body#dungeonApp.mobile-touch #gameApp #mobileActionDock #mbtnC { background: radial-gradient(at 50% 10%, #80633230, transparent 75%), var(--mv-metal-bg) !important; }
+body#dungeonApp.mobile-touch #gameApp #mobileActionDock #mbtnF { border-top-color: #af7464 !important; }
+body#dungeonApp.mobile-touch #gameApp #mobileActionDock :is([aria-disabled='true'],.is-cooling) > img { opacity: .58; filter: saturate(.4); }
+body#dungeonApp.mobile-touch #gameApp #mobileActionDock :is([aria-disabled='true'],.is-cooling) small { color: #c2c8c8; }
+body#dungeonApp.mobile-touch #gameApp #mbtnE { border-color: #bca573 !important; background: var(--mv-selected-bg) !important; }
+body#dungeonApp.mobile-touch #gameApp #mbtnE .mobile-action-copy strong { font-size: 12px !important; }
+body#dungeonApp.mobile-touch #gameApp .dpad-center { opacity: .16; box-shadow: none !important; }
+body#dungeonApp.mobile-touch #gameApp .mobile-dpad::before { opacity: .1; }
+body#dungeonApp.mobile-touch #gameApp :is(.dpad-btn,.mact-btn).is-pressed { border-color: #ffe0a0 !important; }
+/* Details occupy their own reading surface; the battle header must not overlap. */
+body#dungeonApp.mobile-touch.mobile-details-open #gameApp :is(.room-stage,.mobile-command-location,#mobileHud,#mobileMenuButton,#mobileFullscreenButton) { visibility: hidden !important; }
+body#dungeonApp.mobile-touch.mobile-details-open #gameApp .panel-left {
+  inset: 64px 12px 12px !important; width: min(680px, calc(100vw - 24px)) !important;
+  margin: 0 auto !important; padding: 18px !important; border: 1px solid #887655;
+  border-radius: 6px; background: var(--mv-panel-bg) !important; z-index: 90;
+}
+body#dungeonApp.mobile-touch.mobile-details-open #gameApp #mobileDetailsButton {
+  visibility: visible !important; top: calc(10px + var(--mv-safe-t)) !important; right: calc(12px + var(--mv-safe-r)) !important;
+  width: 84px !important; height: 44px !important; padding: 8px !important; border: 1px solid #a08b5f !important;
+  border-image: none !important; border-radius: 5px; background: var(--mv-metal-bg) !important; color: #f1dfb9; z-index: 100;
+}
+body#dungeonApp.mobile-touch #gameApp .panel-left .panel-title { font: 500 26px/1.2 var(--mv-title-font); color: var(--mv-gold); margin: 0 0 14px; }
+body#dungeonApp.mobile-touch #gameApp .panel-left :is(.hud,.hud *) { font-family: var(--mv-copy-font); }
+body#dungeonApp.mobile-touch #gameApp .panel-left .hud { font-size: 14px; line-height: 1.6; }
+/* screenOverlay is reparented into body while open; :has keeps specificity without requiring ancestry. */
+/* Consistent cards retain the game's art, with a slimmer metal edge. */
+body#dungeonApp.mobile-touch:has(#gameApp) #screenOverlay > .overlay-card {
+  width: min(820px, calc(100vw - 24px)) !important; min-height: 0 !important; height: auto !important;
+  max-height: calc(100dvh - 24px - var(--mv-safe-t) - var(--mv-safe-b)) !important;
+  padding: 18px !important; margin: auto !important; box-sizing: border-box;
+  border: 1px solid #8b7752 !important; border-image: none !important; border-radius: 7px !important;
+  background: var(--mv-panel-bg) !important; box-shadow: inset 0 1px #d1b87540, 0 18px 60px #000b !important;
+  color: var(--mv-copy); font-family: var(--mv-copy-font) !important; scrollbar-width: thin; scrollbar-color: #857252 #0b1014;
+}
+body#dungeonApp.mobile-touch:has(#gameApp) #screenOverlay > .overlay-card::before,
+body#dungeonApp.mobile-touch:has(#gameApp) #screenOverlay > .overlay-card::after { display: none !important; }
+body#dungeonApp.mobile-touch:has(#gameApp) #screenOverlay :is(p,small,em,span,strong,button,[role='button'],.overlay-menu-desc) { font-family: var(--mv-copy-font) !important; font-style: normal; }
+body#dungeonApp.mobile-touch:has(#gameApp) #screenOverlay :is(.overlay-title,.death-requiem-header h2) { font: 500 28px/1.12 var(--mv-title-font) !important; letter-spacing: .035em; color: #f0dfb9; margin: 0 0 8px !important; }
+body#dungeonApp.mobile-touch:has(#gameApp) #screenOverlay :is(.overlay-sub,.overlay-subtitle,.overlay-hint,.forge-controls,.camp-revamp-guide) { font: 12px/1.4 var(--mv-copy-font) !important; color: #bdc4c2; margin: 6px 0 10px !important; }
+body#dungeonApp.mobile-touch:has(#gameApp) #screenOverlay .overlay-menu-row { border-radius: 5px !important; background: var(--mv-metal-bg) !important; }
+body#dungeonApp.mobile-touch:has(#gameApp) #screenOverlay :is(.hd-nav-selected,.camp-revamp-tab.active) { outline: 0 !important; border-color: #d3b373 !important; box-shadow: inset 3px 0 #d3b373 !important; }
+body#dungeonApp.mobile-touch:has(#gameApp) #screenOverlay :is(.mobile-overlay-action,.camp-revamp-action,.forge-footer,.relic-draft-skip) {
+  border: 1px solid #807252 !important; border-image: none !important; border-radius: 5px !important;
+  padding: 10px 14px !important; background: var(--mv-selected-bg) !important; min-height: 48px !important; box-sizing: border-box;
+  font: 600 13px/1.3 var(--mv-copy-font) !important;
+}
+body#dungeonApp.mobile-touch:has(#gameApp) #screenOverlay :is(.mobile-overlay-action,.camp-revamp-action,.forge-footer,.relic-draft-skip)::before,
+body#dungeonApp.mobile-touch:has(#gameApp) #screenOverlay :is(.mobile-overlay-action,.camp-revamp-action,.forge-footer,.relic-draft-skip)::after { display: none !important; }
+body#dungeonApp.mobile-touch:has(#gameApp) #screenOverlay .overlay-card-main-menu { width: min(660px, calc(100vw - 24px)) !important; }
+body#dungeonApp.mobile-touch:has(#gameApp) #screenOverlay .emergency-extract-confirm { width: min(580px, calc(100vw - 24px)) !important; }
+body#dungeonApp.mobile-touch:has(#gameApp) #screenOverlay .emergency-extract-confirm .overlay-menu-row:first-child { border-color: #b87960 !important; background: linear-gradient(125deg,#462e28,#281c19) !important; }
+/* Native journey panel, including compact landscape menus. */
+body#dungeonApp.mobile-touch .mobile-journey-dialog { width: min(620px, calc(100vw - 24px)); padding: 22px; border-radius: 7px; background: var(--mv-panel-bg); }
+body#dungeonApp.mobile-touch .mobile-journey-dialog h2 { font-size: 29px; }
+body#dungeonApp.mobile-touch .mobile-journey-dialog[data-mode='portal'] { padding-left: 86px; }
+body#dungeonApp.mobile-touch .mobile-journey-dialog[data-mode='portal']::before { content: ''; position: absolute; top: 25px; left: 15px; width: 60px; height: 80px; background: url('assets/hd/objects/common/portal-active-01.png') center / contain no-repeat; }
+body#dungeonApp.mobile-touch .journey-choice { border-radius: 5px; }
+body#dungeonApp.mobile-touch .journey-choice.primary { box-shadow: inset 3px 0 #d0ad69; }
+body#dungeonApp.mobile-touch .journey-choice.danger { background: linear-gradient(100deg,#5a2c2466,#120e0d9c), var(--mv-metal-bg); }
+body#dungeonApp.mobile-touch .journey-kicker { font-size: 11px; }
+body#dungeonApp.mobile-touch .journey-choice span { color: #c3ccca; }
+/* Camp: calm rows and consistent prices; retain existing purchasing behavior. */
+body#dungeonApp.mobile-touch:has(#gameApp) #screenOverlay .camp-revamp-stats > div { border: 1px solid #53594f !important; background: #080a0bc9 !important; padding: 7px !important; gap: 5px; }
+body#dungeonApp.mobile-touch:has(#gameApp) #screenOverlay .camp-revamp-stats :is(span,strong) { font-size: 12px !important; }
+body#dungeonApp.mobile-touch:has(#gameApp) #screenOverlay .camp-revamp-tab { min-height: 44px !important; padding: 10px 6px !important; border: 1px solid #5b635b !important; border-image: none !important; background: var(--mv-metal-bg) !important; border-radius: 4px; font-size: 12px !important; }
+body#dungeonApp.mobile-touch:has(#gameApp) #screenOverlay .camp-revamp-panel-head { flex-wrap: wrap; gap: 4px; padding: 9px 0 !important; background: none !important; border: 0 !important; }
+body#dungeonApp.mobile-touch:has(#gameApp) #screenOverlay .camp-revamp-panel-head small { font-size: 12px !important; }
+body#dungeonApp.mobile-touch:has(#gameApp) #screenOverlay .camp-revamp-row { border: 1px solid #59615b !important; border-image: none !important; border-radius: 5px !important; padding: 10px !important; background: var(--mv-metal-bg) !important; }
+body#dungeonApp.mobile-touch:has(#gameApp) #screenOverlay .camp-revamp-row::before,
+body#dungeonApp.mobile-touch:has(#gameApp) #screenOverlay .camp-revamp-row::after { display: none !important; }
+body#dungeonApp.mobile-touch:has(#gameApp) #screenOverlay .camp-revamp-copy { text-align: left; }
+body#dungeonApp.mobile-touch:has(#gameApp) #screenOverlay .camp-revamp-status { font: 700 13px/1.3 var(--mv-copy-font) !important; color: #e5c785; }
+/* Forge: icons are illustrations, never the entire card. */
+body#dungeonApp.mobile-touch:has(#gameApp) #screenOverlay .forge-choice { min-height: 120px !important; height: auto !important; padding: 16px !important; border: 1px solid #7b725b !important; border-image: none !important; border-radius: 5px; background: var(--mv-metal-bg) !important; }
+body#dungeonApp.mobile-touch:has(#gameApp) #screenOverlay .forge-choice::before,
+body#dungeonApp.mobile-touch:has(#gameApp) #screenOverlay .forge-choice::after { display: none !important; }
+body#dungeonApp.mobile-touch:has(#gameApp) #screenOverlay .forge-choice-emblem { width: 56px !important; height: 56px !important; flex: 0 0 56px; }
+body#dungeonApp.mobile-touch:has(#gameApp) #screenOverlay .forge-choice-copy { text-align: left; min-width: 0; }
+body#dungeonApp.mobile-touch:has(#gameApp) #screenOverlay .forge-choice-copy strong { font-size: 16px !important; }
+body#dungeonApp.mobile-touch:has(#gameApp) #screenOverlay .forge-choice-copy :is(small,p) { font-size: 12px !important; line-height: 1.5 !important; }
+body#dungeonApp.mobile-touch:has(#gameApp) #screenOverlay .forge-context :is(strong,span,small) { font-size: 12px !important; }
+/* Merchant: name, rarity and price each keep their own space. */
+body#dungeonApp.mobile-touch:has(#gameApp) #screenOverlay .merchant-buyback-summary { display: flex; gap: 8px; flex-wrap: wrap; padding: 10px !important; font-size: 13px; }
+body#dungeonApp.mobile-touch:has(#gameApp) #screenOverlay .merchant-buyback-summary :is(strong,span) { font-size: 13px !important; }
+body#dungeonApp.mobile-touch:has(#gameApp) #screenOverlay .merchant-buyback-copy { min-width: 0; overflow: visible !important; }
+body#dungeonApp.mobile-touch:has(#gameApp) #screenOverlay .merchant-buyback-copy strong { display: flex !important; gap: 5px; flex-wrap: wrap; white-space: normal !important; overflow: visible !important; font-size: 14px !important; }
+body#dungeonApp.mobile-touch:has(#gameApp) #screenOverlay .merchant-buyback-copy small { font-size: 12px !important; }
+body#dungeonApp.mobile-touch:has(#gameApp) #screenOverlay .merchant-buyback-action { flex: 0 0 66px !important; }
+body#dungeonApp.mobile-touch:has(#gameApp) #screenOverlay .merchant-buyback-action small { font-size: 11px !important; }
+body#dungeonApp.mobile-touch:has(#gameApp) #screenOverlay .merchant-summary-line { gap: 4px; }
+/* Relic choice: all three rewards remain comparable in landscape. */
+body#dungeonApp.mobile-touch:has(#gameApp) #screenOverlay .relic-draft-kicker { margin: 0 0 8px; font-size: 12px !important; color: #c5b28b; }
+body#dungeonApp.mobile-touch:has(#gameApp) #screenOverlay :is(.relic-draft-panel,.relic-draft-grid) { min-height: 0 !important; height: auto !important; padding: 0 !important; overflow: visible !important; }
+body#dungeonApp.mobile-touch:has(#gameApp) #screenOverlay .relic-draft-grid { display: grid !important; gap: 10px !important; }
+body#dungeonApp.mobile-touch:has(#gameApp) #screenOverlay .relic-draft-choice { display: flex !important; flex-direction: row !important; align-items: center !important; gap: 12px !important; min-height: 108px !important; height: auto !important; padding: 12px !important; border: 1px solid #716d72 !important; border-image: none !important; border-radius: 5px; background: var(--mv-metal-bg) !important; }
+body#dungeonApp.mobile-touch:has(#gameApp) #screenOverlay .relic-draft-choice::before,
+body#dungeonApp.mobile-touch:has(#gameApp) #screenOverlay .relic-draft-choice::after { display: none !important; }
+body#dungeonApp.mobile-touch:has(#gameApp) #screenOverlay .relic-draft-icon { width: 64px !important; height: 64px !important; flex: 0 0 64px; margin: 0 !important; }
+body#dungeonApp.mobile-touch:has(#gameApp) #screenOverlay .relic-draft-icon img { width: 100% !important; height: 100% !important; object-fit: contain; }
+body#dungeonApp.mobile-touch:has(#gameApp) #screenOverlay .relic-draft-choice-copy { min-width: 0; text-align: left !important; }
+body#dungeonApp.mobile-touch:has(#gameApp) #screenOverlay .relic-draft-choice-copy strong { display: block; font-size: 15px !important; line-height: 1.3 !important; }
+body#dungeonApp.mobile-touch:has(#gameApp) #screenOverlay .relic-draft-choice-copy small { display: block; font-size: 12px !important; line-height: 1.4 !important; }
+body#dungeonApp.mobile-touch:has(#gameApp) #screenOverlay .relic-draft-rarity { font-size: 11px !important; letter-spacing: .07em; }
+body#dungeonApp.mobile-touch:has(#gameApp) #screenOverlay .relic-draft-skip { margin-top: 12px !important; }
+/* Defeat: explicit hierarchy, separated labels and values. */
+body#dungeonApp.mobile-touch:has(#gameApp) #screenOverlay .death-requiem { width: min(640px, calc(100vw - 24px)) !important; display: flex !important; flex-direction: column !important; gap: 14px !important; }
+body#dungeonApp.mobile-touch:has(#gameApp) #screenOverlay :is(.death-requiem-header,.death-requiem-summary,.death-requiem-vigil,.death-requiem-penalty) { margin: 0 !important; padding: 0 !important; height: auto !important; min-height: 0 !important; }
+body#dungeonApp.mobile-touch:has(#gameApp) #screenOverlay .death-requiem-kicker { margin: 0 0 6px !important; color: #cfaf8b; font-size: 12px; }
+body#dungeonApp.mobile-touch:has(#gameApp) #screenOverlay .death-requiem-cause { font-size: 13px !important; }
+body#dungeonApp.mobile-touch:has(#gameApp) #screenOverlay .death-requiem-stats { display: grid !important; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 12px; margin: 0; }
+body#dungeonApp.mobile-touch:has(#gameApp) #screenOverlay .death-requiem-stats > div { display: flex; flex-direction: column; gap: 5px; padding: 8px; background: #080a0bc9; border: 1px solid #414b4d; }
+body#dungeonApp.mobile-touch:has(#gameApp) #screenOverlay .death-requiem-stats span { font-size: 12px !important; color: #b9c0bd; }
+body#dungeonApp.mobile-touch:has(#gameApp) #screenOverlay .death-requiem-stats strong { font-size: 20px !important; color: #eed9af; }
+body#dungeonApp.mobile-touch:has(#gameApp) #screenOverlay .death-requiem-penalty { display: flex; justify-content: center; flex-wrap: wrap; gap: 8px; font-size: 13px; }
+body#dungeonApp.mobile-touch:has(#gameApp) #screenOverlay .death-requiem-actions { display: grid !important; grid-template-columns: 1fr 1fr; gap: 10px; margin: 0 !important; }
+body#dungeonApp.mobile-touch:has(#gameApp) #screenOverlay .death-requiem-action { display: flex !important; flex-direction: column !important; gap: 5px; padding: 12px !important; border: 1px solid #6c776b !important; border-image: none !important; background: var(--mv-metal-bg) !important; border-radius: 5px; }
+body#dungeonApp.mobile-touch:has(#gameApp) #screenOverlay .death-requiem-action :is(strong,span) { display: block; font-size: 14px !important; }
+body#dungeonApp.mobile-touch:has(#gameApp) #screenOverlay .death-requiem-action small { display: block; font-size: 12px !important; }
+body#dungeonApp.mobile-touch:has(#gameApp) #screenOverlay .death-requiem-hint { margin: 0 !important; font-size: 12px; }
+/* Depth selection uses visible, evenly sized options. */
+body#dungeonApp.mobile-touch:has(#gameApp) #screenOverlay .camp-start-route-grid { display: grid !important; grid-template-columns: repeat(3,minmax(0,1fr)) !important; gap: 8px; }
+body#dungeonApp.mobile-touch:has(#gameApp) #screenOverlay .camp-start-choice { display: flex !important; align-items: center; gap: 8px; padding: 9px !important; border: 1px solid #4c5d5c !important; background: var(--mv-metal-bg) !important; border-radius: 5px; min-height: 56px; box-sizing: border-box; }
+body#dungeonApp.mobile-touch:has(#gameApp) #screenOverlay .camp-start-choice.selected { background: var(--mv-selected-bg) !important; border-color: #d9b977 !important; }
+body#dungeonApp.mobile-touch:has(#gameApp) #screenOverlay .camp-start-choice-copy { display: flex; flex-direction: column; gap: 3px; }
+body#dungeonApp.mobile-touch:has(#gameApp) #screenOverlay .camp-start-choice-copy :is(strong,small) { font-size: 13px !important; }
+@media (orientation: landscape) {
+  body#dungeonApp.mobile-touch .mobile-journey-dialog[data-mode='menu'] .journey-choices { grid-template-columns: 1fr 1fr; }
+  body#dungeonApp.mobile-touch .mobile-journey-dialog[data-mode='menu'] [data-journey='close'] { grid-column: 1 / -1; }
+  body#dungeonApp.mobile-touch:has(#gameApp) #screenOverlay .overlay-card-main-menu .overlay-menu { display: grid !important; grid-template-columns: 1fr 1fr !important; gap: 7px; }
+  body#dungeonApp.mobile-touch:has(#gameApp) #screenOverlay .relic-draft-grid { grid-template-columns: repeat(3,minmax(0,1fr)) !important; }
+  body#dungeonApp.mobile-touch:has(#gameApp) #screenOverlay .relic-draft-choice { flex-direction: column !important; min-height: 0 !important; gap: 7px !important; }
+  body#dungeonApp.mobile-touch:has(#gameApp) #screenOverlay .relic-draft-choice-copy { text-align: center !important; }
+  body#dungeonApp.mobile-touch:has(#gameApp) #screenOverlay .relic-draft-icon { width: 48px !important; height: 48px !important; flex-basis: 48px; }
+}
+@media (orientation: portrait) {
+  body#dungeonApp.mobile-touch #gameApp #mobileHud { gap: 6px 12px; }
+  body#dungeonApp.mobile-touch #gameApp .mobile-hud-gold { border: 0; padding-top: 0; }
+  body#dungeonApp.mobile-touch #gameApp .mobile-action-copy strong { font-size: 12px !important; }
+  body#dungeonApp.mobile-touch #gameApp #mobileActionDock { bottom: calc(24px + var(--mv-safe-b)) !important; }
+  body#dungeonApp.mobile-touch .mobile-journey-dialog[data-mode='portal'] { padding: 20px; }
+  body#dungeonApp.mobile-touch .mobile-journey-dialog[data-mode='portal']::before { position: static; display: block; width: 48px; height: 56px; margin: 0 auto 12px; }
+  body#dungeonApp.mobile-touch:has(#gameApp) #screenOverlay .camp-start-route-grid { grid-template-columns: repeat(2,minmax(0,1fr)) !important; }
+  body#dungeonApp.mobile-touch:has(#gameApp) #screenOverlay .camp-revamp-stats { grid-template-columns: 1fr 1fr !important; }
+  body#dungeonApp.mobile-touch:has(#gameApp) #screenOverlay .merchant-summary-line { flex-wrap: wrap; }
+  body#dungeonApp.mobile-touch:has(#gameApp) #screenOverlay .death-requiem-actions { grid-template-columns: 1fr; }
+}
+@media (orientation: portrait) and (max-height: 700px) {
+  body#dungeonApp.mobile-touch #gameApp #mobileActionDock { grid-template-rows: repeat(3,60px) !important; grid-auto-rows: 60px !important; gap: 6px !important; bottom: calc(14px + var(--mv-safe-b)) !important; }
+  body#dungeonApp.mobile-touch #gameApp #mobileActionDock .mact-btn > img { width: 26px !important; height: 26px !important; }
+  body#dungeonApp.mobile-touch #gameApp .layout-track > .board { padding-top: 80px !important; padding-bottom: 226px !important; }
+}
+@media (orientation: landscape) and (max-height: 340px) {
+  body#dungeonApp.mobile-touch .mobile-journey-dialog { padding: 14px 18px; }
+  body#dungeonApp.mobile-touch .mobile-journey-dialog h2 { font-size: 23px; margin: 4px 0; }
+  body#dungeonApp.mobile-touch .mobile-journey-dialog p { margin: 5px 0 10px; }
+  body#dungeonApp.mobile-touch .journey-choice { padding: 9px 12px; }
+  body#dungeonApp.mobile-touch:has(#gameApp) #screenOverlay > .overlay-card { padding: 12px !important; }
+  body#dungeonApp.mobile-touch:has(#gameApp) #screenOverlay .relic-draft-choice { padding: 8px !important; }
+}
+@media (prefers-reduced-motion: reduce) {
+  body#dungeonApp.mobile-touch :is(.mobile-journey-dialog,.journey-choice,.mact-btn,.dpad-btn) { animation: none !important; transition: none !important; }
+}
+/* Resolve inherited desktop sizing and sticky footer collisions explicitly. */
+body#dungeonApp.mobile-touch:has(#gameApp) #screenOverlay > .overlay-card { flex: 0 1 auto !important; align-self: center !important; justify-content: flex-start !important; }
+body#dungeonApp.mobile-touch:has(#gameApp) #screenOverlay .overlay-card-main-menu > .overlay-menu { width: 100% !important; max-width: none !important; }
+body#dungeonApp.mobile-touch:has(#gameApp) #screenOverlay .overlay-card-main-menu .overlay-menu-row { width: 100% !important; max-width: none !important; }
+body#dungeonApp.mobile-touch:has(#gameApp) #screenOverlay .overlay-card-camp { height: calc(100dvh - 24px - var(--mv-safe-t) - var(--mv-safe-b)) !important; overflow: hidden !important; }
+body#dungeonApp.mobile-touch:has(#gameApp) #screenOverlay .camp-revamp { height: 100% !important; gap: 8px; }
+body#dungeonApp.mobile-touch:has(#gameApp) #screenOverlay .camp-revamp-content { min-height: 0 !important; overflow: hidden !important; }
+body#dungeonApp.mobile-touch:has(#gameApp) #screenOverlay .camp-revamp-grid { min-height: 0 !important; overflow-y: auto !important; }
+body#dungeonApp.mobile-touch:has(#gameApp) #screenOverlay .camp-revamp-actions { position: static !important; background: #090a09 !important; padding: 0 !important; }
+body#dungeonApp.mobile-touch:has(#gameApp) #screenOverlay .relic-draft-skip { display: flex !important; flex-direction: column !important; justify-content: center; gap: 4px; }
+body#dungeonApp.mobile-touch:has(#gameApp) #screenOverlay .relic-draft-skip :is(strong,small) { display: block; }
+body#dungeonApp.mobile-touch:has(#gameApp) #screenOverlay .relic-draft-choice-epic .relic-draft-rarity { color: #d6aaff !important; }
+body#dungeonApp.mobile-touch:has(#gameApp) #screenOverlay .relic-draft-choice-rare .relic-draft-rarity { color: #97ceff !important; }
+body#dungeonApp.mobile-touch:has(#gameApp) #screenOverlay .relic-draft-choice-legendary .relic-draft-rarity { color: #f1c878 !important; }
+body#dungeonApp.mobile-touch:has(#gameApp) #screenOverlay .death-requiem { height: auto !important; min-height: 0 !important; }
+body#dungeonApp.mobile-touch:has(#gameApp) #screenOverlay .death-requiem > * { flex: 0 0 auto !important; }
+body#dungeonApp.mobile-touch:has(#gameApp) #screenOverlay .death-requiem-summary { display: grid !important; grid-template-columns: 1fr; gap: 12px; }
+body#dungeonApp.mobile-touch:has(#gameApp) #screenOverlay .death-requiem-vigil > div { display: flex; justify-content: center; gap: 8px; }
+body#dungeonApp.mobile-touch:has(#gameApp) #screenOverlay .death-requiem-vigil > em { display: none; }
+body#dungeonApp.mobile-touch:has(#gameApp) #screenOverlay .death-requiem-actions { position: static !important; background: none !important; }
+body#dungeonApp.mobile-touch:has(#gameApp) #screenOverlay .camp-start-route-grid { grid-auto-rows: minmax(64px,auto) !important; }
+body#dungeonApp.mobile-touch:has(#gameApp) #screenOverlay .camp-start-choice { position: relative; }
+body#dungeonApp.mobile-touch:has(#gameApp) #screenOverlay .camp-start-choice > em { position: absolute !important; top: 3px !important; right: 6px !important; bottom: auto !important; left: auto !important; transform: none !important; font: 600 10px/1.1 var(--mv-copy-font) !important; color: #efcf8f; }
+body#dungeonApp.mobile-touch:has(#gameApp) #screenOverlay .camp-start-choice-copy span { font-size: 12px !important; }
+body#dungeonApp.mobile-touch:has(#gameApp) #screenOverlay .camp-start-choice img { width: 28px !important; height: 36px !important; object-fit: contain; }
+body#dungeonApp.mobile-touch:has(#gameApp) #screenOverlay .camp-start-choice-copy { flex: 1; }
+body#dungeonApp.mobile-touch:has(#gameApp) #screenOverlay .camp-start-selection { display: flex; flex-direction: column; gap: 5px; margin: 10px 0; font-size: 13px; }
+@media (orientation: landscape) {
+  body#dungeonApp.mobile-touch:has(#gameApp) #screenOverlay .camp-revamp-grid { grid-template-columns: repeat(2,minmax(0,1fr)) !important; }
+}
+body#dungeonApp.mobile-touch:has(#gameApp) #screenOverlay .forge-sanctuary { display: flex !important; flex-direction: column !important; align-items: stretch !important; gap: 8px; }
+body#dungeonApp.mobile-touch:has(#gameApp) #screenOverlay :is(.forge-sanctuary-header,.forge-context,.forge-choice-grid,.forge-footer) { width: 100% !important; max-width: none !important; box-sizing: border-box; }
+body#dungeonApp.mobile-touch:has(#gameApp) #screenOverlay .forge-choice-grid { grid-template-columns: 1fr 1fr !important; }
+body#dungeonApp.mobile-touch:has(#gameApp) #screenOverlay .death-requiem-action > span { display: none !important; }
+body#dungeonApp.mobile-touch:has(#gameApp) #screenOverlay .camp-start-route-grid { grid-template-columns: repeat(2,minmax(0,1fr)) !important; }
+@media (orientation: landscape) {
+  body#dungeonApp.mobile-touch:has(#gameApp) #screenOverlay .camp-start-sanctum { display: grid !important; grid-template-columns: minmax(190px,.8fr) minmax(0,1.2fr); grid-template-rows: auto 1fr; gap: 14px 22px; }
+  body#dungeonApp.mobile-touch:has(#gameApp) #screenOverlay .camp-start-header { grid-area: 1 / 1; }
+  body#dungeonApp.mobile-touch:has(#gameApp) #screenOverlay .camp-start-route-grid { grid-area: 1 / 2 / 3 / 3; grid-auto-rows: 56px !important; }
+  body#dungeonApp.mobile-touch:has(#gameApp) #screenOverlay .camp-start-choice { min-height: 56px !important; }
+  body#dungeonApp.mobile-touch:has(#gameApp) #screenOverlay .camp-start-footer { grid-area: 2 / 1; }
+}
+@media (orientation: portrait) {
+  body#dungeonApp.mobile-touch:has(#gameApp) #screenOverlay .forge-choice-grid { grid-template-columns: 1fr !important; }
+}
+body#dungeonApp.mobile-touch:has(#gameApp) #screenOverlay .camp-start-action { min-height: 48px !important; display: flex !important; align-items: center; justify-content: center; }
+body#dungeonApp.mobile-touch:has(#gameApp) #screenOverlay .camp-revamp-copy strong em { display: inline-block; margin-left: 5px; font-size: 11px !important; color: #b8c2bf; }
+body#dungeonApp.mobile-touch:has(#gameApp) #screenOverlay .camp-revamp-relic .camp-revamp-copy strong em { color: var(--relic-accent, #d7cba8); padding: 1px 4px; border: 1px solid currentColor; border-radius: 3px; font-size: 10px !important; line-height: 1.2; vertical-align: middle; }
+
+/* Gothic materials reuse PC art. Painted edges do not change layout or hit areas. */
+body#dungeonApp.mobile-touch #gameApp .layout-track > .board::after {
+  content: ''; display: block !important; position: absolute; inset: 0; width: auto; height: auto;
+  border: 0 solid transparent; border-image: url('assets/hd/ui/abyssal-gothic/screen-chrome.png') 150 130 / 8px 6px;
+  background: none; box-shadow: none; opacity: .8; pointer-events: none; z-index: 1;
+}
+body#dungeonApp.mobile-touch #gameApp .canvas-wrap::after {
+  content: ''; display: block !important; position: absolute; inset: -3px; width: auto; height: auto;
+  margin: 0; padding: 0; transform: none; border: 0 solid transparent;
+  border-image: url('assets/hd/ui/abyssal-gothic/board-frame.png') 100 / 6px;
+  background: none; box-shadow: none; opacity: 1; pointer-events: none; z-index: 2;
+}
+body#dungeonApp.mobile-touch #gameApp .room-vital-rail { border-radius: 1px; box-shadow: inset 1px 0 #c0b29226, inset -1px 0 #000; }
+body#dungeonApp.mobile-touch #gameApp #mobileActionDock .mact-btn {
+  border-image: var(--mv-button-frame) 30% 12% / 6px 7px !important; border-radius: 1px !important;
+  box-shadow: inset 0 0 14px #0006, 0 3px 3px #0009 !important;
+}
+body#dungeonApp.mobile-touch #gameApp #mobileActionDock .mact-btn.is-armed {
+  box-shadow: inset 0 0 14px #327fa155, 0 0 8px #55bdfa80 !important;
+}
+body#dungeonApp.mobile-touch #gameApp #mobileActionDock .mact-btn.is-active {
+  box-shadow: inset 0 0 14px #a8752e66, 0 0 7px #d8b56b55 !important;
+}
+body#dungeonApp.mobile-touch #gameApp #mobileActionDock .mact-btn.is-pressed {
+  box-shadow: inset 0 0 12px #dbc08880, 0 0 7px #d8b56b66 !important;
+}
+body#dungeonApp.mobile-touch #gameApp .mobile-dpad::before {
+  content: ''; display: block !important; position: absolute; inset: -9px !important;
+  background: url('assets/hd/ui/mobile/gothic/gothic-dpad-plate.png') center / 100% 100% no-repeat !important;
+  border: 0; box-shadow: none; opacity: 1; filter: none; pointer-events: none;
+}
+body#dungeonApp.mobile-touch #gameApp .mobile-dpad :is(.dpad-btn,.dpad-center) {
+  border-color: transparent !important; border-radius: 0 !important; background: transparent !important; box-shadow: none !important;
+}
+body#dungeonApp.mobile-touch #gameApp .mobile-dpad .dpad-center { opacity: 0; }
+body#dungeonApp.mobile-touch #gameApp .mobile-dpad .dpad-btn.is-pressed { background: #c5a06730 !important; }
+body#dungeonApp.mobile-touch #mobileFullscreenButton,
+body#dungeonApp.mobile-touch #mobileMenuButton,
+body#dungeonApp.mobile-touch.mobile-details-open #gameApp #mobileDetailsButton {
+  border-image: var(--mv-button-frame) 30% 12% / 7px 8px !important; border-radius: 1px !important;
+}
+body#dungeonApp.mobile-touch .mobile-journey-dialog,
+body#dungeonApp.mobile-touch.mobile-details-open #gameApp .panel-left,
+body#dungeonApp.mobile-touch:has(#gameApp) #screenOverlay > .overlay-card {
+  border-image: var(--mv-frame) 64 / 12px !important; border-radius: 1px !important;
+  box-shadow: inset 0 0 32px #0009, 0 18px 60px #000c !important;
+}
+/* A small original skull crest sits within the existing top padding. */
+body#dungeonApp.mobile-touch .mobile-journey-dialog::after,
+body#dungeonApp.mobile-touch:has(#gameApp) #screenOverlay > .overlay-card::after {
+  content: ''; display: block !important; position: absolute; top: 1px; left: 50%; right: auto; bottom: auto;
+  width: 30px; height: 17px; margin: 0; padding: 0; transform: translateX(-50%);
+  background: url('assets/hd/ui/abyssal-gothic/menu-frame.png') center top / 80px 120px no-repeat !important;
+  border: 0; box-shadow: none; filter: none; opacity: 1; pointer-events: none;
+}
+body#dungeonApp.mobile-touch .journey-choice {
+  background: var(--mv-metal-bg); border-image: var(--mv-button-frame) 30% 12% / 9px 11px;
+  border-radius: 1px; box-shadow: inset 0 0 16px #0006;
+}
+body#dungeonApp.mobile-touch .journey-choice strong { font-family: var(--mv-title-font); font-weight: 700; }
+body#dungeonApp.mobile-touch .journey-choice.primary { background: var(--mv-selected-bg); }
+body#dungeonApp.mobile-touch:has(#gameApp) #screenOverlay :is(.overlay-menu-row,.camp-revamp-row,.forge-choice,.relic-draft-choice,.death-requiem-action,.camp-start-choice) {
+  border-image: var(--mv-frame) 64 / 7px !important; border-radius: 1px !important;
+}
+body#dungeonApp.mobile-touch:has(#gameApp) #screenOverlay :is(.mobile-overlay-action,.camp-revamp-action,.forge-footer,.relic-draft-skip,.camp-start-action) {
+  border-image: var(--mv-button-frame) 30% 12% / 8px 10px !important; border-radius: 1px !important;
+}
+body#dungeonApp.mobile-touch:has(#gameApp) #screenOverlay .camp-revamp-tab {
+  border-image: var(--mv-button-frame) 30% 12% / 7px 7px !important; border-radius: 1px;
+}
+body#dungeonApp.mobile-touch:has(#gameApp) #screenOverlay :is(.camp-revamp-tab.active,.camp-start-choice.selected,.hd-nav-selected) {
+  background: var(--mv-selected-bg) !important; box-shadow: inset 3px 0 #d3b373, inset 0 0 16px #ac72272e !important;
+}
+@media (orientation: landscape) and (max-height: 340px) {
+  body#dungeonApp.mobile-touch .mobile-journey-dialog::after,
+  body#dungeonApp.mobile-touch:has(#gameApp) #screenOverlay > .overlay-card::after { height: 10px; background-size: 48px 72px !important; }
+}
+
+/* Current choices stay recognisable when a textured border replaces a flat line. */
+body#dungeonApp.mobile-touch:has(#gameApp) #screenOverlay :is(.camp-revamp-tab.active,.camp-start-choice.selected) {
+  outline: 1px solid #b29862 !important; outline-offset: -4px;
+}
+body#dungeonApp.mobile-touch:has(#gameApp) #screenOverlay .camp-start-action-confirm { background: var(--mv-selected-bg) !important; }
+body#dungeonApp.mobile-touch:has(#gameApp) #screenOverlay .camp-start-action-cancel { background: var(--mv-metal-bg) !important; }
+
+/* Thumb layout: three skills left; consumables over the centred right-hand D-pad. */
+body#dungeonApp.mobile-touch {
+  --mv-left-zone: calc((100vw + var(--mv-left) - var(--mv-right) + var(--mv-safe-l) - var(--mv-safe-r) - var(--mv-board) - 72px) / 2);
+  --mv-right-zone: calc((100vw - var(--mv-left) + var(--mv-right) - var(--mv-safe-l) + var(--mv-safe-r) - var(--mv-board) - 72px) / 2);
+  --mv-left-center: calc((var(--mv-left-zone) + var(--mv-safe-l)) / 2);
+  --mv-right-center: calc(100vw - (var(--mv-right-zone) + var(--mv-safe-r)) / 2);
+  --mv-skill-size: min(108px, calc((100dvh - 154px - var(--mv-safe-t) - var(--mv-safe-b)) / 3), calc(var(--mv-left-zone) - var(--mv-safe-l) - 24px));
+  --mv-consumable-size: min(82px, calc((var(--mv-right-zone) - var(--mv-safe-r) - 28px) / 2));
+  --mv-skill-gap: 8px;
+  --mv-control-bottom: calc(16px + var(--mv-safe-b));
+  --mv-pad-bottom: calc(22px + var(--mv-safe-b));
+  --mv-pad-size: calc(var(--mv-cell) * 3 + 4px);
+  --mv-consumable-bottom: calc(var(--mv-pad-bottom) + var(--mv-pad-size) + 14px);
+}
+/* Preserve the existing buttons/listeners and DOM action order. The empty dock cannot intercept board input. */
+body#dungeonApp.mobile-touch #gameApp #mobileActionDock {
+  position: fixed !important; inset: 0 !important; width: 100vw !important; height: 100dvh !important;
+  display: block !important; padding: 0 !important; margin: 0 !important; pointer-events: none; z-index: 44;
+}
+body#dungeonApp.mobile-touch #gameApp #mobileActionDock .mact-btn {
+  --mv-action-size: var(--mv-skill-size);
+  position: absolute !important; width: var(--mv-action-size) !important; height: var(--mv-action-size) !important;
+  min-height: 0 !important; left: calc(var(--mv-left-center) - var(--mv-action-size) / 2) !important;
+  right: auto !important; top: auto !important; bottom: var(--mv-control-bottom) !important;
+  border: 2px solid #80765e !important; border-image: none !important; border-radius: 50% !important;
+  padding: clamp(4px, calc(var(--mv-action-size) * .06), 7px) !important; box-sizing: border-box;
+  box-shadow: inset 0 0 0 2px #070909, inset 0 0 0 3px #b6aa8055, inset 0 -8px 16px #0009, 0 3px 8px #000c !important;
+  pointer-events: auto;
+}
+body#dungeonApp.mobile-touch #gameApp #mobileActionDock .mact-btn::after {
+  content: ''; display: block !important; position: absolute; inset: 4px; border: 1px solid #b8b3a230;
+  border-radius: 50%; background: none !important; box-shadow: none; pointer-events: none;
+}
+body#dungeonApp.mobile-touch #gameApp #mobileActionDock .mact-btn > img {
+  width: clamp(24px, calc(var(--mv-action-size) * .46), 50px) !important;
+  height: clamp(24px, calc(var(--mv-action-size) * .46), 50px) !important;
+  border-radius: 50%;
+}
+body#dungeonApp.mobile-touch #gameApp #mobileActionDock .mobile-action-copy strong {
+  font-size: clamp(11px, calc(var(--mv-action-size) * .14), 14px) !important; letter-spacing: -.025em;
+}
+body#dungeonApp.mobile-touch #gameApp #mobileActionDock .mobile-action-copy small { font-size: clamp(11px, calc(var(--mv-action-size) * .13), 12px) !important; }
+body#dungeonApp.mobile-touch #gameApp #mobileActionDock #mbtnZ { bottom: calc(var(--mv-control-bottom) + (var(--mv-skill-size) + var(--mv-skill-gap)) * 2) !important; }
+body#dungeonApp.mobile-touch #gameApp #mobileActionDock #mbtnX { bottom: calc(var(--mv-control-bottom) + var(--mv-skill-size) + var(--mv-skill-gap)) !important; }
+body#dungeonApp.mobile-touch #gameApp #mobileActionDock :is(#mbtnF,#mbtnG) {
+  --mv-action-size: var(--mv-consumable-size); bottom: var(--mv-consumable-bottom) !important;
+}
+body#dungeonApp.mobile-touch #gameApp #mobileActionDock #mbtnF { left: calc(var(--mv-right-center) - var(--mv-consumable-size) - 6px) !important; }
+body#dungeonApp.mobile-touch #gameApp #mobileActionDock #mbtnG { left: calc(var(--mv-right-center) + 6px) !important; }
+body#dungeonApp.mobile-touch #gameApp .mobile-dpad {
+  right: calc(100vw - var(--mv-right-center) - var(--mv-pad-size) / 2) !important; bottom: var(--mv-pad-bottom) !important;
+}
+body#dungeonApp.mobile-touch #gameApp #mobileActionDock #mbtnE {
+  --mv-action-size: var(--mv-cell); left: calc(var(--mv-right-center) - var(--mv-cell) / 2) !important;
+  bottom: calc(var(--mv-pad-bottom) + var(--mv-cell) + 2px) !important; padding: 2px !important;
+  background: var(--mv-selected-bg) !important; border-color: #c4aa6b !important;
+}
+body#dungeonApp.mobile-touch #gameApp #mobileActionDock #mbtnE .mobile-action-copy strong { font-size: 10px !important; }
+body#dungeonApp.mobile-touch #gameApp #mobileActionDock #mbtnE .mobile-action-copy small { display: none !important; }
+body#dungeonApp.mobile-touch #gameApp #mobileActionDock .mact-btn.is-armed { box-shadow: inset 0 0 0 2px #070909, inset 0 0 16px #327fa166, 0 0 10px #55bdfaa0 !important; border-color: #7bc5e4 !important; }
+body#dungeonApp.mobile-touch #gameApp #mobileActionDock .mact-btn.is-active { box-shadow: inset 0 0 0 2px #070909, inset 0 0 16px #a8752e77, 0 0 9px #d8b56b66 !important; border-color: #c6a05e !important; }
+body#dungeonApp.mobile-touch #gameApp #mobileActionDock .mact-btn.is-pressed { box-shadow: inset 0 0 14px #dbc08880, 0 0 7px #d8b56b66 !important; }
+@media (orientation: landscape) and (max-height: 340px) {
+  body#dungeonApp.mobile-touch {
+    --mv-cell: 44px; --mv-pad-bottom: calc(12px + var(--mv-safe-b)); --mv-consumable-size: 64px;
+    --mv-skill-size: min(72px, calc((var(--mv-left-zone) - var(--mv-safe-l) - 12px - var(--mv-skill-gap)) / 2));
+    --mv-consumable-bottom: calc(var(--mv-pad-bottom) + var(--mv-pad-size) + 12px);
+  }
+  body#dungeonApp.mobile-touch #gameApp #mobileActionDock #mbtnZ { left: calc(var(--mv-left-center) - var(--mv-skill-size) - var(--mv-skill-gap) / 2) !important; bottom: calc(var(--mv-control-bottom) + var(--mv-skill-size) + var(--mv-skill-gap)) !important; }
+  body#dungeonApp.mobile-touch #gameApp #mobileActionDock #mbtnX { left: calc(var(--mv-left-center) + var(--mv-skill-gap) / 2) !important; }
+}
+@media (orientation: portrait) {
+  body#dungeonApp.mobile-touch {
+    --mv-left-zone: 50vw; --mv-right-zone: 50vw; --mv-skill-size: 100px;
+    --mv-pad-bottom: calc(24px + var(--mv-safe-b));
+  }
+}
+@media (orientation: portrait) and (max-height: 700px) {
+  body#dungeonApp.mobile-touch { --mv-skill-size: 72px; --mv-consumable-size: min(74px, calc((var(--mv-right-zone) - var(--mv-safe-r) - 28px) / 2)); --mv-pad-bottom: calc(18px + var(--mv-safe-b)); }
+  body#dungeonApp.mobile-touch #gameApp .layout-track > .board { padding-bottom: calc(250px + var(--mv-safe-b)) !important; }
+}

@@ -1,0 +1,284 @@
+[
+  {
+    "id": "player",
+    "label": "Player",
+    "folder": "actors/player",
+    "action": "attack",
+    "root": "early-v2/player",
+    "renderSize": 80,
+    "directions": [
+      "south",
+      "north",
+      "east",
+      "west"
+    ],
+    "actionDuration": 240
+  },
+  {
+    "id": "slime",
+    "label": "Slime",
+    "folder": "enemies/slime",
+    "action": "attack",
+    "root": "early-v2/slime",
+    "renderSize": 64,
+    "directions": [
+      "south",
+      "north",
+      "east",
+      "west"
+    ],
+    "actionDuration": 140
+  },
+  {
+    "id": "skeleton",
+    "label": "Skeleton",
+    "folder": "enemies/skeleton",
+    "action": "attack",
+    "root": "early-v2/skeleton",
+    "renderSize": 64,
+    "directions": [
+      "south",
+      "north",
+      "east",
+      "west"
+    ],
+    "actionDuration": 140
+  },
+  {
+    "id": "brute",
+    "label": "Brute",
+    "folder": "enemies/brute",
+    "action": "attack",
+    "root": "all-v2/brute",
+    "renderSize": 80,
+    "directions": [
+      "south",
+      "north",
+      "east",
+      "west"
+    ],
+    "actionDuration": 140
+  },
+  {
+    "id": "acolyte",
+    "label": "Acolyte",
+    "folder": "enemies/acolyte",
+    "action": "attack",
+    "root": "all-v2/acolyte",
+    "renderSize": 64,
+    "directions": [
+      "south",
+      "north",
+      "east",
+      "west"
+    ],
+    "actionDuration": 140
+  },
+  {
+    "id": "skitter",
+    "label": "Skitter · nowa sylwetka",
+    "folder": "enemies/skitter",
+    "action": "attack",
+    "root": "all-v2/skitter",
+    "renderSize": 64,
+    "directions": [
+      "south",
+      "north",
+      "east",
+      "west"
+    ],
+    "actionDuration": 140
+  },
+  {
+    "id": "otter",
+    "label": "Otter",
+    "folder": "enemies/otter",
+    "action": "attack",
+    "root": "all-v2/otter",
+    "renderSize": 64,
+    "directions": [
+      "south",
+      "north",
+      "east",
+      "west"
+    ],
+    "actionDuration": 140
+  },
+  {
+    "id": "riftweaver",
+    "label": "Riftweaver",
+    "folder": "enemies/riftweaver",
+    "action": "attack",
+    "root": "all-v2/riftweaver",
+    "renderSize": 72,
+    "directions": [
+      "south",
+      "north",
+      "east",
+      "west"
+    ],
+    "actionDuration": 320
+  },
+  {
+    "id": "bulwark",
+    "label": "Bulwark",
+    "folder": "enemies/bulwark",
+    "action": "attack",
+    "root": "all-v2/bulwark",
+    "renderSize": 114,
+    "directions": [
+      "south",
+      "north",
+      "east",
+      "west"
+    ],
+    "actionDuration": 320
+  },
+  {
+    "id": "guardian",
+    "label": "Vault Guardian",
+    "folder": "bosses/vault-guardian",
+    "action": "attack",
+    "root": "all-v2/guardian",
+    "renderSize": 128,
+    "directions": [
+      "south",
+      "north",
+      "east",
+      "west"
+    ],
+    "actionDuration": 140
+  },
+  {
+    "id": "blacksmith",
+    "label": "Blacksmith Guardian",
+    "folder": "bosses/blacksmith-guardian",
+    "action": "attack",
+    "root": "all-v2/blacksmith",
+    "renderSize": 128,
+    "directions": [
+      "south",
+      "north",
+      "east",
+      "west"
+    ],
+    "actionDuration": 140
+  },
+  {
+    "id": "warden1",
+    "label": "Warden · faza I",
+    "folder": "bosses/warden/phase-1",
+    "action": "cast",
+    "root": "all-v2/warden1",
+    "renderSize": 160,
+    "directions": [
+      "south",
+      "north",
+      "east",
+      "west"
+    ],
+    "actionDuration": 360
+  },
+  {
+    "id": "warden2",
+    "label": "Warden · faza II",
+    "folder": "bosses/warden/phase-2",
+    "action": "cast",
+    "root": "all-v2/warden2",
+    "renderSize": 192,
+    "directions": [
+      "south",
+      "north",
+      "east",
+      "west"
+    ],
+    "actionDuration": 360
+  },
+  {
+    "id": "warden-descent",
+    "label": "Warden · Descent",
+    "folder": "bosses/warden-biome-descent",
+    "action": "cast",
+    "root": "all-v2/warden-descent",
+    "renderSize": 160,
+    "directions": [
+      "south",
+      "north",
+      "east",
+      "west"
+    ],
+    "actionDuration": 360
+  },
+  {
+    "id": "warden-corruption",
+    "label": "Warden · Corruption",
+    "folder": "bosses/warden-biome-corruption",
+    "action": "cast",
+    "root": "all-v2/warden-corruption",
+    "renderSize": 160,
+    "directions": [
+      "south",
+      "north",
+      "east",
+      "west"
+    ],
+    "actionDuration": 360
+  },
+  {
+    "id": "warden-abyss",
+    "label": "Warden · Abyss",
+    "folder": "bosses/warden-biome-abyss",
+    "action": "cast",
+    "root": "all-v2/warden-abyss",
+    "renderSize": 160,
+    "directions": [
+      "south",
+      "north",
+      "east",
+      "west"
+    ],
+    "actionDuration": 360
+  },
+  {
+    "id": "blacksmith-overheat",
+    "label": "Blacksmith · Overheat",
+    "folder": "bosses/blacksmith-guardian/overheat",
+    "action": "attack",
+    "root": "all-v2/blacksmith-overheat",
+    "renderSize": 128,
+    "directions": [
+      "south",
+      "north",
+      "east",
+      "west"
+    ],
+    "actionDuration": 140
+  },
+  {
+    "id": "warden-reborn",
+    "label": "Warden · Reborn",
+    "folder": "bosses/warden/phase-2-reborn",
+    "action": "cast",
+    "root": "all-v2/warden-reborn",
+    "renderSize": 192,
+    "directions": [
+      "south",
+      "north",
+      "east",
+      "west"
+    ],
+    "actionDuration": 360
+  },
+  {
+    "id": "totem",
+    "label": "Totem",
+    "folder": "enemies/totem",
+    "action": "cast",
+    "root": "all-v2/totem",
+    "renderSize": 80,
+    "directions": [
+      "base"
+    ],
+    "actionDuration": 140
+  }
+]

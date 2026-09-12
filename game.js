@@ -1130,6 +1130,7 @@
   const mobileCoarsePointerMedia = typeof window.matchMedia === "function"
     ? window.matchMedia(MOBILE_COARSE_POINTER_MEDIA_QUERY)
     : null;
+  let mobileExperience = null;
   const mobileUi = {
     active: false,
     paneIndex: MOBILE_PANE_BOARD,
@@ -1423,7 +1424,9 @@
       mobileMenuButtonEl.classList.toggle("visible", menuVisible);
       mobileMenuButtonEl.tabIndex = menuVisible ? 0 : -1;
       mobileMenuButtonEl.setAttribute("aria-hidden", menuVisible ? "false" : "true");
-      mobileMenuButtonEl.setAttribute("aria-expanded", isScreenOverlayVisible() ? "true" : "false");
+      mobileMenuButtonEl.setAttribute("aria-expanded", mobileExperience?.isOpen() || isScreenOverlayVisible() ? "true" : "false");
+      mobileMenuButtonEl.setAttribute("aria-controls", state.phase === "playing" ? "mobileJourneyDialog" : "screenOverlay");
+      mobileMenuButtonEl.setAttribute("aria-label", state.phase === "playing" ? "Open run menu" : "Open main menu");
     }
     if (mobileSwipeHintEl) {
       mobileSwipeHintEl.classList.toggle("visible", shouldShowMobileSwipeHint());
@@ -6802,12 +6805,23 @@
     osc.stop(at + duration + 0.02);
   }
 
+  const npcCueGate = window.DungeonHD2NpcCues?.createGate();
+
   function playSfx(kind) {
     if (isSimulationActive() && state.simulation.suppressAudio) return;
     if (!ensureAudio()) return;
     const ctx = audio.ctx;
     const out = audio.master;
     const now = ctx.currentTime + 0.002;
+
+    if (typeof kind === "string" && kind.startsWith("npc:")) {
+      const cue = kind.slice(4);
+      if (window.DungeonHDRendererLayers?.earlyAnimationsEnabled !== true || !npcCueGate?.(cue, now)) return;
+      for (const tone of window.DungeonHD2NpcCues.cues[cue]) {
+        playTone(ctx, out, { ...tone, at: now + tone.delay });
+      }
+      return;
+    }
 
     if (kind === "hit") {
       playTone(ctx, out, {
@@ -7349,6 +7363,7 @@
   }
 
   function tryOpenFirstPortalTutorialIfNeeded() {
+    if (mobileUi.touchDevice) return false; // The contextual portal dialog teaches this flow.
     if (state.phase !== "playing") return false;
     if (state.tutorialPortalSeen) return false;
     if (state.depth !== 0) return false;
@@ -15512,8 +15527,16 @@
     });
   }
 
+  function emitNpcSkillCue(kind, enemy) {
+    if (enemy && window.DungeonHDRendererLayers?.earlyAnimationsEnabled === true) {
+      emitVisualEvent(`npc_${kind}`, enemy.x, enemy.y, { sourceId: enemy.id, durationMs: 140 });
+    }
+  }
+
   function emitVisualEvent(kind, x, y, options = {}) {
     if (isSimulationActive() && state.simulation.suppressVisuals) return null;
+    const npcCue = window.DungeonHD2NpcCues?.events[kind];
+    if (npcCue && window.DungeonHDRendererLayers?.earlyAnimationsEnabled === true) playSfx(`npc:${npcCue}`);
     const startedAtMs = typeof performance === "object" && typeof performance.now === "function"
       ? performance.now()
       : Date.now();
@@ -18134,6 +18157,7 @@
 
     cancelVaultGuardianSlamWindup(enemy);
     enemy.vaultLockdownAiming = true;
+    emitNpcSkillCue("charge", enemy);
     enemy.vaultLockdownTargets = targets.map((target) => ({ x: target.x, y: target.y }));
     enemy.telegraphAge = 0;
     enemy.rests = true;
@@ -18271,6 +18295,7 @@
 
   function castBlacksmithForgeTemper(enemy) {
     if (!canBlacksmithUseForgeTemper(enemy)) return false;
+    emitNpcSkillCue("aura", enemy);
     const maxHp = Math.max(1, Number(enemy.maxHp) || Number(enemy.hp) || 1);
     enemy.blacksmithBarrier = Math.max(
       MIN_EFFECTIVE_DAMAGE,
@@ -18324,6 +18349,8 @@
     enemy.anvilDx = 0;
     enemy.anvilDy = 0;
     if (dx === 0 && dy === 0) return false;
+    emitNpcSkillCue("slam", enemy);
+    if (window.DungeonHDRendererLayers?.earlyAnimationsEnabled === true) enemy.castFlash = 140;
     const lineTiles = getBlacksmithAnvilTiles(enemy, dx, dy);
     spawnParticles(enemy.x, enemy.y, "#ff8b59", 12, 1.1);
     if (!lineTiles.some((tile) => tile.x === state.player.x && tile.y === state.player.y)) {
@@ -18339,6 +18366,7 @@
 
   function castBlacksmithMoltenPulse(enemy) {
     if (!enemy || enemy.type !== "blacksmith_guardian") return false;
+    emitNpcSkillCue("aura", enemy);
     enemy.castFlash = Math.max(Number(enemy.castFlash) || 0, 100);
     spawnShockwaveRing(enemy.x, enemy.y, {
       color: "#ff7a36",
@@ -18474,6 +18502,7 @@
   }
 
   function executeWardenBurst(enemy) {
+    emitNpcSkillCue("rift", enemy);
     const profile = getWardenBossProfile(state.depth);
     const burstDamage = Math.max(
       MIN_EFFECTIVE_DAMAGE,
@@ -18579,6 +18608,7 @@
   function startRiftweaverRift(enemy) {
     if (!enemy) return false;
     enemy.riftAiming = true;
+    emitNpcSkillCue("charge", enemy);
     enemy.riftTargetX = state.player.x;
     enemy.riftTargetY = state.player.y;
     enemy.telegraphAge = 0;
@@ -18626,6 +18656,7 @@
   function startBulwarkBash(enemy) {
     if (!enemy) return false;
     enemy.bulwarkBashAiming = true;
+    emitNpcSkillCue("charge", enemy);
     enemy.telegraphAge = 0;
     enemy.facing = getFacingFromDelta(state.player.x - enemy.x, state.player.y - enemy.y, enemy.facing);
     enemy.castFlash = Math.max(Number(enemy.castFlash) || 0, EXPANSION_ENEMY_ACTION_VISUAL_MS);
@@ -18732,6 +18763,7 @@
     const castCount = clamp(Math.round(Number(profile?.latticeCastCount) || 1), 1, 2);
     enemy.latticeCastsRemaining = castCount - 1;
     syncWardenLatticeState(enemy, [createWardenLatticePattern(profile, 1)]);
+    emitNpcSkillCue("charge", enemy);
     enemy.telegraphAge = 0;
     enemy.castFlash = Math.max(Number(enemy.castFlash) || 0, WARDEN_CAST_VISUAL_MS);
     pushLog(
@@ -18836,6 +18868,7 @@
   function startWardenVoidStep(enemy) {
     if (!enemy) return false;
     enemy.voidStepAiming = true;
+    emitNpcSkillCue("charge", enemy);
     enemy.voidStepOriginX = enemy.x;
     enemy.voidStepOriginY = enemy.y;
     enemy.telegraphAge = 0;
@@ -18963,6 +18996,7 @@
       spawnParticles(tile.x, tile.y, "#e258ff", 7, 0.7);
     }
     enemy.doomSigilCooldown = Math.max(1, Number(profile?.doomSigilCooldown) || 5);
+    if (tiles.length > 0) emitNpcSkillCue("hex", enemy);
     enemy.castFlash = Math.max(Number(enemy.castFlash) || 0, WARDEN_CAST_VISUAL_MS);
     pushLog(
       "Abyssal Warden Reborn brands " + targetedTiles.length + " tracking and " + randomTiles.length + " random Doom Sigils. They erupt after one full turn!",
@@ -18974,6 +19008,7 @@
   function startWardenSoulChain(enemy) {
     if (!enemy) return false;
     enemy.soulChainAiming = true;
+    emitNpcSkillCue("charge", enemy);
     enemy.soulChainTiles = getGridLineTiles(enemy.x, enemy.y, state.player.x, state.player.y);
     enemy.soulChainTargetX = state.player.x;
     enemy.soulChainTargetY = state.player.y;
@@ -19112,6 +19147,7 @@
   function startBlacksmithChainHook(enemy) {
     if (!enemy) return false;
     enemy.blacksmithChainAiming = true;
+    emitNpcSkillCue("charge", enemy);
     enemy.blacksmithChainTiles = getGridLineTiles(enemy.x, enemy.y, state.player.x, state.player.y);
     enemy.telegraphAge = 0;
     enemy.facing = getFacingFromDelta(state.player.x - enemy.x, state.player.y - enemy.y, enemy.facing);
@@ -19573,6 +19609,7 @@
   }
 
   function enemyMelee(enemy) {
+    emitNpcSkillCue("melee", enemy);
     const hpBefore = Math.max(0, Number(state.player.hp) || 0);
     const playerShieldBeforeHit = Math.max(0, Number(getTotalPlayerShield()) || 0);
     const damage = enemy.type === "skeleton"
@@ -19622,6 +19659,7 @@
   }
 
   function enemyRanged(enemy, options = {}) {
+    emitNpcSkillCue("bolt", enemy);
     const boltColor = typeof options.color === "string"
       ? options.color
       : (enemy.type === "warden" ? "#c8a7ff" : "#8bb4ff");
@@ -19794,6 +19832,7 @@
     target.hp = Math.min(target.maxHp, target.hp + healAmount);
     const healed = Math.max(0, target.hp - beforeHp);
     caster.castFlash = 120;
+    if (window.DungeonHDRendererLayers?.earlyAnimationsEnabled === true) emitVisualEvent("npc_heal", caster.x, caster.y, { sourceId: caster.id, durationMs: 120 });
     spawnParticles(caster.x, caster.y, "#8edcc3", 8, 1.05);
     spawnParticles(target.x, target.y, "#baf7dc", 10, 1.05);
     if (healed > 0) {
@@ -19810,6 +19849,7 @@
     target.acolyteBuffTurns = ACOLYTE_SUPPORT_BUFF_TURNS;
     state.enemyAcolyteBuffCastThisTurn = true;
     caster.castFlash = 120;
+    if (window.DungeonHDRendererLayers?.earlyAnimationsEnabled === true) emitVisualEvent("npc_buff", caster.x, caster.y, { sourceId: caster.id, durationMs: 120 });
     spawnParticles(caster.x, caster.y, "#b89dff", 8, 1.05);
     spawnParticles(target.x, target.y, "#cbb7ff", 10, 1.05);
     spawnFloatingText(target.x, target.y, "EMPOWER", "#e1d5ff");
@@ -19845,6 +19885,7 @@
     const poisonDamage = getTotemPoisonBoltDamage();
     const applied = applyPlayerPoison(poisonDamage, TOTEM_POISON_TURNS);
     if (!applied) return false;
+    emitNpcSkillCue("venom", enemy);
     enemy.castFlash = 120;
     spawnRangedBolt(enemy.x, enemy.y, state.player.x, state.player.y, "#7effa8");
     spawnRangedImpact(state.player.x, state.player.y, "#7effa8");
@@ -19896,6 +19937,7 @@
       const previous = Math.max(0, Number(state.skillCooldowns[skillId]) || 0);
       const next = clamp(previous + TOTEM_HEX_COOLDOWN_INCREASE, 0, TOTEM_HEX_MAX_COOLDOWN);
       state.skillCooldowns[skillId] = next;
+      emitNpcSkillCue("hex", enemy);
       enemy.castFlash = 120;
       spawnRangedBolt(enemy.x, enemy.y, state.player.x, state.player.y, "#c88bff");
       spawnRangedImpact(state.player.x, state.player.y, "#c88bff");
@@ -20315,6 +20357,7 @@
           canStartTelegraph: canStartEnemyTelegraph()
         });
         if (wardenTactical.type === "start_burst") {
+          emitNpcSkillCue("charge", enemy);
           pushLog("Warden weaves a gravity burst.", "bad");
           return;
         }
@@ -20350,6 +20393,7 @@
       if (canBlast && enemy.cooldown === 0 && wantsCast) {
         enemy.aiming = true;
         pushLog("Warden charges a pulse blast.", "bad");
+        emitNpcSkillCue("charge", enemy);
         return;
       }
       if (smartWarden) {
@@ -20381,6 +20425,7 @@
           canStartTelegraph: canStartEnemyTelegraph()
         });
         if (skeletonTactical.type === "start_volley") {
+          emitNpcSkillCue("charge", enemy);
           pushLog("Skeleton prepares a bone volley.", "bad");
           return;
         }
@@ -20480,6 +20525,7 @@
       if (acolytePlan.type !== "none" && enemy.cooldown === 0 && canStartEnemyTelegraph()) {
         enemy.aiming = true;
         enemy.acolyteCastType = acolytePlan.type;
+        emitNpcSkillCue("charge", enemy);
         if (acolytePlan.type === "heal") {
           pushLog("Acolyte begins a mending chant.", "bad");
         } else if (acolytePlan.type === "buff") {
@@ -20551,6 +20597,7 @@
         canStartEnemyTelegraph()
       ) {
         enemy.anvilAiming = true;
+        emitNpcSkillCue("charge", enemy);
         enemy.anvilDx = anvilDirection.dx;
         enemy.anvilDy = anvilDirection.dy;
         enemy.telegraphAge = 0;
@@ -20595,12 +20642,15 @@
           return;
         }
         pushLog(`${enemy.name} winds up a slam!`, "bad");
+        emitNpcSkillCue("charge", enemy);
         return;
       }
       if (bruteTactical.type === "execute_slam") {
         if (!canEnemyCommitMelee(enemy)) {
           return;
         }
+        emitNpcSkillCue("slam", enemy);
+        if (window.DungeonHDRendererLayers?.earlyAnimationsEnabled === true) enemy.castFlash = 140;
         enemy.facing = getFacingFromDelta(state.player.x - enemy.x, state.player.y - enemy.y, enemy.facing);
         const slamResolved = enemy.type === "guardian"
           ? useGuardianHazardKnockback(enemy)
@@ -24010,7 +24060,7 @@
         `<div class="tutorial-row"><div class="tutorial-keys"><span class="tutorial-key tutorial-key-good">Armor</span></div><div class="tutorial-text">Armor reduces incoming damage each hit. It keeps you alive through burst windows.</div></div>`,
         `<div class="tutorial-row"><div class="tutorial-keys"><span class="tutorial-key tutorial-key-ability">Attack</span></div><div class="tutorial-text">Attack shortens fights and lowers total damage you take from long Warden fights.</div></div>`,
         `<div class="tutorial-row"><div class="tutorial-keys"><span class="tutorial-key tutorial-key-core">Potions/Elixirs</span></div><div class="tutorial-text">Bring sustain and emergency stats before your next Warden attempt.</div></div>`,
-        `<div class="tutorial-row"><div class="tutorial-keys"><span class="tutorial-key tutorial-key-core">${mobileUi.touchDevice ? "Extract" : "Q"}</span></div><div class="tutorial-text"><strong>Go to Camp:</strong> after clearing a room, ${mobileUi.touchDevice ? "tap Extract" : "press Q anywhere"} to extract and buy upgrades.</div></div>`,
+        `<div class="tutorial-row"><div class="tutorial-keys"><span class="tutorial-key tutorial-key-core">${mobileUi.touchDevice ? "Extract" : "Q"}</span></div><div class="tutorial-text"><strong>Go to Camp:</strong> after clearing a room, ${mobileUi.touchDevice ? "enter the portal and choose Go to camp, or open Menu → Return to camp" : "press Q anywhere"} to extract and buy upgrades.</div></div>`,
         `</div>`,
         `</div>`,
         `<p class="overlay-hint">${mobileUi.touchDevice ? "Tap Continue when you are ready." : "Press Enter, Esc, or H to continue."}</p>`,
@@ -25583,6 +25633,7 @@
     syncHdMenuNavigation();
     syncMobileOverlayAccessibility();
     syncMobileUiState({ forceBoard: isScreenOverlayVisible() });
+    mobileExperience?.sync();
     state.uiDirty = false;
   }
 
@@ -33932,7 +33983,7 @@
     mobileMenuButtonEl.addEventListener("click", () => {
       setMobileDetailsOpen(false);
       dismissMobileSwipeHint();
-      openMainMenuFromMobileButton();
+      if (!mobileExperience?.openMenu()) openMainMenuFromMobileButton();
       syncMobileUiState({ forceBoard: true });
     });
   }
@@ -33999,6 +34050,7 @@
 
   function mobileMoveHandler(dx, dy) {
     return () => {
+      if (mobileExperience?.isOpen() || mobileUi.detailsOpen || isScreenOverlayVisible()) return;
       if (state.phase !== "playing") return;
       if (isTurnInputLocked()) return;
       if (state.dashAimActive) {
@@ -34041,7 +34093,7 @@
   }
 
   function performMobileActionDirection(direction) {
-    if (!direction) return false;
+    if (!direction || mobileExperience?.isOpen() || mobileUi.detailsOpen) return false;
     if (isMobilePortraitBlocked()) return false;
     if (!mobileUi.active || mobileUi.paneIndex !== MOBILE_PANE_BOARD) return false;
     if (state.phase !== "playing" || isScreenOverlayVisible() || isTurnInputLocked()) return false;
@@ -34126,8 +34178,27 @@
     window.dispatchEvent(new KeyboardEvent("keydown", { key, bubbles: true }));
   };
   for (const key of ["z", "x", "c", "f", "g", "e", "q"]) {
-    bindMobileButton(`mbtn${key.toUpperCase()}`, () => dispatchCanonicalMobileKey(key));
+    bindMobileButton(`mbtn${key.toUpperCase()}`, () => {
+      if (mobileExperience?.isOpen()) return;
+      if (key === "e" && isOnPortal() && mobileExperience?.openPortal()) return;
+      dispatchCanonicalMobileKey(key);
+    });
   }
+  mobileExperience = window.DungeonMobileExperience?.create({
+    read: () => ({
+      enabled: mobileUi.active, phase: state.phase, depth: state.depth,
+      onPortal: isOnPortal(), cleared: state.roomCleared, enemies: state.enemies.length,
+      location: `${state.depth}:${state.roomIndex}:${state.player.x}:${state.player.y}`,
+      blocked: isTurnInputLocked() || isScreenOverlayVisible() || mobileUi.detailsOpen || state.dashAimActive,
+      automated: isObserverBotActive(),
+      canDescend: state.depth < MAX_DEPTH && (!state.onlineV3Ranked || Boolean(state.onlineV3NextDirective)),
+      interactable: isOnPortal() || isOnMerchant() || isOnForge() || isOnPact() || isOnShrine() || Boolean(getChestAt(state.player.x, state.player.y)),
+      hp: Math.max(0, Math.round(state.player.hp)), maxHp: Math.max(1, Math.round(state.player.maxHp)),
+      lossRatio: getEmergencyExtractLossRatio()
+    }),
+    sendKey: dispatchCanonicalMobileKey, onMenu: openMainMenuFromMobileButton,
+    onDetails: () => setMobileDetailsOpen(true), stopMovement: clearMobileBoardRepeat
+  });
   bindMobileButton("mbtnR", () => {
     if (isMobilePortraitBlocked()) return;
     if (state.phase === "camp") {

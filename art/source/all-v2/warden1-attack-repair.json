@@ -1,0 +1,5 @@
+{
+  "source": "C:\\Users\\Kamil\\.codex\\generated_images\\01a082a2-4b2e-7d82-b36f-9cf7ad735f40\\exec-aa958a4b-1473-46a4-819f-b996e3f0f022.png",
+  "prompt": "Repair spacing of this exact Warden casting sprite sheet. Keep all 32 poses and exact model and 8 columns x 4 rows. Uniformly shrink EVERY sprite AND its entire attached magic effects by 25% centered inside its own cell. There MUST be broad completely empty magenta gutters between every row and every column, no magic or crown or cloth may cross into another cell or touch another sprite. Reconstruct any clipped pieces. Preserve direction rows SOUTH FRONT, NORTH BACK, EAST RIGHT, WEST LEFT, never turn within a row. All armor/crown/robe/body detail same. Flat #ff00ff background, no labels or grid. Full silhouettes with safe margins on all sides. Sequential 8 casting frames.",
+  "model": "Built-in Images; identity not exposed"
+}

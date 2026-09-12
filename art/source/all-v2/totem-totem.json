@@ -1,0 +1,7 @@
+{
+  "actor": "totem",
+  "clip": "totem",
+  "source": "C:\\Users\\Kamil\\.codex\\generated_images\\01a082a2-4b2e-7d82-b36f-9cf7ad735f40\\exec-dd3e898a-743f-4f4a-bbac-ed399c6309d5.png",
+  "prompt": "Create a detailed hand-painted dark dungeon game animation sheet for the exact stone ritual TOTEM in this reference. Preserve its proportions, runes, carved wood/stone features and muted colors. This actor never walks and has one fixed front camera direction. Exactly 8 columns by4 rows =32 separate sprites, consistent fixed body size and bottom anchor throughout. Row1 eight-frame seamless IDLE loop: subtle rune pulse and minute settling; row2 eight-frame AWAKEN animation: dormant carvings slowly light internally, fragments slightly stir then settle; row3 eight-frame CAST animation: runes intensify, stone leans slightly, contained spell energy grows untilframe5, releasesframe6 then recovers7-8; row4 cols1-4 HIT recoil/recovery, cols5-8 DEATH crack and collapse into a coherent rubble pile, keeping same physical scale as standing. No detached beams or external spell effects. All sprites completely within equal cells with20% clear margins. Solid uniform #ff00ff technical key background, no magenta on actor or edges, no background shadows, no labels, no grid, no scenery, no checkerboard. Smooth consecutive poses for every row.",
+  "model": "Built-in Images; model selection/identity not exposed"
+}

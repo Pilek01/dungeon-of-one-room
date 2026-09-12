@@ -1,0 +1,7 @@
+{
+  "actor": "acolyte",
+  "clip": "idle",
+  "source": "C:\\Users\\Kamil\\.codex\\generated_images\\01a082a2-4b2e-7d82-b36f-9cf7ad735f40\\exec-c11a9bfd-0cac-4ead-80ed-62f6d89b97c0.png",
+  "prompt": "Create a production 2D dark dungeon game animation sprite sheet based faithfully on the FOUR supplied existing direction reference sprites: south/front, north/back, east/right, west/left. Actor: robed acolyte caster, subtle dark ritual. Upgrade fine anatomical/material detail and organic movement in the same muted dark fantasy art family as a detailed hand-painted game sprite. Keep original color family, proportions, recognizability, all weapons, equipment, anatomy and projected top-down camera.  EXACT 8 columns by 4 rows: row 1 south, row 2 north, row 3 east, row 4 west. Each row is EIGHT consecutive smooth IDLE poses: subtle breath/weight/cloth/antenna movement with seamless loop. Frame 1 and 8 almost match. Fixed camera, fixed scale, shared foot baseline. Small sensible movement, not different costumes. Each entire sprite must be centered WITHIN its own equal cell with 20% clear margin; no crossing cell boundary. Solid perfectly uniform bright #ff00ff MAGENTA key background. NO magenta on the character, no outlines of magenta, no background shadow, no glow outside silhouette, no environment, labels, text, divider lines or checkerboard. Make 32 clean separate sprites total. Render weapon and every appendage completely within each cell.",
+  "model": "Built-in Images; model selection/identity not exposed"
+}

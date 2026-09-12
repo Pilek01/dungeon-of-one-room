@@ -1,0 +1,138 @@
+{
+  "id": "totem",
+  "frameSize": 128,
+  "anchor": [
+    0.5,
+    1
+  ],
+  "files": [
+    {
+      "file": "base-idle-01.png",
+      "sha256": "263a610b68ff4b6b587e509a58eada650c254393d3b3016b60497fdebee91105"
+    },
+    {
+      "file": "base-idle-02.png",
+      "sha256": "be3af4ea130798fa2e02c26911e04ca871c8d76a67c35820542f10b4c6bcca8b"
+    },
+    {
+      "file": "base-idle-03.png",
+      "sha256": "62f9dcb2f9d11765b1ff19d6c3a6ba1e082981a881129df16c3bf2f64d8106e8"
+    },
+    {
+      "file": "base-idle-04.png",
+      "sha256": "4d9c59686e504f1293f1e679d65809b5c64d52c930c56ab78fe603d59df44b4c"
+    },
+    {
+      "file": "base-idle-05.png",
+      "sha256": "17c58c433a85ef763648b5de61c82377f1a4015e7c4e3dae2b0d08f2b6c59409"
+    },
+    {
+      "file": "base-idle-06.png",
+      "sha256": "4ca350fa2123a24a82c93121b32a146d4ba404b241d5d744f7a28ee42de27935"
+    },
+    {
+      "file": "base-idle-07.png",
+      "sha256": "cf3b80dd8bb848d162038c7ba08f451991635f848f200aa71375c975b5ba86f8"
+    },
+    {
+      "file": "base-idle-08.png",
+      "sha256": "cbfe15f0de21568820e1982ebb91965168079a74b396afc6acbf981fc15fb8c2"
+    },
+    {
+      "file": "base-awaken-01.png",
+      "sha256": "dd0fe470311cfbbae88e05c3eefac32831a5fb8a87c6bb7d3db00cb0194e3dd9"
+    },
+    {
+      "file": "base-awaken-02.png",
+      "sha256": "bfcd34bfae0aa257d61ba4c2694d223984b6c41ac3d069d6e5ac92e1f89d0f2b"
+    },
+    {
+      "file": "base-awaken-03.png",
+      "sha256": "87629f06fbac64128967e5fb5750b102b15349a749c5bd8986fce3dd29bc950a"
+    },
+    {
+      "file": "base-awaken-04.png",
+      "sha256": "7659a2de8d8fd9bb6df7ae660956b7540b4be045613f7d00490c7e490edacf64"
+    },
+    {
+      "file": "base-awaken-05.png",
+      "sha256": "3b02a1b334ffa2514e12384046d30966a934c945502a01ba295f38cd62e03e21"
+    },
+    {
+      "file": "base-awaken-06.png",
+      "sha256": "c011dcf5af4b945684854ccdd1af457d153f1e5ec54a0e7729270e07c555d38c"
+    },
+    {
+      "file": "base-awaken-07.png",
+      "sha256": "e73e94a3e5c56f640add8a38c8d1f8e0127b7ab62977aba0b7bd191cf66fa472"
+    },
+    {
+      "file": "base-awaken-08.png",
+      "sha256": "9c431a0a96723279111270b3d480afb3d56dc2dfc50016990d040b35e55b45e7"
+    },
+    {
+      "file": "base-cast-01.png",
+      "sha256": "601dc0ca2b9f26fda0d9af9671843b9ca06c7e6648c225f8d9cc3886fa5733d9"
+    },
+    {
+      "file": "base-cast-02.png",
+      "sha256": "d19c2e7394232c220f22827a6470703243f5dcf9acd7d0cd9e0cdc20c0cc8f7f"
+    },
+    {
+      "file": "base-cast-03.png",
+      "sha256": "e77714ecc0a381d9fa972c9c9c5d3b036c51a56e8ae040c84e509871e4d146d2"
+    },
+    {
+      "file": "base-cast-04.png",
+      "sha256": "43e60fcb02b70274d563d4e4cca83d65a1a81e0b5c6186eeb904e0c7e27a1500"
+    },
+    {
+      "file": "base-cast-05.png",
+      "sha256": "9e066ecbe4066bb71e73b889fc3c5b38f4f68553fd2d75fd41c1c4dbdcd0dd41"
+    },
+    {
+      "file": "base-cast-06.png",
+      "sha256": "c4b08c0076cef05922382c961efa2c751280db0669a4036594e0040f75122d58"
+    },
+    {
+      "file": "base-cast-07.png",
+      "sha256": "a8d75e0ba9b91a554f47b4e9734992126da2ff33cba97be95e2ab4365699343f"
+    },
+    {
+      "file": "base-cast-08.png",
+      "sha256": "8d0630ad0f34d778577fa5b0dae6f623b2679b08e9d6e330d0f79cb706d249e3"
+    },
+    {
+      "file": "base-hit-01.png",
+      "sha256": "c8ddb5943195c915fc0edf46414c23b5f086862dc324ba7c5151c166c84d7dc8"
+    },
+    {
+      "file": "base-hit-02.png",
+      "sha256": "c9a5dfe5af62abf0534df0b716f84187f3c4c242877f4a49dd2bb30c02326b7f"
+    },
+    {
+      "file": "base-hit-03.png",
+      "sha256": "fc8469ef2cb9e576328f02281bff4ee49952e1e7975a4a18f033e90f1eb1f826"
+    },
+    {
+      "file": "base-hit-04.png",
+      "sha256": "92bbf6ae6d37568a033616166b039c89f9d07533b2c0cec4bf31b76aa002951c"
+    },
+    {
+      "file": "base-death-01.png",
+      "sha256": "c226824f60a093e981cbb7091330b765049935c83d7f885e03a9b1f69819d71d"
+    },
+    {
+      "file": "base-death-02.png",
+      "sha256": "fd95d86c09340fd1064da185d74a48b1b727624066f8bffa4f7c59a1c0e3d428"
+    },
+    {
+      "file": "base-death-03.png",
+      "sha256": "676d976f33dfa53d143e615a8c6d442fcde992bf3bc687594d95cc45a0ba73ce"
+    },
+    {
+      "file": "base-death-04.png",
+      "sha256": "9067ddd568e4d213fcd36b2995568d91089f2d19338e5ca75be1f1e14b5b7de5"
+    }
+  ]
+}

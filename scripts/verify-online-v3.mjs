@@ -162,6 +162,8 @@ async function verificationInput() {
     workerModulesRoot: workerModulesRoot || ""
   };
   hash.update(JSON.stringify(environment));
+  hash.update("\0head\0");
+  hash.update(headOutput.trim());
   hash.update("\0status\0");
   hash.update(statusOutput);
   hash.update("\0raw-diff\0");
@@ -209,6 +211,7 @@ async function reusableReceipt(input) {
       receipt?.schema === RECEIPT_SCHEMA &&
       receipt?.mode === MODE &&
       receipt?.result === "PASS" &&
+      receipt?.head === input.head &&
       receipt?.fingerprint === input.fingerprint
     ) {
       return receipt;

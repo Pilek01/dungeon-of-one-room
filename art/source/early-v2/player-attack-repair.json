@@ -1,0 +1,4 @@
+{
+  "source": "C:\\Users\\Kamil\\.codex\\generated_images\\01a082a2-4b2e-7d82-b36f-9cf7ad735f40\\exec-9ffb23c1-a5b8-4148-ad32-a043f1dad3e3.png",
+  "prompt": "Technical sprite sheet repair. Preserve this exact dark knight, all 32 attack poses and directions and artwork. Keep an EXACT 8-column by 4-row equal grid. SOLID pure #ff00ff background, no texture/checkerboard. The sword in row1 column3 is clipped at the image top. Several horizontal swords extend across equal cell boundaries. Shrink every complete actor uniformly by 20% (same scale for all 32), then center each complete pose inside its own equal cell, foot line stable within its row. Reconstruct the missing sword tip. Every sword/cape/foot must have at least 18 pixels clear magenta margin from ALL four edges of its cell, with absolutely NO part of neighboring sprite in any cell. Preserve all anatomy/outfit/color details; no cell lines, no text. This is a source sheet for sprite slicing."
+}

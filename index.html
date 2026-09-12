@@ -17,8 +17,12 @@
   <link rel="stylesheet" href="style-hd-boot.css" />
   <link rel="stylesheet" href="style-mobile-hd.css" />
   <link rel="stylesheet" href="style-mobile-gothic.css" />
+  <link rel="stylesheet" href="style-mobile-v2.css" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="Dungeon" />
+  <meta name="theme-color" content="#090c0e" />
 </head>
-<body class="graphics-hd-ui">
+<body id="dungeonApp" class="graphics-hd-ui">
   <div
     id="mobileRotateOverlay"
     class="mobile-rotate-overlay"
@@ -119,7 +123,7 @@
                 <button class="dpad-btn dpad-up" id="mbtnUp" type="button" aria-label="Move up" aria-keyshortcuts="ArrowUp"></button>
                 <div class="dpad-middle-row">
                   <button class="dpad-btn dpad-left" id="mbtnLeft" type="button" aria-label="Move left" aria-keyshortcuts="ArrowLeft"></button>
-                  <span class="dpad-center"></span>
+                  <span class="dpad-center" aria-hidden="true"></span>
                   <button class="dpad-btn dpad-right" id="mbtnRight" type="button" aria-label="Move right" aria-keyshortcuts="ArrowRight"></button>
                 </div>
                 <button class="dpad-btn dpad-down" id="mbtnDown" type="button" aria-label="Move down" aria-keyshortcuts="ArrowDown"></button>
@@ -151,6 +155,7 @@
         <strong>Swipe Panels</strong>
         <span>Swipe left/right for stats and effects. Use Menu to open main menu.</span>
       </div>
+      <button id="mobileFullscreenButton" type="button" hidden aria-label="Toggle full screen" aria-pressed="false">Full screen</button>
       <button id="mobileMenuButton" class="mobile-menu-button" type="button" aria-label="Open main menu" aria-keyshortcuts="Escape" aria-haspopup="dialog" aria-controls="screenOverlay" aria-expanded="false" aria-hidden="true" tabindex="-1">Menu</button>
     </section>
     <footer class="app-footer">
@@ -199,6 +204,7 @@
   <script src="render/hd-vfx.js"></script>
   <script src="render/hd-lighting.js"></script>
   <script src="render/hd-renderer-layers.js"></script>
+  <script src="render/hd2-npc-cues.js"></script>
   <script src="render/hd-renderer.js"></script>
   <script src="render/visual-snapshot.js"></script>
   <script src="online-v3/ranked-v3-protocol.js"></script>
@@ -213,6 +219,7 @@
   <script src="record-archive-ui.js"></script>
   <script src="practice-records-adapter.js"></script>
   <script src="online-v3/ranked-v3-leaderboard-ui.js"></script>
+  <script src="render/mobile-experience.js"></script>
   <script src="game.js"></script>
   <script src="online-v3/ranked-v3-runtime.js"></script>
 </body>

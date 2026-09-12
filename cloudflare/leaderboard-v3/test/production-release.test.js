@@ -48,6 +48,7 @@ const require = createRequire(import.meta.url);
 const protocol = require("../../../online-v3/ranked-v3-protocol.js");
 const EXPECTED_HASH = manifest.rulesetHash;
 const CURRENT_PRODUCTION_HASH = EXPECTED_HASH;
+const PREVIOUS_MOBILE_HD2_HASH = "sha256:c381c23e71385fec5e411e53b657e4429c3fa2d57edc59f91f984dd3e109f3cb";
 const PREVIOUS_SPECIAL_ROOM_ROTATION_HASH = "sha256:dc8b9d11a97fe35d670089a03141b70174d62d9af39a8dabd12733193ae2ce3e";
 const PREVIOUS_OBSERVER_PROFILE_HASH = "sha256:6f3df4c80298d16c42ca9277adb533f63a6c767fed209000aa17340ad7da8758";
 const PREVIOUS_SHRINE_ELITE_BUDGET_HASH = "sha256:6272204a1127cd12cebcbde90e27d098684d4e1131a41526924fce4283f2620e";
@@ -180,6 +181,7 @@ test("bounded proc release activates a new hash and leaves every historical desc
     value.status === RULESET_RELEASE_STATES.PRODUCTION_RELEASED &&
     typeof value.rulesetHash === "string" &&
     value.rulesetHash !== manifest.rulesetHash &&
+    value.rulesetHash !== PREVIOUS_MOBILE_HD2_HASH &&
     value.rulesetHash !== PREVIOUS_SPECIAL_ROOM_ROTATION_HASH &&
     value.rulesetHash !== PREVIOUS_OBSERVER_PROFILE_HASH &&
     value.rulesetHash !== PREVIOUS_SHRINE_ELITE_BUDGET_HASH &&
@@ -214,6 +216,7 @@ test("bounded proc release activates a new hash and leaves every historical desc
   assert.ok(protocol.SUPPORTED_RULESET_HASHES.includes(PREVIOUS_BOUNDED_PROC_HASH));
   assert.deepEqual(protocol.BOUNDED_PROC_CLAIMS_RULESET_HASHES, [
     CURRENT_PRODUCTION_HASH,
+    PREVIOUS_MOBILE_HD2_HASH,
     PREVIOUS_SPECIAL_ROOM_ROTATION_HASH,
     PREVIOUS_OBSERVER_PROFILE_HASH,
     PREVIOUS_SHRINE_ELITE_BUDGET_HASH,
@@ -280,6 +283,7 @@ test("canonical chest carry release is hash-gated and preserves the previous pro
   assert.ok(protocol.SUPPORTED_RULESET_HASHES.includes(PREVIOUS_CHEST_CARRY_HASH));
   assert.deepEqual(protocol.CANONICAL_CHEST_OUTCOMES_RULESET_HASHES, [
     CURRENT_PRODUCTION_HASH,
+    PREVIOUS_MOBILE_HD2_HASH,
     PREVIOUS_SPECIAL_ROOM_ROTATION_HASH,
     PREVIOUS_OBSERVER_PROFILE_HASH,
     PREVIOUS_SHRINE_ELITE_BUDGET_HASH,
@@ -337,6 +341,7 @@ test("canonical chest repair release retains the previous canonical hash and cap
   assert.ok(protocol.SUPPORTED_RULESET_HASHES.includes(PREVIOUS_CANONICAL_CHEST_HASH));
   assert.deepEqual(protocol.CANONICAL_CHEST_OUTCOMES_RULESET_HASHES, [
     CURRENT_PRODUCTION_HASH,
+    PREVIOUS_MOBILE_HD2_HASH,
     PREVIOUS_SPECIAL_ROOM_ROTATION_HASH,
     PREVIOUS_OBSERVER_PROFILE_HASH,
     PREVIOUS_SHRINE_ELITE_BUDGET_HASH,
@@ -386,6 +391,7 @@ test("Ranked start resource parity is hash-gated and preserves the previous prod
   assert.ok(protocol.SUPPORTED_RULESET_HASHES.includes(PREVIOUS_START_RESOURCE_PARITY_HASH));
   assert.deepEqual(protocol.BOUNDED_COMBAT_RESOURCES_RULESET_HASHES, [
     CURRENT_PRODUCTION_HASH,
+    PREVIOUS_MOBILE_HD2_HASH,
     PREVIOUS_SPECIAL_ROOM_ROTATION_HASH,
     PREVIOUS_OBSERVER_PROFILE_HASH,
     PREVIOUS_SHRINE_ELITE_BUDGET_HASH,
@@ -894,4 +900,23 @@ test("production menu separates Practice pause, Practice save, and Ranked save c
     runtime,
     /session\.getState\(\) === root\.DungeonRankedV3Session\.STATES\.finalized[\s\S]*?clearEndedRecovery\(\)/u
   );
+});
+
+test("mobile HD2 release retains the immediate predecessor with identical capabilities", async () => {
+  const previous = releases.V08_META_1_MOBILE_HD2_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR;
+  assert.equal(previous.rulesetHash, PREVIOUS_MOBILE_HD2_HASH);
+  assert.notEqual(previous.rulesetHash, manifest.rulesetHash);
+  assert.deepEqual(previous.capabilities, V08_META_1_PRODUCTION_RELEASE_DESCRIPTOR.capabilities);
+  assert.ok(COMPATIBLE_RULESET_HASHES.includes(previous.rulesetHash));
+  for (const [name, hashes] of Object.entries(protocol)) {
+    if (Array.isArray(hashes) && hashes.includes(manifest.rulesetHash)) {
+      assert.ok(hashes.includes(previous.rulesetHash), name);
+    }
+  }
+  const entry = await rootFile("cloudflare/leaderboard-v3/src/production-ruleset-entry.js");
+  assert.equal(entry.match(/V08_META_1_MOBILE_HD2_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR/g).length, 2);
+  const registry = createRulesetRegistry([previous, V08_META_1_PRODUCTION_RELEASE_DESCRIPTOR]);
+  const resolved = registry.resolve({rulesetId:"v08-meta-1", rulesetHash:previous.rulesetHash, environment:"production", lifecycle:"ranked"});
+  assert.equal(resolved.rulesetHash, previous.rulesetHash);
+  assert.deepEqual(resolved.capabilities, previous.capabilities);
 });

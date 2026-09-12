@@ -11,7 +11,7 @@
   const pitApi = typeof module === "object" && module.exports
     ? require("../pit-hazard.js")
     : root && root.DungeonPitHazard;
-  const api = factory(vfxApi, lightingApi, statusApi, pitApi);
+  const api = factory(vfxApi, lightingApi, statusApi, pitApi, root);
 
   if (typeof module === "object" && module.exports) {
     module.exports = api;
@@ -19,8 +19,11 @@
   if (root) {
     root.DungeonHDRendererLayers = api;
   }
-})(typeof window !== "undefined" ? window : null, function createHDRendererLayersApi(vfxApi, lightingApi, statusApi, pitApi) {
+})(typeof window !== "undefined" ? window : null, function createHDRendererLayersApi(vfxApi, lightingApi, statusApi, pitApi, root) {
   "use strict";
+
+  const earlyAnimationsEnabled = Boolean(root && /(?:^|[?&])hd2=1(?:&|$)/.test(root.location?.search || ""));
+  const EARLY_ENEMY_CLIPS = Object.freeze({ idle: 8, move: 8, attack: 8, awaken: 8, cast: 8, hit: 4, death: 4 });
 
   const LAYER_ORDER = Object.freeze([
     "floor",
@@ -92,7 +95,13 @@
     Array.from({ length: 8 }, (_, index) => `swirl${String(index + 1).padStart(2, "0")}`)
   );
   const PLAYER_DIRECTIONS = Object.freeze(["south", "north", "east", "west"]);
-  const PLAYER_CLIPS = Object.freeze({
+  const PLAYER_CLIPS = Object.freeze(earlyAnimationsEnabled ? {
+    idle: Object.freeze({ frameCount: 8, fps: 8, loop: true }),
+    move: Object.freeze({ frameCount: 8, fps: 16, loop: true }),
+    attack: Object.freeze({ frameCount: 8, fps: 24, loop: false }),
+    hit: Object.freeze({ frameCount: 4, fps: 1000 / 30, loop: false }),
+    death: Object.freeze({ frameCount: 4, fps: 12, loop: false })
+  } : {
     idle: Object.freeze({ frameCount: 4, fps: 4, loop: true }),
     move: Object.freeze({ frameCount: 4, fps: 8, loop: true }),
     attack: Object.freeze({ frameCount: 4, fps: 12, loop: false }),
@@ -828,10 +837,15 @@
       ? actor.type
       : ENEMY_ROSTER.includes(actor.renderType) ? actor.renderType : actor.type;
     if (!ENEMY_ROSTER.includes(renderType)) return Object.freeze({ diagnostic: true });
+    const useEarlyAnimations = earlyAnimationsEnabled;
+    const meleeEvent = useEarlyAnimations && ["slime", "skitter", "otter", "brute"].includes(actor.type) && [...(Array.isArray(visual.visualEvents) ? visual.visualEvents : [])].reverse().find(e =>
+      actor.id != null && String(e.sourceId) === String(actor.id) && ["npc_melee", "npc_slam"].includes(e.kind) &&
+      Number(visual.nowMs) >= Number(e.startedAtMs) && Number(visual.nowMs) - Number(e.startedAtMs) < Number(e.durationMs));
     const direction = selectEnemyDirection({ ...actor, renderType });
     let clip = "idle";
     if (Number(actor.hp) <= 0) clip = "death";
     else if ((Number(actor.hitFlash) || 0) > 0) clip = "hit";
+    else if (meleeEvent) clip = "attack";
     else if (actor.type === "totem" && (Number(actor.castFlash) || 0) > 0) clip = "cast";
     else if (actor.type === "skeleton" && (actor.aiming === true || actor.volleyAiming === true || ((Number(actor.castFlash) || 0) > 0 && !(actor.disoriented || (Number(actor.disorientedTurns) || 0) > 0)))) clip = "attack";
     else if (actor.type === "riftweaver" && (actor.riftAiming === true || (Number(actor.castFlash) || 0) > 0)) clip = "attack";
@@ -839,24 +853,39 @@
     else if (renderType === "acolyte" && (actor.aiming === true || (Number(actor.castFlash) || 0) > 0)) clip = "attack";
     else if (renderType === "brute" && (actor.slamAiming === true || actor.rests === true)) clip = "attack";
     else if (Number.isFinite(Number(actor._tweenT)) && Number(actor._tweenT) >= 0 && Number(actor._tweenT) < ENEMY_TWEEN_MS) clip = "move";
-    const frameCount = ENEMY_CLIPS[clip];
+    const frameCount = (useEarlyAnimations ? EARLY_ENEMY_CLIPS : ENEMY_CLIPS)[clip];
     const elapsed = Math.max(0, Number(visual.nowMs) || 0);
+    const preparing = actor.riftAiming === true || actor.bulwarkBashAiming === true || actor.aiming === true || actor.volleyAiming === true || actor.slamAiming === true;
     let frame = 1;
     if (clip === "idle") {
-      frame = (Math.floor(elapsed / 250) % frameCount) + 1;
+      frame = (Math.floor(elapsed / (1000 / frameCount)) % frameCount) + 1;
     } else if (clip === "move") {
       const tweenProgress = Math.max(0, Math.min(1, (Number(actor._tweenT) || 0) / ENEMY_TWEEN_MS));
       frame = Math.min(frameCount, Math.floor(tweenProgress * frameCount) + 1);
     } else if (clip === "hit") {
-      frame = (Number(actor.hitFlash) || 0) > 60 ? 1 : 2;
+      frame = useEarlyAnimations
+        ? Math.max(1, Math.min(frameCount, 1 + Math.floor((120 - Number(actor.hitFlash)) / 30)))
+        : (Number(actor.hitFlash) || 0) > 60 ? 1 : 2;
+    } else if (meleeEvent && clip === "attack") {
+      frame = Math.min(8, 6 + Math.floor((Number(visual.nowMs) - Number(meleeEvent.startedAtMs)) / (Number(meleeEvent.durationMs) / 3)));
+    } else if (useEarlyAnimations && clip === "attack" && preparing) {
+      const duration = ["riftweaver", "bulwark"].includes(actor.type) ? EXPANSION_ENEMY_ACTION_VISUAL_MS : 140;
+      const remaining = Math.max(0, Math.min(duration, Number(actor.castFlash) || 0));
+      frame = remaining > 0 ? Math.min(5, 1 + Math.floor((duration - remaining) / (duration / 5))) : 5;
     } else if (clip === "cast" || ((clip === "attack") && (Number(actor.castFlash) || 0) > 0)) {
       const actionDurationMs = ["riftweaver", "bulwark"].includes(actor.type)
         ? EXPANSION_ENEMY_ACTION_VISUAL_MS
         : 140;
       const remaining = Math.max(0, Math.min(actionDurationMs, Number(actor.castFlash) || 0));
       frame = Math.min(frameCount, 1 + Math.floor((actionDurationMs - remaining) / (actionDurationMs / frameCount)));
+      if (useEarlyAnimations && ["skeleton", "acolyte", "riftweaver", "bulwark"].includes(actor.type)) {
+        // Frames 1-5 prepare the action; 6-8 release/recover after its real signal.
+        frame = Math.min(8, 6 + Math.floor((actionDurationMs - remaining) / (actionDurationMs / 3)));
+      }
     } else if (clip === "attack") {
-      if (actor.type === "riftweaver") {
+      if (useEarlyAnimations) {
+        frame = actor.rests === true ? 8 : 5;
+      } else if (actor.type === "riftweaver") {
         frame = Math.min(2, 1 + Math.max(0, Math.floor(Number(actor.telegraphAge) || 0)));
       } else if (actor.type === "bulwark") {
         frame = Math.min(2, 1 + Math.max(0, Math.floor(Number(actor.telegraphAge) || 0)));
@@ -866,7 +895,15 @@
     } else if (clip === "death") {
       frame = (Math.floor(elapsed / 180) % frameCount) + 1;
     }
-    const key = `enemy.${renderType}.${direction}.${clip}.${String(frame).padStart(2, "0")}`;
+    let assetClip = clip;
+    if (useEarlyAnimations && renderType === "acolyte" && clip === "attack") {
+      const event = [...(Array.isArray(visual.visualEvents) ? visual.visualEvents : [])].reverse().find(e =>
+        ["npc_heal", "npc_buff"].includes(e.kind) && String(e.sourceId) === String(actor.id) &&
+        elapsed >= Number(e.startedAtMs) && elapsed - Number(e.startedAtMs) < Number(e.durationMs));
+      const kind = actor.aiming === true ? actor.acolyteCastType : event?.kind.slice(4);
+      if (kind === "heal" || kind === "buff") assetClip = kind;
+    }
+    const key = `enemy.${renderType}.${direction}.${assetClip}.${String(frame).padStart(2, "0")}`;
     return Object.freeze({ type: renderType, logicalType: actor.type, direction, clip, frame, key });
   }
 
@@ -904,9 +941,15 @@
         ? `warden.${wardenBiome}`
         : profile.key;
     const direction = PLAYER_DIRECTIONS.includes(actor.facing) ? actor.facing : "south";
+    const preparing = actor.aiming === true || actor.burstAiming === true || actor.anvilAiming === true || actor.slamAiming === true || actor.latticeAiming === true || actor.voidStepAiming === true || actor.soulChainAiming === true || actor.blacksmithChainAiming === true || actor.vaultLockdownAiming === true;
+    const releaseKinds = ["npc_slam", "npc_rift", "npc_bolt", "npc_aura", "warden_lattice_burst", "warden_voidstep_vanish", "warden_voidstep_arrival", "warden_soul_chain_fire", "blacksmith_chain_hook_fire", "blacksmith_overheat_transition", "vault_hoard_sentence_cast", "vault_lockdown_detonate"];
+    const release = earlyAnimationsEnabled && [...(Array.isArray(visual.visualEvents) ? visual.visualEvents : [])].reverse().find(e =>
+      actor.id != null && String(e.sourceId) === String(actor.id) && releaseKinds.includes(e.kind) &&
+      Number(visual.nowMs) >= Number(e.startedAtMs) && Number(visual.nowMs) - Number(e.startedAtMs) < Number(e.durationMs));
     let clip = "idle";
     if (Number(actor.hp) <= 0) clip = "death";
     else if ((Number(actor.hitFlash) || 0) > 0) clip = "hit";
+    else if (earlyAnimationsEnabled && (preparing || release)) clip = profile.action;
     else if (
       (actor.type === "warden" && (actor.aiming === true || actor.burstAiming === true || (Number(actor.castFlash) || 0) > 0))
       || (actor.type === "blacksmith_guardian" && (actor.anvilAiming === true || actor.rests === true || (Number(actor.castFlash) || 0) > 0))
@@ -914,7 +957,7 @@
     ) clip = profile.action;
     else if (Number.isFinite(Number(actor._tweenT)) && Number(actor._tweenT) >= 0 && Number(actor._tweenT) < ENEMY_TWEEN_MS) clip = "move";
 
-    const frameCount = clip === "hit" || clip === "death" ? 2 : 4;
+    const frameCount = (clip === "hit" || clip === "death" ? 2 : 4) * (earlyAnimationsEnabled ? 2 : 1);
     let frame = 1;
     if (clip === "idle" || clip === "move") {
       const fps = clip === "move" ? 8 : 4;
@@ -931,6 +974,23 @@
       }
     } else if (clip === "death") {
       frame = Math.min(2, 1 + Math.floor(Math.max(0, Number(visual.nowMs) || 0) / 180) % 2);
+    }
+    if (earlyAnimationsEnabled) {
+      if (clip === "idle") {
+        frame = Math.floor(Math.max(0, Number(visual.nowMs) || 0) / 125) % 8 + 1;
+      } else if (clip === "move") {
+        frame = Math.min(8, Math.floor(Math.max(0, Number(actor._tweenT) || 0) / 15) + 1);
+      } else if (clip === "hit") {
+        frame = Math.max(1, Math.min(4, 1 + Math.floor((120 - Number(actor.hitFlash)) / 30)));
+      } else if (clip === profile.action) {
+        const duration = actor.type === "warden" ? WARDEN_CAST_VISUAL_MS : 140;
+        const remaining = Math.max(0, Math.min(duration, Number(actor.castFlash) || 0));
+        frame = release
+          ? Math.min(8, 6 + Math.floor((Number(visual.nowMs) - Number(release.startedAtMs)) / (Number(release.durationMs) / 3)))
+          : preparing
+          ? remaining > 0 ? Math.min(5, 1 + Math.floor((duration - remaining) / (duration / 5))) : 5
+          : remaining > 0 ? Math.min(8, 6 + Math.floor((duration - remaining) / (duration / 3))) : actor.rests === true ? 8 : 5;
+      }
     }
     return Object.freeze({
       type: actor.type,
@@ -1486,6 +1546,7 @@
   }
 
   return Object.freeze({
+    earlyAnimationsEnabled,
     LAYER_ORDER,
     DEFAULT_LAYERS,
     visualHash,

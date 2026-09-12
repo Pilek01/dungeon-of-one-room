@@ -1,0 +1,287 @@
+[
+  {
+    "id": "brute",
+    "folder": "enemies/brute",
+    "description": "hulking muscular brute, heavy ground slam",
+    "references": [
+      "D:/Codex workstation/Dungeon/dungeon-online-v3/assets/hd/enemies/brute/frames/south-idle-01.png",
+      "D:/Codex workstation/Dungeon/dungeon-online-v3/assets/hd/enemies/brute/frames/north-idle-01.png",
+      "D:/Codex workstation/Dungeon/dungeon-online-v3/assets/hd/enemies/brute/frames/east-idle-01.png",
+      "D:/Codex workstation/Dungeon/dungeon-online-v3/assets/hd/enemies/brute/frames/west-idle-01.png"
+    ],
+    "action": "attack",
+    "rowDirections": [
+      "south",
+      "north",
+      "west",
+      "east"
+    ]
+  },
+  {
+    "id": "acolyte",
+    "folder": "enemies/acolyte",
+    "description": "robed acolyte caster, subtle dark ritual",
+    "references": [
+      "D:/Codex workstation/Dungeon/dungeon-online-v3/assets/hd/enemies/acolyte/frames/south-idle-01.png",
+      "D:/Codex workstation/Dungeon/dungeon-online-v3/assets/hd/enemies/acolyte/frames/north-idle-01.png",
+      "D:/Codex workstation/Dungeon/dungeon-online-v3/assets/hd/enemies/acolyte/frames/east-idle-01.png",
+      "D:/Codex workstation/Dungeon/dungeon-online-v3/assets/hd/enemies/acolyte/frames/west-idle-01.png"
+    ],
+    "action": "attack",
+    "rowDirections": [
+      "south",
+      "north",
+      "west",
+      "east"
+    ]
+  },
+  {
+    "id": "skitter",
+    "folder": "enemies/skitter",
+    "description": "small fast predatory skitter; user requests a modest redesign: clearer compact insectoid anatomy, articulated hooked legs, distinct armored head, restrained amber eyes, sharp readable silhouette; preserve its low profile, palette and recognizable creature family",
+    "references": [
+      "D:/Codex workstation/Dungeon/dungeon-online-v3/assets/hd/enemies/skitter/frames/south-idle-01.png",
+      "D:/Codex workstation/Dungeon/dungeon-online-v3/assets/hd/enemies/skitter/frames/north-idle-01.png",
+      "D:/Codex workstation/Dungeon/dungeon-online-v3/assets/hd/enemies/skitter/frames/east-idle-01.png",
+      "D:/Codex workstation/Dungeon/dungeon-online-v3/assets/hd/enemies/skitter/frames/west-idle-01.png"
+    ],
+    "action": "attack",
+    "rowDirections": [
+      "south",
+      "north",
+      "east",
+      "west"
+    ]
+  },
+  {
+    "id": "otter",
+    "folder": "enemies/otter",
+    "description": "otter creature; preserve its unusual existing character and weapons",
+    "references": [
+      "D:/Codex workstation/Dungeon/dungeon-online-v3/assets/hd/enemies/otter/frames/south-idle-01.png",
+      "D:/Codex workstation/Dungeon/dungeon-online-v3/assets/hd/enemies/otter/frames/north-idle-01.png",
+      "D:/Codex workstation/Dungeon/dungeon-online-v3/assets/hd/enemies/otter/frames/east-idle-01.png",
+      "D:/Codex workstation/Dungeon/dungeon-online-v3/assets/hd/enemies/otter/frames/west-idle-01.png"
+    ],
+    "action": "attack",
+    "rowDirections": [
+      "south",
+      "north",
+      "east",
+      "west"
+    ]
+  },
+  {
+    "id": "riftweaver",
+    "folder": "enemies/riftweaver",
+    "description": "rift mage, ritual void gestures",
+    "references": [
+      "D:/Codex workstation/Dungeon/dungeon-online-v3/assets/hd/enemies/riftweaver/frames/south-idle-01.png",
+      "D:/Codex workstation/Dungeon/dungeon-online-v3/assets/hd/enemies/riftweaver/frames/north-idle-01.png",
+      "D:/Codex workstation/Dungeon/dungeon-online-v3/assets/hd/enemies/riftweaver/frames/east-idle-01.png",
+      "D:/Codex workstation/Dungeon/dungeon-online-v3/assets/hd/enemies/riftweaver/frames/west-idle-01.png"
+    ],
+    "action": "attack",
+    "rowDirections": [
+      "south",
+      "north",
+      "east",
+      "west"
+    ]
+  },
+  {
+    "id": "bulwark",
+    "folder": "enemies/bulwark",
+    "description": "heavily armored shield sentinel, bash",
+    "references": [
+      "D:/Codex workstation/Dungeon/dungeon-online-v3/assets/hd/enemies/bulwark/frames/south-idle-01.png",
+      "D:/Codex workstation/Dungeon/dungeon-online-v3/assets/hd/enemies/bulwark/frames/north-idle-01.png",
+      "D:/Codex workstation/Dungeon/dungeon-online-v3/assets/hd/enemies/bulwark/frames/east-idle-01.png",
+      "D:/Codex workstation/Dungeon/dungeon-online-v3/assets/hd/enemies/bulwark/frames/west-idle-01.png"
+    ],
+    "action": "attack",
+    "rowDirections": [
+      "south",
+      "north",
+      "east",
+      "west"
+    ]
+  },
+  {
+    "id": "guardian",
+    "folder": "bosses/vault-guardian",
+    "description": "Vault Guardian boss, heavy guardian slam",
+    "references": [
+      "D:/Codex workstation/Dungeon/dungeon-online-v3/assets/hd/bosses/vault-guardian/frames/south-idle-01.png",
+      "D:/Codex workstation/Dungeon/dungeon-online-v3/assets/hd/bosses/vault-guardian/frames/north-idle-01.png",
+      "D:/Codex workstation/Dungeon/dungeon-online-v3/assets/hd/bosses/vault-guardian/frames/east-idle-01.png",
+      "D:/Codex workstation/Dungeon/dungeon-online-v3/assets/hd/bosses/vault-guardian/frames/west-idle-01.png"
+    ],
+    "action": "attack",
+    "rowDirections": [
+      "south",
+      "north",
+      "west",
+      "east"
+    ]
+  },
+  {
+    "id": "blacksmith",
+    "folder": "bosses/blacksmith-guardian",
+    "description": "blacksmith guardian boss with hammer, heavy smith attack",
+    "references": [
+      "D:/Codex workstation/Dungeon/dungeon-online-v3/assets/hd/bosses/blacksmith-guardian/frames/south-idle-01.png",
+      "D:/Codex workstation/Dungeon/dungeon-online-v3/assets/hd/bosses/blacksmith-guardian/frames/north-idle-01.png",
+      "D:/Codex workstation/Dungeon/dungeon-online-v3/assets/hd/bosses/blacksmith-guardian/frames/east-idle-01.png",
+      "D:/Codex workstation/Dungeon/dungeon-online-v3/assets/hd/bosses/blacksmith-guardian/frames/west-idle-01.png"
+    ],
+    "action": "attack",
+    "rowDirections": [
+      "south",
+      "north",
+      "west",
+      "east"
+    ]
+  },
+  {
+    "id": "warden1",
+    "folder": "bosses/warden/phase-1",
+    "description": "Warden phase one, powerful void spell",
+    "references": [
+      "D:/Codex workstation/Dungeon/dungeon-online-v3/assets/hd/bosses/warden/phase-1/frames/south-idle-01.png",
+      "D:/Codex workstation/Dungeon/dungeon-online-v3/assets/hd/bosses/warden/phase-1/frames/north-idle-01.png",
+      "D:/Codex workstation/Dungeon/dungeon-online-v3/assets/hd/bosses/warden/phase-1/frames/east-idle-01.png",
+      "D:/Codex workstation/Dungeon/dungeon-online-v3/assets/hd/bosses/warden/phase-1/frames/west-idle-01.png"
+    ],
+    "action": "cast",
+    "rowDirections": [
+      "south",
+      "north",
+      "east",
+      "west"
+    ]
+  },
+  {
+    "id": "warden2",
+    "folder": "bosses/warden/phase-2",
+    "description": "Warden phase two, powerful void spell",
+    "references": [
+      "D:/Codex workstation/Dungeon/dungeon-online-v3/assets/hd/bosses/warden/phase-2/frames/south-idle-01.png",
+      "D:/Codex workstation/Dungeon/dungeon-online-v3/assets/hd/bosses/warden/phase-2/frames/north-idle-01.png",
+      "D:/Codex workstation/Dungeon/dungeon-online-v3/assets/hd/bosses/warden/phase-2/frames/east-idle-01.png",
+      "D:/Codex workstation/Dungeon/dungeon-online-v3/assets/hd/bosses/warden/phase-2/frames/west-idle-01.png"
+    ],
+    "action": "cast",
+    "rowDirections": [
+      "south",
+      "north",
+      "east",
+      "west"
+    ]
+  },
+  {
+    "id": "warden-descent",
+    "folder": "bosses/warden-biome-descent",
+    "description": "Descent biome Warden variant",
+    "references": [
+      "D:/Codex workstation/Dungeon/dungeon-online-v3/assets/hd/bosses/warden-biome-descent/frames/south-idle-01.png",
+      "D:/Codex workstation/Dungeon/dungeon-online-v3/assets/hd/bosses/warden-biome-descent/frames/north-idle-01.png",
+      "D:/Codex workstation/Dungeon/dungeon-online-v3/assets/hd/bosses/warden-biome-descent/frames/east-idle-01.png",
+      "D:/Codex workstation/Dungeon/dungeon-online-v3/assets/hd/bosses/warden-biome-descent/frames/west-idle-01.png"
+    ],
+    "action": "cast",
+    "rowDirections": [
+      "south",
+      "north",
+      "east",
+      "west"
+    ]
+  },
+  {
+    "id": "warden-corruption",
+    "folder": "bosses/warden-biome-corruption",
+    "description": "Corruption biome Warden variant",
+    "references": [
+      "D:/Codex workstation/Dungeon/dungeon-online-v3/assets/hd/bosses/warden-biome-corruption/frames/south-idle-01.png",
+      "D:/Codex workstation/Dungeon/dungeon-online-v3/assets/hd/bosses/warden-biome-corruption/frames/north-idle-01.png",
+      "D:/Codex workstation/Dungeon/dungeon-online-v3/assets/hd/bosses/warden-biome-corruption/frames/east-idle-01.png",
+      "D:/Codex workstation/Dungeon/dungeon-online-v3/assets/hd/bosses/warden-biome-corruption/frames/west-idle-01.png"
+    ],
+    "action": "cast",
+    "rowDirections": [
+      "south",
+      "north",
+      "east",
+      "west"
+    ]
+  },
+  {
+    "id": "warden-abyss",
+    "folder": "bosses/warden-biome-abyss",
+    "description": "Abyss biome Warden variant",
+    "references": [
+      "D:/Codex workstation/Dungeon/dungeon-online-v3/assets/hd/bosses/warden-biome-abyss/frames/south-idle-01.png",
+      "D:/Codex workstation/Dungeon/dungeon-online-v3/assets/hd/bosses/warden-biome-abyss/frames/north-idle-01.png",
+      "D:/Codex workstation/Dungeon/dungeon-online-v3/assets/hd/bosses/warden-biome-abyss/frames/east-idle-01.png",
+      "D:/Codex workstation/Dungeon/dungeon-online-v3/assets/hd/bosses/warden-biome-abyss/frames/west-idle-01.png"
+    ],
+    "action": "cast",
+    "rowDirections": [
+      "south",
+      "north",
+      "west",
+      "east"
+    ]
+  },
+  {
+    "id": "blacksmith-overheat",
+    "folder": "bosses/blacksmith-guardian/overheat",
+    "description": "overheated blacksmith guardian, preserve glowing forge features",
+    "references": [
+      "D:/Codex workstation/Dungeon/dungeon-online-v3/assets/hd/bosses/blacksmith-guardian/overheat/frames/south-idle-01.png",
+      "D:/Codex workstation/Dungeon/dungeon-online-v3/assets/hd/bosses/blacksmith-guardian/overheat/frames/north-idle-01.png",
+      "D:/Codex workstation/Dungeon/dungeon-online-v3/assets/hd/bosses/blacksmith-guardian/overheat/frames/east-idle-01.png",
+      "D:/Codex workstation/Dungeon/dungeon-online-v3/assets/hd/bosses/blacksmith-guardian/overheat/frames/west-idle-01.png"
+    ],
+    "action": "attack",
+    "rowDirections": [
+      "south",
+      "north",
+      "east",
+      "west"
+    ]
+  },
+  {
+    "id": "warden-reborn",
+    "folder": "bosses/warden/phase-2-reborn",
+    "description": "reborn Warden phase two, preserve original evolved silhouette",
+    "references": [
+      "D:/Codex workstation/Dungeon/dungeon-online-v3/assets/hd/bosses/warden/phase-2-reborn/frames/south-idle-01.png",
+      "D:/Codex workstation/Dungeon/dungeon-online-v3/assets/hd/bosses/warden/phase-2-reborn/frames/north-idle-01.png",
+      "D:/Codex workstation/Dungeon/dungeon-online-v3/assets/hd/bosses/warden/phase-2-reborn/frames/east-idle-01.png",
+      "D:/Codex workstation/Dungeon/dungeon-online-v3/assets/hd/bosses/warden/phase-2-reborn/frames/west-idle-01.png"
+    ],
+    "action": "cast",
+    "rowDirections": [
+      "south",
+      "north",
+      "east",
+      "west"
+    ]
+  },
+  {
+    "id": "totem",
+    "folder": "enemies/totem",
+    "description": "stationary ritual totem",
+    "action": "cast",
+    "rowDirections": [
+      "base",
+      "base",
+      "base",
+      "base"
+    ],
+    "references": [
+      "D:/Codex workstation/Dungeon/dungeon-online-v3/assets/hd/enemies/totem/frames/base-idle-01.png"
+    ]
+  }
+]

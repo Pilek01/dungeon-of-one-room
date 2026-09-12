@@ -1,0 +1,5 @@
+{
+  "source": "C:\\Users\\Kamil\\.codex\\generated_images\\01a082a2-4b2e-7d82-b36f-9cf7ad735f40\\exec-b4df2894-7974-493b-a20a-ef3c306ea9fb.png",
+  "prompt": "Repair this exact sprite attack sheet. Keep the same armored brute model and 8 columns x 4 rows. All 32 sprites must be entirely visible, especially the hammer raised above head in row 1 column 5: reconstruct its clipped top. Uniformly reduce all sprites by 25 percent within their cells to leave safe empty margins; do not enlarge the body during action. Row 1 faces viewer/south, row 2 back/north, row 3 faces LEFT throughout every pose including impact in column 6, row 4 faces RIGHT throughout every pose including impact in column 6. Preserve the same attack sequence, colors, proportions, fixed camera and smooth consecutive motion. Full flat #ff00ff background, no shadows, grid, labels, effects. No sprite may touch any edge or neighbor.",
+  "model": "Built-in Images; identity not exposed"
+}

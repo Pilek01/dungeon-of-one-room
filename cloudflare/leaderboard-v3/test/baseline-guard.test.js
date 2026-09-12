@@ -1,5 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
+import approvedHd2Assets from "./fixtures/approved-hd2-checksums.json" with { type: "json" };
 import { execFileSync } from "node:child_process";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
@@ -50,7 +52,8 @@ const ALLOWED_PROTECTED_ONLINE_V3_PATHS = new Set([
   "assets/hd/ui/ranked-reference-plates/ranked-build-inspect-desktop-plate.png",
   "assets/hd/ui/ranked-reference-plates/ranked-leaderboard-desktop-plate.png",
   "style-hd-boot.css",
-  "style-hd-composition.css"
+  "style-hd-composition.css",
+  ...Object.keys(approvedHd2Assets)
 ]);
 
 test("non-M4 Practice protected paths match f98820c outside explicitly allowed Online v3 assets", () => {
@@ -119,5 +122,17 @@ test("Worker source imports no game, DOM, audio, HUD, renderer, or Ranked v2 cod
       source,
       /game\.js|ranked-runtime|sim-core|presentationDirector|\/api\/ranked\/v2|document\.|window\./iu
     );
+  }
+});
+
+test("approved HD2 additions retain their reviewed bytes without unlocking existing HD assets", async () => {
+  const entries = Object.entries(approvedHd2Assets);
+  assert.equal(entries.length, 2417);
+  for (const [relative, expected] of entries) {
+    assert.match(relative, /^assets\/hd\/(?:early-v2|all-v2)\/[^.]+\.(?:png|json)$/u);
+    const bytes = await readFile(path.join(REPO_ROOT, relative));
+    // Git stores text as LF; source manifests may still have CRLF in a Windows working tree.
+    const canonicalBytes = relative.endsWith(".json") ? Buffer.from(bytes.toString("utf8").replace(/\r\n/gu, "\n")) : bytes;
+    assert.equal(createHash("sha256").update(canonicalBytes).digest("hex"), expected, relative);
   }
 });

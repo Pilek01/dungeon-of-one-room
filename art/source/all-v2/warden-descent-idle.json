@@ -1,0 +1,7 @@
+{
+  "actor": "warden-descent",
+  "clip": "idle",
+  "source": "C:\\Users\\Kamil\\.codex\\generated_images\\01a082a2-4b2e-7d82-b36f-9cf7ad735f40\\exec-53bf7c65-bccf-4ebc-b299-8c5ce322c474.png",
+  "prompt": "Create a production 2D dark dungeon game animation sprite sheet based faithfully on supplied existing direction reference sprites. Upgrade fine material detail and organic movement in the same muted dark fantasy hand-painted game sprite family. Keep original palette, proportions, projected elevated top-down camera, recognizability, weapons and equipment. EXACT 8 columns by 4 rows, 32 sprites: row1 SOUTH front, row2 NORTH back, row3 EAST facing RIGHT, row4 WEST facing LEFT. Each row is eight consecutive smooth IDLE poses: subtle breathing, weight shift, cloth motion with seamless loop. Frame1 and8 nearly match. Fixed camera, identical body scale all32, shared foot baseline. Entire sprite centered WITHIN its own cell with20% clear margin including weapons. Perfectly uniform solid #ff00ff background. NO magenta in character, magenta outline, external glows, shadows, environment, text, grid lines or checkerboard. Preserve silhouette, no poster composition. All parts fully in frame.\nActor: Descent biome Warden variant.",
+  "model": "Built-in Images; model selection/identity not exposed"
+}

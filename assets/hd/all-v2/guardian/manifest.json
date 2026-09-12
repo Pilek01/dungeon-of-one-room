@@ -1,0 +1,522 @@
+{
+  "id": "guardian",
+  "frameSize": 256,
+  "anchor": [
+    0.5,
+    1
+  ],
+  "files": [
+    {
+      "file": "south-idle-01.png",
+      "sha256": "0b6a9ce735f3436a6c7e1becb1a780083dbd0f01ba0b9f733856fa6a47caafe1"
+    },
+    {
+      "file": "south-idle-02.png",
+      "sha256": "f8d9e53046eb6e4277cb4245eeab3db1c29209e8e58dee559b03fe92ea62f576"
+    },
+    {
+      "file": "south-idle-03.png",
+      "sha256": "4651d146c5a513597e1a06a2fb07dd45bf5626bc5e934c40037eb744cfb98924"
+    },
+    {
+      "file": "south-idle-04.png",
+      "sha256": "198ee33424890593e8b19b165be1240cb53bf2ec7a0bf53b4e91029f3a8700f4"
+    },
+    {
+      "file": "south-idle-05.png",
+      "sha256": "aedaf1905e6f6d1cb2e30b15b8f2e8b3dd46b8da074582b9de220e5727eb7445"
+    },
+    {
+      "file": "south-idle-06.png",
+      "sha256": "d32e1f9934d332e200009f74c48c77a323185c1a667177f931c772e71e2fda8a"
+    },
+    {
+      "file": "south-idle-07.png",
+      "sha256": "c67c8d29922eb74699bc3fe1ca09a33bfee1d6473fa97693568cd655ed410343"
+    },
+    {
+      "file": "south-idle-08.png",
+      "sha256": "ea8e7745fdac64d8e4e17a77811eea42621edaa3e26d6ba8d1dd50825bfafbc0"
+    },
+    {
+      "file": "south-move-01.png",
+      "sha256": "6d39643f57a97dc712f8fad33ca81ab0ce9c0b970459cdbfe94668cfacdcc80b"
+    },
+    {
+      "file": "south-move-02.png",
+      "sha256": "1847b3f602008331957b02e1b250408fd751a3634a9bfde8dd817c96245f7593"
+    },
+    {
+      "file": "south-move-03.png",
+      "sha256": "5832f32f02375f9fe21e48bd81debfbd68102213595083049b83b5cbddafcbab"
+    },
+    {
+      "file": "south-move-04.png",
+      "sha256": "2857dc6001f8531c3e8c985da25b8a8419c866c73c3171a9523778b4cbc75a54"
+    },
+    {
+      "file": "south-move-05.png",
+      "sha256": "48578fa6fe6550a4ad0c5fa0824eaf8842082133727975f7ecc1885b381a590e"
+    },
+    {
+      "file": "south-move-06.png",
+      "sha256": "9f35cbc2d0fd779ec7c209ffb66fe3422b3b20cdc8a75a987d076a781de0eb69"
+    },
+    {
+      "file": "south-move-07.png",
+      "sha256": "a86e6bbfbf9ea0a43ae141dcf15948ccf6ef06c30de3942a6d4e95ce357ff8d6"
+    },
+    {
+      "file": "south-move-08.png",
+      "sha256": "485699a4ee2d8e687bc1df03dd01d8250e46511cfc2aa86d582bf9b0b8a09bb5"
+    },
+    {
+      "file": "south-attack-01.png",
+      "sha256": "0d72cb8d9ef1527fa407746e2d068f1df1352186fb0e15c681fcc1d09caa278b"
+    },
+    {
+      "file": "south-attack-02.png",
+      "sha256": "182ab96e1d536d259cc9c9d4810a2b3cd030731113c6108ccd915d483d8a2147"
+    },
+    {
+      "file": "south-attack-03.png",
+      "sha256": "b5d2eddd1244debe6cfb6f8cbbcff2dfed8b36edcfa12be89c0c2f00f9332818"
+    },
+    {
+      "file": "south-attack-04.png",
+      "sha256": "22477e747c83368b854ba62c217ef56e025fe89e2ae3435d0850595851971c87"
+    },
+    {
+      "file": "south-attack-05.png",
+      "sha256": "4a4b509974b67e3c290df91aa4c60a52c114e46d3ea1e5eb94f7758f7e6d833e"
+    },
+    {
+      "file": "south-attack-06.png",
+      "sha256": "cac8a3fc2697f84d8ccdb983dab415c5956f908e734da782a938521c74b2fe87"
+    },
+    {
+      "file": "south-attack-07.png",
+      "sha256": "598f3e9cf5a61aa44e3eacd6e60163a9b6529d9697e06e0e2d289bf0810b9e68"
+    },
+    {
+      "file": "south-attack-08.png",
+      "sha256": "8b484ba7a96da1ef87231ef97af3305d448f36928c74f0cdd917881b72faf7d3"
+    },
+    {
+      "file": "south-hit-01.png",
+      "sha256": "917e17fbd6f26d73105df0f4d047f86f00019a42095d21d6a690981390c7514c"
+    },
+    {
+      "file": "south-hit-02.png",
+      "sha256": "defc2094c133193cb68e10d497a6a7da3ac40704e856cc84caaa2d0e209c8ab8"
+    },
+    {
+      "file": "south-hit-03.png",
+      "sha256": "2a09ac01c204adb9fe804d01a49f67b20e95e2e9451632ffabeadccc8527603e"
+    },
+    {
+      "file": "south-hit-04.png",
+      "sha256": "4e364590de8f6b52680c6219f9b4bc666ce66801ec56017a494fda5446099b42"
+    },
+    {
+      "file": "south-death-01.png",
+      "sha256": "50e50b2ebc19bd78517aa8d7f9981461d06aebd6d2fd18958f9220f739e3d4fd"
+    },
+    {
+      "file": "south-death-02.png",
+      "sha256": "50d4c96deab2826590233b3f15d3546648707c2122df348f49fa832211a15eb3"
+    },
+    {
+      "file": "south-death-03.png",
+      "sha256": "44d1d05390bbd844823c040678e957c175b838b0afb6aa3b6f17ea5af7151226"
+    },
+    {
+      "file": "south-death-04.png",
+      "sha256": "c140e945e16d935bef45593ae82e21d722d93096e7fa89eb5c3c491e7dfa101f"
+    },
+    {
+      "file": "north-idle-01.png",
+      "sha256": "0160ddd9114c2dc019db3ef7223b7bdce559a3b81e2af13472f799b04f74bdea"
+    },
+    {
+      "file": "north-idle-02.png",
+      "sha256": "31db727df50329d1699bfc1c2606968d837a9c5c4a4f37ae93475c0e30e77e4b"
+    },
+    {
+      "file": "north-idle-03.png",
+      "sha256": "06090db6c27dd7df98786da6aece320390b82bc00161f42964960b5dbe210c7b"
+    },
+    {
+      "file": "north-idle-04.png",
+      "sha256": "deefa47d450d6e4306ee511075991df0681f2ff1dfd48e2ceee58da968bc786c"
+    },
+    {
+      "file": "north-idle-05.png",
+      "sha256": "92881b4916be92079491425255854dc3168809757bf606d103728a87dbf64578"
+    },
+    {
+      "file": "north-idle-06.png",
+      "sha256": "0ba00f2c520d8cd48c4cd3dfce41ab5eafae7a56dc474cb8ba6d1b0eb0ea4a93"
+    },
+    {
+      "file": "north-idle-07.png",
+      "sha256": "99d688172f95440395b7614607cb042ff6504a6e4df6e0d0e3dafbbd65b5b966"
+    },
+    {
+      "file": "north-idle-08.png",
+      "sha256": "5983f942653e861f573fcd2f5d0e54fe27c1a7f2585bfd24700a2c0c993aeef8"
+    },
+    {
+      "file": "north-move-01.png",
+      "sha256": "7e87cb61b904b73b7d63f71f00979d59204b4219271b419491fbc71b50e71e00"
+    },
+    {
+      "file": "north-move-02.png",
+      "sha256": "71116a5065d1b8abbf9be14b272dca39e34b59af7905f7909e2f23f3803b6485"
+    },
+    {
+      "file": "north-move-03.png",
+      "sha256": "9eaba02824f75afa6a2aa4da255d9707bdeccea1f3eba4891e3017729d5aa509"
+    },
+    {
+      "file": "north-move-04.png",
+      "sha256": "dd7b252e55a104f2cbd171cf42918ba2cc237b98bcc23268025d86d61e95dcd8"
+    },
+    {
+      "file": "north-move-05.png",
+      "sha256": "0ee50020dedf4a9f9a4c9954135eb8ef5b6e52381c7962605fffce817f4c7455"
+    },
+    {
+      "file": "north-move-06.png",
+      "sha256": "39f815d023ab8277104af9d628d7b50e267860472f7e541f86f4b6fe07bd2086"
+    },
+    {
+      "file": "north-move-07.png",
+      "sha256": "6b55c12ee06d5897a54a537dae29854b37618a60c85f9142e2fdc53ec1b26e2e"
+    },
+    {
+      "file": "north-move-08.png",
+      "sha256": "1dbca8086a8b9d0771ac0c4a9d8ce2ca6365c99b66fff36366bcf6d2d0e8fd34"
+    },
+    {
+      "file": "north-attack-01.png",
+      "sha256": "4dde0e27cd67f801ba1b86c62422fb2004354a2cc5af391536e0f0ee97fcb31c"
+    },
+    {
+      "file": "north-attack-02.png",
+      "sha256": "0869b18bbcf63d3fe669edf442a1b2496bd8b6717bbcf3c406638edc12813544"
+    },
+    {
+      "file": "north-attack-03.png",
+      "sha256": "e46c982757525b868f86bbf0ab421e0887f6fa3634f7b2dcc4eafbcb2090572f"
+    },
+    {
+      "file": "north-attack-04.png",
+      "sha256": "e24840a632c27fb9cc9f776d106a4cb2984e7932ed7badd633072fa54556dcb2"
+    },
+    {
+      "file": "north-attack-05.png",
+      "sha256": "88186d580554321230840c0fc191f3bc94e8988324fbaf7d0480d489778d4f81"
+    },
+    {
+      "file": "north-attack-06.png",
+      "sha256": "dba2c9fd87c375ded769eafa31bebeb519041c879065907dfbe0c33aadb60e2c"
+    },
+    {
+      "file": "north-attack-07.png",
+      "sha256": "bbd1a9d42037a6e8247410641469fc2a2b06d3ebb4d7376aec6450a8a152f729"
+    },
+    {
+      "file": "north-attack-08.png",
+      "sha256": "ddbd803b38bc44ef0bfbad0498c80fa446cc4f368dbb9a25cd09aabd832a079f"
+    },
+    {
+      "file": "north-hit-01.png",
+      "sha256": "e3fbd9ceea42e00dfdeef4be572a68cdc6e7ab2c31266382357e3bb1bc689310"
+    },
+    {
+      "file": "north-hit-02.png",
+      "sha256": "a8150b478ec219fef7278c0f557aa84034f258f099cbcdc09e47093e91d52696"
+    },
+    {
+      "file": "north-hit-03.png",
+      "sha256": "8f7438e4a626452f2656bc1b101e94f8327ce8a176f8fdfcc91f5b0cd047eaf8"
+    },
+    {
+      "file": "north-hit-04.png",
+      "sha256": "7aca735f6f1ec93e875e7da93267e350155afa6b1bf5e7a7090f2ff5790e338d"
+    },
+    {
+      "file": "north-death-01.png",
+      "sha256": "f6cbe030b5e432a2c6202b08f3bdee57030ec9f5cc4536a9bfad97100215183c"
+    },
+    {
+      "file": "north-death-02.png",
+      "sha256": "2f0e5acc4864bd1acc777bc7ac75d2ca9d66aa0a28ba2ca93d39eb9306dba044"
+    },
+    {
+      "file": "north-death-03.png",
+      "sha256": "c7d5f9c641e1ca781bc29891f60ccc92054157e798bedd6d76f9092922890084"
+    },
+    {
+      "file": "north-death-04.png",
+      "sha256": "a7933ac666bb0889cb0303a90e7bbc614221b0472cbbeff13abe3d96a67044d1"
+    },
+    {
+      "file": "west-idle-01.png",
+      "sha256": "3bb0731cc186596fe1f659f6b3633a4d947d3998aad8bac4a8927140fda3ff2b"
+    },
+    {
+      "file": "west-idle-02.png",
+      "sha256": "5abc62a87c1935b0bce20e907b9f4a3e45248e8ddcde5eff6f2638556042ad71"
+    },
+    {
+      "file": "west-idle-03.png",
+      "sha256": "b93318352d8685c0d1797aba6be654e275e2022d4940047637a4c40a6db31fb9"
+    },
+    {
+      "file": "west-idle-04.png",
+      "sha256": "d95954cda19c88198b674603c9596994a5d1b38deed53aa817d9f9b63de3d5df"
+    },
+    {
+      "file": "west-idle-05.png",
+      "sha256": "a4940b1f21b661cad410f4e41bb9ce4a6566d2877ae9b6d1579689a00ae16976"
+    },
+    {
+      "file": "west-idle-06.png",
+      "sha256": "d755b2753f77917a3b0f0b5d3bfac685f4c4f684f9bbb72bdbdf63cd92ddf5a5"
+    },
+    {
+      "file": "west-idle-07.png",
+      "sha256": "782891bff3c0f036bdc1d3f478fe2a5383df9e80175436032f27ab7db9409e72"
+    },
+    {
+      "file": "west-idle-08.png",
+      "sha256": "2f07e064a2b27332e7840709aa42e026aa43f38b24cb84d1b515e0c360fe3056"
+    },
+    {
+      "file": "west-move-01.png",
+      "sha256": "02cb054dfedb583ae5db93c3f0b498cf5b59a5eb6c3f7cd0a8edd6a2afd6261e"
+    },
+    {
+      "file": "west-move-02.png",
+      "sha256": "d3ca9a9b3e498477b868caa9d76232cb9a69acfd7e6610d019eb417c76becdb7"
+    },
+    {
+      "file": "west-move-03.png",
+      "sha256": "80f279c1c4b5b36ea41cce989e4c4f86f5ed210ea025f06248338dc07b9ef7bc"
+    },
+    {
+      "file": "west-move-04.png",
+      "sha256": "2754065c3379ba95457e887ccba3ccb55aa87867a0bf655679f0dffd4988f93e"
+    },
+    {
+      "file": "west-move-05.png",
+      "sha256": "c31b4e61771f3ec9fa7f19c17d9c808e7318a9c3aba63befc9c55346f54a72c5"
+    },
+    {
+      "file": "west-move-06.png",
+      "sha256": "137dbb9e6e64b840dcf59adb94f3c6477bafefb63a3320e2bad24499ae4d80db"
+    },
+    {
+      "file": "west-move-07.png",
+      "sha256": "e99355c4bfe080711be2d519c9cb7b8e781f74f4303f61f5a25369246bc4d8c9"
+    },
+    {
+      "file": "west-move-08.png",
+      "sha256": "015e1fda3562fcb7e96d7612714592ba3cc4b9e8c2893590baa8eb2a141e94ea"
+    },
+    {
+      "file": "west-attack-01.png",
+      "sha256": "4c963467658b986301c26f3d085acd4f0a08d9b154bfc1ffa6bdb4a5d78ddc67"
+    },
+    {
+      "file": "west-attack-02.png",
+      "sha256": "6a2ca301a12e02df25f1e26e37347505526024f227b3df4a5ce5abbd79fbeb7a"
+    },
+    {
+      "file": "west-attack-03.png",
+      "sha256": "907157d6f90a7a9453533a2601269a51d54cb04617e0f7b198e7f7759f281571"
+    },
+    {
+      "file": "west-attack-04.png",
+      "sha256": "d7cad5501bc97cd902a009871feb4de31c39fda1bea570910221a4e9533f309a"
+    },
+    {
+      "file": "west-attack-05.png",
+      "sha256": "71e09c5f9578d4cb3b36a3ce2e7ea94f35922a446850485c3dda8eb54100c2b6"
+    },
+    {
+      "file": "west-attack-06.png",
+      "sha256": "cc9cd15b08f015d93d5838823481ae6486ae258fcde42f8972ff6eade657cc50"
+    },
+    {
+      "file": "west-attack-07.png",
+      "sha256": "8bf7b8cfc04df273bcf62c65ddd6f6f7b6cea5ffdaefefb9e0cd300bf9e4ddb2"
+    },
+    {
+      "file": "west-attack-08.png",
+      "sha256": "7230229c04ad04f84b65fe27bdf3b50ddb4cef64312f61787c8472fe33df26ec"
+    },
+    {
+      "file": "west-hit-01.png",
+      "sha256": "71a97d1ddc43809de99463357786d28ff38d711030d23eefbec96e6cf2223467"
+    },
+    {
+      "file": "west-hit-02.png",
+      "sha256": "6f0f044aea5f71d3b68a1c77d5461122dec886c5d7ebafe90bda65485388a558"
+    },
+    {
+      "file": "west-hit-03.png",
+      "sha256": "deaa44f7a75541e0da3a05655538fac58c6f8631545f65a32cacb9f6feb052ef"
+    },
+    {
+      "file": "west-hit-04.png",
+      "sha256": "28ab11e559abdae7f85e25e739f0a17f0cb3808af9cf6496aa3267c767801d1e"
+    },
+    {
+      "file": "west-death-01.png",
+      "sha256": "8a86a63796de35c38d66ea7e31b9ad38182d7e8810f5158a9189d18999f2b489"
+    },
+    {
+      "file": "west-death-02.png",
+      "sha256": "44d3d56772db3f7a9e1c197bf675c22d619b0d87e9790409571e4e27d6f3a545"
+    },
+    {
+      "file": "west-death-03.png",
+      "sha256": "1700738a9b4a8d3fdfab0435950ad73bfc94ca48d07573676438a24a3092c132"
+    },
+    {
+      "file": "west-death-04.png",
+      "sha256": "140c784fd49a5ffbbf6995dffaefb6debc57611fd29d3ff93801bcc0f08d4465"
+    },
+    {
+      "file": "east-idle-01.png",
+      "sha256": "fcd5399dff58d12a0cd5bedf8c181fc4fbb5da1cb0f06de02cbc9d0d459b83c9"
+    },
+    {
+      "file": "east-idle-02.png",
+      "sha256": "51789637e691e67a675cac8f723632815b5af898fa3a28bc22a4e61af9d73995"
+    },
+    {
+      "file": "east-idle-03.png",
+      "sha256": "8097bb4620c8a7e82465aaeee87c63250ad88bdde2d0ffe0474f5a41cd49ad42"
+    },
+    {
+      "file": "east-idle-04.png",
+      "sha256": "2739cc1618bd1f43457fb1fb2a73fd48c7e8e078111a9dbb857fe86037e4617f"
+    },
+    {
+      "file": "east-idle-05.png",
+      "sha256": "ca0a3d4b725b1ffdb65f55a058c5e8cbdb31461e4ec4ef0c3411951ef8976714"
+    },
+    {
+      "file": "east-idle-06.png",
+      "sha256": "93b58513ea602e0935927db818473217eaa10cbb26b9d11f194efe72e8adf4a0"
+    },
+    {
+      "file": "east-idle-07.png",
+      "sha256": "a22987fc13ffe235f9432b85cc7f1ebb77694985e1b7bb0aa01ef5dc3324ed71"
+    },
+    {
+      "file": "east-idle-08.png",
+      "sha256": "5d17ed3ade93e5b249102b6cf7863762e4ee5829bc469b1d7bd65ea61060c9e9"
+    },
+    {
+      "file": "east-move-01.png",
+      "sha256": "340fff8c753ea35171fa4a89284e48b5c16b2d2deed99d256c92a6b464b65aa1"
+    },
+    {
+      "file": "east-move-02.png",
+      "sha256": "12e851719b81f5aeb5c98aeb49454751997b1b1e7759b43d7c24e22d7eee0f6e"
+    },
+    {
+      "file": "east-move-03.png",
+      "sha256": "71dfcc0b4e05d0c2f9060a749a024ee11fe315022a46fbfac222f577789650d8"
+    },
+    {
+      "file": "east-move-04.png",
+      "sha256": "28d7c394e874966a2296605feed4af9401104139324a1447304bb38c637f1630"
+    },
+    {
+      "file": "east-move-05.png",
+      "sha256": "8f6c31075f5727f6b3f7de84cf8cff8963d779dd7a45c353ac8eb7a46bc8e5d0"
+    },
+    {
+      "file": "east-move-06.png",
+      "sha256": "bcab18a0fc9410f119b75b0db0dde777d41f3e552c6a7597723382ce24bfc9a5"
+    },
+    {
+      "file": "east-move-07.png",
+      "sha256": "037164d31110afd5ca9cfa68a0f1b51caa7714490c29313dc70785547adeea50"
+    },
+    {
+      "file": "east-move-08.png",
+      "sha256": "febbb82c0a73758bcf0e9b4d7e022d19858a7c380e1bbeaedcfadcab3a53c8fc"
+    },
+    {
+      "file": "east-attack-01.png",
+      "sha256": "fef46c4d9e30a2a5b309ebcc2590a4d6f0b11f57dbe26c6adaacc94d4c080290"
+    },
+    {
+      "file": "east-attack-02.png",
+      "sha256": "0c08d79a8981da459fd55680a40fd3b1cd5286bd19dcaaf87437c451061de0fa"
+    },
+    {
+      "file": "east-attack-03.png",
+      "sha256": "78f04ad7434eb4ed0f52a21207c18b251859e48ed50371ba40827341060f4b46"
+    },
+    {
+      "file": "east-attack-04.png",
+      "sha256": "42b06b022a08c93b7221dcdb424f32f7c97ffbe33eeddb634cc4a83a3bfe40ce"
+    },
+    {
+      "file": "east-attack-05.png",
+      "sha256": "3aa2887649cfb80ce50850bc7841498e5a66042db55cca80496180a0c1b49647"
+    },
+    {
+      "file": "east-attack-06.png",
+      "sha256": "970fb805fc884b035dce81c01d154115c9ee087ec0e05922c0f6214f031a5a31"
+    },
+    {
+      "file": "east-attack-07.png",
+      "sha256": "6976d6748d38e09f81b9104c9ed47c755b5c33f183dee17b9329d372b89af4cb"
+    },
+    {
+      "file": "east-attack-08.png",
+      "sha256": "2a549db5e80f841d9e7587d525236e7b93b6299ceb510c8ab66998739f454f3d"
+    },
+    {
+      "file": "east-hit-01.png",
+      "sha256": "bd1e23fe44105dc20c77f4f38aed5a37275ab835c6076b34dbfb626445562284"
+    },
+    {
+      "file": "east-hit-02.png",
+      "sha256": "d7c215cb3196148cb0600560a71b67224df7dc94a989d03f5532b3a03b2b54db"
+    },
+    {
+      "file": "east-hit-03.png",
+      "sha256": "eb96cef777db60413e69b9b77884edc7f527144b5ff1a58b590fc9857d760b64"
+    },
+    {
+      "file": "east-hit-04.png",
+      "sha256": "0920db00b7aea43a3dd4b63c65847c1ee89dd6d26977a5d5000cc289d7bc9bb3"
+    },
+    {
+      "file": "east-death-01.png",
+      "sha256": "f85fce49b181ee1a3833d49173e4b1cb0ff3640a742a2de133c7e5306cd572bd"
+    },
+    {
+      "file": "east-death-02.png",
+      "sha256": "b293f63a75783fe4d8332d169668bd2ca9283971e1ef6dba66cb7293590b80a7"
+    },
+    {
+      "file": "east-death-03.png",
+      "sha256": "f1a79d50b4d71c6d1bf8288ae70f0b951c92963e5b718ee4547e0c1b55d39818"
+    },
+    {
+      "file": "east-death-04.png",
+      "sha256": "9ed270ef97acaab0a3d4f3d9f0100af339ce7c705c1e4207d2fe8768b49c394d"
+    }
+  ]
+}

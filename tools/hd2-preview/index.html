@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="pl">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Dungeon — HD 2.0 · Animacje</title>
+<style>
+:root{color-scheme:dark;font-family:system-ui,sans-serif;background:#10100f;color:#e2ddd1}*{box-sizing:border-box}body{margin:0 auto;max-width:1240px;padding:40px 30px}header{display:flex;align-items:end;justify-content:space-between;gap:20px;border-bottom:1px solid #39382e;padding-bottom:26px}.eyebrow{font-size:11px;letter-spacing:3px;color:#bb9c60}h1{font-family:Georgia,serif;font-size:44px;font-weight:normal;margin:12px 0}p{color:#a49f93;line-height:1.6;margin:8px 0}a{color:#dfc88c;text-decoration:none}a:hover{text-decoration:underline}.controls{display:flex;gap:16px;flex-wrap:wrap;align-items:end;margin:28px 0}label{font-size:12px;color:#aaa497;display:grid;gap:8px}select,button{font:inherit;color:#eee6d4;background:#24241e;border:1px solid #494638;border-radius:5px;padding:10px 16px}button{cursor:pointer}button:hover{border-color:#c0a366}.stage{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}.card{border:1px solid #38382f;background:#181916;border-radius:8px;overflow:hidden}.card h2{font-size:16px;font-weight:500;margin:18px 20px 0}.card canvas{display:block;width:100%;height:auto}.foot{display:flex;justify-content:space-between;margin:24px 0;color:#a49f93;font-size:13px}.rail{display:grid;grid-template-columns:repeat(8,1fr);gap:6px}.rail canvas{width:100%;background:#20211b;border:1px solid #38382f;border-radius:4px}.rail canvas.active{border-color:#d5b76d}.detail{margin-top:24px;padding:20px;border-left:2px solid #a98d51;background:#191a16;font-size:14px}input{accent-color:#c4a568}.tag{font-size:11px;border:1px solid #514832;padding:6px 10px;color:#cfb477;border-radius:30px;white-space:nowrap}@media(max-width:750px){body{padding:24px 16px}header{align-items:start;flex-direction:column}h1{font-size:34px}.stage{grid-template-columns:1fr}.rail{grid-template-columns:repeat(4,1fr)}}
+</style>
+<header><div><div class="eyebrow">DUNGEON OF ONE ROOM / WARSZTAT ANIMACJI</div><h1>Ten sam dungeon. Więcej życia.</h1><p>Player i cały bestiariusz · bossowie i ich fazy · porównanie animacji</p></div><span class="tag">HD 2.0 — LOKALNY PROTOTYP</span></header>
+<div class="controls">
+<a href="npc-skills.html">Skille NPC i SFX ↗</a>
+<label>Postać<select id="actor"><option value="player">Player</option><option value="slime">Slime</option><option value="skeleton">Skeleton</option></select></label>
+<label>Animacja<select id="clip"><option value="idle">Spoczynek</option><option value="move" selected>Ruch</option><option value="attack">Atak</option><option value="hit">Trafienie</option><option value="death">Śmierć</option></select></label>
+<label>Kierunek<select id="direction"><option value="south">Południe</option><option value="north">Północ</option><option value="east" selected>Wschód</option><option value="west">Zachód</option></select></label>
+<label>Odtwarzanie<select id="speed"><option value="1">Tempo gry</option><option value="0.25" selected>Slow motion ×0.25</option><option value="0.5">Slow motion ×0.5</option></select></label>
+<button id="pause">Pauza</button><a href="../../output/hd2-dist/index.html?hd2=1" target="_blank" rel="noopener">Uruchom grę z HD 2.0 ↗</a>
+</div>
+<div class="stage"><section class="card"><h2>Obecne HD</h2><canvas id="before" width="720" height="540"></canvas></section><section class="card"><h2>HD 2.0</h2><canvas id="after" width="720" height="540"></canvas></section><section class="card"><h2>Detal ×3</h2><canvas id="zoom" width="720" height="540"></canvas></section></div>
+<div class="foot"><span id="status">Wczytywanie klatek…</span><span>Kliknij klatkę, aby zatrzymać podgląd.</span></div><div class="rail" id="rail"></div>
+<div class="detail" id="note"></div>
+<script src="preview.js"></script>
+</html>

@@ -10,6 +10,9 @@
 })(typeof window !== "undefined" ? window : null, function createHDAssetManifestApi(root) {
   "use strict";
 
+  // Local HD2 preview only. Catalog keys and the default HD1 assets stay stable.
+  const earlyAnimationsEnabled = Boolean(root && /(?:^|[?&])hd2=1(?:&|$)/.test(root.location?.search || ""));
+
   const KEY_PATTERN = /^[a-z][a-z0-9_]*(?:\.[a-z][a-z0-9_]*){2,}(?:\.[0-9]{2})?$/;
   const GROUP_PATTERN = /^[a-z][a-z0-9-]*$/;
   const IMAGE_EXTENSION_PATTERN = /\.(?:avif|gif|jpe?g|png|webp)$/;
@@ -244,7 +247,8 @@
 
   const playerEntries = [];
   const playerDirections = ["south", "north", "east", "west"];
-  const playerClips = [
+  const earlyClips = [["idle", 8], ["move", 8], ["attack", 8], ["hit", 4], ["death", 4]];
+  const playerClips = earlyAnimationsEnabled ? earlyClips : [
     ["idle", 4],
     ["move", 4],
     ["attack", 4],
@@ -257,7 +261,9 @@
         const suffix = String(frame).padStart(2, "0");
         playerEntries.push({
           key: `actor.player.${direction}.${clip}.${suffix}`,
-          src: `assets/hd/actors/player/frames/${direction}-${clip}-${suffix}.png`,
+          src: earlyAnimationsEnabled
+            ? `assets/hd/early-v2/player/${direction}-${clip}-${suffix}.png`
+            : `assets/hd/actors/player/frames/${direction}-${clip}-${suffix}.png`,
           group: "player",
           critical: true
         });
@@ -272,14 +278,17 @@
   const totemClips = [["idle", 4], ["awaken", 4], ["cast", 4], ["hit", 2], ["death", 2]];
   for (const type of enemyRoster) {
     const directions = type === "totem" ? ["base"] : enemyDirections;
-    const clips = type === "totem" ? totemClips : mobileEnemyClips;
+    const useEarlyAnimations = earlyAnimationsEnabled && ["slime", "skeleton"].includes(type);
+    const clips = useEarlyAnimations ? earlyClips : type === "totem" ? totemClips : mobileEnemyClips;
     for (const direction of directions) {
       for (const [clip, frameCount] of clips) {
         for (let frame = 1; frame <= frameCount; frame += 1) {
           const suffix = String(frame).padStart(2, "0");
           enemyEntries.push({
             key: `enemy.${type}.${direction}.${clip}.${suffix}`,
-            src: `assets/hd/enemies/${type}/frames/${direction}-${clip}-${suffix}.png`,
+            src: useEarlyAnimations
+              ? `assets/hd/early-v2/${type}/${direction}-${clip}-${suffix}.png`
+              : `assets/hd/enemies/${type}/frames/${direction}-${clip}-${suffix}.png`,
             group: "enemies",
             critical: true
           });
@@ -682,7 +691,48 @@
     return true;
   }
 
-  const entries = snapshotManifest([
+  function expandHD2Actors(candidate) {
+    if (!earlyAnimationsEnabled) return candidate;
+    const folders = {
+      "enemies/brute": "brute", "enemies/acolyte": "acolyte",
+      "enemies/skitter": "skitter", "enemies/totem": "totem",
+      "enemies/otter": "otter", "enemies/riftweaver": "riftweaver",
+      "enemies/bulwark": "bulwark", "bosses/vault-guardian": "guardian",
+      "bosses/blacksmith-guardian": "blacksmith", "bosses/warden/phase-1": "warden1",
+      "bosses/warden/phase-2": "warden2", "bosses/warden-biome-descent": "warden-descent",
+      "bosses/warden-biome-corruption": "warden-corruption", "bosses/warden-biome-abyss": "warden-abyss",
+      "bosses/blacksmith-guardian/overheat": "blacksmith-overheat",
+      "bosses/warden/phase-2-reborn": "warden-reborn"
+    };
+    const expanded = candidate.flatMap(entry => {
+      const match = /^assets\/hd\/(.+)\/frames\/(south|north|east|west|base)-(idle|move|attack|cast|awaken|hit|death)-(\d\d)\.png$/.exec(entry.src);
+      if (!match || !folders[match[1]]) return [entry];
+      const [, folder, direction, clip, frameText] = match;
+      const originalCount = clip === "hit" || clip === "death" ? 2 : 4;
+      const frame = Number(frameText);
+      const makeEntry = number => ({
+        ...entry,
+        key: entry.key.replace(/\.\d\d$/, `.${String(number).padStart(2, "0")}`),
+        src: `assets/hd/all-v2/${folders[folder]}/${direction}-${clip}-${String(number).padStart(2, "0")}.png`
+      });
+      const result = [makeEntry(frame)];
+      if (frame === originalCount) {
+        for (let extra = originalCount + 1; extra <= originalCount * 2; extra++) result.push(makeEntry(extra));
+      }
+      return result;
+    });
+    for (const direction of ["south", "north", "east", "west"]) {
+      for (const clip of ["heal", "buff"]) {
+        for (let frame = 1; frame <= 8; frame++) {
+          const suffix = String(frame).padStart(2, "0");
+          expanded.push({ key: `enemy.acolyte.${direction}.${clip}.${suffix}`, src: `assets/hd/all-v2/acolyte/${direction}-${clip}-${suffix}.png`, group: "enemies", critical: false });
+        }
+      }
+    }
+    return expanded;
+  }
+
+  const entries = snapshotManifest(expandHD2Actors([
     ...descentEntries,
     ...playerEntries,
     ...enemyEntries,
@@ -693,7 +743,7 @@
     ...vaultGuardianVfxEntries,
     ...statusEntries,
     ...expansionArtEntries.filter((entry) => !entry.key.startsWith("enemy.riftweaver.") && !entry.key.startsWith("enemy.bulwark."))
-  ]);
+  ]));
   const stagedEntries = snapshotManifest(futureEntries);
   const catalogEntries = Object.freeze([...entries, ...stagedEntries]);
 

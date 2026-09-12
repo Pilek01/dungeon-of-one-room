@@ -1,5 +1,66 @@
 Original prompt: Diagnose and repair the Ranked Observer Bot production crashes, verify the smallest robust fixes, merge them to main, and deploy a working release.
 
+## 2026-09-12 - Mobile split thumb controls
+
+- User requested audit first, then three larger round skills left, potion/elixir above the right D-pad, and centring that D-pad. Audit and six-size before/after metrics: docs/audits/2026-09-12-mobile-thumb-layout.md. Four files changed: CSS, focused browser QA, audit and this note. No production JS or gameplay changes.
+- Skills use a column (86px at 915x412, 100px at 390x844, 72px at 360x640), with a triangle for short landscape. Consumables are 82px at 915x412. D-pad is centred relative to the protection rail and right edge; contextual Interact uses its centre only when available. Existing action handlers and accessibility labels preserved. The viewport-sized dock has pointer-events:none; actual buttons receive touch.
+- PASS: 30 mobile tests; six-size QA plus rotation, real potion/equipped-elixir actions and contextual portal; current HD and installed gameplay client. Final PASS also includes Ranked camp, protected committed baseline, guard15, syntax and whitespace. Exact commands are in the audit. Evidence: output/verification/mobile-thumb-layout. Source snapshots saved before editing. Physical-phone comfort remains an emulation limit.
+
+
+## 2026-09-12 - Mobile Gothic atmosphere refinement
+
+- Current request: bring mobile closer to the dark Gothic PC presentation while retaining the audited ergonomics. Two files changed in this turn: style-mobile-v2.css and this progress note. No production JavaScript or new image assets.
+- Reused original stone, iron frames, Gothic D-pad plate and small skull crests; replaced flat blue/green panels with dark neutral stone and restrained warm selection accents. Distinct ARMED, ACTIVE and pressed skill emphasis remains visible. PC presentation and gameplay/Ranked rules unchanged.
+- Six-size before/after metrics are exactly identical for board, HP/protection rails, D-pad and every touch target. Screenshots reviewed for landscape, short browser viewport, small portrait, portal, camp, forge, rewards, defeat, details, menus and armed Dash. Evidence: output/verification/mobile-gothic-refinement/after. Before CSS saved alongside it.
+- PASS: node --test tests/mobile-v1.test.js tests/mobile-repair-pass.test.js tests/mobile-hd-remake.test.js tests/mobile-gothic-ui.test.js tests/mobile-preview-build-metadata.test.mjs tests/mobile-v2-journey.test.js (30 tests, including automatic checkout build identity).
+- PASS: node scripts/verify-mobile-v2.mjs --visual-polish --out=output/verification/mobile-gothic-refinement/after (six sizes and complete mobile journeys). Final state capture used the same QA copied to output/verification/mobile-gothic-refinement/verify-with-armed-capture.mjs, with one extra screenshot after arming Dash; source helper is unchanged.
+- PASS: node scripts/audit-mobile-visual.mjs --visual-polish --out=output/verification/mobile-gothic-refinement/after (12 surfaces).
+- PASS: installed develop-web-game/scripts/web_game_playwright_client.js --url http://127.0.0.1:8091/?scenario=enemy_roster_hd --actions-file tools/hd2-preview/actions.json --iterations 2 --pause-ms 15000 --screenshot-dir output/verification/mobile-gothic-refinement/game-client; shot-1 and state-1 inspected during actual gameplay.
+- PASS: npm run verify:ui-current -- --scenario hd (ui-current-20260912T062840210Z.log); npm run verify:ranked-headed -- --scenario camp (ranked-headed-20260912T063057373Z.log); node --check scripts/verify-mobile-v2.mjs.
+- PASS: npm run verify:baseline (protected committed baseline 5242be0; baseline-20260912T063157455Z.log), npm run verify:guard (15 checks; guard-20260912T063325802Z.log), git diff --check. No unresolved code or browser-QA failures for this scoped change. Physical-phone comfort and appearance under real screen brightness remain outside browser emulation. No commit or deploy requested in this task.
+
+
+## 2026-09-12 - Mobile visual audit and polish
+
+- Current request: detailed visual audit, then fix. Report: docs/audits/2026-09-12-mobile-visual-polish.md; 12 preserved strengths, 22 implemented improvements and 14 reviewed steps with fresh before/after screenshots.
+- Six files changed in this turn. Larger icons/type, visible gold label, clean details surface, complete landscape menus, comparable relic offers, compact forge/death/checkpoint views, consistent camp prices/rarities. Gameplay and Ranked rules/source metadata unchanged.
+- PASS: 30 mobile regressions; six-viewport journey/visual checks; 12 expanded surface checks plus two final camp captures; HD current-tree; Ranked camp; protected committed baseline; guard15; syntax; installed gameplay client. No commit or deploy. Physical phone comfort remains an emulation limit.
+
+
+## 2026-09-12 - Mobile v2 ergonomics
+
+- User requested complete mobile redesign after audit, granting design discretion. New stylesheet style-mobile-v2.css plus render/mobile-experience.js keep PC scoped out. Landscape has skills left, D-pad 12px from right, 396px board at 915x412 (was 341px), and full-height PC-style HP/shield/barrier rails.
+- Contextual portal choices use existing canonical e/q input. Emergency extraction is in the run menu with existing cost confirmation. Native dialog blocks gameplay keys, waits for Ranked overlays, and suppresses automatic prompts for Observer Bot. Added optional click-initiated fullscreen with recoverable fallback. The D-pad center remains noninteractive; the game has no standalone Wait action.
+- Plan: docs/plans/2026-09-12-mobile-v2.md. Audit/screenshots/checks: docs/audits/2026-09-12-mobile-v2-audit.md and output/verification/mobile-v2.
+- Current-tree Pages QA now includes untracked nonignored runtime files; release asset selection unchanged. Do not run Pages builders concurrently: they share output/pages-test-dist.
+- PASS: 30 focused mobile tests, browser matrix and journeys, Pages build metadata, current HD, Ranked camp, committed baseline 5242be0, guard15, syntax, canonical metadata comparison. Local candidate sha256:e6fa9843cd9d3bedeec801a525d8f2bcf46222caaa8fb8404fe38b129f459266 remains unactivated. No commit/deploy.
+- Final phase: 1141/1149 PASS, eight unchanged release-binding failures; output/verification/phase-20260912T053358948Z.log. Final browser suite also verified native fullscreen enter/exit, denied request recovery, and settled HP/shield/barrier fill geometry.
+- Local preview runs at 127.0.0.1:8091. Automatic approval rejected LAN serving; no LAN workaround was attempted. Physical-device thumb reach and browser chrome remain to validate.
+
+## 2026-09-09 - HD2 NPC skills/SFX audit
+
+- Current user requested NPC skill/SFX audit and additional animations as needed. Added separate Acolyte heal/buff and Bulwark shield bash: 96 authored frames, 64 net additional, 2400 total HD2 frames.
+- Preparation/release now follows actual NPC events, including boss skills and misses. Melee uses real impact events, not a generic disorientation flash. Added 13 bounded procedural cues using existing mute/master/simulation behavior. No combat rule or soundtrack change.
+- New interactive preview: tools/hd2-preview/npc-skills.html. Sources: art/source/npc-skills-v2. Regenerate NPC frames after base HD2 assets; then run scripts/build-hd2-preview.mjs.
+- PASS: combined 70 focused tests; final 12 NPC/audio regressions; 2400-frame alpha/padding check; 365 preview combinations plus seven boss scenes; actual NPC skills/misses/mute and 13 rendered SFX signals; current-tree HD; installed game client gameplay; guard 15/15; changed-source syntax.
+- Phase: 1141/1149 PASS, same eight unactivated release-binding failures. Restored LF after source formatting caused 21 additional build failures. Canonical comparison of 35 generated JSON files confirms unchanged rules. Final local candidate hash: sha256:83367e1a4e09d8f3527f63ea7ba805916e4eacf7ab7cd07cfd5f93612b097b12.
+- Audit: docs/audits/2026-09-09-hd2-npc-skills-and-sfx.md. No commit, activation or deploy. Enemy death remains preview-only. Prior section below records the earlier 2336-frame milestone and obsolete melee-flash implementation.
+
+## 2026-09-09 - HD2 early actors (local prototype)
+
+- User expanded scope overnight to all enemies and modest Skitter redesign, without further questions. Completed player + nine ordinary types + nine boss/phase/biome representations: 2336 RGBA frames, 365 preview combinations.
+- Full workshop: tools/hd2-preview/ (local server port 5182). Build local game with scripts/build-hd2-preview.mjs; output/hd2-dist/?hd2=1 includes current untracked art and automatically derived boot build identity.
+- PASS: 58 focused renderer/loader/motion tests; transparency/padding for all 2336 files; preview plus seven boss scenarios; installed Playwright client reached actual gameplay (state/screenshot inspected); current-tree HD scenario; syntax and whitespace. Earlier committed baseline PASS still applies to unchanged HEAD 5242be0.
+- Guard found source checksum drift caused by the four-line HD2 melee presentation signal. Ran generator: 35 JSON files change only byte lengths/hashes; structural comparison confirms identical canonical rules. Local candidate hash: sha256:34e9dbd010ba6d1db3189b9812074f0acee172c82d054f192f4d62face4b3358.
+- Unresolved release gate: verify:phase passes generator + 1141 Worker tests; eight release-binding tests expect the candidate hash to be activated. Active descriptors, client allowlist and deployment bindings were not changed. A future explicitly authorized release must handle that binding; this is not release-ready Ranked. No tests were weakened.
+- Source repairs: player sword directions/margins, brute clipped hammer, Warden phase-one overlapping casting effects. Original generated sheets and repair receipts retained.
+
+- Current user prompt: use Images to create smoother animations for player, slimes and skeleton; preserve dark player, board size and game rules.
+- Isolated branch: codex/hd2-early-animations. Original HD1 sources and locks stay intact.
+- Generated four-direction idle/move/attack/hit/death sheets and normalized 384 RGBA frames. Built-in Images does not expose a model selector; model identity is not verified.
+- Local comparison: tools/hd2-preview/. Game opt-in: ?hd2=1. Frame selection uses existing 120ms movement and 240ms player attack timers; skeleton holds full draw until its actual cast signal. Slime melee emits an HD2-only presentation flash.
+- Enemy death assets are previewable; the game still removes defeated enemies immediately. No new corpse lifetime or occupied tiles.
+
 ## 2026-09-07 - Player animation polish
 
 - User approved smoother player animations preserving the existing style and requested a backup first.

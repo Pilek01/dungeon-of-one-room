@@ -275,7 +275,8 @@ async function dismissBoot(page, diagnostics = null, hdAttempt = 1) {
         path: path.join(ARTIFACT_ROOT, "ranked-boot-loading.png"),
         fullPage: true
       });
-      await page.keyboard.press("Enter");
+      // The first Enter completes loading asynchronously. A second one can
+      // arrive after the screenshot and activate Practice in the ready menu.
     }
   }
   await page.waitForFunction(() => document.querySelector("#bootScreen")?.classList.contains("hidden"));
