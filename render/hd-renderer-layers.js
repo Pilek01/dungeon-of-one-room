@@ -54,7 +54,6 @@
     bulwark: Object.freeze({ renderSize: 114 })
   });
   const BOSS_TYPES = Object.freeze(["guardian", "blacksmith_guardian", "warden"]);
-  const ENEMY_CLIPS = Object.freeze({ idle: 4, move: 4, attack: 4, awaken: 4, cast: 4, hit: 2, death: 2 });
   const GRID_SIZE = 9;
   const ANIMATION_FRAME_MS = 160;
   const EXPANSION_ENEMY_ACTION_VISUAL_MS = 320;
@@ -115,9 +114,9 @@
   }
 
   function drawAsset(context, assets, key, x, y, width = TILE_SIZE, height = TILE_SIZE) {
-    const image = getAsset(assets, key) || (earlyAnimationsEnabled && /^(enemy|boss)\./.test(key) ? getAsset(assets, key.replace(/\.(idle|move|attack|cast|awaken|heal|buff|hit|death)\.\d+$/, ".idle.01")) : null);
+    const image = getAsset(assets, key) || (/^(enemy|boss)\./.test(key) ? getAsset(assets, key.replace(/\.(idle|move|attack|cast|awaken|heal|buff|hit|death)\.\d+$/, ".idle.01")) : null);
     if (!image || !context || typeof context.drawImage !== "function") return false;
-    const stableActor = earlyAnimationsEnabled && /^(actor\.player|enemy|boss)\./.test(key) && !/\.(move|death)\./.test(key);
+    const stableActor = /^(actor\.player|enemy|boss)\./.test(key) && !/\.(move|death)\./.test(key);
     const reference = stableActor ? getAsset(assets, key.replace(/\.(idle|attack|cast|awaken|heal|buff|hit)\.\d+$/, ".idle.01")) : null;
     const offset = stableActor && presentationApi ? presentationApi.anchorOffset(image, reference, width) : { x: 0, y: 0 };
     context.drawImage(image, x + offset.x, y + offset.y, width, height);
@@ -834,6 +833,14 @@
     return PLAYER_DIRECTIONS.includes(enemy && enemy.facing) ? enemy.facing : "south";
   }
 
+  // Presentation timing is shared; HD1 retains its original four/two-frame artwork.
+  // Its second action pose is the held preparation, third is release, fourth recovery.
+  function catalogFrame(frame, clip) {
+    if (earlyAnimationsEnabled) return frame;
+    if ((clip === "attack" || clip === "cast") && frame === 5) return 2;
+    return Math.ceil(frame / 2);
+  }
+
   function selectEnemyVisual(snapshot, enemy) {
     const visual = snapshot && typeof snapshot === "object" ? snapshot : {};
     const actor = enemy && typeof enemy === "object" ? enemy : {};
@@ -841,24 +848,23 @@
       ? actor.type
       : ENEMY_ROSTER.includes(actor.renderType) ? actor.renderType : actor.type;
     if (!ENEMY_ROSTER.includes(renderType)) return Object.freeze({ diagnostic: true });
-    const useEarlyAnimations = earlyAnimationsEnabled;
-    const meleeEvent = useEarlyAnimations && ["slime", "skitter", "otter", "brute"].includes(actor.type) && [...(Array.isArray(visual.visualEvents) ? visual.visualEvents : [])].reverse().find(e =>
+    const meleeEvent = ["slime", "skitter", "otter", "brute"].includes(actor.type) && [...(Array.isArray(visual.visualEvents) ? visual.visualEvents : [])].reverse().find(e =>
       actor.id != null && String(e.sourceId) === String(actor.id) && ["npc_melee", "npc_slam"].includes(e.kind) &&
       Number(visual.nowMs) >= Number(e.startedAtMs) && Number(visual.nowMs) - Number(e.startedAtMs) < Number(e.durationMs));
-    const totemRelease = useEarlyAnimations && actor.type === "totem" && (visual.visualEvents || []).find(e => String(e.sourceId) === String(actor.id) && ["npc_venom", "npc_hex"].includes(e.kind) && visual.nowMs >= e.startedAtMs && visual.nowMs - e.startedAtMs < e.durationMs);
+    const totemRelease = actor.type === "totem" && (visual.visualEvents || []).find(e => String(e.sourceId) === String(actor.id) && ["npc_venom", "npc_hex"].includes(e.kind) && visual.nowMs >= e.startedAtMs && visual.nowMs - e.startedAtMs < e.durationMs);
     const direction = selectEnemyDirection({ ...actor, renderType });
     let clip = "idle";
     if (Number(actor.hp) <= 0) clip = "death";
     else if ((Number(actor.hitFlash) || 0) > 0) clip = "hit";
     else if (meleeEvent) clip = "attack";
-    else if (actor.type === "totem" && (useEarlyAnimations ? totemRelease : (Number(actor.castFlash) || 0) > 0)) clip = "cast";
+    else if (actor.type === "totem" && totemRelease) clip = "cast";
     else if (actor.type === "skeleton" && (actor.aiming === true || actor.volleyAiming === true || ((Number(actor.castFlash) || 0) > 0 && !(actor.disoriented || (Number(actor.disorientedTurns) || 0) > 0)))) clip = "attack";
     else if (actor.type === "riftweaver" && (actor.riftAiming === true || (Number(actor.castFlash) || 0) > 0)) clip = "attack";
     else if (actor.type === "bulwark" && (actor.bulwarkBashAiming === true || (Number(actor.castFlash) || 0) > 0)) clip = "attack";
     else if (renderType === "acolyte" && (actor.aiming === true || (Number(actor.castFlash) || 0) > 0)) clip = "attack";
     else if (renderType === "brute" && (actor.slamAiming === true || actor.rests === true)) clip = "attack";
-    else if ((!earlyAnimationsEnabled || actor.type !== "totem") && Number.isFinite(Number(actor._tweenT)) && Number(actor._tweenT) >= 0 && Number(actor._tweenT) < ENEMY_TWEEN_MS) clip = "move";
-    const frameCount = (useEarlyAnimations ? EARLY_ENEMY_CLIPS : ENEMY_CLIPS)[clip];
+    else if (actor.type !== "totem" && Number.isFinite(Number(actor._tweenT)) && Number(actor._tweenT) >= 0 && Number(actor._tweenT) < ENEMY_TWEEN_MS) clip = "move";
+    const frameCount = EARLY_ENEMY_CLIPS[clip];
     const elapsed = Math.max(0, Number(visual.nowMs) || 0);
     const preparing = actor.riftAiming === true || actor.bulwarkBashAiming === true || actor.aiming === true || actor.volleyAiming === true || actor.slamAiming === true;
     let frame = 1;
@@ -868,12 +874,10 @@
       const tweenProgress = Math.max(0, Math.min(1, (Number(actor._tweenT) || 0) / ENEMY_TWEEN_MS));
       frame = Math.min(frameCount, Math.floor(tweenProgress * frameCount) + 1);
     } else if (clip === "hit") {
-      frame = useEarlyAnimations
-        ? Math.max(1, Math.min(frameCount, 1 + Math.floor((120 - Number(actor.hitFlash)) / 30)))
-        : (Number(actor.hitFlash) || 0) > 60 ? 1 : 2;
+      frame = Math.max(1, Math.min(frameCount, 1 + Math.floor((120 - Number(actor.hitFlash)) / 30)));
     } else if (meleeEvent && clip === "attack") {
       frame = Math.min(8, 6 + Math.floor((Number(visual.nowMs) - Number(meleeEvent.startedAtMs)) / (Number(meleeEvent.durationMs) / 3)));
-    } else if (useEarlyAnimations && clip === "attack" && preparing) {
+    } else if (clip === "attack" && preparing) {
       const duration = ["riftweaver", "bulwark"].includes(actor.type) ? EXPANSION_ENEMY_ACTION_VISUAL_MS : 140;
       const remaining = Math.max(0, Math.min(duration, Number(actor.castFlash) || 0));
       frame = remaining > 0 ? Math.min(5, 1 + Math.floor((duration - remaining) / (duration / 5))) : 5;
@@ -883,32 +887,25 @@
         : 140;
       const remaining = Math.max(0, Math.min(actionDurationMs, Number(actor.castFlash) || 0));
       frame = Math.min(frameCount, 1 + Math.floor((actionDurationMs - remaining) / (actionDurationMs / frameCount)));
-      if (useEarlyAnimations && ["skeleton", "acolyte", "riftweaver", "bulwark"].includes(actor.type)) {
+      if (["skeleton", "acolyte", "riftweaver", "bulwark"].includes(actor.type)) {
         // Frames 1-5 prepare the action; 6-8 release/recover after its real signal.
         frame = Math.min(8, 6 + Math.floor((actionDurationMs - remaining) / (actionDurationMs / 3)));
       }
     } else if (clip === "attack") {
-      if (useEarlyAnimations) {
-        frame = actor.rests === true ? 8 : 5;
-      } else if (actor.type === "riftweaver") {
-        frame = Math.min(2, 1 + Math.max(0, Math.floor(Number(actor.telegraphAge) || 0)));
-      } else if (actor.type === "bulwark") {
-        frame = Math.min(2, 1 + Math.max(0, Math.floor(Number(actor.telegraphAge) || 0)));
-      } else {
-        frame = Math.min(frameCount, 1 + Math.max(0, Math.floor(Number(actor.telegraphAge) || 0)));
-      }
+      frame = actor.rests === true ? 8 : 5;
     } else if (clip === "death") {
       frame = (Math.floor(elapsed / 180) % frameCount) + 1;
     }
     if (totemRelease && clip === "cast") frame = Math.min(8, 6 + Math.floor((elapsed - totemRelease.startedAtMs) / (totemRelease.durationMs / 3)));
     let assetClip = clip;
-    if (useEarlyAnimations && renderType === "acolyte" && clip === "attack") {
+    if (earlyAnimationsEnabled && renderType === "acolyte" && clip === "attack") {
       const event = [...(Array.isArray(visual.visualEvents) ? visual.visualEvents : [])].reverse().find(e =>
         ["npc_heal", "npc_buff"].includes(e.kind) && String(e.sourceId) === String(actor.id) &&
         elapsed >= Number(e.startedAtMs) && elapsed - Number(e.startedAtMs) < Number(e.durationMs));
       const kind = actor.aiming === true ? actor.acolyteCastType : event?.kind.slice(4);
       if (kind === "heal" || kind === "buff") assetClip = kind;
     }
+    frame = catalogFrame(frame, clip);
     const key = `enemy.${renderType}.${direction}.${assetClip}.${String(frame).padStart(2, "0")}`;
     return Object.freeze({ type: renderType, logicalType: actor.type, direction, clip, frame, key });
   }
@@ -949,13 +946,13 @@
     const direction = PLAYER_DIRECTIONS.includes(actor.facing) ? actor.facing : "south";
     const preparing = actor.aiming === true || actor.burstAiming === true || actor.anvilAiming === true || actor.slamAiming === true || actor.latticeAiming === true || actor.voidStepAiming === true || actor.soulChainAiming === true || actor.blacksmithChainAiming === true || actor.vaultLockdownAiming === true;
     const releaseKinds = ["npc_slam", "npc_rift", "npc_bolt", "npc_aura", "warden_lattice_burst", "warden_voidstep_vanish", "warden_voidstep_arrival", "warden_soul_chain_fire", "blacksmith_chain_hook_fire", "blacksmith_overheat_transition", "vault_hoard_sentence_cast", "vault_lockdown_detonate"];
-    const release = earlyAnimationsEnabled && [...(Array.isArray(visual.visualEvents) ? visual.visualEvents : [])].reverse().find(e =>
+    const release = [...(Array.isArray(visual.visualEvents) ? visual.visualEvents : [])].reverse().find(e =>
       actor.id != null && String(e.sourceId) === String(actor.id) && releaseKinds.includes(e.kind) &&
       Number(visual.nowMs) >= Number(e.startedAtMs) && Number(visual.nowMs) - Number(e.startedAtMs) < Number(e.durationMs));
     let clip = "idle";
     if (Number(actor.hp) <= 0) clip = "death";
     else if ((Number(actor.hitFlash) || 0) > 0) clip = "hit";
-    else if (earlyAnimationsEnabled && (preparing || release)) clip = profile.action;
+    else if (preparing || release) clip = profile.action;
     else if (
       (actor.type === "warden" && (actor.aiming === true || actor.burstAiming === true || (Number(actor.castFlash) || 0) > 0))
       || (actor.type === "blacksmith_guardian" && (actor.anvilAiming === true || actor.rests === true || (Number(actor.castFlash) || 0) > 0))
@@ -963,41 +960,24 @@
     ) clip = profile.action;
     else if (Number.isFinite(Number(actor._tweenT)) && Number(actor._tweenT) >= 0 && Number(actor._tweenT) < ENEMY_TWEEN_MS) clip = "move";
 
-    const frameCount = (clip === "hit" || clip === "death" ? 2 : 4) * (earlyAnimationsEnabled ? 2 : 1);
     let frame = 1;
-    if (clip === "idle" || clip === "move") {
-      const fps = clip === "move" ? 8 : 4;
-      frame = (Math.floor(Math.max(0, Number(visual.nowMs) || 0) / (1000 / fps)) % frameCount) + 1;
+    if (clip === "idle") {
+      frame = Math.floor(Math.max(0, Number(visual.nowMs) || 0) / 125) % 8 + 1;
+    } else if (clip === "move") {
+      frame = Math.min(8, Math.floor(Math.max(0, Number(actor._tweenT) || 0) / 15) + 1);
     } else if (clip === "hit") {
-      frame = (Number(actor.hitFlash) || 0) > 60 ? 1 : 2;
+      frame = Math.max(1, Math.min(4, 1 + Math.floor((120 - Number(actor.hitFlash)) / 30)));
     } else if (clip === profile.action) {
-      if ((Number(actor.castFlash) || 0) > 0) {
-        const actionDurationMs = actor.type === "warden" ? WARDEN_CAST_VISUAL_MS : 140;
-        const remaining = Math.max(0, Math.min(actionDurationMs, Number(actor.castFlash) || 0));
-        frame = Math.min(frameCount, 1 + Math.floor((actionDurationMs - remaining) / (actionDurationMs / frameCount)));
-      } else {
-        frame = Math.min(frameCount, 1 + Math.max(0, Math.floor(Number(actor.telegraphAge) || 0)));
-      }
-    } else if (clip === "death") {
-      frame = Math.min(2, 1 + Math.floor(Math.max(0, Number(visual.nowMs) || 0) / 180) % 2);
+      const duration = actor.type === "warden" ? WARDEN_CAST_VISUAL_MS : 140;
+      const remaining = Math.max(0, Math.min(duration, Number(actor.castFlash) || 0));
+      frame = release
+        ? Math.min(8, 6 + Math.floor((Number(visual.nowMs) - Number(release.startedAtMs)) / (Number(release.durationMs) / 3)))
+        : preparing
+        ? remaining > 0 ? Math.min(5, 1 + Math.floor((duration - remaining) / (duration / 5))) : 5
+        : remaining > 0 ? Math.min(8, 6 + Math.floor((duration - remaining) / (duration / 3))) : actor.rests === true ? 8 : 5;
     }
-    if (earlyAnimationsEnabled) {
-      if (clip === "idle") {
-        frame = Math.floor(Math.max(0, Number(visual.nowMs) || 0) / 125) % 8 + 1;
-      } else if (clip === "move") {
-        frame = Math.min(8, Math.floor(Math.max(0, Number(actor._tweenT) || 0) / 15) + 1);
-      } else if (clip === "hit") {
-        frame = Math.max(1, Math.min(4, 1 + Math.floor((120 - Number(actor.hitFlash)) / 30)));
-      } else if (clip === profile.action) {
-        const duration = actor.type === "warden" ? WARDEN_CAST_VISUAL_MS : 140;
-        const remaining = Math.max(0, Math.min(duration, Number(actor.castFlash) || 0));
-        frame = release
-          ? Math.min(8, 6 + Math.floor((Number(visual.nowMs) - Number(release.startedAtMs)) / (Number(release.durationMs) / 3)))
-          : preparing
-          ? remaining > 0 ? Math.min(5, 1 + Math.floor((duration - remaining) / (duration / 5))) : 5
-          : remaining > 0 ? Math.min(8, 6 + Math.floor((duration - remaining) / (duration / 3))) : actor.rests === true ? 8 : 5;
-      }
-    }
+    // Removed bosses use the event-relative one-shot death renderer.
+    frame = catalogFrame(frame, clip);
     return Object.freeze({
       type: actor.type,
       phase,
@@ -1214,7 +1194,7 @@
   }
 
   function drawEnemiesLayer(context, snapshot, assets) {
-    if (earlyAnimationsEnabled) presentationApi?.drawDeaths(context, snapshot, assets);
+    presentationApi?.drawDeaths(context, snapshot, assets);
     const enemies = snapshot && Array.isArray(snapshot.enemies) ? snapshot.enemies : [];
     let drewKnown = false;
     for (const enemy of enemies) {
@@ -1511,7 +1491,7 @@
   }
 
   function drawVfxLayer(context, snapshot, assets) {
-    if (earlyAnimationsEnabled) presentationApi?.drawSkills(context, snapshot);
+    presentationApi?.drawSkills(context, snapshot);
     if (vfxApi && typeof vfxApi.drawVfx === "function") vfxApi.drawVfx(context, snapshot, undefined, assets);
   }
 
@@ -1557,6 +1537,7 @@
 
   return Object.freeze({
     earlyAnimationsEnabled,
+    deathFrameCount: earlyAnimationsEnabled ? 4 : 2,
     LAYER_ORDER,
     DEFAULT_LAYERS,
     visualHash,

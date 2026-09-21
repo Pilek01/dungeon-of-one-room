@@ -4,7 +4,7 @@ const fs=require('node:fs');
 const vm=require('node:vm');
 const cues=require('../render/hd2-npc-cues.js');
 function extract(source,name){const start=source.indexOf(`function ${name}(`);assert.ok(start>=0);const open=source.indexOf('{',source.indexOf(')',start));let depth=0;for(let i=open;i<source.length;i++){if(source[i]==='{')depth++;if(source[i]==='}'&&--depth===0)return source.slice(start,i+1);}throw Error(name);}
-test('actual game SFX path honors mute, simulation, opt-in and same-cue rate limiting',()=>{
+test('actual game SFX path honors mute, simulation, HD1/HD2 and same-cue rate limiting',()=>{
  const source=fs.readFileSync('game.js','utf8');const played=[];
  const state={audioMuted:false,simulation:{suppressAudio:false}};
  const audio={ctx:{currentTime:10},master:{id:'original-master'}};
@@ -16,8 +16,8 @@ test('actual game SFX path honors mute, simulation, opt-in and same-cue rate lim
  context.playSfx('npc:heal');assert.equal(played.length,2);
  audio.ctx.currentTime+=.1;context.playSfx('npc:heal');assert.equal(played.length,4);
  simulation=true;state.simulation.suppressAudio=true;context.playSfx('npc:bash');assert.equal(played.length,4);
- simulation=false;context.window.DungeonHDRendererLayers.earlyAnimationsEnabled=false;context.playSfx('npc:bash');assert.equal(played.length,4);
- context.window.DungeonHDRendererLayers.earlyAnimationsEnabled=true;context.playSfx('npc:unknown');assert.equal(played.length,4);
+ simulation=false;context.window.DungeonHDRendererLayers.earlyAnimationsEnabled=false;context.playSfx('npc:bash');assert.equal(played.length,6);
+ context.window.DungeonHDRendererLayers.earlyAnimationsEnabled=true;context.playSfx('npc:unknown');assert.equal(played.length,6);
 });
 test('NPC cue routing contains real action events and bounds tone energy/duration',()=>{
  for(const kind of Object.values(cues.events))assert.ok(cues.cues[kind]);

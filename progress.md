@@ -2663,3 +2663,69 @@ Updated next good targets
   `verify:ui-current -- --scenario save`,
   `verify:ranked-headed -- --scenario lifecycle`, and `verify:baseline` passed.
 - No commit, push, deploy, D1 migration, or remote ruleset activation was run.
+
+## 2026-09-21 - Original HD1 artwork with default presentation improvements
+
+- Current user request: keep HD1 sprites and promote the loading, NPC SFX/VFX,
+  status, death and timing improvements into the base game.
+- Original PNGs and default asset manifest are unchanged; optional HD2 artwork
+  remains available only through its existing query flag. Shared presentation
+  now uses catalog-appropriate frame counts (HD1 four/two, HD2 eight/four).
+  Totem idle no longer impersonates movement/casting; actual release events
+  drive attacks. Existing HD1 casts represent heal/buff, with distinct effect
+  glyphs instead of importing HD2-only Acolyte artwork.
+- Default NPC material audio retains mute/simulation suppression and rate limits.
+  Two-frame HD1 death events survive immutable snapshots, expire once and do not
+  delay removal, rewards, turn progression or free tiles. Foot anchoring applies
+  to both catalogs. Existing status overlays remain enabled in both catalogs.
+- HD1 bootstrap manifest: 1919 -> 884 entries; 1035 actor frames deferred. Original
+  directional idle frames remain available during loading/failure; existing
+  bounded cache and retry behavior apply. This is an asset-count metric, not a
+  measured startup-time claim.
+- Generated data: 34 generated JSONs differ only in game.js source fingerprint;
+  one ruleset manifest also changes. Canonical rule values unchanged, verified by
+  output/verification/hd1-provenance.cjs. Candidate hash:
+  sha256:f3101eee949400ce36eb65ebe4ccf211125960d4e5223855e451693d55bd1f2b.
+  Previous deployed hash 8c5c268... is retained with identical capabilities in
+  Worker registry and every applicable client capability list. No live activation.
+- PASS: node --test tests/hd1-presentation.test.js tests/hd2-presentation.test.js
+  tests/hd2-stream.test.js tests/hd2-npc-audio.test.js tests/hd2-npc-skills.test.js
+  tests/hd2-early-animation.test.js tests/hd2-all-animation.test.js
+  tests/hd2-mix.test.js tests/hd-actor-status-fx.test.js tests/hd-renderer.test.js
+  tests/hd-player-motion.test.js tests/hd-asset-loader.test.js
+  tests/audio-freeze.test.js (87 tests; output/verification/hd1-focused-final.log).
+- PASS: node --test tests/visual-snapshot.test.js (17 tests);
+  node --test --test-name-pattern 'selector gate' tests/hd-enemy-assets.test.js
+  (1 test); focused production-release, ranked-integrity-release and new
+  hd1-presentation-release checks (23 tests, hd1-compat.log).
+- PASS: node scripts/build-hd2-preview.mjs; node scripts/verify-hd1-presentation.mjs
+  (actual default HD1 heal/buff/rift, sound/mute, statuses, death/removal/reward/
+  expiry; zero HD2 requests, missing assets or page errors). Screenshots inspected.
+- PASS: installed develop-web-game web_game_playwright_client.js, 3 movement/
+  attack iterations, 15000 ms settling pauses; actual playing state and screenshot
+  inspected, no error files. Artifacts: output/verification/hd1-gameplay-client.
+- Current-tree HD browser stage passed:
+  npm run verify:ui-current -- --scenario hd
+  (output/verification/ui-current-20260921T142345375Z.log). Its final whitespace
+  stage found an extra test-file EOF blank line; removed and git diff --check
+  passed afterwards. No renderer change after the successful browser stage.
+- PASS: npm run verify:baseline (committed HEAD only; 4 guard tests plus browser,
+  output/verification/baseline-20260921T142702081Z.log).
+- PASS: npm run verify:ranked-headed -- --scenario recovery
+  (output/verification/ranked-headed-20260921T142852637Z.log).
+- Historical audit limitation: the broad old hd-enemy-assets/hd-boss-assets suite
+  has six existing failures reproduced using the committed HEAD renderer:
+  three external chroma-helper identity/hash mismatches, outdated boss catalog
+  count, old Warden phase-2 key expectation and stale tween fixture.
+  Baseline reproduction: output/verification/hd1-legacy-baseline.log.
+  They are not hidden or weakened; artwork generation was not changed.
+- No commit, push or deployment requested/performed in this task. Physical phone
+  profiling and a fresh subjective sound listening pass were not performed.
+- Final PASS: npm run verify:phase — 1154/1154, generator drift, changed JavaScript
+  syntax and whitespace all passed. Log:
+  output/verification/phase-20260921T143132828Z.log. Earlier phase attempts exposed
+  the expected new fingerprint/explicit historical-hash list mismatch; the
+  candidate and predecessor fixtures were aligned without weakening assertions.
+- Final review: 55 task files, including 35 generated provenance/manifest files;
+  zero image/default-manifest changes. Four pre-existing unrelated untracked
+  files remain untouched. Final git diff --check PASS.

@@ -4,7 +4,7 @@
  function createStream(manifest,loader,options={},inactiveLimit=2){
   const groups=new Map(), permanent=new Set(), bootstrap=[];
   for(const entry of manifest){
-   const actor=/assets\/hd\/(early-v2|all-v2)\//.test(entry.src)&&/^(enemy|boss)\./.test(entry.key);
+   const actor=/^(enemy|boss)\..+\.(north|south|east|west|base)\.(idle|move|attack|cast|awaken|heal|buff|hit|death)\.\d+$/.test(entry.key);
    if(actor){const id=actorKey(entry.key);if(!groups.has(id))groups.set(id,[]);groups.get(id).push(entry);}
    if(!actor||/\.idle\.01$/.test(entry.key)){bootstrap.push(entry);permanent.add(entry.key);}
   }

@@ -10,12 +10,13 @@
    const t=enemy._tweenT/120,remaining=(1-t)*(1-t);
    offsetX=(enemy._tweenFromX/16-enemy.x)*remaining;offsetY=(enemy._tweenFromY/16-enemy.y)*remaining;
   }
-  return {spriteKey:selection.key.replace(/\.[^.]+\.\d+$/,'.death.01'),spriteSize,offsetX,offsetY,sourceId:enemy.id,facing:enemy.facing,durationMs:boss.diagnostic?480:640};
+  return {spriteKey:selection.key.replace(/\.[^.]+\.\d+$/,'.death.01'),spriteSize,spriteFrameCount:layers.deathFrameCount||4,offsetX,offsetY,sourceId:enemy.id,facing:enemy.facing,durationMs:boss.diagnostic?480:640};
  }
  function deathFrame(event,now){
   const age=now-Number(event.startedAtMs),duration=Number(event.durationMs);
   if(age<0||age>=duration||!Number.isFinite(age)||!(duration>0))return null;
-  const progress=age/duration,frame=Math.min(4,1+Math.floor(progress*4));
+  const count=event.spriteFrameCount===2?2:4;
+  const progress=age/duration,frame=Math.min(count,1+Math.floor(progress*count));
   return {frame,key:event.spriteKey.replace(/\d+$/,String(frame).padStart(2,'0')),alpha:Math.min(1,(1-progress)/.3)};
  }
  function drawDeaths(context,snapshot,assets){

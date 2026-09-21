@@ -48,6 +48,7 @@ const require = createRequire(import.meta.url);
 const protocol = require("../../../online-v3/ranked-v3-protocol.js");
 const EXPECTED_HASH = manifest.rulesetHash;
 const CURRENT_PRODUCTION_HASH = EXPECTED_HASH;
+const PREVIOUS_HD1_PRESENTATION_HASH = "sha256:8c5c26851cbf440a62c2c2acf5f168fc13495de6601abd2e9681d6fa0f2d6c32";
 const PREVIOUS_MERCHANT_DEPTH_HASH = "sha256:79078f4f51858209c9c493333824f9e8077403452fef1cff4d1906a1d9661f5a";
 const PREVIOUS_MOBILE_HD2_HASH = "sha256:c381c23e71385fec5e411e53b657e4429c3fa2d57edc59f91f984dd3e109f3cb";
 const PREVIOUS_SPECIAL_ROOM_ROTATION_HASH = "sha256:dc8b9d11a97fe35d670089a03141b70174d62d9af39a8dabd12733193ae2ce3e";
@@ -184,6 +185,7 @@ test("bounded proc release activates a new hash and leaves every historical desc
     value.status === RULESET_RELEASE_STATES.PRODUCTION_RELEASED &&
     typeof value.rulesetHash === "string" &&
     value.rulesetHash !== manifest.rulesetHash &&
+    value.rulesetHash !== PREVIOUS_HD1_PRESENTATION_HASH &&
     value.rulesetHash !== PREVIOUS_MERCHANT_DEPTH_HASH &&
     value.rulesetHash !== PREVIOUS_MOBILE_HD2_HASH &&
     value.rulesetHash !== PREVIOUS_SPECIAL_ROOM_ROTATION_HASH &&
@@ -220,6 +222,7 @@ test("bounded proc release activates a new hash and leaves every historical desc
   assert.ok(protocol.SUPPORTED_RULESET_HASHES.includes(PREVIOUS_BOUNDED_PROC_HASH));
   assert.deepEqual(protocol.BOUNDED_PROC_CLAIMS_RULESET_HASHES, [
     CURRENT_PRODUCTION_HASH,
+    PREVIOUS_HD1_PRESENTATION_HASH,
     PREVIOUS_MERCHANT_DEPTH_HASH,
     PREVIOUS_MOBILE_HD2_HASH,
     PREVIOUS_SPECIAL_ROOM_ROTATION_HASH,
@@ -289,6 +292,7 @@ test("canonical chest carry release is hash-gated and preserves the previous pro
   assert.ok(protocol.SUPPORTED_RULESET_HASHES.includes(PREVIOUS_CHEST_CARRY_HASH));
   assert.deepEqual(protocol.CANONICAL_CHEST_OUTCOMES_RULESET_HASHES, [
     CURRENT_PRODUCTION_HASH,
+    PREVIOUS_HD1_PRESENTATION_HASH,
     PREVIOUS_MERCHANT_DEPTH_HASH,
     PREVIOUS_MOBILE_HD2_HASH,
     PREVIOUS_SPECIAL_ROOM_ROTATION_HASH,
@@ -348,6 +352,7 @@ test("canonical chest repair release retains the previous canonical hash and cap
   assert.ok(protocol.SUPPORTED_RULESET_HASHES.includes(PREVIOUS_CANONICAL_CHEST_HASH));
   assert.deepEqual(protocol.CANONICAL_CHEST_OUTCOMES_RULESET_HASHES, [
     CURRENT_PRODUCTION_HASH,
+    PREVIOUS_HD1_PRESENTATION_HASH,
     PREVIOUS_MERCHANT_DEPTH_HASH,
     PREVIOUS_MOBILE_HD2_HASH,
     PREVIOUS_SPECIAL_ROOM_ROTATION_HASH,
@@ -399,6 +404,7 @@ test("Ranked start resource parity is hash-gated and preserves the previous prod
   assert.ok(protocol.SUPPORTED_RULESET_HASHES.includes(PREVIOUS_START_RESOURCE_PARITY_HASH));
   assert.deepEqual(protocol.BOUNDED_COMBAT_RESOURCES_RULESET_HASHES, [
     CURRENT_PRODUCTION_HASH,
+    PREVIOUS_HD1_PRESENTATION_HASH,
     PREVIOUS_MERCHANT_DEPTH_HASH,
     PREVIOUS_MOBILE_HD2_HASH,
     PREVIOUS_SPECIAL_ROOM_ROTATION_HASH,

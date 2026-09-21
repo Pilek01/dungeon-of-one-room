@@ -1,0 +1,74 @@
+import assert from 'node:assert/strict';
+import {createRequire} from 'node:module';
+import {mkdir,writeFile} from 'node:fs/promises';
+import {launchMutedBrowser} from './playwright-muted-launch.mjs';
+const require=createRequire(import.meta.url);
+const {chromium}=require(require.resolve('playwright',{paths:[process.env.USERPROFILE+'/.codex/skills/develop-web-game/node_modules']}));
+const out='output/verification/hd1-presentation';await mkdir(out,{recursive:true});
+const browser=await launchMutedBrowser(chromium,{headless:true});
+const page=await browser.newPage({viewport:{width:1440,height:1000}});
+const errors=[],missing=[],requested=[];
+page.on('pageerror',e=>errors.push(e.message));
+page.on('request',r=>requested.push(r.url()));
+page.on('response',r=>{if(r.status()>=400&&!r.url().endsWith('favicon.ico'))missing.push(r.url())});
+try{
+ await page.route('**/game.js',async route=>{
+  const response=await route.fetch();let source=await response.text();
+  source=source.replace('function playTone(ctx, destination, options) {','function playTone(ctx, destination, options) { (window.__npcTones ||= []).push(options);');
+  const end=source.lastIndexOf('})();');assert(end>0);
+  source=source.slice(0,end)+'window.__qa={state,killEnemy,renderVisualFrame,graphicsController,applyAcolyteHeal,applyAcolyteBuff,startRiftweaverRift,executeRiftweaverRift,startBulwarkBash,executeBulwarkBash};\n'+source.slice(end);
+  await route.fulfill({response,body:source});
+ });
+ await page.addInitScript(()=>{localStorage.setItem('dungeonOneRoomPlayerName','HD1QA');localStorage.setItem('dungeonOneRoomTutorialSeen','1')});
+ await page.goto((process.env.HD_PREVIEW_URL||'http://127.0.0.1:5183')+'/output/hd2-dist/?scenario=enemy_roster_hd');
+ await page.waitForFunction(()=>window.__qa,null,{timeout:90000});
+ for(let i=0;i<90;i++){if(await page.locator('#bootScreen.hidden').count())break;await page.keyboard.press('Enter');await page.waitForTimeout(250)}
+ await page.waitForFunction(()=>document.querySelector('#bootScreen.hidden'));
+ await page.waitForFunction(()=>window.__qa.graphicsController.getStreamingStats().pending.length===0,null,{timeout:60000});
+ assert.equal(await page.evaluate(()=>window.DungeonHDRendererLayers.earlyAnimationsEnabled),false);
+ await page.locator('#game').click();
+ const result=await page.evaluate(()=>{
+  const q=window.__qa,s=q.state,l=window.DungeonHDRendererLayers,p=window.DungeonHD2Presentation;
+  s.audioMuted=false;s.roomIntroTimer=0;s.player.hp=s.player.maxHp=1000;s.visualEvents=[];
+  const caster=s.enemies.find(e=>e.type==='acolyte'),target=s.enemies.find(e=>e.type==='brute');target.hp=1;target.acolyteBuffTurns=0;
+  const hp=target.hp;q.applyAcolyteHeal(caster,target);q.applyAcolyteBuff(caster,target);
+  const commands=p.skillCommands({nowMs:performance.now(),visualEvents:s.visualEvents});
+  const r={id:'qa-rift',type:'riftweaver',name:'Riftweaver',x:2,y:2,hp:10,maxHp:10,attack:2,facing:'south'};
+  s.enemies.push(r);s.player.x=4;s.player.y=4;const before=s.player.hp;q.startRiftweaverRift(r);
+  const prepared=l.selectEnemyVisual({},r).frame,chargeNoDamage=s.player.hp===before;
+  s.player.x=7;s.player.y=7;q.executeRiftweaverRift(r);
+  const released=l.selectEnemyVisual({},r).frame,missNoDamage=s.player.hp===before;
+  const tones=(window.__npcTones||[]).length;s.audioMuted=true;q.applyAcolyteHeal(caster,target);
+  const muteWorks=(window.__npcTones||[]).length===tones;
+  const skeleton=s.enemies.find(e=>e.type==='skeleton');
+  Object.assign(s.player,{poisonTurns:9,bleedTurns:9});Object.assign(skeleton,{frozenThisTurn:true,frostFx:3000});target.burnTurns=9;
+  const snapshot=window.DungeonVisualSnapshot.createVisualSnapshot(s,performance.now());
+  const statuses={player:p.actorStatuses(snapshot.player),skeleton:p.actorStatuses(snapshot.enemies.find(e=>e.id===skeleton.id)),brute:p.actorStatuses(snapshot.enemies.find(e=>e.id===target.id))};
+  q.renderVisualFrame(performance.now());
+  return {healed:target.hp>hp,buffed:target.acolyteBuffTurns>0,commands,prepared,released,chargeNoDamage,missNoDamage,tones,muteWorks,statuses,stream:q.graphicsController.getStreamingStats()};
+ });
+ assert(result.healed&&result.buffed&&result.chargeNoDamage&&result.missNoDamage&&result.muteWorks);
+ assert(result.prepared<=2);assert.equal(result.released,3);assert(result.tones>=4);
+ assert(result.commands.some(c=>c.kind==='npc_heal'&&c.shape==='cross'));
+ assert.deepEqual(result.statuses.player,['poison','bleed']);assert(result.statuses.skeleton.includes('freeze'));assert(result.statuses.brute.includes('burn'));
+ await page.screenshot({path:out+'/hd1-skills-statuses.png',fullPage:true});
+ const death=await page.evaluate(()=>{
+  const q=window.__qa,s=q.state,enemy=s.enemies.find(e=>e.type==='slime'),before=s.totalKills;
+  enemy.hp=0;q.killEnemy(enemy,'attack');
+  const event=s.visualEvents.find(e=>e.kind==='enemy_death'&&e.sourceId===String(enemy.id));
+  const context=document.querySelector('#game').getContext('2d'),original=context.drawImage,drawn=[];
+  context.drawImage=function(im,...args){if(im.src?.includes('/slime/')&&im.src?.includes('-death-'))drawn.push(im.src);return original.call(this,im,...args)};
+  q.renderVisualFrame(event.startedAtMs+300);context.drawImage=original;
+  const snapshot=window.DungeonVisualSnapshot.createVisualSnapshot(s,event.startedAtMs+300);
+  const copied=snapshot.visualEvents.find(e=>e.kind==='enemy_death');
+  return {event,copied,drawn,removed:!s.enemies.includes(enemy),rewarded:s.totalKills===before+1,expired:window.DungeonHD2Presentation.deathFrame(copied,event.startedAtMs+481)===null};
+ });
+ assert(death.removed&&death.rewarded&&death.expired);assert.equal(death.copied.spriteFrameCount,2);
+ assert(death.drawn.some(src=>src.includes('/enemies/slime/frames/')&&src.endsWith('-death-02.png')));
+ await page.screenshot({path:out+'/hd1-death.png',fullPage:true});
+ assert(!requested.some(u=>/assets\/hd\/(early-v2|all-v2)\//.test(u)),'default must never request HD2 art');
+ assert(!requested.some(u=>/\/bosses\/.*\/frames\/(north|south|east|west)-(move|attack|cast|hit|death)-/.test(u)),'unused boss clips must not preload');
+ assert.deepEqual(errors,[]);assert.deepEqual(missing,[]);
+ await writeFile(out+'/result.json',JSON.stringify({pass:true,result,death,errors,missing,hd2Requests:0},null,2));
+ console.log('PASS: default HD1 artwork, streaming, actual heal/buff/rift + SFX/mute, actor statuses, two-frame death with immediate removal/reward and expiry; no HD2 requests.');
+}finally{await browser.close()}

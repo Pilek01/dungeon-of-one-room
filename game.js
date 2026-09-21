@@ -6816,7 +6816,7 @@
 
     if (typeof kind === "string" && kind.startsWith("npc:")) {
       const cue = kind.slice(4);
-      if (window.DungeonHDRendererLayers?.earlyAnimationsEnabled !== true || !npcCueGate?.(cue, now, cueOptions?.sourceId)) return;
+      if (!npcCueGate?.(cue, now, cueOptions?.sourceId)) return;
       const npcOut = window.DungeonHD2NpcCues.getBus(ctx, out);
       window.DungeonHD2NpcCues.playMaterial(ctx, npcOut, cue, cueOptions?.actorType, now);
       for (const tone of window.DungeonHD2NpcCues.cues[cue]) {
@@ -15530,7 +15530,7 @@
   }
 
   function emitNpcSkillCue(kind, enemy, target) {
-    if (enemy && window.DungeonHDRendererLayers?.earlyAnimationsEnabled === true) {
+    if (enemy) {
       emitVisualEvent(`npc_${kind}`, enemy.x, enemy.y, { sourceId: enemy.id, actorType: enemy.type, targetX: target?.x, targetY: target?.y, durationMs: 140 });
     }
   }
@@ -15538,7 +15538,7 @@
   function emitVisualEvent(kind, x, y, options = {}) {
     if (isSimulationActive() && state.simulation.suppressVisuals) return null;
     const npcCue = window.DungeonHD2NpcCues?.events[kind];
-    if (npcCue && window.DungeonHDRendererLayers?.earlyAnimationsEnabled === true) playSfx(`npc:${npcCue}`, options);
+    if (npcCue) playSfx(`npc:${npcCue}`, options);
     const startedAtMs = typeof performance === "object" && typeof performance.now === "function"
       ? performance.now()
       : Date.now();
@@ -15551,7 +15551,7 @@
       durationMs: Math.max(80, Number(options.durationMs) || 320)
     };
     if (options.sourceId != null) event.sourceId = String(options.sourceId);
-    for (const field of ["spriteKey", "spriteSize", "offsetX", "offsetY", "targetX", "targetY", "actorType"]) {
+    for (const field of ["spriteKey", "spriteSize", "spriteFrameCount", "offsetX", "offsetY", "targetX", "targetY", "actorType"]) {
       if (typeof options[field] === "string" || (typeof options[field] === "number" && Number.isFinite(options[field]))) event[field] = options[field];
     }
     if (Array.isArray(options.tiles)) {
@@ -16237,7 +16237,7 @@
         sourceId: enemy.id
       });
     }
-    if (!shouldTriggerFinalBossShift && typeof window === "object" && window.DungeonHDRendererLayers?.earlyAnimationsEnabled === true) {
+    if (!shouldTriggerFinalBossShift && typeof window === "object" && window.DungeonHDRendererLayers) {
       const record = window.DungeonHD2Presentation?.deathRecord(state, enemy, window.DungeonHDRendererLayers);
       if (record) emitVisualEvent("enemy_death", enemy.x, enemy.y, record);
     }
@@ -18359,7 +18359,7 @@
     enemy.anvilDy = 0;
     if (dx === 0 && dy === 0) return false;
     emitNpcSkillCue("slam", enemy);
-    if (window.DungeonHDRendererLayers?.earlyAnimationsEnabled === true) enemy.castFlash = 140;
+    enemy.castFlash = 140;
     const lineTiles = getBlacksmithAnvilTiles(enemy, dx, dy);
     spawnParticles(enemy.x, enemy.y, "#ff8b59", 12, 1.1);
     if (!lineTiles.some((tile) => tile.x === state.player.x && tile.y === state.player.y)) {
@@ -19841,7 +19841,7 @@
     target.hp = Math.min(target.maxHp, target.hp + healAmount);
     const healed = Math.max(0, target.hp - beforeHp);
     caster.castFlash = 120;
-    if (window.DungeonHDRendererLayers?.earlyAnimationsEnabled === true) emitVisualEvent("npc_heal", caster.x, caster.y, { sourceId: caster.id, actorType: caster.type, targetX: target.x, targetY: target.y, durationMs: 140 });
+    emitVisualEvent("npc_heal", caster.x, caster.y, { sourceId: caster.id, actorType: caster.type, targetX: target.x, targetY: target.y, durationMs: 140 });
     spawnParticles(caster.x, caster.y, "#8edcc3", 8, 1.05);
     spawnParticles(target.x, target.y, "#baf7dc", 10, 1.05);
     if (healed > 0) {
@@ -19858,7 +19858,7 @@
     target.acolyteBuffTurns = ACOLYTE_SUPPORT_BUFF_TURNS;
     state.enemyAcolyteBuffCastThisTurn = true;
     caster.castFlash = 120;
-    if (window.DungeonHDRendererLayers?.earlyAnimationsEnabled === true) emitVisualEvent("npc_buff", caster.x, caster.y, { sourceId: caster.id, actorType: caster.type, targetX: target.x, targetY: target.y, durationMs: 140 });
+    emitVisualEvent("npc_buff", caster.x, caster.y, { sourceId: caster.id, actorType: caster.type, targetX: target.x, targetY: target.y, durationMs: 140 });
     spawnParticles(caster.x, caster.y, "#b89dff", 8, 1.05);
     spawnParticles(target.x, target.y, "#cbb7ff", 10, 1.05);
     spawnFloatingText(target.x, target.y, "EMPOWER", "#e1d5ff");
@@ -20659,7 +20659,7 @@
           return;
         }
         emitNpcSkillCue("slam", enemy);
-        if (window.DungeonHDRendererLayers?.earlyAnimationsEnabled === true) enemy.castFlash = 140;
+        enemy.castFlash = 140;
         enemy.facing = getFacingFromDelta(state.player.x - enemy.x, state.player.y - enemy.y, enemy.facing);
         const slamResolved = enemy.type === "guardian"
           ? useGuardianHazardKnockback(enemy)

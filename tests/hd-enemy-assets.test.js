@@ -198,7 +198,7 @@ test("DEFERRED selector gate: existing snapshot signals select direction and cli
     [{ type: "acolyte", castFlash: 1, acolyteCastType: "heal" }, "attack", "south"],
     [{ type: "brute", slamAiming: true }, "attack", "south"],
     [{ type: "brute", rests: true }, "attack", "south"],
-    [{ type: "totem", castFlash: 1 }, "cast", "base"],
+    [{ type: "totem", castFlash: 1 }, "idle", "base"],
     [{ type: "otter", hitFlash: 1 }, "hit", "south"],
     [{ type: "skitter", hp: 0 }, "death", "south"]
   ];
@@ -213,9 +213,9 @@ test("DEFERRED selector gate: existing snapshot signals select direction and cli
   assert.equal(unknown.diagnostic, true);
   assert.equal(unknown.key, undefined);
   assert.equal(layers.selectEnemyVisual({ nowMs: 10000 }, { type: "otter", hitFlash: 120 }).frame, 1, "hit cannot inherit global runtime age");
-  assert.equal(layers.selectEnemyVisual({ nowMs: 10000 }, { type: "totem", castFlash: 140 }).frame, 1, "cast cannot inherit global runtime age");
-  assert.equal(layers.selectEnemyVisual({ nowMs: 10000 }, { type: "skeleton", aiming: true, telegraphAge: 0 }).frame, 1, "attack cannot inherit global runtime age");
-  assert.equal(layers.selectEnemyVisual({ nowMs: 10000 }, { type: "skeleton", aiming: true, telegraphAge: 2 }).frame, 3, "telegraph age should advance attack frames");
+  assert.equal(layers.selectEnemyVisual({ nowMs: 10000 }, { type: "totem", castFlash: 140 }).clip, "idle", "passive aura must not impersonate a cast");
+  assert.equal(layers.selectEnemyVisual({ nowMs: 10000 }, { type: "skeleton", aiming: true, telegraphAge: 0 }).frame, 2, "completed preparation holds before the real release");
+  assert.equal(layers.selectEnemyVisual({ nowMs: 10000 }, { type: "skeleton", aiming: true, telegraphAge: 2 }).frame, 2, "turn age alone must not release the attack");
 });
 
 test("DEFERRED renderer gate: 120 ms legacy tween is eased in HD and unknown/missing overlays stay visible", () => {

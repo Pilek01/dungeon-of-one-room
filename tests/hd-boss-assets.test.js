@@ -163,7 +163,7 @@ test("boss selector is pure and prioritizes death, hit, cast/attack, move, idle"
     [360, 270, 180, 90].map((castFlash) =>
       layers.selectBossVisual({ finalBossPhase: 2 }, { type: "warden", hp: 10, castFlash }).frame
     ),
-    [1, 2, 3, 4]
+    [3, 3, 4, 4]
   );
   for (const depth of [5, 25, 45, 60]) {
     assert.match(layers.selectBossVisual({ depth }, { type: "guardian", hp: 10 }).key, /^boss\.guardian\.south/);
