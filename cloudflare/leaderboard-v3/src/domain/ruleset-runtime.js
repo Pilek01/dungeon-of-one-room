@@ -294,6 +294,9 @@ export function publicRulesetMetaState(state, ruleset) {
         }
       : null,
     rankEligibility,
+    ...(state.rankedCheckpointResult
+      ? { rankedCheckpointResult: structuredClone(state.rankedCheckpointResult) }
+      : {}),
     ...(rankEligibility === "provisional"
       ? {
           rankIntegrity: {

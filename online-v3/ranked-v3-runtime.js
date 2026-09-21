@@ -262,9 +262,16 @@
       reasonCodes: reasons,
       endpoint: "integrity"
     });
+    const saved = state.rankedCheckpointResult;
+    const preserved = saved?.status === "preserved";
+    const explanation = preserved
+      ? `Your Ranked result was saved at depth ${saved.depth} (${saved.score} points), from the last accepted checkpoint. You can continue unranked; later progress will not add Ranked points or profile rewards.`
+      : saved?.status === "withheld"
+        ? "This run needs an integrity review. No checkpoint result has been published. You can continue unranked."
+        : "No previously accepted checkpoint is available to preserve. You can continue unranked; this run will not add Ranked points or profile rewards.";
     ui.showMessage(
-      "Ranked integrity check failed.",
-      `You can continue playing, but this run will not be submitted to the leaderboard. Diagnostic: ${diagnosticLabel(diagnostic)}.`,
+      preserved ? "Ranked result preserved" : "Ranked validation interrupted",
+      `${explanation} Diagnostic: ${diagnosticLabel(diagnostic)}.`,
       [ui.button("Continue", onContinue)]
     );
     return true;

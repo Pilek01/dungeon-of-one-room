@@ -1,10 +1,15 @@
 import sourceAuditDocument from "./data/m3-finalization-source-audit.generated.json" with { type: "json" };
 import {
   applyRelicRemovalV08,
+  computeRelicBuildDigestV08,
+  createEmptyRelicBuildV08,
   getRelicCatalogEntryV08
 } from "./relic-policy.js";
 import { chooseIndex } from "./rng.js";
 import { clearRunGoldWalletV08 } from "./gold-policy.js";
+
+import { initializePotionResourcesV08 } from "./potion-policy.js";
+import { deriveRunModifierEffects } from "./run-modifiers.js";
 
 const policy = sourceAuditDocument.canonicalData;
 const HISTORY_LIMIT = 32;
@@ -265,6 +270,19 @@ export async function applyFatalEventV08(state, request, context = {}) {
       next.roomIndex = 0;
       next.lifeLedger.currentLife += 1;
       next.lifeLedger.chronoLoopConsumedAcquiredRevision = null;
+      if (context.capabilities?.respawnPotionResources === "v1" && state.potionPolicyVersion === "v1") {
+        // A new life uses the same server-derived potion budget as a fresh Ranked run.
+        // Compute after death relic loss; prevention and final defeat never refill.
+        const modifiers = deriveRunModifierEffects(next.runModifiers).potionModifiers;
+        Object.assign(next.build.resources, initializePotionResourcesV08({
+          baseMaximum: createEmptyRelicBuildV08().resources.maxPotions,
+          satchelLevel: next.build.campUpgrades.satchel || 0,
+          modifierMaximumSlotsAdditive: modifiers.maximumSlotsAdditive,
+          startingPotionsAdditive: modifiers.startingPotionsAdditive,
+          flaskStacks: next.build.relics.find((entry) => entry.relicId === "flask")?.stacks || 0
+        }));
+        next.build.buildDigest = await computeRelicBuildDigestV08(next.build, context.cryptoProvider);
+      }
       resolution = "life_lost";
     }
   }

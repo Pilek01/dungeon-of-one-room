@@ -289,6 +289,41 @@ test("real D1 finalize batch never leaves a split run/leaderboard state", {
       },
       realEntry
     ), false);
+    // A frozen checkpoint is a durable result even if its unranked continuation expires.
+    const savedRun = {
+      ...structuredClone(state),
+      runId: "run_checkpoint_retained",
+      profileId: "profile_checkpoint_retained"
+    };
+    const savedDigest = await canonicalDigest(stateForDigest(savedRun));
+    await runs.insert(savedRun, {
+      stateDigest: savedDigest, recentOps: [],
+      startIdempotencyKey: "checkpoint-retained-start",
+      startRequestDigest: "checkpoint-retained-digest"
+    });
+    const frozenRun = {
+      ...savedRun, revision: savedRun.revision + 1,
+      rankedCheckpointResult: { status: "preserved", revision: 1, depth: 1, score: 10, gold: 0 }
+    };
+    const frozenDigest = await canonicalDigest(stateForDigest(frozenRun));
+    const checkpointEntry = {
+      ...entry, runId: savedRun.runId, profileId: savedRun.profileId,
+      snapshotKind: "checkpoint", outcome: "checkpoint", score: 10, depth: 1, gold: 0
+    };
+    const frozenMetadata = {
+      stateDigest: frozenDigest, recentOps: [],
+      expectedStateDigest: savedDigest, expectedStatus: "active"
+    };
+    assert.equal(await runs.updateWithLeaderboardAtomic(
+      frozenRun, savedRun.revision, frozenMetadata, checkpointEntry
+    ), true);
+    assert.equal(await runs.updateWithLeaderboardAtomic(
+      frozenRun, savedRun.revision, frozenMetadata, { ...checkpointEntry, score: 999999 }
+    ), false);
+    assert.equal((await leaderboard.detail(savedRun.runId)).score, 10);
+    await runs.deleteExpired(savedRun.expiresAt + 1);
+    assert.ok(await runs.get(savedRun.runId));
+    assert.equal((await leaderboard.detail(savedRun.runId)).score, 10);
   } finally {
     await miniflare.dispose();
   }

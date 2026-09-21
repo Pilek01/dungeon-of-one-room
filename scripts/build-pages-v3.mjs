@@ -587,6 +587,7 @@ const productionGameReplacements = [
     resetObserverBotStallTracker();`,
 `    state.player.hp = state.player.maxHp;
 
+    if (rankedFatalDirective) syncRankedRespawnPotions(rankedFatalDirective);
     buildRoom();
     if (rankedFatalDirective) {
       window.DungeonOnlineV3?.onRoomEntered?.(state.onlineV3Directive);
@@ -1777,6 +1778,14 @@ const rankedGoldGameReplacements = [
     state.player.potions = Math.min(canonicalMaxPotions, canonicalPotions);
     state.runMods.potionHealMult = canonicalHealMultiplier;
     return true;
+  }
+  function syncRankedRespawnPotions(directive) {
+    const publicState = window.DungeonOnlineV3?.getSnapshot?.()?.publicState;
+    if (!directive || directive.directiveId !== publicState?.currentRoomDirective?.directiveId ||
+        window.DungeonRankedV3Protocol?.supportsRespawnPotionResources?.(publicState?.rulesetHash) !== true) {
+      return false;
+    }
+    return syncRankedCanonicalPotionState(publicState);
   }
   function syncRankedCanonicalRelics(build = {}) {
     const canonicalRelics = (Array.isArray(build?.relics) ? build.relics : []).flatMap((relic) =>

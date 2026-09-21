@@ -8,7 +8,8 @@ test('HD1 presentation candidate retains the deployed HD2 release and exact capa
  const old='sha256:8c5c26851cbf440a62c2c2acf5f168fc13495de6601abd2e9681d6fa0f2d6c32';
  const previous=releases.V08_META_1_HD1_PRESENTATION_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR;
  assert.equal(previous?.rulesetHash,old);
- assert.deepEqual(previous.capabilities,releases.V08_META_1_PRODUCTION_RELEASE_DESCRIPTOR.capabilities);
+ assert.equal(previous.capabilities.respawnPotionResources, undefined);
+ assert.deepEqual({...previous.capabilities, respawnPotionResources: "v1"},releases.V08_META_1_PRODUCTION_RELEASE_DESCRIPTOR.capabilities);
  assert(isCompatibleRulesetHashV08(old));
  assert.equal(protocol.RULESET_HASH,releases.V08_META_1_PRODUCTION_RULESET_HASH);
  for(const [name,hashes]of Object.entries(protocol))if(name.endsWith('RULESET_HASHES')&&Array.isArray(hashes)&&hashes.includes(protocol.RULESET_HASH))assert(hashes.includes(old),name);

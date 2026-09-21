@@ -238,7 +238,7 @@ export function createMemoryRepositories() {
     async deleteExpired(now) {
       let deleted = 0;
       for (const [runId, row] of runRows) {
-        if (row.state.status !== "finalized" && row.state.expiresAt <= now) {
+        if (row.state.status !== "finalized" && row.state.rankedCheckpointResult?.status !== "preserved" && row.state.expiresAt <= now) {
           runRows.delete(runId);
           deleted += 1;
         }

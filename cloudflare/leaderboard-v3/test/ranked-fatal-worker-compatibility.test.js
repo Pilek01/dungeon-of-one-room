@@ -208,7 +208,8 @@ test("historical production descriptors strip fatal cause while current producti
       roomEliteBudgetByType: "v2",
       merchantFavorTierOneUnique: "v1",
       specialRoomRotation: "v1",
-      merchantDepthSchedule: "v1"
+      merchantDepthSchedule: "v1",
+      respawnPotionResources: "v1"
     }
   );
   assert.deepEqual(
@@ -232,7 +233,8 @@ test("historical production descriptors strip fatal cause while current producti
       roomEliteBudgetByType: "v2",
       merchantFavorTierOneUnique: "v1",
       specialRoomRotation: "v1",
-      merchantDepthSchedule: "v1"
+      merchantDepthSchedule: "v1",
+      respawnPotionResources: "v1"
     }
   );
   assert.deepEqual(

@@ -1,4 +1,4 @@
-const SNAPSHOT_KINDS = new Set(["death", "extract", "final"]);
+const SNAPSHOT_KINDS = new Set(["death", "extract", "final", "checkpoint"]);
 const ASSISTANCE_CLASSES = new Set(["none", "observer_bot", "cheats", "mixed"]);
 const SNAPSHOT_KIND_PRIORITY = Object.freeze({
   death: 0,

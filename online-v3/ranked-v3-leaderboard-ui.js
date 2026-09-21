@@ -658,6 +658,7 @@
     const active = detail.build.runModifiers || [];
     const cause = String(summary.presentationCause || "").trim();
     const isVictory = String(detail.outcome || "").toLowerCase() === "victory";
+    const isCheckpoint = detail.outcome === "checkpoint";
     const detailsAvailable = detail.detailsAvailable !== false;
     const presentationFields = detail.presentationFields || {};
     const rootNode = element(documentRef, "section", `${SELECTORS.plate} ranked-v3-reference-plate--inspect ${SELECTORS.detail}`);
@@ -735,9 +736,9 @@
     chronicle.append(metrics);
     const terminal = element(documentRef, "section", "ranked-v3-inspect-terminal");
     terminal.append(
-      element(documentRef, "h3", "ranked-v3-inspect-terminal-title", isVictory ? "Victory" : "Game Over"),
-      element(documentRef, "p", "ranked-v3-inspect-terminal-eyebrow", isVictory ? "Run completed" : "Fell in combat"),
-      element(documentRef, "p", "ranked-v3-inspect-terminal-cause", isVictory ? "The descent was conquered." : (cause || "Cause not recorded."))
+      element(documentRef, "h3", "ranked-v3-inspect-terminal-title", isCheckpoint ? "Ranked result preserved" : isVictory ? "Victory" : "Game Over"),
+      element(documentRef, "p", "ranked-v3-inspect-terminal-eyebrow", isCheckpoint ? "Last accepted checkpoint" : isVictory ? "Run completed" : "Fell in combat"),
+      element(documentRef, "p", "ranked-v3-inspect-terminal-cause", isCheckpoint ? "Later unranked progress is not included." : isVictory ? "The descent was conquered." : (cause || "Cause not recorded."))
     );
     const actions = element(documentRef, "nav", "ranked-v3-inspect-actions");
     actions.append(recordNavMeta(control(documentRef, "ranked-v3-inspect-back", "Back to Leaderboard", handlers.onBack), "detail-action", "back"));

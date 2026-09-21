@@ -1633,7 +1633,7 @@ test("a provisional response shows the continuation notice only once per run", a
     completionCapability: harness.integrityContexts[0].completionCapability
   });
   assert.equal(harness.uiMessages.length, 1);
-  assert.equal(harness.uiMessages[0][0], "Ranked integrity check failed.");
+  assert.equal(harness.uiMessages[0][0], "Ranked validation interrupted");
   assert.match(harness.uiMessages[0][1], /REPORTED_GOLD_TOTAL_MISMATCH/u);
   assert.deepEqual(Array.from(runtime.getDiagnostics().at(-1)?.reasonCodes || []), [
     "REPORTED_GOLD_TOTAL_MISMATCH"
@@ -2627,4 +2627,25 @@ test("discard resync adopts canonical build reservation clear without charging t
   await waitFor(() => runtime.getRankedMerchantMutationState().status === "confirmed", "discard adoption did not confirm");
   assert.equal(commitCalls, 1);
   assert.equal(harness.merchantCompletions[0].adopted, true);
+});
+test("a preserved checkpoint notice states the frozen depth and unranked continuation", async () => {
+  const harness = createHarness({
+    observerBotActive: false,
+    async onCheckpoint() {
+      return { metaState: metaState({
+        rankEligibility: "provisional",
+        rankIntegrity: { reasonCodes: ["REPORTED_GOLD_TOTAL_MISMATCH"], firstDetectedRevision: 8 },
+        rankedCheckpointResult: { status: "preserved", revision: 7, depth: 6, score: 600, gold: 20 }
+      }) };
+    }
+  });
+  const runtime = await installRuntime(harness);
+  await runtime.onRoomEntered(metaState().currentRoomDirective);
+  await runtime.onLocalRoomCleared({
+    turnCount: 4, rewardClaims: [], reportedGoldDelta: 2,
+    completionCapability: harness.integrityContexts[0].completionCapability
+  });
+  assert.equal(harness.uiMessages[0][0], "Ranked result preserved");
+  assert.match(harness.uiMessages[0][1], /depth 6.*600 points/u);
+  assert.match(harness.uiMessages[0][1], /unranked/u);
 });

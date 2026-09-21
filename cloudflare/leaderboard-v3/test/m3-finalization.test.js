@@ -246,7 +246,7 @@ test("an assisted nonterminal death publishes one marked retry-safe snapshot whi
   assert.equal(harness.repositories.leaderboardCount(), 1);
 });
 
-test("a later provisional checkpoint removes this run's earlier death snapshot", async () => {
+test("a later room mismatch preserves this run's earlier accepted death snapshot", async () => {
   const harness = createRealHarness();
   const started = (await harness.call("/api/v3/runs/start", {
     playerName: "IntegrityCleanup",
@@ -311,7 +311,9 @@ test("a later provisional checkpoint removes this run's earlier death snapshot",
   }, "integrity-cleanup-checkpoint");
   assert.equal(provisional.response.status, 200);
   assert.equal(provisional.payload.metaState.rankEligibility, "provisional");
-  assert.equal(harness.repositories.leaderboardCount(), 0);
+  assert.equal(provisional.payload.metaState.rankedCheckpointResult.status, "preserved");
+  assert.equal(provisional.payload.metaState.rankedCheckpointResult.revision, lifeLost.revision);
+  assert.equal(harness.repositories.leaderboardCount(), 1);
 });
 
 test("HTTP finalization is terminal-token-bound, server-derived and exactly retryable", async () => {

@@ -1789,6 +1789,13 @@ ${fatalTestHookAnchor}`;
     await page.waitForFunction(() => (
       window.DungeonOnlineV3GameBridge?.isRankedTestBotActive?.() === false
     ));
+    const respawnPotionAudit = await page.evaluate(() => ({
+      canonical: window.DungeonOnlineV3.getSnapshot().publicState.build.resources,
+      local: JSON.parse(window.render_game_to_text()).player
+    }));
+    assert(respawnPotionAudit.canonical.potions > 0, JSON.stringify(respawnPotionAudit));
+    assert.equal(respawnPotionAudit.local.maxPotions, respawnPotionAudit.canonical.maxPotions, JSON.stringify(respawnPotionAudit));
+    assert.equal(respawnPotionAudit.local.potions, respawnPotionAudit.canonical.potions, JSON.stringify(respawnPotionAudit));
     await page.screenshot({
       path: path.join(ARTIFACT_ROOT, "ranked-after-death-continue.png"),
       fullPage: true
@@ -3088,6 +3095,50 @@ ${fatalTestHookAnchor}`;
       path: path.join(ARTIFACT_ROOT, "ranked-camp-error-main-menu.png"),
       fullPage: true
     });
+    }
+
+    if (RUN_RECOVERY) {
+      await openRankedChoice(page, "Start Ranked");
+      await page.locator(".ranked-v3-choice-relic").first().waitFor({ state: "visible" });
+      await chooseRelicWithoutFatalPrevention(page);
+      await sessionState(page, "ROOM_ACTIVE", diagnostics);
+      const tutorial = page.locator(".tutorial-overlay-card");
+      if (await tutorial.isVisible()) {
+        await page.keyboard.press("Enter");
+        await tutorial.waitFor({ state: "hidden" });
+      }
+      const source = await visibleGameState(page);
+      await advanceVisibleRoom(page, source.depth + 1);
+      const accepted = await page.evaluate(() => window.DungeonOnlineV3.getSnapshot().publicState);
+      assert.equal(accepted.rankEligibility, "official");
+      await page.route("**/api/v3/runs/checkpoint", async (route) => {
+        const body = route.request().postDataJSON();
+        await route.continue({ postData: JSON.stringify({ ...body, reportedGoldTotal: 999999 }) });
+      });
+      await clearVisibleRoom(page);
+      await enterVisiblePortal(page, source.depth + 2);
+      await page.getByRole("heading", { name: "Ranked result preserved", exact: true }).waitFor({ state: "visible" });
+      const preserved = await page.evaluate(() => window.DungeonOnlineV3.getSnapshot().publicState.rankedCheckpointResult);
+      assert.equal(preserved.status, "preserved");
+      assert.equal(preserved.depth, accepted.maxDepth);
+      assert.equal(preserved.score, accepted.score.score);
+      await page.screenshot({ path: path.join(ARTIFACT_ROOT, "ranked-checkpoint-preserved.png"), fullPage: true });
+      await page.unroute("**/api/v3/runs/checkpoint");
+      await page.getByRole("button", { name: "Continue", exact: true }).click();
+      await completeVisiblePortal(page, source.depth + 2, diagnostics);
+      const entry = await (await page.request.get(
+        proxy.baseUrl + "/api/v3/leaderboard/" + accepted.runId
+      )).json();
+      assert.equal(entry.entry.score, preserved.score);
+      assert.equal(entry.entry.outcome, "checkpoint");
+      await page.reload({ waitUntil: "domcontentloaded" });
+      await dismissBoot(page, diagnostics);
+      await openRankedChoice(page, "Continue Ranked");
+      await sessionState(page, "ROOM_ACTIVE", diagnostics);
+      assert.deepEqual(await page.evaluate(
+        () => window.DungeonOnlineV3.getSnapshot().publicState.rankedCheckpointResult
+      ), preserved);
+      await abandonCurrentRankedAndClearLocal(page);
     }
 
     const expectedDroppedResponseErrors = diagnostics.consoleErrors.filter(

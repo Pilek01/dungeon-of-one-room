@@ -32,6 +32,7 @@ import {
   finalizeRulesetRun,
   publicRulesetMetaState,
 } from "./domain/ruleset-runtime.js";
+import { applyAcceptedCheckpointResult } from "./domain/accepted-checkpoint-result.js";
 import { ROOM_INTEGRITY_SIGNAL } from "./domain/rank-eligibility.js";
 import {
   createInitialRun,
@@ -668,6 +669,14 @@ async function persistRegisteredMutation(context, transition, repositories, opti
     ...transition.nextState,
     updatedAt: context.now
   };
+  options = {
+    ...options,
+    ...applyAcceptedCheckpointResult(context.state, nextState, context.ruleset, {
+      operationType: options.operationType,
+      leaderboardSnapshot: options.leaderboardSnapshot,
+      now: context.now
+    })
+  };
   const stateDigest = await canonicalDigest(stateForDigest(nextState));
   let checkpointToken = null;
   if (nextState.status === "active" && nextState.currentRoomDirective) {
@@ -682,7 +691,7 @@ async function persistRegisteredMutation(context, transition, repositories, opti
     );
   }
   let profileMutation = null;
-  if (options.profileExtraction === true) {
+  if (options.profileExtraction === true && nextState.rankEligibility !== "provisional") {
     const currentProfile = await repositories.profiles?.get(nextState.profileId);
     if (!currentProfile) {
       throw new HttpError(409, "PROFILE_NOT_FOUND", "Ranked profile is unavailable.");

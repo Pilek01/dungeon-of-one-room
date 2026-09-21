@@ -179,7 +179,8 @@ test("historical production releases strip fatal causes while the activated rele
       roomEliteBudgetByType: "v2",
       merchantFavorTierOneUnique: "v1",
       specialRoomRotation: "v1",
-      merchantDepthSchedule: "v1"
+      merchantDepthSchedule: "v1",
+      respawnPotionResources: "v1"
     }
   );
   assert.deepEqual(
@@ -203,7 +204,8 @@ test("historical production releases strip fatal causes while the activated rele
       roomEliteBudgetByType: "v2",
       merchantFavorTierOneUnique: "v1",
       specialRoomRotation: "v1",
-      merchantDepthSchedule: "v1"
+      merchantDepthSchedule: "v1",
+      respawnPotionResources: "v1"
     }
   );
   assert.deepEqual(

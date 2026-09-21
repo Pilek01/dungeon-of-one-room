@@ -867,3 +867,139 @@ test("HTTP potion claims accept canonical current and reject one above it", asyn
   assert.equal(rejected.response.status, 422);
   assert.equal(rejected.payload.error.code, "REWARD_CLAIM_POTION_USE_LIMIT");
 });
+
+async function acceptedIntegrityCheckpoint(harness, session, key, overrides = {}) {
+  const delta = session.metaState.currentRewardEnvelope.fixedAwards.reduce((sum, award) => sum + award.amount, 0);
+  return harness.checkpoint(session, key, {
+    integrityVersion: 1, integritySignals: [],
+    reportedGoldDelta: delta, reportedGoldTotal: session.metaState.gold + delta,
+    ...overrides
+  });
+}
+
+test("integrity downgrade preserves only the previous accepted checkpoint and replays exactly", async () => {
+  const harness = createRealHarness();
+  const started = (await harness.start("preserve-start")).payload;
+  const selected = (await harness.select(started, 0, "preserve-select")).payload;
+  harness.advance(1000);
+  const good = await acceptedIntegrityCheckpoint(harness, selected, "preserve-good");
+  assert.equal(good.response.status, 200);
+  assert.equal(good.payload.metaState.rankEligibility, "official");
+  assert.equal(harness.repositories.leaderboardCount(), 0);
+  const expected = harness.repositories.snapshotRun(good.payload.runId).lastAcceptedCheckpoint;
+  assert.ok(expected, "accepted checkpoint must retain a server-derived result");
+  harness.advance(1000);
+  const bad = await acceptedIntegrityCheckpoint(harness, good.payload, "preserve-bad", { reportedGoldTotal: 999999 });
+  assert.equal(bad.response.status, 200);
+  assert.equal(bad.payload.metaState.rankEligibility, "provisional");
+  assert.equal(bad.payload.metaState.rankedCheckpointResult.status, "preserved");
+  assert.equal(bad.payload.metaState.rankedCheckpointResult.depth, expected.entry.depth);
+  assert.equal(harness.repositories.leaderboardCount(), 1);
+  const listed = await harness.repositories.leaderboard.list("local-season");
+  assert.equal(listed.entries[0].score, expected.entry.score);
+  assert.equal(listed.entries[0].gold, expected.entry.gold);
+  const retry = await acceptedIntegrityCheckpoint(harness, good.payload, "preserve-bad", { reportedGoldTotal: 999999 });
+  assert.deepEqual(retry.payload, bad.payload);
+  const later = await acceptedIntegrityCheckpoint(harness, bad.payload, "preserve-later");
+  assert.equal(later.response.status, 200);
+  assert.deepEqual(later.payload.metaState.rankedCheckpointResult, bad.payload.metaState.rankedCheckpointResult);
+  assert.equal(harness.repositories.leaderboardCount(), 1);
+});
+
+test("first-room mismatch cannot invent a previously accepted checkpoint", async () => {
+  const harness = createRealHarness();
+  const started = (await harness.start("no-checkpoint-start")).payload;
+  const selected = (await harness.select(started, 0, "no-checkpoint-select")).payload;
+  const bad = await acceptedIntegrityCheckpoint(harness, selected, "no-checkpoint-bad", { reportedGoldTotal: 999999 });
+  assert.equal(bad.payload.metaState.rankedCheckpointResult.status, "unavailable");
+  assert.equal(harness.repositories.leaderboardCount(), 0);
+});
+
+test("missing integrity envelope withholds the checkpoint result", async () => {
+  const harness = createRealHarness();
+  const started = (await harness.start("withhold-start")).payload;
+  const selected = (await harness.select(started, 0, "withhold-select")).payload;
+  const good = await acceptedIntegrityCheckpoint(harness, selected, "withhold-good");
+  const bad = await harness.checkpoint(good.payload, "withhold-bad");
+  assert.equal(bad.payload.metaState.rankedCheckpointResult.status, "withheld");
+  assert.equal(harness.repositories.leaderboardCount(), 0);
+});
+test("preserved checkpoint survives recovery and expiry without crediting a provisional extraction", async () => {
+  const harness = createRealHarness();
+  const started = (await harness.start("profile-safe-start")).payload;
+  const selected = (await harness.select(started, 0, "profile-safe-select")).payload;
+  const good = await acceptedIntegrityCheckpoint(harness, selected, "profile-safe-good");
+  const beforeProfile = harness.repositories.snapshotProfile(started.metaState.profileId);
+  const bad = await acceptedIntegrityCheckpoint(harness, good.payload, "profile-safe-bad", { reportedGoldTotal: 999999 });
+  const resumed = await harness.call("/api/v3/runs/resume", {
+    runId: bad.payload.runId, recoveryCredential: "rrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrr",
+    operationId: "op_11111111111111111111111111111111", clientProtocolVersion: "ranked-v3-checkpoint-1", lastKnownRevision: bad.payload.revision
+  }, "op_11111111111111111111111111111111");
+  assert.equal(resumed.response.status, 200);
+  assert.deepEqual(resumed.payload.metaState.rankedCheckpointResult, bad.payload.metaState.rankedCheckpointResult);
+  const extracted = await harness.event(resumed.payload, "request_extraction", { mode: "emergency" }, "profile-safe-extract");
+  assert.equal(extracted.response.status, 200);
+  assert.deepEqual(harness.repositories.snapshotProfile(started.metaState.profileId), beforeProfile);
+  const count = await harness.repositories.runs.deleteExpired(Number.MAX_SAFE_INTEGER);
+  assert.equal(count, 0);
+  assert.equal(harness.repositories.leaderboardCount(), 1);
+});
+test("competing mismatch requests cannot improve or duplicate a frozen checkpoint", async () => {
+  const harness = createRealHarness();
+  const started = (await harness.start("race-preserve-start")).payload;
+  const selected = (await harness.select(started, 0, "race-preserve-select")).payload;
+  const good = await acceptedIntegrityCheckpoint(harness, selected, "race-preserve-good");
+  const results = await Promise.all([
+    acceptedIntegrityCheckpoint(harness, good.payload, "race-preserve-a", { reportedGoldTotal: 999999 }),
+    acceptedIntegrityCheckpoint(harness, good.payload, "race-preserve-b", { reportedGoldTotal: 888888 })
+  ]);
+  assert.deepEqual(results.map((result) => result.response.status).sort(), [200, 409]);
+  assert.equal(harness.repositories.leaderboardCount(), 1);
+  const row = (await harness.repositories.leaderboard.list("local-season")).entries[0];
+  assert.equal(row.score, good.payload.metaState.score.score);
+  const reused = await acceptedIntegrityCheckpoint(harness, good.payload,
+    results[0].response.status === 200 ? "race-preserve-a" : "race-preserve-b",
+    { reportedGoldTotal: 777777 });
+  assert.equal(reused.response.status, 409);
+  assert.equal((await harness.repositories.leaderboard.list("local-season")).entries[0].score, row.score);
+});
+
+test("an invalid boundary settlement withholds an earlier checkpoint and cannot credit the profile", async () => {
+  const harness = createRealHarness();
+  const started = (await harness.start("invalid-boundary-start")).payload;
+  const selected = (await harness.select(started, 0, "invalid-boundary-select")).payload;
+  const good = await acceptedIntegrityCheckpoint(harness, selected, "invalid-boundary-good");
+  const beforeProfile = harness.repositories.snapshotProfile(started.metaState.profileId);
+  const state = good.payload.metaState;
+  const rejected = await harness.event(good.payload, "request_extraction", {
+    mode: "emergency",
+    boundarySettlement: {
+      envelopeId: state.currentRewardEnvelope.envelopeId,
+      roomDirectiveId: state.currentRoomDirective.directiveId,
+      roomNonce: state.currentRoomDirective.roomNonce,
+      claims: [{ claimType: "enemy", claimId: "enemy:invented_reward", count: 1 }],
+      reportedGoldDelta: 999999, reportedGoldTotal: 999999,
+      turnCount: 3, elapsedMs: 1000, commandJournalDigest: "test-boundary",
+      compactRoomProof: "test-boundary",
+      combatResources: { hp: state.build.resources.hp, maxHp: state.build.resources.maxHp }
+    }
+  }, "invalid-boundary-extract");
+  assert.equal(rejected.response.status, 200, JSON.stringify(rejected.payload));
+  assert.equal(rejected.payload.metaState.rankedCheckpointResult.status, "withheld");
+  assert.equal(harness.repositories.leaderboardCount(), 0);
+  assert.deepEqual(harness.repositories.snapshotProfile(started.metaState.profileId), beforeProfile);
+});
+test("client-supplied checkpoint snapshots and scores are rejected without publishing", async () => {
+  const harness = createRealHarness();
+  const started = (await harness.start("forged-prefix-start")).payload;
+  const selected = (await harness.select(started, 0, "forged-prefix-select")).payload;
+  const good = await acceptedIntegrityCheckpoint(harness, selected, "forged-prefix-good");
+  const before = harness.repositories.snapshotRun(good.payload.runId);
+  const forged = await acceptedIntegrityCheckpoint(harness, good.payload, "forged-prefix-bad", {
+    lastAcceptedCheckpoint: { revision: 999, entry: { score: 999999, depth: 999 } },
+    rankedCheckpointResult: { status: "preserved", score: 999999, depth: 999 }
+  });
+  assert.equal(forged.response.status, 400);
+  assert.deepEqual(harness.repositories.snapshotRun(good.payload.runId), before);
+  assert.equal(harness.repositories.leaderboardCount(), 0);
+});

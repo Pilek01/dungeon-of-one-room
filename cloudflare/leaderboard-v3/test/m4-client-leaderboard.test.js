@@ -192,3 +192,15 @@ test("M4 Ranked choice copy hides protocol-style separators", () => {
   assert.equal(rankedUi.playerText("Upgrade crit_chance to 1"), "Upgrade crit chance to 1");
   assert.equal(rankedUi.playerText("buy_iron-1"), "Buy iron 1");
 });
+test("checkpoint detail describes the preserved boundary instead of death", () => {
+  const detail = leaderboardUi.createDetailViewModel({
+    entry: { runId: "run_cp", playerName: "Saved", outcome: "checkpoint", score: 600, depth: 6,
+      build: { relics: [], pacts: [], skillTiers: {}, elixirs: [], runModifiers: [] }, summary: {} }
+  });
+  const node = leaderboardUi.renderDetail(fakeDocument(), detail, () => {});
+  const texts = [];
+  function visit(item) { texts.push(item.textContent || ""); (item.children || []).forEach(visit); }
+  visit(node);
+  assert.ok(texts.includes("Ranked result preserved"));
+  assert.ok(!texts.includes("Fell in combat"));
+});

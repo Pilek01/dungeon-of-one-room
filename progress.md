@@ -2729,3 +2729,20 @@ Updated next good targets
 - Final review: 55 task files, including 35 generated provenance/manifest files;
   zero image/default-manifest changes. Four pre-existing unrelated untracked
   files remain untouched. Final git diff --check PASS.
+
+## 2026-09-21 - Preserve accepted Ranked checkpoint results
+
+- User approved preserving the last accepted server checkpoint when a later room
+  fails integrity validation, while retaining anti-cheat checks.
+- Added a bounded server-only snapshot, atomic publication with the provisional
+  transition, immutable preservation receipt, durable D1 retention, and UI labels.
+  Later unranked extraction cannot mutate the Ranked profile. Unknown/missing
+  integrity evidence at the first downgrade withholds publication.
+- No gameplay or score formula changes. The checkpoint outcome label required
+  candidate hash 00c934a0; deployed f3101eee remains compatible. Source work only;
+  no commit, push or deployment requested in this task.
+- Design, limits and verification: docs/plans/2026-09-21-ranked-checkpoint-preservation.md.
+- Final verification PASS: verify:full 1191/1191, current recovery with the new
+  preservation scenario, current boot, current lifecycle, Practice save and
+  real D1 atomicity. Six archive screenshots and the new notice inspected.
+  Full log: output/verification/full-20260921T154932743Z.log. 27 task files.
