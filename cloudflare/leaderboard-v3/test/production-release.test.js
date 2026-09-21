@@ -48,6 +48,7 @@ const require = createRequire(import.meta.url);
 const protocol = require("../../../online-v3/ranked-v3-protocol.js");
 const EXPECTED_HASH = manifest.rulesetHash;
 const CURRENT_PRODUCTION_HASH = EXPECTED_HASH;
+const PREVIOUS_MERCHANT_DEPTH_HASH = "sha256:79078f4f51858209c9c493333824f9e8077403452fef1cff4d1906a1d9661f5a";
 const PREVIOUS_MOBILE_HD2_HASH = "sha256:c381c23e71385fec5e411e53b657e4429c3fa2d57edc59f91f984dd3e109f3cb";
 const PREVIOUS_SPECIAL_ROOM_ROTATION_HASH = "sha256:dc8b9d11a97fe35d670089a03141b70174d62d9af39a8dabd12733193ae2ce3e";
 const PREVIOUS_OBSERVER_PROFILE_HASH = "sha256:6f3df4c80298d16c42ca9277adb533f63a6c767fed209000aa17340ad7da8758";
@@ -97,6 +98,8 @@ test("production promotion activates the exact candidate and retains its immedia
   assert.equal(active.capabilities.merchantFavorTierOneUnique, "v1");
   assert.equal(active.capabilities.potionClaimOrdering, "v2");
   assert.equal(active.capabilities.specialRoomRotation, "v1");
+  assert.equal(active.capabilities.merchantDepthSchedule, "v1");
+  assert.equal(releases.V08_META_1_MERCHANT_DEPTH_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR.capabilities.merchantDepthSchedule, undefined);
   assert.ok(previous, "the previous special-room descriptor must be retained");
   assert.equal(previous.rulesetHash, PREVIOUS_SPECIAL_ROOM_ROTATION_HASH);
   assert.equal(previous.capabilities.specialRoomRotation, undefined);
@@ -181,6 +184,7 @@ test("bounded proc release activates a new hash and leaves every historical desc
     value.status === RULESET_RELEASE_STATES.PRODUCTION_RELEASED &&
     typeof value.rulesetHash === "string" &&
     value.rulesetHash !== manifest.rulesetHash &&
+    value.rulesetHash !== PREVIOUS_MERCHANT_DEPTH_HASH &&
     value.rulesetHash !== PREVIOUS_MOBILE_HD2_HASH &&
     value.rulesetHash !== PREVIOUS_SPECIAL_ROOM_ROTATION_HASH &&
     value.rulesetHash !== PREVIOUS_OBSERVER_PROFILE_HASH &&
@@ -216,6 +220,7 @@ test("bounded proc release activates a new hash and leaves every historical desc
   assert.ok(protocol.SUPPORTED_RULESET_HASHES.includes(PREVIOUS_BOUNDED_PROC_HASH));
   assert.deepEqual(protocol.BOUNDED_PROC_CLAIMS_RULESET_HASHES, [
     CURRENT_PRODUCTION_HASH,
+    PREVIOUS_MERCHANT_DEPTH_HASH,
     PREVIOUS_MOBILE_HD2_HASH,
     PREVIOUS_SPECIAL_ROOM_ROTATION_HASH,
     PREVIOUS_OBSERVER_PROFILE_HASH,
@@ -277,12 +282,14 @@ test("canonical chest carry release is hash-gated and preserves the previous pro
     otterActualDepthEligibility: "v1",
     roomEliteBudgetByType: "v2",
     merchantFavorTierOneUnique: "v1",
-    specialRoomRotation: "v1"
+    specialRoomRotation: "v1",
+    merchantDepthSchedule: "v1"
   });
 
   assert.ok(protocol.SUPPORTED_RULESET_HASHES.includes(PREVIOUS_CHEST_CARRY_HASH));
   assert.deepEqual(protocol.CANONICAL_CHEST_OUTCOMES_RULESET_HASHES, [
     CURRENT_PRODUCTION_HASH,
+    PREVIOUS_MERCHANT_DEPTH_HASH,
     PREVIOUS_MOBILE_HD2_HASH,
     PREVIOUS_SPECIAL_ROOM_ROTATION_HASH,
     PREVIOUS_OBSERVER_PROFILE_HASH,
@@ -341,6 +348,7 @@ test("canonical chest repair release retains the previous canonical hash and cap
   assert.ok(protocol.SUPPORTED_RULESET_HASHES.includes(PREVIOUS_CANONICAL_CHEST_HASH));
   assert.deepEqual(protocol.CANONICAL_CHEST_OUTCOMES_RULESET_HASHES, [
     CURRENT_PRODUCTION_HASH,
+    PREVIOUS_MERCHANT_DEPTH_HASH,
     PREVIOUS_MOBILE_HD2_HASH,
     PREVIOUS_SPECIAL_ROOM_ROTATION_HASH,
     PREVIOUS_OBSERVER_PROFILE_HASH,
@@ -391,6 +399,7 @@ test("Ranked start resource parity is hash-gated and preserves the previous prod
   assert.ok(protocol.SUPPORTED_RULESET_HASHES.includes(PREVIOUS_START_RESOURCE_PARITY_HASH));
   assert.deepEqual(protocol.BOUNDED_COMBAT_RESOURCES_RULESET_HASHES, [
     CURRENT_PRODUCTION_HASH,
+    PREVIOUS_MERCHANT_DEPTH_HASH,
     PREVIOUS_MOBILE_HD2_HASH,
     PREVIOUS_SPECIAL_ROOM_ROTATION_HASH,
     PREVIOUS_OBSERVER_PROFILE_HASH,
@@ -902,11 +911,11 @@ test("production menu separates Practice pause, Practice save, and Ranked save c
   );
 });
 
-test("mobile HD2 release retains the immediate predecessor with identical capabilities", async () => {
+test("mobile HD2 historical release retains its original capabilities", async () => {
   const previous = releases.V08_META_1_MOBILE_HD2_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR;
   assert.equal(previous.rulesetHash, PREVIOUS_MOBILE_HD2_HASH);
   assert.notEqual(previous.rulesetHash, manifest.rulesetHash);
-  assert.deepEqual(previous.capabilities, V08_META_1_PRODUCTION_RELEASE_DESCRIPTOR.capabilities);
+  assert.deepEqual({ ...previous.capabilities, merchantDepthSchedule: "v1" }, V08_META_1_PRODUCTION_RELEASE_DESCRIPTOR.capabilities);
   assert.ok(COMPATIBLE_RULESET_HASHES.includes(previous.rulesetHash));
   for (const [name, hashes] of Object.entries(protocol)) {
     if (Array.isArray(hashes) && hashes.includes(manifest.rulesetHash)) {

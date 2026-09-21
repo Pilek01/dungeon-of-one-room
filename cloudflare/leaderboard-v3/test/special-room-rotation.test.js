@@ -57,10 +57,11 @@ function activeState(runId, depth, roomIndex) {
   return { state, runtimeContext };
 }
 
-test("Merchant is scheduled on every x9 display depth and removed from random weights", async () => {
+test("historical rotation retains merchants on indexes 8..98 and excludes random merchants", async () => {
   for (const roomIndex of [8, 18, 28, 98]) {
     const { state, runtimeContext } = activeState(`merchant_${roomIndex}`, roomIndex - 1, roomIndex - 1);
     const issued = await issueNextRoomDirectiveV08(state, runtimeContext);
+    assert.equal(issued.currentRoomDirective.depth, roomIndex);
     assert.equal(issued.currentRoomDirective.roomType, "merchant");
     assert.equal(issued.currentRoomDirective.specialRoomPayload.policySource, "merchant-schedule");
   }
@@ -149,4 +150,34 @@ test("special-room cooldown state survives a new descent in the same campaign", 
     forge: 31,
     arena: 37
   });
+});
+
+test("depth-based merchants use depth 9..99 regardless of room index", async () => {
+  for (const roomIndex of [0, 7, 17, 50]) {
+    for (const depth of [7,8,9,17,18,19,29,39,49,59,69,79,89,99,100]) {
+      const { state, runtimeContext } = activeState('depth_' + depth + '_' + roomIndex, depth - 1, roomIndex);
+      runtimeContext.capabilities.merchantDepthSchedule = 'v1';
+      const issued = await issueNextRoomDirectiveV08(state, runtimeContext);
+      assert.equal(issued.currentRoomDirective.depth, depth);
+      assert.equal(issued.currentRoomDirective.roomType === 'merchant', depth % 10 === 9, 'depth ' + depth + ', index ' + roomIndex);
+    }
+  }
+});
+
+test("local and production descriptors share the corrected schedule; retained runs keep theirs", async () => {
+  const releases = await import('../src/rulesets/releases.js');
+  for (const [descriptor, merchantDepth] of [
+    [releases.V08_META_1_LOCAL_RELEASE_DESCRIPTOR, 9],
+    [releases.V08_META_1_PRODUCTION_RELEASE_DESCRIPTOR, 9],
+    [releases.V08_META_1_MERCHANT_DEPTH_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR, 8]
+  ]) {
+    for (const depth of [8, 9]) {
+      const { state, runtimeContext } = activeState('bound_' + depth, depth - 1, depth - 1);
+      state.rulesetHash = descriptor.rulesetHash;
+      delete runtimeContext.capabilities;
+      const issued = await descriptor.createRuleset().issueRoomDirective(state, runtimeContext);
+      assert.equal(issued.currentRoomDirective.depth, depth);
+      assert.equal(issued.currentRoomDirective.roomType === 'merchant', depth === merchantDepth);
+    }
+  }
 });

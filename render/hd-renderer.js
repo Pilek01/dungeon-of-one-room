@@ -1,9 +1,10 @@
 (function attachHDRenderer(root, factory) {
   const layersApi = typeof module === "object" && module.exports ? require("./hd-renderer-layers.js") : root && root.DungeonHDRendererLayers;
-  const api = factory(layersApi);
+  const streamApi = typeof module === "object" && module.exports ? require("./hd2-actor-stream.js") : root && root.DungeonHD2ActorStream;
+  const api = factory(layersApi, streamApi);
   if (typeof module === "object" && module.exports) module.exports = api;
   if (root) root.DungeonHDRenderer = api;
-})(typeof window !== "undefined" ? window : null, function createHDRendererApi(layersApi) {
+})(typeof window !== "undefined" ? window : null, function createHDRendererApi(layersApi, streamApi) {
   "use strict";
   if (!layersApi || !Array.isArray(layersApi.LAYER_ORDER) || typeof layersApi.renderLayers !== "function") throw new Error("DungeonHDRendererLayers must load before DungeonHDRenderer");
   const TILE_SIZE = 64;
@@ -48,6 +49,7 @@
     if (onDiagnostic !== undefined && typeof onDiagnostic !== "function") throw new TypeError("onDiagnostic must be a function");
     let mode = "hd";
     let loadedAssets = new Map();
+    let stream = null;
     let generation = 0;
     let pendingInitialization = null;
     let requested = false;
@@ -151,9 +153,12 @@
       let loadResult;
       try {
         writePresentation();
-        const required = criticalKeys(manifest);
+        criticalKeys(manifest);
+        stream = streamApi ? streamApi.createStream(manifest, loader, loaderOptions) : null;
+        const bootManifest = stream ? stream.bootstrap : manifest;
+        const required = criticalKeys(bootManifest);
         if (!loader || typeof loader.loadAssets !== "function") throw new Error("HD asset loader is unavailable");
-        loadResult = loader.loadAssets(manifest, loaderOptions);
+        loadResult = loader.loadAssets(bootManifest, loaderOptions);
         Promise.resolve(loadResult).then((raw) => {
           if (!isCurrent(token, record)) return resolve(status({ stale: true }));
           try {
@@ -169,9 +174,19 @@
       } catch (error) { resolve(completeFailure(token, record, error, null)); pendingInitialization = null; }
       return promise;
     }
-    function render(snapshot) { renderHD(snapshot, context, loadedAssets instanceof Map ? loadedAssets : new Map()); }
+    function render(snapshot) {
+      if (stream && lastOutcome?.ready) {
+        const keys = (snapshot.enemies || []).map(enemy => {
+          const boss = layersApi.selectBossVisual(snapshot, enemy);
+          return (boss.diagnostic ? layersApi.selectEnemyVisual(snapshot, enemy) : boss).key;
+        }).filter(Boolean);
+        for (const event of snapshot.visualEvents || []) if (event.spriteKey) keys.push(event.spriteKey);
+        stream.ensure(keys, loadedAssets);
+      }
+      renderHD(snapshot, context, loadedAssets);
+    }
     writePresentation();
-    return Object.freeze({ initialize, render, getMode: () => mode });
+    return Object.freeze({ initialize, render, getMode: () => mode, getStreamingStats: () => stream?.getStats() });
   }
   return Object.freeze({ TILE_SIZE, GRID_SIZE, WORLD_SIZE, LAYER_ORDER, BOTTOM_CENTER_ANCHOR, gridToScreen, getAnchoredDestinationRect, renderHDFrame, createGraphicsController });
 });

@@ -41,3 +41,5 @@ test('healing event preserves Acolyte pose after AI clears cast type, without mu
  assert.match(layers().selectEnemyVisual(snapshot,actor).key,/\.heal\./);
  assert.deepEqual({snapshot,actor},before);
 });
+
+test('totem aura stays anchored in idle; only real hex or venom releases a cast',()=>{const api=layers(),actor={id:'t',type:'totem',hp:5,castFlash:80,_tweenT:40};assert.equal(api.selectEnemyVisual({nowMs:1000},actor).clip,'idle');for(const kind of ['npc_hex','npc_venom']){const events=[{kind,sourceId:'t',startedAtMs:1000,durationMs:140}];const result=api.selectEnemyVisual({nowMs:1000,visualEvents:events},actor);assert.equal(result.clip,'cast');assert.equal(result.frame,6);assert.equal(api.selectEnemyVisual({nowMs:1141,visualEvents:events},actor).clip,'idle');}});

@@ -2059,6 +2059,11 @@ function buildCanonicalData(records, textByFile) {
   const merchantFirstRoomIndex = extractNumber(pitySource, "MERCHANT_FIRST_ROOM_INDEX");
   const merchantLastRoomIndex = extractNumber(pitySource, "MERCHANT_LAST_ROOM_INDEX");
   const merchantRoomInterval = extractNumber(pitySource, "MERCHANT_ROOM_INTERVAL");
+  const guaranteedMerchantDepths = [];
+  for (let depth = extractNumber(pitySource, "MERCHANT_FIRST_DEPTH");
+    depth <= extractNumber(pitySource, "MERCHANT_LAST_DEPTH"); depth += merchantRoomInterval) {
+    guaranteedMerchantDepths.push(depth);
+  }
   const guaranteedMerchantRoomIndexes = [];
   for (
     let roomIndex = merchantFirstRoomIndex;
@@ -2200,9 +2205,10 @@ function buildCanonicalData(records, textByFile) {
         ...defaults,
         id: room.id,
         minDepth: 3,
+        guaranteedDepths: guaranteedMerchantDepths,
         guaranteedRoomIndexes: guaranteedMerchantRoomIndexes,
         deterministic: true,
-        scheduleRule: "deterministic every ten room indexes from 8 through 98; excluded from weighted selection"
+        scheduleRule: "deterministic at absolute depth 9 through 99 every ten depths; historical rulesets retain indexes 8 through 98; excluded from weighted selection"
       };
     }
     if (room.id === "vault") {
@@ -2340,6 +2346,7 @@ function buildCanonicalData(records, textByFile) {
         "otter-pity",
         "weighted-room"
       ],
+      guaranteedMerchantDepths,
       guaranteedMerchantRoomIndexes,
       globalGapDepths: specialRoomGlobalGapDepths,
       cooldownDepths: specialRoomCooldownDepths,

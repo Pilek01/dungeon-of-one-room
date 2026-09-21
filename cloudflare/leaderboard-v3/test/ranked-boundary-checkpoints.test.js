@@ -99,8 +99,8 @@ async function merchantBarrierRoom(runId, capabilities) {
   };
   const state = createInitialMetaStateV08({}, context);
   state.status = "active";
-  state.depth = 7;
-  state.roomIndex = 7;
+  state.depth = capabilities.merchantDepthSchedule === "v1" ? 8 : 7;
+  state.roomIndex = state.depth;
   const issued = await issueNextRoomDirectiveV08(state, context);
   assert.equal(issued.currentRoomDirective.roomType, "merchant");
   const offered = await issueMerchantInventoryV08(issued, context);

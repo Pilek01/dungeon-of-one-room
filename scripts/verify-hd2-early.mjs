@@ -59,7 +59,10 @@ try {
   await page.waitForFunction(()=>document.getElementById('bootScreen')?.classList.contains('hidden'));
   assert.equal(await page.evaluate(()=>window.DungeonHDRendererLayers.earlyAnimationsEnabled),true);
   const actualAssets = requests.slice(start).filter(u=>/\/assets\/hd\/(early|all)-v2\//.test(u));
-  assert.equal(new Set(actualAssets).size,2400);
+  assert.ok(new Set(actualAssets).size < 1600, "HD2 must not preload the full actor catalog");
+  assert.ok(!actualAssets.some(u => /all-v2\/(warden|guardian|blacksmith)[^/]*\/[^/]+-(move|cast|attack|hit|death)-/.test(u)), "unused boss animations must stay unloaded");
+  for (let i=0;i<300 && !requests.slice(start).some(u => u.includes('all-v2/totem/base-death-04.png'));i++) await page.waitForTimeout(100);
+  assert.ok(requests.slice(start).some(u => u.includes('all-v2/totem/base-death-04.png')), 'resident totem death frames are requested');
   await page.screenshot({path:path.join(out,'game-hd2.png'),fullPage:true});
   for(const key of ['ArrowUp','ArrowRight','Space','ArrowDown']) {
     await page.keyboard.press(key); await page.waitForTimeout(180);

@@ -245,7 +245,10 @@ async function selectRoomType(state, context, depth, roomIndex) {
     return { roomType: "boss", source: "boss-priority" };
   }
 
-  if (specialRoomRotationEnabled(context) && isScheduledMerchantRoom(roomIndex)) {
+  const scheduledMerchant = context?.capabilities?.merchantDepthSchedule === "v1"
+    ? specialPolicy.guaranteedMerchantDepths.includes(depth)
+    : isScheduledMerchantRoom(roomIndex);
+  if (specialRoomRotationEnabled(context) && scheduledMerchant) {
     return { roomType: "merchant", source: "merchant-schedule" };
   }
 

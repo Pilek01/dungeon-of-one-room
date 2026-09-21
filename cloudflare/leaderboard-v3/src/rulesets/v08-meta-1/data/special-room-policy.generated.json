@@ -10,8 +10,8 @@
     },
     {
       "file": "game.js",
-      "byteLength": 1390372,
-      "sha256": "d60c1ea02e6ba977fab8a0c8df66d1bd799252a000da2adfc1405da2493ff074"
+      "byteLength": 1391394,
+      "sha256": "40a658b77e9c7b7b4eff107ad086c7871fcdbff255333ba66507c505146e70b4"
     },
     {
       "file": "pact-room.js",
@@ -20,8 +20,8 @@
     },
     {
       "file": "room-pity.js",
-      "byteLength": 4019,
-      "sha256": "5ed408418674e52918285bfce274a4198e7dd9679326f3ca7ad449a133251b86"
+      "byteLength": 4475,
+      "sha256": "a0e9e718d71bfdebdbdfbfbfde90eff9b2426ca002d6113428ea8e300c6ca428"
     }
   ],
   "canonicalData": {
@@ -34,6 +34,18 @@
       "forge-pity",
       "otter-pity",
       "weighted-room"
+    ],
+    "guaranteedMerchantDepths": [
+      9,
+      19,
+      29,
+      39,
+      49,
+      59,
+      69,
+      79,
+      89,
+      99
     ],
     "guaranteedMerchantRoomIndexes": [
       8,

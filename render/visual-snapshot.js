@@ -152,7 +152,7 @@
     "skill", "tier", "style", "furySpent", "ringIndex", "seed"
   ];
   const DASH_AFTERLINE_FIELDS = ["turns", "maxTurns"];
-  const VISUAL_EVENT_FIELDS = ["kind", "x", "y", "facing", "startedAtMs", "durationMs", "sourceId"];
+  const VISUAL_EVENT_FIELDS = ["kind", "x", "y", "facing", "startedAtMs", "durationMs", "sourceId", "spriteKey", "spriteSize", "offsetX", "offsetY", "targetX", "targetY", "actorType"];
   const PLAYER_SHRINE_TURN_FIELDS = [
     "furyBlessingTurns",
     "shrineAttackTurns",

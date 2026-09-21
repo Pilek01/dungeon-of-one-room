@@ -1,6 +1,9 @@
 (function () {
   const FORGE_PITY_DEPTH = 21;
   const OTTER_PITY_DEPTH = 41;
+  const MERCHANT_FIRST_DEPTH = 9;
+  const MERCHANT_LAST_DEPTH = 99;
+  // Retained for historical Ranked rulesets. New runs use absolute depth.
   const MERCHANT_FIRST_ROOM_INDEX = 8;
   const MERCHANT_LAST_ROOM_INDEX = 98;
   const MERCHANT_ROOM_INTERVAL = 10;
@@ -25,6 +28,12 @@
       index >= MERCHANT_FIRST_ROOM_INDEX &&
       index <= MERCHANT_LAST_ROOM_INDEX &&
       (index - MERCHANT_FIRST_ROOM_INDEX) % MERCHANT_ROOM_INTERVAL === 0;
+  }
+
+  function isScheduledMerchantDepth(depth) {
+    return Number.isSafeInteger(depth) &&
+      depth >= MERCHANT_FIRST_DEPTH && depth <= MERCHANT_LAST_DEPTH &&
+      (depth - MERCHANT_FIRST_DEPTH) % MERCHANT_ROOM_INTERVAL === 0;
   }
 
   function isNaturalSpecialRoomEligible(roomType, depth, scheduleState = {}) {
@@ -96,6 +105,9 @@
   const api = {
     FORGE_PITY_DEPTH,
     OTTER_PITY_DEPTH,
+    MERCHANT_FIRST_DEPTH,
+    MERCHANT_LAST_DEPTH,
+    isScheduledMerchantDepth,
     MERCHANT_FIRST_ROOM_INDEX,
     MERCHANT_LAST_ROOM_INDEX,
     MERCHANT_ROOM_INTERVAL,

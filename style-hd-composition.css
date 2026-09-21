@@ -4361,3 +4361,10 @@ body.graphics-hd-ui:has(#game.graphics-hd) .camp-revamp-curse b { color: #c87474
   }
 
   body.graphics-hd-ui .camp-start-choice.locked > em { color: #716b63; }
+
+/* Match the ten mutators to their five-row keyboard navigation. */
+@media (min-width: 1201px) {
+  body.graphics-hd-ui:has(#game.graphics-hd) .camp-revamp-grid:has(> .camp-revamp-mutator) {
+    grid-template-rows: repeat(5, minmax(0, 1fr));
+  }
+}

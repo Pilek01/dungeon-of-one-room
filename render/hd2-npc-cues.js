@@ -23,6 +23,43 @@
     npc_charge:'charge',npc_melee:'melee',npc_bolt:'bolt',npc_heal:'heal',npc_buff:'buff',npc_hex:'hex',npc_venom:'venom',npc_slam:'slam',npc_aura:'aura',
     riftweaver_rift_detonate:'rift',bulwark_shield_bash:'bash',warden_lattice_burst:'rift',warden_voidstep_vanish:'blink',warden_soul_chain_fire:'chain',blacksmith_chain_hook_fire:'chain',blacksmith_overheat_transition:'aura',vault_hoard_sentence_cast:'hex',vault_lockdown_detonate:'slam',warden_doom_sigil_explode:'rift'
   });
-  function createGate(){const last=new Map();return (kind,now)=>{if(!cues[kind]||!Number.isFinite(now))return false;const previous=last.get(kind);if(previous!==undefined&&now-previous<.08)return false;last.set(kind,now);return true;};}
-  return Object.freeze({cues,events,createGate});
+
+  function createGate(){
+    const last=new Map();let active=[];
+    return (kind,now,sourceId='shared')=>{
+      if(!cues[kind]||!Number.isFinite(now))return false;
+      for(const [key,time]of last)if(now-time>1)last.delete(key);
+      active=active.filter(time=>now-time<.25);
+      const key=kind+':'+sourceId,previous=last.get(key);
+      if(previous!==undefined&&now-previous<.08)return false;
+      // Reserve two voices for magic/danger when melee crowds the room.
+      if(active.length>=(kind==='melee'?4:6))return false;
+      last.set(key,now);active.push(now);return true;
+    };
+  }
+  const materialFor=(cue,actor)=>['totem','guardian'].includes(actor)?'stone':actor==='skeleton'?'bone':['bulwark','blacksmith_guardian'].includes(actor)?'metal':['venom','rift','hex'].includes(cue)?cue:cue==='chain'||cue==='bash'?'metal':cue==='slam'?'stone':null;
+  function materialSamples(material,sampleRate){
+    const duration=material==='rift'||material==='hex'?.16:.085,length=Math.round(sampleRate*duration),data=new Float32Array(length);
+    let seed=2166136261,low=0;for(const c of material)seed=Math.imul(seed^c.charCodeAt(0),16777619);
+    for(let i=0;i<length;i++){
+      seed^=seed<<13;seed^=seed>>>17;seed^=seed<<5;const noise=(seed>>>0)/2147483648-1;
+      low+=.18*(noise-low);const progress=i/(length-1),envelope=Math.min(1,i/(sampleRate*.004))*(1-progress)**3;
+      const signal=material==='stone'?low:material==='metal'?.5*noise+.5*Math.sin(i/sampleRate*2*Math.PI*1800):material==='bone'?.75*noise:noise-low;
+      data[i]=Math.max(-1,Math.min(1,signal))*.018*envelope;
+    }return data;
+  }
+  const buses=new WeakMap(),buffers=new WeakMap();
+  function getBus(ctx,master){
+    if(typeof ctx.createDynamicsCompressor!=='function')return master;
+    const previous=buses.get(ctx);if(previous?.master===master)return previous.node;
+    if(previous)previous.node.disconnect();
+    const node=ctx.createDynamicsCompressor();node.threshold.value=-19;node.knee.value=12;node.ratio.value=4;node.attack.value=.003;node.release.value=.12;node.connect(master);buses.set(ctx,{master,node});return node;
+  }
+  function playMaterial(ctx,out,cue,actor,at){
+    const material=materialFor(cue,actor);if(!material||typeof ctx.createBufferSource!=='function')return;
+    let cache=buffers.get(ctx);if(!cache){cache=new Map();buffers.set(ctx,cache);}
+    let buffer=cache.get(material);if(!buffer){const data=materialSamples(material,ctx.sampleRate);buffer=ctx.createBuffer(1,data.length,ctx.sampleRate);buffer.copyToChannel(data,0);cache.set(material,buffer);}
+    const source=ctx.createBufferSource();source.buffer=buffer;source.connect(out);source.onended=()=>source.disconnect();source.start(at);source.stop(at+buffer.duration+.01);
+  }
+  return Object.freeze({cues,events,createGate,materialSamples,materialFor,getBus,playMaterial});
 });

@@ -11,7 +11,8 @@
   const pitApi = typeof module === "object" && module.exports
     ? require("../pit-hazard.js")
     : root && root.DungeonPitHazard;
-  const api = factory(vfxApi, lightingApi, statusApi, pitApi, root);
+  const presentationApi = typeof module === "object" && module.exports ? require("./hd2-presentation.js") : root && root.DungeonHD2Presentation;
+  const api = factory(vfxApi, lightingApi, statusApi, pitApi, root, presentationApi);
 
   if (typeof module === "object" && module.exports) {
     module.exports = api;
@@ -19,7 +20,7 @@
   if (root) {
     root.DungeonHDRendererLayers = api;
   }
-})(typeof window !== "undefined" ? window : null, function createHDRendererLayersApi(vfxApi, lightingApi, statusApi, pitApi, root) {
+})(typeof window !== "undefined" ? window : null, function createHDRendererLayersApi(vfxApi, lightingApi, statusApi, pitApi, root, presentationApi) {
   "use strict";
 
   const earlyAnimationsEnabled = Boolean(root && /(?:^|[?&])hd2=1(?:&|$)/.test(root.location?.search || ""));
@@ -114,9 +115,12 @@
   }
 
   function drawAsset(context, assets, key, x, y, width = TILE_SIZE, height = TILE_SIZE) {
-    const image = getAsset(assets, key);
+    const image = getAsset(assets, key) || (earlyAnimationsEnabled && /^(enemy|boss)\./.test(key) ? getAsset(assets, key.replace(/\.(idle|move|attack|cast|awaken|heal|buff|hit|death)\.\d+$/, ".idle.01")) : null);
     if (!image || !context || typeof context.drawImage !== "function") return false;
-    context.drawImage(image, x, y, width, height);
+    const stableActor = earlyAnimationsEnabled && /^(actor\.player|enemy|boss)\./.test(key) && !/\.(move|death)\./.test(key);
+    const reference = stableActor ? getAsset(assets, key.replace(/\.(idle|attack|cast|awaken|heal|buff|hit)\.\d+$/, ".idle.01")) : null;
+    const offset = stableActor && presentationApi ? presentationApi.anchorOffset(image, reference, width) : { x: 0, y: 0 };
+    context.drawImage(image, x + offset.x, y + offset.y, width, height);
     return true;
   }
 
@@ -841,18 +845,19 @@
     const meleeEvent = useEarlyAnimations && ["slime", "skitter", "otter", "brute"].includes(actor.type) && [...(Array.isArray(visual.visualEvents) ? visual.visualEvents : [])].reverse().find(e =>
       actor.id != null && String(e.sourceId) === String(actor.id) && ["npc_melee", "npc_slam"].includes(e.kind) &&
       Number(visual.nowMs) >= Number(e.startedAtMs) && Number(visual.nowMs) - Number(e.startedAtMs) < Number(e.durationMs));
+    const totemRelease = useEarlyAnimations && actor.type === "totem" && (visual.visualEvents || []).find(e => String(e.sourceId) === String(actor.id) && ["npc_venom", "npc_hex"].includes(e.kind) && visual.nowMs >= e.startedAtMs && visual.nowMs - e.startedAtMs < e.durationMs);
     const direction = selectEnemyDirection({ ...actor, renderType });
     let clip = "idle";
     if (Number(actor.hp) <= 0) clip = "death";
     else if ((Number(actor.hitFlash) || 0) > 0) clip = "hit";
     else if (meleeEvent) clip = "attack";
-    else if (actor.type === "totem" && (Number(actor.castFlash) || 0) > 0) clip = "cast";
+    else if (actor.type === "totem" && (useEarlyAnimations ? totemRelease : (Number(actor.castFlash) || 0) > 0)) clip = "cast";
     else if (actor.type === "skeleton" && (actor.aiming === true || actor.volleyAiming === true || ((Number(actor.castFlash) || 0) > 0 && !(actor.disoriented || (Number(actor.disorientedTurns) || 0) > 0)))) clip = "attack";
     else if (actor.type === "riftweaver" && (actor.riftAiming === true || (Number(actor.castFlash) || 0) > 0)) clip = "attack";
     else if (actor.type === "bulwark" && (actor.bulwarkBashAiming === true || (Number(actor.castFlash) || 0) > 0)) clip = "attack";
     else if (renderType === "acolyte" && (actor.aiming === true || (Number(actor.castFlash) || 0) > 0)) clip = "attack";
     else if (renderType === "brute" && (actor.slamAiming === true || actor.rests === true)) clip = "attack";
-    else if (Number.isFinite(Number(actor._tweenT)) && Number(actor._tweenT) >= 0 && Number(actor._tweenT) < ENEMY_TWEEN_MS) clip = "move";
+    else if ((!earlyAnimationsEnabled || actor.type !== "totem") && Number.isFinite(Number(actor._tweenT)) && Number(actor._tweenT) >= 0 && Number(actor._tweenT) < ENEMY_TWEEN_MS) clip = "move";
     const frameCount = (useEarlyAnimations ? EARLY_ENEMY_CLIPS : ENEMY_CLIPS)[clip];
     const elapsed = Math.max(0, Number(visual.nowMs) || 0);
     const preparing = actor.riftAiming === true || actor.bulwarkBashAiming === true || actor.aiming === true || actor.volleyAiming === true || actor.slamAiming === true;
@@ -895,6 +900,7 @@
     } else if (clip === "death") {
       frame = (Math.floor(elapsed / 180) % frameCount) + 1;
     }
+    if (totemRelease && clip === "cast") frame = Math.min(8, 6 + Math.floor((elapsed - totemRelease.startedAtMs) / (totemRelease.durationMs / 3)));
     let assetClip = clip;
     if (useEarlyAnimations && renderType === "acolyte" && clip === "attack") {
       const event = [...(Array.isArray(visual.visualEvents) ? visual.visualEvents : [])].reverse().find(e =>
@@ -1208,6 +1214,7 @@
   }
 
   function drawEnemiesLayer(context, snapshot, assets) {
+    if (earlyAnimationsEnabled) presentationApi?.drawDeaths(context, snapshot, assets);
     const enemies = snapshot && Array.isArray(snapshot.enemies) ? snapshot.enemies : [];
     let drewKnown = false;
     for (const enemy of enemies) {
@@ -1264,6 +1271,7 @@
       if (canStyleElite) context.restore();
       if (!drawn) drawDiagnosticActor(context, enemy, "#b84b52");
       else drewKnown = true;
+      if (drawn) presentationApi?.drawActorStatuses(context, enemy, { x: drawX, y: drawY, size: renderSize }, snapshot.nowMs);
       const bulwarkGuard = drawn ? selectBulwarkGuardVisual(enemy) : null;
       if (bulwarkGuard) {
         drawAsset(context, assets, bulwarkGuard.key, drawX, drawY, renderSize, renderSize);
@@ -1423,6 +1431,7 @@
         )
       : false;
     if (!drawn) drawDiagnosticActor(context, player, "#d8c7ff");
+    else presentationApi?.drawActorStatuses(context, player, { x: drawX + motion.x, y: drawY + motion.y, size: PLAYER_RENDER_SIZE }, snapshot.nowMs);
     if (Number.isFinite(drawX) && Number.isFinite(drawY)) {
       drawProtectionPass(context, snapshot, assets, player, logicalX, logicalY, "front");
       if ((Number(player.frozenMoveTurns) || 0) > 0) {
@@ -1502,6 +1511,7 @@
   }
 
   function drawVfxLayer(context, snapshot, assets) {
+    if (earlyAnimationsEnabled) presentationApi?.drawSkills(context, snapshot);
     if (vfxApi && typeof vfxApi.drawVfx === "function") vfxApi.drawVfx(context, snapshot, undefined, assets);
   }
 
@@ -1564,6 +1574,7 @@
     drawObjectsLayer,
     drawEnemiesLayer,
     selectEnemyVisual,
+    getEnemyRenderSize,
     selectBulwarkGuardVisual,
     selectBossVisual,
     selectProtectionEffects,

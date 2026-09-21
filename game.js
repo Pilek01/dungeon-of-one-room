@@ -6807,7 +6807,7 @@
 
   const npcCueGate = window.DungeonHD2NpcCues?.createGate();
 
-  function playSfx(kind) {
+  function playSfx(kind, cueOptions) {
     if (isSimulationActive() && state.simulation.suppressAudio) return;
     if (!ensureAudio()) return;
     const ctx = audio.ctx;
@@ -6816,9 +6816,11 @@
 
     if (typeof kind === "string" && kind.startsWith("npc:")) {
       const cue = kind.slice(4);
-      if (window.DungeonHDRendererLayers?.earlyAnimationsEnabled !== true || !npcCueGate?.(cue, now)) return;
+      if (window.DungeonHDRendererLayers?.earlyAnimationsEnabled !== true || !npcCueGate?.(cue, now, cueOptions?.sourceId)) return;
+      const npcOut = window.DungeonHD2NpcCues.getBus(ctx, out);
+      window.DungeonHD2NpcCues.playMaterial(ctx, npcOut, cue, cueOptions?.actorType, now);
       for (const tone of window.DungeonHD2NpcCues.cues[cue]) {
-        playTone(ctx, out, { ...tone, at: now + tone.delay });
+        playTone(ctx, npcOut, { ...tone, at: now + tone.delay });
       }
       return;
     }
@@ -8293,8 +8295,8 @@
     }
     const regionConfig = getCampaignRegionConfig();
     const scheduledMerchant = !isBossDepth() && window.roomPityApi &&
-      typeof window.roomPityApi.isScheduledMerchantRoom === "function" &&
-      window.roomPityApi.isScheduledMerchantRoom(state.roomIndex);
+      typeof window.roomPityApi.isScheduledMerchantDepth === "function" &&
+      window.roomPityApi.isScheduledMerchantDepth(state.depth);
     if (scheduledMerchant) {
       return selectLocalRoomType("merchant", "merchant-schedule");
     }
@@ -15527,16 +15529,16 @@
     });
   }
 
-  function emitNpcSkillCue(kind, enemy) {
+  function emitNpcSkillCue(kind, enemy, target) {
     if (enemy && window.DungeonHDRendererLayers?.earlyAnimationsEnabled === true) {
-      emitVisualEvent(`npc_${kind}`, enemy.x, enemy.y, { sourceId: enemy.id, durationMs: 140 });
+      emitVisualEvent(`npc_${kind}`, enemy.x, enemy.y, { sourceId: enemy.id, actorType: enemy.type, targetX: target?.x, targetY: target?.y, durationMs: 140 });
     }
   }
 
   function emitVisualEvent(kind, x, y, options = {}) {
     if (isSimulationActive() && state.simulation.suppressVisuals) return null;
     const npcCue = window.DungeonHD2NpcCues?.events[kind];
-    if (npcCue && window.DungeonHDRendererLayers?.earlyAnimationsEnabled === true) playSfx(`npc:${npcCue}`);
+    if (npcCue && window.DungeonHDRendererLayers?.earlyAnimationsEnabled === true) playSfx(`npc:${npcCue}`, options);
     const startedAtMs = typeof performance === "object" && typeof performance.now === "function"
       ? performance.now()
       : Date.now();
@@ -15549,6 +15551,9 @@
       durationMs: Math.max(80, Number(options.durationMs) || 320)
     };
     if (options.sourceId != null) event.sourceId = String(options.sourceId);
+    for (const field of ["spriteKey", "spriteSize", "offsetX", "offsetY", "targetX", "targetY", "actorType"]) {
+      if (typeof options[field] === "string" || (typeof options[field] === "number" && Number.isFinite(options[field]))) event[field] = options[field];
+    }
     if (Array.isArray(options.tiles)) {
       event.tiles = options.tiles
         .filter((tile) => tile && Number.isFinite(Number(tile.x)) && Number.isFinite(Number(tile.y)))
@@ -16231,6 +16236,10 @@
         durationMs: 640,
         sourceId: enemy.id
       });
+    }
+    if (!shouldTriggerFinalBossShift && typeof window === "object" && window.DungeonHDRendererLayers?.earlyAnimationsEnabled === true) {
+      const record = window.DungeonHD2Presentation?.deathRecord(state, enemy, window.DungeonHDRendererLayers);
+      if (record) emitVisualEvent("enemy_death", enemy.x, enemy.y, record);
     }
     removeEnemy(enemy);
     if (enemy.type === "guardian" && state.roomType === "vault") {
@@ -18996,7 +19005,7 @@
       spawnParticles(tile.x, tile.y, "#e258ff", 7, 0.7);
     }
     enemy.doomSigilCooldown = Math.max(1, Number(profile?.doomSigilCooldown) || 5);
-    if (tiles.length > 0) emitNpcSkillCue("hex", enemy);
+    if (tiles.length > 0) emitNpcSkillCue("hex", enemy, state.player);
     enemy.castFlash = Math.max(Number(enemy.castFlash) || 0, WARDEN_CAST_VISUAL_MS);
     pushLog(
       "Abyssal Warden Reborn brands " + targetedTiles.length + " tracking and " + randomTiles.length + " random Doom Sigils. They erupt after one full turn!",
@@ -19832,7 +19841,7 @@
     target.hp = Math.min(target.maxHp, target.hp + healAmount);
     const healed = Math.max(0, target.hp - beforeHp);
     caster.castFlash = 120;
-    if (window.DungeonHDRendererLayers?.earlyAnimationsEnabled === true) emitVisualEvent("npc_heal", caster.x, caster.y, { sourceId: caster.id, durationMs: 120 });
+    if (window.DungeonHDRendererLayers?.earlyAnimationsEnabled === true) emitVisualEvent("npc_heal", caster.x, caster.y, { sourceId: caster.id, actorType: caster.type, targetX: target.x, targetY: target.y, durationMs: 140 });
     spawnParticles(caster.x, caster.y, "#8edcc3", 8, 1.05);
     spawnParticles(target.x, target.y, "#baf7dc", 10, 1.05);
     if (healed > 0) {
@@ -19849,7 +19858,7 @@
     target.acolyteBuffTurns = ACOLYTE_SUPPORT_BUFF_TURNS;
     state.enemyAcolyteBuffCastThisTurn = true;
     caster.castFlash = 120;
-    if (window.DungeonHDRendererLayers?.earlyAnimationsEnabled === true) emitVisualEvent("npc_buff", caster.x, caster.y, { sourceId: caster.id, durationMs: 120 });
+    if (window.DungeonHDRendererLayers?.earlyAnimationsEnabled === true) emitVisualEvent("npc_buff", caster.x, caster.y, { sourceId: caster.id, actorType: caster.type, targetX: target.x, targetY: target.y, durationMs: 140 });
     spawnParticles(caster.x, caster.y, "#b89dff", 8, 1.05);
     spawnParticles(target.x, target.y, "#cbb7ff", 10, 1.05);
     spawnFloatingText(target.x, target.y, "EMPOWER", "#e1d5ff");
@@ -19885,7 +19894,7 @@
     const poisonDamage = getTotemPoisonBoltDamage();
     const applied = applyPlayerPoison(poisonDamage, TOTEM_POISON_TURNS);
     if (!applied) return false;
-    emitNpcSkillCue("venom", enemy);
+    emitNpcSkillCue("venom", enemy, state.player);
     enemy.castFlash = 120;
     spawnRangedBolt(enemy.x, enemy.y, state.player.x, state.player.y, "#7effa8");
     spawnRangedImpact(state.player.x, state.player.y, "#7effa8");
