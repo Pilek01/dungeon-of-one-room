@@ -5,8 +5,8 @@
   "sources": [
     {
       "file": "game.js",
-      "byteLength": 1390904,
-      "sha256": "3b129cddeebe2692710e2417f12113b35e78361ea4cec55ee80e875e7d38d68f"
+      "byteLength": 1394893,
+      "sha256": "4848175a7f7b0e69862367a4e172a1e1156e0b266b16082b92369d9d6dd1e630"
     },
     {
       "file": "relic-data.js",

@@ -50,7 +50,7 @@ const PREVIOUS_GOLD_PARITY_HASH =
   "sha256:78ae2f6f797063b7f364e5652e3367f6b26d651302f5c6038576d304dc442ec3";
 
 test("bounded combat resources remain active when the candidate is promoted", () => {
-  assert.equal(V08_META_1_PRODUCTION_RELEASE_DESCRIPTOR.rulesetHash, manifest.rulesetHash);
+  assert.equal(V08_META_1_PRODUCTION_RELEASE_DESCRIPTOR.rulesetHash, "sha256:dd2bc67015aabc40cb833aec4f224e9a0e9a952a5d3bcd05e33f6144a2f59c05");
   assert.equal(V08_META_1_LOCAL_RELEASE_DESCRIPTOR.rulesetHash, manifest.rulesetHash);
   assert.equal(
     V08_META_1_PRODUCTION_RELEASE_DESCRIPTOR.capabilities.boundedCombatResources,
@@ -131,6 +131,7 @@ test("bounded combat resources remain active when the candidate is promoted", ()
   assert.ok(protocol.SUPPORTED_RULESET_HASHES.includes(PREVIOUS_PRODUCTION_HASH));
   assert.deepEqual(protocol.BOUNDED_COMBAT_RESOURCES_RULESET_HASHES, [
     V08_META_1_PRODUCTION_RELEASE_DESCRIPTOR.rulesetHash,
+    manifest.rulesetHash,
     V08_META_1_CHECKPOINT_RESULT_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR.rulesetHash,
     V08_META_1_HD1_PRESENTATION_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR.rulesetHash,
     V08_META_1_MERCHANT_DEPTH_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR.rulesetHash,
@@ -159,6 +160,7 @@ test("bounded combat resources remain active when the candidate is promoted", ()
   assert.equal(protocol.supportsBoundedCombatResources(PREVIOUS_PRODUCTION_HASH), false);
   assert.deepEqual(protocol.POTION_CLAIM_ORDERING_RULESET_HASHES, [
     V08_META_1_PRODUCTION_RELEASE_DESCRIPTOR.rulesetHash,
+    manifest.rulesetHash,
     V08_META_1_CHECKPOINT_RESULT_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR.rulesetHash,
     V08_META_1_HD1_PRESENTATION_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR.rulesetHash,
     V08_META_1_MERCHANT_DEPTH_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR.rulesetHash,

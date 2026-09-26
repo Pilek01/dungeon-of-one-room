@@ -568,6 +568,11 @@
     const safeMerchantBackoff = merchantStatus === "backoff" &&
       merchantOperation?.leaveAllowed === true;
     const reasons = [];
+    if (
+      sessionState === root.DungeonRankedV3Session.STATES.terminal ||
+      sessionState === root.DungeonRankedV3Session.STATES.finalizing ||
+      sessionState === root.DungeonRankedV3Session.STATES.finalized && !currentCampResponse
+    ) reasons.push("terminal_session");
     if (observerBotBoundaryPending) reasons.push("observer_boundary_pending");
     if (observerBotAutomationHalted) reasons.push("observer_automation_halted");
     if (root.DungeonRankedV3Session.isObserverAutomationTransitionState?.(sessionState, {
@@ -1264,7 +1269,9 @@
     }
     if (["victory", "defeat", "extraction"].includes(state.status)) {
       session.transition(root.DungeonRankedV3Session.STATES.terminal);
-      extractedProfileReady = state.status === "extraction" && Boolean(response.profile);
+      // Resume returns canonical run state without the event's optional profile projection.
+      // Camp fetches and authorizes its own profile after finalization.
+      extractedProfileReady = state.status === "extraction" && state.rankEligibility !== "provisional";
       if (extractedProfileReady) {
         root.DungeonOnlineV3GameBridge?.beginRankedExtraction?.();
         await finalize();
@@ -2741,7 +2748,10 @@
       : openBoundary();
   }
 
-  async function acceptFinal() {
+  async function acceptFinal(response = {}) {
+    if (response.outcome) {
+      extractedProfileReady = response.outcome === "extract" && response.metaState?.rankEligibility !== "provisional";
+    }
     if (session.getState() !== root.DungeonRankedV3Session.STATES.finalized) {
       session.transition(root.DungeonRankedV3Session.STATES.finalized);
     }
@@ -2824,7 +2834,7 @@
     root.DungeonOnlineV3GameBridge.syncCanonicalProjection(response.metaState);
     const finishExtraction = async () => {
       if (operation && !isCurrentOperationGeneration(operation)) return;
-      extractedProfileReady = response.metaState?.status === "extraction" && Boolean(response.profile);
+      extractedProfileReady = response.metaState?.status === "extraction" && response.metaState?.rankEligibility !== "provisional";
       session.transition(root.DungeonRankedV3Session.STATES.terminal);
       await finalize();
     };

@@ -56,13 +56,15 @@ function reconcileExactLocalEliteGoldAnomalies(
   nextState,
   integrityState,
   integrityBody,
-  authoritativeGoldDelta
+  authoritativeGoldDelta,
+  capabilities
 ) {
   if (integrityBody?.integrityVersion !== 1) return;
   const expectation = checkpointGoldIntegrityExpectation(
     integrityState,
     integrityBody,
-    authoritativeGoldDelta
+    authoritativeGoldDelta,
+    capabilities
   );
   if (
     !expectation.localPair ||
@@ -179,7 +181,8 @@ async function settleEventJournalBoundary(state, payload, outcome, ruleset, cont
       settlement.state,
       roomIntegrityState || state,
       boundaryIntegrityBody,
-      settlement.authoritativeGoldDelta
+      settlement.authoritativeGoldDelta,
+      ruleset.capabilities
     );
   }
   applyCheckpointRankEligibility(settlement.state, {
@@ -189,7 +192,8 @@ async function settleEventJournalBoundary(state, payload, outcome, ruleset, cont
       ? checkpointGoldIntegrityReasons(
         roomIntegrityState || state,
         boundaryIntegrityBody,
-        settlement.authoritativeGoldDelta
+        settlement.authoritativeGoldDelta,
+        ruleset.capabilities
       )
       : []
   });
@@ -411,7 +415,8 @@ export async function applyRulesetCheckpoint(state, body, ruleset, context = {})
     nextState,
     roomIntegrityState || state,
     body,
-    authoritativeGoldDelta
+    authoritativeGoldDelta,
+    ruleset.capabilities
   );
   applyCheckpointRankEligibility(nextState, {
     integrityVersion: body.integrityVersion,
@@ -419,7 +424,8 @@ export async function applyRulesetCheckpoint(state, body, ruleset, context = {})
     goldIntegrityReasons: checkpointGoldIntegrityReasons(
       roomIntegrityState || state,
       body,
-      authoritativeGoldDelta
+      authoritativeGoldDelta,
+      ruleset.capabilities
     )
   });
   captureRankIntegrityRoomContext(nextState);

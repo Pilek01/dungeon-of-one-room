@@ -2856,6 +2856,16 @@ function buildCanonicalData(records, textByFile) {
       },
       enemyClaims: {
         baseGoldByEnemyType: enemyBase,
+        depthGoldScaling: {
+          perDepth: extractNumber(gameSource, "ENEMY_DEPTH_GOLD_PER_DEPTH"),
+          eliteBonus: extractNumber(gameSource, "ELITE_KILL_GOLD_BONUS"),
+          enemyTypes: extractStringArray(gameSource, "DEPTH_SCALED_ENEMY_TYPES")
+        },
+        ordinaryEliteBudget: {
+          maximum: extractNumber(gameSource, "MAX_ORDINARY_ELITES_PER_ROOM"),
+          roomTypes: extractStringArray(gameSource, "ORDINARY_ELITE_ROOM_TYPES"),
+          rosterFraction: 0.5
+        },
         maximumEnemiesByRoom,
         maximumElitesPerRoom,
         maximumElitesByRoom,

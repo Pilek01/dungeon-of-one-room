@@ -117,14 +117,22 @@ export async function startMultiBotWall(options) {
   let wallStopped = false;
   let stopPromise = null;
   let workerExitHandled = false;
-  let workerLogFlushed = false;
+  let workerLogSnapshot = null;
+  let workerLogPromise = Promise.resolve();
   let unsubscribeWorkerExit = () => {};
   let unsubscribeWorkerRestart = () => {};
 
   async function flushWorkerLog() {
-    if (workerLogFlushed) return;
-    workerLogFlushed = true;
-    await writeFile(paths.workerLogPath, `${redact(options.worker.getLogs?.() || "").trimEnd()}\n`, "utf8");
+    const text = `${redact(options.worker.getLogs?.() || "").trimEnd()}\n`;
+    if (workerLogSnapshot === text) return workerLogPromise;
+    workerLogSnapshot = text;
+    workerLogPromise = workerLogPromise.catch(() => {}).then(
+      () => writeFile(paths.workerLogPath, text, "utf8")
+    ).catch((error) => {
+      if (workerLogSnapshot === text) workerLogSnapshot = null;
+      throw error;
+    });
+    return workerLogPromise;
   }
 
   function clearEntryTimer(entry) {
@@ -165,6 +173,9 @@ export async function startMultiBotWall(options) {
       });
     });
     await entry.persistPromise;
+    await flushWorkerLog().catch((error) => {
+      emit({ type: "worker_log_write_failed", message: redact(error?.message || error) });
+    });
   }
 
   async function captureBot(botId, failureIncident) {
@@ -202,7 +213,11 @@ export async function startMultiBotWall(options) {
   }
 
   function beginMonitoring(entry) {
-    const monitor = new BotProgressMonitor({ stallMs: 30_000, loopMs: 30_000 });
+    const monitor = new BotProgressMonitor({
+      stallMs: 30_000,
+      loopMs: 30_000,
+      reconnectGraceMs: 60_000
+    });
     let polling = false;
     const poll = async () => {
       if (polling || wallStopped || entry.status !== "running") return;

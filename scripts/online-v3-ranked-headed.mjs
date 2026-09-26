@@ -743,6 +743,28 @@ async function advanceVisibleRoom(page, expectedDepth) {
   return sourceRoom;
 }
 
+async function recoveredCamp(page) {
+  try {
+    await page.waitForFunction(() => {
+      const game = JSON.parse(window.render_game_to_text());
+      return game.phase === "camp" && (document.querySelector(".camp-revamp") || /Camp Guide/u.test(game.overlayText || ""));
+    }, null, { timeout: 15_000 });
+    const audit = await page.evaluate(() => ({ game: JSON.parse(window.render_game_to_text()) }));
+    if (shouldDismissCampGuide(audit)) await page.keyboard.press("h");
+    await page.locator(".camp-revamp").waitFor({ state: "visible", timeout: 15_000 });
+  } catch (error) {
+    const audit = await page.evaluate(() => {
+      const game = JSON.parse(window.render_game_to_text());
+      const state = window.DungeonOnlineV3.getSnapshot()?.publicState;
+      return { phase: game.phase, overlayText: game.overlayText,
+        session: window.DungeonOnlineV3.getSessionState(), status: state?.status,
+        eligibility: state?.rankEligibility,
+        rankedOverlay: document.querySelector(".ranked-v3-overlay")?.innerText };
+    });
+    throw new Error(`Recovered Camp did not open: ${JSON.stringify(audit)}`, { cause: error });
+  }
+}
+
 async function d1Count(runId) {
   const sql = `SELECT COUNT(*) AS count FROM leaderboard_entries WHERE run_id = '${runId}'`;
   const { stdout } = await runWrangler([
@@ -3141,6 +3163,58 @@ ${fatalTestHookAnchor}`;
       await abandonCurrentRankedAndClearLocal(page);
     }
 
+    if (RUN_RECOVERY) {
+      await page.reload({ waitUntil: "domcontentloaded" });
+      await dismissBoot(page, diagnostics);
+      await openRankedChoice(page, "Start Ranked");
+      await page.locator(".ranked-v3-choice-relic").first().click();
+      await sessionState(page, "ROOM_ACTIVE", diagnostics);
+      const extractionRoom = await visibleGameState(page);
+      await advanceVisibleRoom(page, extractionRoom.depth + 1);
+      const extractedRunId = await page.evaluate(() => {
+        window.__rankedExtractionRecoveryProbe = window.DungeonRankedV3Storage.createStore(localStorage).loadRecovery();
+        return window.DungeonOnlineV3.getSnapshot().runId;
+      });
+      let lostExtractionResponses = 0;
+      const extractionOperationIds = new Set();
+      const resumesBefore = diagnostics.apiRequests.filter((entry) => entry.path === "/api/v3/runs/resume").length;
+      await page.route("**/api/v3/runs/event", async (route) => {
+        if (route.request().postDataJSON()?.type !== "request_extraction") return route.continue();
+        extractionOperationIds.add(route.request().headers()["idempotency-key"]);
+        const response = await route.fetch();
+        assert.equal(response.status(), 200, "Extraction must commit before its response is lost");
+        lostExtractionResponses += 1;
+        await route.abort("failed");
+      });
+      await page.evaluate(() => window.DungeonOnlineV3.onExtraction("emergency"));
+      await sessionState(page, "FINALIZED", diagnostics);
+      await recoveredCamp(page);
+      await page.unroute("**/api/v3/runs/event");
+      assert.equal(lostExtractionResponses, 3);
+      assert.equal(extractionOperationIds.size, 1, "Transport retries must reuse the extraction identity");
+      assert.equal(diagnostics.apiRequests.filter((entry) => entry.path === "/api/v3/runs/resume").length, resumesBefore + 1);
+      assert.equal((await visibleGameState(page)).phase, "camp");
+      assert.equal(await page.evaluate(() => window.DungeonOnlineV3.getSessionState()), "FINALIZED");
+      assert.equal(await d1Count(extractedRunId), 1);
+      await page.screenshot({ path: path.join(ARTIFACT_ROOT, "ranked-extraction-response-recovered.png"), fullPage: true });
+
+      // Recreate a reload after finalization but before Camp was presented and recovery cleared.
+      const finalizationsBeforeReload = diagnostics.finalizeOperationIds.length;
+      await page.evaluate(() => {
+        const store = window.DungeonRankedV3Storage.createStore(localStorage);
+        store.saveRecovery(window.__rankedExtractionRecoveryProbe);
+      });
+      await page.reload({ waitUntil: "domcontentloaded" });
+      await dismissBoot(page, diagnostics);
+      await openRankedChoice(page, "Continue Ranked");
+      await sessionState(page, "FINALIZED", diagnostics);
+      await recoveredCamp(page);
+      assert.equal((await visibleGameState(page)).phase, "camp");
+      assert.equal(diagnostics.finalizeOperationIds.length, finalizationsBeforeReload, "Finalized extraction must not finalize twice");
+      assert.equal(await d1Count(extractedRunId), 1);
+      await page.screenshot({ path: path.join(ARTIFACT_ROOT, "ranked-finalized-extraction-reloaded.png"), fullPage: true });
+    }
+
     const expectedDroppedResponseErrors = diagnostics.consoleErrors.filter(
       (message) => message === "Failed to load resource: net::ERR_FAILED"
     );
@@ -3162,7 +3236,7 @@ ${fatalTestHookAnchor}`;
       ].includes(message)
     );
     const expectedDroppedErrors =
-      (RUN_RECOVERY ? 3 : 0) +
+      (RUN_RECOVERY ? 6 : 0) +
       (RUN_LIFECYCLE ? 1 : 0) +
       (RUN_CAMP ? 3 : 0);
     assert.equal(expectedDroppedResponseErrors.length, expectedDroppedErrors);
@@ -3192,6 +3266,8 @@ ${fatalTestHookAnchor}`;
       endedRecoveryRestartScenarios: RUN_CAMP ? 1 : 0,
       staleProfileRepairScenarios: RUN_RECOVERY ? 1 : 0,
       storageQuotaRecoveryScenarios: RUN_RECOVERY ? 1 : 0,
+      extractionResponseRecoveryScenarios: RUN_RECOVERY ? 1 : 0,
+      finalizedExtractionReloadScenarios: RUN_RECOVERY ? 1 : 0,
       activeCombatApiRequests: 0,
       finalizeAttempts: diagnostics.finalizeOperationIds.length,
       uniqueFinalizeOperationIds: new Set(diagnostics.finalizeOperationIds).size,

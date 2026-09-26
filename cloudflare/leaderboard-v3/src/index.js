@@ -1058,7 +1058,7 @@ async function handleRegisteredResume(request, env, options, repositories) {
     publicStateDigest: stateDigest,
     ...(tokenField ? { [tokenField]: token } : {}),
     metaState: publicRulesetMetaState(state, ruleset),
-    ...(state.status === "finalized" ? { leaderboardEntryId: state.runId } : {})
+    ...(state.status === "finalized" ? { leaderboardEntryId: state.runId, outcome: state.outcome } : {})
   };
   recordMetric(env, options, "resume_success", 1, state.status);
   return jsonResponse(responseBody, 200, { "cache-control": "no-store" });

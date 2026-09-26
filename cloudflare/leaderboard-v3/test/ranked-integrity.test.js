@@ -21,6 +21,7 @@ import { createV08Meta1Ruleset } from "../src/rulesets/v08-meta-1/index.js";
 import { applyRelicAcquisition } from "../src/rulesets/v08-meta-1/relic-policy.js";
 import manifest from "../src/rulesets/v08-meta-1/data/ruleset-manifest.json" with { type: "json" };
 import {
+  V08_META_1_LOCAL_RELEASE_DESCRIPTOR,
   V08_META_1_PRODUCTION_RELEASE_DESCRIPTOR
 } from "../src/rulesets/releases.js";
 import { TEST_SECRET } from "./fixtures/harness.js";
@@ -38,7 +39,7 @@ async function activeState(seed = 1, rulesetOptions = {}) {
     season: "integrity-season",
     gameVersion: "0.8.1",
     rulesetId: "v08-meta-1",
-    rulesetHash: manifest.rulesetHash,
+    rulesetHash: ruleset.rulesetHash,
     clientInstallIdHash: `install_integrity_${seed}`
   }, {
     ruleset,
@@ -232,6 +233,29 @@ test("the local v0.8 elite bonus is accepted with canonical build and mutator mu
     }, canonicalDelta),
     ["REPORTED_GOLD_DELTA_MISMATCH", "REPORTED_GOLD_TOTAL_MISMATCH"]
   );
+});
+
+test("rebalanced checkpoint accepts exact elite gold and rejects an additional legacy bonus", async () => {
+  const descriptor = V08_META_1_LOCAL_RELEASE_DESCRIPTOR;
+  const value = await activeState(35, { rulesetHash: descriptor.rulesetHash, capabilities: descriptor.capabilities });
+  const state = value.state;
+  const delta = state.currentRewardEnvelope.fixedAwards.reduce((sum, award) => sum + award.amount, 0) +
+    calculateEnemyGoldV08({ canonicalBuild: state.build, canonicalRunModifiers: state.runModifiers,
+      enemyType: "slime", elite: true, depth: state.currentRoomDirective.depth, capabilities: descriptor.capabilities });
+  const report = {
+    rewardClaims: [{ claimType: "elite", claimId: "elite:slime", count: 1 }],
+    reportedGoldDelta: delta, reportedGoldTotal: state.gold + delta,
+    combatResources: { hp: state.build.resources.hp, maxHp: state.build.resources.maxHp }
+  };
+  const legitimate = await checkpoint(value, report);
+  assert.equal(legitimate.nextState.rankEligibility, "official");
+  const inflated = await checkpoint(value, { ...report,
+    reportedGoldDelta: delta + V08_LOCAL_ELITE_REWARD_BONUS,
+    reportedGoldTotal: state.gold + delta + V08_LOCAL_ELITE_REWARD_BONUS });
+  assert.equal(inflated.nextState.gold, legitimate.nextState.gold);
+  assert.equal(inflated.nextState.rankEligibility, "provisional");
+  assert.deepEqual(inflated.nextState.rankIntegrity.reasonCodes,
+    ["REPORTED_GOLD_DELTA_MISMATCH", "REPORTED_GOLD_TOTAL_MISMATCH"]);
 });
 
 test("production checkpoint treats the exact legacy elite +3 report as clean without changing canonical credit", async () => {

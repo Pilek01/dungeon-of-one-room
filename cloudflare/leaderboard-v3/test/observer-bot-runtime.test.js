@@ -791,6 +791,69 @@ test("gameplay stays blocked when the assistance response is not canonically mar
   assert.equal(runtime.getDiagnostics().at(-1)?.code, "RANKED_TEST_ASSISTANCE_UNCONFIRMED");
 });
 
+for (const recoveredStatus of ["extraction", "finalized"]) {
+  for (const observerBotActive of [true, false]) {
+    test(`resumed ${recoveredStatus} without profile enters Camp for ${observerBotActive ? "Observer" : "player"}`, async () => {
+      const camp = deferred();
+      const presentations = [];
+      const heldTerminals = [];
+      const state = metaState({ status: recoveredStatus, rulesetHash: "sha256:boundary", lives: 2 });
+      const harness = createHarness({
+        observerBotActive,
+        hasRecovery: true,
+        async onResume() {
+          return { metaState: state, ...(recoveredStatus === "finalized" ? { outcome: "extract" } : {}) };
+        },
+        async onFinalize() { return { outcome: "extract", metaState: { ...state, status: "finalized" } }; },
+        async onCamp(action) { assert.equal(action, "open"); return camp.promise; }
+      });
+      harness.root.DungeonOnlineV3GameBridge.holdTerminal = (terminal) => heldTerminals.push(terminal);
+      harness.root.DungeonOnlineV3GameBridge.enterRankedCamp = (profile) => presentations.push(profile);
+      const runtime = await installRuntime(harness, { realSession: true });
+      const pending = runtime.resumeRanked();
+      await waitForTimer(() => runtime.getSessionState() === "FINALIZED", "Recovered extraction did not finalize");
+      assert.equal(heldTerminals.length, 0, "An extraction must never present the death/restart screen");
+      assert.ok(harness.calls.some((entry) => entry.action === "camp:open"), "Recovered extraction must fetch canonical Camp");
+      if (observerBotActive) assert.equal(runtime.getRankedAutomationBlockState().blocked, true);
+      camp.resolve({ profile: { profileId: "profile_test" }, metaTransactionOffer: { choices: [] } });
+      await pending;
+      assert.equal(presentations.length, 1);
+      assert.equal(runtime.getRankedAutomationBlockState().blocked, false);
+      assert.equal(runtime.getDiagnostics().length, 0);
+      assert.equal(harness.calls.filter((entry) => entry.action === "finalize").length, recoveredStatus === "extraction" ? 1 : 0);
+      assert.equal(harness.calls.some((entry) => entry.action === "request_extraction"), false);
+    });
+  }
+}
+
+test("a finalized non-extraction cannot restart Observer combat or open Camp", async () => {
+  const harness = createHarness({
+    hasRecovery: true,
+    async onResume() { return { outcome: "death", metaState: metaState({ status: "finalized" }) }; }
+  });
+  const runtime = await installRuntime(harness, { realSession: true });
+  await runtime.resumeRanked();
+  assert.equal(runtime.getSessionState(), "FINALIZED");
+  assert.equal(runtime.getRankedAutomationBlockState().blocked, true);
+  assert.equal(harness.calls.some((entry) => entry.action === "camp:open"), false);
+});
+
+test("recovery never opens official Camp for a provisional finalized extraction", async () => {
+  const harness = createHarness({
+    hasRecovery: true,
+    async onResume() {
+      return { outcome: "extract", metaState: metaState({ status: "finalized", rankEligibility: "provisional" }) };
+    }
+  });
+  const runtime = await installRuntime(harness, { realSession: true });
+  await runtime.resumeRanked();
+  const continueButton = harness.uiMessages.at(-1)[2].find((button) => button.label === "Continue");
+  continueButton.onClick();
+  await waitForTimer(() => runtime.getSessionState() === "FINALIZED", "Provisional run did not settle");
+  assert.equal(harness.calls.some((entry) => entry.action === "camp:open"), false);
+  assert.equal(runtime.getRankedAutomationBlockState().blocked, true);
+});
+
 test("finalized extraction keeps Camp recovery separate from Ranked run resync", async () => {
   let campAttempts = 0;
   const campError = Object.assign(new Error("CAMP_SESSION_PENDING_TRANSACTION"), {

@@ -345,6 +345,7 @@ test("safe Merchant backoff is terminal for purchasing but does not globally blo
     session: { getState: () => "ROOM_ACTIVE" },
     root: {
       DungeonRankedV3Session: {
+        STATES: { terminal: "TERMINAL_PENDING", finalizing: "FINALIZING", finalized: "FINALIZED" },
         isObserverAutomationTransitionState: () => false
       },
       DungeonOnlineV3GameBridge: {

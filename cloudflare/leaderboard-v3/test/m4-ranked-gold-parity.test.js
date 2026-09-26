@@ -41,7 +41,10 @@ async function localRankedGoldProjection(modifierIds, options = {}) {
   };
   const context = {
     result: null,
+    window: { DungeonRankedV3Protocol: protocolApi },
     state: {
+      depth: options.depth ?? 0,
+      onlineV3RulesetHash: options.rulesetHash ?? protocolApi.RULESET_HASH,
       player: {
         attack: 20,
         maxHp: 100,
@@ -70,6 +73,10 @@ async function localRankedGoldProjection(modifierIds, options = {}) {
     STORAGE_TOTAL_GOLD: "test"
   };
   vm.runInNewContext(`
+${gameSource.match(/  const ENEMY_DEPTH_GOLD_PER_DEPTH = [^;]+;/u)[0]}
+${gameSource.match(/  const DEPTH_SCALED_ENEMY_TYPES = [^;]+;/u)[0]}
+${extractFunction("isDifficultyRebalanceEnabled", "getEnemyEncounterDepthMultiplier")}
+${extractFunction("getEnemyDepthGoldMultiplier", "getOrdinaryCombatEnemyCount")}
 ${extractFunction("resetRunModifiers", "applyCampUpgradesToRun")}
 ${extractFunction("applyMutatorsToRun", "applyMutatorMidRun")}
 ${extractFunction("getGoldMultiplierForGrant", "grantPotion")}
@@ -252,8 +259,9 @@ test("Ranked integrity elite adjustment stays bound to the v0.8 source bonus", a
   const gameSource = await readFile(new URL("../../../game.js", import.meta.url), "utf8");
   assert.match(
     gameSource,
-    new RegExp(`enemy\\.rewardBonus\\s*\\+=\\s*${V08_LOCAL_ELITE_REWARD_BONUS}`, "u")
+    new RegExp(`const ELITE_KILL_GOLD_BONUS = ${V08_LOCAL_ELITE_REWARD_BONUS};`, "u")
   );
+  assert.match(gameSource, /enemy\.rewardBonus\s*\+=\s*ELITE_KILL_GOLD_BONUS/u);
 });
 
 test("Ranked Arena wave one uses the canonical +2 enemy reward bonus", async () => {

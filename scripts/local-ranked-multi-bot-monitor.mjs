@@ -116,11 +116,28 @@ export class BotProgressMonitor {
     this.boundaryFingerprint = null;
     this.boundaryStartedAt = null;
     this.history = [];
+    this.reconnectGraceMs = Math.max(0, Number(options.reconnectGraceMs) || 0);
+    this.reconnectStartedAt = null;
   }
 
   observe(sample, nowMs = Date.now()) {
     const immediate = classifyImmediateFailure(sample);
+    const sessionState = String(sample?.sessionState || "").toUpperCase();
+    const recoverableReconnect = immediate?.kind === "reconnect" && sessionState === "RECONNECT_REQUIRED";
+    const retryingReconnect = !immediate && sessionState === "RETRYING" && this.reconnectStartedAt !== null;
+    if (this.reconnectGraceMs > 0 && (recoverableReconnect || retryingReconnect)) {
+      this.reconnectStartedAt ??= nowMs;
+      this.lastFingerprint = null;
+      this.lastProgressAt = null;
+      this.boundaryFingerprint = null;
+      this.boundaryStartedAt = null;
+      this.history = [];
+      return nowMs - this.reconnectStartedAt >= this.reconnectGraceMs
+        ? immediate || incident("reconnect", `Ranked recovery exceeded ${this.reconnectGraceMs} ms.`)
+        : null;
+    }
     if (immediate) return immediate;
+    this.reconnectStartedAt = null;
 
     const fingerprint = gameplayFingerprint(sample);
     const loopFingerprint = gameplayLoopFingerprint(sample);

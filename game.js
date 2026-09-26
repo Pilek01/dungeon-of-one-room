@@ -206,6 +206,11 @@
   const MAX_SKITTERS_PER_ROOM = 2;
   const MAX_TOTEMS_PER_ROOM = 1;
   const MAX_ELITES_PER_ROOM = 4;
+  const MAX_ORDINARY_ELITES_PER_ROOM = 3;
+  const ORDINARY_ELITE_ROOM_TYPES = Object.freeze(["combat", "treasure", "shrine", "cursed", "ambush", "horde"]);
+  const ENEMY_DEPTH_GOLD_PER_DEPTH = 0.02;
+  const ELITE_KILL_GOLD_BONUS = 3;
+  const DEPTH_SCALED_ENEMY_TYPES = Object.freeze(["slime", "skeleton", "acolyte", "brute", "skitter", "totem", "riftweaver", "bulwark"]);
   const TOTEM_CAST_COOLDOWN_TURNS = 2;
   const TOTEM_HEX_COOLDOWN_INCREASE = 2;
   const TOTEM_HEX_MAX_COOLDOWN = 30;
@@ -226,6 +231,7 @@
   const OTTER_ROOM_RELIC_CHOICES = 9;
   const SKELETON_MELEE_DAMAGE_MULTIPLIER = 0.7;
   const SKITTER_BLEED_TURNS = 3;
+  const SKITTER_BLEED_COOLDOWN_TURNS = 6;
   const SKITTER_BLEED_DAMAGE_MULTIPLIER = 0.35;
   const GOLDEN_IDOL_GOLD_MULTIPLIER = 0.15;
   const THORNMAIL_REFLECT_MULTIPLIER = 0.2;
@@ -1634,6 +1640,37 @@
     if (depth < ENEMY_LATE_SCALE_START_DEPTH) return 1;
     const steps = Math.floor((depth - ENEMY_LATE_SCALE_START_DEPTH) / ENEMY_LATE_SCALE_STEP_DEPTH) + 1;
     return 1 + steps * ENEMY_LATE_SCALE_PER_STEP;
+  }
+
+  function isDifficultyRebalanceEnabled() {
+    return !state.onlineV3Ranked ||
+      window.DungeonRankedV3Protocol?.supportsDifficultyRebalance?.(state.onlineV3RulesetHash) === true;
+  }
+
+  function getEnemyEncounterDepthMultiplier(type, depth = state.depth) {
+    if (!isDifficultyRebalanceEnabled() || state.bossRoom ||
+      ["warden", "guardian", "blacksmith_guardian", "otter"].includes(type)) {
+      return getEnemyLateDepthMultiplier(depth);
+    }
+    return 1;
+  }
+
+  function getEnemyDepthGoldMultiplier(type, depth = state.depth) {
+    if (!isDifficultyRebalanceEnabled() || !DEPTH_SCALED_ENEMY_TYPES.includes(type)) return 1;
+    return 1 + Math.max(0, Math.floor(Number(depth) || 0)) * ENEMY_DEPTH_GOLD_PER_DEPTH;
+  }
+
+  function getOrdinaryCombatEnemyCount(baseCount, roll) {
+    if (!isDifficultyRebalanceEnabled() || state.depth < 20 || state.roomType !== "combat") return baseCount;
+    const draw = roll == null ? Math.random() : roll;
+    const count = draw < 0.25 ? 4 : draw < 0.75 ? 5 : 6;
+    return clamp(count + Math.max(0, Number(state.runMods.extraEnemies) || 0), 4, 6);
+  }
+
+  function getRoomEliteLimit(enemyCount, roomType = state.roomType) {
+    if (!isDifficultyRebalanceEnabled() ||
+      !ORDINARY_ELITE_ROOM_TYPES.includes(roomType)) return MAX_ELITES_PER_ROOM;
+    return Math.min(MAX_ORDINARY_ELITES_PER_ROOM, Math.floor(Math.max(0, Number(enemyCount) || 0) / 2));
   }
 
   function getSpikeDamageByDepth(depth = state.depth) {
@@ -5126,6 +5163,8 @@
       player: state.player,
       portal: state.portal,
       enemies: state.enemies,
+      roomEnemySpawnCount: state.roomEnemySpawnCount,
+      roomEliteSpawnCount: state.roomEliteSpawnCount,
       chests: state.chests,
       pits: state.pits,
       spikes: state.spikes,
@@ -5649,11 +5688,17 @@
     };
 
     state.enemies = Array.isArray(snapshot.enemies) ? snapshot.enemies : [];
+    state.roomEnemySpawnCount = Math.max(state.enemies.length, Math.floor(Number(snapshot.roomEnemySpawnCount) || 0));
+    // An old save has no lifetime elite counter: do not grant it a fresh spawn budget.
+    state.roomEliteSpawnCount = snapshot.roomEliteSpawnCount == null
+      ? MAX_ELITES_PER_ROOM
+      : Math.max(0, Math.floor(Number(snapshot.roomEliteSpawnCount) || 0));
     for (const enemy of state.enemies) {
       if (enemyTactics && typeof enemyTactics.ensureEnemyState === "function") {
         enemyTactics.ensureEnemyState(enemy);
       }
       if (enemy.cooldown == null) enemy.cooldown = 0;
+      enemy.skitterBleedReadyTurn = Math.max(0, Math.floor(Number(enemy.skitterBleedReadyTurn) || 0));
       enemy.aiming = Boolean(enemy.aiming);
       enemy.slamAiming = Boolean(enemy.slamAiming);
       const castType = String(enemy.acolyteCastType || "").toLowerCase();
@@ -12934,7 +12979,7 @@
     }
     // (enemyAtkPerDepth removed — Ascension now uses getAscensionEnemyAtkMult() via getEnemyEffectiveAttack())
 
-    const lateScale = getEnemyLateDepthMultiplier(state.depth);
+    const lateScale = getEnemyEncounterDepthMultiplier(type, state.depth);
     if (lateScale > 1) {
       enemy.hp = Math.round(enemy.hp * lateScale);
       enemy.attack = Math.round(enemy.attack * lateScale);
@@ -12992,6 +13037,7 @@
     enemy.exposedTurns = Math.max(0, Number(enemy.exposedTurns) || 0);
     enemy.acolyteCastType = "";
     enemy.acolyteBuffTurns = Math.max(0, Number(enemy.acolyteBuffTurns) || 0);
+    enemy.skitterBleedReadyTurn = 0;
     enemy.affix = normalizeEliteAffix(enemy.affix);
     enemy.relentlessStepCooldown = Math.max(0, Number(enemy.relentlessStepCooldown) || 0);
     enemy.blooddrinkerLastHealTurn = Number.isFinite(Number(enemy.blooddrinkerLastHealTurn))
@@ -13008,7 +13054,7 @@
 
     if ((options.elite || options.forceElite) && enemy.type !== "warden" && enemy.type !== "totem" && (state.depth >= 6 || options.forceElite)) {
       enemy.elite = true;
-      enemy.rewardBonus += 3;
+      enemy.rewardBonus += ELITE_KILL_GOLD_BONUS;
       enemy.hp = Math.round(enemy.hp * 1.4);
       // Mutator: eliteHpMult applied after base elite scaling and after enemyHpMult.
       if (state.runMods.eliteHpMult && state.runMods.eliteHpMult !== 1.0) {
@@ -13265,6 +13311,7 @@
     state.roomType = state.onlineV3Ranked && state.onlineV3Directive
       ? state.onlineV3Directive.roomType
       : chooseRoomType();
+    enemyCount = getOrdinaryCombatEnemyCount(enemyCount);
     if (state.roomType === "crossroads") {
       buildCrossroadsRoom(occupied);
       return;
@@ -13514,6 +13561,8 @@
     if (state.roomType === "arena") eliteChance += 0.04;
     eliteChance = clamp(eliteChance, 0.02, 0.75);
     let eliteCount = 0;
+    state.roomEnemySpawnCount = enemyCount;
+    state.roomEliteSpawnCount = 0;
 
     for (let i = 0; i < enemyCount; i += 1) {
       const isVaultGuardian = state.roomType === "vault";
@@ -13531,6 +13580,7 @@
         !isOtterRoom &&
         (forceEliteOnly || (elitesEnabled &&
         eliteCount < MAX_ELITES_PER_ROOM &&
+        eliteCount < getRoomEliteLimit(enemyCount) &&
         chance(eliteChance)));
       const spawnedEnemy = createEnemy(enemyType, spot.x, spot.y, { elite });
       if (roomEnemyHpMultiplier !== 1) {
@@ -13547,7 +13597,10 @@
         spawnedEnemy.name = `Duel Champion ${spawnedEnemy.name.replace(/^Elite\s+/i, "")}`;
       }
       state.enemies.push(spawnedEnemy);
-      if (elite) eliteCount += 1;
+      if (spawnedEnemy.elite || (!isDifficultyRebalanceEnabled() && elite)) {
+        eliteCount += 1;
+        state.roomEliteSpawnCount += 1;
+      }
     }
     for (let i = 0; i < chestCount; i += 1) {
       const spot = randomFreeTile(occupied, { avoidBonfire: true, minY: 2 });
@@ -14486,6 +14539,8 @@
     state.roomIndex += 1;
     state.roomCleared = false;
     state.potionUsedInRoom = false;
+    state.roomEnemySpawnCount = 0;
+    state.roomEliteSpawnCount = 0;
     state.hpDamageTakenInRoom = false;
     state.playerHpDamagedThisTurn = false;
     state.arena = null;
@@ -15305,6 +15360,8 @@
     if (spawnCount <= 0) return 0;
     const occupied = buildOccupiedTilesForShrineCurseSpawn();
     let eliteCount = countEliteEnemiesInRoom();
+    const rebalance = isDifficultyRebalanceEnabled();
+    if (rebalance) eliteCount = Math.max(eliteCount, Number(state.roomEliteSpawnCount) || 0);
     let spawned = 0;
     for (let i = 0; i < spawnCount; i += 1) {
       const enemyType = rollEnemyTypeWithCaps();
@@ -15312,10 +15369,14 @@
       const spot = randomFreeTile(occupied, { avoidBonfire: true, sideInset }) ||
         randomFreeTile(occupied, { sideInset });
       if (!spot) break;
-      const elite = state.depth >= 8 && eliteCount < MAX_ELITES_PER_ROOM && chance(0.25);
+      const cumulativeCount = Math.max(state.enemies.length, Number(state.roomEnemySpawnCount) || 0) + 1;
+      const elite = state.depth >= 8 && eliteCount < MAX_ELITES_PER_ROOM &&
+        eliteCount < getRoomEliteLimit(cumulativeCount) && chance(0.25);
       const enemy = createEnemy(enemyType, spot.x, spot.y, { elite });
       state.enemies.push(enemy);
-      if (elite) eliteCount += 1;
+      state.roomEnemySpawnCount = cumulativeCount;
+      if (enemy.elite || (!rebalance && elite)) eliteCount += 1;
+      state.roomEliteSpawnCount = eliteCount;
       spawned += 1;
       spawnParticles(spot.x, spot.y, "#d7c6ff", 8, 1.1);
     }
@@ -16160,7 +16221,7 @@
     else if (enemy.type === "brute") base = 4;
     else if (enemy.type === "skeleton") base = 3;
     const eliteMult = enemy.elite ? (state.runMods.eliteGoldMult || 1) : 1;
-    const boosted = (base + (enemy.rewardBonus || 0)) * getBountyContractMultiplier() * eliteMult;
+    const boosted = (base + (enemy.rewardBonus || 0)) * getBountyContractMultiplier() * eliteMult * getEnemyDepthGoldMultiplier(enemy.type);
     return Math.max(1, Math.round(boosted));
   }
 
@@ -19617,6 +19678,18 @@
     return healed;
   }
 
+  function tryApplySkitterBleed(enemy, playerShieldBeforeHit, hpBefore) {
+    if (enemy?.type !== "skitter" || state.phase !== "playing" ||
+      playerShieldBeforeHit > 0 || state.player.hp >= hpBefore) return false;
+    const rebalance = isDifficultyRebalanceEnabled();
+    const turn = Math.max(0, Number(state.turn) || 0);
+    if (rebalance && ((state.player.bleedTurns || 0) > 0 || turn < (enemy.skitterBleedReadyTurn || 0))) return false;
+    const damage = Math.max(MIN_EFFECTIVE_DAMAGE, Math.round(getEnemyEffectiveAttack(enemy) * SKITTER_BLEED_DAMAGE_MULTIPLIER));
+    const applied = applyPlayerBleed(damage, SKITTER_BLEED_TURNS);
+    if (applied && rebalance) enemy.skitterBleedReadyTurn = turn + SKITTER_BLEED_COOLDOWN_TURNS;
+    return applied;
+  }
+
   function enemyMelee(enemy) {
     emitNpcSkillCue("melee", enemy);
     const hpBefore = Math.max(0, Number(state.player.hp) || 0);
@@ -19628,18 +19701,7 @@
       )
       : getEnemyEffectiveAttack(enemy);
     applyDamageToPlayer(damage, enemy.name, enemy);
-    if (
-      enemy?.type === "skitter" &&
-      state.phase === "playing" &&
-      playerShieldBeforeHit <= 0 &&
-      state.player.hp < hpBefore
-    ) {
-      const bleedDamage = Math.max(
-        MIN_EFFECTIVE_DAMAGE,
-        Math.round(getEnemyEffectiveAttack(enemy) * SKITTER_BLEED_DAMAGE_MULTIPLIER)
-      );
-      applyPlayerBleed(bleedDamage, SKITTER_BLEED_TURNS);
-    }
+    tryApplySkitterBleed(enemy, playerShieldBeforeHit, hpBefore);
     tryEnemyBlooddrinkerHeal(enemy);
     spawnParticles(state.player.x, state.player.y, "#ff7a7a", 7, 1.35);
 
@@ -34680,6 +34742,7 @@
   window.render_game_to_text = renderGameToText;
   window.DungeonOnlineV3GameBridge = Object.freeze({
     startRanked(directive, publicState) {
+      state.onlineV3RulesetHash = publicState?.rulesetHash || "";
       state.onlineV3Ranked = true;
       state.onlineV3Directive = directive;
       state.onlineV3NextDirective = null;
@@ -34714,6 +34777,7 @@
       return true;
     },
     syncCanonicalProjection(publicState) {
+      state.onlineV3RulesetHash = publicState?.rulesetHash || "";
       state.player.gold = Math.max(0, Number(publicState?.gold) || 0);
       state.lives = Math.max(0, Number(publicState?.lives) || 0);
       state.runMaxDepth = Math.max(0, Number(publicState?.maxDepth) || state.runMaxDepth);
@@ -34726,6 +34790,7 @@
       return showRankedOtterRewardChest(slot);
     },
     resumeAfterFatal(directive, publicState) {
+      state.onlineV3RulesetHash = publicState?.rulesetHash || "";
       state.onlineV3FatalPending = false;
       state.turnInProgress = false;
       state.phase = "playing";

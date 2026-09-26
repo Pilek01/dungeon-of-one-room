@@ -596,6 +596,7 @@ const productionGameReplacements = [
   ],
   [
 `    resumeAfterFatal(directive, publicState) {
+      state.onlineV3RulesetHash = publicState?.rulesetHash || "";
       state.onlineV3FatalPending = false;
       state.turnInProgress = false;
       state.phase = "playing";
@@ -608,6 +609,7 @@ const productionGameReplacements = [
       markUiDirty();
     },`,
 `    resumeAfterFatal(directive, publicState, presentation = {}) {
+      state.onlineV3RulesetHash = publicState?.rulesetHash || "";
       state.onlineV3FatalPending = false;
       state.onlineV3NextDirective = directive;
       const build = publicState?.build || {};
@@ -1294,8 +1296,8 @@ const rankedSpecialRoomScalingReplacements = [
         attack: scaledCombat(4 + Math.floor(encounterDepth / 3)),`
   ],
   [
-`    const lateScale = getEnemyLateDepthMultiplier(state.depth);`,
-`    const lateScale = getEnemyLateDepthMultiplier(encounterDepth);`
+`    const lateScale = getEnemyEncounterDepthMultiplier(type, state.depth);`,
+`    const lateScale = getEnemyEncounterDepthMultiplier(type, encounterDepth);`
   ],
   [
 `  function handleChestAttackUpgrade(inTreasureRoom) {

@@ -71,6 +71,36 @@ test("detects the exact 30-second stall while known boundary waits reset the clo
   assert.equal(boundaryMonitor.observe(activeSample("A"), 60_000)?.kind, "stall");
 });
 
+test("allows a bounded reconnect interval without resetting it on retries", () => {
+  const monitor = new BotProgressMonitor({ reconnectGraceMs: 60_000 });
+  const reconnect = activeSample("A", { sessionState: "RECONNECT_REQUIRED" });
+  assert.equal(monitor.observe(reconnect, 0), null);
+  assert.equal(monitor.observe(activeSample("A", { sessionState: "RETRYING" }), 30_000), null);
+  assert.equal(monitor.observe(reconnect, 59_999), null);
+  assert.equal(monitor.observe(reconnect, 60_000)?.kind, "reconnect");
+});
+
+test("reconnect grace never hides integrity, protocol, or page errors", () => {
+  for (const [extra, expected] of [
+    [{ sessionState: "UNRECOVERABLE_PROTOCOL_ERROR" }, "reconnect"],
+    [{ snapshot: { publicState: { rankEligibility: "provisional" } } }, "integrity"],
+    [{ pageErrors: ["unexpected exception"] }, "page_error"]
+  ]) {
+    const monitor = new BotProgressMonitor({ reconnectGraceMs: 60_000 });
+    monitor.observe(activeSample("A", { sessionState: "RECONNECT_REQUIRED" }), 0);
+    assert.equal(monitor.observe(activeSample("A", extra), 1)?.kind, expected);
+  }
+});
+
+test("recovered gameplay starts a fresh stall clock after reconnect grace", () => {
+  const monitor = new BotProgressMonitor({ reconnectGraceMs: 60_000, stallMs: 30_000 });
+  assert.equal(monitor.observe(activeSample("A"), 0), null);
+  assert.equal(monitor.observe(activeSample("A", { sessionState: "RECONNECT_REQUIRED" }), 10_000), null);
+  assert.equal(monitor.observe(activeSample("A"), 50_000), null);
+  assert.equal(monitor.observe(activeSample("A"), 79_999), null);
+  assert.equal(monitor.observe(activeSample("A"), 80_000)?.kind, "stall");
+});
+
 test("captures a Ranked boundary that remains unchanged beyond its bounded grace period", () => {
   const monitor = new BotProgressMonitor({
     stallMs: 30_000,

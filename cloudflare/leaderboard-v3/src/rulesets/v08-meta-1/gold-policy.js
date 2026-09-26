@@ -125,7 +125,9 @@ export function calculateEnemyGoldV08({
   canonicalRunModifiers,
   enemyType,
   elite = false,
-  rewardBonus = 0
+  rewardBonus = 0,
+  depth = 0,
+  capabilities = {}
 }) {
   const base = rewardBounds.enemyClaims.baseGoldByEnemyType[enemyType];
   if (!Number.isSafeInteger(base)) throw new TypeError(`ENEMY_GOLD_TYPE_UNKNOWN:${enemyType}`);
@@ -136,9 +138,14 @@ export function calculateEnemyGoldV08({
   const bonus = requireSafeAmount(rewardBonus, "ENEMY_REWARD_BONUS_INVALID");
   const bountyLevel = level(build, "bounty_contract", 5);
   const eliteMultiplier = elite ? runModifierEffects.eliteGoldMultiplier : 1;
+  const depthPolicy = rewardBounds.enemyClaims.depthGoldScaling;
+  const eliteBonus = capabilities.difficultyRebalance === "v1" && elite ? depthPolicy.eliteBonus : 0;
+  const depthMultiplier = capabilities.difficultyRebalance === "v1" && depthPolicy.enemyTypes.includes(enemyType)
+    ? 1 + requireSafeAmount(depth, "ENEMY_REWARD_DEPTH_INVALID") * depthPolicy.perDepth
+    : 1;
   const preGrant = Math.max(
     1,
-    Math.round((base + bonus) * (1 + bountyLevel * 0.1) * eliteMultiplier)
+    Math.round((base + bonus + eliteBonus) * (1 + bountyLevel * 0.1) * eliteMultiplier * depthMultiplier)
   );
   return resolveGoldModifierV08({
     canonicalBuild: build,

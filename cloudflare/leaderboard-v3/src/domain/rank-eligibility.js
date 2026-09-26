@@ -118,8 +118,9 @@ export function isOfficialRankEligible(state) {
   return rankEligibilityOf(state) === RANK_ELIGIBILITY.official;
 }
 
-function v08LocalEliteGoldAdjustment(state, rewardClaims) {
+function v08LocalEliteGoldAdjustment(state, rewardClaims, capabilities) {
   if (
+    capabilities?.difficultyRebalance === "v1" ||
     state?.rulesetId !== "v08-meta-1" ||
     state?.currentRewardEnvelope?.claimPolicyVersion !== rewardBounds.policyVersion
   ) return 0;
@@ -154,11 +155,12 @@ function v08LocalEliteGoldAdjustment(state, rewardClaims) {
   return adjustment;
 }
 
-export function checkpointGoldIntegrityExpectation(state, body, authoritativeGoldDelta) {
+export function checkpointGoldIntegrityExpectation(state, body, authoritativeGoldDelta, capabilities = {}) {
   const canonicalDelta = Math.max(0, Number(authoritativeGoldDelta) || 0);
   const expectedLocalDelta = canonicalDelta + v08LocalEliteGoldAdjustment(
     state,
-    body?.rewardClaims
+    body?.rewardClaims,
+    capabilities
   );
   const canonicalTotal = Math.max(0, Number(state?.gold) || 0) + canonicalDelta;
   const expectedLocalTotal = Math.max(0, Number(state?.gold) || 0) + expectedLocalDelta;
@@ -172,9 +174,9 @@ export function checkpointGoldIntegrityExpectation(state, body, authoritativeGol
   };
 }
 
-export function checkpointGoldIntegrityReasons(state, body, authoritativeGoldDelta) {
+export function checkpointGoldIntegrityReasons(state, body, authoritativeGoldDelta, capabilities = {}) {
   if (body?.integrityVersion !== 1) return [];
-  const expectation = checkpointGoldIntegrityExpectation(state, body, authoritativeGoldDelta);
+  const expectation = checkpointGoldIntegrityExpectation(state, body, authoritativeGoldDelta, capabilities);
   if (expectation.canonicalPair || expectation.localPair) return [];
   const reasons = [];
   if (body.reportedGoldDelta !== expectation.expectedLocalDelta) {

@@ -157,6 +157,10 @@ function enemyMaximumForRoom(roomType) {
 }
 
 function eliteMaximumForRoom(roomType, capabilities = {}) {
+  const ordinary = rewardBounds.enemyClaims.ordinaryEliteBudget;
+  if (capabilities?.difficultyRebalance === "v1" && ordinary.roomTypes.includes(roomType)) {
+    return Math.min(ordinary.maximum, Math.floor(enemyMaximumForRoom(roomType) * ordinary.rosterFraction));
+  }
   const budgetVersion = capabilities?.roomEliteBudgetByType;
   const configured = budgetVersion === "v2"
     ? rewardBounds.enemyClaims.maximumCumulativeElitesByRoom?.[roomType]
@@ -481,7 +485,7 @@ function relicOfferSlots(directive, envelopeId) {
   }];
 }
 
-function maximumGoldDeltaForEnvelope(build, runModifiers, depth, roomType, claims, slots) {
+function maximumGoldDeltaForEnvelope(build, runModifiers, depth, roomType, claims, slots, capabilities = {}, enemyDepth = depth) {
   const fixed = calculateMultipliedGoldV08({
     canonicalBuild: build,
     canonicalRunModifiers: runModifiers,
@@ -489,6 +493,8 @@ function maximumGoldDeltaForEnvelope(build, runModifiers, depth, roomType, claim
     baseAmount: roomClearBase(depth, roomType)
   });
   let enemyMaximum = 0;
+  let ordinaryUnitMaximum = 0;
+  let eliteUnitMaximum = 0;
   let procMaximum = 0;
   for (const claim of claims) {
     if (claim.claimType === "proc") {
@@ -512,16 +518,21 @@ function maximumGoldDeltaForEnvelope(build, runModifiers, depth, roomType, claim
     }
     if (!claim.claimId.startsWith("enemy:") && !claim.claimId.startsWith("elite:")) continue;
     const [kind, enemyType] = claim.claimId.split(":");
-    enemyMaximum = Math.max(
-      enemyMaximum,
-      calculateEnemyGoldV08({
-        canonicalBuild: build,
-        canonicalRunModifiers: runModifiers,
-        enemyType,
-        elite: kind === "elite",
-        rewardBonus: rewardBounds.enemyClaims.rewardBonusByRoom[roomType] || 0
-      }) * claim.maximumCount
-    );
+    const unitGold = calculateEnemyGoldV08({
+      canonicalBuild: build, canonicalRunModifiers: runModifiers, enemyType,
+      elite: kind === "elite", rewardBonus: rewardBounds.enemyClaims.rewardBonusByRoom[roomType] || 0,
+      depth: enemyDepth, capabilities
+    });
+    if (kind === "elite") eliteUnitMaximum = Math.max(eliteUnitMaximum, unitGold);
+    else ordinaryUnitMaximum = Math.max(ordinaryUnitMaximum, unitGold);
+    enemyMaximum = Math.max(enemyMaximum, unitGold * claim.maximumCount);
+  }
+  if (capabilities.difficultyRebalance === "v1") {
+    const maximumEnemies = enemyMaximumForRoom(roomType);
+    const maximumElites = Math.min(maximumEnemies, eliteMaximumForRoom(roomType, capabilities));
+    enemyMaximum = Math.max(enemyMaximum,
+      ordinaryUnitMaximum * maximumEnemies,
+      eliteUnitMaximum * maximumElites + ordinaryUnitMaximum * (maximumEnemies - maximumElites));
   }
   const chestMaximum = slots.reduce((sum, slot) => {
     const base = roomType === "treasure"
@@ -621,7 +632,9 @@ export async function createRoomRewardEnvelopeV3({
       scalingDepth,
       directive.roomType,
       boundedClaims,
-      slots
+      slots,
+      capabilities,
+      directive.depth
     ),
     consumed: false,
     issuedStateDigest: await sha256({
@@ -1179,6 +1192,8 @@ function calculateClaimAmount(
     canonicalBuild: goldContext.build,
     canonicalRunModifiers: goldContext.runModifiers,
     enemyType,
+    depth: state.currentRoomDirective.depth,
+    capabilities,
     elite: kind === "elite",
     rewardBonus: rewardBounds.enemyClaims.rewardBonusByRoom[envelope.roomType] || 0
   });

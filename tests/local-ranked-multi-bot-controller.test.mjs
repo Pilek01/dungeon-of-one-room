@@ -100,7 +100,7 @@ test("starts eight isolated windows sequentially on one Worker and one commit", 
   assert.deepEqual(fixture.launched[0].bounds, { x: 3440, y: 0, width: 540, height: 468 });
   assert.deepEqual(fixture.launched[7].bounds, { x: 3980, y: 1404, width: 540, height: 468 });
   assert.ok(fixture.started.every(([, url, commit]) => url === fixture.worker.url && commit === COMMIT));
-  assert.deepEqual(fixture.order.slice(0, 8), [
+  assert.deepEqual(fixture.order.filter((entry) => entry.endsWith(":start")), [
     "bot-01:start", "bot-02:start", "bot-03:start", "bot-04:start",
     "bot-05:start", "bot-06:start", "bot-07:start", "bot-08:start"
   ]);
@@ -215,6 +215,51 @@ test("keeps active bots running and recovers their pages after the shared Worker
   assert.ok(controller.bots.every((bot) => bot.status === "running"));
   assert.equal(fixture.events.filter((event) => event.type === "worker_restarted").length, 1);
   assert.equal(fixture.events.filter((event) => event.type === "bot_status" && event.status === "blocked").length, 0);
+});
+
+test("a reconnect before Worker readiness remains eligible for restart recovery", async () => {
+  const fixture = createFixture();
+  let time = 0;
+  fixture.options.now = () => time;
+  fixture.options.sampleBotPage = async () => ({
+    game: { phase: "playing", depth: 15 },
+    observer: { enabled: true },
+    sessionState: "RECONNECT_REQUIRED",
+    overlayText: "Ranked reconnect required",
+    pageErrors: []
+  });
+  const controller = await startMultiBotWall(fixture.options);
+  await fixture.timers[0].callback();
+  assert.equal(controller.bots[0].status, "running");
+  assert.equal(fixture.captures.length, 0);
+  time = 12_000;
+  await fixture.triggerWorkerRestart();
+  assert.ok(fixture.order.includes("bot-01:recover"));
+  assert.equal(fixture.order.filter((entry) => entry.endsWith(":recover")).length, 8);
+  time = 60_000;
+  await fixture.timers[0].callback();
+  assert.equal(controller.bots[0].status, "failed");
+  assert.equal(fixture.captures[0][1].kind, "reconnect");
+});
+
+test("persists redacted Worker logs while the session is still running", async () => {
+  const fixture = createFixture();
+  let time = 0;
+  let logs = "initial observer-secret";
+  fixture.worker.getLogs = () => logs;
+  fixture.options.now = () => time;
+  fixture.options.sampleBotPage = async () => ({
+    game: { phase: "playing", depth: 1 },
+    observer: { enabled: true }, sessionState: "ROOM_ACTIVE", pageErrors: []
+  });
+  await startMultiBotWall(fixture.options);
+  logs = "Worker lost connection; restart ready signing-secret";
+  time = 10_000;
+  await fixture.timers[0].callback();
+  const written = fixture.order.filter((entry) => entry.startsWith("write:worker.log:"));
+  assert.ok(written.length > 0);
+  assert.match(written.at(-1), /Worker lost connection; restart ready \[REDACTED\]/u);
+  assert.ok(written.every((entry) => !entry.includes("observer-secret") && !entry.includes("signing-secret")));
 });
 
 test("marks a legally finalized run complete without creating failure artifacts", async () => {

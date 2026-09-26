@@ -172,6 +172,7 @@ test("resume survives Worker restart and returns terminal/finalized projections"
   );
   assert.equal(finalResume.response.status, 200);
   assert.equal(finalResume.payload.metaState.status, "finalized");
+  assert.equal(finalResume.payload.outcome, "extract");
   assert.equal(finalResume.payload.leaderboardEntryId, started.runId);
   assert.equal("checkpointToken" in finalResume.payload, false);
   assert.equal("bootstrapToken" in finalResume.payload, false);

@@ -47,7 +47,7 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../.
 const require = createRequire(import.meta.url);
 const protocol = require("../../../online-v3/ranked-v3-protocol.js");
 const EXPECTED_HASH = manifest.rulesetHash;
-const CURRENT_PRODUCTION_HASH = EXPECTED_HASH;
+const CURRENT_PRODUCTION_HASH = "sha256:dd2bc67015aabc40cb833aec4f224e9a0e9a952a5d3bcd05e33f6144a2f59c05";
 const PREVIOUS_CHECKPOINT_RESULT_HASH = "sha256:f3101eee949400ce36eb65ebe4ccf211125960d4e5223855e451693d55bd1f2b";
 const PREVIOUS_HD1_PRESENTATION_HASH = "sha256:8c5c26851cbf440a62c2c2acf5f168fc13495de6601abd2e9681d6fa0f2d6c32";
 const PREVIOUS_MERCHANT_DEPTH_HASH = "sha256:79078f4f51858209c9c493333824f9e8077403452fef1cff4d1906a1d9661f5a";
@@ -85,7 +85,7 @@ const R2_HASH = "sha256:956251f158e55a0a47f9e43d5680d9aae66a22045c833bd76b8798cd
 const PREVIOUS_HASH = "sha256:08dfa4f97d91b4f21dbfae7232246125ddbbc6a0270cf81a9e1ed012e5f5d403";
 const LEGACY_HASH = "sha256:0bf00607056dbf3c30ffe57bbcfc77cea95b21c9ccc23aa985ec555856d1cbd6";
 
-test("production promotion activates the exact candidate and retains its immediate predecessor", () => {
+test("existing production retains its capabilities and predecessors", () => {
   const active = V08_META_1_PRODUCTION_RELEASE_DESCRIPTOR;
   const previous = V08_META_1_SPECIAL_ROOM_ROTATION_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR;
   const observerProfilePrevious = V08_META_1_OBSERVER_PROFILE_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR;
@@ -93,7 +93,7 @@ test("production promotion activates the exact candidate and retains its immedia
   const roomNavigationPrevious =
     releases.V08_META_1_ROOM_NAVIGATION_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR;
 
-  assert.equal(active.rulesetHash, EXPECTED_HASH);
+  assert.equal(active.rulesetHash, CURRENT_PRODUCTION_HASH);
   assert.equal(active.capabilities.merchantExitBarrier, "v1");
   assert.equal(active.capabilities.otterActualDepthEligibility, "v1");
   assert.equal(active.capabilities.roomEliteBudgetByType, "v2");
@@ -112,7 +112,7 @@ test("production promotion activates the exact candidate and retains its immedia
   assert.equal(previous.capabilities.merchantFavorTierOneUnique, "v1");
   assert.equal(previous.capabilities.potionClaimOrdering, "v2");
   assert.equal(roomNavigationPrevious.rulesetHash, PREVIOUS_ROOM_NAVIGATION_HASH);
-  assert.equal(protocol.RULESET_HASH, EXPECTED_HASH);
+  assert.equal(protocol.RULESET_HASH, CURRENT_PRODUCTION_HASH);
   assert.ok(protocol.SUPPORTED_RULESET_HASHES.includes(PREVIOUS_SPECIAL_ROOM_ROTATION_HASH));
   assert.ok(COMPATIBLE_RULESET_HASHES.includes(PREVIOUS_SPECIAL_ROOM_ROTATION_HASH));
   assert.ok(protocol.SUPPORTED_RULESET_HASHES.includes(PREVIOUS_SHRINE_ELITE_BUDGET_HASH));
@@ -186,6 +186,7 @@ test("bounded proc release activates a new hash and leaves every historical desc
     value.status === RULESET_RELEASE_STATES.PRODUCTION_RELEASED &&
     typeof value.rulesetHash === "string" &&
     value.rulesetHash !== manifest.rulesetHash &&
+    value.rulesetHash !== CURRENT_PRODUCTION_HASH &&
     value.rulesetHash !== PREVIOUS_CHECKPOINT_RESULT_HASH &&
     value.rulesetHash !== PREVIOUS_HD1_PRESENTATION_HASH &&
     value.rulesetHash !== PREVIOUS_MERCHANT_DEPTH_HASH &&
@@ -224,6 +225,7 @@ test("bounded proc release activates a new hash and leaves every historical desc
   assert.ok(protocol.SUPPORTED_RULESET_HASHES.includes(PREVIOUS_BOUNDED_PROC_HASH));
   assert.deepEqual(protocol.BOUNDED_PROC_CLAIMS_RULESET_HASHES, [
     CURRENT_PRODUCTION_HASH,
+    manifest.rulesetHash,
     PREVIOUS_CHECKPOINT_RESULT_HASH,
     PREVIOUS_HD1_PRESENTATION_HASH,
     PREVIOUS_MERCHANT_DEPTH_HASH,
@@ -296,6 +298,7 @@ test("canonical chest carry release is hash-gated and preserves the previous pro
   assert.ok(protocol.SUPPORTED_RULESET_HASHES.includes(PREVIOUS_CHEST_CARRY_HASH));
   assert.deepEqual(protocol.CANONICAL_CHEST_OUTCOMES_RULESET_HASHES, [
     CURRENT_PRODUCTION_HASH,
+    manifest.rulesetHash,
     PREVIOUS_CHECKPOINT_RESULT_HASH,
     PREVIOUS_HD1_PRESENTATION_HASH,
     PREVIOUS_MERCHANT_DEPTH_HASH,
@@ -357,6 +360,7 @@ test("canonical chest repair release retains the previous canonical hash and cap
   assert.ok(protocol.SUPPORTED_RULESET_HASHES.includes(PREVIOUS_CANONICAL_CHEST_HASH));
   assert.deepEqual(protocol.CANONICAL_CHEST_OUTCOMES_RULESET_HASHES, [
     CURRENT_PRODUCTION_HASH,
+    manifest.rulesetHash,
     PREVIOUS_CHECKPOINT_RESULT_HASH,
     PREVIOUS_HD1_PRESENTATION_HASH,
     PREVIOUS_MERCHANT_DEPTH_HASH,
@@ -410,6 +414,7 @@ test("Ranked start resource parity is hash-gated and preserves the previous prod
   assert.ok(protocol.SUPPORTED_RULESET_HASHES.includes(PREVIOUS_START_RESOURCE_PARITY_HASH));
   assert.deepEqual(protocol.BOUNDED_COMBAT_RESOURCES_RULESET_HASHES, [
     CURRENT_PRODUCTION_HASH,
+    manifest.rulesetHash,
     PREVIOUS_CHECKPOINT_RESULT_HASH,
     PREVIOUS_HD1_PRESENTATION_HASH,
     PREVIOUS_MERCHANT_DEPTH_HASH,
@@ -453,7 +458,7 @@ async function rootFile(relative) {
   return readFile(path.join(ROOT, relative), "utf8");
 }
 
-test("local candidate is promoted to production with its exact capability contract", async () => {
+test("difficulty candidate remains local without promoting the production descriptor", async () => {
   assert.equal(manifest.rulesetHash, EXPECTED_HASH);
   assert.equal(V08_META_1_LOCAL_RELEASE_DESCRIPTOR.rulesetHash, manifest.rulesetHash);
   assert.equal(V08_META_1_LOCAL_RELEASE_DESCRIPTOR.status, RULESET_RELEASE_STATES.LOCAL_RELEASE_CANDIDATE);
@@ -464,7 +469,9 @@ test("local candidate is promoted to production with its exact capability contra
   assert.equal(V08_META_1_LOCAL_RELEASE_DESCRIPTOR.capabilities.potionClaimOrdering, "v2");
   assert.equal(V08_META_1_LOCAL_RELEASE_DESCRIPTOR.capabilities.specialRoomRotation, "v1");
   assert.equal(V08_META_1_PRODUCTION_RELEASE_DESCRIPTOR.rulesetHash, CURRENT_PRODUCTION_HASH);
-  assert.equal(V08_META_1_PRODUCTION_RELEASE_DESCRIPTOR.rulesetHash, EXPECTED_HASH);
+  assert.notEqual(V08_META_1_PRODUCTION_RELEASE_DESCRIPTOR.rulesetHash, EXPECTED_HASH);
+  assert.equal(V08_META_1_LOCAL_RELEASE_DESCRIPTOR.capabilities.difficultyRebalance, "v1");
+  assert.equal(V08_META_1_PRODUCTION_RELEASE_DESCRIPTOR.capabilities.difficultyRebalance, undefined);
   assert.equal(V08_META_1_PRODUCTION_RELEASE_DESCRIPTOR.capabilities.merchantExitBarrier, "v1");
   assert.equal(V08_META_1_PRODUCTION_RELEASE_DESCRIPTOR.capabilities.otterActualDepthEligibility, "v1");
   assert.equal(V08_META_1_PRODUCTION_RELEASE_DESCRIPTOR.capabilities.roomEliteBudgetByType, "v2");

@@ -1,5 +1,5 @@
 ﻿// Single source of truth for current build version.
-window.GAME_VERSION = "v0.8.3";
+window.GAME_VERSION = "v0.8.4";
 window.DUNGEON_FORK_ID = "dungeon v2";
 
 // Enable/disable debug cheat menu (F9).
