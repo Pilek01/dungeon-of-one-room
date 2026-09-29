@@ -22,7 +22,8 @@ import { applyRelicAcquisition } from "../src/rulesets/v08-meta-1/relic-policy.j
 import manifest from "../src/rulesets/v08-meta-1/data/ruleset-manifest.json" with { type: "json" };
 import {
   V08_META_1_LOCAL_RELEASE_DESCRIPTOR,
-  V08_META_1_PRODUCTION_RELEASE_DESCRIPTOR
+  V08_META_1_PRODUCTION_RELEASE_DESCRIPTOR,
+  V08_META_1_DIFFICULTY_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR
 } from "../src/rulesets/releases.js";
 import { TEST_SECRET } from "./fixtures/harness.js";
 
@@ -258,10 +259,10 @@ test("rebalanced checkpoint accepts exact elite gold and rejects an additional l
     ["REPORTED_GOLD_DELTA_MISMATCH", "REPORTED_GOLD_TOTAL_MISMATCH"]);
 });
 
-test("production checkpoint treats the exact legacy elite +3 report as clean without changing canonical credit", async () => {
+test("previous production checkpoint treats the exact legacy elite +3 report as clean without changing canonical credit", async () => {
   const value = await activeState(34, {
-    rulesetHash: V08_META_1_PRODUCTION_RELEASE_DESCRIPTOR.rulesetHash,
-    capabilities: V08_META_1_PRODUCTION_RELEASE_DESCRIPTOR.capabilities
+    rulesetHash: V08_META_1_DIFFICULTY_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR.rulesetHash,
+    capabilities: V08_META_1_DIFFICULTY_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR.capabilities
   });
   const priorAnomalyFlags = Array.from(
     { length: 64 },

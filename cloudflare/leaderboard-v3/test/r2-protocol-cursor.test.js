@@ -124,8 +124,9 @@ test("R2 public seek cursor is versioned, strict, and malformed input returns 40
 
 test("R2 client accepts the activated manifest and released save hashes while rejecting unknown hashes", () => {
   assert.equal(protocol.RULESET_HASH, V08_META_1_PRODUCTION_RELEASE_DESCRIPTOR.rulesetHash);
-  assert.notEqual(protocol.RULESET_HASH, V08_META_1_LOCAL_RELEASE_DESCRIPTOR.rulesetHash);
-  assert.equal(protocol.supportsDifficultyRebalance(protocol.RULESET_HASH), false);
+  assert.equal(protocol.RULESET_HASH, V08_META_1_LOCAL_RELEASE_DESCRIPTOR.rulesetHash);
+  assert.equal(protocol.supportsDifficultyRebalance(protocol.RULESET_HASH), true);
+  assert.equal(protocol.supportsDifficultyRebalance(protocol.DIFFICULTY_PREVIOUS_RULESET_HASH), false);
   assert.equal(protocol.supportsDifficultyRebalance(V08_META_1_LOCAL_RELEASE_DESCRIPTOR.rulesetHash), true);
   assert.equal(V08_META_1_LOCAL_RELEASE_DESCRIPTOR.rulesetHash, manifest.rulesetHash);
   assert.equal(protocol.isSupportedRulesetHash(manifest.rulesetHash), true);

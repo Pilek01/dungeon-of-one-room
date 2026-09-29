@@ -206,7 +206,8 @@ test("historical production releases strip fatal causes while the activated rele
       merchantFavorTierOneUnique: "v1",
       specialRoomRotation: "v1",
       merchantDepthSchedule: "v1",
-      respawnPotionResources: "v1"
+      respawnPotionResources: "v1",
+      difficultyRebalance: "v1"
     }
   );
   assert.deepEqual(

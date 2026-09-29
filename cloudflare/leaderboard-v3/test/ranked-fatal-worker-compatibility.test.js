@@ -235,7 +235,8 @@ test("historical production descriptors strip fatal cause while current producti
       merchantFavorTierOneUnique: "v1",
       specialRoomRotation: "v1",
       merchantDepthSchedule: "v1",
-      respawnPotionResources: "v1"
+      respawnPotionResources: "v1",
+      difficultyRebalance: "v1"
     }
   );
   assert.deepEqual(
