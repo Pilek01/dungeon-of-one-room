@@ -9,7 +9,7 @@ test("checkpoint-result candidate retains the deployed hash with unchanged capab
   const previous = releases.V08_META_1_CHECKPOINT_RESULT_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR;
   const old = "sha256:f3101eee949400ce36eb65ebe4ccf211125960d4e5223855e451693d55bd1f2b";
   assert.equal(previous?.rulesetHash, old);
-  const { respawnPotionResources, ...unchanged } = releases.V08_META_1_PRODUCTION_RELEASE_DESCRIPTOR.capabilities;
+  const { respawnPotionResources, ...unchanged } = releases.V08_META_1_DIFFICULTY_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR.capabilities;
   assert.equal(respawnPotionResources, "v1");
   assert.deepEqual(previous.capabilities, unchanged);
   assert(isCompatibleRulesetHashV08(old));

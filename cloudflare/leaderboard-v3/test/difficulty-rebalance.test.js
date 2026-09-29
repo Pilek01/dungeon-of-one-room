@@ -9,7 +9,7 @@ import { calculateEnemyGoldV08 } from '../src/rulesets/v08-meta-1/gold-policy.js
 import { createInitialMetaStateV08 } from '../src/rulesets/v08-meta-1/meta-state.js';
 import { issueNextRoomDirectiveV08 } from '../src/rulesets/v08-meta-1/room-policy.js';
 import { settleRoomRewardEnvelopeV3 } from '../src/rulesets/v08-meta-1/reward-policy.js';
-import { V08_META_1_LOCAL_RELEASE_DESCRIPTOR, V08_META_1_PRODUCTION_RELEASE_DESCRIPTOR } from '../src/rulesets/releases.js';
+import { V08_META_1_LOCAL_RELEASE_DESCRIPTOR, V08_META_1_PRODUCTION_RELEASE_DESCRIPTOR, V08_META_1_DIFFICULTY_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR } from '../src/rulesets/releases.js';
 
 const capabilities={difficultyRebalance:'v1',roomEliteBudgetByType:'v2'};
 const protocol = createRequire(import.meta.url)('../../../online-v3/ranked-v3-protocol.js');
@@ -19,18 +19,32 @@ test('local Worker retains the previous run ruleset alongside the new candidate'
   const expression = source.match(/const localRegistry = (createRulesetRegistry\([\s\S]*?\));/u)?.[1];
   assert.ok(expression);
   const registry = vm.runInNewContext(expression, { createRulesetRegistry, ...releases });
-  for (const descriptor of [V08_META_1_PRODUCTION_RELEASE_DESCRIPTOR, V08_META_1_LOCAL_RELEASE_DESCRIPTOR]) {
+  for (const descriptor of [V08_META_1_DIFFICULTY_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR, V08_META_1_LOCAL_RELEASE_DESCRIPTOR]) {
     const resolved = registry.resolve({ rulesetId: descriptor.rulesetId, rulesetHash: descriptor.rulesetHash,
       environment: 'local', lifecycle: 'ranked' });
     assert.equal(resolved.rulesetHash, descriptor.rulesetHash);
     assert.deepEqual(resolved.capabilities, descriptor.capabilities);
   }
 });
-test('client enables the balance only for the new local descriptor', () => {
+test('production resolves new runs and both retained recent predecessors with their original capabilities', () => {
+  const source = readFileSync(new URL('../src/production-ruleset-entry.js', import.meta.url), 'utf8');
+  const expression = source.match(/const productionRegistry = (createRulesetRegistry\([\s\S]*?\));/u)?.[1];
+  assert.ok(expression);
+  const registry = vm.runInNewContext(expression, { createRulesetRegistry, ...releases });
+  for (const descriptor of [V08_META_1_PRODUCTION_RELEASE_DESCRIPTOR,
+    V08_META_1_DIFFICULTY_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR,
+    releases.V08_META_1_CHECKPOINT_RESULT_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR]) {
+    const resolved = registry.resolve({ rulesetId: descriptor.rulesetId, rulesetHash: descriptor.rulesetHash,
+      environment: 'production', lifecycle: 'ranked' });
+    assert.equal(resolved.rulesetHash, descriptor.rulesetHash);
+    assert.deepEqual(resolved.capabilities, descriptor.capabilities);
+  }
+});
+test('client enables the balance for the released descriptor and retains the predecessor', () => {
   const candidate = V08_META_1_LOCAL_RELEASE_DESCRIPTOR.rulesetHash;
   assert.equal(protocol.DIFFICULTY_REBALANCE_RULESET_HASH, candidate);
   assert.equal(protocol.supportsDifficultyRebalance(candidate), true);
-  assert.equal(protocol.supportsDifficultyRebalance(V08_META_1_PRODUCTION_RELEASE_DESCRIPTOR.rulesetHash), false);
+  assert.equal(protocol.supportsDifficultyRebalance(V08_META_1_DIFFICULTY_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR.rulesetHash), false);
   assert.equal(protocol.supportsDifficultyRebalance('unknown'), false);
   assert.equal(protocol.supportsRespawnPotionResources(candidate), true);
   assert.equal(new Set(protocol.SUPPORTED_RULESET_HASHES).size, protocol.SUPPORTED_RULESET_HASHES.length);
@@ -66,8 +80,10 @@ test('room settlement awards canonical depth gold, bounds cumulative elites and 
   const legacy=await settleRoomRewardEnvelopeV3(old,request(old,[{claimType:'elite',claimId:'elite:brute',count:4}]),{capabilities:{roomEliteBudgetByType:'v2'}});
   assert.equal(legacy.authoritativeGoldDelta,58);
 });
-test('new balance stays local while the existing production descriptor remains pinned',()=>{
+test('new balance is released with the previous descriptor retained',()=>{
   assert.equal(V08_META_1_LOCAL_RELEASE_DESCRIPTOR.capabilities.difficultyRebalance,'v1');
-  assert.equal(V08_META_1_PRODUCTION_RELEASE_DESCRIPTOR.capabilities.difficultyRebalance,undefined);
-  assert.equal(V08_META_1_PRODUCTION_RELEASE_DESCRIPTOR.rulesetHash,'sha256:dd2bc67015aabc40cb833aec4f224e9a0e9a952a5d3bcd05e33f6144a2f59c05');
+  assert.equal(V08_META_1_PRODUCTION_RELEASE_DESCRIPTOR.capabilities.difficultyRebalance,'v1');
+  assert.equal(V08_META_1_PRODUCTION_RELEASE_DESCRIPTOR.rulesetHash,V08_META_1_LOCAL_RELEASE_DESCRIPTOR.rulesetHash);
+  assert.equal(V08_META_1_DIFFICULTY_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR.capabilities.difficultyRebalance,undefined);
+  assert.equal(V08_META_1_DIFFICULTY_PREVIOUS_PRODUCTION_RELEASE_DESCRIPTOR.rulesetHash,'sha256:dd2bc67015aabc40cb833aec4f224e9a0e9a952a5d3bcd05e33f6144a2f59c05');
 });
